@@ -17,6 +17,7 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.audiobookshelf.AudibleRating
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser
+import com.makd.afinity.data.models.audiobookshelf.Author
 import com.makd.afinity.data.models.audiobookshelf.BatchLocalSessionRequest
 import com.makd.afinity.data.models.audiobookshelf.Bookmark
 import com.makd.afinity.data.models.audiobookshelf.BookmarkRequest
@@ -41,8 +42,10 @@ import com.makd.afinity.data.models.audiobookshelf.mediaProgressKey
 import com.makd.afinity.data.models.server.AddressCheck
 import com.makd.afinity.data.network.AudiobookshelfApiService
 import com.makd.afinity.data.network.AudnexusApiService
+import com.makd.afinity.data.repository.AbsItemFilter
 import com.makd.afinity.data.repository.AudiobookshelfConfig
 import com.makd.afinity.data.repository.AudiobookshelfRepository
+import com.makd.afinity.data.repository.FilteredItemsResult
 import com.makd.afinity.data.repository.ItemWithProgress
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.SeriesItemsResult
@@ -53,6 +56,7 @@ import java.io.File
 import java.io.IOException
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -211,7 +215,15 @@ constructor(
     companion object {
         private const val CACHE_VALIDITY_MS = 5 * 60 * 1000L
         private const val LIBRARY_ITEMS_TTL_MS = 15 * 60 * 1000L
+        private val AUDIBLE_PROVIDER_REGIONS =
+            setOf("ca", "uk", "au", "fr", "de", "jp", "it", "in", "es")
+        private const val ENRICHMENT_TTL_MS = 15 * 60 * 1000L
+        private const val ENRICHMENT_CACHE_MAX_ENTRIES = 64
     }
+
+    private data class EnrichmentEntry(val fetchedAt: Long, val value: Any)
+
+    private val enrichmentCache = ConcurrentHashMap<String, EnrichmentEntry>()
 
     override suspend fun verifyServer(url: String): Boolean {
         return withContext(Dispatchers.IO) {
@@ -1360,6 +1372,7 @@ constructor(
         currentTime: Double,
         duration: Double,
         isFinished: Boolean,
+        timeListened: Double,
     ): Result<MediaProgress> {
         return withContext(Dispatchers.IO) {
             val (currentServerId, currentUserId) =
@@ -1367,18 +1380,36 @@ constructor(
 
             try {
                 val progress = if (duration > 0) currentTime / duration else 0.0
-                val previousFinished =
+                val existing =
                     if (episodeId != null) {
-                        audiobookshelfDao
-                            .getProgressForEpisode(
-                                itemId,
-                                episodeId,
-                                currentServerId,
-                                currentUserId.toString(),
-                            )
-                            ?.isFinished == true
-                    } else false
+                        audiobookshelfDao.getProgressForEpisode(
+                            itemId,
+                            episodeId,
+                            currentServerId,
+                            currentUserId.toString(),
+                        )
+                    } else {
+                        audiobookshelfDao.getProgressForItem(
+                            itemId,
+                            currentServerId,
+                            currentUserId.toString(),
+                        )
+                    }
+                val previousFinished = existing?.isFinished == true
 
+                val carriedListened =
+                    if (existing?.pendingSync == true) existing.pendingTimeListened else 0.0
+                val pendingTimeListened = carriedListened + timeListened.coerceAtLeast(0.0)
+                val localSessionId =
+                    when {
+                        pendingTimeListened <= 0.0 -> null
+                        carriedListened > 0.0 && existing?.localSessionId != null ->
+                            existing.localSessionId
+
+                        else -> UUID.randomUUID().toString()
+                    }
+
+                val now = System.currentTimeMillis()
                 val localProgress =
                     AudiobookshelfProgressEntity(
                         id = "${itemId}_${episodeId ?: ""}",
@@ -1390,10 +1421,12 @@ constructor(
                         duration = duration,
                         progress = progress,
                         isFinished = isFinished,
-                        lastUpdate = System.currentTimeMillis(),
-                        startedAt = System.currentTimeMillis(),
-                        finishedAt = if (isFinished) System.currentTimeMillis() else null,
+                        lastUpdate = now,
+                        startedAt = existing?.startedAt ?: now,
+                        finishedAt = if (isFinished) now else null,
                         pendingSync = true,
+                        pendingTimeListened = pendingTimeListened,
+                        localSessionId = localSessionId,
                     )
                 audiobookshelfDao.insertProgress(localProgress)
                 pruneDuplicateProgress(
@@ -1422,7 +1455,7 @@ constructor(
                     )
 
                 val synced =
-                    if (networkConnectivityMonitor.isCurrentlyConnected()) {
+                    if (timeListened <= 0.0 && networkConnectivityMonitor.isCurrentlyConnected()) {
                         val response =
                             if (episodeId != null) {
                                 apiService.get().updateEpisodeProgress(itemId, episodeId, request)
@@ -1431,12 +1464,13 @@ constructor(
                             }
                         response.isSuccessful
                     } else false
+                val fullySynced = synced && pendingTimeListened <= 0.0
 
-                if (synced) {
+                if (fullySynced) {
                     audiobookshelfDao.insertProgress(localProgress.copy(pendingSync = false))
                 }
 
-                Result.success(localProgress.copy(pendingSync = !synced).toMediaProgress())
+                Result.success(localProgress.copy(pendingSync = !fullySynced).toMediaProgress())
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -1591,19 +1625,9 @@ constructor(
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
-                val deviceInfo =
-                    DeviceInfo(
-                        deviceId = getDeviceId(),
-                        manufacturer = Build.MANUFACTURER,
-                        model = Build.MODEL,
-                        sdkVersion = Build.VERSION.SDK_INT,
-                        clientName = "AFinity",
-                        clientVersion = BuildConfig.VERSION_NAME,
-                    )
-
                 val request =
                     PlaybackSessionRequest(
-                        deviceInfo = deviceInfo,
+                        deviceInfo = buildDeviceInfo(),
                         forceDirectPlay = true,
                         mediaPlayer = "ExoPlayer",
                         supportedMimeTypes =
@@ -1911,25 +1935,33 @@ constructor(
                     )
                 }
 
+                val sessionIds = pendingProgress.associate { progress ->
+                    progress.id to (progress.localSessionId ?: UUID.randomUUID().toString())
+                }
                 val sessions = pendingProgress.map { progress ->
                     LocalSessionData(
-                        id = "local_${progress.libraryItemId}_${progress.episodeId ?: ""}",
+                        id = sessionIds.getValue(progress.id),
                         libraryItemId = progress.libraryItemId,
                         episodeId = progress.episodeId,
                         currentTime = progress.currentTime,
-                        timeListening =
-                            ((progress.lastUpdate - progress.startedAt) / 1000.0).coerceAtLeast(
-                                0.0
-                            ),
+                        timeListening = progress.pendingTimeListened,
                         duration = progress.duration,
                         progress = progress.progress,
-                        startedAt = progress.startedAt,
+                        startedAt =
+                            progress.lastUpdate - (progress.pendingTimeListened * 1000).toLong(),
                         updatedAt = progress.lastUpdate,
                     )
                 }
 
                 val response =
-                    apiService.get().syncAllLocalSessions(BatchLocalSessionRequest(sessions))
+                    apiService
+                        .get()
+                        .syncAllLocalSessions(
+                            BatchLocalSessionRequest(
+                                deviceInfo = buildDeviceInfo(),
+                                sessions = sessions,
+                            )
+                        )
                 Timber.d("syncPendingProgress: batch response ${response.code()}")
 
                 if (!response.isSuccessful) {
@@ -1939,27 +1971,27 @@ constructor(
                     return@withContext Result.failure(Exception("Sync failed: ${response.code()}"))
                 }
 
-                val batchResult = response.body()
-                val successfulIds =
-                    batchResult?.results?.filter { it.success }?.map { it.id }?.toSet()
-                        ?: emptySet()
+                val results = response.body()?.results.orEmpty()
+                val successfulIds = results.filter { it.success }.map { it.id }.toSet()
 
                 var syncedCount = 0
                 pendingProgress.forEach { progress ->
-                    val sessionId = "local_${progress.libraryItemId}_${progress.episodeId ?: ""}"
-                    if (successfulIds.isEmpty() || sessionId in successfulIds) {
-                        audiobookshelfDao.markSynced(
-                            progress.id,
-                            serverId,
-                            userId.toString(),
-                        )
+                    val sessionId = sessionIds.getValue(progress.id)
+                    if (sessionId in successfulIds) {
+                        val cleared =
+                            audiobookshelfDao.markSyncedIfUnchanged(
+                                progress.id,
+                                serverId,
+                                userId.toString(),
+                                progress.lastUpdate,
+                            )
                         syncedCount++
                         Timber.d(
-                            "syncPendingProgress: synced itemId=${progress.libraryItemId} episodeId=${progress.episodeId}"
+                            "syncPendingProgress: synced itemId=${progress.libraryItemId} episodeId=${progress.episodeId} listened=${progress.pendingTimeListened} stillPending=${cleared == 0}"
                         )
                     } else {
                         Timber.w(
-                            "syncPendingProgress: server rejected itemId=${progress.libraryItemId} episodeId=${progress.episodeId}"
+                            "syncPendingProgress: not synced itemId=${progress.libraryItemId} episodeId=${progress.episodeId} error=${results.firstOrNull { it.id == sessionId }?.error}"
                         )
                     }
                 }
@@ -2109,6 +2141,23 @@ constructor(
         val userId = currentUserId.toString()
         val rowId = "${progress.libraryItemId}_${progress.episodeId ?: ""}"
 
+        val existing =
+            if (progress.episodeId != null) {
+                audiobookshelfDao.getProgressForEpisode(
+                    progress.libraryItemId,
+                    progress.episodeId,
+                    currentServerId,
+                    userId,
+                )
+            } else {
+                audiobookshelfDao.getProgressForItem(
+                    progress.libraryItemId,
+                    currentServerId,
+                    userId,
+                )
+            }
+        if (existing?.pendingSync == true) return
+
         val entity =
             AudiobookshelfProgressEntity(
                 id = rowId,
@@ -2159,6 +2208,16 @@ constructor(
     private fun getDeviceId(): String {
         return "${Build.MANUFACTURER}_${Build.MODEL}_${Build.ID}".replace(" ", "_")
     }
+
+    private fun buildDeviceInfo(): DeviceInfo =
+        DeviceInfo(
+            deviceId = getDeviceId(),
+            manufacturer = Build.MANUFACTURER,
+            model = Build.MODEL,
+            sdkVersion = Build.VERSION.SDK_INT,
+            clientName = "AFinity",
+            clientVersion = BuildConfig.VERSION_NAME,
+        )
 
     private fun AudiobookshelfLibraryEntity.toLibrary(): Library {
         return Library(
@@ -2287,6 +2346,132 @@ constructor(
         }
     }
 
+    override suspend fun getItemListeningSessions(
+        itemId: String,
+        itemsPerPage: Int,
+    ): Result<ListeningSessionsResponse> =
+        withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+                val response =
+                    apiService.get().getItemListeningSessions(itemId, itemsPerPage = itemsPerPage)
+                if (response.isSuccessful) {
+                    Result.success(response.body() ?: ListeningSessionsResponse())
+                } else {
+                    Result.failure(Exception("Failed to get item sessions: ${response.code()}"))
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to get listening sessions for $itemId")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun getAuthor(authorId: String): Result<Author> =
+        withContext(Dispatchers.IO) {
+            cachedEnrichment("author_$authorId") {
+                try {
+                    if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                        return@cachedEnrichment Result.failure(Exception("No network connection"))
+                    }
+                    val response = apiService.get().getAuthor(authorId)
+                    val body = response.body()
+                    if (response.isSuccessful && body != null) {
+                        Result.success(body)
+                    } else {
+                        Result.failure(Exception("Failed to get author: ${response.code()}"))
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to get author $authorId")
+                    Result.failure(e)
+                }
+            }
+        }
+
+    override suspend fun getFilteredLibraryItems(
+        libraryId: String,
+        filter: AbsItemFilter,
+        limit: Int,
+        collapseSeries: Boolean,
+    ): Result<FilteredItemsResult> =
+        withContext(Dispatchers.IO) {
+            val cacheKey =
+                "items_${libraryId}_${filter.group}_${filter.value}_${limit}_$collapseSeries"
+            cachedEnrichment(cacheKey) {
+                try {
+                    if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                        return@cachedEnrichment Result.failure(Exception("No network connection"))
+                    }
+                    val encodedFilter =
+                        filter.group +
+                            "." +
+                            java.net.URLEncoder.encode(
+                                android.util.Base64.encodeToString(
+                                    filter.value.toByteArray(),
+                                    android.util.Base64.NO_WRAP,
+                                ),
+                                "UTF-8",
+                            )
+                    val response =
+                        apiService
+                            .get()
+                            .getLibraryItems(
+                                id = libraryId,
+                                limit = limit,
+                                page = 0,
+                                filter = encodedFilter,
+                                minified = 1,
+                                collapseseries = if (collapseSeries) 1 else null,
+                            )
+                    val body = response.body()
+                    if (response.isSuccessful && body != null) {
+                        Result.success(
+                            FilteredItemsResult(
+                                items = body.results,
+                                total = body.total,
+                            )
+                        )
+                    } else {
+                        Result.failure(Exception("Failed to get items: ${response.code()}"))
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to get ${filter.group} items for ${filter.value}")
+                    Result.failure(e)
+                }
+            }
+        }
+
+    private suspend fun <T : Any> cachedEnrichment(
+        key: String,
+        fetch: suspend () -> Result<T>,
+    ): Result<T> {
+        val (serverId, userId) =
+            activeContext ?: return Result.failure(Exception("No active session"))
+        val scopedKey = "${serverId}_${userId}_$key"
+        val now = System.currentTimeMillis()
+        enrichmentCache[scopedKey]?.let { entry ->
+            if (now - entry.fetchedAt < ENRICHMENT_TTL_MS) {
+                @Suppress("UNCHECKED_CAST")
+                return Result.success(entry.value as T)
+            }
+        }
+        return fetch().onSuccess { value ->
+            if (enrichmentCache.size >= ENRICHMENT_CACHE_MAX_ENTRIES) {
+                enrichmentCache.entries
+                    .minByOrNull { it.value.fetchedAt }
+                    ?.let { enrichmentCache.remove(it.key) }
+            }
+            enrichmentCache[scopedKey] = EnrichmentEntry(now, value)
+        }
+    }
+
     override suspend fun getAudibleRating(
         itemId: String,
         asin: String?,
@@ -2371,16 +2556,19 @@ constructor(
         return try {
             val region =
                 Locale.getDefault().country.lowercase().let { if (it == "gb") "uk" else it }
+            val provider = if (region in AUDIBLE_PROVIDER_REGIONS) "audible.$region" else "audible"
             Timber.d(
-                "AudibleRating: fallback search title=$title author=$authorName region=$region"
+                "AudibleRating: fallback search title=$title author=$authorName provider=$provider"
             )
             val response =
-                apiService.get().searchCovers(title = title, author = authorName, region = region)
+                apiService
+                    .get()
+                    .searchBooks(title = title, author = authorName, provider = provider)
             Timber.d(
                 "AudibleRating: fallback response code=${response.code()} body=${response.body()}"
             )
             if (!response.isSuccessful) return null
-            val asin = response.body()?.firstOrNull()?.asin
+            val asin = response.body()?.firstNotNullOfOrNull { it.asin?.takeIf(String::isNotBlank) }
             Timber.d("AudibleRating: fallback asin=$asin")
             asin
         } catch (e: CancellationException) {

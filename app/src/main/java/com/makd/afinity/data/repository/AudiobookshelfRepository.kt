@@ -3,6 +3,7 @@ package com.makd.afinity.data.repository
 import com.makd.afinity.data.models.audiobookshelf.AudibleRating
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser
+import com.makd.afinity.data.models.audiobookshelf.Author
 import com.makd.afinity.data.models.audiobookshelf.Bookmark
 import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
@@ -131,6 +132,7 @@ interface AudiobookshelfRepository {
         currentTime: Double,
         duration: Double,
         isFinished: Boolean,
+        timeListened: Double = 0.0,
     ): Result<MediaProgress>
 
     suspend fun applyRemoteProgress(progressList: List<MediaProgress>): Int
@@ -181,6 +183,20 @@ interface AudiobookshelfRepository {
 
     suspend fun getListeningSessions(itemsPerPage: Int = 15): Result<ListeningSessionsResponse>
 
+    suspend fun getItemListeningSessions(
+        itemId: String,
+        itemsPerPage: Int = 50,
+    ): Result<ListeningSessionsResponse>
+
+    suspend fun getAuthor(authorId: String): Result<Author>
+
+    suspend fun getFilteredLibraryItems(
+        libraryId: String,
+        filter: AbsItemFilter,
+        limit: Int,
+        collapseSeries: Boolean = false,
+    ): Result<FilteredItemsResult>
+
     suspend fun getAudibleRating(
         itemId: String,
         asin: String?,
@@ -192,3 +208,13 @@ interface AudiobookshelfRepository {
 data class AudiobookshelfConfig(val serverUrl: String, val absUserId: String, val username: String)
 
 data class SeriesItemsResult(val items: List<LibraryItem>, val totalBooks: Int)
+
+data class FilteredItemsResult(val items: List<LibraryItem>, val total: Int)
+
+sealed class AbsItemFilter(val group: String, val value: String) {
+    class ByAuthor(authorId: String) : AbsItemFilter("authors", authorId)
+
+    class ByNarrator(name: String) : AbsItemFilter("narrators", name)
+
+    class ByGenre(genre: String) : AbsItemFilter("genres", genre)
+}

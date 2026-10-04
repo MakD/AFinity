@@ -1454,6 +1454,12 @@ fun MainNavigation(
                                                 )
                                             )
                                         },
+                                        onNavigateToItem = { itemId ->
+                                            navController.navigate(
+                                                Destination.createAudiobookshelfItemRoute(itemId)
+                                            )
+                                        },
+                                        widthSizeClass = widthSizeClass,
                                     )
                                 }
 

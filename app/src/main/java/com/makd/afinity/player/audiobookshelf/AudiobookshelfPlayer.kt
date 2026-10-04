@@ -20,8 +20,9 @@ import com.makd.afinity.R
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.audiobookshelf.AudioTrack
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
+import com.makd.afinity.data.models.audiobookshelf.EpisodeSort
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
-import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
+import com.makd.afinity.data.models.audiobookshelf.PodcastEpisodeOrder
 import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
@@ -40,6 +41,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -57,6 +59,7 @@ constructor(
     private val sessionManager: SessionManager,
     private val absSyncScheduler: AbsProgressSyncScheduler,
     private val musicPlaybackManager: MusicPlaybackManager,
+    private val progressSyncer: AudiobookshelfProgressSyncer,
 ) {
     private var mediaController: MediaController? = null
     private var controllerFuture: ListenableFuture<MediaController>? = null
@@ -152,12 +155,20 @@ constructor(
 
             val token = securePreferencesRepository.getCachedAudiobookshelfToken()
             val isLocalSession = session.id.startsWith("local_")
+            val queueOrder = EpisodeSort.parse(episodeSort)
             val isPodcastPlaylist =
-                !isLocalSession && episodeSort != null && session.mediaType == "podcast"
+                !isLocalSession && queueOrder != null && session.mediaType == "podcast"
             val unsortedEpisodes = session.libraryItem?.media?.episodes ?: emptyList()
             val episodes =
-                if (isPodcastPlaylist) {
-                    sortEpisodes(unsortedEpisodes, episodeSort!!)
+                if (isPodcastPlaylist && queueOrder != null) {
+                    val progressMap =
+                        audiobookshelfRepository
+                            .getEpisodeProgressMapFlow(session.libraryItemId)
+                            .first()
+                    PodcastEpisodeOrder.sorted(unsortedEpisodes, queueOrder).filter { episode ->
+                        episode.id == session.episodeId ||
+                            progressMap[episode.id]?.isFinished != true
+                    }
                 } else {
                     unsortedEpisodes
                 }
@@ -371,58 +382,6 @@ constructor(
         return result
     }
 
-    private fun sortEpisodes(
-        episodes: List<PodcastEpisode>,
-        sortParam: String,
-    ): List<PodcastEpisode> {
-        val parts = sortParam.split("_")
-        val ascending = parts.lastOrNull() == "asc"
-        val sortType = parts.dropLast(1).joinToString("_")
-
-        val cmp =
-            Comparator<String> { a, b ->
-                val pattern = Regex("(\\d+|\\D+)")
-                val aParts = pattern.findAll(a).map { it.value }.toList()
-                val bParts = pattern.findAll(b).map { it.value }.toList()
-                for (i in 0 until minOf(aParts.size, bParts.size)) {
-                    val ap = aParts[i]
-                    val bp = bParts[i]
-                    val aNum = ap.toBigIntegerOrNull()
-                    val bNum = bp.toBigIntegerOrNull()
-                    val result =
-                        if (aNum != null && bNum != null) aNum.compareTo(bNum)
-                        else ap.compareTo(bp, ignoreCase = true)
-                    if (result != 0) return@Comparator result
-                }
-                aParts.size - bParts.size
-            }
-
-        val sorted =
-            when (sortType) {
-                "pub_date" -> episodes.sortedBy { it.publishedAt ?: 0L }
-                "title" -> episodes.sortedWith(compareBy<PodcastEpisode, String>(cmp) { it.title })
-                "season" ->
-                    episodes.sortedWith(
-                        compareBy<PodcastEpisode, String>(cmp) { it.season ?: "" }
-                            .thenBy(cmp) { it.episode ?: "" }
-                    )
-
-                "episode" ->
-                    episodes.sortedWith(compareBy<PodcastEpisode, String>(cmp) { it.episode ?: "" })
-
-                "filename" ->
-                    episodes.sortedWith(
-                        compareBy<PodcastEpisode, String>(cmp) {
-                            it.audioFile?.metadata?.filename ?: ""
-                        }
-                    )
-
-                else -> episodes
-            }
-
-        return if (ascending) sorted else sorted.reversed()
-    }
-
     fun play() {
         val controller = mediaController ?: return
         if (controller.playbackState == Player.STATE_IDLE || controller.playerError != null) {
@@ -607,8 +566,13 @@ constructor(
         cancelSleepTimer()
         val state = playbackManager.playbackState.value
         val sessionId = state.sessionId
+        val listened = if (sessionId != null) progressSyncer.takeListenedSeconds() else 0.0
         Timber.d(
-            "closeSession: sessionId=$sessionId itemId=${state.itemId} episodeId=${state.episodeId} currentTime=${state.currentTime} isLocal=${sessionId?.startsWith("local_")}"
+            "closeSession: sessionId=$sessionId itemId=${state.itemId} episodeId=${state.episodeId} currentTime=${state.currentTime} listened=$listened isLocal=${
+                sessionId?.startsWith(
+                    "local_"
+                )
+            }"
         )
         if (sessionId != null) {
             scope.launch {
@@ -652,6 +616,7 @@ constructor(
                                     currentTime = currentTime,
                                     duration = duration,
                                     isFinished = duration > 0 && currentTime / duration >= 0.99,
+                                    timeListened = listened,
                                 )
                                 absSyncScheduler.scheduleSync(serverId, userId)
                                 Timber.d(
@@ -669,7 +634,7 @@ constructor(
                             audiobookshelfRepository.closePlaybackSession(
                                 sessionId = sessionId,
                                 currentTime = currentTime,
-                                timeListened = currentTime,
+                                timeListened = listened,
                                 duration = duration,
                             )
                         if (result.isSuccess) {

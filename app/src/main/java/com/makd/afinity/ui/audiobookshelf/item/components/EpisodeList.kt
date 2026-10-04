@@ -16,9 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -44,7 +43,6 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
-import com.makd.afinity.ui.components.ListPickerDialog
 import com.makd.afinity.util.DateSkeleton
 import com.makd.afinity.util.localizedDateFormat
 import java.util.Date
@@ -62,11 +60,18 @@ fun LazyListScope.episodeListItems(
     onEpisodeDeleteDownload: ((String) -> Unit)? = null,
     onEpisodeToggleFinished: ((PodcastEpisode) -> Unit)? = null,
     nowPlayingEpisodeId: String? = null,
+    fadeLastItem: Boolean = false,
 ) {
-    items(items = episodes, key = { it.id }) { episode ->
+    itemsIndexed(items = episodes, key = { _, episode -> episode.id }) { index, episode ->
         val isExpanded = expandedEpisodeId == episode.id
 
-        Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+        Box(
+            modifier =
+                Modifier.animateItem()
+                    .fadeOutBottom(fadeLastItem && index == episodes.lastIndex)
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+        ) {
             ExpandableEpisodeItem(
                 episode = episode,
                 isExpanded = isExpanded,
@@ -345,57 +350,6 @@ private fun formatDuration(seconds: Double): String {
         hours > 0 -> "${hours}h ${minutes}m"
         minutes > 0 -> "${minutes}m"
         else -> "< 1m"
-    }
-}
-
-@Composable
-fun EpisodeListDialog(
-    episodes: List<PodcastEpisode>,
-    onEpisodePlay: (PodcastEpisode) -> Unit,
-    expandedEpisodeId: String?,
-    onExpandEpisode: (String?) -> Unit,
-    episodeProgressMap: Map<String, MediaProgress>,
-    onDismiss: () -> Unit,
-    onSortClick: () -> Unit,
-    episodeDownloadMap: Map<String, AbsDownloadInfo> = emptyMap(),
-    onEpisodeDownload: ((String) -> Unit)? = null,
-    onEpisodeCancelDownload: ((String) -> Unit)? = null,
-    onEpisodeDeleteDownload: ((String) -> Unit)? = null,
-    onEpisodeToggleFinished: ((PodcastEpisode) -> Unit)? = null,
-    nowPlayingEpisodeId: String? = null,
-) {
-    ListPickerDialog(
-        title = stringResource(R.string.section_episodes),
-        onDismiss = onDismiss,
-        height = 600.dp,
-        actions = {
-            IconButton(onClick = onSortClick) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_arrows_sort),
-                    contentDescription = stringResource(R.string.cd_abs_sort),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        },
-    ) {
-        LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)) {
-            episodeListItems(
-                episodes = episodes,
-                onEpisodePlay = { episode ->
-                    onEpisodePlay(episode)
-                    onDismiss()
-                },
-                expandedEpisodeId = expandedEpisodeId,
-                onExpandEpisode = onExpandEpisode,
-                episodeProgressMap = episodeProgressMap,
-                episodeDownloadMap = episodeDownloadMap,
-                onEpisodeDownload = onEpisodeDownload,
-                onEpisodeCancelDownload = onEpisodeCancelDownload,
-                onEpisodeDeleteDownload = onEpisodeDeleteDownload,
-                onEpisodeToggleFinished = onEpisodeToggleFinished,
-                nowPlayingEpisodeId = nowPlayingEpisodeId,
-            )
-        }
     }
 }
 

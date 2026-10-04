@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -24,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.coverUrl
 import com.makd.afinity.ui.audiobookshelf.item.SeriesDisplayData
+import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
 
 @Composable
 fun IncludedInSeriesSection(
@@ -34,12 +36,8 @@ fun IncludedInSeriesSection(
 ) {
     if (seriesList.isEmpty()) return
 
-    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-        Text(
-            text = stringResource(R.string.abs_included_in_series),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-        )
+    Column(modifier = modifier.fillMaxWidth()) {
+        DetailSectionTitle(text = stringResource(R.string.abs_included_in_series))
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -69,7 +67,12 @@ fun IncludedInSeriesSection(
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        text = "${series.totalBooks} books",
+                        text =
+                            pluralStringResource(
+                                R.plurals.abs_series_books_fmt,
+                                series.totalBooks,
+                                series.totalBooks,
+                            ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

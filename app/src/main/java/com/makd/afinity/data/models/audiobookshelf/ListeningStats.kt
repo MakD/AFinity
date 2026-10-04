@@ -20,7 +20,9 @@ data class ListeningSession(
     @SerialName("displayTitle") val displayTitle: String? = null,
     @SerialName("displayAuthor") val displayAuthor: String? = null,
     @SerialName("timeListening") val timeListening: Double = 0.0,
+    @SerialName("startedAt") val startedAt: Long? = null,
     @SerialName("updatedAt") val updatedAt: Long? = null,
+    @SerialName("date") val date: String? = null,
     @SerialName("mediaMetadata") val mediaMetadata: MediaMetadataCompact? = null,
     @SerialName("deviceInfo") val deviceInfo: DeviceInfoCompact? = null,
 )

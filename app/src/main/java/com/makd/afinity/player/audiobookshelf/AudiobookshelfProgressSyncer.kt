@@ -3,6 +3,7 @@ package com.makd.afinity.player.audiobookshelf
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.SystemClock
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsProgressSyncScheduler
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -28,10 +29,12 @@ constructor(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var syncJob: Job? = null
-    private var lastSyncTime: Double = 0.0
-    private var totalTimeListened: Double = 0.0
-    private var sessionStartTime: Long = 0L
     private var currentPlaylistEpisodeId: String? = null
+
+    private val listenLock = Any()
+    private var playingSinceMs: Long? = null
+    private var pendingListenedMs: Long = 0L
+    private var accountedSessionId: String? = null
 
     companion object {
         private const val WIFI_SYNC_INTERVAL_MS = 15_000L
@@ -41,10 +44,15 @@ constructor(
     fun startSyncing() {
         stopSyncing()
 
-        sessionStartTime = System.currentTimeMillis()
-        lastSyncTime = playbackManager.playbackState.value.currentTime
-        totalTimeListened = 0.0
-        currentPlaylistEpisodeId = playbackManager.playbackState.value.episodeId
+        val state = playbackManager.playbackState.value
+        synchronized(listenLock) {
+            if (state.sessionId != accountedSessionId) {
+                pendingListenedMs = 0L
+                accountedSessionId = state.sessionId
+            }
+            playingSinceMs = SystemClock.elapsedRealtime()
+        }
+        currentPlaylistEpisodeId = state.episodeId
 
         syncJob = scope.launch {
             while (true) {
@@ -59,11 +67,34 @@ constructor(
     }
 
     fun stopSyncing() {
+        synchronized(listenLock) {
+            accrueListenedLocked()
+            playingSinceMs = null
+        }
         if (syncJob != null) {
             syncJob?.cancel()
             syncJob = null
             Timber.d("Progress syncer stopped")
         }
+    }
+
+    fun takeListenedSeconds(): Double =
+        synchronized(listenLock) {
+            accrueListenedLocked()
+            val seconds = pendingListenedMs / 1000.0
+            pendingListenedMs = 0L
+            seconds
+        }
+
+    private fun returnListenedSeconds(seconds: Double) {
+        synchronized(listenLock) { pendingListenedMs += (seconds * 1000).toLong() }
+    }
+
+    private fun accrueListenedLocked() {
+        val since = playingSinceMs ?: return
+        val now = SystemClock.elapsedRealtime()
+        pendingListenedMs += now - since
+        playingSinceMs = now
     }
 
     suspend fun syncNow() {
@@ -86,44 +117,51 @@ constructor(
         sessionId: String,
     ) {
         val currentTime = state.currentTime
-        val timeListenedSinceLastSync = (currentTime - lastSyncTime).coerceAtLeast(0.0)
-        totalTimeListened += timeListenedSinceLastSync
-        lastSyncTime = currentTime
 
         if (sessionId.startsWith("local_")) {
             val itemId = state.itemId ?: return
             val (serverId, userId) = audiobookshelfRepository.currentActiveContext ?: return
+            val listened = takeListenedSeconds()
             Timber.d(
-                "ProgressSync[audiobook]: saving offline progress itemId=$itemId episodeId=${state.episodeId} currentTime=$currentTime duration=${state.duration}"
+                "ProgressSync[audiobook]: saving offline progress itemId=$itemId episodeId=${state.episodeId} currentTime=$currentTime duration=${state.duration} listened=$listened"
             )
-            audiobookshelfRepository.updateProgress(
-                itemId = itemId,
-                episodeId = state.episodeId,
-                currentTime = currentTime,
-                duration = state.duration,
-                isFinished = state.duration > 0 && currentTime / state.duration >= 0.99,
-            )
+            audiobookshelfRepository
+                .updateProgress(
+                    itemId = itemId,
+                    episodeId = state.episodeId,
+                    currentTime = currentTime,
+                    duration = state.duration,
+                    isFinished = state.duration > 0 && currentTime / state.duration >= 0.99,
+                    timeListened = listened,
+                )
+                .onFailure { returnListenedSeconds(listened) }
             absSyncScheduler.scheduleSync(serverId, userId)
             Timber.d("ProgressSync[audiobook]: offline progress saved and sync scheduled")
             return
         }
 
+        val listened = takeListenedSeconds()
         try {
             val result =
                 audiobookshelfRepository.syncPlaybackSession(
                     sessionId = sessionId,
-                    timeListened = timeListenedSinceLastSync,
+                    timeListened = listened,
                     currentTime = currentTime,
                     duration = state.duration,
                 )
 
             result.fold(
                 onSuccess = { Timber.d("Progress synced: ${currentTime}s / ${state.duration}s") },
-                onFailure = { error -> Timber.w(error, "Failed to sync progress, will retry") },
+                onFailure = { error ->
+                    returnListenedSeconds(listened)
+                    Timber.w(error, "Failed to sync progress, will retry")
+                },
             )
         } catch (e: CancellationException) {
+            returnListenedSeconds(listened)
             throw e
         } catch (e: Exception) {
+            returnListenedSeconds(listened)
             Timber.e(e, "Exception syncing progress")
         }
     }
@@ -144,32 +182,35 @@ constructor(
             return
         }
 
-        val timeListenedSinceLastSync = (state.currentTime - lastSyncTime).coerceAtLeast(0.0)
-        lastSyncTime = state.currentTime
-
         if (sessionId.startsWith("local_")) {
             val itemId = state.itemId ?: return
             val (serverId, userId) = audiobookshelfRepository.currentActiveContext ?: return
+            val listened = takeListenedSeconds()
             Timber.d(
-                "ProgressSync[podcast]: saving offline progress itemId=$itemId episodeId=$episodeId currentTime=$episodeCurrentTime duration=$episodeDuration"
+                "ProgressSync[podcast]: saving offline progress itemId=$itemId episodeId=$episodeId currentTime=$episodeCurrentTime duration=$episodeDuration listened=$listened"
             )
-            audiobookshelfRepository.updateProgress(
-                itemId = itemId,
-                episodeId = episodeId,
-                currentTime = episodeCurrentTime,
-                duration = episodeDuration,
-                isFinished = episodeDuration > 0 && episodeCurrentTime / episodeDuration >= 0.99,
-            )
+            audiobookshelfRepository
+                .updateProgress(
+                    itemId = itemId,
+                    episodeId = episodeId,
+                    currentTime = episodeCurrentTime,
+                    duration = episodeDuration,
+                    isFinished =
+                        episodeDuration > 0 && episodeCurrentTime / episodeDuration >= 0.99,
+                    timeListened = listened,
+                )
+                .onFailure { returnListenedSeconds(listened) }
             absSyncScheduler.scheduleSync(serverId, userId)
             Timber.d("ProgressSync[podcast]: offline progress saved and sync scheduled")
             return
         }
 
+        val listened = takeListenedSeconds()
         try {
             val result =
                 audiobookshelfRepository.syncPlaybackSession(
-                    sessionId = state.sessionId ?: return,
-                    timeListened = timeListenedSinceLastSync,
+                    sessionId = sessionId,
+                    timeListened = listened,
                     currentTime = episodeCurrentTime,
                     duration = episodeDuration,
                 )
@@ -181,11 +222,16 @@ constructor(
                             "${episodeCurrentTime}s / ${episodeDuration}s"
                     )
                 },
-                onFailure = { error -> Timber.w(error, "Failed to sync playlist progress") },
+                onFailure = { error ->
+                    returnListenedSeconds(listened)
+                    Timber.w(error, "Failed to sync playlist progress")
+                },
             )
         } catch (e: CancellationException) {
+            returnListenedSeconds(listened)
             throw e
         } catch (e: Exception) {
+            returnListenedSeconds(listened)
             Timber.e(e, "Exception syncing playlist progress")
         }
     }
@@ -212,7 +258,7 @@ constructor(
                     audiobookshelfRepository.closePlaybackSession(
                         sessionId = oldSessionId,
                         currentTime = prevDuration,
-                        timeListened = prevDuration,
+                        timeListened = takeListenedSeconds(),
                         duration = prevDuration,
                     )
                     Timber.d("Closed session for episode: $prevEpisodeId")
@@ -229,9 +275,8 @@ constructor(
             result.fold(
                 onSuccess = { newSession ->
                     currentPlaylistEpisodeId = newEpisodeId
+                    synchronized(listenLock) { accountedSessionId = newSession.id }
                     playbackManager.updateSessionInfo(newSession.id, newEpisodeId)
-                    lastSyncTime = state.currentTime
-                    totalTimeListened = 0.0
                     Timber.d("Started new session for episode: $newEpisodeId (${newSession.id})")
                 },
                 onFailure = { error ->

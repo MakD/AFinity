@@ -37,6 +37,14 @@ data class LibraryItem(
     @SerialName("rssFeedUrl") val rssFeedUrl: String? = null,
     @SerialName("numEpisodesIncomplete") val numEpisodesIncomplete: Int? = null,
     @SerialName("recentEpisode") val recentEpisode: PodcastEpisode? = null,
+    @SerialName("collapsedSeries") val collapsedSeries: CollapsedSeries? = null,
+)
+
+@Serializable
+data class CollapsedSeries(
+    @SerialName("id") val id: String,
+    @SerialName("name") val name: String,
+    @SerialName("numBooks") val numBooks: Int? = null,
 )
 
 fun LibraryItem.coverUrl(serverUrl: String, width: Int? = null): String {
@@ -120,6 +128,12 @@ data class Author(
     @SerialName("updatedAt") val updatedAt: Long? = null,
     @SerialName("numBooks") val numBooks: Int? = null,
 )
+
+fun Author.imageUrl(serverUrl: String, width: Int): String? {
+    if (imagePath == null) return null
+    val ts = updatedAt?.let { "&ts=$it" } ?: ""
+    return "$serverUrl/api/authors/$id/image?width=$width$ts"
+}
 
 @Serializable
 data class SeriesItem(

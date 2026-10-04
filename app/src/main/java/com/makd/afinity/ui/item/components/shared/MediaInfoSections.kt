@@ -53,7 +53,10 @@ fun OverviewSection(overview: String, modifier: Modifier = Modifier) {
             if (
                 overview.contains("<a ", ignoreCase = true) ||
                     overview.contains("</a>", ignoreCase = true) ||
-                    overview.contains("<br", ignoreCase = true)
+                    overview.contains("<br", ignoreCase = true) ||
+                    overview.contains("<p", ignoreCase = true) ||
+                    overview.contains("<i>", ignoreCase = true) ||
+                    overview.contains("<b>", ignoreCase = true)
             ) {
                 htmlToAnnotatedString(overview, linkColor)
             } else {

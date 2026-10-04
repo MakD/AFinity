@@ -288,9 +288,14 @@ interface AudiobookshelfDao {
     suspend fun insertProgressList(progressList: List<AudiobookshelfProgressEntity>)
 
     @Query(
-        "UPDATE audiobookshelf_progress SET pendingSync = 0 WHERE id = :progressId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "UPDATE audiobookshelf_progress SET pendingSync = 0, pendingTimeListened = 0, localSessionId = NULL WHERE id = :progressId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId AND lastUpdate = :lastUpdate"
     )
-    suspend fun markSynced(progressId: String, serverId: String, userId: String)
+    suspend fun markSyncedIfUnchanged(
+        progressId: String,
+        serverId: String,
+        userId: String,
+        lastUpdate: Long,
+    ): Int
 
     @Query(
         "DELETE FROM audiobookshelf_progress WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"

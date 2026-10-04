@@ -146,7 +146,8 @@ constructor(
     private fun startPlayback() {
         if (castManager.castState.value.isAbsCasting) return
         val currentState = playbackManager.playbackState.value
-        if (currentState.sessionId != null && currentState.itemId == itemId) {
+        val isSameEpisode = episodeId == null || episodeId == currentState.episodeId
+        if (currentState.sessionId != null && currentState.itemId == itemId && isSameEpisode) {
             Timber.d("Resuming existing playback session for item: $itemId")
             if (startPosition != null) {
                 audiobookshelfPlayer.seekToPosition(startPosition)

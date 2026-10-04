@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,14 +18,13 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -43,69 +41,70 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
+import com.makd.afinity.data.models.audiobookshelf.EpisodeSort
+import com.makd.afinity.data.models.audiobookshelf.EpisodeSortKey
+import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
 import com.makd.afinity.data.models.audiobookshelf.coverUrl
+import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.navigation.LocalPlayerOffset
-import com.makd.afinity.ui.audiobookshelf.item.components.ChapterListDialog
-import com.makd.afinity.ui.audiobookshelf.item.components.EpisodeListDialog
-import com.makd.afinity.ui.audiobookshelf.item.components.ExpandableSynopsis
+import com.makd.afinity.ui.audiobookshelf.item.components.AbsSectionTitle
+import com.makd.afinity.ui.audiobookshelf.item.components.AuthorCard
 import com.makd.afinity.ui.audiobookshelf.item.components.IncludedInSeriesSection
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemDetailsSection
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeader
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeaderContent
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeroBackground
-import com.makd.afinity.ui.audiobookshelf.item.components.chapterListItems
+import com.makd.afinity.ui.audiobookshelf.item.components.ListExpandButton
+import com.makd.afinity.ui.audiobookshelf.item.components.ListeningSection
+import com.makd.afinity.ui.audiobookshelf.item.components.NarratorsSection
+import com.makd.afinity.ui.audiobookshelf.item.components.PodcastUpNextCard
+import com.makd.afinity.ui.audiobookshelf.item.components.RecommendationRowSection
+import com.makd.afinity.ui.audiobookshelf.item.components.chapterWindowItems
 import com.makd.afinity.ui.audiobookshelf.item.components.episodeListItems
+import com.makd.afinity.ui.audiobookshelf.item.components.formatListenTime
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.isLandscapeWindow
+import com.makd.afinity.ui.item.components.shared.DetailSectionGap
+import com.makd.afinity.ui.item.components.shared.LocalDetailLayout
+import com.makd.afinity.ui.item.components.shared.OverviewSection
+import com.makd.afinity.ui.item.components.shared.detailItem
+import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 
-private val naturalOrderComparator =
-    Comparator<String> { a, b ->
-        val patternSplit = Regex("(\\d+|\\D+)")
-        val aParts = patternSplit.findAll(a).map { it.value }.toList()
-        val bParts = patternSplit.findAll(b).map { it.value }.toList()
-        for (i in 0 until minOf(aParts.size, bParts.size)) {
-            val ap = aParts[i]
-            val bp = bParts[i]
-            val aNum = ap.toBigIntegerOrNull()
-            val bNum = bp.toBigIntegerOrNull()
-            val cmp =
-                if (aNum != null && bNum != null) aNum.compareTo(bNum)
-                else ap.compareTo(bp, ignoreCase = true)
-            if (cmp != 0) return@Comparator cmp
-        }
-        aParts.size - bParts.size
-    }
+private const val EPISODE_PREVIEW_COUNT = 5
+private val DetailHorizontalPadding = 16.dp
 
-private enum class EpisodeSortOption(@param:StringRes val labelRes: Int) {
-    PUB_DATE(R.string.abs_sort_pub_date),
-    TITLE(R.string.abs_sort_title),
-    SEASON(R.string.abs_sort_season),
-    EPISODE(R.string.abs_sort_episode),
-    FILENAME(R.string.abs_sort_filename),
-}
+@get:StringRes
+private val EpisodeSortKey.labelRes: Int
+    get() =
+        when (this) {
+            EpisodeSortKey.PUB_DATE -> R.string.abs_sort_pub_date
+            EpisodeSortKey.TITLE -> R.string.abs_sort_title
+            EpisodeSortKey.SEASON -> R.string.abs_sort_season
+            EpisodeSortKey.EPISODE -> R.string.abs_sort_episode
+            EpisodeSortKey.FILENAME -> R.string.abs_sort_filename
+        }
 
 @Composable
 fun AudiobookshelfItemScreen(
@@ -113,7 +112,9 @@ fun AudiobookshelfItemScreen(
     onNavigateToSeries: (seriesId: String, libraryId: String, seriesName: String) -> Unit =
         { _, _, _ ->
         },
+    onNavigateToItem: (itemId: String) -> Unit = {},
     onNavigateHome: () -> Unit = {},
+    widthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact,
     viewModel: AudiobookshelfItemViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -128,355 +129,123 @@ fun AudiobookshelfItemScreen(
     val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
     val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
     val audibleRating by viewModel.audibleRating.collectAsStateWithLifecycle()
+    val authorDetails by viewModel.authorDetails.collectAsStateWithLifecycle()
+    val listening by viewModel.listening.collectAsStateWithLifecycle()
+    val recommendationRows by viewModel.recommendationRows.collectAsStateWithLifecycle()
+    val sortedEpisodes by viewModel.sortedEpisodes.collectAsStateWithLifecycle()
+    val episodeSort by viewModel.episodeSort.collectAsStateWithLifecycle()
+    val upNext by viewModel.podcastUpNext.collectAsStateWithLifecycle()
+    val detailLayout by viewModel.detailLayout.collectAsStateWithLifecycle()
 
     val isPodcast = item?.mediaType?.lowercase() == "podcast"
     val isLandscape = isLandscapeWindow()
     val playerOffset = LocalPlayerOffset.current
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val cardWidth = widthSizeClass.portraitWidth
 
-    var chaptersExpanded by remember { mutableStateOf(false) }
-    var sortOption by remember { mutableStateOf(EpisodeSortOption.PUB_DATE) }
-    var sortAscending by remember { mutableStateOf(false) }
+    var showAllChapters by rememberSaveable { mutableStateOf(false) }
+    var showListenedChapters by rememberSaveable { mutableStateOf(false) }
+    var showAllEpisodes by rememberSaveable { mutableStateOf(false) }
     var showSortDialog by remember { mutableStateOf(false) }
-    var showListDialog by remember { mutableStateOf(false) }
 
     var expandedEpisodeId by remember { mutableStateOf<String?>(null) }
 
     val lazyListState = rememberLazyListState()
     val topBarOpacity by rememberTopBarOpacity(lazyListState)
 
-    val sortedEpisodes by
-        remember(uiState.episodes, sortOption, sortAscending, isOffline, episodeDownloadMap) {
-            derivedStateOf {
-                val episodes =
-                    if (isOffline) {
-                        uiState.episodes.filter {
-                            episodeDownloadMap[it.id]?.status == AbsDownloadStatus.COMPLETED
-                        }
-                    } else {
-                        uiState.episodes
-                    }
-                val cmp = naturalOrderComparator
-                val sorted =
-                    when (sortOption) {
-                        EpisodeSortOption.PUB_DATE -> episodes.sortedBy { it.publishedAt ?: 0L }
-                        EpisodeSortOption.TITLE -> episodes.sortedWith(compareBy(cmp) { it.title })
-
-                        EpisodeSortOption.SEASON ->
-                            episodes.sortedWith(
-                                compareBy<
-                                        com.makd.afinity.data.models.audiobookshelf.PodcastEpisode,
-                                        String,
-                                    >(
-                                        cmp
-                                    ) {
-                                        it.season ?: ""
-                                    }
-                                    .thenBy(cmp) { it.episode ?: "" }
-                            )
-
-                        EpisodeSortOption.EPISODE ->
-                            episodes.sortedWith(compareBy(cmp) { it.episode ?: "" })
-
-                        EpisodeSortOption.FILENAME ->
-                            episodes.sortedWith(
-                                compareBy(cmp) { it.audioFile?.metadata?.filename ?: "" }
-                            )
-                    }
-                if (sortAscending) sorted else sorted.reversed()
-            }
+    val resumePositionOf: (PodcastEpisode) -> Double? = { episode ->
+        episodeProgressMap[episode.id]?.takeIf { !it.isFinished && it.currentTime > 0 }?.currentTime
+    }
+    val playEpisode: (PodcastEpisode, Double?, EpisodeSort?) -> Unit =
+        { episode, startPosition, queueOrder ->
+            onNavigateToPlayer(viewModel.itemId, episode.id, startPosition, queueOrder?.param)
         }
-
-    val currentSortParam by
-        remember(sortOption, sortAscending) {
-            derivedStateOf {
-                val key =
-                    when (sortOption) {
-                        EpisodeSortOption.PUB_DATE -> "pub_date"
-                        EpisodeSortOption.TITLE -> "title"
-                        EpisodeSortOption.SEASON -> "season"
-                        EpisodeSortOption.EPISODE -> "episode"
-                        EpisodeSortOption.FILENAME -> "filename"
-                    }
-                "${key}_${if (sortAscending) "asc" else "desc"}"
-            }
+    val isSerial = item.isSerialPodcast()
+    val playResume: () -> Unit = {
+        upNext.resume?.let { playEpisode(it, resumePositionOf(it), episodeSort) }
+    }
+    val playNextUnplayed: () -> Unit = {
+        upNext.nextUnplayed?.let {
+            playEpisode(
+                it,
+                resumePositionOf(it),
+                if (isSerial) episodeSort.ascendingOrder() else EpisodeSort.Default,
+            )
         }
+    }
+    val playLatest: () -> Unit = {
+        upNext.latest?.let { playEpisode(it, resumePositionOf(it), EpisodeSort.Default) }
+    }
+    val playFirst: () -> Unit = {
+        upNext.first?.let { playEpisode(it, 0.0, episodeSort.ascendingOrder()) }
+    }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        when {
-            uiState.isLoading -> {
-                FullScreenLoading()
-            }
+    CompositionLocalProvider(LocalDetailLayout provides (detailLayout ?: DetailLayout.CLASSIC)) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            when {
+                uiState.isLoading || detailLayout == null -> {
+                    FullScreenLoading()
+                }
 
-            item == null -> {
-                FullScreenError(message = uiState.error)
-            }
+                item == null -> {
+                    FullScreenError(message = uiState.error)
+                }
 
-            item != null -> {
-                if (isLandscape) {
-                    val coverUrl =
-                        if (
-                            downloadInfo?.status == AbsDownloadStatus.COMPLETED &&
-                                downloadInfo?.localDirPath != null
-                        ) {
-                            "file://${downloadInfo?.localDirPath}/cover.jpg"
-                        } else if (config?.serverUrl != null && item?.media?.coverPath != null) {
-                            item?.coverUrl(config?.serverUrl ?: "")
-                        } else null
+                item != null -> {
+                    val currentItem = item!!
+                    val metadata = currentItem.media.metadata
 
-                    ItemHeroBackground(coverUrl = coverUrl)
+                    val onPlay: (() -> Unit)? =
+                        if (isPodcast) null
+                        else ({ onNavigateToPlayer(viewModel.itemId, null, null, null) })
 
-                    Row(
-                        modifier =
-                            Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.displayCutout)
-                    ) {
-                        Column(
-                            modifier =
-                                Modifier.weight(1f)
-                                    .fillMaxHeight()
-                                    .verticalScroll(rememberScrollState())
-                                    .padding(bottom = 24.dp)
-                        ) {
-                            ItemHeaderContent(
-                                item = item!!,
-                                progress = progress,
-                                coverUrl = coverUrl,
-                                onPlay = {
-                                    val resumeEpisodeId =
-                                        if (isPodcast) {
-                                            val downloadedIds = sortedEpisodes.map { it.id }.toSet()
-                                            episodeProgressMap.values
-                                                .filter {
-                                                    !it.isFinished &&
-                                                        it.currentTime > 0 &&
-                                                        (!isOffline ||
-                                                            it.episodeId in downloadedIds)
-                                                }
-                                                .maxByOrNull { it.lastUpdate }
-                                                ?.episodeId ?: sortedEpisodes.firstOrNull()?.id
-                                        } else null
-                                    onNavigateToPlayer(
-                                        viewModel.itemId,
-                                        resumeEpisodeId,
-                                        resumeEpisodeId?.let {
-                                            episodeProgressMap[it]?.currentTime
-                                        },
-                                        if (isPodcast) currentSortParam else null,
-                                    )
-                                },
-                                downloadInfo = if (!isPodcast) downloadInfo else null,
-                                onDownload =
-                                    if (!isPodcast && canDownload) ({ viewModel.startDownload() })
-                                    else null,
-                                onCancelDownload =
-                                    if (!isPodcast) ({ viewModel.cancelDownload() }) else null,
-                                onDeleteDownload =
-                                    if (!isPodcast) ({ viewModel.deleteDownload() }) else null,
-                                audibleRating = if (!isPodcast) audibleRating else null,
-                                onToggleFinished =
-                                    if (!isPodcast) ({ viewModel.toggleItemFinished() }) else null,
-                                toggleFinishedEnabled = !isThisItemPlaying,
+                    val narrators =
+                        metadata.narrators?.filter { it.isNotBlank() }?.takeIf { it.isNotEmpty() }
+                            ?: metadata.narratorName
+                                ?.split(",")
+                                ?.map { it.trim() }
+                                ?.filter { it.isNotEmpty() }
+                                .orEmpty()
+                    val authorName = metadata.authors?.firstOrNull()?.name ?: metadata.authorName
+                    val chaptersTrailing =
+                        listOfNotNull(
+                                uiState.chapters.size.toString(),
+                                currentItem.media.duration?.let { formatListenTime(it) },
                             )
-                        }
+                            .joinToString(" · ")
+                    val showNetworkSections = !isPodcast && !isOffline
 
-                        LazyColumn(
-                            state = lazyListState,
-                            modifier =
-                                Modifier.weight(1f)
-                                    .fillMaxHeight()
-                                    .background(
-                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
-                                    ),
-                            contentPadding =
-                                PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                        ) {
-                            item { Spacer(modifier = Modifier.statusBarsPadding()) }
-
-                            item?.media?.metadata?.description?.let { description ->
-                                item {
-                                    ExpandableSynopsis(
-                                        description = description,
-                                        modifier = Modifier.padding(horizontal = 16.dp),
-                                    )
-                                }
-                            }
-
-                            if (uiState.seriesDetails.isNotEmpty()) {
-                                item {
-                                    IncludedInSeriesSection(
-                                        seriesList = uiState.seriesDetails,
-                                        serverUrl = config?.serverUrl,
-                                        onSeriesClick = { seriesId, seriesName ->
-                                            onNavigateToSeries(
-                                                seriesId,
-                                                item?.libraryId ?: "",
-                                                seriesName,
-                                            )
-                                        },
-                                    )
-                                }
-                            }
-
-                            item?.media?.metadata?.narratorName?.let { narrator ->
-                                item {
-                                    NarratedByRow(
-                                        narrator = narrator,
-                                        modifier = Modifier.padding(horizontal = 16.dp),
-                                    )
-                                }
-                            }
-
-                            item {
-                                ItemDetailsSection(
-                                    item = item!!,
-                                    modifier = Modifier.padding(horizontal = 16.dp),
+                    val detailBody: LazyListScope.() -> Unit = {
+                        if (isPodcast && upNext.latest != null) {
+                            detailItem("up_next", DetailHorizontalPadding) {
+                                PodcastUpNextCard(
+                                    upNext = upNext,
+                                    resumeProgress =
+                                        upNext.resume?.let { episodeProgressMap[it.id] },
+                                    isSerial = isSerial,
+                                    onResume = playResume,
+                                    onPlayNext = playNextUnplayed,
+                                    onPlayLatest = playLatest,
+                                    onPlayFirst = playFirst,
                                 )
                             }
-
-                            val showEpisodes = isPodcast && uiState.episodes.isNotEmpty()
-                            val showChapters = !isPodcast && uiState.chapters.isNotEmpty()
-
-                            if (showEpisodes || showChapters) {
-                                item {
-                                    CollapsibleSectionHeader(
-                                        title =
-                                            if (showEpisodes)
-                                                stringResource(R.string.abs_label_episodes)
-                                            else stringResource(R.string.abs_label_chapters),
-                                        expanded = chaptersExpanded,
-                                        onToggle = { chaptersExpanded = !chaptersExpanded },
-                                        showSortButton = showEpisodes,
-                                        onSortClick = { showSortDialog = true },
-                                    )
-                                }
-
-                                if (chaptersExpanded) {
-                                    if (showEpisodes) {
-                                        episodeListItems(
-                                            episodes = sortedEpisodes,
-                                            onEpisodePlay = { episode ->
-                                                onNavigateToPlayer(
-                                                    viewModel.itemId,
-                                                    episode.id,
-                                                    episodeProgressMap[episode.id]?.currentTime,
-                                                    null,
-                                                )
-                                            },
-                                            expandedEpisodeId = expandedEpisodeId,
-                                            onExpandEpisode = { expandedEpisodeId = it },
-                                            episodeProgressMap = episodeProgressMap,
-                                            episodeDownloadMap = episodeDownloadMap,
-                                            onEpisodeDownload =
-                                                if (canDownload) ({ viewModel.startDownload(it) })
-                                                else null,
-                                            onEpisodeCancelDownload = {
-                                                viewModel.cancelDownload(it)
-                                            },
-                                            onEpisodeDeleteDownload = {
-                                                viewModel.deleteDownload(it)
-                                            },
-                                            onEpisodeToggleFinished = {
-                                                viewModel.toggleEpisodeFinished(it)
-                                            },
-                                            nowPlayingEpisodeId = nowPlayingEpisodeId,
-                                        )
-
-                                        item {
-                                            Spacer(
-                                                modifier =
-                                                    Modifier.padding(top = 8.dp, bottom = 16.dp)
-                                            )
-                                        }
-                                    } else {
-                                        chapterListItems(
-                                            chapters = uiState.chapters,
-                                            currentPosition = progress?.currentTime,
-                                            onChapterClick = { chapter ->
-                                                onNavigateToPlayer(
-                                                    viewModel.itemId,
-                                                    null,
-                                                    chapter.start,
-                                                    null,
-                                                )
-                                            },
-                                        )
-
-                                        item { Spacer(modifier = Modifier.height(8.dp)) }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    LazyColumn(
-                        state = lazyListState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding =
-                            PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        item {
-                            ItemHeader(
-                                item = item!!,
-                                progress = progress,
-                                serverUrl = config?.serverUrl,
-                                onPlay = {
-                                    val resumeEpisodeId =
-                                        if (isPodcast) {
-                                            val downloadedIds = sortedEpisodes.map { it.id }.toSet()
-                                            episodeProgressMap.values
-                                                .filter {
-                                                    !it.isFinished &&
-                                                        it.currentTime > 0 &&
-                                                        (!isOffline ||
-                                                            it.episodeId in downloadedIds)
-                                                }
-                                                .maxByOrNull { it.lastUpdate }
-                                                ?.episodeId ?: sortedEpisodes.firstOrNull()?.id
-                                        } else null
-                                    onNavigateToPlayer(
-                                        viewModel.itemId,
-                                        resumeEpisodeId,
-                                        resumeEpisodeId?.let {
-                                            episodeProgressMap[it]?.currentTime
-                                        },
-                                        if (isPodcast) currentSortParam else null,
-                                    )
-                                },
-                                downloadInfo = if (!isPodcast) downloadInfo else null,
-                                onDownload =
-                                    if (!isPodcast && canDownload) ({ viewModel.startDownload() })
-                                    else null,
-                                onCancelDownload =
-                                    if (!isPodcast) ({ viewModel.cancelDownload() }) else null,
-                                onDeleteDownload =
-                                    if (!isPodcast) ({ viewModel.deleteDownload() }) else null,
-                                audibleRating = if (!isPodcast) audibleRating else null,
-                                onToggleFinished =
-                                    if (!isPodcast) ({ viewModel.toggleItemFinished() }) else null,
-                                toggleFinishedEnabled = !isThisItemPlaying,
-                            )
                         }
 
-                        item?.media?.metadata?.description?.let { description ->
-                            item {
-                                ExpandableSynopsis(
-                                    description = description,
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                )
+                        metadata.description?.let { description ->
+                            detailItem("synopsis", DetailHorizontalPadding) {
+                                OverviewSection(overview = description)
                             }
                         }
 
                         if (uiState.seriesDetails.isNotEmpty()) {
-                            item {
+                            detailItem("series", DetailHorizontalPadding) {
                                 IncludedInSeriesSection(
                                     seriesList = uiState.seriesDetails,
                                     serverUrl = config?.serverUrl,
                                     onSeriesClick = { seriesId, seriesName ->
                                         onNavigateToSeries(
                                             seriesId,
-                                            item?.libraryId ?: "",
+                                            currentItem.libraryId,
                                             seriesName,
                                         )
                                     },
@@ -484,271 +253,295 @@ fun AudiobookshelfItemScreen(
                             }
                         }
 
-                        item?.media?.metadata?.narratorName?.let { narrator ->
-                            item {
-                                NarratedByRow(
-                                    narrator = narrator,
-                                    modifier = Modifier.padding(horizontal = 16.dp),
+                        if (narrators.isNotEmpty()) {
+                            detailItem("narrators", DetailHorizontalPadding) {
+                                NarratorsSection(narrators = narrators)
+                            }
+                        }
+
+                        if (showNetworkSections && authorName != null) {
+                            detailItem("author", DetailHorizontalPadding) {
+                                LaunchedEffect(Unit) { viewModel.ensureAuthor() }
+                                AuthorCard(
+                                    authorName = authorName,
+                                    details = authorDetails,
+                                    serverUrl = config?.serverUrl,
                                 )
                             }
                         }
 
-                        item {
-                            ItemDetailsSection(
-                                item = item!!,
-                                modifier = Modifier.padding(horizontal = 16.dp),
+                        detailItem("details", DetailHorizontalPadding) {
+                            ItemDetailsSection(item = currentItem)
+                        }
+
+                        if (!isPodcast && uiState.chapters.isNotEmpty()) {
+                            chapterWindowItems(
+                                chapters = uiState.chapters,
+                                currentPosition = progress?.currentTime,
+                                showAll = showAllChapters,
+                                onShowAllChange = { showAll ->
+                                    showAllChapters = showAll
+                                    if (!showAll) showListenedChapters = false
+                                },
+                                showListened = showListenedChapters,
+                                onShowListenedChange = { showListenedChapters = it },
+                                onChapterClick = { chapter ->
+                                    onNavigateToPlayer(viewModel.itemId, null, chapter.start, null)
+                                },
+                                headerTrailing = chaptersTrailing,
                             )
                         }
 
-                        val showEpisodes = isPodcast && uiState.episodes.isNotEmpty()
-                        val showChapters = !isPodcast && uiState.chapters.isNotEmpty()
-
-                        if (showEpisodes || showChapters) {
-                            item {
-                                SectionDialogRow(
-                                    title =
-                                        if (showEpisodes)
-                                            stringResource(R.string.abs_label_episodes)
-                                        else stringResource(R.string.abs_label_chapters),
-                                    count =
-                                        if (showEpisodes) uiState.episodes.size
-                                        else uiState.chapters.size,
-                                    onClick = { showListDialog = true },
+                        if (isPodcast && uiState.episodes.isNotEmpty()) {
+                            item(key = "episodes_header") {
+                                EpisodesHeader(
+                                    count = sortedEpisodes.size,
+                                    onSortClick = { showSortDialog = true },
                                 )
                             }
-                        } else {
-                            item { Spacer(modifier = Modifier.height(16.dp)) }
+                            episodeListItems(
+                                episodes =
+                                    if (showAllEpisodes) sortedEpisodes
+                                    else sortedEpisodes.take(EPISODE_PREVIEW_COUNT),
+                                onEpisodePlay = { episode ->
+                                    playEpisode(episode, resumePositionOf(episode), null)
+                                },
+                                expandedEpisodeId = expandedEpisodeId,
+                                onExpandEpisode = { expandedEpisodeId = it },
+                                episodeProgressMap = episodeProgressMap,
+                                episodeDownloadMap = episodeDownloadMap,
+                                onEpisodeDownload =
+                                    if (canDownload) ({ viewModel.startDownload(it) }) else null,
+                                onEpisodeCancelDownload = { viewModel.cancelDownload(it) },
+                                onEpisodeDeleteDownload = { viewModel.deleteDownload(it) },
+                                onEpisodeToggleFinished = { viewModel.toggleEpisodeFinished(it) },
+                                nowPlayingEpisodeId = nowPlayingEpisodeId,
+                                fadeLastItem =
+                                    !showAllEpisodes && sortedEpisodes.size > EPISODE_PREVIEW_COUNT,
+                            )
+                            if (sortedEpisodes.size > EPISODE_PREVIEW_COUNT) {
+                                item(key = "episodes_toggle") {
+                                    ListExpandButton(
+                                        expanded = showAllEpisodes,
+                                        onToggle = { showAllEpisodes = !showAllEpisodes },
+                                    )
+                                }
+                            }
+                        }
+
+                        if (showNetworkSections) {
+                            detailItem("listening", DetailHorizontalPadding) {
+                                LaunchedEffect(Unit) { viewModel.ensureListening() }
+                                listening?.let { summary -> ListeningSection(summary = summary) }
+                            }
+                            detailItem("recommendations", DetailHorizontalPadding) {
+                                LaunchedEffect(Unit) { viewModel.ensureRecommendations() }
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(DetailSectionGap)
+                                ) {
+                                    recommendationRows.forEach { row ->
+                                        RecommendationRowSection(
+                                            row = row,
+                                            serverUrl = config?.serverUrl,
+                                            cardWidth = cardWidth,
+                                            onItemClick = { onNavigateToItem(it.id) },
+                                            onSeriesClick = { series ->
+                                                onNavigateToSeries(
+                                                    series.id,
+                                                    currentItem.libraryId,
+                                                    series.name,
+                                                )
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (isLandscape) {
+                        val coverUrl =
+                            if (
+                                downloadInfo?.status == AbsDownloadStatus.COMPLETED &&
+                                    downloadInfo?.localDirPath != null
+                            ) {
+                                "file://${downloadInfo?.localDirPath}/cover.jpg"
+                            } else if (
+                                config?.serverUrl != null && currentItem.media.coverPath != null
+                            ) {
+                                currentItem.coverUrl(config?.serverUrl ?: "")
+                            } else null
+
+                        ItemHeroBackground(coverUrl = coverUrl)
+
+                        Row(
+                            modifier =
+                                Modifier.fillMaxSize()
+                                    .windowInsetsPadding(WindowInsets.displayCutout)
+                        ) {
+                            Column(
+                                modifier =
+                                    Modifier.weight(1f)
+                                        .fillMaxHeight()
+                                        .verticalScroll(rememberScrollState())
+                                        .padding(bottom = 24.dp)
+                            ) {
+                                ItemHeaderContent(
+                                    item = currentItem,
+                                    progress = progress,
+                                    coverUrl = coverUrl,
+                                    onPlay = onPlay,
+                                    downloadInfo = if (!isPodcast) downloadInfo else null,
+                                    onDownload =
+                                        if (!isPodcast && canDownload)
+                                            ({ viewModel.startDownload() })
+                                        else null,
+                                    onCancelDownload =
+                                        if (!isPodcast) ({ viewModel.cancelDownload() }) else null,
+                                    onDeleteDownload =
+                                        if (!isPodcast) ({ viewModel.deleteDownload() }) else null,
+                                    audibleRating = if (!isPodcast) audibleRating else null,
+                                    onToggleFinished =
+                                        if (!isPodcast) ({ viewModel.toggleItemFinished() })
+                                        else null,
+                                    toggleFinishedEnabled = !isThisItemPlaying,
+                                )
+                            }
+
+                            LazyColumn(
+                                state = lazyListState,
+                                modifier =
+                                    Modifier.weight(1f)
+                                        .fillMaxHeight()
+                                        .background(
+                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                                        ),
+                                contentPadding =
+                                    PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
+                            ) {
+                                item(key = "status_bar") {
+                                    Spacer(modifier = Modifier.statusBarsPadding())
+                                }
+                                detailBody()
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            state = lazyListState,
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding =
+                                PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
+                        ) {
+                            item(key = "header") {
+                                ItemHeader(
+                                    item = currentItem,
+                                    progress = progress,
+                                    serverUrl = config?.serverUrl,
+                                    onPlay = onPlay,
+                                    downloadInfo = if (!isPodcast) downloadInfo else null,
+                                    onDownload =
+                                        if (!isPodcast && canDownload)
+                                            ({ viewModel.startDownload() })
+                                        else null,
+                                    onCancelDownload =
+                                        if (!isPodcast) ({ viewModel.cancelDownload() }) else null,
+                                    onDeleteDownload =
+                                        if (!isPodcast) ({ viewModel.deleteDownload() }) else null,
+                                    audibleRating = if (!isPodcast) audibleRating else null,
+                                    onToggleFinished =
+                                        if (!isPodcast) ({ viewModel.toggleItemFinished() })
+                                        else null,
+                                    toggleFinishedEnabled = !isThisItemPlaying,
+                                )
+                            }
+                            detailBody()
                         }
                     }
                 }
+
+                uiState.error != null -> {
+                    Text(
+                        text = stringResource(R.string.abs_error_load_item),
+                        modifier = Modifier.align(Alignment.Center),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                }
             }
 
-            uiState.error != null -> {
-                Text(
-                    text = stringResource(R.string.abs_error_load_item),
-                    modifier = Modifier.align(Alignment.Center),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            }
-        }
+            AfinityTopAppBar(
+                title = {},
+                onHomeClick = onNavigateHome,
+                backgroundOpacity = { topBarOpacity },
+            )
 
-        AfinityTopAppBar(
-            title = {},
-            onHomeClick = onNavigateHome,
-            backgroundOpacity = { topBarOpacity },
-        )
-
-        AnimatedVisibility(
-            visible = uiState.error != null,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.align(Alignment.BottomCenter),
-        ) {
-            Card(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .padding(16.dp)
-                        .padding(WindowInsets.navigationBars.asPaddingValues()),
-                colors =
-                    CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    ),
+            AnimatedVisibility(
+                visible = uiState.error != null,
+                enter = fadeIn(),
+                exit = fadeOut(),
+                modifier = Modifier.align(Alignment.BottomCenter),
             ) {
-                Text(
-                    text = uiState.error ?: "",
-                    modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                )
+                Card(
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .padding(16.dp)
+                            .padding(WindowInsets.navigationBars.asPaddingValues()),
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        ),
+                ) {
+                    Text(
+                        text = uiState.error ?: "",
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                }
             }
         }
     }
 
     if (showSortDialog) {
         EpisodeSortDialog(
-            currentSort = sortOption,
-            currentAscending = sortAscending,
+            current = episodeSort,
             onDismiss = { showSortDialog = false },
-            onSortSelected = { sort, ascending ->
-                sortOption = sort
-                sortAscending = ascending
+            onSortSelected = { sort ->
+                viewModel.setEpisodeSort(sort)
                 showSortDialog = false
             },
         )
     }
+}
 
-    if (showListDialog) {
-        if (isPodcast && uiState.episodes.isNotEmpty()) {
-            EpisodeListDialog(
-                episodes = sortedEpisodes,
-                onEpisodePlay = { episode ->
-                    onNavigateToPlayer(
-                        viewModel.itemId,
-                        episode.id,
-                        episodeProgressMap[episode.id]?.currentTime,
-                        null,
-                    )
-                    showListDialog = false
-                },
-                expandedEpisodeId = expandedEpisodeId,
-                onExpandEpisode = { expandedEpisodeId = it },
-                episodeProgressMap = episodeProgressMap,
-                onDismiss = { showListDialog = false },
-                onSortClick = { showSortDialog = true },
-                episodeDownloadMap = episodeDownloadMap,
-                onEpisodeDownload = if (canDownload) ({ viewModel.startDownload(it) }) else null,
-                onEpisodeCancelDownload = { viewModel.cancelDownload(it) },
-                onEpisodeDeleteDownload = { viewModel.deleteDownload(it) },
-                onEpisodeToggleFinished = { viewModel.toggleEpisodeFinished(it) },
-                nowPlayingEpisodeId = nowPlayingEpisodeId,
-            )
-        } else if (uiState.chapters.isNotEmpty()) {
-            ChapterListDialog(
-                chapters = uiState.chapters,
-                currentPosition = progress?.currentTime,
-                onChapterClick = { chapter ->
-                    onNavigateToPlayer(viewModel.itemId, null, chapter.start, null)
-                    showListDialog = false
-                },
-                onDismiss = { showListDialog = false },
+@Composable
+private fun EpisodesHeader(count: Int, onSortClick: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AbsSectionTitle(
+            text = stringResource(R.string.season_episodes_title),
+            trailing = count.toString(),
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(onClick = onSortClick) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_arrows_sort),
+                contentDescription = stringResource(R.string.cd_abs_sort),
+                tint = MaterialTheme.colorScheme.primary,
             )
         }
     }
-}
-
-@Composable
-private fun CollapsibleSectionHeader(
-    title: String,
-    expanded: Boolean,
-    onToggle: () -> Unit,
-    modifier: Modifier = Modifier,
-    showSortButton: Boolean = false,
-    onSortClick: () -> Unit = {},
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = { onToggle() },
-                )
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.weight(1f),
-        )
-        if (showSortButton) {
-            IconButton(onClick = onSortClick, modifier = Modifier.size(32.dp)) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_arrows_sort),
-                    contentDescription = stringResource(R.string.cd_abs_sort),
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-        }
-        Icon(
-            painter =
-                painterResource(
-                    id =
-                        if (expanded) R.drawable.ic_keyboard_arrow_up
-                        else R.drawable.ic_keyboard_arrow_down
-                ),
-            contentDescription =
-                if (expanded) stringResource(R.string.cd_collapse)
-                else stringResource(R.string.cd_expand),
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp),
-        )
-    }
-}
-
-@Composable
-private fun SectionDialogRow(
-    title: String,
-    count: Int,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = onClick,
-                )
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = "$title ($count)",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.weight(1f),
-        )
-        Icon(
-            painter = painterResource(id = R.drawable.ic_chevron_right),
-            contentDescription = stringResource(R.string.cd_abs_open_item_fmt, title),
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp),
-        )
-    }
-}
-
-@Composable
-private fun NarratedByRow(narrator: String, modifier: Modifier = Modifier) {
-    Text(
-        text =
-            buildAnnotatedString {
-                withStyle(
-                    style =
-                        SpanStyle(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Normal,
-                        )
-                ) {
-                    append(stringResource(R.string.abs_narrated_by))
-                    append(" ")
-                }
-
-                withStyle(
-                    style =
-                        SpanStyle(
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.Medium,
-                        )
-                ) {
-                    append(narrator)
-                }
-            },
-        style = MaterialTheme.typography.bodyMedium,
-        modifier = modifier,
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EpisodeSortDialog(
-    currentSort: EpisodeSortOption,
-    currentAscending: Boolean,
+    current: EpisodeSort,
     onDismiss: () -> Unit,
-    onSortSelected: (EpisodeSortOption, Boolean) -> Unit,
+    onSortSelected: (EpisodeSort) -> Unit,
 ) {
-    var isAscending by remember { mutableStateOf(currentAscending) }
-    var selectedSort by remember { mutableStateOf(currentSort) }
+    var isAscending by remember { mutableStateOf(current.ascending) }
+    var selectedSort by remember { mutableStateOf(current.key) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -776,7 +569,7 @@ private fun EpisodeSortDialog(
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    EpisodeSortOption.entries.forEach { option ->
+                    EpisodeSortKey.entries.forEach { option ->
                         EpisodeSortOptionRow(
                             label = stringResource(option.labelRes),
                             selected = selectedSort == option,
@@ -787,7 +580,7 @@ private fun EpisodeSortDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSortSelected(selectedSort, isAscending) }) {
+            TextButton(onClick = { onSortSelected(EpisodeSort(selectedSort, isAscending)) }) {
                 Text(stringResource(R.string.action_apply))
             }
         },

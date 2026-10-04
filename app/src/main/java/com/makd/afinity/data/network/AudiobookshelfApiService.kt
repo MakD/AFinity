@@ -1,7 +1,8 @@
 package com.makd.afinity.data.network
 
-import com.makd.afinity.data.models.audiobookshelf.AbsCoverSearchResult
+import com.makd.afinity.data.models.audiobookshelf.AbsBookSearchResult
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser
+import com.makd.afinity.data.models.audiobookshelf.Author
 import com.makd.afinity.data.models.audiobookshelf.AuthorizeResponse
 import com.makd.afinity.data.models.audiobookshelf.BatchLocalSessionRequest
 import com.makd.afinity.data.models.audiobookshelf.BatchSyncResponse
@@ -90,13 +91,12 @@ interface AudiobookshelfApiService {
         @Query("limit") limit: Int? = null,
     ): Response<SearchResponse>
 
-    @GET("api/search/covers")
-    suspend fun searchCovers(
+    @GET("api/search/books")
+    suspend fun searchBooks(
         @Query("title") title: String,
         @Query("author") author: String? = null,
         @Query("provider") provider: String = "audible",
-        @Query("region") region: String? = null,
-    ): Response<List<AbsCoverSearchResult>>
+    ): Response<List<AbsBookSearchResult>>
 
     @GET("api/items/{itemId}")
     suspend fun getItem(
@@ -121,6 +121,16 @@ interface AudiobookshelfApiService {
         @Query("itemsPerPage") itemsPerPage: Int = 15,
         @Query("page") page: Int = 0,
     ): Response<ListeningSessionsResponse>
+
+    @GET("api/me/item/listening-sessions/{libraryItemId}")
+    suspend fun getItemListeningSessions(
+        @Path("libraryItemId") itemId: String,
+        @Query("itemsPerPage") itemsPerPage: Int,
+        @Query("page") page: Int = 0,
+    ): Response<ListeningSessionsResponse>
+
+    @GET("api/authors/{authorId}")
+    suspend fun getAuthor(@Path("authorId") id: String): Response<Author>
 
     @GET("api/me/items-in-progress")
     suspend fun getItemsInProgress(

@@ -1671,6 +1671,45 @@
     <string name="abs_publisher">Publisher</string>
     <string name="abs_year">Year</string>
     <string name="abs_by_author_fmt">by %1$s</string>
+    <string name="abs_narrators_title">Narrated by</string>
+    <string name="abs_author_label">Author</string>
+    <plurals name="abs_titles_in_library_fmt">
+        <item quantity="one">%1$d title in your library</item>
+        <item quantity="other">%1$d titles in your library</item>
+    </plurals>
+    <plurals name="abs_series_books_fmt">
+        <item quantity="one">%1$d book</item>
+        <item quantity="other">%1$d books</item>
+    </plurals>
+    <string name="abs_more_by_fmt">More by %1$s</string>
+    <string name="abs_narrated_by_fmt">Narrated by %1$s</string>
+    <plurals name="abs_chapters_listened_fmt">
+        <item quantity="one">%1$d chapter listened</item>
+        <item quantity="other">%1$d chapters listened</item>
+    </plurals>
+    <string name="abs_time_left_fmt">%1$s left</string>
+    <string name="abs_now_in">Now in</string>
+    <string name="abs_your_listening">Your listening</string>
+    <string name="abs_listened_label">listened</string>
+    <plurals name="abs_sessions_label">
+        <item quantity="one">session</item>
+        <item quantity="other">sessions</item>
+    </plurals>
+    <string name="abs_last_played_label">last played</string>
+    <plurals name="abs_listening_since_fmt">
+        <item quantity="one">Started %2$s · %1$d listening day</item>
+        <item quantity="other">Started %2$s · %1$d listening days</item>
+    </plurals>
+    <string name="abs_show_sessions">Show sessions</string>
+    <string name="abs_continue_listening_label">Continue listening</string>
+    <string name="abs_latest_episode_label">Latest episode</string>
+    <string name="abs_first_episode_label">First episode</string>
+    <string name="abs_next_unplayed_label">Next unplayed</string>
+    <string name="abs_episode_type_bonus">Bonus</string>
+    <string name="abs_episode_type_trailer">Trailer</string>
+    <string name="abs_play_latest">Play latest</string>
+    <string name="abs_from_episode_one">From episode 1</string>
+    <string name="abs_latest_short">Latest</string>
 
     <!--Request Confirmation Dialog-->
     <string name="request_on_seerr_title">Request on Seerr</string>

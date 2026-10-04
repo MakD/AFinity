@@ -20,4 +20,6 @@ data class AudiobookshelfProgressEntity(
     val startedAt: Long,
     val finishedAt: Long?,
     val pendingSync: Boolean,
+    val pendingTimeListened: Double = 0.0,
+    val localSessionId: String? = null,
 )

@@ -185,7 +185,10 @@ data class ProgressUpdateRequest(
 )
 
 @Serializable
-data class BatchLocalSessionRequest(@SerialName("sessions") val sessions: List<LocalSessionData>)
+data class BatchLocalSessionRequest(
+    @SerialName("deviceInfo") val deviceInfo: DeviceInfo? = null,
+    @SerialName("sessions") val sessions: List<LocalSessionData>,
+)
 
 @Serializable
 data class LocalSessionData(

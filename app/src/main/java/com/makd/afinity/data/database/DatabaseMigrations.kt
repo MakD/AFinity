@@ -1676,6 +1676,18 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_80_81 =
+        object : Migration(80, 81) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `audiobookshelf_progress` ADD COLUMN `pendingTimeListened` REAL NOT NULL DEFAULT 0"
+                )
+                db.execSQL(
+                    "ALTER TABLE `audiobookshelf_progress` ADD COLUMN `localSessionId` TEXT"
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1757,5 +1769,6 @@ object DatabaseMigrations {
             MIGRATION_77_78,
             MIGRATION_78_79,
             MIGRATION_79_80,
+            MIGRATION_80_81,
         )
 }
