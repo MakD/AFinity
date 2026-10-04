@@ -15,6 +15,7 @@ import com.makd.afinity.data.database.entities.AudiobookshelfLibraryEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfProgressEntity
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.audiobookshelf.AudibleRating
+import com.makd.afinity.data.models.audiobookshelf.AudioTrack
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser
 import com.makd.afinity.data.models.audiobookshelf.Author
@@ -823,6 +824,46 @@ constructor(
                     ?: return@withContext null
             val localCover = localDownloadedCoverUrl(itemId, serverId, userId.toString())
             Triple(entity.title, entity.authorName, localCover ?: entity.coverUrl)
+        }
+    }
+
+    override suspend fun getCachedItem(itemId: String): LibraryItem? {
+        return withContext(Dispatchers.IO) {
+            val (serverId, userId) = activeContext ?: return@withContext null
+            try {
+                cachedItemOrNull(itemId, serverId, userId.toString())
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to read cached item $itemId")
+                null
+            }
+        }
+    }
+
+    override suspend fun getDownloadedEpisodeTracks(itemId: String): Map<String, AudioTrack> {
+        return withContext(Dispatchers.IO) {
+            val (serverId, userId) = activeContext ?: return@withContext emptyMap()
+            database
+                .absDownloadDao()
+                .getCompletedEpisodesForItem(itemId, serverId, userId.toString())
+                .mapNotNull { download ->
+                    val episodeId = download.episodeId ?: return@mapNotNull null
+                    val track =
+                        download.serializedSession
+                            ?.let { serialized ->
+                                try {
+                                    json.decodeFromString<PlaybackSession>(serialized)
+                                } catch (e: Exception) {
+                                    Timber.w(e, "Unreadable local session for episode $episodeId")
+                                    null
+                                }
+                            }
+                            ?.audioTracks
+                            ?.firstOrNull() ?: return@mapNotNull null
+                    episodeId to track
+                }
+                .toMap()
         }
     }
 

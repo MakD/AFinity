@@ -21,13 +21,17 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.audiobookshelf.AudioTrack
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
 import com.makd.afinity.data.models.audiobookshelf.EpisodeSort
+import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
+import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
 import com.makd.afinity.data.models.audiobookshelf.PodcastEpisodeOrder
 import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.repository.AudiobookshelfRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsProgressSyncScheduler
 import com.makd.afinity.player.music.MusicPlaybackManager
+import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Locale
 import javax.inject.Inject
@@ -48,6 +52,8 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
+private const val RESUME_SNAP_MS = 1_000L
+
 @Singleton
 class AudiobookshelfPlayer
 @Inject
@@ -60,9 +66,61 @@ constructor(
     private val absSyncScheduler: AbsProgressSyncScheduler,
     private val musicPlaybackManager: MusicPlaybackManager,
     private val progressSyncer: AudiobookshelfProgressSyncer,
+    private val preferencesRepository: PreferencesRepository,
+    private val networkConnectivityMonitor: NetworkConnectivityMonitor,
 ) {
     private var mediaController: MediaController? = null
     private var controllerFuture: ListenableFuture<MediaController>? = null
+    private var queueStartPositions: Map<Int, Double> = emptyMap()
+
+    private class PodcastQueue(
+        val episodes: List<PodcastEpisode>,
+        val tracks: List<AudioTrack>,
+        val startPositions: Map<Int, Double>,
+    )
+
+    private val queueListener =
+        object : Player.Listener {
+            override fun onPositionDiscontinuity(
+                oldPosition: Player.PositionInfo,
+                newPosition: Player.PositionInfo,
+                reason: Int,
+            ) {
+                val isAutoAdvance = reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION
+                if (!isAutoAdvance && reason != Player.DISCONTINUITY_REASON_SEEK) return
+                val state = playbackManager.playbackState.value
+                if (!state.isPodcastPlaylist) return
+                val oldIndex = oldPosition.mediaItemIndex
+                val newIndex = newPosition.mediaItemIndex
+                if (oldIndex == newIndex) return
+                val previousEpisodeId = state.playlistEpisodeIds.getOrNull(oldIndex) ?: return
+                val newEpisodeId = state.playlistEpisodeIds.getOrNull(newIndex) ?: return
+                if (previousEpisodeId != state.episodeId) return
+
+                val previousDuration =
+                    state.chapters.getOrNull(oldIndex)?.let {
+                        (it.end - it.start).coerceAtLeast(0.0)
+                    } ?: 0.0
+                val previousTime =
+                    if (isAutoAdvance) previousDuration
+                    else (oldPosition.positionMs / 1000.0).coerceIn(0.0, previousDuration)
+
+                playbackManager.setActiveEpisode(newEpisodeId)
+                progressSyncer.onPlaylistEpisodeChanged(
+                    previousEpisodeId,
+                    previousTime,
+                    previousDuration,
+                    newEpisodeId,
+                )
+
+                val landedAtStart = newPosition.positionMs < RESUME_SNAP_MS
+                if (isAutoAdvance || landedAtStart) {
+                    queueStartPositions[newIndex]?.let { resumeAt ->
+                        mediaController?.seekTo(newIndex, (resumeAt * 1000).toLong())
+                    }
+                }
+            }
+        }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var sleepTimerJob: Job? = null
@@ -119,7 +177,7 @@ constructor(
         controllerFuture = future
 
         return try {
-            mediaController = future.await()
+            mediaController = future.await().also { it.addListener(queueListener) }
             Timber.d("ABS getConnectedController: connected to AudioService")
             mediaController
         } catch (e: CancellationException) {
@@ -137,6 +195,7 @@ constructor(
         baseUrl: String,
         startPosition: Double? = null,
         episodeSort: String? = null,
+        includePlayed: Boolean = false,
     ) {
         scope.launch {
             val trackBefore = musicPlaybackManager.state.value.currentTrack
@@ -154,37 +213,13 @@ constructor(
             Timber.d("ABS loadSession: controller connected")
 
             val token = securePreferencesRepository.getCachedAudiobookshelfToken()
-            val isLocalSession = session.id.startsWith("local_")
-            val queueOrder = EpisodeSort.parse(episodeSort)
-            val isPodcastPlaylist =
-                !isLocalSession && queueOrder != null && session.mediaType == "podcast"
-            val unsortedEpisodes = session.libraryItem?.media?.episodes ?: emptyList()
-            val episodes =
-                if (isPodcastPlaylist && queueOrder != null) {
-                    val progressMap =
-                        audiobookshelfRepository
-                            .getEpisodeProgressMapFlow(session.libraryItemId)
-                            .first()
-                    PodcastEpisodeOrder.sorted(unsortedEpisodes, queueOrder).filter { episode ->
-                        episode.id == session.episodeId ||
-                            progressMap[episode.id]?.isFinished != true
-                    }
-                } else {
-                    unsortedEpisodes
-                }
+            val queue = buildPodcastQueue(session, episodeSort, includePlayed)
+            val isPodcastPlaylist = queue != null
 
             val audioTracks =
-                if (isPodcastPlaylist) {
-                    val allTracks = episodes.mapNotNull { episode ->
-                        episode.audioTrack?.let { track -> track.copy(title = episode.title) }
-                    }
-                    if (allTracks.isNotEmpty()) {
-                        Timber.d("Loading ${allTracks.size} episodes for podcast playlist")
-                        allTracks
-                    } else {
-                        Timber.e("No audio tracks found in any episodes")
-                        return@launch
-                    }
+                if (queue != null) {
+                    Timber.d("Loading ${queue.tracks.size} episodes for podcast playlist")
+                    queue.tracks
                 } else if (session.audioTracks.isNullOrEmpty()) {
                     Timber.e("No audio tracks found in session. Session data: $session")
                     return@launch
@@ -193,29 +228,26 @@ constructor(
                 }
 
             val enhancedSession =
-                if (isPodcastPlaylist && episodes.isNotEmpty()) {
+                if (queue != null) {
                     var accumulatedTime = 0.0
-                    val episodeChapters = episodes.mapNotNull { episode ->
-                        episode.audioTrack?.let {
-                            val chapter =
-                                BookChapter(
-                                    id = episodes.indexOf(episode),
+                    val episodeChapters =
+                        queue.episodes.mapIndexed { index, episode ->
+                            val length = queue.tracks[index].duration
+                            BookChapter(
+                                    id = index,
                                     start = accumulatedTime,
-                                    end = accumulatedTime + (episode.duration ?: 0.0),
+                                    end = accumulatedTime + length,
                                     title = episode.title,
                                 )
-                            accumulatedTime += episode.duration ?: 0.0
-                            chapter
+                                .also { accumulatedTime += length }
                         }
-                    }
-                    val totalDuration = episodes.sumOf { it.duration ?: 0.0 }
 
                     session.copy(
                         audioTracks = audioTracks,
                         displayTitle =
                             session.mediaMetadata?.title ?: session.displayTitle ?: "Podcast",
                         displayAuthor = session.mediaMetadata?.authorName ?: session.displayAuthor,
-                        duration = totalDuration,
+                        duration = accumulatedTime,
                         chapters = episodeChapters,
                     )
                 } else {
@@ -223,10 +255,11 @@ constructor(
                 }
 
             playbackManager.setSession(enhancedSession, baseUrl, token)
+            progressSyncer.onSessionLoaded(session.episodeId)
+            queueStartPositions = queue?.startPositions ?: emptyMap()
 
-            if (isPodcastPlaylist) {
-                val episodeIds = episodes.filter { it.audioTrack != null }.map { it.id }
-                playbackManager.setPlaylistInfo(episodeIds)
+            if (queue != null) {
+                playbackManager.setPlaylistInfo(queue.episodes.map { it.id })
             }
 
             val artUrl =
@@ -303,9 +336,8 @@ constructor(
             controller.setMediaItems(mediaItems)
             controller.prepare()
 
-            if (isPodcastPlaylist && session.episodeId != null) {
-                val episodesWithTracks = episodes.filter { it.audioTrack != null }
-                val episodeIndex = episodesWithTracks.indexOfFirst { it.id == session.episodeId }
+            if (queue != null && session.episodeId != null) {
+                val episodeIndex = queue.episodes.indexOfFirst { it.id == session.episodeId }
                 val seekPosition = startPosition ?: session.currentTime
                 if (episodeIndex > 0) {
                     controller.seekTo(episodeIndex, (seekPosition * 1000).toLong())
@@ -320,6 +352,92 @@ constructor(
             }
             controller.play()
         }
+    }
+
+    private suspend fun buildPodcastQueue(
+        session: PlaybackSession,
+        episodeSort: String?,
+        includePlayed: Boolean,
+    ): PodcastQueue? {
+        val chosenEpisodeId = session.episodeId ?: return null
+        if (session.mediaType != "podcast") return null
+        val itemId = session.libraryItemId
+
+        var cachedItemValue: LibraryItem? = null
+        var cachedItemLoaded = false
+        suspend fun cachedItem(): LibraryItem? {
+            if (!cachedItemLoaded) {
+                cachedItemValue = audiobookshelfRepository.getCachedItem(itemId)
+                cachedItemLoaded = true
+            }
+            return cachedItemValue
+        }
+
+        val allEpisodes =
+            session.libraryItem?.media?.episodes?.takeIf { it.isNotEmpty() }
+                ?: cachedItem()?.media?.episodes.orEmpty()
+        if (allEpisodes.none { it.id == chosenEpisodeId }) return null
+
+        val order =
+            EpisodeSort.parse(episodeSort)
+                ?: run {
+                    val saved =
+                        EpisodeSort.parse(
+                            preferencesRepository.getStringPreference("abs_episode_sort_$itemId")
+                        ) ?: EpisodeSort.Default
+                    val seriesType =
+                        session.libraryItem?.media?.metadata?.type
+                            ?: cachedItem()?.media?.metadata?.type
+                    if (seriesType.equals("serial", ignoreCase = true)) saved.ascendingOrder()
+                    else saved
+                }
+
+        val progressMap = audiobookshelfRepository.getEpisodeProgressMapFlow(itemId).first()
+        val localTracks = audiobookshelfRepository.getDownloadedEpisodeTracks(itemId)
+        val isOnline = networkConnectivityMonitor.isCurrentlyConnected()
+
+        val entries =
+            PodcastEpisodeOrder.sorted(allEpisodes, order).mapNotNull { episode ->
+                val isChosen = episode.id == chosenEpisodeId
+                if (!isChosen) {
+                    if (PodcastEpisodeOrder.isTrailer(episode)) return@mapNotNull null
+                    if (!includePlayed && progressMap[episode.id]?.isFinished == true) {
+                        return@mapNotNull null
+                    }
+                }
+                val candidateTrack =
+                    if (isChosen) {
+                        session.audioTracks?.firstOrNull()
+                            ?: localTracks[episode.id]
+                            ?: episode.audioTrack
+                    } else {
+                        localTracks[episode.id] ?: episode.audioTrack?.takeIf { isOnline }
+                    }
+                val track = candidateTrack ?: return@mapNotNull null
+                val length = track.duration.takeIf { it > 0 } ?: episode.duration ?: 0.0
+                episode to track.copy(title = episode.title, duration = length)
+            }
+        if (entries.none { it.first.id == chosenEpisodeId }) return null
+
+        val startPositions =
+            if (includePlayed) {
+                emptyMap()
+            } else {
+                entries
+                    .mapIndexedNotNull { index, (episode, _) ->
+                        if (episode.id == chosenEpisodeId) return@mapIndexedNotNull null
+                        progressMap[episode.id]
+                            ?.takeIf { !it.isFinished && it.currentTime > 0 }
+                            ?.let { index to it.currentTime }
+                    }
+                    .toMap()
+            }
+
+        return PodcastQueue(
+            episodes = entries.map { it.first },
+            tracks = entries.map { it.second },
+            startPositions = startPositions,
+        )
     }
 
     private fun buildChapterMediaItems(

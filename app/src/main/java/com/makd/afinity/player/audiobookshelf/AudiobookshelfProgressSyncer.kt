@@ -7,6 +7,7 @@ import android.os.SystemClock
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsProgressSyncScheduler
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -16,6 +17,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
 
 @Singleton
@@ -30,6 +33,10 @@ constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var syncJob: Job? = null
     private var currentPlaylistEpisodeId: String? = null
+    private var lastEpisodeTime: Double? = null
+
+    private val episodeMutex = Mutex()
+    private val pendingTransitions = AtomicInteger(0)
 
     private val listenLock = Any()
     private var playingSinceMs: Long? = null
@@ -39,6 +46,12 @@ constructor(
     companion object {
         private const val WIFI_SYNC_INTERVAL_MS = 15_000L
         private const val CELLULAR_SYNC_INTERVAL_MS = 60_000L
+        private const val FINISHED_RATIO = 0.99
+    }
+
+    fun onSessionLoaded(episodeId: String?) {
+        currentPlaylistEpisodeId = episodeId
+        lastEpisodeTime = null
     }
 
     fun startSyncing() {
@@ -52,7 +65,7 @@ constructor(
             }
             playingSinceMs = SystemClock.elapsedRealtime()
         }
-        currentPlaylistEpisodeId = state.episodeId
+        if (currentPlaylistEpisodeId == null) currentPlaylistEpisodeId = state.episodeId
 
         syncJob = scope.launch {
             while (true) {
@@ -101,14 +114,39 @@ constructor(
         syncProgress()
     }
 
-    private suspend fun syncProgress() {
-        val state = playbackManager.playbackState.value
-        val sessionId = state.sessionId ?: return
+    fun onPlaylistEpisodeChanged(
+        previousEpisodeId: String,
+        previousTime: Double,
+        previousDuration: Double,
+        newEpisodeId: String,
+    ) {
+        pendingTransitions.incrementAndGet()
+        scope.launch {
+            try {
+                episodeMutex.withLock {
+                    switchPlaylistEpisode(
+                        previousEpisodeId,
+                        previousTime,
+                        previousDuration,
+                        newEpisodeId,
+                    )
+                }
+            } finally {
+                pendingTransitions.decrementAndGet()
+            }
+        }
+    }
 
-        if (state.isPodcastPlaylist) {
-            syncPlaylistProgress(state, sessionId)
-        } else {
-            syncStandardProgress(state, sessionId)
+    private suspend fun syncProgress() {
+        episodeMutex.withLock {
+            val state = playbackManager.playbackState.value
+            val sessionId = state.sessionId ?: return
+
+            if (state.isPodcastPlaylist) {
+                syncPlaylistProgress(state, sessionId)
+            } else {
+                syncStandardProgress(state, sessionId)
+            }
         }
     }
 
@@ -131,7 +169,8 @@ constructor(
                     episodeId = state.episodeId,
                     currentTime = currentTime,
                     duration = state.duration,
-                    isFinished = state.duration > 0 && currentTime / state.duration >= 0.99,
+                    isFinished =
+                        state.duration > 0 && currentTime / state.duration >= FINISHED_RATIO,
                     timeListened = listened,
                 )
                 .onFailure { returnListenedSeconds(listened) }
@@ -178,9 +217,24 @@ constructor(
         val episodeDuration = (currentChapter.end - currentChapter.start).coerceAtLeast(0.0)
 
         if (episodeId != currentPlaylistEpisodeId) {
-            handleEpisodeTransition(state, sessionId, episodeId)
+            if (pendingTransitions.get() > 0) return
+            val previousEpisodeId = currentPlaylistEpisodeId
+            val previousDuration =
+                previousEpisodeId
+                    ?.let { state.playlistEpisodeIds.indexOf(it) }
+                    ?.let { state.chapters.getOrNull(it) }
+                    ?.let { (it.end - it.start).coerceAtLeast(0.0) } ?: 0.0
+            Timber.w("Playlist episode change missed by the player, recovering at last position")
+            switchPlaylistEpisode(
+                previousEpisodeId,
+                lastEpisodeTime ?: 0.0,
+                previousDuration,
+                episodeId,
+            )
             return
         }
+
+        lastEpisodeTime = episodeCurrentTime
 
         if (sessionId.startsWith("local_")) {
             val itemId = state.itemId ?: return
@@ -196,7 +250,8 @@ constructor(
                     currentTime = episodeCurrentTime,
                     duration = episodeDuration,
                     isFinished =
-                        episodeDuration > 0 && episodeCurrentTime / episodeDuration >= 0.99,
+                        episodeDuration > 0 &&
+                            episodeCurrentTime / episodeDuration >= FINISHED_RATIO,
                     timeListened = listened,
                 )
                 .onFailure { returnListenedSeconds(listened) }
@@ -236,57 +291,91 @@ constructor(
         }
     }
 
-    private suspend fun handleEpisodeTransition(
-        state: AudiobookshelfPlaybackState,
-        oldSessionId: String,
+    private suspend fun switchPlaylistEpisode(
+        previousEpisodeId: String?,
+        previousTime: Double,
+        previousDuration: Double,
         newEpisodeId: String,
     ) {
+        if (currentPlaylistEpisodeId == newEpisodeId) return
+        val state = playbackManager.playbackState.value
         val itemId = state.itemId ?: return
 
-        Timber.d("Playlist episode transition: $currentPlaylistEpisodeId -> $newEpisodeId")
+        Timber.d(
+            "Playlist episode change: $previousEpisodeId -> $newEpisodeId at ${previousTime}s / ${previousDuration}s"
+        )
 
-        val prevEpisodeId = currentPlaylistEpisodeId
-        if (prevEpisodeId != null) {
-            val prevChapter =
-                state.chapters.find { chapter ->
-                    val idx = state.chapters.indexOf(chapter)
-                    state.playlistEpisodeIds.getOrNull(idx) == prevEpisodeId
-                }
-            if (prevChapter != null) {
-                val prevDuration = (prevChapter.end - prevChapter.start).coerceAtLeast(0.0)
-                try {
-                    audiobookshelfRepository.closePlaybackSession(
-                        sessionId = oldSessionId,
-                        currentTime = prevDuration,
-                        timeListened = takeListenedSeconds(),
-                        duration = prevDuration,
-                    )
-                    Timber.d("Closed session for episode: $prevEpisodeId")
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to close previous episode session")
-                }
-            }
+        val sessionId = state.sessionId
+        if (
+            previousEpisodeId != null &&
+                previousEpisodeId == currentPlaylistEpisodeId &&
+                sessionId != null
+        ) {
+            closeEpisodeSession(
+                sessionId,
+                itemId,
+                previousEpisodeId,
+                previousTime,
+                previousDuration,
+            )
         }
 
+        currentPlaylistEpisodeId = newEpisodeId
+        lastEpisodeTime = null
+
+        val startedSessionId =
+            try {
+                audiobookshelfRepository
+                    .startPlaybackSession(itemId, newEpisodeId)
+                    .onFailure { Timber.e(it, "Failed to start session for episode $newEpisodeId") }
+                    .getOrNull()
+                    ?.id
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Exception starting session for episode $newEpisodeId")
+                null
+            }
+        val newSessionId = startedSessionId ?: "local_${itemId}_$newEpisodeId"
+
+        synchronized(listenLock) { accountedSessionId = newSessionId }
+        playbackManager.updateSessionInfo(newSessionId, newEpisodeId)
+        Timber.d("Now tracking episode $newEpisodeId with session $newSessionId")
+    }
+
+    private suspend fun closeEpisodeSession(
+        sessionId: String,
+        itemId: String,
+        episodeId: String,
+        currentTime: Double,
+        duration: Double,
+    ) {
+        val listened = takeListenedSeconds()
         try {
-            val result = audiobookshelfRepository.startPlaybackSession(itemId, newEpisodeId)
-            result.fold(
-                onSuccess = { newSession ->
-                    currentPlaylistEpisodeId = newEpisodeId
-                    synchronized(listenLock) { accountedSessionId = newSession.id }
-                    playbackManager.updateSessionInfo(newSession.id, newEpisodeId)
-                    Timber.d("Started new session for episode: $newEpisodeId (${newSession.id})")
-                },
-                onFailure = { error ->
-                    Timber.e(error, "Failed to start session for new episode: $newEpisodeId")
-                },
-            )
+            if (sessionId.startsWith("local_")) {
+                val (serverId, userId) = audiobookshelfRepository.currentActiveContext ?: return
+                audiobookshelfRepository.updateProgress(
+                    itemId = itemId,
+                    episodeId = episodeId,
+                    currentTime = currentTime,
+                    duration = duration,
+                    isFinished = duration > 0 && currentTime / duration >= FINISHED_RATIO,
+                    timeListened = listened,
+                )
+                absSyncScheduler.scheduleSync(serverId, userId)
+            } else {
+                audiobookshelfRepository.closePlaybackSession(
+                    sessionId = sessionId,
+                    currentTime = currentTime,
+                    timeListened = listened,
+                    duration = duration,
+                )
+            }
+            Timber.d("Closed episode $episodeId at ${currentTime}s / ${duration}s")
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Timber.e(e, "Exception starting new episode session")
+            Timber.e(e, "Failed to close session for episode $episodeId")
         }
     }
 

@@ -1435,13 +1435,15 @@ fun MainNavigation(
                                             itemId,
                                             episodeId,
                                             startPosition,
-                                            episodeSort ->
+                                            episodeSort,
+                                            includePlayed ->
                                             navController.navigate(
                                                 Destination.createAudiobookshelfPlayerRoute(
                                                     itemId,
                                                     episodeId,
                                                     startPosition,
                                                     episodeSort,
+                                                    includePlayed,
                                                 )
                                             )
                                         },
@@ -1509,6 +1511,11 @@ fun MainNavigation(
                                                 defaultValue = null
                                             },
                                             navArgument("episodeSort") {
+                                                type = NavType.StringType
+                                                nullable = true
+                                                defaultValue = null
+                                            },
+                                            navArgument("includePlayed") {
                                                 type = NavType.StringType
                                                 nullable = true
                                                 defaultValue = null

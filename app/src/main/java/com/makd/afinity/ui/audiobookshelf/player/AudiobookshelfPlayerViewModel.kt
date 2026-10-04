@@ -52,6 +52,8 @@ constructor(
     private val startPosition: Double? =
         savedStateHandle.get<String>("startPosition")?.toDoubleOrNull()
     private val episodeSort: String? = savedStateHandle.get<String>("episodeSort")
+    private val includePlayed: Boolean =
+        savedStateHandle.get<String>("includePlayed")?.toBooleanStrictOrNull() == true
 
     private val _uiState = MutableStateFlow(AudiobookshelfPlayerUiState())
     val uiState: StateFlow<AudiobookshelfPlayerUiState> = _uiState.asStateFlow()
@@ -177,6 +179,7 @@ constructor(
                             serverUrl,
                             startPosition,
                             episodeSort,
+                            includePlayed,
                         )
                         _uiState.value = _uiState.value.copy(isLoading = false)
                         Timber.d("Started playback session: ${session.id}")

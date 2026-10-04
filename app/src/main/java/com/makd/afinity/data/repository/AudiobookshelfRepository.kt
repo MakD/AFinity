@@ -1,6 +1,7 @@
 package com.makd.afinity.data.repository
 
 import com.makd.afinity.data.models.audiobookshelf.AudibleRating
+import com.makd.afinity.data.models.audiobookshelf.AudioTrack
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser
 import com.makd.afinity.data.models.audiobookshelf.Author
@@ -83,6 +84,10 @@ interface AudiobookshelfRepository {
 
     /** Reads title/author/coverUrl from Room cache only — no network call. */
     suspend fun getCachedItemMetadata(itemId: String): Triple<String, String?, String?>?
+
+    suspend fun getCachedItem(itemId: String): LibraryItem?
+
+    suspend fun getDownloadedEpisodeTracks(itemId: String): Map<String, AudioTrack>
 
     suspend fun searchLibrary(
         libraryId: String,

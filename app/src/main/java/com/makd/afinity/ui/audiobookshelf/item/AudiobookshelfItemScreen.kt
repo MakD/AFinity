@@ -108,7 +108,7 @@ private val EpisodeSortKey.labelRes: Int
 
 @Composable
 fun AudiobookshelfItemScreen(
-    onNavigateToPlayer: (String, String?, Double?, String?) -> Unit,
+    onNavigateToPlayer: (String, String?, Double?, String?, Boolean) -> Unit,
     onNavigateToSeries: (seriesId: String, libraryId: String, seriesName: String) -> Unit =
         { _, _, _ ->
         },
@@ -156,13 +156,19 @@ fun AudiobookshelfItemScreen(
     val resumePositionOf: (PodcastEpisode) -> Double? = { episode ->
         episodeProgressMap[episode.id]?.takeIf { !it.isFinished && it.currentTime > 0 }?.currentTime
     }
-    val playEpisode: (PodcastEpisode, Double?, EpisodeSort?) -> Unit =
-        { episode, startPosition, queueOrder ->
-            onNavigateToPlayer(viewModel.itemId, episode.id, startPosition, queueOrder?.param)
+    val playEpisode: (PodcastEpisode, Double?, EpisodeSort?, Boolean) -> Unit =
+        { episode, startPosition, queueOrder, includePlayed ->
+            onNavigateToPlayer(
+                viewModel.itemId,
+                episode.id,
+                startPosition,
+                queueOrder?.param,
+                includePlayed,
+            )
         }
     val isSerial = item.isSerialPodcast()
     val playResume: () -> Unit = {
-        upNext.resume?.let { playEpisode(it, resumePositionOf(it), episodeSort) }
+        upNext.resume?.let { playEpisode(it, resumePositionOf(it), episodeSort, false) }
     }
     val playNextUnplayed: () -> Unit = {
         upNext.nextUnplayed?.let {
@@ -170,14 +176,15 @@ fun AudiobookshelfItemScreen(
                 it,
                 resumePositionOf(it),
                 if (isSerial) episodeSort.ascendingOrder() else EpisodeSort.Default,
+                false,
             )
         }
     }
     val playLatest: () -> Unit = {
-        upNext.latest?.let { playEpisode(it, resumePositionOf(it), EpisodeSort.Default) }
+        upNext.latest?.let { playEpisode(it, resumePositionOf(it), EpisodeSort.Default, false) }
     }
     val playFirst: () -> Unit = {
-        upNext.first?.let { playEpisode(it, 0.0, episodeSort.ascendingOrder()) }
+        upNext.first?.let { playEpisode(it, 0.0, episodeSort.ascendingOrder(), true) }
     }
 
     CompositionLocalProvider(LocalDetailLayout provides (detailLayout ?: DetailLayout.CLASSIC)) {
@@ -197,7 +204,7 @@ fun AudiobookshelfItemScreen(
 
                     val onPlay: (() -> Unit)? =
                         if (isPodcast) null
-                        else ({ onNavigateToPlayer(viewModel.itemId, null, null, null) })
+                        else ({ onNavigateToPlayer(viewModel.itemId, null, null, null, false) })
 
                     val narrators =
                         metadata.narrators?.filter { it.isNotBlank() }?.takeIf { it.isNotEmpty() }
@@ -286,7 +293,13 @@ fun AudiobookshelfItemScreen(
                                 showListened = showListenedChapters,
                                 onShowListenedChange = { showListenedChapters = it },
                                 onChapterClick = { chapter ->
-                                    onNavigateToPlayer(viewModel.itemId, null, chapter.start, null)
+                                    onNavigateToPlayer(
+                                        viewModel.itemId,
+                                        null,
+                                        chapter.start,
+                                        null,
+                                        false,
+                                    )
                                 },
                                 headerTrailing = chaptersTrailing,
                             )
@@ -304,7 +317,12 @@ fun AudiobookshelfItemScreen(
                                     if (showAllEpisodes) sortedEpisodes
                                     else sortedEpisodes.take(EPISODE_PREVIEW_COUNT),
                                 onEpisodePlay = { episode ->
-                                    playEpisode(episode, resumePositionOf(episode), null)
+                                    playEpisode(
+                                        episode,
+                                        resumePositionOf(episode),
+                                        episodeSort,
+                                        false,
+                                    )
                                 },
                                 expandedEpisodeId = expandedEpisodeId,
                                 onExpandEpisode = { expandedEpisodeId = it },

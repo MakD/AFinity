@@ -55,6 +55,8 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
                 displayTitle = session.displayTitle ?: "Unknown",
                 displayAuthor = session.displayAuthor,
                 coverUrl = coverUrl,
+                isPodcastPlaylist = false,
+                playlistEpisodeIds = emptyList(),
             )
     }
 
@@ -110,6 +112,10 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
 
     fun setChapterBasedPlayback(isChapterBased: Boolean) {
         _playbackState.update { it.copy(isChapterBasedPlayback = isChapterBased) }
+    }
+
+    fun setActiveEpisode(episodeId: String) {
+        _playbackState.update { it.copy(episodeId = episodeId) }
     }
 
     fun updateSessionInfo(sessionId: String, episodeId: String?) {
