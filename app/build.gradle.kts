@@ -228,7 +228,6 @@ dependencies {
     implementation(libs.blurhash)
     implementation(libs.coil.compose)
     implementation(libs.coil.gif)
-    implementation(libs.coil.network.cache.control)
     implementation(libs.coil.network.okhttp)
     implementation(libs.coil.svg)
     implementation(libs.commonmark)
