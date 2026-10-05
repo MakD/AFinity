@@ -208,10 +208,20 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (event.isCtrlPressed || event.isAltPressed || event.isMetaPressed) {
+        val state = viewModel.uiState.value
+        // viewModel.player is unset until isPlayerReady; while casting, the cast controller owns
+        // playback, and the controls lock must block keyboard input like it blocks gestures.
+        if (
+            !state.isPlayerReady ||
+                state.isCasting ||
+                state.isControlsLocked ||
+                event.isCtrlPressed ||
+                event.isAltPressed ||
+                event.isMetaPressed
+        ) {
             return super.dispatchKeyEvent(event)
         }
-        val shortcut = keyboardShortcut(event) ?: return super.dispatchKeyEvent(event)
+        val shortcut = keyboardShortcut(event, state) ?: return super.dispatchKeyEvent(event)
         if (
             event.action == KeyEvent.ACTION_DOWN &&
                 (event.repeatCount == 0 || event.keyCode in repeatableShortcutKeys)
@@ -222,9 +232,14 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     // Mirrors the YouTube web player's keyboard shortcuts.
-    private fun keyboardShortcut(event: KeyEvent): (() -> Unit)? {
+    private fun keyboardShortcut(
+        event: KeyEvent,
+        state: PlayerViewModel.PlayerUiState,
+    ): (() -> Unit)? {
         val player = viewModel.player
         val shift = event.isShiftPressed
+        val canSeek = !state.isLiveChannel && !state.isPlayingIntro
+        val playlist = viewModel.playlistState.value
         return when (event.keyCode) {
             KeyEvent.KEYCODE_SPACE,
             KeyEvent.KEYCODE_K -> {
@@ -234,18 +249,10 @@ class PlayerActivity : AppCompatActivity() {
                     )
                 }
             }
-            KeyEvent.KEYCODE_J -> {
-                { viewModel.handlePlayerEvent(PlayerEvent.SeekRelative(-10_000)) }
-            }
-            KeyEvent.KEYCODE_L -> {
-                { viewModel.handlePlayerEvent(PlayerEvent.SeekRelative(10_000)) }
-            }
-            KeyEvent.KEYCODE_DPAD_LEFT -> {
-                { viewModel.handlePlayerEvent(PlayerEvent.SeekRelative(-5_000)) }
-            }
-            KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                { viewModel.handlePlayerEvent(PlayerEvent.SeekRelative(5_000)) }
-            }
+            KeyEvent.KEYCODE_J -> if (canSeek) seekBy(-10_000) else null
+            KeyEvent.KEYCODE_L -> if (canSeek) seekBy(10_000) else null
+            KeyEvent.KEYCODE_DPAD_LEFT -> if (canSeek) seekBy(-5_000) else null
+            KeyEvent.KEYCODE_DPAD_RIGHT -> if (canSeek) seekBy(5_000) else null
             KeyEvent.KEYCODE_DPAD_UP -> {
                 { setVolumeStep(currentVolumeStep() + 1) }
             }
@@ -265,7 +272,7 @@ class PlayerActivity : AppCompatActivity() {
             }
             in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9,
             in KeyEvent.KEYCODE_NUMPAD_0..KeyEvent.KEYCODE_NUMPAD_9 ->
-                if (shift) null
+                if (shift || !canSeek) null
                 else {
                     {
                         val digit =
@@ -274,44 +281,49 @@ class PlayerActivity : AppCompatActivity() {
                             } else {
                                 event.keyCode - KeyEvent.KEYCODE_NUMPAD_0
                             }
-                        if (player.duration > 0) {
-                            viewModel.handlePlayerEvent(
-                                PlayerEvent.Seek(player.duration * digit / 10)
-                            )
-                        }
+                        if (player.duration > 0) seekTo(player.duration * digit / 10)
                     }
                 }
-            KeyEvent.KEYCODE_MOVE_HOME -> {
-                { viewModel.handlePlayerEvent(PlayerEvent.Seek(0)) }
-            }
-            KeyEvent.KEYCODE_MOVE_END -> {
-                {
-                    if (player.duration > 0) {
-                        viewModel.handlePlayerEvent(PlayerEvent.Seek(player.duration))
-                    }
-                }
-            }
-            KeyEvent.KEYCODE_PERIOD ->
-                if (shift) {
-                    { changePlaybackSpeed(0.25f) }
+            KeyEvent.KEYCODE_MOVE_HOME ->
+                if (canSeek) {
+                    { seekTo(0) }
                 } else null
-            KeyEvent.KEYCODE_COMMA ->
-                if (shift) {
-                    { changePlaybackSpeed(-0.25f) }
+            KeyEvent.KEYCODE_MOVE_END ->
+                if (canSeek) {
+                    { if (player.duration > 0) seekTo(player.duration) }
                 } else null
             KeyEvent.KEYCODE_N ->
-                if (shift) {
+                if (shift && canSeek && playlist.hasNext) {
                     { viewModel.onNextEpisode() }
                 } else null
             KeyEvent.KEYCODE_P ->
-                if (shift) {
+                if (shift && canSeek && playlist.hasPrevious) {
                     { viewModel.onPreviousEpisode() }
                 } else null
             KeyEvent.KEYCODE_I -> {
                 { viewModel.handlePlayerEvent(PlayerEvent.EnterPictureInPicture) }
             }
-            else -> null
+            // '<' and '>' sit on different physical keys across layouts (e.g. QWERTZ).
+            else ->
+                when (event.unicodeChar.toChar()) {
+                    '>' -> {
+                        { changePlaybackSpeed(0.25f) }
+                    }
+                    '<' -> {
+                        { changePlaybackSpeed(-0.25f) }
+                    }
+                    else -> null
+                }
         }
+    }
+
+    private fun seekBy(deltaMs: Long): () -> Unit = {
+        viewModel.handlePlayerEvent(PlayerEvent.SeekRelative(deltaMs))
+    }
+
+    private fun seekTo(positionMs: Long) {
+        viewModel.handlePlayerEvent(PlayerEvent.Seek(positionMs))
+        viewModel.showControls()
     }
 
     private fun changePlaybackSpeed(delta: Float) {
