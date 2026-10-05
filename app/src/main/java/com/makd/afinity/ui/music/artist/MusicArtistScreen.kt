@@ -405,8 +405,11 @@ fun MusicArtistScreen(
                                     }
                                     AnimatedVisibility(
                                         visible = showAllTracks,
-                                        enter = expandVertically() + fadeIn(),
-                                        exit = shrinkVertically() + fadeOut(),
+                                        enter =
+                                            expandVertically(expandFrom = Alignment.Top) + fadeIn(),
+                                        exit =
+                                            shrinkVertically(shrinkTowards = Alignment.Top) +
+                                                fadeOut(),
                                     ) {
                                         Column {
                                             extraTracks.forEachIndexed { i, track ->
@@ -849,8 +852,8 @@ fun MusicArtistScreen(
                         item(key = "extra_tracks") {
                             AnimatedVisibility(
                                 visible = showAllTracks,
-                                enter = expandVertically() + fadeIn(),
-                                exit = shrinkVertically() + fadeOut(),
+                                enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
+                                exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut(),
                             ) {
                                 Column {
                                     extraTracks.forEachIndexed { i, track ->
