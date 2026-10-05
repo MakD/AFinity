@@ -67,6 +67,11 @@ class PlayerActivity : AppCompatActivity() {
 
     private var playerUiHasFocus = false
 
+    // Devices that pressed a letter or Space in this player. Some TV remotes report themselves
+    // as full keyboards (and have digit keys), so arrows only become seek/volume shortcuts on a
+    // device that has typed.
+    private val typingDeviceIds = mutableSetOf<Int>()
+
     private val arrowKeys =
         setOf(
             KeyEvent.KEYCODE_DPAD_UP,
@@ -248,6 +253,14 @@ class PlayerActivity : AppCompatActivity() {
                 (event.metaState and KeyEvent.META_ALT_LEFT_ON) != 0 ||
                 event.isMetaPressed
         ) {
+            return super.dispatchKeyEvent(event)
+        }
+        if (
+            event.keyCode in KeyEvent.KEYCODE_A..KeyEvent.KEYCODE_Z ||
+                event.keyCode == KeyEvent.KEYCODE_SPACE
+        ) {
+            typingDeviceIds += event.deviceId
+        } else if (event.keyCode in arrowKeys && event.deviceId !in typingDeviceIds) {
             return super.dispatchKeyEvent(event)
         }
         val shortcut = keyboardShortcut(event, state) ?: return super.dispatchKeyEvent(event)
