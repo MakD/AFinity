@@ -139,7 +139,7 @@ The Requests tab will appear in your bottom navigation once connected.
 ### Core Features
 
 - [X] Download management for offline viewing
-- [ ] Adaptive streaming with quality selection (transcoding support)
+- [X] Adaptive streaming with quality selection (transcoding support)
 - [X] Chromecast support
 - [X] Enhanced accessibility features
 - [X] Multi-user profile switching
