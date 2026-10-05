@@ -16,6 +16,7 @@ import android.media.AudioManager
 import android.os.Bundle
 import android.os.Process
 import android.util.Rational
+import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.activity.compose.setContent
@@ -34,6 +35,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.data.models.player.PlayerEvent
@@ -64,9 +66,6 @@ class PlayerActivity : AppCompatActivity() {
     private var volumeStepBeforeMute = 1
 
     private var playerUiHasFocus = false
-
-    private val confirmKeys =
-        setOf(KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER)
 
     private val repeatableVolumeKeys = setOf(KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN)
 
@@ -221,11 +220,13 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         val state = viewModel.uiState.value
-        // viewModel.player is unset until isPlayerReady; while casting, the cast controller owns
-        // playback, the controls lock must block keyboard input like it blocks gestures, and an
-        // open in-window panel needs the keys for its own focus navigation.
+        // Only full keyboards get shortcuts: remotes, gamepads and D-pads keep plain focus
+        // navigation. viewModel.player is unset until isPlayerReady; while casting, the cast
+        // controller owns playback, the controls lock must block keyboard input like it blocks
+        // gestures, and an open in-window panel needs the keys for its own focus navigation.
         if (
-            !state.isPlayerReady ||
+            event.device?.keyboardType != InputDevice.KEYBOARD_TYPE_ALPHABETIC ||
+                !state.isPlayerReady ||
                 state.currentItem == null ||
                 viewModel.isOverlayPanelOpen ||
                 state.isCasting ||
@@ -236,28 +237,6 @@ class PlayerActivity : AppCompatActivity() {
                 event.isMetaPressed
         ) {
             return super.dispatchKeyEvent(event)
-        }
-        if (!playerUiHasFocus && event.keyCode in confirmKeys) {
-            // With nothing focused OK does nothing, and remotes/gamepads have no Tab key to reach
-            // the controls: the first press shows them, the next focuses the first one like Tab.
-            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-                if (state.showControls) {
-                    for (action in listOf(KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP)) {
-                        super.dispatchKeyEvent(
-                            KeyEvent(
-                                event.downTime,
-                                event.eventTime,
-                                action,
-                                KeyEvent.KEYCODE_TAB,
-                                0,
-                            )
-                        )
-                    }
-                } else {
-                    viewModel.showControls()
-                }
-            }
-            return true
         }
         val shortcut = keyboardShortcut(event, state) ?: return super.dispatchKeyEvent(event)
         // A focused control (panel list, slider, button) keeps its own key handling; shortcuts
@@ -286,8 +265,14 @@ class PlayerActivity : AppCompatActivity() {
             KeyEvent.KEYCODE_K -> {
                 {
                     viewModel.handlePlayerEvent(
-                        if (state.isPlaying || state.playWhenReady) PlayerEvent.Pause
-                        else PlayerEvent.Play
+                        if (
+                            state.isPlaying ||
+                                (state.playWhenReady && player.playbackState != Player.STATE_ENDED)
+                        ) {
+                            PlayerEvent.Pause
+                        } else {
+                            PlayerEvent.Play
+                        }
                     )
                 }
             }

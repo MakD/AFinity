@@ -184,6 +184,7 @@ fun PlayerControls(
             showSpeedDialog ||
             showEpisodeSwitcher ||
             showChapterSwitcher ||
+            showMembersPopup ||
             showSleepTimerPanel
     DisposableEffect(isPanelOpen) {
         onPanelOpenChange(isPanelOpen)
