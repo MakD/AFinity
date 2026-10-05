@@ -10,9 +10,11 @@ import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicFilterOptions
 import com.makd.afinity.data.models.music.MusicFilters
 import com.makd.afinity.data.models.music.MusicSearchResults
+import com.makd.afinity.data.repository.FieldSets
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.MediaType
 import org.jellyfin.sdk.model.api.SortOrder
@@ -63,7 +65,10 @@ interface MusicRepository {
 
     suspend fun getArtistById(artistId: UUID): AfinityArtist?
 
-    suspend fun getArtistsByIds(artistIds: List<UUID>): List<AfinityArtist>
+    suspend fun getArtistsByIds(
+        artistIds: List<UUID>,
+        fields: List<ItemFields> = FieldSets.MUSIC_ARTIST,
+    ): List<AfinityArtist>
 
     suspend fun getArtistAlbums(
         artistId: UUID,
@@ -154,11 +159,9 @@ interface MusicRepository {
 
     suspend fun getFavoriteArtists(limit: Int = 10, parentId: UUID? = null): List<AfinityArtist>
 
-    suspend fun getTopArtists(limit: Int = 10, parentId: UUID? = null): List<AfinityArtist>
-
     suspend fun getRecentlyPlayedAlbums(limit: Int = 15): List<AfinityAlbum>
 
-    suspend fun getMostPlayedAlbums(limit: Int = 15): List<AfinityAlbum>
+    suspend fun getMostPlayedTracks(limit: Int = 200, parentId: UUID? = null): List<AfinityTrack>
 
     suspend fun getFavoriteTracks(limit: Int = 50): List<AfinityTrack>
 

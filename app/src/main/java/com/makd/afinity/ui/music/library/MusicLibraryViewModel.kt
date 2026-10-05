@@ -15,7 +15,9 @@ import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.extensions.toMostPlayedAlbums
 import com.makd.afinity.data.models.extensions.toRecentlyPlayedAlbums
+import com.makd.afinity.data.models.extensions.topArtistIds
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityMusicGenre
@@ -166,6 +168,7 @@ private const val MFY_GENRE_TRACKS = 15
 private const val MFY_CACHE_MAX_AGE_MS = 24L * 60L * 60L * 1000L
 private const val RECENT_TRACKS_FETCH = 40
 private const val RECENT_TRACKS_DISPLAY = 20
+private const val MOST_PLAYED_TRACKS_FETCH = 200
 
 private const val SLOT_SURPRISE = "mfy_surprise"
 
@@ -741,10 +744,16 @@ constructor(
                 runCatching { musicRepository.getRecentlyAddedAlbums(limit = 15) }
                     .getOrDefault(emptyList())
             }
-            val mostPlayedJob = async {
-                runCatching { musicRepository.getMostPlayedAlbums(limit = 15) }
+            val mostPlayedTracksJob = async {
+                runCatching {
+                    musicRepository.getMostPlayedTracks(
+                        limit = MOST_PLAYED_TRACKS_FETCH,
+                        parentId = libraryId,
+                    )
+                }
                     .getOrDefault(emptyList())
             }
+            val mostPlayedJob = async { mostPlayedTracksJob.await().toMostPlayedAlbums(15) }
             val genresJob = async {
                 runCatching { musicRepository.getMusicGenres(limit = 20, parentId = libraryId) }
                     .getOrDefault(emptyList())
@@ -900,7 +909,12 @@ constructor(
             }
             launch {
                 runCatching {
-                    val a = musicRepository.getTopArtists(limit = 15, parentId = libraryId)
+                    val ids = mostPlayedTracksJob.await().topArtistIds(15)
+                    val byId =
+                        musicRepository.getArtistsByIds(ids, fields = emptyList()).associateBy {
+                            it.id
+                        }
+                    val a = ids.mapNotNull { byId[it] }
                     if (a.isNotEmpty()) _uiState.update { it.copy(topArtists = a) }
                 }
             }

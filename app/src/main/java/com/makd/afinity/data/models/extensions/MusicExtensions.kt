@@ -17,25 +17,65 @@ fun List<AfinityTrack>.toRecentlyPlayedAlbums(limit: Int): List<AfinityAlbum> {
             val albumId = track.albumId ?: return@mapNotNull null
             val albumName = track.album ?: return@mapNotNull null
             if (!seen.add(albumId)) return@mapNotNull null
-            AfinityAlbum(
-                id = albumId,
-                name = albumName,
-                artistId = track.artistId,
-                artist = track.artist,
-                artists = track.artists,
-                productionYear = track.productionYear,
-                songCount = null,
-                runtimeTicks = 0L,
-                genres = emptyList(),
-                overview = null,
-                favorite = false,
-                played = false,
-                playCount = null,
-                images = track.images,
-            )
+            track.toAlbumStub(albumId, albumName, playCount = null)
         }
         .take(limit)
 }
+
+fun List<AfinityTrack>.toMostPlayedAlbums(limit: Int): List<AfinityAlbum> {
+    val plays = LinkedHashMap<UUID, Int>()
+    val sources = HashMap<UUID, AfinityTrack>()
+    for (track in this) {
+        val albumId = track.albumId ?: continue
+        if (track.album == null) continue
+        plays[albumId] = (plays[albumId] ?: 0) + (track.playCount ?: 0)
+        sources.putIfAbsent(albumId, track)
+    }
+    return plays.entries
+        .filter { it.value > 0 }
+        .sortedByDescending { it.value }
+        .take(limit)
+        .mapNotNull { (albumId, count) ->
+            val track = sources[albumId] ?: return@mapNotNull null
+            val albumName = track.album ?: return@mapNotNull null
+            track.toAlbumStub(albumId, albumName, playCount = count)
+        }
+}
+
+fun List<AfinityTrack>.topArtistIds(limit: Int): List<UUID> {
+    val plays = LinkedHashMap<UUID, Int>()
+    for (track in this) {
+        val artistId = track.artistId ?: continue
+        plays[artistId] = (plays[artistId] ?: 0) + (track.playCount ?: 0)
+    }
+    return plays.entries
+        .filter { it.value > 0 }
+        .sortedByDescending { it.value }
+        .take(limit)
+        .map { it.key }
+}
+
+private fun AfinityTrack.toAlbumStub(
+    albumId: UUID,
+    albumName: String,
+    playCount: Int?,
+): AfinityAlbum =
+    AfinityAlbum(
+        id = albumId,
+        name = albumName,
+        artistId = artistId,
+        artist = artist,
+        artists = artists,
+        productionYear = productionYear,
+        songCount = null,
+        runtimeTicks = 0L,
+        genres = emptyList(),
+        overview = null,
+        favorite = false,
+        played = false,
+        playCount = playCount,
+        images = images,
+    )
 
 fun BaseItemDto.toAfinityTrack(baseUrl: String): AfinityTrack {
     val baseUri = baseUrl.trimEnd('/').toUri()

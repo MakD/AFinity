@@ -53,6 +53,7 @@ import org.jellyfin.sdk.api.operations.LyricApi
 import org.jellyfin.sdk.api.operations.PlaylistApi
 import org.jellyfin.sdk.api.operations.UserDataApi
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.MediaType
@@ -390,7 +391,10 @@ constructor(
             }
         }
 
-    override suspend fun getArtistsByIds(artistIds: List<UUID>): List<AfinityArtist> =
+    override suspend fun getArtistsByIds(
+        artistIds: List<UUID>,
+        fields: List<ItemFields>,
+    ): List<AfinityArtist> =
         apiCall(emptyList(), "Failed to fetch artists by ids") { apiClient, userId ->
             if (artistIds.isEmpty()) return@apiCall emptyList()
             val baseUrl = getBaseUrlInternal()
@@ -398,7 +402,7 @@ constructor(
                 .getItems(
                     userId = userId,
                     ids = artistIds,
-                    fields = FieldSets.MUSIC_ARTIST,
+                    fields = fields,
                     enableUserData = true,
                     enableTotalRecordCount = false,
                 )
@@ -1031,48 +1035,30 @@ constructor(
             }
         }
 
-    override suspend fun getTopArtists(limit: Int, parentId: UUID?): List<AfinityArtist> =
-        apiCall(emptyList(), "Failed to fetch top artists") { apiClient, userId ->
-            val baseUrl = getBaseUrlInternal()
-
-            val response =
-                ArtistApi(apiClient)
-                    .getAlbumArtists(
-                        userId = userId,
-                        parentId = parentId,
-                        sortBy = listOf(ItemSortBy.PLAY_COUNT),
-                        sortOrder = listOf(SortOrder.DESCENDING),
-                        limit = limit,
-                        fields = FieldSets.MUSIC_ARTIST,
-                        enableUserData = true,
-                        enableTotalRecordCount = false,
-                    )
-            response.content.items.mapNotNull { dto ->
-                runCatching { dto.toAfinityArtist(baseUrl) }.getOrNull()
-            }
-        }
-
     override suspend fun getRecentlyPlayedAlbums(limit: Int): List<AfinityAlbum> =
         getRecentlyPlayedTracks(limit = limit * 3).toRecentlyPlayedAlbums(limit)
 
-    override suspend fun getMostPlayedAlbums(limit: Int): List<AfinityAlbum> =
-        apiCall(emptyList(), "Failed to fetch most played albums") { apiClient, userId ->
+    override suspend fun getMostPlayedTracks(limit: Int, parentId: UUID?): List<AfinityTrack> =
+        apiCall(emptyList(), "Failed to fetch most played tracks") { apiClient, userId ->
             val baseUrl = getBaseUrlInternal()
+
             val response =
                 LibraryApi(apiClient)
                     .getItems(
                         userId = userId,
-                        includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
-                        sortBy = listOf(ItemSortBy.PLAY_COUNT),
-                        sortOrder = listOf(SortOrder.DESCENDING),
-                        limit = limit,
-                        fields = FieldSets.MUSIC_ALBUM,
+                        parentId = parentId,
+                        includeItemTypes = listOf(BaseItemKind.AUDIO),
+                        filters = listOf(ItemFilter.IS_PLAYED),
+                        sortBy = listOf(ItemSortBy.PLAY_COUNT, ItemSortBy.SORT_NAME),
+                        sortOrder = listOf(SortOrder.DESCENDING, SortOrder.ASCENDING),
+                        fields = FieldSets.MUSIC_TRACK,
                         enableUserData = true,
                         recursive = true,
+                        limit = limit,
                         enableTotalRecordCount = false,
                     )
-            response.content.items.mapNotNull {
-                runCatching { it.toAfinityAlbum(baseUrl) }.getOrNull()
+            response.content.items.mapNotNull { dto ->
+                runCatching { dto.toAfinityTrack(baseUrl) }.getOrNull()
             }
         }
 
