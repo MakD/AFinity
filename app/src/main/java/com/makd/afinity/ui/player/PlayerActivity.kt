@@ -52,6 +52,9 @@ class PlayerActivity : AppCompatActivity() {
 
     private val viewModel: PlayerViewModel by viewModels()
 
+    // Same activity-scoped instance PlayerScreen gets from hiltViewModel().
+    private val syncPlayViewModel: SyncPlayViewModel by viewModels()
+
     @Inject lateinit var preferencesRepository: PreferencesRepository
 
     private var wasPip: Boolean = false
@@ -62,14 +65,14 @@ class PlayerActivity : AppCompatActivity() {
 
     private var playerUiHasFocus = false
 
-    private val repeatableShortcutKeys =
+    private val repeatableVolumeKeys = setOf(KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN)
+
+    private val repeatableSeekKeys =
         setOf(
             KeyEvent.KEYCODE_J,
             KeyEvent.KEYCODE_L,
             KeyEvent.KEYCODE_DPAD_LEFT,
             KeyEvent.KEYCODE_DPAD_RIGHT,
-            KeyEvent.KEYCODE_DPAD_UP,
-            KeyEvent.KEYCODE_DPAD_DOWN,
         )
 
     companion object {
@@ -231,10 +234,7 @@ class PlayerActivity : AppCompatActivity() {
         // A focused control (panel list, slider, button) keeps its own key handling; shortcuts
         // only take the keys it leaves unused.
         if (playerUiHasFocus && super.dispatchKeyEvent(event)) return true
-        if (
-            event.action == KeyEvent.ACTION_DOWN &&
-                (event.repeatCount == 0 || event.keyCode in repeatableShortcutKeys)
-        ) {
+        if (event.action == KeyEvent.ACTION_DOWN && isShortcutRepeatAllowed(event)) {
             shortcut()
         }
         return true
@@ -330,6 +330,13 @@ class PlayerActivity : AppCompatActivity() {
                 }
         }
     }
+
+    // Every repeated seek in a SyncPlay group is sent to the server and re-syncs all members.
+    private fun isShortcutRepeatAllowed(event: KeyEvent): Boolean =
+        event.repeatCount == 0 ||
+            event.keyCode in repeatableVolumeKeys ||
+            (event.keyCode in repeatableSeekKeys &&
+                !syncPlayViewModel.syncPlayState.value.isInGroup)
 
     private fun seekBy(deltaMs: Long): () -> Unit = {
         viewModel.handlePlayerEvent(PlayerEvent.SeekRelative(deltaMs))
