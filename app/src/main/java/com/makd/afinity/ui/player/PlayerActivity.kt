@@ -65,6 +65,9 @@ class PlayerActivity : AppCompatActivity() {
 
     private var playerUiHasFocus = false
 
+    private val confirmKeys =
+        setOf(KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER)
+
     private val repeatableVolumeKeys = setOf(KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN)
 
     private val repeatableSeekKeys =
@@ -219,9 +222,12 @@ class PlayerActivity : AppCompatActivity() {
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         val state = viewModel.uiState.value
         // viewModel.player is unset until isPlayerReady; while casting, the cast controller owns
-        // playback, and the controls lock must block keyboard input like it blocks gestures.
+        // playback, the controls lock must block keyboard input like it blocks gestures, and an
+        // open in-window panel needs the keys for its own focus navigation.
         if (
             !state.isPlayerReady ||
+                state.currentItem == null ||
+                viewModel.isOverlayPanelOpen ||
                 state.isCasting ||
                 viewModel.castManager.castState.value.isConnected ||
                 state.isControlsLocked ||
@@ -230,6 +236,28 @@ class PlayerActivity : AppCompatActivity() {
                 event.isMetaPressed
         ) {
             return super.dispatchKeyEvent(event)
+        }
+        if (!playerUiHasFocus && event.keyCode in confirmKeys) {
+            // With nothing focused OK does nothing, and remotes/gamepads have no Tab key to reach
+            // the controls: the first press shows them, the next focuses the first one like Tab.
+            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                if (state.showControls) {
+                    for (action in listOf(KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP)) {
+                        super.dispatchKeyEvent(
+                            KeyEvent(
+                                event.downTime,
+                                event.eventTime,
+                                action,
+                                KeyEvent.KEYCODE_TAB,
+                                0,
+                            )
+                        )
+                    }
+                } else {
+                    viewModel.showControls()
+                }
+            }
+            return true
         }
         val shortcut = keyboardShortcut(event, state) ?: return super.dispatchKeyEvent(event)
         // A focused control (panel list, slider, button) keeps its own key handling; shortcuts
