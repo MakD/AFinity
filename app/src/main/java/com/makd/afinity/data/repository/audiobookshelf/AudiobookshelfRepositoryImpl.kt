@@ -872,6 +872,8 @@ constructor(
                             ?.let { serialized ->
                                 try {
                                     json.decodeFromString<PlaybackSession>(serialized)
+                                } catch (e: CancellationException) {
+                                    throw e
                                 } catch (e: Exception) {
                                     Timber.w(e, "Unreadable local session for episode $episodeId")
                                     null

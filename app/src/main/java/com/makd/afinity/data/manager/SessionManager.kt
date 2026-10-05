@@ -504,6 +504,8 @@ constructor(
                     httpClientOptions = NetworkModule.BACKGROUND_HTTP_OPTIONS,
                 )
                 .also { backgroundClient = key to it }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to build background ApiClient, using session client")
             primary

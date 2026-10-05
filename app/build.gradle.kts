@@ -286,6 +286,7 @@ val cancellationRethrowAllowlist =
         "ui/audiobookshelf/libraries/AudiobookshelfLibrariesViewModel.kt",
         "ui/components/AsyncImage.kt",
         "ui/components/HeroCarousel.kt",
+        "ui/item/components/shared/WhereToWatch.kt",
         "ui/person/PersonViewModel.kt",
         "ui/player/Extensions.kt",
         "ui/player/PlayerActivity.kt",
