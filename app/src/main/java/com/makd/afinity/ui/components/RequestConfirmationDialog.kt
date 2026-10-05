@@ -21,7 +21,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -41,8 +40,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -141,7 +142,7 @@ fun RequestConfirmationDialog(
     onRootFolderSelected: (String) -> Unit = {},
     is4kLaneBlocked: Boolean = false,
     errorMessage: String? = null,
-    seasonNumbers: List<Int> = (1..availableSeasons).toList(),
+    seasonNumbers: List<Int> = List(availableSeasons.coerceAtLeast(0)) { it + 1 },
     onRetry: () -> Unit = {},
 ) {
     val alreadyRequested =
@@ -162,6 +163,8 @@ fun RequestConfirmationDialog(
             }
 
     val headerImageUrl = mediaBackdropUrl?.takeIf { it.isNotBlank() } ?: mediaPosterUrl
+    val headerTargetWidth =
+        with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
     val scrollState = rememberScrollState()
     LaunchedEffect(mediaTitle) { scrollState.scrollTo(0) }
 
@@ -192,7 +195,7 @@ fun RequestConfirmationDialog(
                             blurHash = null,
                             modifier = Modifier.fillMaxWidth(),
                             contentScale = ContentScale.Crop,
-                            targetWidth = LocalConfiguration.current.screenWidthDp.dp,
+                            targetWidth = headerTargetWidth,
                             targetHeight = 200.dp,
                         )
                         Box(
@@ -989,12 +992,13 @@ private fun RootFolderTile(
     isLoading: Boolean,
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     if (availableRootFolders.size > 1) {
         val labelFor = { folder: RootFolder ->
             folder.freeSpace
                 ?.takeIf { it > 0 }
                 ?.let { bytes ->
-                    context.getString(
+                    resources.getString(
                         R.string.request_root_folder_free_fmt,
                         folder.path,
                         Formatter.formatShortFileSize(context, bytes),
@@ -1111,7 +1115,7 @@ fun <T> MinimalSelectionTile(
             )
         }
 
-        DropdownMenu(
+        EndAlignedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -1195,7 +1199,7 @@ fun <T> MinimalMultiSelectTile(
             )
         }
 
-        DropdownMenu(
+        EndAlignedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),

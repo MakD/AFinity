@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -37,6 +36,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.EndAlignedDropdownMenu
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
@@ -258,7 +258,7 @@ private fun ThemeSelectorItem(currentThemeMode: String, onThemeModeChange: (Stri
             },
         )
 
-        DropdownMenu(
+        EndAlignedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -309,7 +309,7 @@ private fun DetailLayoutSelectorItem(
             },
         )
 
-        DropdownMenu(
+        EndAlignedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -369,7 +369,7 @@ private fun EpisodeLayoutSelectorItem(
             },
         )
 
-        DropdownMenu(
+        EndAlignedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -436,7 +436,7 @@ private fun FontSelectorItem(currentFont: String, onFontChange: (String) -> Unit
             },
         )
 
-        DropdownMenu(
+        EndAlignedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),

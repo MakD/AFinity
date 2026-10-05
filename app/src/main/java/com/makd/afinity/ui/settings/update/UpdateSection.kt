@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -44,6 +43,7 @@ import com.makd.afinity.data.updater.models.ApkVerification
 import com.makd.afinity.data.updater.models.GitHubRelease
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import com.makd.afinity.data.updater.models.UpdateState
+import com.makd.afinity.ui.components.EndAlignedDropdownMenu
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 
@@ -271,7 +271,7 @@ private fun UpdateFrequencySelector(
             }
         }
 
-        DropdownMenu(
+        EndAlignedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
