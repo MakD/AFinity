@@ -67,6 +67,8 @@ class PlayerActivity : AppCompatActivity() {
 
     private var playerUiHasFocus = false
 
+    private val consumedDownKeyCodes = mutableSetOf<Int>()
+
     // Devices that pressed a letter or Space in this player. Some TV remotes report themselves
     // as full keyboards (and have digit keys), so typingGatedKeys only become shortcuts on a
     // device that has typed.
@@ -238,6 +240,11 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        // State can change between a key's DOWN and UP (e.g. Enter hides the skip button), so the
+        // UP of a consumed DOWN is consumed too rather than reaching Compose unpaired.
+        if (event.action == KeyEvent.ACTION_UP && consumedDownKeyCodes.remove(event.keyCode)) {
+            return true
+        }
         val state = viewModel.uiState.value
         // Only physical full keyboards get shortcuts: remotes, gamepads and D-pads keep plain
         // focus navigation (HDMI-CEC remote keys arrive via the virtual alphabetic keyboard).
@@ -277,8 +284,9 @@ class PlayerActivity : AppCompatActivity() {
             if (super.dispatchKeyEvent(event)) return true
             if (event.keyCode in arrowKeys) return false
         }
-        if (event.action == KeyEvent.ACTION_DOWN && isShortcutRepeatAllowed(event)) {
-            shortcut()
+        if (event.action == KeyEvent.ACTION_DOWN) {
+            consumedDownKeyCodes += event.keyCode
+            if (isShortcutRepeatAllowed(event)) shortcut()
         }
         return true
     }
@@ -373,9 +381,10 @@ class PlayerActivity : AppCompatActivity() {
                 if (shift && canSeek && playlist.hasPrevious) {
                     { viewModel.onPreviousEpisode() }
                 } else null
-            KeyEvent.KEYCODE_I -> {
-                { viewModel.handlePlayerEvent(PlayerEvent.EnterPictureInPicture) }
-            }
+            KeyEvent.KEYCODE_I ->
+                if (isPipSupported) {
+                    { viewModel.handlePlayerEvent(PlayerEvent.EnterPictureInPicture) }
+                } else null
             // '<' and '>' sit on different physical keys across layouts (e.g. QWERTZ).
             else ->
                 when (if (state.isSpeedingUp) null else event.unicodeChar.toChar()) {
