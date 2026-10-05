@@ -61,6 +61,7 @@ import coil3.request.ImageRequest
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
+import com.makd.afinity.data.models.extensions.logoImageUrlWebp
 import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
@@ -82,6 +83,12 @@ private val HeroBottomOverlap = 40.dp
 private val HeroFadeHeight = 340.dp
 private const val HeroPortraitFraction = 0.65f
 private const val HeroLandscapeFraction = 0.95f
+private val HeroLogoHeight = 140.dp
+private const val HeroLogoPortraitWidthFraction = 0.8f
+private const val HeroLogoLandscapeWidthFraction = 0.4f
+
+private fun heroLogoUrl(item: AfinityItem, skipServerResize: Boolean): String? =
+    if (skipServerResize) item.images.logoImageUrlWithTransparency else item.images.logoImageUrlWebp
 
 @Composable
 fun heroCarouselLayoutHeight(): Dp {
@@ -125,12 +132,17 @@ fun HeroCarousel(
     val pagerState =
         rememberPagerState(initialPage = adjustedStart, pageCount = { infinitePageCount })
 
+    val logoWidthFraction =
+        if (isLandscape) HeroLogoLandscapeWidthFraction else HeroLogoPortraitWidthFraction
+
     HeroCarouselAutoScrollAndPrefetch(
         pagerState = pagerState,
         items = items,
         isScrolling = isScrolling,
         fillWidthPx = screenWidthPx,
         fillHeightPx = with(density) { heroHeight.toPx().toInt() },
+        logoWidthPx = with(density) { (screenWidthDp * logoWidthFraction).toPx().toInt() },
+        logoHeightPx = with(density) { HeroLogoHeight.toPx().toInt() },
     )
 
     val currentItem by
@@ -184,6 +196,8 @@ private fun HeroCarouselAutoScrollAndPrefetch(
     isScrolling: Boolean,
     fillWidthPx: Int,
     fillHeightPx: Int,
+    logoWidthPx: Int,
+    logoHeightPx: Int,
 ) {
     val context = LocalContext.current
     val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
@@ -227,6 +241,15 @@ private fun HeroCarouselAutoScrollAndPrefetch(
                     .size(fillWidthPx, fillHeightPx)
                     .build()
             context.imageLoader.enqueue(request)
+        }
+        val logoUrl = heroLogoUrl(item, skipServerResize)
+        if (logoUrl != null) {
+            val logoRequest =
+                ImageRequest.Builder(context)
+                    .data(optimizedImageUrl(logoUrl, logoWidthPx, skipServerResize))
+                    .size(logoWidthPx, logoHeightPx)
+                    .build()
+            context.imageLoader.enqueue(logoRequest)
         }
     }
 }
@@ -308,6 +331,8 @@ private fun BoxScope.HeroContentCentered(
     onPlayTrailerClick: (AfinityItem) -> Unit,
     onMoreInformationClick: (AfinityItem) -> Unit,
 ) {
+    val skipServerResize = LocalSkipServerImageResize.current
+
     Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
         Column(
             modifier =
@@ -319,16 +344,17 @@ private fun BoxScope.HeroContentCentered(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Box(
-                modifier = Modifier.fillMaxWidth(0.8f).height(140.dp),
+                modifier =
+                    Modifier.fillMaxWidth(HeroLogoPortraitWidthFraction).height(HeroLogoHeight),
                 contentAlignment = Alignment.Center,
             ) {
                 currentItem.images.logo?.let { _ ->
                     AsyncImage(
-                        imageUrl = currentItem.images.logoImageUrlWithTransparency,
+                        imageUrl = heroLogoUrl(currentItem, skipServerResize),
                         contentDescription = "${currentItem.name} logo",
                         blurHash = null,
-                        targetWidth = screenWidthDp * 0.8f,
-                        targetHeight = 140.dp,
+                        targetWidth = screenWidthDp * HeroLogoPortraitWidthFraction,
+                        targetHeight = HeroLogoHeight,
                         modifier =
                             Modifier.fillMaxHeight().wrapContentWidth(Alignment.CenterHorizontally),
                         contentScale = ContentScale.Fit,
@@ -466,6 +492,8 @@ private fun BoxScope.HeroContentRich(
     onPlayTrailerClick: (AfinityItem) -> Unit,
     onMoreInformationClick: (AfinityItem) -> Unit,
 ) {
+    val skipServerResize = LocalSkipServerImageResize.current
+
     Box(
         modifier =
             Modifier.fillMaxSize()
@@ -481,7 +509,7 @@ private fun BoxScope.HeroContentRich(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Box(
-                    modifier = Modifier.fillMaxWidth(0.5f).height(140.dp),
+                    modifier = Modifier.fillMaxWidth(0.5f).height(HeroLogoHeight),
                     contentAlignment = Alignment.CenterStart,
                 ) {
                     Box(
@@ -490,11 +518,11 @@ private fun BoxScope.HeroContentRich(
                     ) {
                         currentItem.images.logo?.let { _ ->
                             AsyncImage(
-                                imageUrl = currentItem.images.logoImageUrlWithTransparency,
+                                imageUrl = heroLogoUrl(currentItem, skipServerResize),
                                 contentDescription = "${currentItem.name} logo",
                                 blurHash = null,
-                                targetWidth = screenWidthDp * 0.4f,
-                                targetHeight = 140.dp,
+                                targetWidth = screenWidthDp * HeroLogoLandscapeWidthFraction,
+                                targetHeight = HeroLogoHeight,
                                 modifier =
                                     Modifier.fillMaxHeight().wrapContentWidth(Alignment.Start),
                                 contentScale = ContentScale.Fit,

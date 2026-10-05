@@ -41,3 +41,7 @@ val AfinityImages.logoImageUrlWithTransparency: String?
     get() = logoImageUrl?.let { url ->
         if (url.contains("?")) "$url&format=png" else "$url?format=png"
     }
+val AfinityImages.logoImageUrlWebp: String?
+    get() = logoImageUrl?.let { url ->
+        if (url.contains("?")) "$url&format=webp" else "$url?format=webp"
+    }
