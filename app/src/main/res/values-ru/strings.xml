@@ -2233,4 +2233,29 @@
     <string name="where_to_watch_stream_on">Смотрите на</string>
     <string name="where_to_watch_rent_or_buy_on">Возьмите напрокат или купите в</string>
     <string name="where_to_watch_stream">Потоковое</string>
+    <string name="abs_narrators_title">Рассказывает</string>
+    <string name="abs_author_label">Автор</string>
+    <plurals name="abs_series_books_fmt">
+        <item quantity="one">%1$d книга</item>
+        <item quantity="few">%1$d книги</item>
+        <item quantity="many">%1$d книг</item>
+        <item quantity="other">%1$d книг</item>
+    </plurals>
+    <string name="abs_more_by_fmt">Еще от автора: %1$s</string>
+    <string name="abs_narrated_by_fmt">Рассказчик: %1$s</string>
+    <plurals name="abs_chapters_listened_fmt">
+        <item quantity="one">Прослушана %1$d глава</item>
+        <item quantity="few">Прослушаны %1$d главы</item>
+        <item quantity="many">Прослушано %1$d глав</item>
+        <item quantity="other">Прослушано %1$d глав</item>
+    </plurals>
+    <string name="abs_time_left_fmt">Осталось: %1$s</string>
+    <plurals name="abs_sessions_label">
+        <item quantity="one">сеанс</item>
+        <item quantity="few">сеанса</item>
+        <item quantity="many">сеансов</item>
+        <item quantity="other">сеансов</item>
+    </plurals>
+    <string name="abs_listened_label">прослушано</string>
+    <string name="abs_your_listening">Вы слушаете</string>
 </resources>
