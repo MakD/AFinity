@@ -96,19 +96,20 @@ interface JellyseerrApiService {
     @DELETE("api/v1/media/{mediaId}")
     suspend fun deleteMedia(@Path("mediaId") mediaId: Int): Response<Unit>
 
-    @POST("api/v1/settings/cache/flush") suspend fun flushCache(): Response<Unit>
-
     @POST("api/v1/settings/jobs/{jobId}/run")
     suspend fun runJob(@Path("jobId") jobId: String): Response<Unit>
 
     @POST("api/v1/request/{requestId}/approve")
     suspend fun approveRequest(@Path("requestId") requestId: Int): Response<JellyseerrRequest>
 
+    @POST("api/v1/request/{requestId}/retry")
+    suspend fun retryRequest(@Path("requestId") requestId: Int): Response<JellyseerrRequest>
+
     @retrofit2.http.PUT("api/v1/request/{requestId}")
     suspend fun updateRequest(
         @Path("requestId") requestId: Int,
         @Body request: CreateRequestBody,
-    ): Response<JellyseerrRequest>
+    ): Response<JsonObject>
 
     @POST("api/v1/request/{requestId}/decline")
     suspend fun declineRequest(@Path("requestId") requestId: Int): Response<JellyseerrRequest>
@@ -117,7 +118,6 @@ interface JellyseerrApiService {
     suspend fun search(
         @Query("query") query: String,
         @Query("page") page: Int = 1,
-        @Query("language") language: String = "en",
     ): Response<JellyseerrSearchResult>
 
     @GET("api/v1/movie/{movieId}")
@@ -160,15 +160,11 @@ interface JellyseerrApiService {
     suspend fun getDiscoverSliders(): Response<List<DiscoverSlider>>
 
     @GET("api/v1/discover/trending")
-    suspend fun getTrending(
-        @Query("page") page: Int = 1,
-        @Query("language") language: String = "en",
-    ): Response<JellyseerrSearchResult>
+    suspend fun getTrending(@Query("page") page: Int = 1): Response<JellyseerrSearchResult>
 
     @GET("api/v1/discover/movies")
     suspend fun getDiscoverMovies(
         @Query("page") page: Int = 1,
-        @Query("language") language: String = "en",
         @Query("sortBy") sortBy: String = "popularity.desc",
         @Query("studio") studio: Int? = null,
         @Query("genre") genre: String? = null,
@@ -191,7 +187,6 @@ interface JellyseerrApiService {
     @GET("api/v1/discover/tv")
     suspend fun getDiscoverTv(
         @Query("page") page: Int = 1,
-        @Query("language") language: String = "en",
         @Query("sortBy") sortBy: String = "popularity.desc",
         @Query("network") network: Int? = null,
         @Query("genre") genre: String? = null,
@@ -213,36 +208,24 @@ interface JellyseerrApiService {
     ): Response<JellyseerrSearchResult>
 
     @GET("api/v1/discover/movies/upcoming")
-    suspend fun getUpcomingMovies(
-        @Query("page") page: Int = 1,
-        @Query("language") language: String = "en",
-    ): Response<JellyseerrSearchResult>
+    suspend fun getUpcomingMovies(@Query("page") page: Int = 1): Response<JellyseerrSearchResult>
 
     @GET("api/v1/discover/tv/upcoming")
-    suspend fun getUpcomingTv(
-        @Query("page") page: Int = 1,
-        @Query("language") language: String = "en",
-    ): Response<JellyseerrSearchResult>
+    suspend fun getUpcomingTv(@Query("page") page: Int = 1): Response<JellyseerrSearchResult>
 
     @GET("api/v1/genres/movie")
-    suspend fun getMovieGenres(
-        @Query("language") language: String = "en"
-    ): Response<List<com.makd.afinity.data.models.jellyseerr.Genre>>
+    suspend fun getMovieGenres(): Response<List<com.makd.afinity.data.models.jellyseerr.Genre>>
 
     @GET("api/v1/genres/tv")
-    suspend fun getTvGenres(
-        @Query("language") language: String = "en"
-    ): Response<List<com.makd.afinity.data.models.jellyseerr.Genre>>
+    suspend fun getTvGenres(): Response<List<com.makd.afinity.data.models.jellyseerr.Genre>>
 
     @GET("api/v1/discover/genreslider/movie")
-    suspend fun getMovieGenreSlider(
-        @Query("language") language: String = "en"
-    ): Response<List<com.makd.afinity.data.models.jellyseerr.GenreSliderItem>>
+    suspend fun getMovieGenreSlider():
+        Response<List<com.makd.afinity.data.models.jellyseerr.GenreSliderItem>>
 
     @GET("api/v1/discover/genreslider/tv")
-    suspend fun getTvGenreSlider(
-        @Query("language") language: String = "en"
-    ): Response<List<com.makd.afinity.data.models.jellyseerr.GenreSliderItem>>
+    suspend fun getTvGenreSlider():
+        Response<List<com.makd.afinity.data.models.jellyseerr.GenreSliderItem>>
 
     @GET("api/v1/watchproviders/regions")
     suspend fun getWatchProviderRegions(): Response<List<WatchProviderRegion>>

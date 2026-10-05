@@ -223,7 +223,7 @@ fun RequestsScreen(
                                                     if (
                                                         item.mediaInfo?.isFullyAvailable() == true
                                                     ) {
-                                                        item.mediaInfo?.getJellyfinItemId()?.let {
+                                                        item.mediaInfo.getJellyfinItemId()?.let {
                                                             jellyfinId ->
                                                             val mappedType =
                                                                 when (item.mediaType.lowercase()) {
@@ -387,6 +387,7 @@ fun RequestsScreen(
                         uiState.isDeletingRequest,
                 onUpdate = { viewModel.updateRequest(req.id) },
                 onApprove = { viewModel.approveRequest(req.id) },
+                onRetry = { viewModel.retryRequest(req.id) },
                 onDecline = { viewModel.declineRequest(req.id) },
                 onDelete = { viewModel.deleteRequest(req.id) },
                 onDismiss = { viewModel.dismissManagementDialog() },

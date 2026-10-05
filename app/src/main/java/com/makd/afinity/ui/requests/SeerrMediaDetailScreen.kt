@@ -212,6 +212,14 @@ private fun SeerrRequestActionButton(
                 (status == MediaStatus.PENDING ||
                     status == MediaStatus.PROCESSING ||
                     status == MediaStatus.AVAILABLE))
+    val canRequest =
+        currentUser?.let { user ->
+            user.hasPermission(Permissions.REQUEST) ||
+                user.hasPermission(
+                    if (mediaType == MediaType.MOVIE) Permissions.REQUEST_MOVIE
+                    else Permissions.REQUEST_TV
+                )
+        } ?: true
     val fourKEnabled =
         requestsUiState.publicSettings?.let {
             if (mediaType == MediaType.MOVIE) it.movie4kEnabled else it.series4kEnabled
@@ -254,6 +262,7 @@ private fun SeerrRequestActionButton(
             mappedType = mappedType,
             onItemClick = onItemClick,
             onRequest = { openRequestDialog(false) },
+            requestEnabled = canRequest,
         )
         if (showRequest4k) {
             OutlinedButton(
@@ -284,6 +293,7 @@ private fun SeerrPrimaryActionButton(
     mappedType: String,
     onItemClick: (String, String?) -> Unit,
     onRequest: () -> Unit,
+    requestEnabled: Boolean = true,
 ) {
     when {
         status == MediaStatus.AVAILABLE && jellyfinId != null -> {
@@ -318,6 +328,7 @@ private fun SeerrPrimaryActionButton(
         else -> {
             Button(
                 onClick = onRequest,
+                enabled = requestEnabled,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
             ) {
                 Row(
@@ -349,7 +360,7 @@ private fun SeerrDetailSections(
 
     val handleMediaItemClick: (SearchResultItem) -> Unit = { item ->
         if (item.mediaInfo?.isFullyAvailable() == true) {
-            item.mediaInfo?.getJellyfinItemId()?.let { id ->
+            item.mediaInfo.getJellyfinItemId()?.let { id ->
                 onItemClick(id, if (item.mediaType.lowercase() == "tv") "Series" else "Movie")
             } ?: onNavigateToSeerrMedia(item)
         } else {
@@ -481,6 +492,7 @@ private fun SeerrRequestDialogHost(requestsViewModel: RequestsViewModel) {
             mediaPosterUrl = pending.posterUrl,
             mediaType = pending.mediaType,
             availableSeasons = pending.availableSeasons,
+            seasonNumbers = pending.seasonNumbers,
             selectedSeasons = uiState.selectedSeasons,
             onSeasonsChange = { requestsViewModel.setSelectedSeasons(it) },
             disabledSeasons = uiState.disabledSeasons,

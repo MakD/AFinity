@@ -142,6 +142,8 @@ interface JellyseerrRepository {
 
     suspend fun approveRequest(requestId: Int): Result<JellyseerrRequest>
 
+    suspend fun retryRequest(requestId: Int): Result<JellyseerrRequest>
+
     suspend fun updateRequest(
         requestId: Int,
         mediaId: Int,

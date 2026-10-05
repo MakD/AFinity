@@ -190,8 +190,12 @@ fun FilteredMediaScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    items(count = uiState.items.size, key = { index -> uiState.items[index].id }) {
-                        index ->
+                    items(
+                        count = uiState.items.size,
+                        key = { index ->
+                            uiState.items[index].let { "${it.mediaType}_${it.id}" }
+                        },
+                    ) { index ->
                         val item = uiState.items[index]
 
                         if (

@@ -1787,6 +1787,7 @@
     <string name="season_all_seasons">All Seasons</string>
     <string name="season_all_remaining_seasons">All Remaining Seasons</string>
     <string name="season_n_fmt">Season %1$d</string>
+    <string name="season_specials">Specials</string>
 
     <!--Home Screen-->
     <string name="home_downloaded_audiobooks">Downloaded Audiobooks</string>

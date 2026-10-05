@@ -29,6 +29,7 @@ import java.io.File
 import java.io.IOException
 import java.net.Inet4Address
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
@@ -433,6 +434,7 @@ object NetworkModule {
                 .readTimeout(10, TimeUnit.SECONDS)
                 .callTimeout(15, TimeUnit.SECONDS)
                 .build()
+        val csrfNotRequiredHosts = ConcurrentHashMap.newKeySet<String>()
 
         return baseOkHttpClient
             .newBuilder()
@@ -468,24 +470,23 @@ object NetworkModule {
 
                 val isMutating = originalRequest.method in listOf("POST", "PUT", "DELETE", "PATCH")
 
-                if (isMutating && !seerrCookieJar.hasXsrfToken(baseHttpUrl.host)) {
-                    val candidates = listOf(currentBaseUrl)
-                    for (url in candidates) {
-                        try {
-                            csrfSeedClient
-                                .newCall(Request.Builder().url(url).get().build())
-                                .execute()
-                                .close()
-                            if (seerrCookieJar.hasXsrfToken(baseHttpUrl.host)) {
-                                if (url != currentBaseUrl)
-                                    securePreferencesRepository.updateCachedJellyseerrServerUrl(
-                                        url.trimEnd('/')
-                                    )
-                                break
-                            }
-                        } catch (e: Exception) {
-                            Timber.w(e, "Jellyseerr: CSRF seed failed for $url")
+                if (
+                    isMutating &&
+                        !seerrCookieJar.hasXsrfToken(baseHttpUrl.host) &&
+                        baseHttpUrl.host !in csrfNotRequiredHosts
+                ) {
+                    val seedUrl =
+                        baseHttpUrl.newBuilder().addPathSegments("api/v1/settings/public").build()
+                    try {
+                        csrfSeedClient
+                            .newCall(Request.Builder().url(seedUrl).get().build())
+                            .execute()
+                            .close()
+                        if (!seerrCookieJar.hasXsrfToken(baseHttpUrl.host)) {
+                            csrfNotRequiredHosts.add(baseHttpUrl.host)
                         }
+                    } catch (e: Exception) {
+                        Timber.w(e, "Jellyseerr: CSRF seed failed for $currentBaseUrl")
                     }
                 }
 
@@ -506,6 +507,7 @@ object NetworkModule {
 
                 if (response.code == 403) {
                     seerrCookieJar.clear(baseHttpUrl.host)
+                    if (isMutating) csrfNotRequiredHosts.remove(baseHttpUrl.host)
                 }
 
                 response

@@ -168,8 +168,10 @@ fun DiscoverSection(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            items(items = items, key = { item -> "${title.replace(" ", "_")}_${item.id}" }) { item
-                ->
+            items(
+                items = items,
+                key = { item -> "${title.replace(" ", "_")}_${item.mediaType}_${item.id}" },
+            ) { item ->
                 DiscoverMediaCard(
                     item = item,
                     onClick = { onItemClick(item) },

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -28,8 +29,9 @@ fun SeasonSelector(
     onSeasonsChange: (List<Int>) -> Unit,
     modifier: Modifier = Modifier,
     disabledSeasons: List<Int> = emptyList(),
+    seasonNumbers: List<Int> = (1..availableSeasons).toList(),
 ) {
-    val selectableSeasons = (1..availableSeasons).filter { it !in disabledSeasons }
+    val selectableSeasons = seasonNumbers.filter { it !in disabledSeasons }
     val allSelectableSelected = selectableSeasons.all { it in selectedSeasons }
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -81,13 +83,12 @@ fun SeasonSelector(
             }
         }
 
-        if (availableSeasons > 0) {
+        if (seasonNumbers.isNotEmpty()) {
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                items(availableSeasons, key = { it }) { index ->
-                    val seasonNumber = index + 1
+                items(seasonNumbers, key = { it }) { seasonNumber ->
                     val isDisabled = seasonNumber in disabledSeasons
 
                     FilterChip(
@@ -109,7 +110,10 @@ fun SeasonSelector(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
-                                Text(stringResource(R.string.season_n_fmt, seasonNumber))
+                                Text(
+                                    if (seasonNumber == 0) stringResource(R.string.season_specials)
+                                    else stringResource(R.string.season_n_fmt, seasonNumber)
+                                )
 
                                 if (isDisabled) {
                                     Icon(

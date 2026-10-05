@@ -15,7 +15,7 @@ data class MediaDetails(
     @SerialName("posterPath") val posterPath: String? = null,
     @SerialName("backdropPath") val backdropPath: String? = null,
     @SerialName("releaseDate") val releaseDate: String? = null,
-    @SerialName("numberOfSeason") val numberOfSeason: Int? = null,
+    @SerialName("numberOfSeasons") val numberOfSeason: Int? = null,
     @SerialName("numberOfEpisodes") val numberOfEpisodes: Int? = null,
     @SerialName("seasons") val seasons: List<Season>? = null,
     @SerialName("firstAirDate") val firstAirDate: String? = null,
@@ -52,6 +52,15 @@ data class MediaDetails(
     fun getSeasonCount(): Int {
         return seasons?.filter { (it.seasonNumber ?: 0) > 0 }?.size ?: numberOfSeason ?: 0
     }
+
+    fun requestableSeasonNumbers(includeSpecials: Boolean): List<Int> =
+        seasons
+            .orEmpty()
+            .filter { it.episodeCount != 0 }
+            .mapNotNull { it.seasonNumber }
+            .filter { it > 0 || (includeSpecials && it == 0) }
+            .distinct()
+            .sorted()
 
     fun getPosterUrl(baseUrl: String = "https://image.tmdb.org/t/p/w500"): String? {
         return posterPath?.let { "$baseUrl$it" }

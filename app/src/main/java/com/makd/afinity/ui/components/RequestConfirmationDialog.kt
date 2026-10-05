@@ -141,6 +141,8 @@ fun RequestConfirmationDialog(
     onRootFolderSelected: (String) -> Unit = {},
     is4kLaneBlocked: Boolean = false,
     errorMessage: String? = null,
+    seasonNumbers: List<Int> = (1..availableSeasons).toList(),
+    onRetry: () -> Unit = {},
 ) {
     val alreadyRequested =
         !isManagementMode &&
@@ -155,8 +157,8 @@ fun RequestConfirmationDialog(
     val overQuota =
         quotaActive &&
             when (mediaType) {
-                MediaType.MOVIE -> (quota!!.remaining ?: 0) <= 0
-                MediaType.TV -> selectedSeasons.size > (quota!!.remaining ?: 0)
+                MediaType.MOVIE -> (quota.remaining ?: 0) <= 0
+                MediaType.TV -> selectedSeasons.size > (quota.remaining ?: 0)
             }
 
     val headerImageUrl = mediaBackdropUrl?.takeIf { it.isNotBlank() } ?: mediaPosterUrl
@@ -615,7 +617,7 @@ fun RequestConfirmationDialog(
                         if (quotaActive) {
                             QuotaIndicator(
                                 mediaType = mediaType,
-                                quota = quota!!,
+                                quota = quota,
                                 selectedSeasonCount = selectedSeasons.size,
                                 overQuota = overQuota,
                             )
@@ -639,6 +641,7 @@ fun RequestConfirmationDialog(
                                     selectedSeasons = selectedSeasons,
                                     onSeasonsChange = onSeasonsChange,
                                     disabledSeasons = disabledSeasons,
+                                    seasonNumbers = seasonNumbers,
                                 )
                             } else {
                                 Text(
@@ -813,6 +816,16 @@ fun RequestConfirmationDialog(
                             else Text(stringResource(R.string.request_approve))
                         }
                     }
+                } else if (requestStatus == RequestStatus.FAILED) {
+                    Button(onClick = onRetry, enabled = !isLoading) {
+                        if (isLoading)
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        else Text(stringResource(R.string.action_retry))
+                    }
                 }
             } else {
                 Button(
@@ -824,7 +837,7 @@ fun RequestConfirmationDialog(
                             !(mediaType == MediaType.TV && detailsLoading) &&
                             (mediaType == MediaType.MOVIE ||
                                 selectedSeasons.isNotEmpty() ||
-                                availableSeasons == 0),
+                                seasonNumbers.isEmpty()),
                 ) {
                     if (isLoading)
                         CircularProgressIndicator(

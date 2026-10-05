@@ -1834,9 +1834,15 @@ constructor(
         onError: (String) -> Unit,
     ) {
         viewModelScope.launch {
-            val item = uiState.value.item
-            val tmdbId = item?.providerIds?.get("Tmdb")?.toIntOrNull()
-            val isMovie = item is AfinityMovie
+            val target = uiState.value.item?.takeIf { it.id == targetItemId }
+            val isMovie =
+                when (target) {
+                    is AfinityMovie -> true
+                    is AfinityShow -> false
+                    else -> null
+                }
+            val tmdbId =
+                if (isMovie != null) target?.providerIds?.get("Tmdb")?.toIntOrNull() else null
             val result = adminRepository.deleteItem(targetItemId.toString(), tmdbId, isMovie)
             if (result.isSuccess) {
                 onSuccess()

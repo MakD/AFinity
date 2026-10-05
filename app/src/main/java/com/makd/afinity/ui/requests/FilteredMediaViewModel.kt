@@ -52,7 +52,10 @@ constructor(
                     state.copy(
                         items =
                             state.items.map { item ->
-                                if (item.id == updatedRequest.media.tmdbId) {
+                                if (
+                                    item.id == updatedRequest.media.tmdbId &&
+                                        item.mediaType == updatedRequest.media.mediaType
+                                ) {
                                     item.copy(mediaInfo = updatedRequest.media)
                                 } else {
                                     item
@@ -144,7 +147,16 @@ constructor(
             return
         }
 
-        val (sortBy, options) = persisted
+        val (sortBy, persistedOptions) = persisted
+        val isUpcoming =
+            params.type == FilterType.UPCOMING_MOVIES || params.type == FilterType.UPCOMING_TV
+        val options =
+            if (isUpcoming) {
+                val today = java.time.LocalDate.now().toString()
+                persistedOptions.copy(
+                    releaseDateGte = listOfNotNull(persistedOptions.releaseDateGte, today).max()
+                )
+            } else persistedOptions
         val separatorIndex = sortBy.lastIndexOf('.')
         val apiKey = if (separatorIndex < 0) sortBy else sortBy.substring(0, separatorIndex)
         val descending = separatorIndex < 0 || sortBy.substring(separatorIndex + 1) != "asc"
@@ -362,7 +374,8 @@ constructor(
                 result.fold(
                     onSuccess = { searchResult ->
                         val rawItems = searchResult.results
-                        val hasReachedEnd = rawItems.isEmpty() || rawItems.size < 20
+                        val hasReachedEnd =
+                            rawItems.isEmpty() || currentPage >= searchResult.totalPages
 
                         val hideAvailable =
                             params.type != FilterType.PERSON &&
@@ -377,7 +390,7 @@ constructor(
                         _uiState.update { state ->
                             val combinedList =
                                 if (currentPage == 1) newItems else state.items + newItems
-                            val uniqueList = combinedList.distinctBy { it.id }
+                            val uniqueList = combinedList.distinctBy { it.mediaType to it.id }
 
                             state.copy(
                                 items = uniqueList,

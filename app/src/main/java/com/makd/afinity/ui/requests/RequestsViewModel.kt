@@ -215,10 +215,13 @@ constructor(
     }
 
     private fun refreshUserQuota() {
-        val userId = _currentUser.value?.id ?: return
+        val userId = _uiState.value.selectedRequestUser?.id ?: _currentUser.value?.id ?: return
         viewModelScope.launch {
             jellyseerrRepository.getUserQuota(userId).onSuccess { quota ->
-                _uiState.update { it.copy(userQuota = quota) }
+                _uiState.update {
+                    val activeUserId = it.selectedRequestUser?.id ?: _currentUser.value?.id
+                    if (activeUserId == userId) it.copy(userQuota = quota) else it
+                }
             }
         }
     }
@@ -261,6 +264,7 @@ constructor(
 
     fun selectRequestUser(user: JellyseerrUser) {
         _uiState.update { it.copy(selectedRequestUser = user) }
+        refreshUserQuota()
     }
 
     fun selectTvdbCandidate(candidate: SonarrSeries) {
@@ -291,7 +295,10 @@ constructor(
                     updatedRequest.media.copy(requests = listOfNotNull(updatedRequest))
 
                 val updateItemStatus: (SearchResultItem) -> SearchResultItem = { item ->
-                    if (item.id == updatedRequest.media.tmdbId) {
+                    if (
+                        item.id == updatedRequest.media.tmdbId &&
+                            item.mediaType == updatedRequest.media.mediaType
+                    ) {
                         item.copy(mediaInfo = updatedMediaInfo)
                     } else {
                         item
@@ -517,6 +524,32 @@ constructor(
                     it.copy(isProcessingRequest = false, error = e.message ?: "Unknown error")
                 }
             }
+        }
+    }
+
+    fun retryRequest(requestId: Int) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isProcessingRequest = true, requestDialogError = null) }
+            jellyseerrRepository
+                .retryRequest(requestId)
+                .fold(
+                    onSuccess = {
+                        dismissManagementDialog()
+                        loadRequests()
+                    },
+                    onFailure = { error ->
+                        _uiState.update {
+                            it.copy(
+                                isProcessingRequest = false,
+                                requestDialogError =
+                                    context.getString(
+                                        R.string.error_request_update_failed_fmt,
+                                        error.message.orEmpty(),
+                                    ),
+                            )
+                        }
+                    },
+                )
         }
     }
 
@@ -762,9 +795,7 @@ constructor(
                 disabledSeasons = if (switchSeasons) laneDisabled else it.disabledSeasons,
                 selectedSeasons =
                     if (switchSeasons) {
-                        (1..(pending?.availableSeasons ?: 0)).filter { season ->
-                            season !in laneDisabled
-                        }
+                        pending.seasonNumbers.filter { season -> season !in laneDisabled }
                     } else {
                         it.selectedSeasons
                     },
@@ -1262,13 +1293,22 @@ constructor(
 
             detailsResult.fold(
                 onSuccess = { details ->
-                    val seasonCount = if (mediaType == MediaType.TV) details.getSeasonCount() else 0
+                    val seasonNumbers =
+                        if (mediaType == MediaType.TV) {
+                            details.requestableSeasonNumbers(
+                                includeSpecials =
+                                    _uiState.value.publicSettings?.enableSpecialEpisodes == true
+                            )
+                        } else {
+                            emptyList()
+                        }
+                    val seasonCount = seasonNumbers.size
                     val mediaInfo = details.mediaInfo
                     val disabledHd = mediaInfo?.blockedSeasons(is4k = false).orEmpty()
                     val disabled4k = mediaInfo?.blockedSeasons(is4k = true).orEmpty()
                     val fourKLaneBlocked =
                         if (mediaType == MediaType.TV) {
-                            seasonCount > 0 && (1..seasonCount).all { it in disabled4k }
+                            seasonNumbers.isNotEmpty() && seasonNumbers.all { it in disabled4k }
                         } else {
                             mediaInfo?.canRequestLane(is4k = true) == false
                         }
@@ -1277,12 +1317,7 @@ constructor(
                         if (!isStillCurrent(state)) state
                         else {
                             val laneDisabled = if (state.is4kRequested) disabled4k else disabledHd
-                            val selectableSeasons =
-                                if (mediaType == MediaType.TV) {
-                                    (1..seasonCount).filter { it !in laneDisabled }
-                                } else {
-                                    emptyList()
-                                }
+                            val selectableSeasons = seasonNumbers.filter { it !in laneDisabled }
                             state.copy(
                                 isFetchingTvDetails = false,
                                 pendingRequest =
@@ -1305,6 +1340,7 @@ constructor(
                                         details.getDirector(),
                                         details.getGenreNames(),
                                         details.ratingsCombined,
+                                        seasonNumbers,
                                     ),
                                 selectedSeasons = selectableSeasons,
                                 disabledSeasons = laneDisabled,
@@ -1519,6 +1555,7 @@ data class PendingRequest(
     val director: String? = null,
     val genres: List<String> = emptyList(),
     val ratingsCombined: RatingsCombined? = null,
+    val seasonNumbers: List<Int> = emptyList(),
 )
 
 sealed class DiscoverSectionContent {

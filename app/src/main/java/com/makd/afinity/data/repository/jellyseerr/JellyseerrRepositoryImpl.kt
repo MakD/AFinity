@@ -126,6 +126,7 @@ constructor(
 
     companion object {
         private const val CACHE_VALIDITY_MS = 5 * 60 * 1000L
+        private const val MAX_REQUESTS = 1000
     }
 
     private fun seerrErrorMessage(response: Response<*>): String {
@@ -218,7 +219,7 @@ constructor(
                 okhttp3.Request.Builder().url("$baseUrl/api/v1/settings/public").get().build()
             identityClient().newCall(request).execute().use { response ->
                 if (!response.isSuccessful) return null
-                val body = response.body?.string() ?: return null
+                val body = response.body.string()
                 publicSettingsJson.decodeFromString<PublicSettings>(body)
             }
         } catch (e: CancellationException) {
@@ -291,7 +292,7 @@ constructor(
                         return@use AddressCheck.DIFFERENT_SERVER
                     }
                     if (!response.isSuccessful) return@use AddressCheck.INDETERMINATE
-                    val body = response.body?.string() ?: return@use AddressCheck.INDETERMINATE
+                    val body = response.body.string()
                     val id =
                         Json.parseToJsonElement(body).jsonObject["id"]?.jsonPrimitive?.intOrNull
                     when (id) {
@@ -626,10 +627,14 @@ constructor(
                 if (!networkConnectivityMonitor.isCurrentlyConnected()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
+                val requestContext = activeContext
                 val response = apiService.get().getCurrentUser()
                 if (response.isSuccessful && response.body() != null)
                     Result.success(response.body()!!)
-                else Result.failure(Exception("Failed to get current user: ${response.message()}"))
+                else {
+                    if (isSeerrAuthRejection(response)) handleSessionExpired(requestContext)
+                    Result.failure(Exception("Failed to get current user: ${response.message()}"))
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -637,6 +642,27 @@ constructor(
                 Result.failure(e)
             }
         }
+    }
+
+    private fun isSeerrAuthRejection(response: Response<*>): Boolean {
+        if (response.code() != 401 && response.code() != 403) return false
+        val raw = runCatching { response.errorBody()?.string() }.getOrNull() ?: return false
+        return runCatching {
+                val body = seerrJson.parseToJsonElement(raw).jsonObject
+                "error" in body || "message" in body
+            }
+            .getOrDefault(false)
+    }
+
+    private suspend fun handleSessionExpired(requestContext: Pair<String, UUID>?) {
+        val (serverId, userId) = requestContext ?: return
+        if (activeContext != requestContext || !_isAuthenticated.value) return
+        Timber.w("Jellyseerr session rejected by the server, signing out locally")
+        jellyseerrDao.getConfig(serverId, userId.toString())?.let { config ->
+            jellyseerrDao.saveConfig(config.copy(isLoggedIn = false))
+        }
+        seerrCookieJar.clearAll()
+        _isAuthenticated.value = false
     }
 
     override suspend fun isLoggedIn(): Boolean = _isAuthenticated.value
@@ -863,7 +889,22 @@ constructor(
                         val response = apiService.get().getRequests(take, skip, filter)
                         if (response.isSuccessful && response.body() != null) {
                             val body = response.body()!!
-                            val baseRequests = body.results
+                            val totalResults = body.pageInfo.results
+                            val fetched = body.results.toMutableList()
+                            if (skip == 0 && filter == null) {
+                                while (fetched.size < totalResults && fetched.size < MAX_REQUESTS) {
+                                    val nextPage =
+                                        apiService
+                                            .get()
+                                            .getRequests(take, fetched.size, filter)
+                                            .takeIf { it.isSuccessful }
+                                            ?.body()
+                                            ?.results
+                                    if (nextPage.isNullOrEmpty()) break
+                                    fetched += nextPage
+                                }
+                            }
+                            val baseRequests = fetched.distinctBy { it.id }
 
                             val existingById =
                                 jellyseerrDao
@@ -902,11 +943,7 @@ constructor(
 
                             jellyseerrDao.insertRequests(mergedEntities)
 
-                            if (
-                                skip == 0 &&
-                                    filter == null &&
-                                    baseRequests.size >= body.pageInfo.results
-                            ) {
+                            if (skip == 0 && filter == null && fetched.size >= totalResults) {
                                 val fetchedIds = mergedEntities.map { it.id }.toSet()
                                 existingById.keys
                                     .filterNot { it in fetchedIds }
@@ -1055,6 +1092,7 @@ constructor(
                 var targetMediaId: Int? = null
 
                 val cleanJellyfinId = jellyfinItemId.replace("-", "").lowercase(Locale.ROOT)
+                val mediaType = isMovie?.let { if (it) "movie" else "tv" }
 
                 // 1. Check cached requests in DB
                 try {
@@ -1063,7 +1101,12 @@ constructor(
                             .getAllRequests(currentServerId, currentUserId.toString())
                             .first()
                     cachedRequests.forEach { reqEntity ->
-                        if (tmdbId != null && reqEntity.tmdbId == tmdbId) {
+                        if (
+                            tmdbId != null &&
+                                mediaType != null &&
+                                reqEntity.tmdbId == tmdbId &&
+                                reqEntity.mediaType == mediaType
+                        ) {
                             requestsToDelete.add(reqEntity.id)
                         }
                     }
@@ -1087,7 +1130,10 @@ constructor(
                             if (
                                 cleanJellyfinId == jId ||
                                     cleanJellyfinId == jId4k ||
-                                    (tmdbId != null && req.media.tmdbId == tmdbId)
+                                    (tmdbId != null &&
+                                        mediaType != null &&
+                                        req.media.tmdbId == tmdbId &&
+                                        req.media.mediaType == mediaType)
                             ) {
                                 requestsToDelete.add(req.id)
                                 if (req.media.id > 0) {
@@ -1123,6 +1169,10 @@ constructor(
                     }
                 }
 
+                if (requestsToDelete.isEmpty() && targetMediaId == null) {
+                    return@withContext Result.success(Unit)
+                }
+
                 // 4. Delete requests in Jellyseerr server and local DB
                 requestsToDelete.forEach { requestId ->
                     try {
@@ -1153,21 +1203,7 @@ constructor(
                     }
                 }
 
-                // 6. Trigger clear data / cache flush in Jellyseerr server
-                try {
-                    api.flushCache()
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to flush cache in Jellyseerr")
-                }
-                try {
-                    api.runJob("clear-data")
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to run clear-data job in Jellyseerr")
-                }
+                // 6. Trigger availability sync in Jellyseerr server
                 try {
                     api.runJob("availability-sync")
                 } catch (e: CancellationException) {
@@ -1177,7 +1213,7 @@ constructor(
                 }
 
                 // 7. Refresh requests
-                getRequests(take = 50, skip = 0)
+                getRequests()
 
                 Result.success(Unit)
             } catch (e: CancellationException) {
@@ -1189,10 +1225,19 @@ constructor(
         }
     }
 
-    override suspend fun approveRequest(requestId: Int): Result<JellyseerrRequest> {
+    override suspend fun approveRequest(requestId: Int): Result<JellyseerrRequest> =
+        approveOrRetry(requestId) { api -> api.approveRequest(requestId) }
+
+    override suspend fun retryRequest(requestId: Int): Result<JellyseerrRequest> =
+        approveOrRetry(requestId) { api -> api.retryRequest(requestId) }
+
+    private suspend fun approveOrRetry(
+        requestId: Int,
+        call: suspend (JellyseerrApiService) -> Response<JellyseerrRequest>,
+    ): Result<JellyseerrRequest> {
         return withContext(Dispatchers.IO) {
             try {
-                val response = apiService.get().approveRequest(requestId)
+                val response = call(apiService.get())
 
                 if (response.isSuccessful && response.body() != null) {
                     var req = response.body()!!
@@ -1283,9 +1328,21 @@ constructor(
                     )
 
                 val response = apiService.get().updateRequest(requestId, requestBody)
+                val responseBody = response.body()
 
-                if (response.isSuccessful && response.body() != null) {
-                    var updatedRequest = response.body()!!
+                if (response.isSuccessful && responseBody != null) {
+                    if (!responseBody.containsKey("id")) {
+                        val message =
+                            responseBody["message"]?.jsonPrimitive?.contentOrNull
+                                ?: "HTTP ${response.code()}"
+                        Timber.w("Seerr accepted the update without applying it: $message")
+                        return@withContext Result.failure(Exception(message))
+                    }
+                    var updatedRequest =
+                        seerrJson.decodeFromJsonElement(
+                            JellyseerrRequest.serializer(),
+                            responseBody,
+                        )
                     val existingEntity =
                         jellyseerrDao
                             .getAllRequests(currentServerId, currentUserId.toString())
@@ -1543,7 +1600,7 @@ constructor(
                                 watchProviders
                                     ?: filterOptions.watchProviderIds
                                         .takeIf { it.isNotEmpty() }
-                                        ?.joinToString(","),
+                                        ?.joinToString("|"),
                             primaryReleaseDateGte = filterOptions.releaseDateGte,
                             primaryReleaseDateLte = filterOptions.releaseDateLte,
                             withRuntimeGte = filterOptions.runtimeGte,
@@ -1610,7 +1667,7 @@ constructor(
                                 watchProviders
                                     ?: filterOptions.watchProviderIds
                                         .takeIf { it.isNotEmpty() }
-                                        ?.joinToString(","),
+                                        ?.joinToString("|"),
                             firstAirDateGte = filterOptions.releaseDateGte,
                             firstAirDateLte = filterOptions.releaseDateLte,
                             withRuntimeGte = filterOptions.runtimeGte,
@@ -1622,7 +1679,7 @@ constructor(
                             status =
                                 filterOptions.tvStatus
                                     .takeIf { it.isNotEmpty() }
-                                    ?.joinToString(","),
+                                    ?.joinToString("|"),
                             certificationCountry =
                                 if (filterOptions.certification.isNotEmpty()) "US" else null,
                             certification =
