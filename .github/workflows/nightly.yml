@@ -21,21 +21,33 @@ jobs:
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             echo "Manual trigger — skipping commit check"
             echo "should_build=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          PATHS="app/src/ app/build.gradle.kts gradle/ build.gradle.kts settings.gradle.kts"
+
+          RELEASE_TAG=$(git describe --tags --match 'v*' --abbrev=0 HEAD 2>/dev/null || true)
+          if [ -n "$RELEASE_TAG" ]; then
+            SINCE_RELEASE=$(git rev-list --count "${RELEASE_TAG}..HEAD" -- $PATHS)
+            echo "Relevant commits since release ${RELEASE_TAG}: $SINCE_RELEASE"
           else
-            CHANGED=$(git log --since="24 hours ago" --oneline -- \
-              app/src/ \
-              app/build.gradle.kts \
-              gradle/ \
-              build.gradle.kts \
-              settings.gradle.kts \
-              | wc -l)
-            echo "Relevant commits in last 24h: $CHANGED"
-            if [ "$CHANGED" -gt 0 ]; then
-              echo "should_build=true" >> $GITHUB_OUTPUT
-            else
-              echo "No relevant commits. Skipping nightly build."
-              echo "should_build=false" >> $GITHUB_OUTPUT
-            fi
+            SINCE_RELEASE=1
+            echo "No release tag found in history"
+          fi
+
+          if git rev-parse -q --verify refs/tags/nightly > /dev/null; then
+            SINCE_NIGHTLY=$(git rev-list --count "refs/tags/nightly..HEAD" -- $PATHS)
+            echo "Relevant commits since last nightly: $SINCE_NIGHTLY"
+          else
+            SINCE_NIGHTLY=1
+            echo "No nightly tag found"
+          fi
+
+          if [ "$SINCE_RELEASE" -gt 0 ] && [ "$SINCE_NIGHTLY" -gt 0 ]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          else
+            echo "Nothing new since the latest release or the last nightly. Skipping nightly build."
+            echo "should_build=false" >> $GITHUB_OUTPUT
           fi
 
   build:
