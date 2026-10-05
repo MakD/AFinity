@@ -776,7 +776,12 @@ constructor(
             val libraries = _libraries.value
             if (libraries.isNotEmpty()) {
                 Timber.d("Reloading home data...")
+                val baseUrlAtStart = serverRepository.currentBaseUrl.value
                 val (latestMovies, latestTvSeries) = loadHomeSpecificData(libraries)
+                if (serverRepository.currentBaseUrl.value != baseUrlAtStart) {
+                    Timber.d("Server base URL changed during home reload, discarding result")
+                    return
+                }
                 _latestMovies.value = latestMovies
                 _latestTvSeries.value = latestTvSeries
                 Timber.d("Home data reloaded successfully")
