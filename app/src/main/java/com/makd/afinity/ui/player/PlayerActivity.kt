@@ -228,12 +228,15 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         val state = viewModel.uiState.value
-        // Only full keyboards get shortcuts: remotes, gamepads and D-pads keep plain focus
-        // navigation. viewModel.player is unset until isPlayerReady; while casting, the cast
-        // controller owns playback, the controls lock must block keyboard input like it blocks
-        // gestures, and an open in-window panel needs the keys for its own focus navigation.
+        // Only physical full keyboards get shortcuts: remotes, gamepads and D-pads keep plain
+        // focus navigation (HDMI-CEC remote keys arrive via the virtual alphabetic keyboard).
+        // viewModel.player is unset until isPlayerReady; while casting, the cast controller owns
+        // playback, the controls lock must block keyboard input like it blocks gestures, and an
+        // open in-window panel needs the keys for its own focus navigation.
         if (
             event.device?.keyboardType != InputDevice.KEYBOARD_TYPE_ALPHABETIC ||
+                event.device?.isVirtual != false ||
+                event.isFromSource(InputDevice.SOURCE_HDMI) ||
                 !state.isPlayerReady ||
                 state.currentItem == null ||
                 viewModel.isOverlayPanelOpen ||
@@ -241,7 +244,8 @@ class PlayerActivity : AppCompatActivity() {
                 viewModel.castManager.castState.value.isConnected ||
                 state.isControlsLocked ||
                 event.isCtrlPressed ||
-                event.isAltPressed ||
+                // Right Alt is AltGr, which some layouts need to type < and >.
+                (event.metaState and KeyEvent.META_ALT_LEFT_ON) != 0 ||
                 event.isMetaPressed
         ) {
             return super.dispatchKeyEvent(event)
