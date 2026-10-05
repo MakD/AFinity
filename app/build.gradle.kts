@@ -232,7 +232,6 @@ dependencies {
     implementation(libs.coil.svg)
     implementation(libs.commonmark)
     implementation(libs.commonmark.ext.autolink)
-    implementation(libs.compose.pager.indicator)
     implementation(libs.hilt.android)
     implementation(libs.jellyfin.core)
     implementation(libs.kotlin.logging)

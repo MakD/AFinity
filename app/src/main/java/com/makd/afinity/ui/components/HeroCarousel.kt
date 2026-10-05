@@ -32,7 +32,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -73,8 +72,6 @@ import com.makd.afinity.navigation.LocalSkipServerImageResize
 import com.makd.afinity.ui.utils.bottomOverlap
 import java.util.Locale
 import kotlinx.coroutines.delay
-import mx.platacard.pagerindicator.PagerIndicatorOrientation
-import mx.platacard.pagerindicator.PagerWormIndicator
 import timber.log.Timber
 
 private val HeroMaxHeight = 560.dp
@@ -307,16 +304,16 @@ private fun HeroBackdrop(
 }
 
 @Composable
-private fun rememberHeroPageFraction(pagerState: PagerState, size: Int): State<Float> = remember {
-    derivedStateOf {
-        val currentPage = pagerState.currentPage % size
-        val pageOffset = pagerState.currentPageOffsetFraction
-        when {
-            pageOffset > 0.5f && currentPage == size - 1 -> 0f
-            pageOffset < -0.5f && currentPage == 0 -> (size - 1).toFloat()
-            else -> (currentPage + pageOffset).coerceIn(0f, (size - 1).toFloat())
-        }
-    }
+private fun HeroPagerIndicator(pagerState: PagerState, size: Int, modifier: Modifier = Modifier) {
+    WormPagerIndicator(
+        pageCount = size,
+        pageFractionProvider = {
+            pagerState.currentPage % size + pagerState.currentPageOffsetFraction
+        },
+        activeColor = MaterialTheme.colorScheme.primary,
+        inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -463,25 +460,16 @@ private fun BoxScope.HeroContentCentered(
     }
 
     if (items.size > 1) {
-        val currentPageFractionState = rememberHeroPageFraction(pagerState, items.size)
-
-        PagerWormIndicator(
-            pageCount = items.size,
-            currentPageFraction = currentPageFractionState,
-            activeDotColor = MaterialTheme.colorScheme.primary,
-            dotColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+        HeroPagerIndicator(
+            pagerState = pagerState,
+            size = items.size,
             modifier = Modifier.align(Alignment.BottomCenter).padding(40.dp),
-            dotCount = 5,
-            activeDotSize = 8.dp,
-            minDotSize = 4.dp,
-            space = 5.dp,
-            orientation = PagerIndicatorOrientation.Horizontal,
         )
     }
 }
 
 @Composable
-private fun BoxScope.HeroContentRich(
+private fun HeroContentRich(
     currentItem: AfinityItem,
     items: List<AfinityItem>,
     pagerState: PagerState,
@@ -628,19 +616,7 @@ private fun BoxScope.HeroContentRich(
                 }
 
                 if (items.size > 1) {
-                    val currentPageFractionState = rememberHeroPageFraction(pagerState, items.size)
-
-                    PagerWormIndicator(
-                        pageCount = items.size,
-                        currentPageFraction = currentPageFractionState,
-                        activeDotColor = MaterialTheme.colorScheme.primary,
-                        dotColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                        dotCount = 5,
-                        activeDotSize = 8.dp,
-                        minDotSize = 4.dp,
-                        space = 5.dp,
-                        orientation = PagerIndicatorOrientation.Horizontal,
-                    )
+                    HeroPagerIndicator(pagerState = pagerState, size = items.size)
                 }
             }
         }
