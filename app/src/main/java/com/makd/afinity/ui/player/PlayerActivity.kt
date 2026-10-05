@@ -223,6 +223,7 @@ class PlayerActivity : AppCompatActivity() {
         if (
             !state.isPlayerReady ||
                 state.isCasting ||
+                viewModel.castManager.castState.value.isConnected ||
                 state.isControlsLocked ||
                 event.isCtrlPressed ||
                 event.isAltPressed ||
@@ -248,20 +249,24 @@ class PlayerActivity : AppCompatActivity() {
         val player = viewModel.player
         val shift = event.isShiftPressed
         val canSeek = !state.isLiveChannel && !state.isPlayingIntro
+        // Seek keys are swallowed rather than passed on when seeking is off, so they don't
+        // silently turn into focus navigation on live TV or intros.
+        val noOp: () -> Unit = {}
         val playlist = viewModel.playlistState.value
         return when (event.keyCode) {
             KeyEvent.KEYCODE_SPACE,
             KeyEvent.KEYCODE_K -> {
                 {
                     viewModel.handlePlayerEvent(
-                        if (state.isPlaying) PlayerEvent.Pause else PlayerEvent.Play
+                        if (state.isPlaying || state.playWhenReady) PlayerEvent.Pause
+                        else PlayerEvent.Play
                     )
                 }
             }
-            KeyEvent.KEYCODE_J -> if (canSeek) seekBy(-10_000) else null
-            KeyEvent.KEYCODE_L -> if (canSeek) seekBy(10_000) else null
-            KeyEvent.KEYCODE_DPAD_LEFT -> if (canSeek) seekBy(-5_000) else null
-            KeyEvent.KEYCODE_DPAD_RIGHT -> if (canSeek) seekBy(5_000) else null
+            KeyEvent.KEYCODE_J -> if (canSeek) seekBy(-10_000) else noOp
+            KeyEvent.KEYCODE_L -> if (canSeek) seekBy(10_000) else noOp
+            KeyEvent.KEYCODE_DPAD_LEFT -> if (canSeek) seekBy(-5_000) else noOp
+            KeyEvent.KEYCODE_DPAD_RIGHT -> if (canSeek) seekBy(5_000) else noOp
             KeyEvent.KEYCODE_DPAD_UP -> {
                 { setVolumeStep(currentVolumeStep() + 1) }
             }
@@ -281,13 +286,11 @@ class PlayerActivity : AppCompatActivity() {
             }
             in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9,
             in KeyEvent.KEYCODE_NUMPAD_0..KeyEvent.KEYCODE_NUMPAD_9 ->
-                if (
-                    shift ||
-                        !canSeek ||
-                        (event.keyCode >= KeyEvent.KEYCODE_NUMPAD_0 && !event.isNumLockOn)
-                )
+                if (shift || (event.keyCode >= KeyEvent.KEYCODE_NUMPAD_0 && !event.isNumLockOn)) {
                     null
-                else {
+                } else if (!canSeek) {
+                    noOp
+                } else {
                     {
                         val digit =
                             if (event.keyCode <= KeyEvent.KEYCODE_9) {
@@ -301,11 +304,11 @@ class PlayerActivity : AppCompatActivity() {
             KeyEvent.KEYCODE_MOVE_HOME ->
                 if (canSeek) {
                     { seekTo(0) }
-                } else null
+                } else noOp
             KeyEvent.KEYCODE_MOVE_END ->
                 if (canSeek) {
                     { if (player.duration > 0) seekTo(player.duration) }
-                } else null
+                } else noOp
             KeyEvent.KEYCODE_N ->
                 if (shift && canSeek && playlist.hasNext) {
                     { viewModel.onNextEpisode() }
