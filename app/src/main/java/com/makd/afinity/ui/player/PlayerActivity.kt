@@ -68,7 +68,7 @@ class PlayerActivity : AppCompatActivity() {
     private var playerUiHasFocus = false
 
     // Devices that pressed a letter or Space in this player. Some TV remotes report themselves
-    // as full keyboards (and have digit keys), so arrows only become seek/volume shortcuts on a
+    // as full keyboards (and have digit keys), so typingGatedKeys only become shortcuts on a
     // device that has typed.
     private val typingDeviceIds = mutableSetOf<Int>()
 
@@ -79,6 +79,12 @@ class PlayerActivity : AppCompatActivity() {
             KeyEvent.KEYCODE_DPAD_LEFT,
             KeyEvent.KEYCODE_DPAD_RIGHT,
         )
+
+    private val typingGatedKeys =
+        arrowKeys +
+            (KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9) +
+            (KeyEvent.KEYCODE_NUMPAD_0..KeyEvent.KEYCODE_NUMPAD_9) +
+            setOf(KeyEvent.KEYCODE_MOVE_HOME, KeyEvent.KEYCODE_MOVE_END)
 
     private val repeatableVolumeKeys = setOf(KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN)
 
@@ -260,13 +266,14 @@ class PlayerActivity : AppCompatActivity() {
                 event.keyCode == KeyEvent.KEYCODE_SPACE
         ) {
             typingDeviceIds += event.deviceId
-        } else if (event.keyCode in arrowKeys && event.deviceId !in typingDeviceIds) {
+        } else if (event.keyCode in typingGatedKeys && event.deviceId !in typingDeviceIds) {
             return super.dispatchKeyEvent(event)
         }
         val shortcut = keyboardShortcut(event, state) ?: return super.dispatchKeyEvent(event)
         // A focused control (panel list, slider, button) keeps its own key handling; shortcuts
         // only take the keys it leaves unused. Arrows stay with focus navigation even at its edge.
-        if (playerUiHasFocus) {
+        // Space always plays/pauses instead of clicking the focused control.
+        if (playerUiHasFocus && event.keyCode != KeyEvent.KEYCODE_SPACE) {
             if (super.dispatchKeyEvent(event)) return true
             if (event.keyCode in arrowKeys) return false
         }
@@ -302,7 +309,15 @@ class PlayerActivity : AppCompatActivity() {
                             PlayerEvent.Play
                         }
                     )
+                    viewModel.showControls()
                 }
+            }
+            KeyEvent.KEYCODE_ENTER,
+            KeyEvent.KEYCODE_NUMPAD_ENTER -> {
+                val segment = state.currentSegment
+                if (state.showSkipButton && segment != null && !state.sleepTimerExpired) {
+                    { viewModel.handlePlayerEvent(PlayerEvent.SkipSegment(segment)) }
+                } else null
             }
             KeyEvent.KEYCODE_J -> if (canSeek) seekBy(-10_000) else noOp
             KeyEvent.KEYCODE_L -> if (canSeek) seekBy(10_000) else noOp
@@ -403,15 +418,17 @@ class PlayerActivity : AppCompatActivity() {
         val maxStep = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         val target = step.coerceIn(0, maxStep)
         // SetVolume takes a percentage that VolumeManager truncates back to a stream step; pick
-        // the percentage that lands on the target under that same conversion. With more than
-        // 100 steps not every step is reachable, so move to the nearest one in that direction.
+        // the lowest percentage that lands on the target under that same conversion, so the
+        // indicator reads 0 when muted. With more than 100 steps not every step is reachable, so
+        // move to the nearest one in that direction.
         val stepAt = { percent: Int -> ((percent.toFloat() / 100f) * maxStep).toInt() }
         val percent =
-            if (target < currentVolumeStep()) {
-                (100 downTo 0).firstOrNull { stepAt(it) <= target } ?: 0
-            } else {
-                (0..100).firstOrNull { stepAt(it) >= target } ?: 100
-            }
+            (0..100).firstOrNull { stepAt(it) == target }
+                ?: if (target < currentVolumeStep()) {
+                    (100 downTo 0).firstOrNull { stepAt(it) <= target } ?: 0
+                } else {
+                    (0..100).firstOrNull { stepAt(it) >= target } ?: 100
+                }
         viewModel.handlePlayerEvent(PlayerEvent.SetVolume(percent))
     }
 
