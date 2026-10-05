@@ -7,14 +7,17 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.download.DownloadQuality
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.download.PlaylistDownloadFilter
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.PlaylistEntry
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
+import com.makd.afinity.data.models.player.MusicQuality
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.FieldSets
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.music.MusicRepository
@@ -27,9 +30,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -109,10 +114,20 @@ constructor(
     private val downloadRepository: DownloadRepository,
     private val appDataRepository: AppDataRepository,
     private val downloadPermissions: DownloadPermissions,
+    preferencesRepository: PreferencesRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     val playlistId: UUID = UUID.fromString(savedStateHandle.get<String>("playlistId")!!)
+
+    val defaultMusicDownloadQuality: StateFlow<Int> =
+        preferencesRepository
+            .getMusicDownloadQualityFlow()
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5_000),
+                MusicQuality.ORIGINAL_BITRATE,
+            )
 
     val isDownloadAllowedByServer: StateFlow<Boolean> = downloadPermissions.isAllowedByServer
 
@@ -252,7 +267,10 @@ constructor(
         }
     }
 
-    fun downloadPlaylist(filter: PlaylistDownloadFilter = defaultDownloadFilter()) {
+    fun downloadPlaylist(
+        filter: PlaylistDownloadFilter = defaultDownloadFilter(),
+        quality: DownloadQuality? = null,
+    ) {
         val expected =
             _uiState.value.let { state ->
                 when (filter) {
@@ -263,7 +281,7 @@ constructor(
             }
         viewModelScope.launch {
             downloadRepository
-                .startPlaylistDownload(playlistId, filter = filter)
+                .startPlaylistDownload(playlistId, filter = filter, quality = quality)
                 .onSuccess { started ->
                     if (started < expected) {
                         _downloadMessages.emit(

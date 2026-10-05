@@ -87,6 +87,8 @@ internal object PortablePreferences {
             spec("download_wifi_only", PrefType.BOOLEAN, SettingsSection.DOWNLOADS),
             spec("download_quality", PrefType.STRING, SettingsSection.DOWNLOADS),
             spec("max_downloads", PrefType.INT, SettingsSection.DOWNLOADS),
+            spec("video_download_quality", PrefType.INT, SettingsSection.DOWNLOADS),
+            spec("music_download_quality", PrefType.INT, SettingsSection.DOWNLOADS),
             spec("sync_enabled", PrefType.BOOLEAN, SettingsSection.DOWNLOADS),
             spec("sync_interval", PrefType.INT, SettingsSection.DOWNLOADS),
             spec("crash_reporting", PrefType.BOOLEAN, SettingsSection.PRIVACY),

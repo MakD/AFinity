@@ -42,6 +42,8 @@ import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.data.models.player.MusicQuality
+import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.repository.CacheSection
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
@@ -50,6 +52,9 @@ import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
 import com.makd.afinity.ui.downloads.DownloadsViewModel
+import com.makd.afinity.ui.player.components.musicQualityLabel
+import com.makd.afinity.ui.player.components.settingsQualityLabel
+import com.makd.afinity.ui.settings.player.SubtitleDropdownItem
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -231,6 +236,41 @@ fun StorageSettingsScreen(
                                 }
                             }
                         },
+                    )
+                    SettingsDivider()
+                    val videoQualityOptions = VideoQuality.settingsLadder().filterNot { it.isAuto }
+                    val showExoPlayerHint =
+                        uiState.useExoPlayer &&
+                            uiState.videoDownloadQuality != VideoQuality.ORIGINAL_BITRATE
+                    SubtitleDropdownItem(
+                        title = stringResource(R.string.pref_video_download_quality_title),
+                        selectedOption = uiState.videoDownloadQuality,
+                        options = videoQualityOptions.map { it.maxBitrate },
+                        onValueChange = viewModel::setVideoDownloadQuality,
+                        labelProvider = { bitrate ->
+                            settingsQualityLabel(VideoQuality.fromBitrate(bitrate))
+                        },
+                        icon = painterResource(id = R.drawable.ic_video),
+                        hint =
+                            stringResource(
+                                if (showExoPlayerHint) {
+                                    R.string.pref_download_quality_exoplayer_hint
+                                } else {
+                                    R.string.pref_download_quality_hint
+                                }
+                            ),
+                    )
+                    SettingsDivider()
+                    SubtitleDropdownItem(
+                        title = stringResource(R.string.pref_music_download_quality_title),
+                        selectedOption = uiState.musicDownloadQuality,
+                        options = MusicQuality.options().map { it.maxBitrate },
+                        onValueChange = viewModel::setMusicDownloadQuality,
+                        labelProvider = { bitrate ->
+                            musicQualityLabel(MusicQuality.fromBitrate(bitrate))
+                        },
+                        icon = painterResource(id = R.drawable.ic_music),
+                        hint = stringResource(R.string.pref_download_quality_hint),
                     )
                 }
             }

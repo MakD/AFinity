@@ -35,7 +35,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -95,6 +94,7 @@ import com.makd.afinity.di.PreferencesEntryPoint
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinitySlider
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.EndAlignedDropdownMenu
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
@@ -768,7 +768,7 @@ private fun SkipModeSelectorItem(
             },
         )
 
-        DropdownMenu(
+        EndAlignedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -991,7 +991,7 @@ private fun BufferSizeSelectorItem(selectedSizeMb: Int, onSizeSelected: (Int) ->
             },
         )
 
-        DropdownMenu(
+        EndAlignedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -1060,7 +1060,7 @@ private fun VideoZoomModeSelectorItem(
             },
         )
 
-        DropdownMenu(
+        EndAlignedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -1651,7 +1651,7 @@ private fun VideoQualityPickerDialog(
 }
 
 @Composable
-private fun <T> SubtitleDropdownItem(
+internal fun <T> SubtitleDropdownItem(
     title: String,
     selectedOption: T,
     options: List<T>,
@@ -1695,7 +1695,7 @@ private fun <T> SubtitleDropdownItem(
             }
         }
 
-        DropdownMenu(
+        EndAlignedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),

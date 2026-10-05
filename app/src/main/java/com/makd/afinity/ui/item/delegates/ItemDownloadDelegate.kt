@@ -1,6 +1,7 @@
 package com.makd.afinity.ui.item.delegates
 
 import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.download.DownloadQuality
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.repository.PreferencesRepository
@@ -80,6 +81,7 @@ constructor(
         item: AfinityItem?,
         sourceId: String,
         volumeId: String? = null,
+        quality: DownloadQuality? = null,
         hideQualityDialog: () -> Unit,
     ) {
         val target = item ?: return
@@ -87,7 +89,7 @@ constructor(
             try {
                 hideQualityDialog()
                 downloadRepository
-                    .startDownload(target.id, sourceId, volumeId)
+                    .startDownload(target.id, sourceId, volumeId, quality = quality)
                     .onSuccess { Timber.i("Download started successfully for: ${target.name}") }
                     .onFailure { error -> Timber.e(error, "Failed to start download") }
             } catch (e: CancellationException) {

@@ -115,12 +115,13 @@ fun EpisodeOverlayHandler(
                 volumes = volumes,
                 selectedVolumeId = selectedVolumeId,
                 onVolumeSelected = { selectedVolumeId = it },
-                onConfirm = { source, volumeId ->
+                onConfirm = { source, volumeId, quality ->
                     downloadDelegate.onQualitySelected(
                         scope = scope,
                         item = selectedEpisode,
                         sourceId = source.id,
                         volumeId = volumeId,
+                        quality = quality,
                         hideQualityDialog = { showQualityDialog = false },
                     )
                 },

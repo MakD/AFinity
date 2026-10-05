@@ -24,6 +24,7 @@ import com.makd.afinity.data.manager.UnreachableReason
 import com.makd.afinity.data.manager.resolveTargetItem
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.download.DownloadQuality
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityItem
@@ -42,6 +43,7 @@ import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.media.toAfinityMovie
 import com.makd.afinity.data.models.media.toAfinityShow
+import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.models.tmdb.TmdbRegionProviders
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.models.wikidata.WikidataAwards
@@ -1528,8 +1530,8 @@ constructor(
     /**
      * Long-press entry point. Always opens the version/location dialog for the leaf item (movie or
      * episode), even when there is a single version — letting the user pick a storage location. For
-     * bulk show/season downloads, opens a storage-location picker when more than one volume is
-     * available; otherwise falls back to the normal tap behavior.
+     * bulk show/season downloads, opens a picker for the download quality, plus the storage
+     * location when more than one volume is available.
      */
     fun onDownloadLongClick() {
         val selectedEpisode = _selectedEpisode.value
@@ -1547,11 +1549,13 @@ constructor(
         viewModelScope.launch {
             val volumes = storageLocationProvider.listVolumes()
             val defaultVolumeId = preferencesRepository.getDownloadStorageVolumeId()
+            val defaultQuality = preferencesRepository.getVideoDownloadQuality()
             _uiState.value =
                 _uiState.value.copy(
                     showQualityDialog = true,
                     availableVolumes = volumes,
                     selectedVolumeId = defaultVolumeId,
+                    defaultVideoDownloadQuality = defaultQuality,
                 )
         }
     }
@@ -1563,21 +1567,19 @@ constructor(
     private fun showLocationDialogWithVolumes() {
         viewModelScope.launch {
             val volumes = storageLocationProvider.listVolumes()
-            if (volumes.size <= 1) {
-                onDownloadClick()
-                return@launch
-            }
             val defaultVolumeId = preferencesRepository.getDownloadStorageVolumeId()
+            val defaultQuality = preferencesRepository.getVideoDownloadQuality()
             _uiState.value =
                 _uiState.value.copy(
                     showLocationDialog = true,
                     availableVolumes = volumes,
                     selectedVolumeId = defaultVolumeId,
+                    defaultVideoDownloadQuality = defaultQuality,
                 )
         }
     }
 
-    fun onLocationConfirmed() {
+    fun onLocationConfirmed(quality: DownloadQuality? = null) {
         val volumeId = _uiState.value.selectedVolumeId
         val currentItem = _uiState.value.item
         dismissLocationDialog()
@@ -1585,7 +1587,12 @@ constructor(
             is AfinitySeason -> {
                 bulkDownloadJob = viewModelScope.launch {
                     downloadRepository
-                        .startSeasonDownload(currentItem.id, currentItem.seriesId, volumeId)
+                        .startSeasonDownload(
+                            currentItem.id,
+                            currentItem.seriesId,
+                            volumeId,
+                            quality,
+                        )
                         .onSuccess { count ->
                             Timber.i("Queued $count episodes for season ${currentItem.name}")
                         }
@@ -1595,7 +1602,7 @@ constructor(
             is AfinityShow -> {
                 bulkDownloadJob = viewModelScope.launch {
                     downloadRepository
-                        .startSeriesDownload(currentItem.id, volumeId)
+                        .startSeriesDownload(currentItem.id, volumeId, quality)
                         .onSuccess { count ->
                             Timber.i("Queued $count episodes for series ${currentItem.name}")
                         }
@@ -1610,12 +1617,13 @@ constructor(
         _uiState.value = _uiState.value.copy(showLocationDialog = false, selectedVolumeId = null)
     }
 
-    fun onQualitySelected(sourceId: String) {
+    fun onQualitySelected(sourceId: String, quality: DownloadQuality? = null) {
         itemDownloadDelegate.onQualitySelected(
             viewModelScope,
             _selectedEpisode.value ?: _uiState.value.item,
             sourceId,
             _uiState.value.selectedVolumeId,
+            quality,
         ) {
             dismissQualityDialog()
         }
@@ -1875,6 +1883,7 @@ data class ItemDetailUiState(
     val nextEpisode: AfinityEpisode? = null,
     val episodesPagingData: Flow<PagingData<AfinityEpisode>>? = null,
     val showQualityDialog: Boolean = false,
+    val defaultVideoDownloadQuality: Int = VideoQuality.ORIGINAL_BITRATE,
     val showLocationDialog: Boolean = false,
     val availableVolumes: List<StorageVolumeInfo> = emptyList(),
     val selectedVolumeId: String? = null,

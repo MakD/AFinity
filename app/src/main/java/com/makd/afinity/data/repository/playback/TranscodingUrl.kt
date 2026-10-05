@@ -26,8 +26,19 @@ object TranscodingUrl {
         return subtitleStreamIndex(url)?.takeIf { it >= 0 }
     }
 
+    fun audioStreamIndex(url: String): Int? = queryValue(url, "AudioStreamIndex")?.toIntOrNull()
+
     fun withSubtitleStreamIndex(url: String, index: Int?): String =
         withParam(url, "SubtitleStreamIndex", (index ?: NO_SUBTITLE).toString())
+
+    fun withBurnedInSubtitle(url: String, index: Int?): String {
+        if (index == null || index < 0) return withSubtitleStreamIndex(url, null)
+        return withParam(
+            withSubtitleStreamIndex(url, index),
+            "SubtitleMethod",
+            SubtitleDeliveryMethod.ENCODE.serialName,
+        )
+    }
 
     fun withAudioStreamIndex(url: String, index: Int): String =
         withParam(url, "AudioStreamIndex", index.toString())

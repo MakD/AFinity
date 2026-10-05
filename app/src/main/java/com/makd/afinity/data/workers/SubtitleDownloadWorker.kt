@@ -13,6 +13,7 @@ import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.di.DownloadClient
+import com.makd.afinity.player.profile.AndroidDeviceProfileFactory
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.io.File
@@ -144,9 +145,14 @@ constructor(
                             workDataOf("error" to "Source not found")
                         )
 
+                val includeEmbeddedText = download.transcodedContainer != null
                 val subtitleStreams =
                     source.mediaStreams.filter { stream ->
-                        stream.type == MediaStreamType.SUBTITLE && stream.isExternal == true
+                        stream.type == MediaStreamType.SUBTITLE &&
+                            (stream.isExternal ||
+                                (includeEmbeddedText &&
+                                    stream.codec.lowercase() in
+                                        AndroidDeviceProfileFactory.DOWNLOAD_TEXT_SUBTITLE_CODECS))
                     }
 
                 if (subtitleStreams.isEmpty()) {

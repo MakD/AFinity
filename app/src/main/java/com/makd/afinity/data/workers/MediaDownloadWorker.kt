@@ -35,10 +35,13 @@ import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.repository.download.DownloadTranscodePlan
+import com.makd.afinity.data.repository.download.DownloadTranscodePlanner
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.segments.SegmentsRepository
 import com.makd.afinity.di.DownloadClient
 import com.makd.afinity.util.LocalNetworkPermission
+import com.makd.afinity.util.Mp4FragmentProbe
 import com.makd.afinity.util.formatFileSize
 import com.makd.afinity.util.parseDashlessUuid
 import com.makd.afinity.util.redactUrl
@@ -81,10 +84,13 @@ constructor(
     private val segmentsRepository: SegmentsRepository,
     private val preferencesRepository: PreferencesRepository,
     private val downloadSemaphoreManager: DownloadSemaphoreManager,
+    private val transcodePlanner: DownloadTranscodePlanner,
     private val downloadNotificationManager: DownloadNotificationManager,
     @param:DownloadClient private val okHttpClient: OkHttpClient,
     private val localNetworkPermission: LocalNetworkPermission,
 ) : CoroutineWorker(appContext, workerParams) {
+
+    private var allowPause = true
 
     companion object {
         const val KEY_DOWNLOAD_ID = "download_id"
@@ -97,6 +103,8 @@ constructor(
         const val BUFFER_SIZE = 256 * 1024
         const val PROGRESS_UPDATE_INTERVAL_MS = 500L
         const val MAX_PERMISSION_RETRY_ATTEMPTS = 5
+        const val ESTIMATED_PROGRESS_CAP = 0.99f
+        const val TRANSCODE_END_TOLERANCE_MS = 30_000L
     }
 
     private suspend fun markPermissionFailure(downloadId: UUID) {
@@ -186,7 +194,13 @@ constructor(
 
             val maxDownloads = preferencesRepository.getMaxDownloads()
             downloadSemaphoreManager.updatePermits(maxDownloads)
+            val transcodeMutex = downloadSemaphoreManager.transcodeMutex
+            var holdsTranscodeLock = false
             try {
+                if (needsVideoConversion(downloadRecord, itemType)) {
+                    transcodeMutex.lock()
+                    holdsTranscodeLock = true
+                }
                 downloadSemaphoreManager.semaphore.withPermit {
                     try {
                         setForeground(
@@ -225,6 +239,7 @@ constructor(
                             download.copy(
                                 status = DownloadStatus.DOWNLOADING,
                                 updatedAt = System.currentTimeMillis(),
+                                transcodedContainer = null,
                             )
                         )
 
@@ -310,142 +325,237 @@ constructor(
                             )
                         }
 
-                        val extension =
-                            if (isAudio) {
-                                audioMediaSource!!.container?.lowercase() ?: "mp3"
-                            } else {
-                                source!!.container?.lowercase() ?: "mkv"
-                            }
+                        var transcodePlan: DownloadTranscodePlan? = null
+                        var transcodedContainer: String? = null
 
-                        val outputFile = File(mediaDir, "$sourceId.$extension.download")
-                        val finalFile = File(mediaDir, "$sourceId.$extension")
-
-                        // Each sourceId is actually an itemId corresponding to the specific version
-                        // that was requested in the download dialog
-                        // Unfortunately, because the SDK expects a UUID, but UUID.fromString
-                        // doesn't handle strings without dashes, we have
-                        // to do some special handling here to get a UUID to pass to getDownloadUrl
-                        val sourceUuid =
+                        val finalFile: File =
                             try {
-                                parseDashlessUuid(sourceId)
-                            } catch (e: IllegalArgumentException) {
-                                throw Exception("Invalid source ID")
-                            }
-
-                        val downloadUrl = apiClient.libraryApi.getDownloadUrl(itemId = sourceUuid)
-
-                        val existingFileSize = if (outputFile.exists()) outputFile.length() else 0L
-
-                        Timber.d("Downloading from: ${redactUrl(downloadUrl)}")
-                        Timber.d("Saving to: ${outputFile.absolutePath}")
-                        Timber.d("Resuming from byte: $existingFileSize")
-
-                        val requestBuilder =
-                            Request.Builder()
-                                .url(downloadUrl)
-                                .header(
-                                    "Authorization",
-                                    "MediaBrowser Token=\"${apiClient.accessToken ?: ""}\"",
-                                )
-
-                        if (existingFileSize > 0) {
-                            requestBuilder.header("Range", "bytes=$existingFileSize-")
-                        }
-
-                        val request = requestBuilder.build()
-
-                        okHttpClient.newCall(request).execute().use { response ->
-                            if (!response.isSuccessful && response.code != 416) {
-                                throw Exception(
-                                    "Download failed: ${response.code} ${response.message}"
-                                )
-                            }
-                            if (response.code == 416) {
-                                Timber.w("File already fully downloaded (416). Skipping body copy.")
-                                return@use
-                            }
-
-                            val serverIgnoredRange = existingFileSize > 0 && response.code == 200
-                            if (serverIgnoredRange) {
-                                Timber.w("Server ignored Range header, restarting from byte 0")
-                            }
-                            val resumeOffset = if (serverIgnoredRange) 0L else existingFileSize
-
-                            val remainingBytes = response.body.contentLength()
-                            val totalBytes =
-                                if (remainingBytes != -1L) resumeOffset + remainingBytes else -1L
-
-                            val downloadedBytes = AtomicLong(resumeOffset)
-                            var stoppedByUser = false
-
-                            response.body.byteStream().use { input ->
-                                FileOutputStream(outputFile, !serverIgnoredRange).use { output ->
-                                    coroutineScope {
-                                        val progressJob =
-                                            if (totalBytes > 0) {
-                                                launch {
-                                                    while (isActive) {
-                                                        delay(PROGRESS_UPDATE_INTERVAL_MS)
-                                                        val bytes = downloadedBytes.get()
-                                                        val progress =
-                                                            bytes.toFloat() / totalBytes.toFloat()
-                                                        updateProgress(
-                                                            downloadId,
-                                                            progress,
-                                                            bytes,
-                                                            totalBytes,
-                                                        )
-                                                        setProgressAsync(
-                                                            workDataOf(
-                                                                PROGRESS_KEY to progress,
-                                                                "downloadedBytes" to bytes,
-                                                                "totalBytes" to totalBytes,
-                                                            )
-                                                        )
-                                                        downloadNotificationManager.notify(
-                                                            downloadId.hashCode(),
-                                                            createForegroundInfo(
-                                                                    downloadId,
-                                                                    notifTitle,
-                                                                    notifSubText,
-                                                                    notificationIcon,
-                                                                    bigPicture,
-                                                                    bytes,
-                                                                    totalBytes,
-                                                                )
-                                                                .notification,
-                                                        )
-                                                    }
-                                                }
-                                            } else null
-
-                                        val buffer = ByteArray(BUFFER_SIZE)
-                                        var bytes: Int
-
-                                        while (input.read(buffer).also { bytes = it } != -1) {
-                                            if (isStopped) {
-                                                Timber.d("Download paused/stopped by user")
-                                                stoppedByUser = true
-                                                break
-                                            }
-
-                                            output.write(buffer, 0, bytes)
-                                            downloadedBytes.addAndGet(bytes.toLong())
-                                        }
-
-                                        progressJob?.cancelAndJoin()
+                                if (isAudio) {
+                                    transcodePlan =
+                                        transcodePlanner.planAudio(
+                                            apiClient,
+                                            download,
+                                            audioMediaSource!!,
+                                        )
+                                } else if (holdsTranscodeLock) {
+                                    transcodePlan = transcodePlanner.planVideo(apiClient, download)
+                                    if (transcodePlan == null) {
+                                        transcodeMutex.unlock()
+                                        holdsTranscodeLock = false
                                     }
                                 }
-                            }
+                                val plan = transcodePlan
+                                if (plan != null) allowPause = false
 
-                            if (stoppedByUser) {
-                                return@withContext Result.failure(workDataOf("error" to "Paused"))
-                            }
-                        }
+                                val extension =
+                                    plan?.container
+                                        ?: if (isAudio) {
+                                            audioMediaSource!!.container?.lowercase() ?: "mp3"
+                                        } else {
+                                            source!!.container?.lowercase() ?: "mkv"
+                                        }
 
-                        if (outputFile.exists() && !outputFile.renameTo(finalFile)) {
-                            throw Exception("Failed to move completed download into place")
-                        }
+                                val outputFile = File(mediaDir, "$sourceId.$extension.download")
+                                var completedFile = File(mediaDir, "$sourceId.$extension")
+
+                                if (plan != null && outputFile.exists()) {
+                                    outputFile.delete()
+                                }
+
+                                // Each sourceId is actually an itemId corresponding to the specific
+                                // version
+                                // that was requested in the download dialog
+                                // Unfortunately, because the SDK expects a UUID, but
+                                // UUID.fromString
+                                // doesn't handle strings without dashes, we have
+                                // to do some special handling here to get a UUID to pass to
+                                // getDownloadUrl
+                                val sourceUuid =
+                                    try {
+                                        parseDashlessUuid(sourceId)
+                                    } catch (e: IllegalArgumentException) {
+                                        throw Exception("Invalid source ID")
+                                    }
+
+                                val downloadUrl =
+                                    plan?.url
+                                        ?: apiClient.libraryApi.getDownloadUrl(itemId = sourceUuid)
+
+                                val existingFileSize =
+                                    if (outputFile.exists()) outputFile.length() else 0L
+
+                                Timber.d("Downloading from: ${redactUrl(downloadUrl)}")
+                                Timber.d("Saving to: ${outputFile.absolutePath}")
+                                Timber.d("Resuming from byte: $existingFileSize")
+
+                                val requestBuilder =
+                                    Request.Builder()
+                                        .url(downloadUrl)
+                                        .header(
+                                            "Authorization",
+                                            "MediaBrowser Token=\"${apiClient.accessToken ?: ""}\"",
+                                        )
+
+                                if (existingFileSize > 0) {
+                                    requestBuilder.header("Range", "bytes=$existingFileSize-")
+                                }
+
+                                val request = requestBuilder.build()
+
+                                okHttpClient.newCall(request).execute().use { response ->
+                                    if (!response.isSuccessful && response.code != 416) {
+                                        throw Exception(
+                                            "Download failed: ${response.code} ${response.message}"
+                                        )
+                                    }
+                                    if (response.code == 416) {
+                                        Timber.w(
+                                            "File already fully downloaded (416). Skipping body copy."
+                                        )
+                                        return@use
+                                    }
+
+                                    val serverIgnoredRange =
+                                        existingFileSize > 0 && response.code == 200
+                                    if (serverIgnoredRange) {
+                                        Timber.w(
+                                            "Server ignored Range header, restarting from byte 0"
+                                        )
+                                    }
+                                    val resumeOffset =
+                                        if (serverIgnoredRange) 0L else existingFileSize
+
+                                    val remainingBytes = response.body.contentLength()
+                                    val estimatedTotal =
+                                        plan?.estimatedBytes?.takeIf {
+                                            remainingBytes == -1L && it > 0L
+                                        }
+                                    val totalBytes =
+                                        if (remainingBytes != -1L) resumeOffset + remainingBytes
+                                        else estimatedTotal ?: -1L
+
+                                    if (plan != null && remainingBytes == -1L) {
+                                        val actualExtension =
+                                            extensionForContentType(response.header("Content-Type"))
+                                                ?: extension
+                                        transcodedContainer = actualExtension
+                                        completedFile = File(mediaDir, "$sourceId.$actualExtension")
+                                        databaseRepository.getDownload(downloadId)?.let { current ->
+                                            databaseRepository.insertDownload(
+                                                current.copy(
+                                                    transcodedContainer = actualExtension,
+                                                    transcodeSessionId = plan.playSessionId,
+                                                    updatedAt = System.currentTimeMillis(),
+                                                )
+                                            )
+                                        }
+                                    }
+
+                                    val downloadedBytes = AtomicLong(resumeOffset)
+                                    var stoppedByUser = false
+
+                                    response.body.byteStream().use { input ->
+                                        FileOutputStream(outputFile, !serverIgnoredRange).use {
+                                            output ->
+                                            coroutineScope {
+                                                val progressJob =
+                                                    if (totalBytes > 0) {
+                                                        launch {
+                                                            while (isActive) {
+                                                                delay(PROGRESS_UPDATE_INTERVAL_MS)
+                                                                val bytes = downloadedBytes.get()
+                                                                val shownTotal =
+                                                                    if (estimatedTotal != null) {
+                                                                        maxOf(totalBytes, bytes)
+                                                                    } else totalBytes
+                                                                val rawProgress =
+                                                                    bytes.toFloat() /
+                                                                        shownTotal.toFloat()
+                                                                val progress =
+                                                                    if (estimatedTotal != null) {
+                                                                        rawProgress.coerceAtMost(
+                                                                            ESTIMATED_PROGRESS_CAP
+                                                                        )
+                                                                    } else rawProgress
+                                                                updateProgress(
+                                                                    downloadId,
+                                                                    progress,
+                                                                    bytes,
+                                                                    shownTotal,
+                                                                )
+                                                                setProgressAsync(
+                                                                    workDataOf(
+                                                                        PROGRESS_KEY to progress,
+                                                                        "downloadedBytes" to bytes,
+                                                                        "totalBytes" to shownTotal,
+                                                                    )
+                                                                )
+                                                                downloadNotificationManager.notify(
+                                                                    downloadId.hashCode(),
+                                                                    createForegroundInfo(
+                                                                            downloadId,
+                                                                            notifTitle,
+                                                                            notifSubText,
+                                                                            notificationIcon,
+                                                                            bigPicture,
+                                                                            bytes,
+                                                                            shownTotal,
+                                                                        )
+                                                                        .notification,
+                                                                )
+                                                            }
+                                                        }
+                                                    } else null
+
+                                                val buffer = ByteArray(BUFFER_SIZE)
+                                                var bytes: Int
+
+                                                while (
+                                                    input.read(buffer).also { bytes = it } != -1
+                                                ) {
+                                                    if (isStopped) {
+                                                        Timber.d("Download paused/stopped by user")
+                                                        stoppedByUser = true
+                                                        break
+                                                    }
+
+                                                    output.write(buffer, 0, bytes)
+                                                    downloadedBytes.addAndGet(bytes.toLong())
+                                                }
+
+                                                progressJob?.cancelAndJoin()
+                                            }
+                                        }
+                                    }
+
+                                    if (stoppedByUser) {
+                                        if (plan != null) outputFile.delete()
+                                        return@withContext Result.failure(
+                                            workDataOf("error" to "Paused")
+                                        )
+                                    }
+                                }
+
+                                if (outputFile.exists() && !outputFile.renameTo(completedFile)) {
+                                    throw Exception("Failed to move completed download into place")
+                                }
+                                if (!isAudio) {
+                                    verifyTranscodedVideo(
+                                        completedFile,
+                                        transcodedContainer,
+                                        download.runtimeTicks,
+                                    )
+                                }
+                                completedFile
+                            } finally {
+                                if (holdsTranscodeLock) {
+                                    transcodeMutex.unlock()
+                                    holdsTranscodeLock = false
+                                }
+                                transcodePlan?.let {
+                                    transcodePlanner.stopEncoding(apiClient, it.playSessionId)
+                                }
+                            }
                         Timber.d("Download completed: ${finalFile.absolutePath}")
 
                         val updatedDownload =
@@ -456,6 +566,8 @@ constructor(
                                 totalBytes = finalFile.length(),
                                 filePath = finalFile.absolutePath,
                                 updatedAt = System.currentTimeMillis(),
+                                transcodedContainer = transcodedContainer,
+                                transcodeSessionId = transcodePlan?.playSessionId,
                             )
                         databaseRepository.insertDownload(updatedDownload)
 
@@ -481,7 +593,19 @@ constructor(
                         }
                         val sourceName =
                             if (isAudio) audioMediaSource!!.name ?: itemName else source!!.name
-                        val sourceStreams = if (isAudio) emptyList() else source!!.mediaStreams
+                        val completedPlan = transcodePlan
+                        val sourceStreams =
+                            when {
+                                isAudio -> emptyList()
+                                completedPlan != null && transcodedContainer != null ->
+                                    transcodePlanner.transcodedStreams(
+                                        source!!.mediaStreams,
+                                        completedPlan,
+                                        download.transcodeMaxWidth,
+                                    )
+
+                                else -> source!!.mediaStreams
+                            }
                         createLocalSource(itemId, sourceId, sourceName, finalFile, sourceStreams)
 
                         downloadNotificationManager.postCompleted(
@@ -536,9 +660,62 @@ constructor(
                     }
                 }
             } finally {
+                if (holdsTranscodeLock) transcodeMutex.unlock()
                 downloadNotificationManager.cancelProgress(downloadId)
             }
         }
+
+    private suspend fun needsVideoConversion(download: DownloadDto?, itemType: String): Boolean {
+        if (download == null || download.transcodeBitrate == null || itemType == "Audio") {
+            return false
+        }
+        return try {
+            val apiClient = sessionManager.getOrRestoreApiClient(download.serverId) ?: return true
+            transcodePlanner.planVideo(apiClient, download) != null
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Could not check whether the download needs converting")
+            true
+        }
+    }
+
+    private fun extensionForContentType(contentType: String?): String? =
+        when (contentType?.substringBefore(';')?.trim()?.lowercase()) {
+            "video/mp4" -> "mp4"
+            "video/mp2t" -> "ts"
+            "video/x-matroska" -> "mkv"
+            "video/webm" -> "webm"
+            "audio/ogg",
+            "application/ogg" -> "ogg"
+
+            "audio/mpeg" -> "mp3"
+            "audio/aac" -> "aac"
+            "audio/mp4",
+            "audio/x-m4a" -> "m4a"
+
+            "audio/flac",
+            "audio/x-flac" -> "flac"
+
+            "audio/wav",
+            "audio/x-wav" -> "wav"
+
+            else -> null
+        }
+
+    private fun verifyTranscodedVideo(file: File, container: String?, runtimeTicks: Long?) {
+        if (container != "mp4") return
+        val expectedMs = (runtimeTicks ?: 0L) / 10_000L
+        if (expectedMs <= 0L) return
+        val reachedMs = Mp4FragmentProbe.lastFragmentTimeMs(file) ?: return
+        val tolerance = maxOf(TRANSCODE_END_TOLERANCE_MS, expectedMs / 20L)
+        if (reachedMs < expectedMs - tolerance) {
+            file.delete()
+            throw Exception(
+                "The server stopped converting early (${reachedMs / 1000L}s of ${expectedMs / 1000L}s)"
+            )
+        }
+    }
 
     private suspend fun updateProgress(
         downloadId: UUID,
@@ -1023,11 +1200,15 @@ constructor(
                 .setOngoing(true)
                 .setGroup(DownloadNotificationManager.GROUP_ACTIVE)
                 .setContentIntent(downloadNotificationManager.downloadsContentIntent())
-                .addAction(
-                    R.drawable.ic_player_pause_filled,
-                    context.getString(R.string.notif_action_pause),
-                    downloadNotificationManager.pauseActionIntent(downloadId),
-                )
+                .apply {
+                    if (allowPause) {
+                        addAction(
+                            R.drawable.ic_player_pause_filled,
+                            context.getString(R.string.notif_action_pause),
+                            downloadNotificationManager.pauseActionIntent(downloadId),
+                        )
+                    }
+                }
                 .addAction(
                     R.drawable.ic_cancel,
                     context.getString(R.string.action_cancel),
@@ -1085,11 +1266,15 @@ constructor(
                 .setOngoing(true)
                 .setGroup(DownloadNotificationManager.GROUP_ACTIVE)
                 .setContentIntent(downloadNotificationManager.downloadsContentIntent())
-                .addAction(
-                    R.drawable.ic_player_pause_filled,
-                    context.getString(R.string.notif_action_pause),
-                    downloadNotificationManager.pauseActionIntent(downloadId),
-                )
+                .apply {
+                    if (allowPause) {
+                        addAction(
+                            R.drawable.ic_player_pause_filled,
+                            context.getString(R.string.notif_action_pause),
+                            downloadNotificationManager.pauseActionIntent(downloadId),
+                        )
+                    }
+                }
                 .addAction(
                     R.drawable.ic_cancel,
                     context.getString(R.string.action_cancel),

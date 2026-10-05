@@ -136,6 +136,36 @@ class AndroidDeviceProfileFactory @Inject constructor() {
         )
     }
 
+    fun createDownloadProfile(
+        quality: VideoQuality,
+        maxAudioChannels: Int,
+        allowHdrPassthrough: Boolean,
+    ): DeviceProfile =
+        DeviceProfile(
+            name = DOWNLOAD_PROFILE_NAME,
+            maxStreamingBitrate = streamingBitrate(quality),
+            maxStaticBitrate = MAX_STATIC_BITRATE,
+            musicStreamingTranscodingBitrate = MAX_MUSIC_TRANSCODING_BITRATE,
+            directPlayProfiles =
+                listOf(DirectPlayProfile(type = DlnaProfileType.VIDEO, container = "")),
+            transcodingProfiles =
+                listOf(
+                    TranscodingProfile(
+                        type = DlnaProfileType.VIDEO,
+                        container = DOWNLOAD_TRANSCODE_CONTAINER,
+                        videoCodec = "h264",
+                        audioCodec = "aac,ac3,eac3",
+                        protocol = MediaStreamProtocol.HTTP,
+                        context = EncodingContext.STREAMING,
+                        maxAudioChannels = maxAudioChannels.toString(),
+                        conditions = emptyList(),
+                    )
+                ),
+            containerProfiles = emptyList(),
+            codecProfiles = listOfNotNull(globalVideoConditions(quality, allowHdrPassthrough)),
+            subtitleProfiles = DOWNLOAD_SUBTITLE_PROFILES,
+        )
+
     fun createMusicProfile(maxStreamingBitrate: Int? = null): DeviceProfile {
         val directPlayProfiles = mutableListOf<DirectPlayProfile>()
 
@@ -250,19 +280,33 @@ class AndroidDeviceProfileFactory @Inject constructor() {
             ),
         )
 
-    private companion object {
-        const val PROFILE_NAME = "AFinity Android"
-        const val MPV_PROFILE_NAME = "AFinity Android (MPV)"
-        const val MUSIC_PROFILE_NAME = "AFinity Android (Music)"
+    companion object {
+        const val DOWNLOAD_TRANSCODE_CONTAINER = "mp4"
 
-        const val MAX_STREAMING_BITRATE = 120_000_000
-        const val MAX_STATIC_BITRATE = 100_000_000
-        const val MAX_MUSIC_TRANSCODING_BITRATE = 384_000
+        private const val PROFILE_NAME = "AFinity Android"
+        private const val MPV_PROFILE_NAME = "AFinity Android (MPV)"
+        private const val MUSIC_PROFILE_NAME = "AFinity Android (Music)"
+        private const val DOWNLOAD_PROFILE_NAME = "AFinity Android (Download)"
 
-        val TS_AUDIO_CODECS =
+        private const val MAX_STREAMING_BITRATE = 120_000_000
+        private const val MAX_STATIC_BITRATE = 100_000_000
+        private const val MAX_MUSIC_TRANSCODING_BITRATE = 384_000
+
+        private val TS_AUDIO_CODECS =
             listOf("mp1", "mp2", "mp3", "aac", "ac3", "eac3", "dts", "mlp", "truehd")
 
-        val EXO_SUBTITLE_PROFILES =
+        val DOWNLOAD_TEXT_SUBTITLE_CODECS =
+            setOf("srt", "subrip", "vtt", "webvtt", "ass", "ssa", "ttml", "mov_text")
+
+        private val DOWNLOAD_SUBTITLE_PROFILES =
+            listOf("srt", "subrip", "vtt", "webvtt", "ass", "ssa", "ttml").map {
+                SubtitleProfile(format = it, method = SubtitleDeliveryMethod.EXTERNAL)
+            } +
+                listOf("pgssub", "dvdsub", "dvbsub").map {
+                    SubtitleProfile(format = it, method = SubtitleDeliveryMethod.ENCODE)
+                }
+
+        private val EXO_SUBTITLE_PROFILES =
             listOf("subrip", "srt", "ttml", "pgssub", "dvbsub").map {
                 SubtitleProfile(format = it, method = SubtitleDeliveryMethod.EMBED)
             } +
@@ -270,7 +314,7 @@ class AndroidDeviceProfileFactory @Inject constructor() {
                     SubtitleProfile(format = it, method = SubtitleDeliveryMethod.EXTERNAL)
                 }
 
-        val MPV_SUBTITLE_PROFILES =
+        private val MPV_SUBTITLE_PROFILES =
             listOf("subrip", "srt", "ttml", "ass", "ssa", "pgssub", "dvbsub").map {
                 SubtitleProfile(format = it, method = SubtitleDeliveryMethod.EMBED)
             } +

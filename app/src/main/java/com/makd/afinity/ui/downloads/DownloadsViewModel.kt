@@ -9,6 +9,8 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.data.models.player.MusicQuality
+import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.repository.CacheMaintenance
 import com.makd.afinity.data.repository.CacheSection
 import com.makd.afinity.data.repository.CacheUsage
@@ -30,6 +32,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -210,6 +213,9 @@ constructor(
                 val imageCacheSizeMb = preferencesRepository.getImageCacheSizeMb()
                 val videoCacheSizeMb = preferencesRepository.getVideoCacheSizeMb()
                 val maxConcurrentDownloads = preferencesRepository.getMaxDownloads()
+                val videoDownloadQuality = preferencesRepository.getVideoDownloadQuality()
+                val musicDownloadQuality = preferencesRepository.getMusicDownloadQuality()
+                val useExoPlayer = preferencesRepository.useExoPlayer.first()
 
                 _uiState.value =
                     _uiState.value.copy(
@@ -218,11 +224,40 @@ constructor(
                         imageCacheSizeMb = imageCacheSizeMb,
                         videoCacheSizeMb = videoCacheSizeMb,
                         maxConcurrentDownloads = maxConcurrentDownloads,
+                        videoDownloadQuality = videoDownloadQuality,
+                        musicDownloadQuality = musicDownloadQuality,
+                        useExoPlayer = useExoPlayer,
                     )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load download preferences")
+            }
+        }
+    }
+
+    fun setVideoDownloadQuality(bitrate: Int) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setVideoDownloadQuality(bitrate)
+                _uiState.value = _uiState.value.copy(videoDownloadQuality = bitrate)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to update video download quality preference")
+            }
+        }
+    }
+
+    fun setMusicDownloadQuality(bitrate: Int) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setMusicDownloadQuality(bitrate)
+                _uiState.value = _uiState.value.copy(musicDownloadQuality = bitrate)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to update music download quality preference")
             }
         }
     }
@@ -727,6 +762,9 @@ data class DownloadsUiState(
     val totalStorageUsedAllServers: Long = 0L,
     val downloadOverWifiOnly: Boolean = true,
     val maxConcurrentDownloads: Int = 3,
+    val videoDownloadQuality: Int = VideoQuality.ORIGINAL_BITRATE,
+    val musicDownloadQuality: Int = MusicQuality.ORIGINAL_BITRATE,
+    val useExoPlayer: Boolean = false,
     val isImageCacheEnabled: Boolean = true,
     val imageCacheSizeMb: Int = 512,
     val videoCacheSizeMb: Int = 1024,

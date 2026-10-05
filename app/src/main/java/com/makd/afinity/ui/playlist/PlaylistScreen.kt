@@ -77,6 +77,7 @@ import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.DownloadProgressIndicator
+import com.makd.afinity.ui.item.components.MusicDownloadQualityDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
@@ -123,6 +124,9 @@ fun PlaylistScreen(
 
     var playChoiceShuffle by remember { mutableStateOf<Boolean?>(null) }
     var showDownloadChoice by remember { mutableStateOf(false) }
+    var showMusicQualityDialog by remember { mutableStateOf(false) }
+    val defaultMusicDownloadQuality by
+        viewModel.defaultMusicDownloadQuality.collectAsStateWithLifecycle()
     var draggedKey by remember { mutableStateOf<String?>(null) }
     val reorderState =
         rememberReorderableLazyListState(lazyListState) { from, to ->
@@ -374,6 +378,10 @@ fun PlaylistScreen(
                                     },
                                     onPauseClick = {},
                                     onResumeClick = { viewModel.downloadPlaylist() },
+                                    onDownloadLongClick =
+                                        if (uiState.audioCount > 0) {
+                                            { showMusicQualityDialog = true }
+                                        } else null,
                                     onCancelClick = { viewModel.cancelPlaylistDownload() },
                                     canDownload = canDownloadOnNetwork,
                                     iconSize = 26.dp,
@@ -633,6 +641,10 @@ fun PlaylistScreen(
                                 },
                                 onPauseClick = {},
                                 onResumeClick = { viewModel.downloadPlaylist() },
+                                onDownloadLongClick =
+                                    if (uiState.audioCount > 0) {
+                                        { showMusicQualityDialog = true }
+                                    } else null,
                                 onCancelClick = { viewModel.cancelPlaylistDownload() },
                                 canDownload = canDownloadOnNetwork,
                                 iconSize = 26.dp,
@@ -817,6 +829,14 @@ fun PlaylistScreen(
                     Text(stringResource(R.string.playlist_play_videos))
                 }
             },
+        )
+    }
+
+    if (showMusicQualityDialog) {
+        MusicDownloadQualityDialog(
+            initialBitrate = defaultMusicDownloadQuality,
+            onConfirm = { quality -> viewModel.downloadPlaylist(quality = quality) },
+            onDismiss = { showMusicQualityDialog = false },
         )
     }
 

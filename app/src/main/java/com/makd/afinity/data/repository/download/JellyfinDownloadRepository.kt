@@ -10,6 +10,7 @@ import com.makd.afinity.data.database.entities.toDownloadInfo
 import com.makd.afinity.data.manager.DownloadNotificationManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.download.DownloadQuality
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.download.PlaylistDownloadFilter
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
@@ -21,6 +22,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.PlaylistEntry
+import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.media.MediaRepository
@@ -102,6 +104,7 @@ constructor(
         sourceId: String,
         volumeId: String?,
         playlistId: String?,
+        quality: DownloadQuality?,
     ): Result<UUID> =
         withContext(Dispatchers.IO) {
             return@withContext try {
@@ -176,6 +179,9 @@ constructor(
                     val resolvedSourceId = mediaSource.id ?: itemId.toString()
                     val albumId = track.albumId ?: itemId
                     val downloadId = UUID.randomUUID()
+                    val musicBitrate =
+                        (quality?.bitrate ?: preferencesRepository.getMusicDownloadQuality())
+                            .takeIf { it > 0 }
 
                     val download =
                         DownloadDto(
@@ -206,6 +212,7 @@ constructor(
                             seriesId = albumId.toString(),
                             storageVolumeId = resolvedVolumeId,
                             playlistId = playlistId,
+                            transcodeBitrate = musicBitrate,
                         )
 
                     databaseRepository.insertDownload(download)
@@ -244,6 +251,13 @@ constructor(
                     }
 
                 val downloadId = UUID.randomUUID()
+                val videoBitrate =
+                    (quality?.bitrate ?: preferencesRepository.getVideoDownloadQuality()).takeIf {
+                        it > 0
+                    }
+                val videoMaxWidth = videoBitrate?.let { VideoQuality.fromBitrate(it).maxWidth }
+                val burnSubtitleIndex = quality?.burnSubtitleIndex?.takeIf { videoBitrate != null }
+                val audioStreamIndex = quality?.audioStreamIndex?.takeIf { videoBitrate != null }
 
                 val imageUrl =
                     when (item) {
@@ -314,6 +328,10 @@ constructor(
                         seriesId = (item as? AfinityEpisode)?.seriesId?.toString(),
                         storageVolumeId = resolvedVolumeId,
                         playlistId = playlistId,
+                        transcodeBitrate = videoBitrate,
+                        transcodeMaxWidth = videoMaxWidth,
+                        burnSubtitleIndex = burnSubtitleIndex,
+                        transcodeAudioIndex = audioStreamIndex,
                     )
 
                 databaseRepository.insertDownload(download)
@@ -754,13 +772,14 @@ constructor(
         seasonId: UUID,
         seriesId: UUID?,
         volumeId: String?,
+        quality: DownloadQuality?,
     ): Result<Int> =
         withContext(Dispatchers.IO) {
             return@withContext try {
                 val episodes = mediaRepository.getEpisodes(seasonId, seriesId)
                 var started = 0
                 for (episode in episodes) {
-                    startDownload(episode.id, "", volumeId)
+                    startDownload(episode.id, "", volumeId, null, quality)
                         .onSuccess { started++ }
                         .onFailure { error ->
                             if (error is VolumeUnavailableException)
@@ -778,13 +797,17 @@ constructor(
             }
         }
 
-    override suspend fun startSeriesDownload(showId: UUID, volumeId: String?): Result<Int> =
+    override suspend fun startSeriesDownload(
+        showId: UUID,
+        volumeId: String?,
+        quality: DownloadQuality?,
+    ): Result<Int> =
         withContext(Dispatchers.IO) {
             return@withContext try {
                 val seasons = mediaRepository.getSeasons(showId)
                 var totalStarted = 0
                 for (season in seasons) {
-                    startSeasonDownload(season.id, showId, volumeId)
+                    startSeasonDownload(season.id, showId, volumeId, quality)
                         .onSuccess { count -> totalStarted += count }
                         .onFailure { Timber.w(it, "Skipping season ${season.name}: ${it.message}") }
                 }
@@ -820,7 +843,11 @@ constructor(
             }
         }
 
-    override suspend fun startAlbumDownload(albumId: UUID, volumeId: String?): Result<Int> =
+    override suspend fun startAlbumDownload(
+        albumId: UUID,
+        volumeId: String?,
+        quality: DownloadQuality?,
+    ): Result<Int> =
         withContext(Dispatchers.IO) {
             return@withContext try {
                 val session =
@@ -839,7 +866,7 @@ constructor(
                 val tracks = musicRepository.getAlbumTracks(albumId)
                 var started = 0
                 for (track in tracks) {
-                    startDownload(track.id, "", volumeId)
+                    startDownload(track.id, "", volumeId, null, quality)
                         .onSuccess { started++ }
                         .onFailure { error ->
                             if (error is VolumeUnavailableException)
@@ -857,13 +884,17 @@ constructor(
             }
         }
 
-    override suspend fun startArtistDownload(artistId: UUID, volumeId: String?): Result<Int> =
+    override suspend fun startArtistDownload(
+        artistId: UUID,
+        volumeId: String?,
+        quality: DownloadQuality?,
+    ): Result<Int> =
         withContext(Dispatchers.IO) {
             return@withContext try {
                 val albums = musicRepository.getArtistAlbums(artistId)
                 var totalStarted = 0
                 for (album in albums) {
-                    startAlbumDownload(album.id, volumeId)
+                    startAlbumDownload(album.id, volumeId, quality)
                         .onSuccess { count -> totalStarted += count }
                         .onFailure { Timber.w(it, "Skipping album ${album.name}: ${it.message}") }
                 }
@@ -883,6 +914,7 @@ constructor(
         playlistId: UUID,
         volumeId: String?,
         filter: PlaylistDownloadFilter,
+        quality: DownloadQuality?,
     ): Result<Int> =
         withContext(Dispatchers.IO) {
             return@withContext try {
@@ -902,7 +934,8 @@ constructor(
                             is PlaylistEntry.Audio -> entry.track.name
                             is PlaylistEntry.Video -> entry.item.name
                         }
-                    startDownload(entry.id, "", volumeId, playlistIdStr)
+                    val entryQuality = quality.takeIf { entry is PlaylistEntry.Audio }
+                    startDownload(entry.id, "", volumeId, playlistIdStr, entryQuality)
                         .onSuccess { started++ }
                         .onFailure { error ->
                             if (error is VolumeUnavailableException)

@@ -1,6 +1,7 @@
 package com.makd.afinity.data.repository.download
 
 import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.download.DownloadQuality
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.download.PlaylistDownloadFilter
 import java.util.UUID
@@ -13,6 +14,7 @@ interface DownloadRepository {
         sourceId: String,
         volumeId: String? = null,
         playlistId: String? = null,
+        quality: DownloadQuality? = null,
     ): Result<UUID>
 
     suspend fun pauseDownload(downloadId: UUID): Result<Unit>
@@ -58,21 +60,35 @@ interface DownloadRepository {
         seasonId: UUID,
         seriesId: UUID? = null,
         volumeId: String? = null,
+        quality: DownloadQuality? = null,
     ): Result<Int>
 
-    suspend fun startSeriesDownload(showId: UUID, volumeId: String? = null): Result<Int>
+    suspend fun startSeriesDownload(
+        showId: UUID,
+        volumeId: String? = null,
+        quality: DownloadQuality? = null,
+    ): Result<Int>
 
     suspend fun cancelAllSeriesDownloads(showId: UUID): Result<Unit>
 
     suspend fun cancelAllSeasonDownloads(seriesId: UUID, seasonNumber: Int): Result<Unit>
 
-    suspend fun startAlbumDownload(albumId: UUID, volumeId: String? = null): Result<Int>
+    suspend fun startAlbumDownload(
+        albumId: UUID,
+        volumeId: String? = null,
+        quality: DownloadQuality? = null,
+    ): Result<Int>
 
-    suspend fun startArtistDownload(artistId: UUID, volumeId: String? = null): Result<Int>
+    suspend fun startArtistDownload(
+        artistId: UUID,
+        volumeId: String? = null,
+        quality: DownloadQuality? = null,
+    ): Result<Int>
 
     suspend fun startPlaylistDownload(
         playlistId: UUID,
         volumeId: String? = null,
         filter: PlaylistDownloadFilter = PlaylistDownloadFilter.ALL,
+        quality: DownloadQuality? = null,
     ): Result<Int>
 }

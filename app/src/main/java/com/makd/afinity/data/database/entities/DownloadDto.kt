@@ -35,6 +35,12 @@ data class DownloadDto(
     val seriesId: String? = null,
     val storageVolumeId: String = "primary",
     val playlistId: String? = null,
+    val transcodeBitrate: Int? = null,
+    val transcodeMaxWidth: Int? = null,
+    val burnSubtitleIndex: Int? = null,
+    val transcodeSessionId: String? = null,
+    val transcodedContainer: String? = null,
+    val transcodeAudioIndex: Int? = null,
 )
 
 fun DownloadDto.toDownloadInfo(): DownloadInfo {
@@ -65,5 +71,7 @@ fun DownloadDto.toDownloadInfo(): DownloadInfo {
         seriesId = seriesId,
         storageVolumeId = storageVolumeId,
         playlistId = playlistId,
+        transcodeBitrate = transcodeBitrate,
+        transcodedContainer = transcodedContainer,
     )
 }

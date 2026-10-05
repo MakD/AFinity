@@ -29,4 +29,9 @@ data class DownloadInfo(
     val seriesId: String? = null,
     val storageVolumeId: String = "primary",
     val playlistId: String? = null,
-)
+    val transcodeBitrate: Int? = null,
+    val transcodedContainer: String? = null,
+) {
+    val isTranscoded: Boolean
+        get() = transcodedContainer != null
+}

@@ -291,6 +291,18 @@ interface PreferencesRepository {
 
     suspend fun getDownloadQuality(): String
 
+    suspend fun setVideoDownloadQuality(bitrate: Int)
+
+    suspend fun getVideoDownloadQuality(): Int
+
+    fun getVideoDownloadQualityFlow(): Flow<Int>
+
+    suspend fun setMusicDownloadQuality(bitrate: Int)
+
+    suspend fun getMusicDownloadQuality(): Int
+
+    fun getMusicDownloadQualityFlow(): Flow<Int>
+
     suspend fun setMaxDownloads(maxDownloads: Int)
 
     suspend fun getMaxDownloads(): Int

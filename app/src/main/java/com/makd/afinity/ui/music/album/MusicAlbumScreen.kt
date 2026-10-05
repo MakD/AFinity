@@ -68,6 +68,7 @@ import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.DownloadProgressIndicator
+import com.makd.afinity.ui.item.components.MusicDownloadQualityDialog
 import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
 import com.makd.afinity.ui.item.components.shared.OverviewSection
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
@@ -196,6 +197,9 @@ fun MusicAlbumScreen(
                 }
             }
             if (isDownloadAllowedByServer) {
+                var showDownloadQualityDialog by remember { mutableStateOf(false) }
+                val defaultDownloadQuality by
+                    viewModel.defaultMusicDownloadQuality.collectAsStateWithLifecycle()
                 DownloadProgressIndicator(
                     downloadInfo = uiState.albumDownloadInfo,
                     onDownloadClick = { viewModel.downloadAlbum() },
@@ -203,8 +207,16 @@ fun MusicAlbumScreen(
                     onResumeClick = { viewModel.downloadAlbum() },
                     onCancelClick = { viewModel.cancelAlbumDownload() },
                     canDownload = canDownloadOnNetwork,
+                    onDownloadLongClick = { showDownloadQualityDialog = true },
                     iconSize = 26.dp,
                 )
+                if (showDownloadQualityDialog) {
+                    MusicDownloadQualityDialog(
+                        initialBitrate = defaultDownloadQuality,
+                        onConfirm = { quality -> viewModel.downloadAlbum(quality) },
+                        onDismiss = { showDownloadQualityDialog = false },
+                    )
+                }
             }
         }
     }

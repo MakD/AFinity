@@ -424,7 +424,10 @@ fun ItemDetailScreen(
                     volumes = uiState.availableVolumes,
                     selectedVolumeId = uiState.selectedVolumeId,
                     onVolumeSelected = { viewModel.onVolumeSelected(it) },
-                    onConfirm = { source, _ -> viewModel.onQualitySelected(source.id) },
+                    initialQualityBitrate = uiState.defaultVideoDownloadQuality,
+                    onConfirm = { source, _, quality ->
+                        viewModel.onQualitySelected(source.id, quality)
+                    },
                 )
             }
         }
@@ -434,8 +437,9 @@ fun ItemDetailScreen(
                 volumes = uiState.availableVolumes,
                 selectedVolumeId = uiState.selectedVolumeId,
                 onVolumeSelected = { viewModel.onVolumeSelected(it) },
-                onConfirm = { viewModel.onLocationConfirmed() },
+                onConfirm = { quality -> viewModel.onLocationConfirmed(quality) },
                 onDismiss = { viewModel.dismissLocationDialog() },
+                initialQualityBitrate = uiState.defaultVideoDownloadQuality,
             )
         }
 

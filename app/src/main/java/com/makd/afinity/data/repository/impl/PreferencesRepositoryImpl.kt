@@ -87,6 +87,8 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
         val DOWNLOAD_WIFI_ONLY = booleanPreferencesKey("download_wifi_only")
         val DOWNLOAD_QUALITY = stringPreferencesKey("download_quality")
+        val VIDEO_DOWNLOAD_QUALITY = intPreferencesKey("video_download_quality")
+        val MUSIC_DOWNLOAD_QUALITY = intPreferencesKey("music_download_quality")
         val MAX_DOWNLOADS = intPreferencesKey("max_downloads")
         val DOWNLOAD_STORAGE_VOLUME_ID = stringPreferencesKey("download_storage_volume_id")
 
@@ -525,6 +527,28 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
     override suspend fun getDownloadQuality(): String {
         return dataStore.data.first()[Keys.DOWNLOAD_QUALITY] ?: "720p"
     }
+
+    override suspend fun setVideoDownloadQuality(bitrate: Int) {
+        dataStore.edit { preferences -> preferences[Keys.VIDEO_DOWNLOAD_QUALITY] = bitrate }
+    }
+
+    override suspend fun getVideoDownloadQuality(): Int {
+        return dataStore.data.first()[Keys.VIDEO_DOWNLOAD_QUALITY] ?: VideoQuality.ORIGINAL_BITRATE
+    }
+
+    override fun getVideoDownloadQualityFlow(): Flow<Int> =
+        dataStore.data.map { it[Keys.VIDEO_DOWNLOAD_QUALITY] ?: VideoQuality.ORIGINAL_BITRATE }
+
+    override suspend fun setMusicDownloadQuality(bitrate: Int) {
+        dataStore.edit { preferences -> preferences[Keys.MUSIC_DOWNLOAD_QUALITY] = bitrate }
+    }
+
+    override suspend fun getMusicDownloadQuality(): Int {
+        return dataStore.data.first()[Keys.MUSIC_DOWNLOAD_QUALITY] ?: MusicQuality.ORIGINAL_BITRATE
+    }
+
+    override fun getMusicDownloadQualityFlow(): Flow<Int> =
+        dataStore.data.map { it[Keys.MUSIC_DOWNLOAD_QUALITY] ?: MusicQuality.ORIGINAL_BITRATE }
 
     override suspend fun setMaxDownloads(maxDownloads: Int) {
         dataStore.edit { preferences -> preferences[Keys.MAX_DOWNLOADS] = maxDownloads }

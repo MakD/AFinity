@@ -6,10 +6,13 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.download.DownloadQuality
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityTrack
+import com.makd.afinity.data.models.player.MusicQuality
 import com.makd.afinity.data.repository.AppDataRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.store.ItemStore
@@ -19,8 +22,10 @@ import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -47,10 +52,20 @@ constructor(
     private val appDataRepository: AppDataRepository,
     private val downloadPermissions: DownloadPermissions,
     private val itemStore: ItemStore,
+    preferencesRepository: PreferencesRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     val albumId: UUID = UUID.fromString(savedStateHandle.get<String>("albumId")!!)
+
+    val defaultMusicDownloadQuality: StateFlow<Int> =
+        preferencesRepository
+            .getMusicDownloadQualityFlow()
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5_000),
+                MusicQuality.ORIGINAL_BITRATE,
+            )
 
     val isDownloadAllowedByServer: StateFlow<Boolean> = downloadPermissions.isAllowedByServer
 
@@ -246,9 +261,9 @@ constructor(
         )
     }
 
-    fun downloadAlbum() {
+    fun downloadAlbum(quality: DownloadQuality? = null) {
         viewModelScope.launch {
-            downloadRepository.startAlbumDownload(albumId).onFailure {
+            downloadRepository.startAlbumDownload(albumId, quality = quality).onFailure {
                 Timber.e(it, "Failed to start album download")
             }
         }

@@ -1686,6 +1686,18 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_81_82 =
+        object : Migration(81, 82) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `downloads` ADD COLUMN `transcodeBitrate` INTEGER")
+                db.execSQL("ALTER TABLE `downloads` ADD COLUMN `transcodeMaxWidth` INTEGER")
+                db.execSQL("ALTER TABLE `downloads` ADD COLUMN `burnSubtitleIndex` INTEGER")
+                db.execSQL("ALTER TABLE `downloads` ADD COLUMN `transcodeSessionId` TEXT")
+                db.execSQL("ALTER TABLE `downloads` ADD COLUMN `transcodedContainer` TEXT")
+                db.execSQL("ALTER TABLE `downloads` ADD COLUMN `transcodeAudioIndex` INTEGER")
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1768,5 +1780,6 @@ object DatabaseMigrations {
             MIGRATION_78_79,
             MIGRATION_79_80,
             MIGRATION_80_81,
+            MIGRATION_81_82,
         )
 }

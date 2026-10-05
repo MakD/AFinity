@@ -81,6 +81,8 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.data.models.player.MusicQuality
+import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.repository.CacheSection
 import com.makd.afinity.data.repository.CacheUsage
 import com.makd.afinity.navigation.LocalPlayerOffset
@@ -98,6 +100,9 @@ import com.makd.afinity.ui.downloads.absChildrenOf
 import com.makd.afinity.ui.downloads.components.DownloadStorageStrip
 import com.makd.afinity.ui.downloads.components.downloadCatalogSections
 import com.makd.afinity.ui.downloads.jellyfinChildrenOf
+import com.makd.afinity.ui.player.components.musicQualityLabel
+import com.makd.afinity.ui.player.components.qualityLabel
+import com.makd.afinity.ui.player.components.settingsQualityLabel
 import java.util.UUID
 import kotlin.math.ceil
 
@@ -767,8 +772,9 @@ fun ActiveDownloadCard(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         if (
-                            download.status == DownloadStatus.DOWNLOADING ||
-                                download.status == DownloadStatus.QUEUED
+                            !download.isTranscoded &&
+                                (download.status == DownloadStatus.DOWNLOADING ||
+                                    download.status == DownloadStatus.QUEUED)
                         ) {
                             IconButton(
                                 onClick = { onPause(download.id) },
@@ -831,12 +837,30 @@ fun ActiveDownloadCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    val convertingLabel =
+                        download.transcodeBitrate
+                            ?.takeIf { download.isTranscoded }
+                            ?.let { bitrate ->
+                                if (download.itemType == "Audio") {
+                                    musicQualityLabel(MusicQuality.fromBitrate(bitrate))
+                                } else {
+                                    settingsQualityLabel(VideoQuality.fromBitrate(bitrate))
+                                }
+                            }
                     val statusText =
                         when (download.status) {
                             DownloadStatus.QUEUED ->
                                 stringResource(R.string.download_status_queued).uppercase()
                             DownloadStatus.DOWNLOADING ->
-                                stringResource(R.string.download_status_downloading).uppercase()
+                                if (convertingLabel != null) {
+                                    stringResource(
+                                            R.string.download_converting_fmt,
+                                            convertingLabel,
+                                        )
+                                        .uppercase()
+                                } else {
+                                    stringResource(R.string.download_status_downloading).uppercase()
+                                }
                             DownloadStatus.PAUSED ->
                                 stringResource(R.string.download_status_paused).uppercase()
                             DownloadStatus.FAILED ->
@@ -861,8 +885,9 @@ fun ActiveDownloadCard(
                         modifier = Modifier.weight(1f),
                     )
 
+                    val totalPrefix = if (download.isTranscoded) "~" else ""
                     val sizeText =
-                        "${formatSize(download.bytesDownloaded)} / ${formatSize(download.totalBytes)}"
+                        "${formatSize(download.bytesDownloaded)} / $totalPrefix${formatSize(download.totalBytes)}"
                     val speedText =
                         if (
                             download.status == DownloadStatus.DOWNLOADING &&
@@ -902,6 +927,10 @@ fun CompletedDownloadRow(
 
     val runtimeMinutes = ceil((download.runtimeTicks ?: 0L) / 600_000_000.0).toInt()
     val runtimeStr = if (runtimeMinutes > 0) "${runtimeMinutes}m • " else ""
+    val convertedLabel =
+        if (download.isTranscoded) {
+            download.transcodeBitrate?.let { qualityLabel(VideoQuality.fromBitrate(it)) }
+        } else null
 
     val subtitleText = buildString {
         if (isEpisode) {
@@ -916,6 +945,7 @@ fun CompletedDownloadRow(
         }
         append(runtimeStr)
         append(formatSize(download.totalBytes))
+        if (convertedLabel != null) append(" • $convertedLabel")
     }
 
     DownloadListItemRow(
@@ -1474,9 +1504,14 @@ fun MusicTrackRow(
     onDelete: (UUID) -> Unit,
     formatSize: (Long) -> String,
 ) {
+    val convertedLabel =
+        if (download.isTranscoded) {
+            download.transcodeBitrate?.let { musicQualityLabel(MusicQuality.fromBitrate(it)) }
+        } else null
     val subtitleText = buildString {
         if (!download.seriesName.isNullOrBlank()) append("${download.seriesName} · ")
         append(formatSize(download.totalBytes))
+        if (convertedLabel != null) append(" · $convertedLabel")
     }
 
     DownloadListItemRow(
