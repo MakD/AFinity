@@ -12,9 +12,11 @@ import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.drawable.Icon
+import android.media.AudioManager
 import android.os.Bundle
 import android.os.Process
 import android.util.Rational
+import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -40,6 +42,7 @@ import com.makd.afinity.ui.theme.AFinityTheme
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.math.roundToInt
 import timber.log.Timber
 
 @UnstableApi
@@ -51,6 +54,20 @@ class PlayerActivity : AppCompatActivity() {
     @Inject lateinit var preferencesRepository: PreferencesRepository
 
     private var wasPip: Boolean = false
+
+    private val audioManager by lazy { getSystemService(AudioManager::class.java) }
+
+    private var volumeStepBeforeMute = 1
+
+    private val repeatableShortcutKeys =
+        setOf(
+            KeyEvent.KEYCODE_J,
+            KeyEvent.KEYCODE_L,
+            KeyEvent.KEYCODE_DPAD_LEFT,
+            KeyEvent.KEYCODE_DPAD_RIGHT,
+            KeyEvent.KEYCODE_DPAD_UP,
+            KeyEvent.KEYCODE_DPAD_DOWN,
+        )
 
     companion object {
         private const val ACTION_PLAY_PAUSE = "com.makd.afinity.action.PLAY_PAUSE"
@@ -188,6 +205,130 @@ class PlayerActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.isCtrlPressed || event.isAltPressed || event.isMetaPressed) {
+            return super.dispatchKeyEvent(event)
+        }
+        val shortcut = keyboardShortcut(event) ?: return super.dispatchKeyEvent(event)
+        if (
+            event.action == KeyEvent.ACTION_DOWN &&
+                (event.repeatCount == 0 || event.keyCode in repeatableShortcutKeys)
+        ) {
+            shortcut()
+        }
+        return true
+    }
+
+    // Mirrors the YouTube web player's keyboard shortcuts.
+    private fun keyboardShortcut(event: KeyEvent): (() -> Unit)? {
+        val player = viewModel.player
+        val shift = event.isShiftPressed
+        return when (event.keyCode) {
+            KeyEvent.KEYCODE_SPACE,
+            KeyEvent.KEYCODE_K -> {
+                {
+                    viewModel.handlePlayerEvent(
+                        if (player.isPlaying) PlayerEvent.Pause else PlayerEvent.Play
+                    )
+                }
+            }
+            KeyEvent.KEYCODE_J -> {
+                { viewModel.handlePlayerEvent(PlayerEvent.SeekRelative(-10_000)) }
+            }
+            KeyEvent.KEYCODE_L -> {
+                { viewModel.handlePlayerEvent(PlayerEvent.SeekRelative(10_000)) }
+            }
+            KeyEvent.KEYCODE_DPAD_LEFT -> {
+                { viewModel.handlePlayerEvent(PlayerEvent.SeekRelative(-5_000)) }
+            }
+            KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                { viewModel.handlePlayerEvent(PlayerEvent.SeekRelative(5_000)) }
+            }
+            KeyEvent.KEYCODE_DPAD_UP -> {
+                { setVolumeStep(currentVolumeStep() + 1) }
+            }
+            KeyEvent.KEYCODE_DPAD_DOWN -> {
+                { setVolumeStep(currentVolumeStep() - 1) }
+            }
+            KeyEvent.KEYCODE_M -> {
+                {
+                    val step = currentVolumeStep()
+                    if (step > 0) {
+                        volumeStepBeforeMute = step
+                        setVolumeStep(0)
+                    } else {
+                        setVolumeStep(volumeStepBeforeMute)
+                    }
+                }
+            }
+            in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9,
+            in KeyEvent.KEYCODE_NUMPAD_0..KeyEvent.KEYCODE_NUMPAD_9 ->
+                if (shift) null
+                else {
+                    {
+                        val digit =
+                            if (event.keyCode <= KeyEvent.KEYCODE_9) {
+                                event.keyCode - KeyEvent.KEYCODE_0
+                            } else {
+                                event.keyCode - KeyEvent.KEYCODE_NUMPAD_0
+                            }
+                        if (player.duration > 0) {
+                            viewModel.handlePlayerEvent(
+                                PlayerEvent.Seek(player.duration * digit / 10)
+                            )
+                        }
+                    }
+                }
+            KeyEvent.KEYCODE_MOVE_HOME -> {
+                { viewModel.handlePlayerEvent(PlayerEvent.Seek(0)) }
+            }
+            KeyEvent.KEYCODE_MOVE_END -> {
+                {
+                    if (player.duration > 0) {
+                        viewModel.handlePlayerEvent(PlayerEvent.Seek(player.duration))
+                    }
+                }
+            }
+            KeyEvent.KEYCODE_PERIOD ->
+                if (shift) {
+                    { changePlaybackSpeed(0.25f) }
+                } else null
+            KeyEvent.KEYCODE_COMMA ->
+                if (shift) {
+                    { changePlaybackSpeed(-0.25f) }
+                } else null
+            KeyEvent.KEYCODE_N ->
+                if (shift) {
+                    { viewModel.onNextEpisode() }
+                } else null
+            KeyEvent.KEYCODE_P ->
+                if (shift) {
+                    { viewModel.onPreviousEpisode() }
+                } else null
+            KeyEvent.KEYCODE_I -> {
+                { viewModel.handlePlayerEvent(PlayerEvent.EnterPictureInPicture) }
+            }
+            else -> null
+        }
+    }
+
+    private fun changePlaybackSpeed(delta: Float) {
+        val speed = (viewModel.uiState.value.playbackSpeed + delta).coerceIn(0.25f, 2f)
+        viewModel.handlePlayerEvent(PlayerEvent.SetPlaybackSpeed(speed))
+        viewModel.showControls()
+    }
+
+    private fun currentVolumeStep(): Int = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+
+    private fun setVolumeStep(step: Int) {
+        val maxStep = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        val target = step.coerceIn(0, maxStep)
+        // SetVolume takes a percentage and truncates it back to a stream step; aiming at the
+        // middle of the step keeps float rounding from landing one step short.
+        val percent = if (target == 0) 0 else ((target + 0.5f) * 100f / maxStep).roundToInt()
+        viewModel.handlePlayerEvent(PlayerEvent.SetVolume(percent.coerceAtMost(100)))
     }
 
     private fun hideSystemUI() {
