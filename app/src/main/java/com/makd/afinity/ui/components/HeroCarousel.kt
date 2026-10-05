@@ -61,7 +61,6 @@ import coil3.request.ImageRequest
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
-import com.makd.afinity.data.models.extensions.logoImageUrlWebp
 import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
@@ -88,7 +87,7 @@ private const val HeroLogoPortraitWidthFraction = 0.8f
 private const val HeroLogoLandscapeWidthFraction = 0.4f
 
 private fun heroLogoUrl(item: AfinityItem, skipServerResize: Boolean): String? =
-    if (skipServerResize) item.images.logoImageUrlWithTransparency else item.images.logoImageUrlWebp
+    item.images.logoImageUrlWithTransparency(webp = !skipServerResize)
 
 @Composable
 fun heroCarouselLayoutHeight(): Dp {

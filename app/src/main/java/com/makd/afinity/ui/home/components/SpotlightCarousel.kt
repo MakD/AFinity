@@ -47,6 +47,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.LocalShowRatings
+import com.makd.afinity.navigation.LocalSkipServerImageResize
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.focalAlpha
 import com.makd.afinity.ui.components.isLandscapeWindow
@@ -72,6 +73,7 @@ fun SpotlightCarousel(
     val windowHeight = with(density) { containerSize.height.toDp() }
     val state = rememberCarouselState { items.size }
     val ratingScale = rememberRatingMetadataScale()
+    val skipServerResize = LocalSkipServerImageResize.current
 
     Column(modifier = modifier) {
         HomeSectionHeader(title = title, startPadding = 14.dp)
@@ -140,7 +142,8 @@ fun SpotlightCarousel(
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         val logoUrl =
-                            item.images.logoImageUrlWithTransparency ?: item.images.showLogoImageUrl
+                            item.images.logoImageUrlWithTransparency(webp = !skipServerResize)
+                                ?: item.images.showLogoImageUrl
                         val imdbRating =
                             when (item) {
                                 is AfinityMovie -> item.communityRating

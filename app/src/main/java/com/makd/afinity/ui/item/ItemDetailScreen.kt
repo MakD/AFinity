@@ -89,6 +89,7 @@ import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.extensions.showBackdropBlurHash
 import com.makd.afinity.data.models.extensions.showBackdropImageUrl
 import com.makd.afinity.data.models.extensions.showLogoImageUrl
+import com.makd.afinity.data.models.extensions.withLogoFormat
 import com.makd.afinity.data.models.external.ExternalTitles
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
@@ -108,6 +109,7 @@ import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.navigation.LocalShowRatings
+import com.makd.afinity.navigation.LocalSkipServerImageResize
 import com.makd.afinity.ui.admin.refresh.RefreshMetadataDialog
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
@@ -1228,12 +1230,11 @@ private fun ColumnScope.MediaLogoHeader(item: AfinityItem, isLandscape: Boolean)
     val windowInfo = LocalWindowInfo.current
     val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
     val logoToDisplay = if (item is AfinitySeason) item.images.showLogo else item.images.logo
+    val webpLogo = !LocalSkipServerImageResize.current
     val logoUrlToDisplay =
         if (item is AfinitySeason) {
-            item.images.showLogoImageUrl?.let { url ->
-                if (url.contains("?")) "$url&format=png" else "$url?format=png"
-            }
-        } else item.images.logoImageUrlWithTransparency
+            item.images.showLogoImageUrl?.withLogoFormat(webp = webpLogo)
+        } else item.images.logoImageUrlWithTransparency(webp = webpLogo)
     val logoNameToDisplay = if (item is AfinitySeason) item.seriesName else item.name
 
     if (logoToDisplay != null) {
