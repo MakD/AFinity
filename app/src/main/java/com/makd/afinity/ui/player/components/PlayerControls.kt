@@ -178,13 +178,14 @@ fun PlayerControls(
         if (uiState.sleepTimerExpired) showSleepTimerPanel = false
     }
 
+    // Same conditions the panels render under, so a panel that vanished doesn't stay "open".
     val isPanelOpen =
         showTrackPanel ||
             showQualityPanel ||
             showSpeedDialog ||
-            showEpisodeSwitcher ||
-            showChapterSwitcher ||
-            showMembersPopup ||
+            (showEpisodeSwitcher && playlistQueue.isNotEmpty()) ||
+            (showChapterSwitcher && uiState.chapters.isNotEmpty()) ||
+            (showMembersPopup && isSyncPlay) ||
             showSleepTimerPanel
     DisposableEffect(isPanelOpen) {
         onPanelOpenChange(isPanelOpen)

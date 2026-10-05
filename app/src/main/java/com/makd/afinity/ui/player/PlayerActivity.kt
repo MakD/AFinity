@@ -67,6 +67,14 @@ class PlayerActivity : AppCompatActivity() {
 
     private var playerUiHasFocus = false
 
+    private val arrowKeys =
+        setOf(
+            KeyEvent.KEYCODE_DPAD_UP,
+            KeyEvent.KEYCODE_DPAD_DOWN,
+            KeyEvent.KEYCODE_DPAD_LEFT,
+            KeyEvent.KEYCODE_DPAD_RIGHT,
+        )
+
     private val repeatableVolumeKeys = setOf(KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN)
 
     private val repeatableSeekKeys =
@@ -240,8 +248,11 @@ class PlayerActivity : AppCompatActivity() {
         }
         val shortcut = keyboardShortcut(event, state) ?: return super.dispatchKeyEvent(event)
         // A focused control (panel list, slider, button) keeps its own key handling; shortcuts
-        // only take the keys it leaves unused.
-        if (playerUiHasFocus && super.dispatchKeyEvent(event)) return true
+        // only take the keys it leaves unused. Arrows stay with focus navigation even at its edge.
+        if (playerUiHasFocus) {
+            if (super.dispatchKeyEvent(event)) return true
+            if (event.keyCode in arrowKeys) return false
+        }
         if (event.action == KeyEvent.ACTION_DOWN && isShortcutRepeatAllowed(event)) {
             shortcut()
         }
