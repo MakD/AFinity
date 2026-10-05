@@ -277,12 +277,16 @@ class PlayerActivity : AppCompatActivity() {
             return super.dispatchKeyEvent(event)
         }
         val shortcut = keyboardShortcut(event, state) ?: return super.dispatchKeyEvent(event)
-        // A focused control (panel list, slider, button) keeps its own key handling; shortcuts
-        // only take the keys it leaves unused. Arrows stay with focus navigation even at its edge.
-        // Space always plays/pauses instead of clicking the focused control.
-        if (playerUiHasFocus && event.keyCode != KeyEvent.KEYCODE_SPACE) {
-            if (super.dispatchKeyEvent(event)) return true
-            if (event.keyCode in arrowKeys) return false
+        // A focused control (e.g. Enter on a Tab-focused button) keeps its own key handling.
+        // Space and the arrows stay shortcuts: a lone focused control such as the skip button
+        // would otherwise swallow them.
+        if (
+            playerUiHasFocus &&
+                event.keyCode != KeyEvent.KEYCODE_SPACE &&
+                event.keyCode !in arrowKeys &&
+                super.dispatchKeyEvent(event)
+        ) {
+            return true
         }
         if (event.action == KeyEvent.ACTION_DOWN) {
             consumedDownKeyCodes += event.keyCode
