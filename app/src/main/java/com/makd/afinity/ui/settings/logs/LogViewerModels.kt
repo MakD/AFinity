@@ -57,8 +57,7 @@ data class LogScope(
     val window: LogWindow = LogWindow.ALL,
 ) {
     val isFiltered: Boolean
-        get() =
-            level != null || query.isNotBlank() || tags.isNotEmpty() || window != LogWindow.ALL
+        get() = level != null || query.isNotBlank() || tags.isNotEmpty() || window != LogWindow.ALL
 }
 
 data class LogViewerUiState(
@@ -86,8 +85,7 @@ data class LogViewerUiState(
     val isExporting: Boolean = false,
 ) {
     val density: LogDensity
-        get() =
-            if (!paused && scope.level == null) LogDensity.COMPACT else LogDensity.COMFORTABLE
+        get() = if (!paused && scope.level == null) LogDensity.COMPACT else LogDensity.COMFORTABLE
 
     val emptyReason: LogEmptyReason
         get() =

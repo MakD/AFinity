@@ -89,6 +89,7 @@ interface JellyseerrRepository {
     val isReachable: StateFlow<Boolean>
 
     suspend fun retryConnection()
+
     val requestEvents: SharedFlow<RequestEvent>
 
     suspend fun setServerUrl(url: String)

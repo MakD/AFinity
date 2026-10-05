@@ -51,8 +51,7 @@ constructor(
         }
         val apiKey = tmdbApiKey() ?: return null
         return try {
-            val credits =
-                tmdbApiService.getPersonCombinedCredits(personTmdbId.toString(), apiKey)
+            val credits = tmdbApiService.getPersonCombinedCredits(personTmdbId.toString(), apiKey)
             ExternalTitles(
                 ExternalTitlesSource.TMDB,
                 credits.toPersonCombinedCredits().meaningfulCredits(),

@@ -296,7 +296,10 @@ constructor(
         val baseUrl = mediaRepository.getBaseUrl()
         val restored = runCatching {
             json.decodeFromString<List<CachedStudio>>(raw)
-        }.getOrNull()?.mapNotNull { it.toStudio() }?.map { it.withBaseUrl(baseUrl) }
+        }
+            .getOrNull()
+            ?.mapNotNull { it.toStudio() }
+            ?.map { it.withBaseUrl(baseUrl) }
         if (!restored.isNullOrEmpty()) {
             cachedStudios = restored
             studiosFetchedAt = updatedAt
@@ -1121,9 +1124,7 @@ constructor(
                     }
                 }
                 val boxSetsDeferred = async {
-                    boxSetPool().filter {
-                        it.unplayedItemCount == 0 && (it.itemCount ?: 0) >= 2
-                    }
+                    boxSetPool().filter { it.unplayedItemCount == 0 && (it.itemCount ?: 0) >= 2 }
                 }
                 val shows =
                     showsDeferred.await().filter {

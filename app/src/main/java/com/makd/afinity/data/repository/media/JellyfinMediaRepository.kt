@@ -1675,34 +1675,33 @@ constructor(
         parentId: UUID?,
         limit: Int?,
         includeItemTypes: List<String>,
-    ): Result<List<String>> =
-        apiInvoker.apiResult { apiClient, userId ->
-            GenreApi(apiClient)
-                .getGenres(
-                    userId = userId,
-                    parentId = parentId,
-                    limit = limit,
-                    sortBy = listOf(ItemSortBy.SORT_NAME),
-                    sortOrder = listOf(SortOrder.ASCENDING),
-                    enableImages = false,
-                    enableTotalRecordCount = false,
-                    includeItemTypes =
-                        includeItemTypes
-                            .mapNotNull {
-                                try {
-                                    BaseItemKind.valueOf(it.uppercase())
-                                } catch (e: CancellationException) {
-                                    throw e
-                                } catch (e: Exception) {
-                                    null
-                                }
+    ): Result<List<String>> = apiInvoker.apiResult { apiClient, userId ->
+        GenreApi(apiClient)
+            .getGenres(
+                userId = userId,
+                parentId = parentId,
+                limit = limit,
+                sortBy = listOf(ItemSortBy.SORT_NAME),
+                sortOrder = listOf(SortOrder.ASCENDING),
+                enableImages = false,
+                enableTotalRecordCount = false,
+                includeItemTypes =
+                    includeItemTypes
+                        .mapNotNull {
+                            try {
+                                BaseItemKind.valueOf(it.uppercase())
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Exception) {
+                                null
                             }
-                            .ifEmpty { null },
-                )
-                .content
-                .items
-                .mapNotNull { genreDto -> genreDto.name?.takeIf { it.isNotBlank() } }
-        }
+                        }
+                        .ifEmpty { null },
+            )
+            .content
+            .items
+            .mapNotNull { genreDto -> genreDto.name?.takeIf { it.isNotBlank() } }
+    }
 
     override suspend fun getStudios(
         includeItemTypes: List<String>,

@@ -746,11 +746,11 @@ constructor(
             }
             val mostPlayedTracksJob = async {
                 runCatching {
-                    musicRepository.getMostPlayedTracks(
-                        limit = MOST_PLAYED_TRACKS_FETCH,
-                        parentId = libraryId,
-                    )
-                }
+                        musicRepository.getMostPlayedTracks(
+                            limit = MOST_PLAYED_TRACKS_FETCH,
+                            parentId = libraryId,
+                        )
+                    }
                     .getOrDefault(emptyList())
             }
             val mostPlayedJob = async { mostPlayedTracksJob.await().toMostPlayedAlbums(15) }

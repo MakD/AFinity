@@ -2215,8 +2215,7 @@ constructor(
             coroutineScope {
                 val streamDecision =
                     when {
-                        useLocalSource ->
-                            StreamDecision.DirectPlay("file://${mediaSource.path}")
+                        useLocalSource -> StreamDecision.DirectPlay("file://${mediaSource.path}")
                         negotiatedSource != null ->
                             playbackRepository.resolveStream(
                                 itemId = fullItem.id,

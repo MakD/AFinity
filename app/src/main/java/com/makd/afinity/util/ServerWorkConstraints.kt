@@ -9,9 +9,7 @@ fun serverNetworkRequest(unmeteredOnly: Boolean = false): NetworkRequest =
     NetworkRequest.Builder()
         .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
         .removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
-        .apply {
-            if (unmeteredOnly) addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
-        }
+        .apply { if (unmeteredOnly) addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED) }
         .build()
 
 fun Constraints.Builder.requireServerNetwork(unmeteredOnly: Boolean = false): Constraints.Builder =

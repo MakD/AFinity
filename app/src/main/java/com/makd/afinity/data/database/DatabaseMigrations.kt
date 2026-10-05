@@ -1682,9 +1682,7 @@ object DatabaseMigrations {
                 db.execSQL(
                     "ALTER TABLE `audiobookshelf_progress` ADD COLUMN `pendingTimeListened` REAL NOT NULL DEFAULT 0"
                 )
-                db.execSQL(
-                    "ALTER TABLE `audiobookshelf_progress` ADD COLUMN `localSessionId` TEXT"
-                )
+                db.execSQL("ALTER TABLE `audiobookshelf_progress` ADD COLUMN `localSessionId` TEXT")
             }
         }
 

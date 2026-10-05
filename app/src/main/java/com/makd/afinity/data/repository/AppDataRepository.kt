@@ -1494,9 +1494,7 @@ constructor(
     private suspend fun refreshNavCounts() {
         backgroundWorkQueue.run("nav counts") {
             coroutineScope {
-                launch {
-                    if (!_favoritesLoaded.value) refreshFavoritesProbe()
-                }
+                launch { if (!_favoritesLoaded.value) refreshFavoritesProbe() }
                 launch {
                     try {
                         watchlistRepository.refreshWatchlistCount()?.let {

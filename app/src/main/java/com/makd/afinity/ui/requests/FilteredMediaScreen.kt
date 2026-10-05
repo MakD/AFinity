@@ -192,9 +192,7 @@ fun FilteredMediaScreen(
                 ) {
                     items(
                         count = uiState.items.size,
-                        key = { index ->
-                            uiState.items[index].let { "${it.mediaType}_${it.id}" }
-                        },
+                        key = { index -> uiState.items[index].let { "${it.mediaType}_${it.id}" } },
                     ) { index ->
                         val item = uiState.items[index]
 

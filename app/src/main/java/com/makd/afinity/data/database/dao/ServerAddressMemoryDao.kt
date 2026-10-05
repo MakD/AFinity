@@ -9,8 +9,7 @@ import com.makd.afinity.data.models.server.ServerAddressMemory
 @Dao
 interface ServerAddressMemoryDao {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(memory: ServerAddressMemory)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsert(memory: ServerAddressMemory)
 
     @Query(
         "SELECT * FROM serverAddressMemory WHERE serverId = :serverId AND networkKey = :networkKey"
