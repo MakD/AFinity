@@ -21,12 +21,14 @@ import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -42,7 +44,6 @@ import com.makd.afinity.ui.theme.AFinityTheme
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.UUID
 import javax.inject.Inject
-import kotlin.math.roundToInt
 import timber.log.Timber
 
 @UnstableApi
@@ -58,6 +59,8 @@ class PlayerActivity : AppCompatActivity() {
     private val audioManager by lazy { getSystemService(AudioManager::class.java) }
 
     private var volumeStepBeforeMute = 1
+
+    private var playerUiHasFocus = false
 
     private val repeatableShortcutKeys =
         setOf(
@@ -200,7 +203,10 @@ class PlayerActivity : AppCompatActivity() {
                         channelName = channelName,
                         liveStreamUrl = liveStreamUrl,
                         onBackPressed = { finish() },
-                        modifier = Modifier.fillMaxSize(),
+                        modifier =
+                            Modifier.fillMaxSize()
+                                .onFocusChanged { playerUiHasFocus = it.hasFocus }
+                                .focusGroup(),
                     )
                 }
             }
@@ -222,6 +228,9 @@ class PlayerActivity : AppCompatActivity() {
             return super.dispatchKeyEvent(event)
         }
         val shortcut = keyboardShortcut(event, state) ?: return super.dispatchKeyEvent(event)
+        // A focused control (panel list, slider, button) keeps its own key handling; shortcuts
+        // only take the keys it leaves unused.
+        if (playerUiHasFocus && super.dispatchKeyEvent(event)) return true
         if (
             event.action == KeyEvent.ACTION_DOWN &&
                 (event.repeatCount == 0 || event.keyCode in repeatableShortcutKeys)
@@ -245,7 +254,7 @@ class PlayerActivity : AppCompatActivity() {
             KeyEvent.KEYCODE_K -> {
                 {
                     viewModel.handlePlayerEvent(
-                        if (player.isPlaying) PlayerEvent.Pause else PlayerEvent.Play
+                        if (state.isPlaying) PlayerEvent.Pause else PlayerEvent.Play
                     )
                 }
             }
@@ -272,7 +281,12 @@ class PlayerActivity : AppCompatActivity() {
             }
             in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9,
             in KeyEvent.KEYCODE_NUMPAD_0..KeyEvent.KEYCODE_NUMPAD_9 ->
-                if (shift || !canSeek) null
+                if (
+                    shift ||
+                        !canSeek ||
+                        (event.keyCode >= KeyEvent.KEYCODE_NUMPAD_0 && !event.isNumLockOn)
+                )
+                    null
                 else {
                     {
                         val digit =
@@ -305,7 +319,7 @@ class PlayerActivity : AppCompatActivity() {
             }
             // '<' and '>' sit on different physical keys across layouts (e.g. QWERTZ).
             else ->
-                when (event.unicodeChar.toChar()) {
+                when (if (state.isSpeedingUp) null else event.unicodeChar.toChar()) {
                     '>' -> {
                         { changePlaybackSpeed(0.25f) }
                     }
@@ -337,10 +351,17 @@ class PlayerActivity : AppCompatActivity() {
     private fun setVolumeStep(step: Int) {
         val maxStep = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         val target = step.coerceIn(0, maxStep)
-        // SetVolume takes a percentage and truncates it back to a stream step; aiming at the
-        // middle of the step keeps float rounding from landing one step short.
-        val percent = if (target == 0) 0 else ((target + 0.5f) * 100f / maxStep).roundToInt()
-        viewModel.handlePlayerEvent(PlayerEvent.SetVolume(percent.coerceAtMost(100)))
+        // SetVolume takes a percentage that VolumeManager truncates back to a stream step; pick
+        // the percentage that lands on the target under that same conversion. With more than
+        // 100 steps not every step is reachable, so move to the nearest one in that direction.
+        val stepAt = { percent: Int -> ((percent.toFloat() / 100f) * maxStep).toInt() }
+        val percent =
+            if (target < currentVolumeStep()) {
+                (100 downTo 0).firstOrNull { stepAt(it) <= target } ?: 0
+            } else {
+                (0..100).firstOrNull { stepAt(it) >= target } ?: 100
+            }
+        viewModel.handlePlayerEvent(PlayerEvent.SetVolume(percent))
     }
 
     private fun hideSystemUI() {
