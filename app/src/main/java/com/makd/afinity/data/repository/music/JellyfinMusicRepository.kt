@@ -903,7 +903,7 @@ constructor(
                     )
             response.content.items.mapNotNull { dto ->
                 val name = dto.name?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-                val id = dto.id ?: return@mapNotNull null
+                val id = dto.id
                 val imageUrl =
                     dto.imageTags?.get(org.jellyfin.sdk.model.api.ImageType.PRIMARY)?.let { tag ->
                         baseUrl
@@ -941,7 +941,7 @@ constructor(
                     )
             response.content.items.mapNotNull { dto ->
                 val name = dto.name?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-                val id = dto.id ?: return@mapNotNull null
+                val id = dto.id
                 val imageUrl =
                     dto.imageTags?.get(org.jellyfin.sdk.model.api.ImageType.PRIMARY)?.let { tag ->
                         baseUrl

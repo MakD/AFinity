@@ -116,7 +116,7 @@ private fun openWatchLink(context: Context, link: String?) {
 }
 
 private fun regionName(region: String): String =
-    Locale("", region).displayCountry.ifBlank { region }
+    Locale.forLanguageTag("und-$region").displayCountry.ifBlank { region }
 
 @Composable
 fun WhereToWatchSection(providers: TmdbRegionProviders, modifier: Modifier = Modifier) {

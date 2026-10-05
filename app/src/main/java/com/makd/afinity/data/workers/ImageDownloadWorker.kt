@@ -348,7 +348,7 @@ constructor(
 
             Timber.d("Saving image to: ${outputFile.absolutePath} (Content-Type: $contentType)")
 
-            response.body?.byteStream()?.use { input ->
+            response.body.byteStream().use { input ->
                 FileOutputStream(outputFile).use { output ->
                     val buffer = ByteArray(BUFFER_SIZE)
                     var bytes: Int

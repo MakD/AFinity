@@ -469,9 +469,9 @@ private fun CastTitleSection(
 
         val episodeLabel =
             if (currentItem is AfinityEpisode) {
-                val s = currentItem.parentIndexNumber?.toString()?.padStart(2, '0')
-                val e = currentItem.indexNumber?.toString()?.padStart(2, '0')
-                if (s != null && e != null) "S${s}E${e}" else null
+                val s = currentItem.parentIndexNumber.toString().padStart(2, '0')
+                val e = currentItem.indexNumber.toString().padStart(2, '0')
+                "S${s}E${e}"
             } else null
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -828,8 +828,8 @@ fun CastAudioSelectionDialog(
                     val isSelected =
                         castState.audioStreamIndex?.let { it == stream.index } ?: stream.isDefault
                     val displayName = buildString {
-                        append(stream.language?.uppercase() ?: "Unknown")
-                        append(" - ${stream.codec?.uppercase() ?: "N/A"}")
+                        append(stream.language.uppercase())
+                        append(" - ${stream.codec.uppercase()}")
                         if ((stream.channels ?: 0) > 0) {
                             append(" (${stream.channels}ch)")
                         }
@@ -845,7 +845,7 @@ fun CastAudioSelectionDialog(
                                                 audioStreamIndex = stream.index,
                                                 item = currentItem,
                                                 serverBaseUrl = baseUrl,
-                                                mediaSourceId = mediaSource.id ?: "",
+                                                mediaSourceId = mediaSource.id,
                                                 subtitleStreamIndex = castState.subtitleStreamIndex,
                                                 maxBitrate = castState.castBitrate,
                                                 enableHevc = castState.enableHevc,
@@ -916,7 +916,7 @@ fun CastSubtitleSelectionDialog(
                                                 subtitleStreamIndex = null,
                                                 item = currentItem,
                                                 serverBaseUrl = baseUrl,
-                                                mediaSourceId = mediaSource.id ?: "",
+                                                mediaSourceId = mediaSource.id,
                                                 audioStreamIndex = castState.audioStreamIndex,
                                                 maxBitrate = castState.castBitrate,
                                                 enableHevc = castState.enableHevc,
@@ -947,8 +947,8 @@ fun CastSubtitleSelectionDialog(
                 items(subtitleStreams, key = { it.index }) { stream ->
                     val isSelected = stream.index == castState.subtitleStreamIndex
                     val displayName = buildString {
-                        append(stream.displayTitle ?: stream.language?.uppercase() ?: "Unknown")
-                        stream.codec?.let { append(" ($it)") }
+                        append(stream.displayTitle ?: stream.language.uppercase())
+                        append(" (${stream.codec})")
                     }
 
                     Row(
@@ -961,7 +961,7 @@ fun CastSubtitleSelectionDialog(
                                                 subtitleStreamIndex = stream.index,
                                                 item = currentItem,
                                                 serverBaseUrl = baseUrl,
-                                                mediaSourceId = mediaSource.id ?: "",
+                                                mediaSourceId = mediaSource.id,
                                                 audioStreamIndex = castState.audioStreamIndex,
                                                 maxBitrate = castState.castBitrate,
                                                 enableHevc = castState.enableHevc,

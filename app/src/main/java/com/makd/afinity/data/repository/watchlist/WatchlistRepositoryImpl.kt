@@ -96,8 +96,7 @@ constructor(
                     criteria = ItemFilterCriteria(isLiked = true),
                 )
                 .map { response ->
-                    response.items?.mapNotNull { it.toAfinityItem(mediaRepository.getBaseUrl()) }
-                        ?: emptyList()
+                    response.items.mapNotNull { it.toAfinityItem(mediaRepository.getBaseUrl()) }
                 }
         }
     }
@@ -114,8 +113,8 @@ constructor(
                         criteria = ItemFilterCriteria(isLiked = true),
                     )
                 response.items
-                    ?.filter { it.type?.name == "BOX_SET" }
-                    ?.map { it.toAfinityBoxSet(mediaRepository.getBaseUrl()) } ?: emptyList()
+                    .filter { it.type.name == "BOX_SET" }
+                    .map { it.toAfinityBoxSet(mediaRepository.getBaseUrl()) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -173,8 +172,8 @@ constructor(
                         criteria = ItemFilterCriteria(isLiked = true),
                     )
                 response.items
-                    ?.filter { it.type?.name == "SEASON" }
-                    ?.mapNotNull { it.toAfinitySeason(mediaRepository.getBaseUrl()) } ?: emptyList()
+                    .filter { it.type.name == "SEASON" }
+                    .mapNotNull { it.toAfinitySeason(mediaRepository.getBaseUrl()) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -196,9 +195,8 @@ constructor(
                         criteria = ItemFilterCriteria(isLiked = true),
                     )
                 response.items
-                    ?.filter { it.type?.name == "EPISODE" }
-                    ?.mapNotNull { it.toAfinityEpisode(mediaRepository.getBaseUrl()) }
-                    ?: emptyList()
+                    .filter { it.type.name == "EPISODE" }
+                    .mapNotNull { it.toAfinityEpisode(mediaRepository.getBaseUrl()) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -217,7 +215,7 @@ constructor(
                 criteria = ItemFilterCriteria(isLiked = true),
                 enableTotalRecordCount = true,
             )
-            .map { it.totalRecordCount ?: 0 }
+            .map { it.totalRecordCount }
             .getOrElse { e ->
                 if (e is CancellationException) throw e
                 Timber.e(e, "Failed to get watchlist count")
@@ -232,7 +230,7 @@ constructor(
                         limit = 1000,
                         criteria = ItemFilterCriteria(isLiked = true),
                     )
-                val likedItemIds = allLikedResponse.items?.mapNotNull { it.id } ?: emptyList()
+                val likedItemIds = allLikedResponse.items.map { it.id }
 
                 likedItemIds.forEach { itemId ->
                     try {

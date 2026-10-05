@@ -121,7 +121,7 @@ fun EpisodeListCard(
                 )
 
                 if (item.runtimeTicks > 0) {
-                    val progress = (item.playbackPositionTicks ?: 0f).toFloat() / item.runtimeTicks
+                    val progress = item.playbackPositionTicks.toFloat() / item.runtimeTicks
                     if (progress > 0f) {
                         LinearProgressIndicator(
                             progress = { progress },
@@ -245,7 +245,7 @@ fun EpisodeListCard(
                 }
 
                 Text(
-                    text = item.name ?: stringResource(R.string.unknown_episode),
+                    text = item.name.ifBlank { stringResource(R.string.unknown_episode) },
                     style =
                         MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onSurface,

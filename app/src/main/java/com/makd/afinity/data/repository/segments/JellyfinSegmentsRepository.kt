@@ -48,9 +48,9 @@ constructor(
                         )
 
                     val segments =
-                        response.content?.items?.map { mediaSegmentDto ->
+                        response.content.items.map { mediaSegmentDto ->
                             mediaSegmentDto.toAfinitySegment()
-                        } ?: emptyList()
+                        }
 
                     Timber.d("Fetched ${segments.size} segments from API for item $itemId")
 

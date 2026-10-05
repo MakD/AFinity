@@ -307,15 +307,15 @@ private fun EpisodeSwitcherCard(
         ) {
             val cardImageUrl =
                 if (episode is AfinityMovie) {
-                    episode.images?.thumbImageUrl ?: episode.images?.primaryImageUrl
+                    episode.images.thumbImageUrl ?: episode.images.primaryImageUrl
                 } else {
-                    episode.images?.primaryImageUrl
+                    episode.images.primaryImageUrl
                 }
             val cardBlurHash =
                 if (episode is AfinityMovie) {
-                    episode.images?.thumbBlurHash ?: episode.images?.primaryBlurHash
+                    episode.images.thumbBlurHash ?: episode.images.primaryBlurHash
                 } else {
-                    episode.images?.primaryBlurHash
+                    episode.images.primaryBlurHash
                 }
             AsyncImage(
                 imageUrl = cardImageUrl.toString(),
@@ -450,13 +450,13 @@ private fun EpisodeSwitcherCard(
                             text =
                                 stringResource(
                                     R.string.player_season_episode_fmt,
-                                    episodeMeta.parentIndexNumber ?: 1,
+                                    episodeMeta.parentIndexNumber,
                                     if (
                                         episodeMeta.indexNumberEnd != null &&
                                             episodeMeta.indexNumberEnd != episodeMeta.indexNumber
                                     )
-                                        "${episodeMeta.indexNumber ?: 0}-${episodeMeta.indexNumberEnd}"
-                                    else "${episodeMeta.indexNumber ?: 0}",
+                                        "${episodeMeta.indexNumber}-${episodeMeta.indexNumberEnd}"
+                                    else "${episodeMeta.indexNumber}",
                                 ),
                             style = MaterialTheme.typography.labelSmall,
                             color =

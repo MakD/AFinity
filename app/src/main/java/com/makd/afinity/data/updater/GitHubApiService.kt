@@ -48,9 +48,7 @@ constructor(@param:GitHubClient private val okHttpClient: OkHttpClient) {
                     )
                 }
 
-                val body =
-                    response.body?.string()
-                        ?: return@withContext Result.failure(Exception("Empty response body"))
+                val body = response.body.string()
 
                 val release = json.decodeFromString<GitHubRelease>(body)
 
@@ -83,9 +81,7 @@ constructor(@param:GitHubClient private val okHttpClient: OkHttpClient) {
                     )
                 }
 
-                val body =
-                    response.body?.string()
-                        ?: return@withContext Result.failure(Exception("Empty response body"))
+                val body = response.body.string()
 
                 val releases = json.decodeFromString<List<GitHubRelease>>(body)
                 val latest =

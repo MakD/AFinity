@@ -263,7 +263,7 @@ constructor(
             }
 
             val artUrl =
-                if (enhancedSession.id?.startsWith("local_") == true) {
+                if (enhancedSession.id.startsWith("local_")) {
                     enhancedSession.coverPath
                 } else if (baseUrl.isNotEmpty()) {
                     "$baseUrl/api/items/${enhancedSession.libraryItemId}/cover?raw=1"

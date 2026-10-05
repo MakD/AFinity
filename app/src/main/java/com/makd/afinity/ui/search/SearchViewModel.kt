@@ -557,7 +557,7 @@ constructor(
                                 //                                    it.locationType !=
                                 //                                        LocationType.VIRTUAL
                                 //                                }
-                                ?.mapNotNull { baseItemDto ->
+                                .mapNotNull { baseItemDto ->
                                     try {
                                         val item = baseItemDto.toAfinityItem(baseUrl)
                                         when (item) {
@@ -572,7 +572,7 @@ constructor(
                                         Timber.w(e, "Failed to convert item: ${baseItemDto.name}")
                                         null
                                     }
-                                } ?: emptyList()
+                                }
 
                         yield()
 
@@ -638,11 +638,11 @@ constructor(
                             //                                it.locationType !=
                             // LocationType.VIRTUAL
                             //                            }
-                            ?.mapNotNull { baseItemDto ->
+                            .mapNotNull { baseItemDto ->
                                 runCatching { baseItemDto.toAfinityItem(baseUrl) }.getOrNull()
                                     as? AfinityEpisode
                             }
-                            ?.sortedByRelevance(query) ?: emptyList()
+                            .sortedByRelevance(query)
                     }
 
                 _uiState.update { it.copy(episodeResults = episodes, isEpisodeSearching = false) }

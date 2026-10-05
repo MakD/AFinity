@@ -54,7 +54,7 @@ fun ChannelCard(
             (currentProgram?.images?.primary != null || currentProgram?.images?.thumb != null)
     val displayImageUrl =
         if (showProgramImage) {
-            currentProgram?.images?.thumb ?: currentProgram?.images?.primary
+            currentProgram.images.thumb ?: currentProgram.images.primary
         } else {
             channel.images.primary ?: channel.images.thumb
         }

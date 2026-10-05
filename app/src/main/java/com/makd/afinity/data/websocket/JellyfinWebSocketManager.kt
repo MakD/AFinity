@@ -349,7 +349,7 @@ constructor(
         val isRunning = runningLibraryTask != null
 
         if (isRunning && !libraryTaskWasRunning) {
-            Timber.d("Library task running: ${runningLibraryTask?.key ?: runningLibraryTask?.name}")
+            Timber.d("Library task running: ${runningLibraryTask.key ?: runningLibraryTask.name}")
         } else if (!isRunning && libraryTaskWasRunning) {
             Timber.d("Library task finished - refreshing library sections")
             mediaRefreshBus.emit(RefreshTrigger.LIBRARY_CHANGED)

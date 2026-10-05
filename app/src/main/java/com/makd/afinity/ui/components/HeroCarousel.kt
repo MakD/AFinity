@@ -363,8 +363,8 @@ private fun BoxScope.HeroContentCentered(
 
             val genres =
                 when (currentItem) {
-                    is AfinityMovie -> (currentItem as AfinityMovie).genres
-                    is AfinityShow -> (currentItem as AfinityShow).genres
+                    is AfinityMovie -> currentItem.genres
+                    is AfinityShow -> currentItem.genres
                     else -> emptyList()
                 }
             if (genres.isNotEmpty()) {
@@ -525,8 +525,8 @@ private fun BoxScope.HeroContentRich(
 
                 val genres =
                     when (currentItem) {
-                        is AfinityMovie -> (currentItem as AfinityMovie).genres
-                        is AfinityShow -> (currentItem as AfinityShow).genres
+                        is AfinityMovie -> currentItem.genres
+                        is AfinityShow -> currentItem.genres
                         else -> emptyList()
                     }
                 if (genres.isNotEmpty()) {
@@ -538,15 +538,13 @@ private fun BoxScope.HeroContentRich(
                     )
                 }
 
-                currentItem.overview?.let { overview ->
-                    Text(
-                        text = overview,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                Text(
+                    text = currentItem.overview,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
 
             Row(

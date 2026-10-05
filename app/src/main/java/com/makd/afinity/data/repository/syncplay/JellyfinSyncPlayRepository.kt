@@ -273,7 +273,6 @@ class JellyfinSyncPlayRepository @Inject constructor(private val sessionManager:
                     Timber.w("SyncPlay group error: ${event.type} — ${event.message}")
                     current
                 }
-                else -> current
             }
     }
 }

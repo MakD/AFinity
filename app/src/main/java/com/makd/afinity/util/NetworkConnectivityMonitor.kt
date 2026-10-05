@@ -166,7 +166,7 @@ constructor(
         val prefixes =
             linkProperties.routes
                 .filter { !it.isDefaultRoute && !it.hasGateway() }
-                .mapNotNull { it.destination?.toString() }
+                .map { it.destination.toString() }
                 .sorted()
                 .joinToString(",")
 

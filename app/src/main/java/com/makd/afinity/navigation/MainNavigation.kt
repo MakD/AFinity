@@ -397,8 +397,8 @@ fun MainNavigation(
                         AudioMiniPlayerState.Music(
                             title = currentTrack.name,
                             artist = currentTrack.artist ?: currentTrack.artists.firstOrNull(),
-                            coverUrl = currentTrack.images?.primary?.toString(),
-                            blurHash = currentTrack.images?.primaryImageBlurHash,
+                            coverUrl = currentTrack.images.primary?.toString(),
+                            blurHash = currentTrack.images.primaryImageBlurHash,
                             positionMs = musicPlaybackState.positionMs,
                             durationMs = musicPlaybackState.durationMs,
                             isPlaying = musicPlaybackState.isPlaying,

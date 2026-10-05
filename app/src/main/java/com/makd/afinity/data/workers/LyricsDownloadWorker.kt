@@ -64,7 +64,7 @@ constructor(
                         ?: return@withContext Result.failure(workDataOf("error" to "No API client"))
 
                 val response = LyricApi(apiClient).getLyrics(itemId = itemId)
-                val lines = response.content.lyrics ?: emptyList()
+                val lines = response.content.lyrics
 
                 if (lines.isEmpty()) {
                     Timber.d("No lyrics found for track $itemId")

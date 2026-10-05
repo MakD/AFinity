@@ -132,7 +132,7 @@ class GenrePagingSource(
                 )
 
             val items =
-                response.items?.mapNotNull { baseItemDto ->
+                response.items.mapNotNull { baseItemDto ->
                     try {
                         baseItemDto.toAfinityItem(mediaRepository.getBaseUrl())
                     } catch (e: CancellationException) {
@@ -140,7 +140,7 @@ class GenrePagingSource(
                     } catch (e: Exception) {
                         null
                     }
-                } ?: emptyList()
+                }
 
             LoadResult.Page(
                 data = items,

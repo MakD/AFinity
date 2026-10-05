@@ -884,7 +884,7 @@ constructor(
                 .getAdditionalPart(itemId = itemId, userId = userId)
                 .content
                 .items
-                ?.mapNotNull { baseItem -> baseItem.toAfinityItem(getBaseUrl()) } ?: emptyList()
+                .mapNotNull { baseItem -> baseItem.toAfinityItem(getBaseUrl()) }
         }
 
     override suspend fun getSimilarItems(
@@ -1366,7 +1366,7 @@ constructor(
                         enableUserData = false,
                     )
                     .content
-                    .totalRecordCount ?: 0
+                    .totalRecordCount
             val artists =
                 ArtistApi(apiClient)
                     .getAlbumArtists(
@@ -1376,7 +1376,7 @@ constructor(
                         enableTotalRecordCount = true,
                     )
                     .content
-                    .totalRecordCount ?: 0
+                    .totalRecordCount
             val people =
                 PersonApi(apiClient)
                     .getPersons(

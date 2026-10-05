@@ -114,8 +114,8 @@ constructor(
                                 enableTotalRecordCount = false,
                             )
                             .content
-                            ?.items
-                            ?.firstOrNull()
+                            .items
+                            .firstOrNull()
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
@@ -208,8 +208,8 @@ constructor(
         outputDir: File,
         mediaSourceId: String,
     ) {
-        val language = stream.language ?: "unknown"
-        val codec = stream.codec ?: "srt"
+        val language = stream.language
+        val codec = stream.codec
         val extension =
             when (codec.lowercase()) {
                 "subrip",
@@ -243,7 +243,7 @@ constructor(
                         return
                     }
 
-                    response.body?.byteStream()?.use { input ->
+                    response.body.byteStream().use { input ->
                         FileOutputStream(outputFile).use { output ->
                             val buffer = ByteArray(BUFFER_SIZE)
                             var bytes: Int

@@ -257,8 +257,8 @@ constructor(
                                         enableTotalRecordCount = false,
                                     )
                                     .content
-                                    ?.items
-                                    ?.firstOrNull()
+                                    .items
+                                    .firstOrNull()
                             } catch (e: CancellationException) {
                                 throw e
                             } catch (e: Exception) {
@@ -371,14 +371,14 @@ constructor(
                             }
                             val resumeOffset = if (serverIgnoredRange) 0L else existingFileSize
 
-                            val remainingBytes = response.body?.contentLength() ?: -1L
+                            val remainingBytes = response.body.contentLength()
                             val totalBytes =
                                 if (remainingBytes != -1L) resumeOffset + remainingBytes else -1L
 
                             val downloadedBytes = AtomicLong(resumeOffset)
                             var stoppedByUser = false
 
-                            response.body?.byteStream()?.use { input ->
+                            response.body.byteStream().use { input ->
                                 FileOutputStream(outputFile, !serverIgnoredRange).use { output ->
                                     coroutineScope {
                                         val progressJob =
@@ -587,7 +587,7 @@ constructor(
                     coroutineScope {
                         val seriesDeferred =
                             seriesId
-                                ?.takeIf { databaseRepository.getShow(it, userId) == null }
+                                .takeIf { databaseRepository.getShow(it, userId) == null }
                                 ?.let { id ->
                                     async {
                                         try {
@@ -606,8 +606,8 @@ constructor(
                                                     enableTotalRecordCount = false,
                                                 )
                                                 .content
-                                                ?.items
-                                                ?.firstOrNull()
+                                                .items
+                                                .firstOrNull()
                                         } catch (_: Exception) {
                                             null
                                         }
@@ -628,19 +628,17 @@ constructor(
                                                 enableTotalRecordCount = false,
                                             )
                                             .content
-                                            ?.items
-                                            ?.firstOrNull()
+                                            .items
+                                            .firstOrNull()
                                     } catch (_: Exception) {
                                         null
                                     }
                                 }
                             } else null
 
-                        seriesId?.let {
-                            seriesDeferred?.await()?.toAfinityShow(baseUrl)?.let { show ->
-                                databaseRepository.insertShow(show, serverId)
-                                downloadShowImages(apiClient, serverId, it, userId, volumeId)
-                            }
+                        seriesDeferred?.await()?.toAfinityShow(baseUrl)?.let { show ->
+                            databaseRepository.insertShow(show, serverId)
+                            downloadShowImages(apiClient, serverId, seriesId, userId, volumeId)
                         }
 
                         seasonDeferred?.await()?.toAfinitySeason(baseUrl)?.let { season ->
@@ -915,7 +913,7 @@ constructor(
                         }
                     val outputFile = File(outputDir, "$baseName.$extension")
 
-                    response.body?.byteStream()?.use { input ->
+                    response.body.byteStream().use { input ->
                         FileOutputStream(outputFile).use { output -> input.copyTo(output) }
                     }
 
@@ -1166,7 +1164,7 @@ constructor(
                 Request.Builder().url(url).header("X-Emby-Token", accessToken ?: "").build()
             okHttpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) return null
-                val bytes = response.body?.bytes() ?: return null
+                val bytes = response.body.bytes()
                 val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
                 if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null

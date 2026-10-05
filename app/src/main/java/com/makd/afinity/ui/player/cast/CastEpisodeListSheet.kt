@@ -157,11 +157,11 @@ private fun CastEpisodeCard(
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest)
         ) {
             AsyncImage(
-                imageUrl = episode.images?.primaryImageUrl.toString(),
+                imageUrl = episode.images.primaryImageUrl,
                 contentDescription = episode.name,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
-                blurHash = episode.images?.primaryBlurHash,
+                blurHash = episode.images.primaryBlurHash,
                 targetWidth = 140.dp,
                 targetHeight = 79.dp,
             )
@@ -269,13 +269,13 @@ private fun CastEpisodeCard(
                         text =
                             stringResource(
                                 R.string.player_season_episode_fmt,
-                                episode.parentIndexNumber ?: 1,
+                                episode.parentIndexNumber,
                                 if (
                                     episode.indexNumberEnd != null &&
                                         episode.indexNumberEnd != episode.indexNumber
                                 )
-                                    "${episode.indexNumber ?: 0}-${episode.indexNumberEnd}"
-                                else "${episode.indexNumber ?: 0}",
+                                    "${episode.indexNumber}-${episode.indexNumberEnd}"
+                                else "${episode.indexNumber}",
                             ),
                         style = MaterialTheme.typography.labelSmall,
                         color =

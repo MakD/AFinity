@@ -169,7 +169,7 @@ internal fun ServerDetailContent(
                                     text =
                                         stringResource(
                                             R.string.server_version_fmt,
-                                            serverWithCount.server.version ?: "",
+                                            serverWithCount.server.version,
                                         ),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,

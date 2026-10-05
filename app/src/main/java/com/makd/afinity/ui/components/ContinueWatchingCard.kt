@@ -107,10 +107,7 @@ fun ContinueWatchingCard(
 
                 val isMissing = item is AfinityEpisode && item.missing
                 val isUpcoming =
-                    isMissing &&
-                        (item as AfinityEpisode)
-                            .premiereDate
-                            ?.isAfter(java.time.LocalDateTime.now()) == true
+                    isMissing && item.premiereDate?.isAfter(java.time.LocalDateTime.now()) == true
                 val isMissingAndAired = isMissing && !isUpcoming
 
                 AsyncImage(

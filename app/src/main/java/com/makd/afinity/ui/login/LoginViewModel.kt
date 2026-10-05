@@ -191,7 +191,7 @@ constructor(
                                 error =
                                     context.getString(
                                         R.string.error_not_valid_jellyfin_fmt,
-                                        validationResult.message ?: "",
+                                        validationResult.message,
                                     ),
                             )
                     }

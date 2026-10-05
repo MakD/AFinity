@@ -741,7 +741,7 @@ private fun LandscapeItemDetailContent(
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         MediaLogoHeader(item = item, isLandscape = true)
 
-                        if (isModernSeason && item is AfinitySeason) {
+                        if (isModernSeason) {
                             ModernSeasonTitle(
                                 season = item,
                                 isLandscape = true,
@@ -1013,7 +1013,7 @@ private fun PortraitItemDetailContent(
             ) {
                 MediaLogoHeader(item = item, isLandscape = false)
 
-                if (isModernSeason && item is AfinitySeason) {
+                if (isModernSeason) {
                     ModernSeasonTitle(
                         season = item,
                         isLandscape = false,

@@ -107,7 +107,7 @@ constructor(
                     mediaInfoApi.getPostedPlaybackInfo(itemId = itemId, data = playbackInfoDto)
 
                 Timber.d(
-                    "Got playback info response with ${response.content.mediaSources?.size ?: 0} media sources"
+                    "Got playback info response with ${response.content.mediaSources.size} media sources"
                 )
 
                 response.content
@@ -159,9 +159,9 @@ constructor(
                     mediaInfoApi.getPostedPlaybackInfo(itemId = itemId, data = playbackInfoDto)
 
                 Timber.d(
-                    "Got ${response.content.mediaSources?.size ?: 0} media sources for item: $itemId"
+                    "Got ${response.content.mediaSources.size} media sources for item: $itemId"
                 )
-                response.content.mediaSources ?: emptyList()
+                response.content.mediaSources
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -234,7 +234,7 @@ constructor(
                                     allowAudioStreamCopy = true,
                                 ),
                         )
-                val source = response.content.mediaSources?.firstOrNull() ?: return@withContext null
+                val source = response.content.mediaSources.firstOrNull() ?: return@withContext null
 
                 if (source.supportsDirectPlay) {
                     val url =
@@ -680,7 +680,7 @@ constructor(
                 val sessionApi = SessionApi(apiClient)
                 val response = sessionApi.getSessions()
                 response.content
-                    ?.firstOrNull { session -> session.deviceId == apiClient.deviceInfo?.id }
+                    .firstOrNull { session -> session.deviceId == apiClient.deviceInfo.id }
                     ?.id
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get active session")
@@ -698,7 +698,7 @@ constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
-                val deviceId = apiClient.deviceInfo?.id ?: return@withContext null
+                val deviceId = apiClient.deviceInfo.id
                 val sessionApi = SessionApi(apiClient)
                 val sessions = sessionApi.getSessions(deviceId = deviceId).content.orEmpty()
                 val info =
@@ -859,7 +859,7 @@ constructor(
                     mediaInfoApi.getPostedPlaybackInfo(itemId = itemId, data = playbackInfoDto)
 
                 Timber.d(
-                    "Got cast playback info with ${response.content.mediaSources?.size ?: 0} media sources"
+                    "Got cast playback info with ${response.content.mediaSources.size} media sources"
                 )
                 response.content
             } catch (e: ApiClientException) {

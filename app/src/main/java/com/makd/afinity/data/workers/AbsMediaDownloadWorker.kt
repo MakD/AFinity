@@ -248,7 +248,7 @@ constructor(
                     audioFilesToDownload = listOf(audioFile)
                     episodeDuration = episode.duration ?: audioFile.duration ?: 0.0
                     displayTitle = episode.title
-                    displayAuthor = item.media?.metadata?.title
+                    displayAuthor = item.media.metadata.title
                     if (episode.description != null || episode.publishedAt != null) {
                         absDownloadDao.upsert(
                             entity.copy(
@@ -393,13 +393,13 @@ constructor(
                             }
                             val effectiveResume = if (serverIgnoredRange) 0L else resumeFrom
 
-                            val contentLength = response.body?.contentLength() ?: -1L
+                            val contentLength = response.body.contentLength()
                             trackTotalBytes =
                                 if (contentLength != -1L) effectiveResume + contentLength else -1L
 
                             var lastDbUpdate = 0L
 
-                            response.body?.byteStream()?.use { input ->
+                            response.body.byteStream().use { input ->
                                 FileOutputStream(outputFile, effectiveResume > 0).use { output ->
                                     val buffer = ByteArray(BUFFER_SIZE)
                                     var bytes: Int
@@ -576,7 +576,7 @@ constructor(
                     .build()
             okHttpClient.newCall(request).execute().use { response ->
                 if (response.isSuccessful) {
-                    response.body?.byteStream()?.use { input ->
+                    response.body.byteStream().use { input ->
                         FileOutputStream(coverFile).use { output -> input.copyTo(output) }
                     }
                     "file://${coverFile.absolutePath}"

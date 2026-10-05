@@ -486,7 +486,7 @@ constructor(
         val hasSession = session != null && session.serverId.isNotBlank()
 
         if (hasSession) {
-            session?.let { seedNavCounts(it.serverId, it.userId.toString()) }
+            seedNavCounts(session.serverId, session.userId.toString())
             val currentBaseUrl = mediaRepository.getBaseUrl()
             val cachedMovies =
                 homeCacheRepository.getLatestMovies("latest_movies_$cacheKey", currentBaseUrl)
@@ -860,7 +860,7 @@ constructor(
                     criteria = ItemFilterCriteria(isPlayed = false, hasOverview = true),
                 )
 
-            randomHeroItems.items?.mapNotNull { it.toAfinityItem(baseUrl) } ?: emptyList()
+            randomHeroItems.items.mapNotNull { it.toAfinityItem(baseUrl) }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

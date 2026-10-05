@@ -158,8 +158,8 @@ fun EpisodeFrame(
 }
 
 private fun episodeDesignator(episode: AfinityEpisode): String {
-    val season = episode.parentIndexNumber ?: 0
-    val number = episode.indexNumber ?: 0
+    val season = episode.parentIndexNumber
+    val number = episode.indexNumber
     val end = episode.indexNumberEnd
 
     return if (end != null && end != episode.indexNumber) {

@@ -273,10 +273,10 @@ constructor(
                     serverInfo ->
                     addServer(
                         Server(
-                            id = serverInfo.id ?: UUID.randomUUID().toString(),
-                            name = serverInfo.name ?: "Jellyfin Server",
+                            id = serverInfo.id,
+                            name = serverInfo.name,
                             version = null,
-                            address = serverInfo.address ?: "",
+                            address = serverInfo.address,
                         ),
                         "broadcast",
                     )
@@ -409,14 +409,12 @@ constructor(
                 val response = systemApi.getPublicSystemInfo()
                 val systemInfo = response.content
 
-                systemInfo?.let {
-                    Server(
-                        id = it.id ?: UUID.randomUUID().toString(),
-                        name = it.serverName ?: "Jellyfin Server",
-                        version = it.version,
-                        address = _currentBaseUrl.value,
-                    )
-                }
+                Server(
+                    id = systemInfo.id ?: UUID.randomUUID().toString(),
+                    name = systemInfo.serverName ?: "Jellyfin Server",
+                    version = systemInfo.version,
+                    address = _currentBaseUrl.value,
+                )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

@@ -280,7 +280,7 @@ constructor(
                 sessionManager.getCurrentApiClient()
                     ?: return@withContext Result.failure(Exception("No active session"))
             return@withContext try {
-                val sessions = SessionApi(apiClient).getSessions().content ?: emptyList()
+                val sessions = SessionApi(apiClient).getSessions().content
                 Result.success(sessions)
             } catch (e: CancellationException) {
                 throw e
@@ -546,8 +546,7 @@ constructor(
                 sessionManager.getCurrentApiClient()
                     ?: return@withContext Result.failure(Exception("No active session"))
             return@withContext try {
-                val tasks =
-                    ScheduledTaskApi(apiClient).getTasks(isHidden = false).content ?: emptyList()
+                val tasks = ScheduledTaskApi(apiClient).getTasks(isHidden = false).content
                 Result.success(tasks)
             } catch (e: CancellationException) {
                 throw e

@@ -190,12 +190,12 @@ private fun PartCard(
     cardWidth: Dp,
 ) {
     MediaThumbnailCard(
-        imageUrl = part.images?.thumbImageUrl ?: part.images?.primaryImageUrl,
+        imageUrl = part.images.thumbImageUrl ?: part.images.primaryImageUrl,
         contentDescription = part.name,
         title = part.name,
         onClick = onClick,
         cardWidth = cardWidth,
-        blurHash = part.images?.thumbBlurHash ?: part.images?.primaryBlurHash,
+        blurHash = part.images.thumbBlurHash ?: part.images.primaryBlurHash,
     ) {
         Surface(
             modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),

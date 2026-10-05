@@ -289,7 +289,7 @@ constructor(
                         return@use AddressCheck.DIFFERENT_SERVER
                     }
                     if (!response.isSuccessful) return@use AddressCheck.INDETERMINATE
-                    val body = response.body?.string() ?: return@use AddressCheck.INDETERMINATE
+                    val body = response.body.string()
                     val id =
                         Json.parseToJsonElement(body).jsonObject["id"]?.jsonPrimitive?.contentOrNull
                     when (id) {

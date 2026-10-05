@@ -266,7 +266,7 @@ constructor(
                         enableTotalRecordCount = false,
                     )
 
-                response.content?.items?.mapNotNull { it.id } ?: emptyList()
+                response.content.items.map { it.id }
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get favorite items")
                 emptyList()
@@ -366,23 +366,21 @@ constructor(
 
                 items.forEach { userDataDto ->
                     try {
-                        userDataDto.itemId?.let { itemId ->
-                            userDataApi.updateItemUserData(
-                                itemId = itemId,
-                                userId = userId,
-                                data =
-                                    UpdateUserItemDataDto(
-                                        rating = userDataDto.rating,
-                                        played = userDataDto.played,
-                                        playbackPositionTicks = userDataDto.playbackPositionTicks,
-                                        playCount = userDataDto.playCount,
-                                        isFavorite = userDataDto.isFavorite,
-                                        likes = userDataDto.likes,
-                                        lastPlayedDate = userDataDto.lastPlayedDate,
-                                    ),
-                            )
-                            successCount++
-                        }
+                        userDataApi.updateItemUserData(
+                            itemId = userDataDto.itemId,
+                            userId = userId,
+                            data =
+                                UpdateUserItemDataDto(
+                                    rating = userDataDto.rating,
+                                    played = userDataDto.played,
+                                    playbackPositionTicks = userDataDto.playbackPositionTicks,
+                                    playCount = userDataDto.playCount,
+                                    isFavorite = userDataDto.isFavorite,
+                                    likes = userDataDto.likes,
+                                    lastPlayedDate = userDataDto.lastPlayedDate,
+                                ),
+                        )
+                        successCount++
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {

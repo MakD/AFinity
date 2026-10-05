@@ -1846,8 +1846,8 @@ constructor(
                 allowTranscoding = true,
             ) ?: return emptyList()
         val source =
-            probe.mediaSources?.firstOrNull { it.id == mediaSourceId }
-                ?: probe.mediaSources?.firstOrNull()
+            probe.mediaSources.firstOrNull { it.id == mediaSourceId }
+                ?: probe.mediaSources.firstOrNull()
         val url = source?.transcodingUrl ?: return emptyList()
         return TranscodingUrl.transcodeReasons(url)
     }
@@ -2216,7 +2216,7 @@ constructor(
                 val streamDecision =
                     when {
                         useLocalSource ->
-                            mediaSource.path?.let { StreamDecision.DirectPlay("file://$it") }
+                            StreamDecision.DirectPlay("file://${mediaSource.path}")
                         negotiatedSource != null ->
                             playbackRepository.resolveStream(
                                 itemId = fullItem.id,
@@ -2354,7 +2354,7 @@ constructor(
                                             "${apiClient.baseUrl}$it"
                                         }
                                             ?: "${apiClient.baseUrl}/Videos/${fullItem.id}/${actualMediaSourceId}/Subtitles/${stream.index}/Stream.$extension"
-                                    val langCode = stream.language ?: "eng"
+                                    val langCode = stream.language
                                     val localizedLang = langCode.toLocalizedLanguageName()
                                     val finalLabel =
                                         if (
@@ -2387,7 +2387,7 @@ constructor(
                                         .setId(TrackMapping.sideLoadedId(stream.index))
                                         .setLabel(finalLabel)
                                         .setMimeType(mimeType)
-                                        .setLanguage(stream.language ?: "eng")
+                                        .setLanguage(stream.language)
                                         .build()
                                 } catch (_: Exception) {
                                     null
@@ -2411,7 +2411,7 @@ constructor(
                         .setMediaId(fullItem.id.toString())
                         .setUri(streamUrl)
                         .apply {
-                            if (streamDecision?.protocol == MediaStreamProtocol.HLS) {
+                            if (streamDecision.protocol == MediaStreamProtocol.HLS) {
                                 setMimeType(MimeTypes.APPLICATION_M3U8)
                             }
                         }

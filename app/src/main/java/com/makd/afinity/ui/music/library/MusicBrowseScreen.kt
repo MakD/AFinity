@@ -406,9 +406,8 @@ fun MusicBrowseScreen(
                         is AddToPlaylistResult.Added -> "Added to \"${result.playlistName}\""
                         is AddToPlaylistResult.Created -> "Created \"${result.playlistName}\""
                         is AddToPlaylistResult.Error -> result.message
-                        else -> null
                     }
-                message?.let { scope.launch { snackbarHostState.showSnackbar(it) } }
+                scope.launch { snackbarHostState.showSnackbar(message) }
             },
         )
     }

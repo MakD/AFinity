@@ -694,9 +694,8 @@ fun MusicAlbumScreen(
                         is AddToPlaylistResult.Created ->
                             createdPlaylistFmt.format(result.playlistName)
                         is AddToPlaylistResult.Error -> result.message
-                        else -> null
                     }
-                message?.let { scope.launch { snackbarHostState.showSnackbar(it) } }
+                scope.launch { snackbarHostState.showSnackbar(message) }
             },
         )
     }

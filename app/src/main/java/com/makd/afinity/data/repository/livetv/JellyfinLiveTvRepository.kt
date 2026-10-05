@@ -157,10 +157,10 @@ constructor(
                         addCurrentProgram = true,
                     )
 
-            response.content.items?.mapNotNull { channelDto ->
+            response.content.items.mapNotNull { channelDto ->
                 val currentProgram = channelDto.currentProgram?.toAfinityProgram(baseUrl)
                 channelDto.toAfinityChannel(baseUrl, currentProgram)
-            } ?: emptyList()
+            }
         }
 
     override suspend fun getChannel(channelId: UUID): AfinityChannel? =
@@ -215,8 +215,7 @@ constructor(
                             listOf(ItemFields.OVERVIEW, ItemFields.GENRES, ItemFields.CHANNEL_INFO),
                     )
 
-            response.content.items?.map { programDto -> programDto.toAfinityProgram(baseUrl) }
-                ?: emptyList()
+            response.content.items.map { programDto -> programDto.toAfinityProgram(baseUrl) }
         }
 
     override suspend fun getGuidePrograms(
@@ -242,7 +241,7 @@ constructor(
                 )
                 .content
                 .items
-                ?.map { programDto -> programDto.toAfinityProgram(baseUrl) } ?: emptyList()
+                .map { programDto -> programDto.toAfinityProgram(baseUrl) }
         }
 
     override suspend fun getCurrentProgram(channelId: UUID): AfinityProgram? {
@@ -274,7 +273,7 @@ constructor(
                 )
                 .content
                 .items
-                ?.map { programDto -> programDto.toAfinityProgram(baseUrl) } ?: emptyList()
+                .map { programDto -> programDto.toAfinityProgram(baseUrl) }
         }
 
     override suspend fun getChannelPlaybackInfo(
@@ -312,7 +311,7 @@ constructor(
             val playbackInfo = playbackResponse.content
 
             Timber.d(
-                "PlaybackInfo: playSessionId=${playbackInfo.playSessionId}, mediaSources=${playbackInfo.mediaSources?.size ?: 0}"
+                "PlaybackInfo: playSessionId=${playbackInfo.playSessionId}, mediaSources=${playbackInfo.mediaSources.size}"
             )
 
             val sources = playbackInfo.mediaSources

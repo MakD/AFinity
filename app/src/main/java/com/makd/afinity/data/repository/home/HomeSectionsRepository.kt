@@ -1289,7 +1289,7 @@ constructor(
                             criteria = criteria,
                         )
                         .items
-                        ?.mapNotNull { it.toAfinityItem(baseUrl) } ?: emptyList()
+                        .mapNotNull { it.toAfinityItem(baseUrl) }
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -1422,7 +1422,7 @@ constructor(
                             fields = FieldSets.MEDIA_ITEM_CARDS,
                         )
                         .items
-                        ?.mapNotNull { it.toAfinityItem(baseUrl) } ?: emptyList()
+                        .mapNotNull { it.toAfinityItem(baseUrl) }
                 }
                 else -> return HomeSectionContent.Empty
             }

@@ -92,7 +92,7 @@ fun EpisodeOverlayHandler(
             },
             onGoToSeries = {
                 onClearSelection()
-                pendingNavigationSeriesId = episode.seriesId?.toString()
+                pendingNavigationSeriesId = episode.seriesId.toString()
             },
             onPersonClick =
                 onNavigateToPerson?.let {

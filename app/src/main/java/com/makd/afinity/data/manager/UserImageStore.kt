@@ -41,7 +41,7 @@ constructor(
                 okHttpClient.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) return@withContext
                     val tmp = File(dir, "${userId}_$tag.jpg.tmp")
-                    response.body?.byteStream()?.use { input ->
+                    response.body.byteStream().use { input ->
                         FileOutputStream(tmp).use { output -> input.copyTo(output) }
                     }
                     if (tmp.length() > 0 && tmp.renameTo(target)) {

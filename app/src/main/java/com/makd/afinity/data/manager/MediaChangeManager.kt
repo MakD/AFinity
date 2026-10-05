@@ -147,7 +147,7 @@ constructor(
 
         val userDataByItemId = linkedMapOf<UUID, UserItemDataDto>()
         userDataList.forEach { userData ->
-            val itemId = userData.itemId ?: return@forEach
+            val itemId = userData.itemId
             userDataByItemId[itemId] = userData
             try {
                 databaseRepository.patchUserDataLocally(itemId, userId, serverId, userData)
