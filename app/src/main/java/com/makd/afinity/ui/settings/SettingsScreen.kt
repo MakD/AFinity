@@ -2,6 +2,7 @@ package com.makd.afinity.ui.settings
 
 import android.app.LocaleConfig
 import android.app.LocaleManager
+import android.os.Build
 import android.os.LocaleList
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -138,6 +139,9 @@ fun SettingsScreen(
     val defaultLangString = stringResource(R.string.lang_system_default)
     val appLanguageSubtitle =
         remember(defaultLangString) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                return@remember defaultLangString
+            }
             val localeManager = context.getSystemService(LocaleManager::class.java)
             val appLocales = localeManager.applicationLocales
 
@@ -439,24 +443,26 @@ fun SettingsScreen(
                                         },
                                     )
                                     SettingsDivider()
-                                    SettingsItem(
-                                        icon = painterResource(id = R.drawable.ic_language),
-                                        title = stringResource(R.string.pref_app_language),
-                                        subtitle = appLanguageSubtitle,
-                                        onClick = {
-                                            if (isDualPane) {
-                                                scope.launch {
-                                                    navigator.navigateTo(
-                                                        ListDetailPaneScaffoldRole.Detail,
-                                                        SettingsPaneDestination.Language,
-                                                    )
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        SettingsItem(
+                                            icon = painterResource(id = R.drawable.ic_language),
+                                            title = stringResource(R.string.pref_app_language),
+                                            subtitle = appLanguageSubtitle,
+                                            onClick = {
+                                                if (isDualPane) {
+                                                    scope.launch {
+                                                        navigator.navigateTo(
+                                                            ListDetailPaneScaffoldRole.Detail,
+                                                            SettingsPaneDestination.Language,
+                                                        )
+                                                    }
+                                                } else {
+                                                    showLanguageDialog = true
                                                 }
-                                            } else {
-                                                showLanguageDialog = true
-                                            }
-                                        },
-                                    )
-                                    SettingsDivider()
+                                            },
+                                        )
+                                        SettingsDivider()
+                                    }
                                     SettingsItem(
                                         icon = painterResource(id = R.drawable.ic_download_arrow),
                                         title = stringResource(R.string.backup_title),
@@ -1044,6 +1050,8 @@ private fun LogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Uni
 
 @Composable
 private fun LanguagePickerDialog(onDismiss: () -> Unit) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+
     val context = LocalContext.current
     val localeManager = remember { context.getSystemService(LocaleManager::class.java) }
     val supportedLocales = remember { LocaleConfig(context).supportedLocales }
@@ -1101,6 +1109,8 @@ private fun LanguagePickerDialog(onDismiss: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LanguagePickerPane(onBackClick: () -> Unit) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+
     val context = LocalContext.current
     val localeManager = remember { context.getSystemService(LocaleManager::class.java) }
     val supportedLocales = remember { LocaleConfig(context).supportedLocales }

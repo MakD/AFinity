@@ -126,8 +126,13 @@ object NetworkModule {
 
     private fun preferredLanguages(context: Context): List<String> {
         val appLocales =
-            context.getSystemService(LocaleManager::class.java)?.applicationLocales?.takeUnless {
-                it.isEmpty
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context
+                    .getSystemService(LocaleManager::class.java)
+                    ?.applicationLocales
+                    ?.takeUnless { it.isEmpty }
+            } else {
+                null
             }
         val locales = appLocales ?: context.resources.configuration.locales
         return (0 until locales.size()).mapNotNull { index ->

@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import com.makd.afinity.MainActivity
 import com.makd.afinity.R
 import com.makd.afinity.data.updater.models.GitHubRelease
@@ -46,10 +47,7 @@ constructor(@param:ApplicationContext private val context: Context) {
     }
 
     fun showUpdateAvailableNotification(release: GitHubRelease) {
-        if (
-            context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
-                android.content.pm.PackageManager.PERMISSION_GRANTED
-        ) {
+        if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) {
             return
         }
 

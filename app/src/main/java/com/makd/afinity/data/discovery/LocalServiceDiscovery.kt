@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import android.net.wifi.WifiManager
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.makd.afinity.util.LocalNetworkPermission
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.net.Inet4Address
@@ -72,6 +74,11 @@ constructor(
         serviceType: String,
         timeoutMs: Long = DEFAULT_TIMEOUT_MS,
     ): Flow<DiscoveryResult> {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            Timber.d("mDNS: discovery needs Android 14, skipping $serviceType")
+            return flowOf(DiscoveryResult.Unavailable)
+        }
+
         val manager =
             nsdManager
                 ?: run {
@@ -199,6 +206,7 @@ constructor(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     private fun NsdServiceInfo.toDiscoveredService(fallbackName: String): DiscoveredService? {
         if (port <= 0) return null
 

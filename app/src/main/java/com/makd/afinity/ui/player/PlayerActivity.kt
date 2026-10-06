@@ -25,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -101,7 +102,12 @@ class PlayerActivity : AppCompatActivity() {
         val filter = IntentFilter().apply { addAction(ACTION_PLAY_PAUSE) }
 
         try {
-            registerReceiver(pipReceiver, filter, RECEIVER_EXPORTED)
+            ContextCompat.registerReceiver(
+                this,
+                pipReceiver,
+                filter,
+                ContextCompat.RECEIVER_EXPORTED,
+            )
             Timber.d("PIP receiver registered successfully")
         } catch (e: Exception) {
             Timber.e(e, "Failed to register PIP receiver")

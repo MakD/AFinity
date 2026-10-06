@@ -149,7 +149,7 @@ private fun generateHomeRowOrder(): List<Int> {
 
     return buildList {
         while (buckets.any { it.isNotEmpty() }) {
-            buckets.forEach { bucket -> if (bucket.isNotEmpty()) add(bucket.removeFirst()) }
+            buckets.forEach { bucket -> if (bucket.isNotEmpty()) add(bucket.removeAt(0)) }
         }
     }
 }

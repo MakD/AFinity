@@ -3,6 +3,7 @@ package com.makd.afinity
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -192,15 +193,17 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        lifecycleScope.launch {
-            val alreadyGranted =
-                ContextCompat.checkSelfPermission(
-                    this@MainActivity,
-                    Manifest.permission.POST_NOTIFICATIONS,
-                ) == PackageManager.PERMISSION_GRANTED
-            val declined = preferencesRepository.getNotificationPermissionDeclined()
-            if (!alreadyGranted && !declined) {
-                showNotificationRationale.value = true
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            lifecycleScope.launch {
+                val alreadyGranted =
+                    ContextCompat.checkSelfPermission(
+                        this@MainActivity,
+                        Manifest.permission.POST_NOTIFICATIONS,
+                    ) == PackageManager.PERMISSION_GRANTED
+                val declined = preferencesRepository.getNotificationPermissionDeclined()
+                if (!alreadyGranted && !declined) {
+                    showNotificationRationale.value = true
+                }
             }
         }
 
