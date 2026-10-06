@@ -202,6 +202,9 @@ object NetworkModule {
 
     private val imageUserAgent = "AFinity/${BuildConfig.VERSION_NAME} (Android; Coil)"
 
+    private val imageAcceptHeader =
+        "image/avif,image/webp,image/svg+xml,image/png,image/jpeg,image/*;q=0.8"
+
     private val apiUserAgent =
         "AFinity/${BuildConfig.VERSION_NAME} (Android ${Build.VERSION.RELEASE}; ${Build.MODEL})"
 
@@ -225,9 +228,10 @@ object NetworkModule {
             .dispatcher(dispatcher)
             .cache(null)
             .addInterceptor { chain ->
-                chain.proceed(
-                    chain.request().newBuilder().header("User-Agent", imageUserAgent).build()
-                )
+                val request = chain.request()
+                val builder = request.newBuilder().header("User-Agent", imageUserAgent)
+                if (request.header("Accept") == null) builder.header("Accept", imageAcceptHeader)
+                chain.proceed(builder.build())
             }
             .addInterceptor { chain ->
                 val request = chain.request()
