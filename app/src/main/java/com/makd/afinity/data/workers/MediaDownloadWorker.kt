@@ -33,6 +33,8 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
+import com.makd.afinity.data.models.player.MusicQuality
+import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadTranscodePlan
@@ -91,6 +93,7 @@ constructor(
 ) : CoroutineWorker(appContext, workerParams) {
 
     private var allowPause = true
+    private var convertingText: String? = null
 
     companion object {
         const val KEY_DOWNLOAD_ID = "download_id"
@@ -449,6 +452,24 @@ constructor(
                                                 )
                                             )
                                         }
+                                        convertingText =
+                                            convertingNotificationText(
+                                                download.transcodeBitrate,
+                                                isAudio,
+                                            )
+                                        downloadNotificationManager.notify(
+                                            downloadId.hashCode(),
+                                            createForegroundInfo(
+                                                    downloadId,
+                                                    notifTitle,
+                                                    notifSubText,
+                                                    notificationIcon,
+                                                    bigPicture,
+                                                    0,
+                                                    0,
+                                                )
+                                                .notification,
+                                        )
                                     }
 
                                     val downloadedBytes = AtomicLong(resumeOffset)
@@ -1235,16 +1256,28 @@ constructor(
         val context: Context = applicationContext
         val channelId = "download_channel"
 
+        val converting = convertingText
         val progressText =
-            if (totalBytes > 0) {
-                "${downloadedBytes * 100 / totalBytes}% • " +
-                    context.getString(
-                        R.string.notif_download_progress_fmt,
-                        formatFileSize(context, downloadedBytes),
-                        formatFileSize(context, totalBytes),
-                    )
-            } else {
-                context.getString(R.string.notif_download_starting)
+            when {
+                totalBytes > 0 && converting != null -> {
+                    val percent = (downloadedBytes * 100 / totalBytes).coerceAtMost(99)
+                    "$converting • $percent% • " +
+                        context.getString(
+                            R.string.notif_download_progress_fmt,
+                            formatFileSize(context, downloadedBytes),
+                            "~" + formatFileSize(context, totalBytes),
+                        )
+                }
+
+                totalBytes > 0 ->
+                    "${downloadedBytes * 100 / totalBytes}% • " +
+                        context.getString(
+                            R.string.notif_download_progress_fmt,
+                            formatFileSize(context, downloadedBytes),
+                            formatFileSize(context, totalBytes),
+                        )
+
+                else -> converting ?: context.getString(R.string.notif_download_starting)
             }
 
         val notification =
@@ -1293,6 +1326,28 @@ constructor(
             notification,
             ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
         )
+    }
+
+    private fun convertingNotificationText(bitrate: Int?, isAudio: Boolean): String? {
+        bitrate ?: return null
+        val context: Context = applicationContext
+        val height = if (isAudio) null else VideoQuality.fromBitrate(bitrate).maxHeight
+        val shownBitrate = if (isAudio) MusicQuality.fromBitrate(bitrate).maxBitrate else bitrate
+        val quality =
+            when {
+                height != null -> context.getString(R.string.player_quality_resolution_fmt, height)
+                shownBitrate < 1_000_000 ->
+                    context.getString(R.string.player_quality_kbps_fmt, shownBitrate / 1000)
+
+                else -> {
+                    val mbps = shownBitrate / 1_000_000.0
+                    val text =
+                        if (mbps % 1.0 == 0.0) mbps.toInt().toString()
+                        else String.format(Locale.getDefault(), "%.1f", mbps)
+                    context.getString(R.string.player_quality_mbps_fmt, text)
+                }
+            }
+        return context.getString(R.string.download_converting_fmt, quality)
     }
 
     private fun notificationTitle(download: DownloadDto?, fallback: String): String =

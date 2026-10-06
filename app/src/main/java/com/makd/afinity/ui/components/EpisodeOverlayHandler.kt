@@ -5,6 +5,7 @@ package com.makd.afinity.ui.components
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -14,6 +15,7 @@ import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinitySourceType
+import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.storage.StorageVolumeInfo
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.item.components.QualitySelectionDialog
@@ -45,8 +47,21 @@ fun EpisodeOverlayHandler(
     var showQualityDialog by remember { mutableStateOf(false) }
     var volumes by remember { mutableStateOf<List<StorageVolumeInfo>>(emptyList()) }
     var selectedVolumeId by remember { mutableStateOf<String?>(null) }
+    var defaultQualityBitrate by remember { mutableIntStateOf(VideoQuality.ORIGINAL_BITRATE) }
 
     selectedEpisode?.let { episode ->
+        val openDownloadPicker = {
+            downloadDelegate.onDownloadLongClick(scope, episode) {
+                loadedVolumes,
+                defaultVolumeId,
+                defaultBitrate ->
+                volumes = loadedVolumes
+                selectedVolumeId = defaultVolumeId
+                defaultQualityBitrate = defaultBitrate
+                showQualityDialog = true
+            }
+        }
+
         EpisodeDetailOverlay(
             episode = episode,
             isInWatchlist = watchlistStatus,
@@ -72,24 +87,12 @@ fun EpisodeOverlayHandler(
             onToggleWatchlist = { onToggleWatchlist(episode) },
             onToggleWatched = { onToggleWatched(episode) },
             onDownloadClick = {
-                downloadDelegate.onDownloadClick(scope, episode) {
-                    volumes = emptyList()
-                    selectedVolumeId = null
-                    showQualityDialog = true
-                }
+                downloadDelegate.onDownloadClick(scope, episode) { openDownloadPicker() }
             },
             onPauseDownload = { downloadDelegate.pauseDownload(scope, downloadInfo) },
             onResumeDownload = { downloadDelegate.resumeDownload(scope, downloadInfo) },
             onCancelDownload = { downloadDelegate.cancelDownload(scope, downloadInfo) },
-            onDownloadLongClick = {
-                downloadDelegate.onDownloadLongClick(scope, episode) {
-                    loadedVolumes,
-                    defaultVolumeId ->
-                    volumes = loadedVolumes
-                    selectedVolumeId = defaultVolumeId
-                    showQualityDialog = true
-                }
-            },
+            onDownloadLongClick = openDownloadPicker,
             onGoToSeries = {
                 onClearSelection()
                 pendingNavigationSeriesId = episode.seriesId.toString()
@@ -115,6 +118,7 @@ fun EpisodeOverlayHandler(
                 volumes = volumes,
                 selectedVolumeId = selectedVolumeId,
                 onVolumeSelected = { selectedVolumeId = it },
+                initialQualityBitrate = defaultQualityBitrate,
                 onConfirm = { source, volumeId, quality ->
                     downloadDelegate.onQualitySelected(
                         scope = scope,

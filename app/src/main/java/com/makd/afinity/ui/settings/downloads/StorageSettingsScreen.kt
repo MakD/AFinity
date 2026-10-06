@@ -239,9 +239,6 @@ fun StorageSettingsScreen(
                     )
                     SettingsDivider()
                     val videoQualityOptions = VideoQuality.settingsLadder().filterNot { it.isAuto }
-                    val showExoPlayerHint =
-                        uiState.useExoPlayer &&
-                            uiState.videoDownloadQuality != VideoQuality.ORIGINAL_BITRATE
                     SubtitleDropdownItem(
                         title = stringResource(R.string.pref_video_download_quality_title),
                         selectedOption = uiState.videoDownloadQuality,
@@ -251,14 +248,7 @@ fun StorageSettingsScreen(
                             settingsQualityLabel(VideoQuality.fromBitrate(bitrate))
                         },
                         icon = painterResource(id = R.drawable.ic_video),
-                        hint =
-                            stringResource(
-                                if (showExoPlayerHint) {
-                                    R.string.pref_download_quality_exoplayer_hint
-                                } else {
-                                    R.string.pref_download_quality_hint
-                                }
-                            ),
+                        hint = stringResource(R.string.pref_download_quality_hint),
                     )
                     SettingsDivider()
                     SubtitleDropdownItem(

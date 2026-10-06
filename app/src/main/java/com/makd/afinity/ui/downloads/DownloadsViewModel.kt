@@ -32,7 +32,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -215,7 +214,6 @@ constructor(
                 val maxConcurrentDownloads = preferencesRepository.getMaxDownloads()
                 val videoDownloadQuality = preferencesRepository.getVideoDownloadQuality()
                 val musicDownloadQuality = preferencesRepository.getMusicDownloadQuality()
-                val useExoPlayer = preferencesRepository.useExoPlayer.first()
 
                 _uiState.value =
                     _uiState.value.copy(
@@ -226,7 +224,6 @@ constructor(
                         maxConcurrentDownloads = maxConcurrentDownloads,
                         videoDownloadQuality = videoDownloadQuality,
                         musicDownloadQuality = musicDownloadQuality,
-                        useExoPlayer = useExoPlayer,
                     )
             } catch (e: CancellationException) {
                 throw e
@@ -764,7 +761,6 @@ data class DownloadsUiState(
     val maxConcurrentDownloads: Int = 3,
     val videoDownloadQuality: Int = VideoQuality.ORIGINAL_BITRATE,
     val musicDownloadQuality: Int = MusicQuality.ORIGINAL_BITRATE,
-    val useExoPlayer: Boolean = false,
     val isImageCacheEnabled: Boolean = true,
     val imageCacheSizeMb: Int = 512,
     val videoCacheSizeMb: Int = 1024,

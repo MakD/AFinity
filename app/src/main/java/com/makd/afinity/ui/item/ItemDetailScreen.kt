@@ -346,6 +346,7 @@ fun ItemDetailScreen(
                 onPauseDownload = { viewModel.pauseDownload() },
                 onResumeDownload = { viewModel.resumeDownload() },
                 onCancelDownload = { viewModel.cancelDownload() },
+                onDownloadLongClick = { viewModel.onDownloadLongClick() },
                 isDownloadAllowedByServer = isDownloadAllowedByServer,
                 canDownloadOnNetwork = canDownloadOnNetwork,
                 onGoToSeries =

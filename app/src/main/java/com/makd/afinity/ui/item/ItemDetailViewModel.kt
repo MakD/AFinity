@@ -1634,17 +1634,41 @@ constructor(
         }
     }
 
-    fun pauseDownload() =
-        itemDownloadDelegate.pauseDownload(
-            viewModelScope,
-            _uiState.value.downloadInfo ?: _selectedEpisodeDownloadInfo.value,
-        )
+    fun pauseDownload() = itemDownloadDelegate.pauseDownload(viewModelScope, activeDownloadInfo())
 
-    fun resumeDownload() =
-        itemDownloadDelegate.resumeDownload(
-            viewModelScope,
-            _uiState.value.downloadInfo ?: _selectedEpisodeDownloadInfo.value,
-        )
+    fun resumeDownload() {
+        val currentItem = _uiState.value.item
+        if (
+            _selectedEpisode.value != null ||
+                (currentItem !is AfinityShow && currentItem !is AfinitySeason)
+        ) {
+            itemDownloadDelegate.resumeDownload(viewModelScope, activeDownloadInfo())
+            return
+        }
+        viewModelScope.launch {
+            val downloads = downloadRepository.getAllDownloadsFlow().first()
+            val paused = downloads.filter { download ->
+                download.status == DownloadStatus.PAUSED &&
+                    when (currentItem) {
+                        is AfinityShow -> download.seriesId == currentItem.id.toString()
+                        is AfinitySeason ->
+                            download.seriesId == currentItem.seriesId.toString() &&
+                                download.seasonNumber == currentItem.indexNumber
+
+                        else -> false
+                    }
+            }
+            paused.forEach { download ->
+                downloadRepository.resumeDownload(download.id).onFailure {
+                    Timber.e(it, "Failed to resume download")
+                }
+            }
+        }
+    }
+
+    private fun activeDownloadInfo(): DownloadInfo? =
+        if (_selectedEpisode.value != null) _selectedEpisodeDownloadInfo.value
+        else _uiState.value.downloadInfo
 
     fun cancelDownload() {
         val selectedEpisode = _selectedEpisode.value

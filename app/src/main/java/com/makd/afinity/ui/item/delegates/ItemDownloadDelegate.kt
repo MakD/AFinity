@@ -49,13 +49,18 @@ constructor(
     /**
      * Long-press entry point for a single (leaf) item. Always opens the version/location picker
      * when the item has remote sources, letting the user choose a quality version and/or a storage
-     * volume. The available volumes and current default are resolved off the main thread and handed
-     * back via [showPicker] so the caller can populate its dialog state.
+     * volume. The available volumes and current defaults are resolved off the main thread and
+     * handed back via [showPicker] so the caller can populate its dialog state.
      */
     fun onDownloadLongClick(
         scope: CoroutineScope,
         item: AfinityItem?,
-        showPicker: (volumes: List<StorageVolumeInfo>, defaultVolumeId: String?) -> Unit,
+        showPicker:
+            (
+                volumes: List<StorageVolumeInfo>,
+                defaultVolumeId: String?,
+                defaultQualityBitrate: Int,
+            ) -> Unit,
     ) {
         val target = item ?: return
         scope.launch {
@@ -67,7 +72,8 @@ constructor(
                 }
                 val volumes = storageLocationProvider.listVolumes()
                 val defaultVolumeId = preferencesRepository.getDownloadStorageVolumeId()
-                showPicker(volumes, defaultVolumeId)
+                val defaultQualityBitrate = preferencesRepository.getVideoDownloadQuality()
+                showPicker(volumes, defaultVolumeId, defaultQualityBitrate)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
