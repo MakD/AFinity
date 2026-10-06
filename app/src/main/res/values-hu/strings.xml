@@ -1331,11 +1331,8 @@
     <string name="admin_action_edit_images">Képek szerkesztése</string>
     <string name="admin_action_refresh_metadata">Metaadatok frissítése</string>
     <string name="admin_delete_dialog_title">Elem törlése</string>
-    <string name="admin_delete_dialog_message">%1$s fájlt biztosan törölni szeretnéd? Ez a művelet nem vonható vissza, és törli a médiafájl(oka)t a szerveredről.</string>
     <string name="admin_delete_success">Elem törlése sikeres</string>
-    <string name="admin_delete_error">%1$s elem törlése sikertelen</string>
     <string name="admin_refresh_title">Metaadatok frissítése</string>
-    <string name="admin_refresh_mode_label">Frissítési mód</string>
     <string name="admin_refresh_replace_images">Meglévő képek cseréje</string>
     <string name="admin_btn_refresh">Frissítés</string>
     <string name="admin_edit_metadata_title">Metaadatok szerkesztése</string>
@@ -1344,10 +1341,8 @@
     <string name="admin_field_original_title">Eredeti cím</string>
     <string name="admin_section_cast">Szereplők és Stáb</string>
     <string name="admin_add_person">Személy hozzáadása</string>
-    <string name="admin_close_form">Űrlap bezárása</string>
     <string name="admin_field_person_type">Típus (Színész, Rendező, Író…)</string>
     <string name="admin_field_person_role">Szerep / Karakter</string>
-    <string name="admin_add_to_list">Hozzáadás a listához</string>
     <string name="admin_add_item_placeholder">Elem hozzáadása…</string>
     <string name="admin_field_community_rating">Közösségi értékelés</string>
     <string name="music_sort_field_community_rating">Közösségi értékelés</string>

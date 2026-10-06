@@ -881,7 +881,6 @@
     <string name="admin_action_edit_images">Edytuj obrazy</string>
     <string name="admin_action_refresh_metadata">Odśwież metadane</string>
     <string name="admin_refresh_title">Odśwież metadane</string>
-    <string name="admin_refresh_mode_label">Tryb odświeżania</string>
     <string name="admin_refresh_replace_images">Zastąp istniejące obrazy</string>
     <string name="admin_btn_refresh">Odśwież</string>
     <string name="admin_edit_metadata_title">Edytuj metadane</string>
@@ -900,11 +899,9 @@
     <string name="admin_section_studios">Studia</string>
     <string name="admin_section_cast">Obsada i zespół</string>
     <string name="admin_add_person">Dodaj osobę</string>
-    <string name="admin_close_form">Zamknij formularz</string>
     <string name="admin_field_person_name">Nazwa</string>
     <string name="admin_field_person_type">Typ (Aktor, Reżyser, Scenarzysta…)</string>
     <string name="admin_field_person_role">Rola / Postać</string>
-    <string name="admin_add_to_list">Dodaj do listy</string>
     <string name="admin_add_item_placeholder">Dodaj element…</string>
     <string name="admin_field_community_rating">Ocena społeczności</string>
     <string name="admin_field_custom_rating">Ocena niestandardowa</string>

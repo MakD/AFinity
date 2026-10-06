@@ -846,7 +846,6 @@
     <string name="admin_action_edit_images">Redigera bilder</string>
     <string name="admin_action_refresh_metadata">Uppdatera metadata</string>
     <string name="admin_refresh_title">Uppdatera metadata</string>
-    <string name="admin_refresh_mode_label">Uppdateringsläge</string>
     <string name="admin_refresh_replace_images">Ersätt befintliga bilder</string>
     <string name="admin_btn_refresh">Uppdatera</string>
     <string name="admin_edit_metadata_title">Redigera metadata</string>
@@ -865,11 +864,9 @@
     <string name="admin_section_studios">Studior</string>
     <string name="admin_section_cast">Medverkande och team</string>
     <string name="admin_add_person">Lägg till person</string>
-    <string name="admin_close_form">Stäng formulär</string>
     <string name="admin_field_person_name">Namn</string>
     <string name="admin_field_person_type">Typ (skådespelare, regissör, manusförfattare …)</string>
     <string name="admin_field_person_role">Roll/karaktär</string>
-    <string name="admin_add_to_list">Lägg till i lista</string>
     <string name="admin_add_item_placeholder">Lägg till objekt …</string>
     <string name="admin_field_community_rating">Communitybetyg</string>
     <string name="admin_field_custom_rating">Anpassat betyg</string>
@@ -1273,9 +1270,7 @@
     <string name="pref_ass_render_mode_hint">Intern återgivning av ASS/SSA-undertextstilar via libass. Mjukt läge ritar animationer i ett GPU-överlägg.</string>
     <string name="admin_action_delete">Ta bort</string>
     <string name="admin_delete_dialog_title">Ta bort objekt</string>
-    <string name="admin_delete_dialog_message">Vill du ta bort %1$s? Åtgärden kan inte ångras och tar bort mediefilen/filerna från servern.</string>
     <string name="admin_delete_success">Objektet har tagits bort</string>
-    <string name="admin_delete_error">Det gick inte att ta bort objektet: %1$s</string>
     <string name="player_tracks_label">Ljud och undertexter</string>
     <string name="player_resume">Återuppta</string>
     <string name="player_restart">Starta om</string>
