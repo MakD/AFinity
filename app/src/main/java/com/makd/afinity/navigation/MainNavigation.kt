@@ -1582,10 +1582,24 @@ fun MainNavigation(
                                                     else viewModel.musicPlaybackManager.play()
                                             }
                                         },
-                                        onSkipNext =
-                                            if (miniPlayerState is AudioMiniPlayerState.Music) {
-                                                { viewModel.musicPlaybackManager.skipToNext() }
-                                            } else null,
+                                        onBackward = {
+                                            when (miniPlayerState) {
+                                                is AudioMiniPlayerState.Abs ->
+                                                    viewModel.audiobookshelfPlayer.skipBackward()
+
+                                                is AudioMiniPlayerState.Music ->
+                                                    viewModel.musicPlaybackManager.skipToPrevious()
+                                            }
+                                        },
+                                        onForward = {
+                                            when (miniPlayerState) {
+                                                is AudioMiniPlayerState.Abs ->
+                                                    viewModel.audiobookshelfPlayer.skipForward()
+
+                                                is AudioMiniPlayerState.Music ->
+                                                    viewModel.musicPlaybackManager.skipToNext()
+                                            }
+                                        },
                                         onCloseClick = {
                                             when (miniPlayerState) {
                                                 is AudioMiniPlayerState.Abs -> {

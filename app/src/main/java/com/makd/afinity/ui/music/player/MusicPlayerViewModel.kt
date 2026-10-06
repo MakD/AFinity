@@ -362,12 +362,7 @@ constructor(
         if (isMusicCasting.value) {
             castManager.skipMusicTrack(forward = false)
         } else {
-            val player = playbackManager.getPlayer() ?: return
-            if (player.currentPosition > 3_000L) {
-                player.seekTo(0L)
-            } else {
-                player.seekToPreviousMediaItem()
-            }
+            playbackManager.skipToPrevious()
         }
     }
 

@@ -30,6 +30,7 @@ import timber.log.Timber
 private const val TICKS_PER_MILLISECOND = 10_000L
 private const val REMOTE_SEEK_STEP_MS = 30_000L
 private const val REMOTE_VOLUME_STEP = 10
+private const val PREVIOUS_RESTART_THRESHOLD_MS = 3_000L
 
 @Singleton
 class MusicPlaybackManager
@@ -218,6 +219,15 @@ constructor(
 
     fun skipToNext() {
         exoPlayer?.seekToNextMediaItem()
+    }
+
+    fun skipToPrevious() {
+        val player = exoPlayer ?: return
+        if (player.currentPosition > PREVIOUS_RESTART_THRESHOLD_MS) {
+            player.seekTo(0L)
+        } else {
+            player.seekToPreviousMediaItem()
+        }
     }
 
     fun seekToIndex(index: Int, positionMs: Long = 0L) {

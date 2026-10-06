@@ -83,7 +83,8 @@ fun SharedTransitionScope.AudioMiniPlayer(
     state: AudioMiniPlayerState,
     animatedVisibilityScope: AnimatedVisibilityScope,
     onPlayPauseClick: () -> Unit,
-    onSkipNext: (() -> Unit)?,
+    onBackward: () -> Unit,
+    onForward: () -> Unit,
     onCloseClick: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -204,6 +205,27 @@ fun SharedTransitionScope.AudioMiniPlayer(
                     }
                 }
 
+                IconButton(onClick = onBackward) {
+                    Icon(
+                        painter =
+                            painterResource(
+                                when (state) {
+                                    is AudioMiniPlayerState.Abs -> R.drawable.ic_rewind_backward_30
+                                    is AudioMiniPlayerState.Music -> R.drawable.ic_player_skip_back
+                                }
+                            ),
+                        contentDescription =
+                            stringResource(
+                                when (state) {
+                                    is AudioMiniPlayerState.Abs -> R.string.cd_rewind_30
+                                    is AudioMiniPlayerState.Music -> R.string.cd_previous
+                                }
+                            ),
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+
                 IconButton(onClick = onPlayPauseClick) {
                     if (state.isBuffering) {
                         BufferingIndicator(
@@ -228,15 +250,26 @@ fun SharedTransitionScope.AudioMiniPlayer(
                     }
                 }
 
-                if (onSkipNext != null) {
-                    IconButton(onClick = onSkipNext) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_player_skip_forward),
-                            contentDescription = stringResource(R.string.cd_next),
-                            modifier = Modifier.size(24.dp),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
+                IconButton(onClick = onForward) {
+                    Icon(
+                        painter =
+                            painterResource(
+                                when (state) {
+                                    is AudioMiniPlayerState.Abs -> R.drawable.ic_rewind_forward_30
+                                    is AudioMiniPlayerState.Music ->
+                                        R.drawable.ic_player_skip_forward
+                                }
+                            ),
+                        contentDescription =
+                            stringResource(
+                                when (state) {
+                                    is AudioMiniPlayerState.Abs -> R.string.cd_forward_30
+                                    is AudioMiniPlayerState.Music -> R.string.cd_next
+                                }
+                            ),
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
                 }
             }
         }

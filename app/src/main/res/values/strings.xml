@@ -840,6 +840,7 @@
     <string name="cd_next">Next</string>
     <string name="cd_rewind_10">Rewind 10 seconds</string>
     <string name="cd_forward_30">Forward 30 seconds</string>
+    <string name="cd_rewind_30">Rewind 30 seconds</string>
     <string name="cd_play">Play</string>
     <string name="cd_pause">Pause</string>
     <string name="cd_episodes">Episodes</string>
