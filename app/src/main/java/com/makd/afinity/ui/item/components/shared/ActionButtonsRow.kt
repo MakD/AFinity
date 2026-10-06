@@ -55,6 +55,7 @@ fun ActionButtonsRow(
     downloadUnavailable: Boolean = false,
     isAdmin: Boolean = false,
     canIdentify: Boolean = true,
+    canDelete: Boolean = true,
     onAdminAction: (AdminAction) -> Unit = {},
     onDownloadLongClick: (() -> Unit)? = null,
     onAddToPlaylist: (() -> Unit)? = null,
@@ -218,26 +219,28 @@ fun ActionButtonsRow(
                             onAdminAction(AdminAction.Refresh)
                         },
                     )
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = stringResource(R.string.admin_action_delete),
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_delete),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        },
-                        onClick = {
-                            menuExpanded = false
-                            onAdminAction(AdminAction.Delete)
-                        },
-                    )
+                    if (canDelete) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = stringResource(R.string.admin_action_delete),
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_delete),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onAdminAction(AdminAction.Delete)
+                            },
+                        )
+                    }
                 }
             }
         }

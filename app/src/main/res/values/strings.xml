@@ -2006,13 +2006,16 @@
     <string name="admin_action_refresh_metadata">Refresh Metadata</string>
     <string name="admin_action_delete">Delete</string>
     <string name="admin_delete_dialog_title">Delete Item</string>
-    <string name="admin_delete_dialog_message">Are you sure you want to delete "%1$s"? This action cannot be undone and will delete the media file(s) from your server.</string>
+    <string name="admin_delete_message_item">This permanently deletes the item and its files from the server.</string>
+    <string name="admin_delete_message_children">This permanently deletes the item, everything it contains, and all associated files from the server.</string>
+    <string name="admin_delete_message_container">Only this collection or playlist is removed. The titles in it stay in your library. This can\'t be undone.</string>
     <string name="admin_delete_success">Item deleted successfully</string>
-    <string name="admin_delete_error">Failed to delete item: %1$s</string>
+    <string name="admin_delete_failed">Couldn\'t delete this item. Try again.</string>
+    <string name="admin_delete_not_allowed">You don\'t have permission to delete this item.</string>
+    <string name="admin_delete_still_running">The server is still deleting this item. It will be removed once the deletion completes.</string>
 
     <!--Admin - Refresh Metadata Dialog-->
     <string name="admin_refresh_title">Refresh Metadata</string>
-    <string name="admin_refresh_mode_label">Refresh mode</string>
     <string name="admin_refresh_mode_scan">Scan for new and updated files</string>
     <string name="admin_refresh_mode_scan_desc">Re-reads the files on disk. Only goes online if something changed.</string>
     <string name="admin_refresh_mode_missing">Search for missing metadata</string>
@@ -2020,6 +2023,10 @@
     <string name="admin_refresh_mode_replace">Replace all metadata</string>
     <string name="admin_refresh_mode_replace_desc">Re-downloads everything and overwrites what\'s there. Manual edits will be lost.</string>
     <string name="admin_refresh_replace_images">Replace existing images</string>
+    <string name="admin_refresh_replace_trickplay">Replace trickplay images</string>
+    <string name="admin_refresh_includes_children">Also refreshes all items it contains.</string>
+    <string name="admin_refresh_queued">Refresh queued. This can take a few minutes.</string>
+    <string name="admin_refresh_failed">Couldn\'t start the refresh. Try again.</string>
     <string name="admin_btn_refresh">Refresh</string>
 
     <!--Admin - Edit Metadata Screen-->
@@ -2039,18 +2046,48 @@
     <string name="admin_section_studios">Studios</string>
     <string name="admin_section_cast">Cast &amp; Crew</string>
     <string name="admin_add_person">Add Person</string>
-    <string name="admin_close_form">Close Form</string>
     <string name="admin_field_person_name">Name</string>
-    <string name="admin_field_person_type">Type (Actor, Director, Writer…)</string>
+    <string name="admin_field_person_type">Type</string>
+    <string name="admin_person_type_actor">Actor</string>
+    <string name="admin_person_type_guest_star">Guest star</string>
+    <string name="admin_person_type_director">Director</string>
+    <string name="admin_person_type_writer">Writer</string>
+    <string name="admin_person_type_producer">Producer</string>
+    <string name="admin_person_type_composer">Composer</string>
+    <string name="admin_person_type_creator">Creator</string>
     <string name="admin_field_person_role">Role / Character</string>
-    <string name="admin_add_to_list">Add to List</string>
     <string name="admin_add_item_placeholder">Add item…</string>
     <string name="admin_field_community_rating">Community Rating</string>
     <string name="admin_field_custom_rating">Custom Rating</string>
-    <string name="admin_field_series_status">Status (Continuing / Ended / Unreleased)</string>
-    <string name="admin_field_display_order">Display Order (AirDate / DVD / Absolute)</string>
+    <string name="admin_field_series_status">Status</string>
+    <string name="admin_field_display_order">Display Order</string>
+    <string name="admin_option_not_set">Not set</string>
+    <string name="admin_display_order_aired">Aired</string>
+    <string name="admin_display_order_original_air_date">Original air date</string>
+    <string name="admin_display_order_absolute">Absolute</string>
+    <string name="admin_display_order_dvd">DVD</string>
+    <string name="admin_display_order_digital">Digital</string>
+    <string name="admin_display_order_story_arc">Story arc</string>
+    <string name="admin_display_order_production">Production</string>
+    <string name="admin_display_order_tv">TV</string>
+    <string name="admin_display_order_alternate">Alternate</string>
+    <string name="admin_display_order_regional">Regional</string>
+    <string name="admin_display_order_alt_dvd">Alternate DVD</string>
+    <string name="admin_display_order_changed_hint">Changing the display order triggers a full metadata refresh for this series and replaces its existing metadata.</string>
     <string name="admin_lock_data">Lock data (prevent auto-refresh from overwriting)</string>
+    <string name="admin_lock_children_hint">Also applies to all items it contains.</string>
     <string name="admin_section_locked_fields">Locked fields</string>
+    <string name="admin_locked_fields_hint">Locked fields are not changed by metadata refreshes.</string>
+    <string name="admin_locked_field_production_locations">Production locations</string>
+    <string name="admin_metadata_title_required">A title is required</string>
+    <string name="admin_metadata_load_failed">Couldn\'t load this item.</string>
+    <string name="admin_metadata_save_failed">Couldn\'t save the changes. Try again.</string>
+    <string name="admin_metadata_save_still_running">The server is still saving your changes. Check the item again in a few minutes.</string>
+    <string name="admin_person_done">Done</string>
+    <string name="admin_metadata_discard_title">Discard changes?</string>
+    <string name="admin_metadata_discard_message">Your edits to this item haven\'t been saved.</string>
+    <string name="admin_metadata_keep_editing">Keep Editing</string>
+    <string name="admin_metadata_discard">Discard</string>
     <string name="cd_admin_remove">Remove</string>
     <string name="cd_admin_add">Add</string>
 
@@ -2064,15 +2101,15 @@
     <string name="admin_identify_results">Results</string>
     <string name="admin_identify_no_results">No results found</string>
     <string name="admin_identify_no_results_hint">Check the spelling, or search by a provider ID for an exact match.</string>
-    <string name="admin_identify_search_without_year">Search without the year</string>
+    <string name="admin_identify_search_without_year">Search Without Year</string>
     <string name="admin_identify_search_failed_title">Search failed</string>
-    <string name="admin_identify_search_failed_message">The server didn\'t respond. Nothing has been changed.</string>
+    <string name="admin_identify_search_failed_message">The request failed. No changes were made.</string>
     <string name="admin_identify_current_match">Currently matched as</string>
-    <string name="admin_identify_provider_ids_hint">An ID finds the exact title, even when the name is wrong.</string>
-    <string name="admin_identify_replace_images_hint">Turn off to keep the artwork this item has now.</string>
-    <string name="admin_identify_use_match">Use this match</string>
-    <string name="admin_identify_applying">Applying… this can take a minute</string>
-    <string name="admin_identify_confirm_message">All of this item\'s details will be replaced with the match. Edits made by hand are lost.</string>
+    <string name="admin_identify_provider_ids_hint">Searching by ID returns the exact title, regardless of the name entered.</string>
+    <string name="admin_identify_replace_images_hint">Turn off to keep the item\'s current artwork.</string>
+    <string name="admin_identify_use_match">Use This Match</string>
+    <string name="admin_identify_applying">Applying… This may take a minute.</string>
+    <string name="admin_identify_confirm_message">All metadata for this item will be replaced with the selected match. Manual edits will be lost.</string>
     <string name="admin_identify_apply_failed">Couldn\'t apply the match. Try again.</string>
     <string name="admin_identify_apply_still_running">The server is still applying this match. Check the item again in a few minutes.</string>
 
@@ -2093,19 +2130,19 @@
     <string name="admin_image_type_art">Art</string>
     <string name="admin_image_type_disc">Disc</string>
     <string name="admin_images_none_title">No image yet</string>
-    <string name="admin_images_none_message">Upload one or pick from the providers below.</string>
-    <string name="admin_images_reorder_hint">The first image is the main one. Hold and drag to reorder.</string>
+    <string name="admin_images_none_message">Upload an image or choose one from the providers below.</string>
+    <string name="admin_images_reorder_hint">The first image is used as the primary. Press and hold, then drag to reorder.</string>
     <string name="admin_images_all_providers">All providers</string>
     <string name="admin_images_sort_recommended">Recommended</string>
     <string name="admin_images_sort_largest">Largest</string>
     <string name="admin_images_load_failed_title">Couldn\'t load images</string>
-    <string name="admin_images_load_failed_message">The server didn\'t respond. Nothing has been changed.</string>
+    <string name="admin_images_load_failed_message">The request failed. No changes were made.</string>
     <string name="admin_images_empty_title">No images found</string>
-    <string name="admin_images_empty_message">The providers have nothing for this image type.</string>
+    <string name="admin_images_empty_message">No images of this type are available from your providers.</string>
     <string name="admin_images_empty_language_message">Providers may have more in other languages.</string>
-    <string name="admin_images_show_all_languages">Show all languages</string>
-    <string name="admin_image_use">Use this image</string>
-    <string name="admin_image_add">Add image</string>
+    <string name="admin_images_show_all_languages">Show All Languages</string>
+    <string name="admin_image_use">Use This Image</string>
+    <string name="admin_image_add">Add Image</string>
     <string name="admin_image_replaces_current">Replaces the current image.</string>
     <string name="admin_image_fact_provider">Provider</string>
     <string name="admin_image_fact_resolution">Resolution</string>
@@ -2115,8 +2152,8 @@
     <string name="admin_image_fact_size">File size</string>
     <string name="admin_image_updated">Image updated</string>
     <string name="admin_image_removed">Image removed</string>
-    <string name="admin_image_action_failed">Couldn\'t update the image. Try again.</string>
-    <string name="admin_image_file_unreadable">Couldn\'t read that file.</string>
+    <string name="admin_image_action_failed">Couldn\'t complete the image change. Try again.</string>
+    <string name="admin_image_file_unreadable">Couldn\'t read the selected file.</string>
 
     <!--Music Player / Library-->
     <!-- Sort Options -->

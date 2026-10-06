@@ -25,15 +25,17 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -47,6 +49,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -169,6 +172,7 @@ fun ItemDetailScreen(
         viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
     val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
+    val deletableItemIds by viewModel.deletableItemIds.collectAsStateWithLifecycle()
     var showEpisodeRefreshDialog by remember { mutableStateOf(false) }
     var showEpisodeDeleteDialog by remember { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -322,6 +326,10 @@ fun ItemDetailScreen(
         }
 
         selectedEpisode?.let { episode ->
+            LaunchedEffect(episode.id, isAdmin) {
+                if (isAdmin) viewModel.checkCanDelete(episode.id)
+            }
+
             EpisodeDetailOverlay(
                 episode = episode,
                 isInWatchlist = selectedEpisodeWatchlistStatus,
@@ -348,6 +356,7 @@ fun ItemDetailScreen(
                         }
                     } else null,
                 isAdmin = isAdmin,
+                canDelete = episode.id in deletableItemIds,
                 onAdminAction = { action ->
                     when (action) {
                         AdminAction.EditMetadata ->
@@ -372,6 +381,7 @@ fun ItemDetailScreen(
             if (showEpisodeRefreshDialog) {
                 RefreshMetadataDialog(
                     itemId = episode.id.toString(),
+                    itemName = episode.name,
                     onDismiss = { showEpisodeRefreshDialog = false },
                 )
             }
@@ -381,6 +391,7 @@ fun ItemDetailScreen(
                     targetId = episode.id,
                     targetName = episode.name,
                     isMainItem = false,
+                    scope = DeleteScope.ITEM,
                     viewModel = viewModel,
                     navController = navController,
                     onDismiss = { showEpisodeDeleteDialog = false },
@@ -638,6 +649,8 @@ private fun LandscapeItemDetailContent(
         viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
     val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
+    val deletableItemIds by viewModel.deletableItemIds.collectAsStateWithLifecycle()
+    LaunchedEffect(item.id, isAdmin) { if (isAdmin) viewModel.checkCanDelete(item.id) }
     var showRefreshDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showAddToPlaylist by remember { mutableStateOf(false) }
@@ -823,6 +836,7 @@ private fun LandscapeItemDetailContent(
                                 downloadUnavailable = uiState.downloadUnavailable,
                                 isAdmin = isAdmin,
                                 canIdentify = identifyItemType(item) != null,
+                                canDelete = item.id in deletableItemIds,
                                 onDownloadLongClick = { viewModel.onDownloadLongClick() },
                                 onAddToPlaylist =
                                     if (
@@ -866,6 +880,8 @@ private fun LandscapeItemDetailContent(
                             if (showRefreshDialog) {
                                 RefreshMetadataDialog(
                                     itemId = item.id.toString(),
+                                    itemName = item.name,
+                                    includesChildren = refreshIncludesChildren(item),
                                     onDismiss = { showRefreshDialog = false },
                                 )
                             }
@@ -885,6 +901,7 @@ private fun LandscapeItemDetailContent(
                                     targetId = item.id,
                                     targetName = item.name,
                                     isMainItem = true,
+                                    scope = deleteScope(item),
                                     viewModel = viewModel,
                                     navController = navController,
                                     onDismiss = { showDeleteDialog = false },
@@ -981,6 +998,8 @@ private fun PortraitItemDetailContent(
         viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
     val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
+    val deletableItemIds by viewModel.deletableItemIds.collectAsStateWithLifecycle()
+    LaunchedEffect(item.id, isAdmin) { if (isAdmin) viewModel.checkCanDelete(item.id) }
     var showRefreshDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showAddToPlaylist by remember { mutableStateOf(false) }
@@ -1074,6 +1093,7 @@ private fun PortraitItemDetailContent(
                     downloadUnavailable = uiState.downloadUnavailable,
                     isAdmin = isAdmin,
                     canIdentify = identifyItemType(item) != null,
+                    canDelete = item.id in deletableItemIds,
                     onDownloadLongClick = { viewModel.onDownloadLongClick() },
                     onAddToPlaylist =
                         if (
@@ -1112,6 +1132,8 @@ private fun PortraitItemDetailContent(
                 if (showRefreshDialog) {
                     RefreshMetadataDialog(
                         itemId = item.id.toString(),
+                        itemName = item.name,
+                        includesChildren = refreshIncludesChildren(item),
                         onDismiss = { showRefreshDialog = false },
                     )
                 }
@@ -1131,6 +1153,7 @@ private fun PortraitItemDetailContent(
                         targetId = item.id,
                         targetName = item.name,
                         isMainItem = true,
+                        scope = deleteScope(item),
                         viewModel = viewModel,
                         navController = navController,
                         onDismiss = { showDeleteDialog = false },
@@ -1514,6 +1537,9 @@ private fun identifyItemType(item: AfinityItem): String? =
         else -> null
     }
 
+private fun refreshIncludesChildren(item: AfinityItem): Boolean =
+    item is AfinityShow || item is AfinitySeason || item is AfinityBoxSet
+
 private fun hasTrailer(item: AfinityItem): Boolean =
     (item as? AfinityMovie)?.trailer != null ||
         (item as? AfinityShow)?.trailer != null ||
@@ -1567,61 +1593,139 @@ private fun shufflePlay(item: AfinityItem, nextEpisode: AfinityEpisode?, context
     }
 }
 
+private enum class DeleteScope {
+    ITEM,
+    WITH_CHILDREN,
+    CONTAINER_ONLY,
+}
+
+private fun deleteScope(item: AfinityItem): DeleteScope =
+    when (item) {
+        is AfinityShow,
+        is AfinitySeason -> DeleteScope.WITH_CHILDREN
+
+        is AfinityBoxSet,
+        is AfinityVideoPlaylist -> DeleteScope.CONTAINER_ONLY
+
+        else -> DeleteScope.ITEM
+    }
+
 @Composable
 private fun DeleteConfirmationDialog(
     targetId: UUID,
     targetName: String,
     isMainItem: Boolean,
+    scope: DeleteScope,
     viewModel: ItemDetailViewModel,
     navController: NavController,
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
-    val deleteErrorFmt = stringResource(R.string.admin_delete_error)
+    val currentOnDismiss by rememberUpdatedState(onDismiss)
+    val pageEntryId = remember { navController.currentBackStackEntry?.id }
+    var deleting by remember(targetId) { mutableStateOf(false) }
+    var errorRes by remember(targetId) { mutableStateOf<Int?>(null) }
+
     AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.admin_delete_dialog_title)) },
-        text = { Text(stringResource(R.string.admin_delete_dialog_message, targetName)) },
-        confirmButton = {
-            Button(
-                onClick = {
-                    onDismiss()
-                    viewModel.deleteItem(
-                        targetItemId = targetId,
-                        onSuccess = {
-                            Toast.makeText(
-                                    context,
-                                    R.string.admin_delete_success,
-                                    Toast.LENGTH_SHORT,
-                                )
-                                .show()
-                            if (isMainItem) {
-                                navController.popBackStack()
-                            } else {
-                                viewModel.clearSelectedEpisode()
+        onDismissRequest = { if (!deleting) onDismiss() },
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        title = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    stringResource(R.string.admin_delete_dialog_title),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+                Text(
+                    text = targetName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text =
+                        stringResource(
+                            when (scope) {
+                                DeleteScope.ITEM -> R.string.admin_delete_message_item
+                                DeleteScope.WITH_CHILDREN -> R.string.admin_delete_message_children
+                                DeleteScope.CONTAINER_ONLY ->
+                                    R.string.admin_delete_message_container
                             }
-                        },
-                        onError = { error ->
-                            Toast.makeText(
-                                    context,
-                                    String.format(deleteErrorFmt, error),
-                                    Toast.LENGTH_LONG,
-                                )
-                                .show()
-                        },
+                        ),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                errorRes?.let { res ->
+                    Text(
+                        text = stringResource(res),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
                     )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    deleting = true
+                    errorRes = null
+                    viewModel.deleteItem(targetId) { outcome ->
+                        deleting = false
+                        when (outcome) {
+                            DeleteOutcome.DELETED -> {
+                                Toast.makeText(
+                                        context,
+                                        R.string.admin_delete_success,
+                                        Toast.LENGTH_SHORT,
+                                    )
+                                    .show()
+                                if (!isMainItem) {
+                                    viewModel.clearSelectedEpisode()
+                                } else if (navController.currentBackStackEntry?.id == pageEntryId) {
+                                    navController.popBackStack()
+                                }
+                                currentOnDismiss()
+                            }
+
+                            DeleteOutcome.STILL_RUNNING -> {
+                                Toast.makeText(
+                                        context,
+                                        R.string.admin_delete_still_running,
+                                        Toast.LENGTH_LONG,
+                                    )
+                                    .show()
+                                currentOnDismiss()
+                            }
+
+                            DeleteOutcome.NOT_ALLOWED ->
+                                errorRes = R.string.admin_delete_not_allowed
+
+                            DeleteOutcome.FAILED -> errorRes = R.string.admin_delete_failed
+                        }
+                    }
                 },
+                enabled = !deleting,
                 colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError,
-                    ),
+                    ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
             ) {
+                if (deleting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = LocalContentColor.current,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
                 Text(stringResource(R.string.admin_action_delete))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+            TextButton(onClick = onDismiss, enabled = !deleting) {
+                Text(stringResource(R.string.action_cancel))
+            }
         },
     )
 }

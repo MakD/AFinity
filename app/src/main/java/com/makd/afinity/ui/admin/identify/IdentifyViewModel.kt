@@ -5,9 +5,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
+import com.makd.afinity.data.models.admin.AdminRequestStillRunningException
 import com.makd.afinity.data.models.admin.ExternalIdProvider
 import com.makd.afinity.data.models.admin.IdentifyResult
-import com.makd.afinity.data.models.admin.IdentifyStillRunningException
 import com.makd.afinity.data.models.admin.IdentifyTarget
 import com.makd.afinity.data.repository.admin.AdminRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -154,7 +154,7 @@ constructor(
                     message =
                         when {
                             outcome.isSuccess -> null
-                            outcome.exceptionOrNull() is IdentifyStillRunningException ->
+                            outcome.exceptionOrNull() is AdminRequestStillRunningException ->
                                 IdentifyMessage.APPLY_STILL_RUNNING
 
                             else -> IdentifyMessage.APPLY_FAILED

@@ -3,22 +3,25 @@ package com.makd.afinity.data.repository.admin
 import android.util.Base64
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.admin.AdminPermissionDeniedException
+import com.makd.afinity.data.models.admin.AdminRequestStillRunningException
 import com.makd.afinity.data.models.admin.EditableItem
 import com.makd.afinity.data.models.admin.EditablePerson
 import com.makd.afinity.data.models.admin.ExternalIdProvider
 import com.makd.afinity.data.models.admin.IdentifyResult
-import com.makd.afinity.data.models.admin.IdentifyStillRunningException
 import com.makd.afinity.data.models.admin.IdentifyTarget
 import com.makd.afinity.data.models.admin.ItemImage
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.exception.ApiClientException
+import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.client.exception.TimeoutException
 import org.jellyfin.sdk.api.operations.ImageApi
 import org.jellyfin.sdk.api.operations.ItemLookupApi
@@ -90,11 +93,12 @@ constructor(
 
     override suspend fun updateItemMetadata(itemId: String, item: EditableItem): Result<Unit> =
         withContext(Dispatchers.IO) {
+            var posted: TimeMark? = null
             try {
                 val apiClient =
                     getApiClient()
                         ?: return@withContext Result.failure(IllegalStateException("No API client"))
-                val api = ItemUpdateApi(apiClient)
+                val api = ItemUpdateApi(sessionManager.getBackgroundApiClient() ?: apiClient)
                 val userId =
                     getUserId()
                         ?: return@withContext Result.failure(IllegalStateException("No user"))
@@ -130,10 +134,25 @@ constructor(
                         lockedFields =
                             item.lockedFields.mapNotNull { MetadataField.fromNameOrNull(it) },
                         trickplay = null,
+                        mediaSources = null,
+                        mediaStreams = null,
+                        chapters = null,
+                        userData = null,
+                        imageBlurHashes = null,
                     )
+                posted = TimeSource.Monotonic.markNow()
                 api.updateItem(itemId = UUID.fromString(itemId), data = updated)
                 adminChangeBroadcaster.notifyItemChanged(itemId)
                 Result.success(Unit)
+            } catch (e: TimeoutException) {
+                Timber.e(e, "Timed out updating item $itemId")
+                val elapsed = posted?.elapsedNow()
+                if (elapsed != null && elapsed >= APPLY_ACCEPTED_AFTER) {
+                    adminChangeBroadcaster.notifyItemChanged(itemId)
+                    Result.failure(AdminRequestStillRunningException(e))
+                } else {
+                    Result.failure(e)
+                }
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to update item $itemId")
                 Result.failure(e)
@@ -316,7 +335,7 @@ constructor(
                 Timber.e(e, "Timed out applying identify result to $itemId")
                 if (started.elapsedNow() >= APPLY_ACCEPTED_AFTER) {
                     adminChangeBroadcaster.notifyItemChanged(itemId)
-                    Result.failure(IdentifyStillRunningException(e))
+                    Result.failure(AdminRequestStillRunningException(e))
                 } else {
                     Result.failure(e)
                 }
@@ -613,6 +632,7 @@ constructor(
         imageRefreshMode: String,
         replaceAllMetadata: Boolean,
         replaceAllImages: Boolean,
+        regenerateTrickplay: Boolean,
     ): Result<Unit> =
         withContext(Dispatchers.IO) {
             try {
@@ -633,6 +653,7 @@ constructor(
                             ?: MetadataRefreshMode.DEFAULT,
                     replaceAllMetadata = replaceAllMetadata,
                     replaceAllImages = replaceAllImages,
+                    regenerateTrickplay = regenerateTrickplay,
                 )
                 Result.success(Unit)
             } catch (e: ApiClientException) {
@@ -646,19 +667,54 @@ constructor(
             }
         }
 
+    override suspend fun canDeleteItem(itemId: String): Boolean =
+        withContext(Dispatchers.IO) {
+            try {
+                val apiClient = getApiClient() ?: return@withContext false
+                val userId = getUserId() ?: return@withContext false
+                LibraryApi(apiClient)
+                    .getItem(userId = userId, itemId = UUID.fromString(itemId))
+                    .content
+                    .canDelete == true
+            } catch (e: ApiClientException) {
+                Timber.e(e, "Failed to check delete permission for $itemId")
+                false
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error checking delete permission for $itemId")
+                false
+            }
+        }
+
     override suspend fun deleteItem(
         itemId: String,
         tmdbId: Int?,
         isMovie: Boolean?,
     ): Result<Unit> =
         withContext(Dispatchers.IO) {
+            val started = TimeSource.Monotonic.markNow()
             try {
                 val apiClient =
-                    getApiClient()
+                    sessionManager.getBackgroundApiClient()
                         ?: return@withContext Result.failure(IllegalStateException("No API client"))
                 LibraryApi(apiClient).deleteItem(itemId = UUID.fromString(itemId))
                 adminChangeBroadcaster.notifyItemDeleted(itemId, tmdbId, isMovie)
                 Result.success(Unit)
+            } catch (e: TimeoutException) {
+                Timber.e(e, "Timed out deleting item $itemId")
+                if (started.elapsedNow() >= APPLY_ACCEPTED_AFTER) {
+                    Result.failure(AdminRequestStillRunningException(e))
+                } else {
+                    Result.failure(e)
+                }
+            } catch (e: InvalidStatusException) {
+                Timber.e(e, "Failed to delete item $itemId")
+                if (e.status == 401 || e.status == 403) {
+                    Result.failure(AdminPermissionDeniedException(e))
+                } else {
+                    Result.failure(e)
+                }
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to delete item $itemId")
                 Result.failure(e)
@@ -696,7 +752,7 @@ constructor(
             premiereDate = premiereDate?.toString(),
             officialRating = officialRating,
             customRating = customRating,
-            communityRating = communityRating?.toDouble(),
+            communityRating = communityRating?.toString()?.toDoubleOrNull(),
             genres = genres ?: emptyList(),
             tags = tags ?: emptyList(),
             studios = studios?.mapNotNull { it.name } ?: emptyList(),

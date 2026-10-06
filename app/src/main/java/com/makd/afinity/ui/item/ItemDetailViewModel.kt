@@ -22,6 +22,8 @@ import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.manager.UnreachableReason
 import com.makd.afinity.data.manager.resolveTargetItem
+import com.makd.afinity.data.models.admin.AdminPermissionDeniedException
+import com.makd.afinity.data.models.admin.AdminRequestStillRunningException
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadQuality
@@ -189,6 +191,9 @@ constructor(
             .map { it?.isAdmin == true }
             .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    private val _deletableItemIds = MutableStateFlow<Set<UUID>>(emptySet())
+    val deletableItemIds: StateFlow<Set<UUID>> = _deletableItemIds.asStateFlow()
+
     val isDownloadAllowedByServer: StateFlow<Boolean> = downloadPermissions.isAllowedByServer
 
     val canDownloadOnNetwork: StateFlow<Boolean> = downloadPermissions.isAllowedOnNetwork
@@ -258,7 +263,7 @@ constructor(
 
         viewModelScope.launch {
             adminChangeBroadcaster.changes
-                .filter { it.itemId == itemId.toString() && it.kind != AdminChangeKind.IMAGES }
+                .filter { it.itemId == itemId.toString() && it.kind == AdminChangeKind.METADATA }
                 .collect { forceReloadFromServer() }
         }
 
@@ -1836,11 +1841,16 @@ constructor(
             ?: episodes.firstOrNull { !it.played }
     }
 
-    fun deleteItem(
-        targetItemId: UUID,
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit,
-    ) {
+    fun checkCanDelete(targetItemId: UUID) {
+        if (targetItemId in _deletableItemIds.value) return
+        viewModelScope.launch {
+            if (adminRepository.canDeleteItem(targetItemId.toString())) {
+                _deletableItemIds.update { it + targetItemId }
+            }
+        }
+    }
+
+    fun deleteItem(targetItemId: UUID, onResult: (DeleteOutcome) -> Unit) {
         viewModelScope.launch {
             val target = uiState.value.item?.takeIf { it.id == targetItemId }
             val isMovie =
@@ -1852,14 +1862,30 @@ constructor(
             val tmdbId =
                 if (isMovie != null) target?.providerIds?.get("Tmdb")?.toIntOrNull() else null
             val result = adminRepository.deleteItem(targetItemId.toString(), tmdbId, isMovie)
-            if (result.isSuccess) {
-                onSuccess()
-            } else {
-                val errorMsg = result.exceptionOrNull()?.localizedMessage ?: "Unknown error"
-                onError(errorMsg)
+            val outcome =
+                when (result.exceptionOrNull()) {
+                    null -> DeleteOutcome.DELETED
+                    is AdminRequestStillRunningException -> DeleteOutcome.STILL_RUNNING
+                    is AdminPermissionDeniedException -> DeleteOutcome.NOT_ALLOWED
+                    else -> DeleteOutcome.FAILED
+                }
+            if (outcome == DeleteOutcome.DELETED) {
+                _deletableItemIds.update { it - targetItemId }
+                if (target == null) {
+                    currentEpisodesPagingSource?.invalidate()
+                    refreshFromCacheImmediate(skipNetworkSync = false)
+                }
             }
+            onResult(outcome)
         }
     }
+}
+
+enum class DeleteOutcome {
+    DELETED,
+    STILL_RUNNING,
+    NOT_ALLOWED,
+    FAILED,
 }
 
 data class RelatedRow(val kind: Kind, val subject: String, val items: List<AfinityItem>) {

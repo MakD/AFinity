@@ -76,6 +76,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -87,6 +88,8 @@ import com.makd.afinity.data.models.admin.ItemImage
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.EmptyState
+import com.makd.afinity.ui.components.MediaCountBadge
+import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.util.formatFileSize
 import java.util.Locale
 import sh.calvin.reorderable.ReorderableItem
@@ -131,8 +134,7 @@ private fun resolutionText(image: ItemImage): String? =
     if (image.width > 0 && image.height > 0) "${image.width} × ${image.height}" else null
 
 private fun ratingText(image: ItemImage, rating: Double): String =
-    if (image.ratingIsLikes) rating.toInt().toString()
-    else String.format(Locale.getDefault(), "%.1f", rating)
+    if (image.ratingIsLikes) rating.toInt().toString() else String.format(Locale.US, "%.1f", rating)
 
 private fun languageName(code: String): String =
     Locale.forLanguageTag(code).getDisplayLanguage(Locale.getDefault()).ifBlank { code }
@@ -371,6 +373,7 @@ fun EditImagesScreen(
                                 CandidateTile(
                                     image = image,
                                     shape = shape,
+                                    showLanguage = uiState.includeAllLanguages,
                                     enabled = !uiState.busy,
                                     onClick = { previewImage = image },
                                 )
@@ -754,10 +757,8 @@ private fun CurrentImageStrip(
                                     dragTo = null
                                     if (from != null && to != null && from != to) onMove(from, to)
                                 },
-                            )
-                            .clip(TileShape)
-                            .clickable(enabled = enabled) { onPreview(image) },
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                            ),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Box(
                         modifier =
@@ -766,6 +767,7 @@ private fun CurrentImageStrip(
                                 .shadow(elevation, TileShape)
                                 .clip(TileShape)
                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                .clickable(enabled = enabled) { onPreview(image) }
                     ) {
                         Artwork(url = image.url, fit = false)
                         Text(
@@ -783,10 +785,13 @@ private fun CurrentImageStrip(
                     }
                     Text(
                         text = resolutionText(image).orEmpty(),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        style =
+                            MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                        color = MaterialTheme.colorScheme.onBackground,
                         maxLines = 1,
-                        modifier = Modifier.padding(horizontal = 4.dp),
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
@@ -939,70 +944,99 @@ private fun <T> DropdownChip(
 private fun CandidateTile(
     image: ItemImage,
     shape: ImageShape,
+    showLanguage: Boolean,
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
-    val source =
-        listOfNotNull(image.providerName, image.language?.takeIf { it.isNotBlank() }?.uppercase())
-            .joinToString(" · ")
+    val ratingScale = rememberRatingMetadataScale()
+    val metadataStyle =
+        MaterialTheme.typography.bodySmall.copy(
+            fontSize = MaterialTheme.typography.bodySmall.fontSize * ratingScale.textScale
+        )
+    val resolution = resolutionText(image)
+    val provider = image.providerName?.takeIf { it.isNotBlank() }
+    val language = image.language?.takeIf { it.isNotBlank() }?.uppercase()
+    val rating = image.communityRating?.takeIf { it > 0.0 }
+    val subtitle = provider.takeIf { resolution != null }
 
-    Column(modifier = Modifier.clip(TileShape).clickable(enabled = enabled, onClick = onClick)) {
+    Column {
         Box(
             modifier =
                 Modifier.fillMaxWidth()
                     .aspectRatio(shape.ratio)
                     .clip(TileShape)
                     .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .clickable(enabled = enabled, onClick = onClick)
         ) {
             Artwork(url = image.url, fit = image.imageType == LOGO)
+            if (showLanguage && language != null) {
+                MediaCountBadge(
+                    text = language,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                )
+            }
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = resolution ?: provider.orEmpty(),
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+
         Row(
-            modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, top = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Text(
-                text = resolutionText(image).orEmpty(),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            RatingLabel(image = image)
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = metadataStyle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+            }
+            if (subtitle != null && rating != null) {
+                Text(
+                    text = "•",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (rating != null) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    if (image.ratingIsLikes) {
+                        Icon(
+                            painterResource(R.drawable.ic_favorite_filled),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(ratingScale.rtIconSize),
+                        )
+                    } else {
+                        Icon(
+                            painterResource(R.drawable.ic_community_rating),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(ratingScale.rtIconSize),
+                        )
+                    }
+                    Text(
+                        text = ratingText(image, rating),
+                        style = metadataStyle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                }
+            }
         }
-        Text(
-            text = source,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp),
-        )
-    }
-}
-
-@Composable
-private fun RatingLabel(image: ItemImage) {
-    val rating = image.communityRating ?: return
-    if (rating <= 0.0) return
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        Icon(
-            painterResource(
-                if (image.ratingIsLikes) R.drawable.ic_favorite else R.drawable.ic_star
-            ),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(12.dp),
-        )
-        Text(
-            text = ratingText(image, rating),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 

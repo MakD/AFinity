@@ -1,16 +1,14 @@
 package com.makd.afinity.ui.admin.refresh
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.repository.admin.AdminRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+private const val MODE_DEFAULT = "Default"
+private const val MODE_FULL_REFRESH = "FullRefresh"
 
 enum class RefreshMode {
     Scan,
@@ -18,65 +16,30 @@ enum class RefreshMode {
     ReplaceAll,
 }
 
-data class RefreshUiState(
-    val mode: RefreshMode = RefreshMode.Scan,
-    val replaceImages: Boolean = false,
-    val refreshing: Boolean = false,
-    val done: Boolean = false,
-    val error: String? = null,
-)
-
 @HiltViewModel
-class RefreshMetadataViewModel
-@Inject
-constructor(
-    private val adminRepository: AdminRepository,
-    savedStateHandle: SavedStateHandle,
-) : ViewModel() {
+class RefreshMetadataViewModel @Inject constructor(private val adminRepository: AdminRepository) :
+    ViewModel() {
 
-    val itemId: String = checkNotNull(savedStateHandle["itemId"])
-
-    private val _uiState = MutableStateFlow(RefreshUiState())
-    val uiState: StateFlow<RefreshUiState> = _uiState.asStateFlow()
-
-    fun setMode(mode: RefreshMode) = _uiState.update { it.copy(mode = mode) }
-
-    fun toggleReplaceImages() = _uiState.update { it.copy(replaceImages = !it.replaceImages) }
-
-    fun refresh() {
-        val state = _uiState.value
+    fun refresh(
+        itemId: String,
+        mode: RefreshMode,
+        replaceImages: Boolean,
+        regenerateTrickplay: Boolean,
+        onResult: (Boolean) -> Unit,
+    ) {
+        val fullRefresh = mode != RefreshMode.Scan
+        val refreshMode = if (fullRefresh) MODE_FULL_REFRESH else MODE_DEFAULT
         viewModelScope.launch {
-            _uiState.update { it.copy(refreshing = true, error = null) }
-            val (metaMode, imageMode, replaceMeta, replaceImages) =
-                when (state.mode) {
-                    RefreshMode.Scan -> RefreshParams("Default", "Default", false, false)
-                    RefreshMode.Missing ->
-                        RefreshParams("FullRefresh", "FullRefresh", false, state.replaceImages)
-                    RefreshMode.ReplaceAll ->
-                        RefreshParams("FullRefresh", "FullRefresh", true, state.replaceImages)
-                }
             val result =
                 adminRepository.refreshItem(
                     itemId = itemId,
-                    metadataRefreshMode = metaMode,
-                    imageRefreshMode = imageMode,
-                    replaceAllMetadata = replaceMeta,
-                    replaceAllImages = replaceImages,
+                    metadataRefreshMode = refreshMode,
+                    imageRefreshMode = refreshMode,
+                    replaceAllMetadata = mode == RefreshMode.ReplaceAll,
+                    replaceAllImages = fullRefresh && replaceImages,
+                    regenerateTrickplay = fullRefresh && regenerateTrickplay,
                 )
-            _uiState.update {
-                it.copy(
-                    refreshing = false,
-                    done = result.isSuccess,
-                    error = result.exceptionOrNull()?.message,
-                )
-            }
+            onResult(result.isSuccess)
         }
     }
-
-    private data class RefreshParams(
-        val metaMode: String,
-        val imageMode: String,
-        val replaceMeta: Boolean,
-        val replaceImages: Boolean,
-    )
 }

@@ -71,7 +71,10 @@ interface AdminRepository {
         imageRefreshMode: String,
         replaceAllMetadata: Boolean,
         replaceAllImages: Boolean,
+        regenerateTrickplay: Boolean,
     ): Result<Unit>
+
+    suspend fun canDeleteItem(itemId: String): Boolean
 
     suspend fun deleteItem(
         itemId: String,

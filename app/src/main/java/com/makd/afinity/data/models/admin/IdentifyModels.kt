@@ -19,5 +19,3 @@ data class IdentifyTarget(
 )
 
 data class ExternalIdProvider(val name: String, val key: String, val type: String? = null)
-
-class IdentifyStillRunningException(cause: Throwable) : Exception(cause)
