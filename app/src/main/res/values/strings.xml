@@ -2063,6 +2063,18 @@
     <string name="admin_identify_search">Search</string>
     <string name="admin_identify_results">Results</string>
     <string name="admin_identify_no_results">No results found</string>
+    <string name="admin_identify_no_results_hint">Check the spelling, or search by a provider ID for an exact match.</string>
+    <string name="admin_identify_search_without_year">Search without the year</string>
+    <string name="admin_identify_search_failed_title">Search failed</string>
+    <string name="admin_identify_search_failed_message">The server didn\'t respond. Nothing has been changed.</string>
+    <string name="admin_identify_current_match">Currently matched as</string>
+    <string name="admin_identify_provider_ids_hint">An ID finds the exact title, even when the name is wrong.</string>
+    <string name="admin_identify_replace_images_hint">Turn off to keep the artwork this item has now.</string>
+    <string name="admin_identify_use_match">Use this match</string>
+    <string name="admin_identify_applying">Applying… this can take a minute</string>
+    <string name="admin_identify_confirm_message">All of this item\'s details will be replaced with the match. Edits made by hand are lost.</string>
+    <string name="admin_identify_apply_failed">Couldn\'t apply the match. Try again.</string>
+    <string name="admin_identify_apply_still_running">The server is still applying this match. Check the item again in a few minutes.</string>
 
     <!--Admin - Edit Images Screen-->
     <string name="admin_edit_images_title">Edit Images</string>
@@ -2076,6 +2088,35 @@
     <string name="admin_images_on_server">Current Images</string>
     <string name="admin_images_from_providers">Available from Providers</string>
     <string name="cd_admin_no_image">No image placeholder</string>
+    <string name="admin_image_type_thumb">Thumb</string>
+    <string name="admin_image_type_banner">Banner</string>
+    <string name="admin_image_type_art">Art</string>
+    <string name="admin_image_type_disc">Disc</string>
+    <string name="admin_images_none_title">No image yet</string>
+    <string name="admin_images_none_message">Upload one or pick from the providers below.</string>
+    <string name="admin_images_reorder_hint">The first image is the main one. Hold and drag to reorder.</string>
+    <string name="admin_images_all_providers">All providers</string>
+    <string name="admin_images_sort_recommended">Recommended</string>
+    <string name="admin_images_sort_largest">Largest</string>
+    <string name="admin_images_load_failed_title">Couldn\'t load images</string>
+    <string name="admin_images_load_failed_message">The server didn\'t respond. Nothing has been changed.</string>
+    <string name="admin_images_empty_title">No images found</string>
+    <string name="admin_images_empty_message">The providers have nothing for this image type.</string>
+    <string name="admin_images_empty_language_message">Providers may have more in other languages.</string>
+    <string name="admin_images_show_all_languages">Show all languages</string>
+    <string name="admin_image_use">Use this image</string>
+    <string name="admin_image_add">Add image</string>
+    <string name="admin_image_replaces_current">Replaces the current image.</string>
+    <string name="admin_image_fact_provider">Provider</string>
+    <string name="admin_image_fact_resolution">Resolution</string>
+    <string name="admin_image_fact_rating">Rating</string>
+    <string name="admin_image_fact_likes">Likes</string>
+    <string name="admin_image_fact_language">Language</string>
+    <string name="admin_image_fact_size">File size</string>
+    <string name="admin_image_updated">Image updated</string>
+    <string name="admin_image_removed">Image removed</string>
+    <string name="admin_image_action_failed">Couldn\'t update the image. Try again.</string>
+    <string name="admin_image_file_unreadable">Couldn\'t read that file.</string>
 
     <!--Music Player / Library-->
     <!-- Sort Options -->

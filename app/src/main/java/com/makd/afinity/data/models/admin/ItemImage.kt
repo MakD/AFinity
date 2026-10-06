@@ -12,4 +12,8 @@ data class ItemImage(
     val language: String?,
     val isServerImage: Boolean,
     val remoteUrl: String?,
+    val previewUrl: String? = null,
+    val fileSize: Long = 0,
+    val isLocalFile: Boolean = true,
+    val ratingIsLikes: Boolean = false,
 )

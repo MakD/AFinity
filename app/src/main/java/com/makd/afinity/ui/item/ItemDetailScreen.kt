@@ -822,6 +822,7 @@ private fun LandscapeItemDetailContent(
                                 isLandscape = true,
                                 downloadUnavailable = uiState.downloadUnavailable,
                                 isAdmin = isAdmin,
+                                canIdentify = identifyItemType(item) != null,
                                 onDownloadLongClick = { viewModel.onDownloadLongClick() },
                                 onAddToPlaylist =
                                     if (
@@ -841,15 +842,14 @@ private fun LandscapeItemDetailContent(
                                                 )
                                             )
                                         AdminAction.Identify ->
-                                            navController.navigate(
-                                                Destination.createIdentifyItemRoute(
-                                                    item.id.toString(),
-                                                    when (item) {
-                                                        is AfinityShow -> "Series"
-                                                        else -> "Movie"
-                                                    },
+                                            identifyItemType(item)?.let { itemType ->
+                                                navController.navigate(
+                                                    Destination.createIdentifyItemRoute(
+                                                        item.id.toString(),
+                                                        itemType,
+                                                    )
                                                 )
-                                            )
+                                            }
                                         AdminAction.EditImages ->
                                             navController.navigate(
                                                 Destination.createEditImagesRoute(
@@ -1073,6 +1073,7 @@ private fun PortraitItemDetailContent(
                     isLandscape = false,
                     downloadUnavailable = uiState.downloadUnavailable,
                     isAdmin = isAdmin,
+                    canIdentify = identifyItemType(item) != null,
                     onDownloadLongClick = { viewModel.onDownloadLongClick() },
                     onAddToPlaylist =
                         if (
@@ -1090,15 +1091,14 @@ private fun PortraitItemDetailContent(
                                     Destination.createEditMetadataRoute(item.id.toString())
                                 )
                             AdminAction.Identify ->
-                                navController.navigate(
-                                    Destination.createIdentifyItemRoute(
-                                        item.id.toString(),
-                                        when (item) {
-                                            is AfinityShow -> "Series"
-                                            else -> "Movie"
-                                        },
+                                identifyItemType(item)?.let { itemType ->
+                                    navController.navigate(
+                                        Destination.createIdentifyItemRoute(
+                                            item.id.toString(),
+                                            itemType,
+                                        )
                                     )
-                                )
+                                }
                             AdminAction.EditImages ->
                                 navController.navigate(
                                     Destination.createEditImagesRoute(item.id.toString())
@@ -1505,6 +1505,14 @@ private fun navigateToSeries(navController: NavController, season: AfinitySeason
         Destination.createItemDetailRoute(itemId = season.seriesId.toString(), itemType = "Series")
     )
 }
+
+private fun identifyItemType(item: AfinityItem): String? =
+    when (item) {
+        is AfinityMovie -> "Movie"
+        is AfinityShow -> "Series"
+        is AfinityBoxSet -> "BoxSet"
+        else -> null
+    }
 
 private fun hasTrailer(item: AfinityItem): Boolean =
     (item as? AfinityMovie)?.trailer != null ||

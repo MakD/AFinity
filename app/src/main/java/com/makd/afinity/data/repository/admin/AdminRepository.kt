@@ -3,6 +3,7 @@ package com.makd.afinity.data.repository.admin
 import com.makd.afinity.data.models.admin.EditableItem
 import com.makd.afinity.data.models.admin.ExternalIdProvider
 import com.makd.afinity.data.models.admin.IdentifyResult
+import com.makd.afinity.data.models.admin.IdentifyTarget
 import com.makd.afinity.data.models.admin.ItemImage
 
 interface AdminRepository {
@@ -11,21 +12,17 @@ interface AdminRepository {
 
     suspend fun updateItemMetadata(itemId: String, item: EditableItem): Result<Unit>
 
+    suspend fun getIdentifyTarget(itemId: String): IdentifyTarget?
+
     suspend fun getExternalIdProviders(itemId: String): List<ExternalIdProvider>
 
-    suspend fun searchMovie(
+    suspend fun searchRemoteResult(
         itemId: String,
+        itemType: String,
         name: String,
         year: Int?,
         providerIds: Map<String, String>,
-    ): List<IdentifyResult>
-
-    suspend fun searchSeries(
-        itemId: String,
-        name: String,
-        year: Int?,
-        providerIds: Map<String, String>,
-    ): List<IdentifyResult>
+    ): Result<List<IdentifyResult>>
 
     suspend fun applyIdentifyResult(
         itemId: String,
@@ -33,13 +30,14 @@ interface AdminRepository {
         replaceAllImages: Boolean,
     ): Result<Unit>
 
-    suspend fun getItemImages(itemId: String): List<ItemImage>
+    suspend fun getItemImagesResult(itemId: String): Result<List<ItemImage>>
 
-    suspend fun getRemoteImages(
+    suspend fun getRemoteImagesResult(
         itemId: String,
-        imageType: String,
         includeAllLanguages: Boolean,
-    ): List<ItemImage>
+    ): Result<List<ItemImage>>
+
+    suspend fun getSupportedImageTypes(itemId: String): List<String>
 
     suspend fun downloadRemoteImage(
         itemId: String,
@@ -58,6 +56,13 @@ interface AdminRepository {
         itemId: String,
         imageType: String,
         imageIndex: Int?,
+    ): Result<Unit>
+
+    suspend fun moveImage(
+        itemId: String,
+        imageType: String,
+        fromIndex: Int,
+        toIndex: Int,
     ): Result<Unit>
 
     suspend fun refreshItem(

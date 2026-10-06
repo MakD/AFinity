@@ -54,6 +54,7 @@ fun ActionButtonsRow(
     isLandscape: Boolean = false,
     downloadUnavailable: Boolean = false,
     isAdmin: Boolean = false,
+    canIdentify: Boolean = true,
     onAdminAction: (AdminAction) -> Unit = {},
     onDownloadLongClick: (() -> Unit)? = null,
     onAddToPlaylist: (() -> Unit)? = null,
@@ -173,20 +174,22 @@ fun ActionButtonsRow(
                             onAdminAction(AdminAction.EditMetadata)
                         },
                     )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.admin_action_identify)) },
-                        leadingIcon = {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_search),
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        },
-                        onClick = {
-                            menuExpanded = false
-                            onAdminAction(AdminAction.Identify)
-                        },
-                    )
+                    if (canIdentify) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.admin_action_identify)) },
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_search),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onAdminAction(AdminAction.Identify)
+                            },
+                        )
+                    }
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.admin_action_edit_images)) },
                         leadingIcon = {
