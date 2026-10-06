@@ -878,7 +878,6 @@
     <string name="admin_action_edit_images">Править изображения</string>
     <string name="admin_action_refresh_metadata">Обновить метаданные</string>
     <string name="admin_refresh_title">Обновить метаданные</string>
-    <string name="admin_refresh_mode_label">Режим обновления</string>
     <string name="admin_refresh_replace_images">Замена имеющихся изображений</string>
     <string name="admin_btn_refresh">Обновить</string>
     <string name="admin_edit_metadata_title">Править метаданные</string>
@@ -897,11 +896,9 @@
     <string name="admin_section_studios">Студии</string>
     <string name="admin_section_cast">Актеры и съемочная группа</string>
     <string name="admin_add_person">Добавить персону</string>
-    <string name="admin_close_form">Закрыть форму</string>
     <string name="admin_field_person_name">Имя</string>
     <string name="admin_field_person_type">Тип (актер, режиссер, сценарист…)</string>
     <string name="admin_field_person_role">Роль / Персонаж</string>
-    <string name="admin_add_to_list">Добавить в список</string>
     <string name="admin_add_item_placeholder">Добавить элемент…</string>
     <string name="admin_field_community_rating">Оценка сообщества</string>
     <string name="admin_field_custom_rating">Своя оценка</string>
@@ -1319,9 +1316,7 @@
     <string name="unverified_address_confirm">Все равно добавить</string>
     <string name="admin_action_delete">Удалить</string>
     <string name="admin_delete_dialog_title">Удалить элемент</string>
-    <string name="admin_delete_dialog_message">Вы уверены, что хотите удалить «%1$s»? Это действие нельзя отменить и оно удалит медиафайл(ы) с вашего сервера.</string>
     <string name="admin_delete_success">Элемент успешно удален</string>
-    <string name="admin_delete_error">Не удалось удалить элемент: %1$s</string>
     <string name="player_tracks_label">Аудио и субтитры</string>
     <string name="player_resume">Возобновить</string>
     <string name="player_restart">Перезапустить</string>
@@ -2258,4 +2253,21 @@
     </plurals>
     <string name="abs_listened_label">прослушано</string>
     <string name="abs_your_listening">Вы слушаете</string>
+    <string name="pref_video_download_quality_title">Качество загружаемых видео</string>
+    <string name="pref_music_download_quality_title">Качество загружаемой музыки</string>
+    <string name="pref_download_quality_hint">Используется по умолчанию для новых загрузок. Зажмите кнопку «Скачать» для настройки.</string>
+    <string name="pref_download_quality_exoplayer_hint">Используется по умолчанию для новых загрузок. Зажмите кнопку «Скачать» для настройки. В ExoPlayer нельзя прокручивать сконвертированные видео.</string>
+    <string name="download_quality_title">Качество</string>
+    <string name="download_audio_track_title">Аудиодорожка</string>
+    <string name="download_converting_fmt">Конвертация · %1$s</string>
+    <string name="jellyseerr_use_local_account">Войти через аккаунт Seerr</string>
+    <string name="jellyseerr_use_jellyfin_account">Войти через аккаунт Jellyfin</string>
+    <plurals name="abs_titles_in_library_fmt">
+        <item quantity="one">%1$d издание в вашей библиотеке</item>
+        <item quantity="few">%1$d издания в вашей библиотеке</item>
+        <item quantity="many">%1$d изданий в вашей библиотеке</item>
+        <item quantity="other">%1$d изданий в вашей библиотеке</item>
+    </plurals>
+    <string name="abs_show_sessions">Показать сеансы</string>
+    <string name="abs_continue_listening_label">Продолжить слушать</string>
 </resources>

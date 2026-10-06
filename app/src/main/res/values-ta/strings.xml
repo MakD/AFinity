@@ -875,7 +875,6 @@
     <string name="admin_action_edit_images">படங்களை திருத்து</string>
     <string name="admin_action_refresh_metadata">மெட்டாடேட்டாவைப் புதுப்பிக்கவும்</string>
     <string name="admin_refresh_title">மெட்டாடேட்டாவைப் புதுப்பிக்கவும்</string>
-    <string name="admin_refresh_mode_label">புதுப்பித்தல் முறை</string>
     <string name="admin_refresh_replace_images">ஏற்கனவே உள்ள படங்களை மாற்றவும்</string>
     <string name="admin_btn_refresh">புதுப்பிப்பு</string>
     <string name="admin_edit_metadata_title">மெட்டாடேட்டாவைத் திருத்தவும்</string>
@@ -894,11 +893,9 @@
     <string name="admin_section_studios">ச்டுடியோக்கள்</string>
     <string name="admin_section_cast">நடிகர்கள் &amp; குழுவினர்</string>
     <string name="admin_add_person">நபரைச் சேர்</string>
-    <string name="admin_close_form">படிவத்தை மூடு</string>
     <string name="admin_field_person_name">பெயர்</string>
     <string name="admin_field_person_type">வகை (நடிகர், இயக்குனர், எழுத்தாளர்...)</string>
     <string name="admin_field_person_role">பாத்திரம் / காதா பாத்திரம்</string>
-    <string name="admin_add_to_list">பட்டியலில் சேர்</string>
     <string name="admin_add_item_placeholder">பொருளைச் சேர்…</string>
     <string name="admin_field_community_rating">சமூக மதிப்பீடு</string>
     <string name="admin_field_custom_rating">விருப்ப மதிப்பீடு</string>

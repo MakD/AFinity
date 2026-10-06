@@ -1262,11 +1262,8 @@
     <string name="admin_action_refresh_metadata">Metadata vernieuwen</string>
     <string name="admin_action_delete">Verwijderen</string>
     <string name="admin_delete_dialog_title">Item verwijderen</string>
-    <string name="admin_delete_dialog_message">Weet je zeker dat je \"%1$s\" wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt en zal de mediabestand(en) definitief van je server verwijderen.</string>
     <string name="admin_delete_success">Item succesvol verwijderd</string>
-    <string name="admin_delete_error">Kan item niet verwijderen: %1$s</string>
     <string name="admin_refresh_title">Metadata vernieuwen</string>
-    <string name="admin_refresh_mode_label">Vernieuwingsmodus</string>
     <string name="admin_refresh_replace_images">Bestaande afbeeldingen vervangen</string>
     <string name="admin_btn_refresh">Vernieuwen</string>
     <string name="admin_edit_metadata_title">Metadata bewerken</string>
@@ -1285,11 +1282,9 @@
     <string name="admin_section_studios">Studio\'s</string>
     <string name="admin_section_cast">Cast &amp; crew</string>
     <string name="admin_add_person">Persoon toevoegen</string>
-    <string name="admin_close_form">Formulier sluiten</string>
     <string name="admin_field_person_name">Naam</string>
     <string name="admin_field_person_type">Type (Acteur, Regisseur, Auteur…)</string>
     <string name="admin_field_person_role">Rol / Personage</string>
-    <string name="admin_add_to_list">Toevoegen aan lijst</string>
     <string name="admin_add_item_placeholder">Item toevoegen…</string>
     <string name="admin_field_community_rating">Beoordeling van de community</string>
     <string name="admin_field_custom_rating">Aangepaste beoordeling</string>

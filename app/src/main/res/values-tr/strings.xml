@@ -849,7 +849,6 @@
     <string name="admin_action_edit_images">Resimleri editle</string>
     <string name="admin_action_refresh_metadata">Üstveriyi Yenile</string>
     <string name="admin_refresh_title">Üstveriyi Yenile</string>
-    <string name="admin_refresh_mode_label">Yenileme modu</string>
     <string name="admin_refresh_replace_images">Varolan resimleri değiştir</string>
     <string name="admin_btn_refresh">Yenile</string>
     <string name="admin_edit_metadata_title">Metadatayı Düzenle</string>
@@ -868,11 +867,9 @@
     <string name="admin_section_studios">Stüdyolar</string>
     <string name="admin_section_cast">Oyuncular ve Ekip</string>
     <string name="admin_add_person">Kişi Ekle</string>
-    <string name="admin_close_form">Formu Kapat</string>
     <string name="admin_field_person_name">Ad</string>
     <string name="admin_field_person_type">Yaz (Oyuncu, Yönetmen, Yazar...)</string>
     <string name="admin_field_person_role">Rol / Karakter</string>
-    <string name="admin_add_to_list">Listeye ekle</string>
     <string name="admin_add_item_placeholder">Öğe ekle…</string>
     <string name="admin_field_community_rating">Topluluk puanı</string>
     <string name="admin_field_custom_rating">Özel Değerlendirme</string>

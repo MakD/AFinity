@@ -839,7 +839,6 @@
     <string name="admin_action_edit_images">Edit Gambar</string>
     <string name="admin_action_refresh_metadata">Segarkan Metadata</string>
     <string name="admin_refresh_title">Segarkan Metadata</string>
-    <string name="admin_refresh_mode_label">Mode penyegaran</string>
     <string name="admin_refresh_replace_images">Ganti gambar yang sudah ada</string>
     <string name="admin_btn_refresh">Segarkan</string>
     <string name="admin_edit_metadata_title">Edit Metadata</string>
@@ -858,11 +857,9 @@
     <string name="admin_section_studios">Studio</string>
     <string name="admin_section_cast">Pemeran &amp; Kru</string>
     <string name="admin_add_person">Tambah Orang</string>
-    <string name="admin_close_form">Tutup Formulir</string>
     <string name="admin_field_person_name">Nama</string>
     <string name="admin_field_person_type">Tipe (Aktor, Sutradara, Penulis…)</string>
     <string name="admin_field_person_role">Peran / Karakter</string>
-    <string name="admin_add_to_list">Tambahkan ke Daftar</string>
     <string name="admin_add_item_placeholder">Tambahkan item…</string>
     <string name="admin_field_community_rating">Rating Komunitas</string>
     <string name="admin_field_custom_rating">Rating Kustom</string>
@@ -1384,9 +1381,7 @@
     <string name="pref_connect_services_summary">Siapkan Seerr, Audiobookshelf, dan akses jarak jauh</string>
     <string name="admin_action_delete">Hapus</string>
     <string name="admin_delete_dialog_title">Hapus Item</string>
-    <string name="admin_delete_dialog_message">Apakah Anda yakin ingin menghapus %1$s? Tindakan ini tidak dapat dibatalkan dan akan menghapus file media dari server Anda.</string>
     <string name="admin_delete_success">Item berhasil dihapus</string>
-    <string name="admin_delete_error">Gagal menghapus item: %1$s</string>
     <string name="cd_episode_details">Detail episode</string>
     <string name="library_load_failed">Tidak dapat memuat pustaka ini. Periksa koneksi Anda lalu coba lagi.</string>
     <string name="home_load_failed">Tidak dapat menghubungi server Anda. Periksa koneksi Anda lalu coba lagi.</string>
