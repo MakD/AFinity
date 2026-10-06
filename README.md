@@ -117,7 +117,7 @@ The Requests tab will appear in your bottom navigation once connected.
 ![Kotlin](https://img.shields.io/badge/Language-Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white&labelColor=000000)
 ![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-3899EC?style=for-the-badge&logo=jetpackcompose&logoColor=white&labelColor=000000)
 ![Material 3](https://img.shields.io/badge/Design-Material%203-7F8CAA?style=for-the-badge&logo=materialdesign&logoColor=white&labelColor=000000)
-![Jellyfin 10.10.x](https://img.shields.io/badge/Server-10.10.x-AA5CC3?style=for-the-badge&logo=jellyfin&logoColor=white&labelColor=000000)
+![Jellyfin 12.x](https://img.shields.io/badge/Server-12.x-AA5CC3?style=for-the-badge&logo=jellyfin&logoColor=white&labelColor=000000)
 
 </div>
 
