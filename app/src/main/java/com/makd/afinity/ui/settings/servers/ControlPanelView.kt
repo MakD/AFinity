@@ -67,7 +67,9 @@ import com.makd.afinity.ui.settings.servers.utils.formatTicks
 import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.SessionInfoDto
+import org.jellyfin.sdk.model.api.TaskCompletionStatus
 import org.jellyfin.sdk.model.api.TaskInfo
+import org.jellyfin.sdk.model.api.TaskResult
 import org.jellyfin.sdk.model.api.TaskState
 
 @Composable
@@ -80,6 +82,7 @@ internal fun ControlPanelView(
     val sessions by viewModel.activeSessions.collectAsStateWithLifecycle()
     val isLibraryRefreshing by viewModel.isLibraryRefreshing.collectAsStateWithLifecycle()
     val pendingPause by viewModel.pendingPause.collectAsStateWithLifecycle()
+    val pendingTaskCommands by viewModel.pendingTaskCommands.collectAsStateWithLifecycle()
 
     var showRestartConfirm by remember { mutableStateOf(false) }
     var showShutdownConfirm by remember { mutableStateOf(false) }
@@ -314,6 +317,7 @@ internal fun ControlPanelView(
                     currentTasks.isNotEmpty() ->
                         ScheduledTasksSection(
                             tasks = currentTasks,
+                            pendingTaskIds = pendingTaskCommands,
                             onRunTask = { viewModel.runTask(it) },
                             onStopTask = { viewModel.stopTask(it) },
                         )
@@ -732,6 +736,7 @@ private fun PlayingSessionCard(
 @Composable
 private fun ScheduledTasksSection(
     tasks: List<TaskInfo>,
+    pendingTaskIds: Set<String>,
     onRunTask: (String) -> Unit,
     onStopTask: (String) -> Unit,
 ) {
@@ -750,6 +755,7 @@ private fun ScheduledTasksSection(
                 androidx.compose.runtime.key(taskId) {
                     ScheduledTaskRow(
                         task = task,
+                        isPending = taskId in pendingTaskIds,
                         onRun = { onRunTask(taskId) },
                         onStop = { onStopTask(taskId) },
                     )
@@ -765,6 +771,7 @@ private fun ScheduledTasksSection(
                     androidx.compose.runtime.key(taskId) {
                         ScheduledTaskRow(
                             task = task,
+                            isPending = taskId in pendingTaskIds,
                             onRun = { onRunTask(taskId) },
                             onStop = { onStopTask(taskId) },
                         )
@@ -775,7 +782,12 @@ private fun ScheduledTasksSection(
 }
 
 @Composable
-private fun ScheduledTaskRow(task: TaskInfo, onRun: () -> Unit, onStop: () -> Unit) {
+private fun ScheduledTaskRow(
+    task: TaskInfo,
+    isPending: Boolean,
+    onRun: () -> Unit,
+    onStop: () -> Unit,
+) {
     val isRunning = task.state == TaskState.RUNNING
     val isCancelling = task.state == TaskState.CANCELLING
 
@@ -814,23 +826,43 @@ private fun ScheduledTaskRow(task: TaskInfo, onRun: () -> Unit, onStop: () -> Un
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    task.lastExecutionResult?.let { result ->
-                        Text(
-                            text =
+                    val result = task.lastExecutionResult
+                    val subtitle =
+                        when {
+                            isCancelling -> stringResource(R.string.task_stopping)
+                            result != null ->
                                 formatLastRun(
                                     LocalContext.current,
                                     result.startTimeUtc,
                                     result.endTimeUtc,
-                                ),
+                                )
+
+                            isRunning -> null
+                            else -> stringResource(R.string.task_never_run)
+                        }
+                    if (subtitle != null) {
+                        Text(
+                            text = subtitle,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            modifier = Modifier.padding(top = 2.dp),
+                        )
+                    }
+                    val outcome = if (isCancelling) null else result?.let { taskOutcomeLabel(it) }
+                    if (outcome != null) {
+                        Text(
+                            text = outcome,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.padding(top = 2.dp),
                         )
                     }
                 }
 
                 when {
-                    isCancelling ->
+                    isCancelling || isPending ->
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp).padding(end = 8.dp),
                             strokeWidth = 2.dp,
@@ -872,6 +904,14 @@ private fun ScheduledTaskRow(task: TaskInfo, onRun: () -> Unit, onStop: () -> Un
                             color = Color(0xFF4CAF50),
                             trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                         )
+                        Text(
+                            text = "${"%.1f".format(progress)}%",
+                            style =
+                                MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
+                            color = Color(0xFF4CAF50),
+                        )
                     } else {
                         LinearProgressIndicator(
                             modifier = Modifier.weight(1f).height(4.dp),
@@ -879,16 +919,23 @@ private fun ScheduledTaskRow(task: TaskInfo, onRun: () -> Unit, onStop: () -> Un
                             trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                         )
                     }
-                    Text(
-                        text = "${progress?.let { "%.1f".format(it) } ?: "0.0"}%",
-                        style =
-                            MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Medium
-                            ),
-                        color = Color(0xFF4CAF50),
-                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun taskOutcomeLabel(result: TaskResult): String? {
+    return when (result.status) {
+        TaskCompletionStatus.COMPLETED -> null
+        TaskCompletionStatus.FAILED -> {
+            val reason = result.errorMessage?.trim().orEmpty()
+            if (reason.isEmpty()) stringResource(R.string.task_status_failed)
+            else stringResource(R.string.task_status_failed_reason, reason)
+        }
+
+        TaskCompletionStatus.CANCELLED -> stringResource(R.string.task_status_cancelled)
+        TaskCompletionStatus.ABORTED -> stringResource(R.string.task_status_aborted)
     }
 }

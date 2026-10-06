@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.server.ServerStorage
-import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -42,7 +41,6 @@ class ControlPanelViewModel
 constructor(
     private val jellyfinRepository: JellyfinRepository,
     private val sessionManager: SessionManager,
-    private val appDataRepository: AppDataRepository,
     private val jellyfinWebSocketManager: JellyfinWebSocketManager,
 ) : ViewModel() {
 
@@ -55,10 +53,12 @@ constructor(
     }
 
     private var currentServerId: String = ""
-    private var previousRunningTaskIds: Set<String> = emptySet()
 
     private val _scheduledTasks = MutableStateFlow<List<TaskInfo>?>(null)
     val scheduledTasks: StateFlow<List<TaskInfo>?> = _scheduledTasks.asStateFlow()
+
+    private val _pendingTaskCommands = MutableStateFlow<Set<String>>(emptySet())
+    val pendingTaskCommands: StateFlow<Set<String>> = _pendingTaskCommands.asStateFlow()
 
     private val _isRefreshInitiated = MutableStateFlow(false)
     private val isRefreshExecuting = AtomicBoolean(false)
@@ -115,7 +115,6 @@ constructor(
 
         viewModelScope.launch {
             jellyfinWebSocketManager.liveTasks.collect { instantTasks ->
-                checkForCompletedTasks(instantTasks)
                 updateTasksState(instantTasks)
             }
         }
@@ -145,6 +144,7 @@ constructor(
                     Timber.e(e, "Failed session fetch")
                 }
                 delay(5000)
+                if (hasActiveTask()) pollTasksNow()
             }
         }
     }
@@ -257,31 +257,10 @@ constructor(
         } ?: false
     }
 
-    private fun checkForCompletedTasks(newTasks: List<TaskInfo>) {
-        val currentRunningIds =
-            newTasks
-                .filter { it.state == TaskState.RUNNING || it.state == TaskState.CANCELLING }
-                .mapNotNull { it.id }
-                .toSet()
-
-        val justCompletedIds = previousRunningTaskIds - currentRunningIds
-        if (justCompletedIds.isNotEmpty()) {
-            val completedLibraryTasks = newTasks.filter {
-                it.id in justCompletedIds && it.isLibraryRelated()
-            }
-            if (completedLibraryTasks.isNotEmpty()) {
-                Timber.d(
-                    "Library tasks completed: ${completedLibraryTasks.map { it.key }} — invalidating media caches"
-                )
-                appDataRepository.scheduleHomeRefreshAfterTaskCompletion()
-            }
-        }
-        previousRunningTaskIds = currentRunningIds
-    }
-
-    private fun TaskInfo.isLibraryRelated(): Boolean {
-        val text = listOfNotNull(key, name, category, description).joinToString(" ").lowercase()
-        return "library" in text || "scan" in text || "refresh" in text
+    private fun hasActiveTask(): Boolean {
+        return _scheduledTasks.value?.any { task ->
+            task.state == TaskState.RUNNING || task.state == TaskState.CANCELLING
+        } ?: false
     }
 
     private fun loadServerStorage(serverId: String) {
@@ -320,19 +299,26 @@ constructor(
     }
 
     fun runTask(taskId: String) {
-        viewModelScope.launch {
-            if (jellyfinRepository.startScheduledTask(taskId).isSuccess) {
-                delay(500)
-                pollTasksNow()
-            }
-        }
+        sendTaskCommand(taskId) { jellyfinRepository.startScheduledTask(taskId) }
     }
 
     fun stopTask(taskId: String) {
+        sendTaskCommand(taskId) { jellyfinRepository.stopScheduledTask(taskId) }
+    }
+
+    private fun sendTaskCommand(taskId: String, block: suspend () -> Result<Unit>) {
+        if (taskId in _pendingTaskCommands.value) return
+        _pendingTaskCommands.update { it + taskId }
         viewModelScope.launch {
-            if (jellyfinRepository.stopScheduledTask(taskId).isSuccess) {
-                delay(500)
+            try {
+                if (block().isSuccess) {
+                    delay(500)
+                } else {
+                    _commandError.tryEmit(Unit)
+                }
                 pollTasksNow()
+            } finally {
+                _pendingTaskCommands.update { it - taskId }
             }
         }
     }

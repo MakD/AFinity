@@ -34,9 +34,6 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Provider
 import kotlin.coroutines.cancellation.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -44,13 +41,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.doubleOrNull
-import org.jellyfin.sdk.model.api.TaskInfo
 import timber.log.Timber
 
 data class ServerManagementState(
@@ -131,7 +125,6 @@ data class ServerDetailStats(
     val jellyfinStats: JellyfinStats? = null,
     val jellyseerrStats: JellyseerrStats? = null,
     val audiobookshelfStats: AudiobookshelfStats? = null,
-    val scheduledTasks: List<TaskInfo>? = null,
 )
 
 data class ServerWithUserCount(
@@ -173,8 +166,6 @@ constructor(
 
     private val _state = MutableStateFlow(ServerManagementState())
     val state: StateFlow<ServerManagementState> = _state.asStateFlow()
-
-    private var taskPollingJob: Job? = null
 
     val isOffline: StateFlow<Boolean> =
         offlineModeManager.isOffline.stateIn(viewModelScope, SharingStarted.Eagerly, false)
@@ -321,8 +312,6 @@ constructor(
     }
 
     fun hideServerDetail() {
-        taskPollingJob?.cancel()
-        taskPollingJob = null
         _state.value = _state.value.copy(detailServer = null, detailStats = null)
     }
 
@@ -381,40 +370,6 @@ constructor(
                 }
             }
         }
-
-        startTaskPolling()
-    }
-
-    private fun startTaskPolling() {
-        taskPollingJob?.cancel()
-        taskPollingJob =
-            viewModelScope.launch(Dispatchers.IO) {
-                val jellyfinRepository = jellyfinRepositoryProvider.get()
-                while (isActive) {
-                    try {
-                        val tasksResult = jellyfinRepository.getScheduledTasks()
-
-                        if (tasksResult.isSuccess) {
-                            val tasks = tasksResult.getOrNull() ?: emptyList()
-                            if (tasks.isNotEmpty()) {
-                                withContext(Dispatchers.Main) {
-                                    val currentStats =
-                                        _state.value.detailStats ?: ServerDetailStats()
-                                    _state.value =
-                                        _state.value.copy(
-                                            detailStats = currentStats.copy(scheduledTasks = tasks)
-                                        )
-                                }
-                            }
-                        }
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        Timber.e(e, "Error polling scheduled tasks")
-                    }
-                    delay(5_000L)
-                }
-            }
     }
 
     private suspend fun loadJellyseerrStats(): JellyseerrStats {

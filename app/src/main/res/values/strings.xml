@@ -1564,6 +1564,11 @@
     <string name="task_duration_minutes">, taking %1$dm</string>
     <string name="task_duration_hours_minutes">, taking %1$dh %2$dm</string>
     <string name="task_last_ran_fmt">Last ran %1$s%2$s</string>
+    <string name="task_stopping">Stopping…</string>
+    <string name="task_status_failed">Failed</string>
+    <string name="task_status_failed_reason">Failed · %1$s</string>
+    <string name="task_status_cancelled">Cancelled</string>
+    <string name="task_status_aborted">Aborted by server shutdown</string>
 
     <string name="section_administration">Administration</string>
     <string name="cd_control_panel">Control Panel</string>

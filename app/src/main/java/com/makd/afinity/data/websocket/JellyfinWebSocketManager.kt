@@ -69,6 +69,7 @@ constructor(
     private companion object {
         const val SUBSCRIPTION_RETRY_DELAY_MS = 3_000L
         const val SUBSCRIPTION_IMMEDIATE_RETRIES = 3
+        const val LIBRARY_SCAN_TASK_KEY = "RefreshLibrary"
     }
 
     private val _connectionState = MutableStateFlow(WebSocketState.DISCONNECTED)
@@ -343,28 +344,18 @@ constructor(
     }
 
     private fun handleScheduledTasksChanged(tasks: List<TaskInfo>) {
-        val runningLibraryTask = tasks.firstOrNull { task ->
-            task.state == TaskState.RUNNING && task.libraryScanTask()
+        val isRunning = tasks.any { task ->
+            task.key == LIBRARY_SCAN_TASK_KEY && task.state != TaskState.IDLE
         }
-        val isRunning = runningLibraryTask != null
 
         if (isRunning && !libraryTaskWasRunning) {
-            Timber.d("Library task running: ${runningLibraryTask.key ?: runningLibraryTask.name}")
+            Timber.d("Library scan running")
         } else if (!isRunning && libraryTaskWasRunning) {
-            Timber.d("Library task finished - refreshing library sections")
+            Timber.d("Library scan finished - refreshing library sections")
             mediaRefreshBus.emit(RefreshTrigger.LIBRARY_CHANGED)
             mediaChangeManager.notifyLibraryContentChanged("library scan completed")
         }
         libraryTaskWasRunning = isRunning
-    }
-
-    private fun TaskInfo.libraryScanTask(): Boolean {
-        val text =
-            listOfNotNull(key, name, category, description)
-                .joinToString(separator = " ")
-                .lowercase()
-
-        return "library" in text || "scan" in text || "refresh" in text
     }
 
     private suspend fun handleUserDataChanged(message: UserDataChangedMessage) {
