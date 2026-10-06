@@ -49,9 +49,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.media3.common.util.UnstableApi
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavType
@@ -1529,10 +1531,20 @@ fun MainNavigation(
                                     )
                                 }
 
-                                composable(route = Destination.MUSIC_PLAYER_ROUTE) {
+                                composable(route = Destination.MUSIC_PLAYER_ROUTE) { playerEntry ->
                                     MusicPlayerScreen(
                                         onNavigateBack =
                                             dropUnlessResumed { navController.popBackStack() },
+                                        onNavigateToAlbum = { albumId ->
+                                            if (playerEntry.isResumed()) {
+                                                navController.leaveMusicPlayerForAlbum(albumId)
+                                            }
+                                        },
+                                        onNavigateToArtist = { artistId ->
+                                            if (playerEntry.isResumed()) {
+                                                navController.leaveMusicPlayerForArtist(artistId)
+                                            }
+                                        },
                                         animatedVisibilityScope = this@composable,
                                     )
                                 }
@@ -1774,6 +1786,44 @@ fun MainNavigation(
                 )
             }
         }
+    }
+}
+
+private fun NavBackStackEntry.isResumed(): Boolean =
+    lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+
+private fun NavController.leaveMusicPlayerForAlbum(albumId: String) {
+    leaveMusicPlayerFor(
+        route = Destination.createMusicAlbumRoute(albumId),
+        pattern = Destination.MUSIC_ALBUM_ROUTE,
+        argName = "albumId",
+        argValue = albumId,
+    )
+}
+
+private fun NavController.leaveMusicPlayerForArtist(artistId: String) {
+    leaveMusicPlayerFor(
+        route = Destination.createMusicArtistRoute(artistId),
+        pattern = Destination.MUSIC_ARTIST_ROUTE,
+        argName = "artistId",
+        argValue = artistId,
+    )
+}
+
+private fun NavController.leaveMusicPlayerFor(
+    route: String,
+    pattern: String,
+    argName: String,
+    argValue: String,
+) {
+    val previous = previousBackStackEntry
+    val alreadyBehind =
+        previous?.destination?.route == pattern &&
+            previous?.arguments?.getString(argName) == argValue
+    if (alreadyBehind) {
+        popBackStack()
+    } else {
+        navigate(route) { popUpTo(Destination.MUSIC_PLAYER_ROUTE) { inclusive = true } }
     }
 }
 

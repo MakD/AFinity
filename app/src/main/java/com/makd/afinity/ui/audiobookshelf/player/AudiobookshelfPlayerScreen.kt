@@ -50,6 +50,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -76,6 +77,8 @@ import com.makd.afinity.ui.player.components.PlaybackStatsOverlay
 import com.makd.afinity.ui.player.components.PlayerMoreRow
 import com.makd.afinity.ui.player.components.PlayerMoreSectionHeader
 import com.makd.afinity.ui.player.components.PlayerMoreSheet
+import com.makd.afinity.ui.player.components.SwipeCoverItem
+import com.makd.afinity.ui.player.components.SwipeableCover
 
 private fun String.withAbsWidth(px: Int): String {
     if (startsWith("file://")) return this
@@ -292,6 +295,56 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
 }
 
 @Composable
+private fun SharedTransitionScope.AbsSwipeableCover(
+    viewModel: AudiobookshelfPlayerViewModel,
+    coverUrl: String?,
+    chapterIndex: Int,
+    chapterCount: Int,
+    cornerRadius: Dp,
+    elevation: Dp,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    modifier: Modifier = Modifier,
+) {
+    val swipeEnabled by viewModel.swipeToSkipEnabled.collectAsStateWithLifecycle()
+    val coverWidthPx = with(LocalDensity.current) { AudioPlayerLayout.CoverMaxSize.roundToPx() }
+    val shape = RoundedCornerShape(cornerRadius)
+    val item = remember { SwipeCoverItem(key = Unit, value = Unit) }
+
+    SwipeableCover(
+        current = item,
+        enabled = swipeEnabled,
+        hasPrevious = chapterCount > 0 && chapterIndex > 0,
+        hasNext = chapterCount > 0 && chapterIndex < chapterCount - 1,
+        onPrevious = { viewModel.seekToChapter(chapterIndex - 1) },
+        onNext = { viewModel.seekToChapter(chapterIndex + 1) },
+        horizontalOverflow = 0.dp,
+        modifier = modifier,
+    ) { _, _ ->
+        Surface(
+            modifier =
+                AudioPlayerLayout.CoverSizeCap.aspectRatio(1f)
+                    .sharedElement(
+                        sharedContentState =
+                            rememberSharedContentState(key = "cover-${coverUrl ?: "default"}"),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                    )
+                    .shadow(elevation = elevation, shape = shape, spotColor = Color.Black),
+            shape = shape,
+            color = Color.Transparent,
+        ) {
+            if (coverUrl != null) {
+                AsyncImage(
+                    model = coverUrl.withAbsWidth(coverWidthPx),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun SharedTransitionScope.PortraitPlayerContent(
     playbackState: AudiobookshelfPlaybackState,
     viewModel: AudiobookshelfPlayerViewModel,
@@ -361,39 +414,16 @@ fun SharedTransitionScope.PortraitPlayerContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        val coverWidthPx = with(LocalDensity.current) { AudioPlayerLayout.CoverMaxSize.roundToPx() }
-        Box(
+        AbsSwipeableCover(
+            viewModel = viewModel,
+            coverUrl = playbackState.coverUrl,
+            chapterIndex = playbackState.currentChapterIndex,
+            chapterCount = playbackState.chapters.size,
+            cornerRadius = 32.dp,
+            elevation = 24.dp,
+            animatedVisibilityScope = animatedVisibilityScope,
             modifier = Modifier.weight(1f).fillMaxWidth(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Surface(
-                modifier =
-                    AudioPlayerLayout.CoverSizeCap.aspectRatio(1f)
-                        .sharedElement(
-                            sharedContentState =
-                                rememberSharedContentState(
-                                    key = "cover-${playbackState.coverUrl ?: "default"}"
-                                ),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                        )
-                        .shadow(
-                            elevation = 24.dp,
-                            shape = RoundedCornerShape(32.dp),
-                            spotColor = Color.Black,
-                        ),
-                shape = RoundedCornerShape(32.dp),
-                color = Color.Transparent,
-            ) {
-                if (playbackState.coverUrl != null) {
-                    AsyncImage(
-                        model = playbackState.coverUrl.withAbsWidth(coverWidthPx),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-            }
-        }
+        )
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -526,39 +556,16 @@ fun SharedTransitionScope.LandscapePlayerContent(
         horizontalArrangement = Arrangement.spacedBy(32.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val coverWidthPx = with(LocalDensity.current) { AudioPlayerLayout.CoverMaxSize.roundToPx() }
-        Box(
+        AbsSwipeableCover(
+            viewModel = viewModel,
+            coverUrl = playbackState.coverUrl,
+            chapterIndex = playbackState.currentChapterIndex,
+            chapterCount = playbackState.chapters.size,
+            cornerRadius = 24.dp,
+            elevation = 16.dp,
+            animatedVisibilityScope = animatedVisibilityScope,
             modifier = Modifier.weight(0.45f).fillMaxHeight(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Surface(
-                modifier =
-                    AudioPlayerLayout.CoverSizeCap.aspectRatio(1f)
-                        .sharedElement(
-                            sharedContentState =
-                                rememberSharedContentState(
-                                    key = "cover-${playbackState.coverUrl ?: "default"}"
-                                ),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                        )
-                        .shadow(
-                            elevation = 16.dp,
-                            shape = RoundedCornerShape(24.dp),
-                            spotColor = Color.Black,
-                        ),
-                shape = RoundedCornerShape(24.dp),
-                color = Color.Transparent,
-            ) {
-                if (playbackState.coverUrl != null) {
-                    AsyncImage(
-                        model = playbackState.coverUrl.withAbsWidth(coverWidthPx),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-            }
-        }
+        )
 
         Column(
             modifier = Modifier.weight(0.55f).fillMaxHeight().verticalScroll(rememberScrollState()),

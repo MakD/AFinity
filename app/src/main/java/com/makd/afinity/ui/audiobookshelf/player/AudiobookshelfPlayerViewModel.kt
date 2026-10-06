@@ -12,6 +12,7 @@ import com.makd.afinity.cast.CastManager
 import com.makd.afinity.data.models.audiobookshelf.Bookmark
 import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.repository.AudiobookshelfRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfEqualizerManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
@@ -45,6 +46,7 @@ constructor(
     private val skipSilenceManager: AudiobookshelfSkipSilenceManager,
     private val castManager: CastManager,
     private val securePreferencesRepository: SecurePreferencesRepository,
+    preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
 
     private val itemId: String = savedStateHandle.get<String>("itemId") ?: ""
@@ -67,6 +69,11 @@ constructor(
         castManager.castState
             .map { it.isAbsCasting }
             .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    val swipeToSkipEnabled: StateFlow<Boolean> =
+        preferencesRepository
+            .getAbsSwipeToSkipFlow()
+            .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
     init {
         startPlayback()

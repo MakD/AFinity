@@ -105,6 +105,14 @@ interface PreferencesRepository {
 
     fun getMusicNeverTranscodeFlow(): Flow<Boolean>
 
+    suspend fun setMusicSwipeToSkip(enabled: Boolean)
+
+    fun getMusicSwipeToSkipFlow(): Flow<Boolean>
+
+    suspend fun setAbsSwipeToSkip(enabled: Boolean)
+
+    fun getAbsSwipeToSkipFlow(): Flow<Boolean>
+
     suspend fun setSkipIntroMode(mode: SkipMode)
 
     suspend fun getSkipIntroMode(): SkipMode

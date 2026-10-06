@@ -611,6 +611,7 @@ private fun AfinityTrack.toEntity(position: Int, serverId: String) =
         indexNumber = indexNumber,
         discNumber = discNumber,
         serverId = serverId,
+        artistId = artistId?.toString(),
     )
 
 private fun MusicQueueEntity.toAfinityTrack() =
@@ -619,7 +620,7 @@ private fun MusicQueueEntity.toAfinityTrack() =
         name = name,
         albumId = albumId?.let { UUID.fromString(it) },
         album = album,
-        artistId = null,
+        artistId = artistId?.let { UUID.fromString(it) },
         artist = artist,
         artists = listOfNotNull(artist),
         indexNumber = indexNumber,

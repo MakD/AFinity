@@ -550,6 +550,18 @@ constructor(
                 _uiState.value = _uiState.value.copy(musicNeverTranscode = it)
             }
         }
+
+        viewModelScope.launch {
+            preferencesRepository.getMusicSwipeToSkipFlow().collect {
+                _uiState.value = _uiState.value.copy(musicSwipeToSkip = it)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getAbsSwipeToSkipFlow().collect {
+                _uiState.value = _uiState.value.copy(absSwipeToSkip = it)
+            }
+        }
     }
 
     fun setThemeMode(mode: String) {
@@ -1055,6 +1067,30 @@ constructor(
         }
     }
 
+    fun toggleMusicSwipeToSkip(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setMusicSwipeToSkip(enabled)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle music swipe to skip")
+            }
+        }
+    }
+
+    fun toggleAbsSwipeToSkip(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setAbsSwipeToSkip(enabled)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle audiobook swipe to skip")
+            }
+        }
+    }
+
     fun setAllowHdrPassthrough(allow: Boolean) {
         viewModelScope.launch {
             try {
@@ -1463,6 +1499,8 @@ data class SettingsUiState(
     val allowHdrPassthrough: Boolean = true,
     val neverTranscode: Boolean = false,
     val musicNeverTranscode: Boolean = false,
+    val musicSwipeToSkip: Boolean = true,
+    val absSwipeToSkip: Boolean = true,
     val musicQualityWifi: Int = MusicQuality.ORIGINAL_BITRATE,
     val musicQualityCellular: Int = MusicQuality.CELLULAR_DEFAULT_BITRATE,
     val bufferSizeMb: Int = 64,

@@ -18,4 +18,5 @@ data class MusicQueueEntity(
     val indexNumber: Int?,
     val discNumber: Int?,
     val serverId: String,
+    val artistId: String? = null,
 )

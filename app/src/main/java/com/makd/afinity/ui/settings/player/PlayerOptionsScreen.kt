@@ -532,6 +532,27 @@ fun PlayerOptionsScreen(
                     }
                 }
 
+            if (section == PlaybackSection.Controls)
+                item {
+                    SettingsGroup(title = stringResource(R.string.pref_group_audio_players)) {
+                        SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_music),
+                            title = stringResource(R.string.pref_music_swipe_skip_title),
+                            subtitle = stringResource(R.string.pref_music_swipe_skip_summary),
+                            checked = uiState.musicSwipeToSkip,
+                            onCheckedChange = viewModel::toggleMusicSwipeToSkip,
+                        )
+                        SettingsDivider()
+                        SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_headphones),
+                            title = stringResource(R.string.pref_abs_swipe_skip_title),
+                            subtitle = stringResource(R.string.pref_abs_swipe_skip_summary),
+                            checked = uiState.absSwipeToSkip,
+                            onCheckedChange = viewModel::toggleAbsSwipeToSkip,
+                        )
+                    }
+                }
+
             if (section == PlaybackSection.SubtitleAppearance)
                 item {
                     SettingsGroup(title = stringResource(R.string.pref_group_subtitles)) {

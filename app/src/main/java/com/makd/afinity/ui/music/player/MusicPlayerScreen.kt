@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,11 +55,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.data.models.music.RepeatMode
 import com.makd.afinity.data.models.player.MusicQuality
@@ -81,13 +84,18 @@ import com.makd.afinity.ui.player.components.PlayerMoreDivider
 import com.makd.afinity.ui.player.components.PlayerMoreRow
 import com.makd.afinity.ui.player.components.PlayerMoreSectionHeader
 import com.makd.afinity.ui.player.components.PlayerMoreSheet
+import com.makd.afinity.ui.player.components.SwipeCoverItem
+import com.makd.afinity.ui.player.components.SwipeableCover
 import com.makd.afinity.ui.player.components.musicQualityShortLabel
+import java.util.UUID
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun SharedTransitionScope.MusicPlayerScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToAlbum: (String) -> Unit,
+    onNavigateToArtist: (String) -> Unit,
     animatedVisibilityScope: AnimatedVisibilityScope,
     viewModel: MusicPlayerViewModel = hiltViewModel(),
     addToPlaylistViewModel: AddToPlaylistViewModel = hiltViewModel(),
@@ -168,6 +176,8 @@ fun SharedTransitionScope.MusicPlayerScreen(
                     lyrics = lyrics,
                     lyricsLoading = lyricsLoading,
                     onNavigateBack = onNavigateBack,
+                    onNavigateToAlbum = onNavigateToAlbum,
+                    onNavigateToArtist = onNavigateToArtist,
                     onOpenQueue = { showQueue = true },
                     onOpenMore = { showMoreSheet = true },
                     onCastClick = launchCastChooser,
@@ -185,6 +195,8 @@ fun SharedTransitionScope.MusicPlayerScreen(
                     lyrics = lyrics,
                     lyricsLoading = lyricsLoading,
                     onNavigateBack = onNavigateBack,
+                    onNavigateToAlbum = onNavigateToAlbum,
+                    onNavigateToArtist = onNavigateToArtist,
                     onOpenQueue = { showQueue = true },
                     onOpenMore = { showMoreSheet = true },
                     onCastClick = launchCastChooser,
@@ -376,6 +388,8 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
     lyrics: List<com.makd.afinity.data.models.music.AfinityLyricLine>,
     lyricsLoading: Boolean,
     onNavigateBack: () -> Unit,
+    onNavigateToAlbum: (String) -> Unit,
+    onNavigateToArtist: (String) -> Unit,
     onOpenQueue: () -> Unit,
     onOpenMore: () -> Unit = {},
     onCastClick: () -> Unit = {},
@@ -459,53 +473,19 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                         accentColor = animatedColor,
                     )
                 } else {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Surface(
-                            modifier =
-                                AudioPlayerLayout.CoverSizeCap.aspectRatio(1f)
-                                    .sharedElement(
-                                        sharedContentState =
-                                            rememberSharedContentState(
-                                                key = "music-cover-${coverUrl ?: "default"}"
-                                            ),
-                                        animatedVisibilityScope = animatedVisibilityScope,
-                                    )
-                                    .shadow(
-                                        elevation = 24.dp,
-                                        shape = RoundedCornerShape(32.dp),
-                                        spotColor = Color.Black,
-                                    ),
-                            shape = RoundedCornerShape(32.dp),
-                            color = Color.Transparent,
-                        ) {
-                            if (coverUrl != null || coverBlurHash != null) {
-                                val coverSizeDp = AudioPlayerLayout.CoverMaxSize
-                                com.makd.afinity.ui.components.AsyncImage(
-                                    imageUrl = coverUrl,
-                                    contentDescription = null,
-                                    blurHash = coverBlurHash,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize(),
-                                    targetWidth = coverSizeDp,
-                                    targetHeight = coverSizeDp,
-                                )
-                            } else {
-                                Box(
-                                    modifier =
-                                        Modifier.fillMaxSize()
-                                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_music),
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(64.dp),
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    MusicSwipeableCover(
+                        viewModel = viewModel,
+                        coverUrl = coverUrl,
+                        coverBlurHash = coverBlurHash,
+                        currentTrackId = playbackState.currentTrack?.id,
+                        repeatMode = playbackState.repeatMode,
+                        isMusicCasting = isMusicCasting,
+                        cornerRadius = 32.dp,
+                        elevation = 24.dp,
+                        placeholderIconSize = 64.dp,
+                        horizontalOverflow = 24.dp,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                    )
                 }
             }
         }
@@ -530,6 +510,10 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
+                val openArtist: (() -> Unit)? =
+                    playbackState.currentTrack?.artistId?.let { id ->
+                        { onNavigateToArtist(id.toString()) }
+                    }
                 Text(
                     text =
                         playbackState.currentTrack?.let {
@@ -539,8 +523,14 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                     color = Color.White.copy(alpha = 0.7f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.plainClickable(openArtist),
                 )
                 val album = playbackState.currentTrack?.album
+                val openAlbum: (() -> Unit)? =
+                    playbackState.currentTrack
+                        ?.albumId
+                        ?.takeIf { album != null }
+                        ?.let { id -> { onNavigateToAlbum(id.toString()) } }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = album ?: " ",
@@ -548,7 +538,8 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                     color = animatedColor,
                     maxLines = 1,
                     modifier =
-                        Modifier.alpha(if (album != null) 1f else 0f)
+                        Modifier.plainClickable(openAlbum)
+                            .alpha(if (album != null) 1f else 0f)
                             .basicMarquee(iterations = Int.MAX_VALUE, velocity = 30.dp),
                 )
             }
@@ -638,6 +629,8 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
     lyrics: List<com.makd.afinity.data.models.music.AfinityLyricLine>,
     lyricsLoading: Boolean,
     onNavigateBack: () -> Unit,
+    onNavigateToAlbum: (String) -> Unit,
+    onNavigateToArtist: (String) -> Unit,
     onOpenQueue: () -> Unit,
     onOpenMore: () -> Unit = {},
     onCastClick: () -> Unit = {},
@@ -675,53 +668,19 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                         accentColor = animatedColor,
                     )
                 } else {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Surface(
-                            modifier =
-                                AudioPlayerLayout.CoverSizeCap.aspectRatio(1f)
-                                    .sharedElement(
-                                        sharedContentState =
-                                            rememberSharedContentState(
-                                                key = "music-cover-${coverUrl ?: "default"}"
-                                            ),
-                                        animatedVisibilityScope = animatedVisibilityScope,
-                                    )
-                                    .shadow(
-                                        elevation = 16.dp,
-                                        shape = RoundedCornerShape(24.dp),
-                                        spotColor = Color.Black,
-                                    ),
-                            shape = RoundedCornerShape(24.dp),
-                            color = Color.Transparent,
-                        ) {
-                            if (coverUrl != null || coverBlurHash != null) {
-                                val coverSizeDp = AudioPlayerLayout.CoverMaxSize
-                                com.makd.afinity.ui.components.AsyncImage(
-                                    imageUrl = coverUrl,
-                                    contentDescription = null,
-                                    blurHash = coverBlurHash,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize(),
-                                    targetWidth = coverSizeDp,
-                                    targetHeight = coverSizeDp,
-                                )
-                            } else {
-                                Box(
-                                    modifier =
-                                        Modifier.fillMaxSize()
-                                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_music),
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(48.dp),
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    MusicSwipeableCover(
+                        viewModel = viewModel,
+                        coverUrl = coverUrl,
+                        coverBlurHash = coverBlurHash,
+                        currentTrackId = playbackState.currentTrack?.id,
+                        repeatMode = playbackState.repeatMode,
+                        isMusicCasting = isMusicCasting,
+                        cornerRadius = 24.dp,
+                        elevation = 16.dp,
+                        placeholderIconSize = 48.dp,
+                        horizontalOverflow = 32.dp,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                    )
                 }
             }
         }
@@ -799,6 +758,10 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    val openArtistLandscape: (() -> Unit)? =
+                        playbackState.currentTrack?.artistId?.let { id ->
+                            { onNavigateToArtist(id.toString()) }
+                        }
                     Text(
                         text =
                             playbackState.currentTrack?.let {
@@ -808,8 +771,14 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                         color = Color.White.copy(alpha = 0.7f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.plainClickable(openArtistLandscape),
                     )
                     val albumLandscape = playbackState.currentTrack?.album
+                    val openAlbumLandscape: (() -> Unit)? =
+                        playbackState.currentTrack
+                            ?.albumId
+                            ?.takeIf { albumLandscape != null }
+                            ?.let { id -> { onNavigateToAlbum(id.toString()) } }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = albumLandscape ?: " ",
@@ -817,7 +786,8 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                         color = animatedColor,
                         maxLines = 1,
                         modifier =
-                            Modifier.alpha(if (albumLandscape != null) 1f else 0f)
+                            Modifier.plainClickable(openAlbumLandscape)
+                                .alpha(if (albumLandscape != null) 1f else 0f)
                                 .basicMarquee(iterations = Int.MAX_VALUE, velocity = 30.dp),
                     )
                 }
@@ -895,6 +865,128 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+private fun Modifier.plainClickable(onClick: (() -> Unit)?): Modifier =
+    if (onClick == null) this
+    else clickable(interactionSource = null, indication = null, onClick = onClick)
+
+private data class MusicCoverImage(val url: String?, val blurHash: String?)
+
+private fun AfinityTrack.toCoverImage() =
+    MusicCoverImage(url = images.primary?.toString(), blurHash = images.primaryImageBlurHash)
+
+private fun neighbourIndex(queueSize: Int, index: Int, step: Int, repeatMode: RepeatMode): Int? {
+    if (queueSize < 2) return null
+    val target = index + step
+    return when {
+        target in 0 until queueSize -> target
+        repeatMode == RepeatMode.ALL -> Math.floorMod(target, queueSize)
+        else -> null
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+private fun SharedTransitionScope.MusicSwipeableCover(
+    viewModel: MusicPlayerViewModel,
+    coverUrl: String?,
+    coverBlurHash: String?,
+    currentTrackId: UUID?,
+    repeatMode: RepeatMode,
+    isMusicCasting: Boolean,
+    cornerRadius: Dp,
+    elevation: Dp,
+    placeholderIconSize: Dp,
+    horizontalOverflow: Dp,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+) {
+    val swipeEnabled by viewModel.swipeToSkipEnabled.collectAsStateWithLifecycle()
+    val queue by viewModel.queue.collectAsStateWithLifecycle()
+    val currentIndex by viewModel.currentIndex.collectAsStateWithLifecycle()
+
+    val canSlide =
+        !isMusicCasting &&
+            currentTrackId != null &&
+            queue.getOrNull(currentIndex)?.id == currentTrackId
+    val previousIndex =
+        if (canSlide) neighbourIndex(queue.size, currentIndex, -1, repeatMode) else null
+    val nextIndex = if (canSlide) neighbourIndex(queue.size, currentIndex, 1, repeatMode) else null
+    val coverModifier = AudioPlayerLayout.CoverSizeCap.aspectRatio(1f)
+
+    SwipeableCover(
+        current = SwipeCoverItem(currentIndex, MusicCoverImage(coverUrl, coverBlurHash)),
+        enabled = swipeEnabled,
+        hasPrevious = isMusicCasting || previousIndex != null,
+        hasNext = isMusicCasting || nextIndex != null,
+        onPrevious = viewModel::skipToPreviousTrack,
+        onNext = viewModel::skipNext,
+        horizontalOverflow = horizontalOverflow,
+        modifier = Modifier.fillMaxSize(),
+        previous = previousIndex?.let { SwipeCoverItem(it, queue[it].toCoverImage()) },
+        next = nextIndex?.let { SwipeCoverItem(it, queue[it].toCoverImage()) },
+    ) { image, isCurrent ->
+        MusicCoverArt(
+            image = image,
+            cornerRadius = cornerRadius,
+            elevation = elevation,
+            placeholderIconSize = placeholderIconSize,
+            modifier =
+                if (isCurrent) {
+                    coverModifier.sharedElement(
+                        sharedContentState =
+                            rememberSharedContentState(
+                                key = "music-cover-${image.url ?: "default"}"
+                            ),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                    )
+                } else {
+                    coverModifier
+                },
+        )
+    }
+}
+
+@Composable
+private fun MusicCoverArt(
+    image: MusicCoverImage,
+    cornerRadius: Dp,
+    elevation: Dp,
+    placeholderIconSize: Dp,
+    modifier: Modifier = Modifier,
+) {
+    val shape = RoundedCornerShape(cornerRadius)
+    Surface(
+        modifier = modifier.shadow(elevation = elevation, shape = shape, spotColor = Color.Black),
+        shape = shape,
+        color = Color.Transparent,
+    ) {
+        if (image.url != null || image.blurHash != null) {
+            val coverSizeDp = AudioPlayerLayout.CoverMaxSize
+            com.makd.afinity.ui.components.AsyncImage(
+                imageUrl = image.url,
+                contentDescription = null,
+                blurHash = image.blurHash,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+                targetWidth = coverSizeDp,
+                targetHeight = coverSizeDp,
+            )
+        } else {
+            Box(
+                modifier =
+                    Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_music),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(placeholderIconSize),
+                )
+            }
         }
     }
 }

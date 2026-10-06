@@ -1160,6 +1160,12 @@
     <string name="pref_pip_background_title">Background Audio</string>
     <string name="pref_pip_background_summary">Keep playing audio when screen is off</string>
 
+    <string name="pref_group_audio_players">Music and audiobooks</string>
+    <string name="pref_music_swipe_skip_title">Swipe to change track</string>
+    <string name="pref_music_swipe_skip_summary">Swipe the cover left or right in the music player</string>
+    <string name="pref_abs_swipe_skip_title">Swipe to change chapter</string>
+    <string name="pref_abs_swipe_skip_summary">Swipe the cover left or right in the audiobook player; podcasts change episode</string>
+
     <string name="pref_group_interface">Interface</string>
     <string name="pref_skip_intro_title">Skip Intro</string>
     <string name="pref_skip_outro_title">Skip Outro</string>

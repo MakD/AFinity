@@ -22,6 +22,7 @@ import com.makd.afinity.data.models.music.RepeatMode
 import com.makd.afinity.data.models.player.MusicQuality
 import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.repository.AppDataRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.player.AudioService
@@ -63,6 +64,7 @@ constructor(
     private val equalizerManager: MusicEqualizerManager,
     private val appDataRepository: AppDataRepository,
     private val playbackRepository: PlaybackRepository,
+    preferencesRepository: PreferencesRepository,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -206,6 +208,11 @@ constructor(
         castManager.castState
             .map { it.isMusicCasting }
             .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    val swipeToSkipEnabled: StateFlow<Boolean> =
+        preferencesRepository
+            .getMusicSwipeToSkipFlow()
+            .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
     private val _lyrics = MutableStateFlow<List<AfinityLyricLine>>(emptyList())
     val lyrics: StateFlow<List<AfinityLyricLine>> = _lyrics.asStateFlow()
@@ -361,6 +368,14 @@ constructor(
             } else {
                 player.seekToPreviousMediaItem()
             }
+        }
+    }
+
+    fun skipToPreviousTrack() {
+        if (isMusicCasting.value) {
+            castManager.skipMusicTrack(forward = false)
+        } else {
+            playbackManager.getPlayer()?.seekToPreviousMediaItem()
         }
     }
 
