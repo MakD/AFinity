@@ -2256,7 +2256,6 @@
     <string name="pref_video_download_quality_title">Качество загружаемых видео</string>
     <string name="pref_music_download_quality_title">Качество загружаемой музыки</string>
     <string name="pref_download_quality_hint">Используется по умолчанию для новых загрузок. Зажмите кнопку «Скачать» для настройки.</string>
-    <string name="pref_download_quality_exoplayer_hint">Используется по умолчанию для новых загрузок. Зажмите кнопку «Скачать» для настройки. В ExoPlayer нельзя прокручивать сконвертированные видео.</string>
     <string name="download_quality_title">Качество</string>
     <string name="download_audio_track_title">Аудиодорожка</string>
     <string name="download_converting_fmt">Конвертация · %1$s</string>
