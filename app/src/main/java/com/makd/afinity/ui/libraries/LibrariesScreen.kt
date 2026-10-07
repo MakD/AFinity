@@ -20,7 +20,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -29,7 +28,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.makd.afinity.R
-import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
@@ -57,11 +55,6 @@ fun LibrariesScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lazyGridState = rememberLazyGridState()
     val playerOffset = LocalPlayerOffset.current
-
-    val orderedLibraries =
-        remember(uiState.libraries, uiState.hasServerOrder) {
-            if (uiState.hasServerOrder) uiState.libraries else sortLibraries(uiState.libraries)
-        }
 
     val topBarOpacity by rememberTopBarOpacity(lazyGridState)
 
@@ -102,7 +95,7 @@ fun LibrariesScreen(
                             ),
                 ) {
                     items(
-                        items = orderedLibraries,
+                        items = uiState.libraries,
                         key = { library -> library.id },
                     ) { library ->
                         LibraryCard(
@@ -143,22 +136,4 @@ fun LibrariesScreen(
                 ),
         )
     }
-}
-
-private fun sortLibraries(libraries: List<AfinityCollection>): List<AfinityCollection> {
-    val sortOrder =
-        mapOf(
-            CollectionType.BoxSets to 1,
-            CollectionType.Movies to 2,
-            CollectionType.TvShows to 3,
-            CollectionType.Music to 4,
-            CollectionType.HomeVideos to 5,
-            CollectionType.Books to 6,
-            CollectionType.Playlists to 7,
-            CollectionType.LiveTv to 8,
-            CollectionType.Mixed to 9,
-            CollectionType.Unknown to 10,
-        )
-
-    return libraries.sortedBy { library -> sortOrder[library.type] ?: 999 }
 }

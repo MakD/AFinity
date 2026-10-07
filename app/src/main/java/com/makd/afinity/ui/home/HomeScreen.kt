@@ -68,8 +68,11 @@ import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.HomeRow
 import com.makd.afinity.data.models.common.CollectionType
+import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
@@ -161,6 +164,24 @@ fun HomeScreen(
     }
 
     val isScrolling by remember { derivedStateOf { lazyListState.isScrollInProgress } }
+
+    val latestLibraryRows =
+        remember(
+            uiState.libraries,
+            uiState.separateMovieLibrarySections,
+            uiState.separateTvLibrarySections,
+            uiState.hiddenRows,
+        ) {
+            buildLatestLibraryRows(
+                libraries = uiState.libraries,
+                movieSections =
+                    if (HomeRow.LATEST_MOVIES in uiState.hiddenRows) emptyList()
+                    else uiState.separateMovieLibrarySections,
+                tvSections =
+                    if (HomeRow.LATEST_TV in uiState.hiddenRows) emptyList()
+                    else uiState.separateTvLibrarySections,
+            )
+        }
 
     Box(modifier = modifier.fillMaxSize()) {
         val offlineAndEmpty =
@@ -436,29 +457,15 @@ fun HomeScreen(
                             }
                         }
 
-                        if (!uiState.isOffline && HomeRow.LATEST_MOVIES !in uiState.hiddenRows) {
-                            if (uiState.combineLibrarySections) {
-                                if (uiState.latestMovies.isNotEmpty()) {
-                                    item(key = "latest_movies_combined") {
-                                        Box(modifier = baseModifier.padding(top = 24.dp)) {
-                                            OptimizedLatestMoviesSection(
-                                                items = uiState.latestMovies,
-                                                onItemClick = onItemClick,
-                                                widthSizeClass = widthSizeClass,
-                                                unavailableItemIds = uiState.unavailableDownloadIds,
-                                            )
-                                        }
-                                    }
-                                }
-                            } else {
-                                items(
-                                    items = uiState.separateMovieLibrarySections,
-                                    key = { (library, _) -> "movie_lib_${library.id}" },
-                                ) { (library, movies) ->
+                        if (!uiState.isOffline && uiState.combineLibrarySections) {
+                            if (
+                                HomeRow.LATEST_MOVIES !in uiState.hiddenRows &&
+                                    uiState.latestMovies.isNotEmpty()
+                            ) {
+                                item(key = "latest_movies_combined") {
                                     Box(modifier = baseModifier.padding(top = 24.dp)) {
                                         OptimizedLatestMoviesSection(
-                                            title = library.name,
-                                            items = movies,
+                                            items = uiState.latestMovies,
                                             onItemClick = onItemClick,
                                             widthSizeClass = widthSizeClass,
                                             unavailableItemIds = uiState.unavailableDownloadIds,
@@ -466,33 +473,52 @@ fun HomeScreen(
                                     }
                                 }
                             }
-                        }
 
-                        if (!uiState.isOffline && HomeRow.LATEST_TV !in uiState.hiddenRows) {
-                            if (uiState.combineLibrarySections) {
-                                if (uiState.latestTvSeries.isNotEmpty()) {
-                                    item(key = "latest_tv_combined") {
-                                        Box(modifier = baseModifier.padding(top = 24.dp)) {
-                                            OptimizedLatestTvSeriesSection(
-                                                items = uiState.latestTvSeries,
-                                                onItemClick = onItemClick,
-                                                widthSizeClass = widthSizeClass,
-                                            )
-                                        }
-                                    }
-                                }
-                            } else {
-                                items(
-                                    items = uiState.separateTvLibrarySections,
-                                    key = { (library, _) -> "tv_lib_${library.id}" },
-                                ) { (library, shows) ->
+                            if (
+                                HomeRow.LATEST_TV !in uiState.hiddenRows &&
+                                    uiState.latestTvSeries.isNotEmpty()
+                            ) {
+                                item(key = "latest_tv_combined") {
                                     Box(modifier = baseModifier.padding(top = 24.dp)) {
                                         OptimizedLatestTvSeriesSection(
-                                            title = library.name,
-                                            items = shows,
+                                            items = uiState.latestTvSeries,
                                             onItemClick = onItemClick,
                                             widthSizeClass = widthSizeClass,
                                         )
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!uiState.isOffline && !uiState.combineLibrarySections) {
+                            items(
+                                items = latestLibraryRows,
+                                key = { row ->
+                                    when (row) {
+                                        is LatestLibraryRow.Movies -> "movie_lib_${row.library.id}"
+                                        is LatestLibraryRow.Shows -> "tv_lib_${row.library.id}"
+                                    }
+                                },
+                                contentType = { row -> row::class },
+                            ) { row ->
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                    when (row) {
+                                        is LatestLibraryRow.Movies ->
+                                            OptimizedLatestMoviesSection(
+                                                title = row.library.name,
+                                                items = row.items,
+                                                onItemClick = onItemClick,
+                                                widthSizeClass = widthSizeClass,
+                                                unavailableItemIds = uiState.unavailableDownloadIds,
+                                            )
+
+                                        is LatestLibraryRow.Shows ->
+                                            OptimizedLatestTvSeriesSection(
+                                                title = row.library.name,
+                                                items = row.items,
+                                                onItemClick = onItemClick,
+                                                widthSizeClass = widthSizeClass,
+                                            )
                                     }
                                 }
                             }
@@ -902,4 +928,26 @@ fun HomeScreen(
             },
         )
     }
+}
+
+private sealed interface LatestLibraryRow {
+    val library: AfinityCollection
+
+    data class Movies(override val library: AfinityCollection, val items: List<AfinityMovie>) :
+        LatestLibraryRow
+
+    data class Shows(override val library: AfinityCollection, val items: List<AfinityShow>) :
+        LatestLibraryRow
+}
+
+private fun buildLatestLibraryRows(
+    libraries: List<AfinityCollection>,
+    movieSections: List<Pair<AfinityCollection, List<AfinityMovie>>>,
+    tvSections: List<Pair<AfinityCollection, List<AfinityShow>>>,
+): List<LatestLibraryRow> {
+    val serverOrder = libraries.withIndex().associate { (index, library) -> library.id to index }
+    val rows: List<LatestLibraryRow> =
+        movieSections.map { (library, items) -> LatestLibraryRow.Movies(library, items) } +
+            tvSections.map { (library, items) -> LatestLibraryRow.Shows(library, items) }
+    return rows.sortedBy { serverOrder[it.library.id] ?: Int.MAX_VALUE }
 }
