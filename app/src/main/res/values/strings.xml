@@ -889,6 +889,7 @@
     <string name="error_no_media_sources">No media sources available.</string>
     <string name="error_load_stream">Failed to load stream.</string>
     <string name="error_unexpected">An unexpected error occurred.</string>
+    <string name="player_error_connection">Couldn\'t reach the server. Check your connection and try again.</string>
     <string name="error_load_live_channel">Failed to load live channel.</string>
 
     <string name="skip_intro">Skip Intro</string>

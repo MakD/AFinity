@@ -75,6 +75,8 @@ sealed class PlayerEvent {
 
     data object PlayAnywayWithTranscoding : PlayerEvent()
 
+    data object RetryLoad : PlayerEvent()
+
     data class RenegotiateTracks(
         val audioStreamIndex: Int? = null,
         val subtitleStreamIndex: Int? = null,

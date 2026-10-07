@@ -20,6 +20,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,6 +60,7 @@ fun ErrorIndicator(
     modifier: Modifier = Modifier,
     canPlayAnyway: Boolean = false,
     onPlayAnywayClick: () -> Unit = {},
+    onCloseClick: (() -> Unit)? = null,
 ) {
     AnimatedVisibility(
         visible = isVisible,
@@ -106,17 +108,28 @@ fun ErrorIndicator(
                 Button(
                     onClick = onRetryClick,
                     colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor =
-                                if (canPlayAnyway) MaterialTheme.colorScheme.secondaryContainer
-                                else MaterialTheme.colorScheme.primary
-                        ),
+                        if (canPlayAnyway) {
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            )
+                        } else {
+                            ButtonDefaults.buttonColors()
+                        },
                 ) {
                     Text(
                         text = stringResource(R.string.action_retry),
-                        color = Color.White,
                         fontWeight = FontWeight.Medium,
                     )
+                }
+
+                if (onCloseClick != null) {
+                    TextButton(onClick = onCloseClick) {
+                        Text(
+                            text = stringResource(R.string.cd_close),
+                            color = Color.White.copy(alpha = 0.8f),
+                        )
+                    }
                 }
             }
         }

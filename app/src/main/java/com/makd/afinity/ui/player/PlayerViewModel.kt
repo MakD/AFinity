@@ -186,6 +186,11 @@ constructor(
     var syncPlayInterceptor: SyncPlayInterceptor? = null
 
     private var hasStoppedPlayback = false
+    private var startedItemId: UUID? = null
+    private var lastLoadAttempt: LoadAttempt? = null
+    private var lastLiveAttempt: PlayerEvent.LoadLiveChannel? = null
+    private var retryResumesCurrentItem = false
+    private var autoRetryJob: Job? = null
     private var currentSessionId: String? = null
     private var currentLivePlaybackInfo: LiveTvPlaybackInfo? = null
     private var currentStreamDecision: StreamDecision? = null
@@ -929,6 +934,87 @@ constructor(
             return
         }
         if (retryWithTranscodeFallback(error)) return
+        retryResumesCurrentItem = !_uiState.value.isLiveChannel
+        showPlaybackError(
+            context.getString(
+                if (isConnectionFailure(error)) R.string.player_error_connection
+                else R.string.error_unexpected
+            )
+        )
+    }
+
+    private fun isConnectionFailure(error: PlaybackException): Boolean =
+        error.errorCode == PlaybackException.ERROR_CODE_IO_UNSPECIFIED ||
+            error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ||
+            error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT
+
+    private fun showPlaybackError(message: String, canPlayAnyway: Boolean = false) {
+        updateUiState {
+            it.copy(
+                isLoading = false,
+                showError = true,
+                errorMessage = message,
+                canPlayAnywayWithTranscoding = canPlayAnyway,
+            )
+        }
+        if (!canPlayAnyway) armAutoRetry()
+    }
+
+    private fun clearPlaybackError() {
+        autoRetryJob?.cancel()
+        updateUiState {
+            it.copy(showError = false, errorMessage = null, canPlayAnywayWithTranscoding = false)
+        }
+    }
+
+    private fun armAutoRetry() {
+        autoRetryJob?.cancel()
+        autoRetryJob = viewModelScope.launch {
+            var sawOffline = !networkConnectivityMonitor.isNetworkAvailable.value
+            networkConnectivityMonitor.isNetworkAvailable.collect { available ->
+                if (!available) {
+                    sawOffline = true
+                } else if (sawOffline) {
+                    delay(AUTO_RETRY_SETTLE_MS)
+                    if (networkConnectivityMonitor.isNetworkAvailable.value) retryLoad()
+                }
+            }
+        }
+    }
+
+    private fun retryLoad() {
+        clearPlaybackError()
+        updateUiState { it.copy(isLoading = true) }
+        viewModelScope.launch {
+            val live = lastLiveAttempt
+            val attempt = lastLoadAttempt
+            val canResume =
+                retryResumesCurrentItem &&
+                    currentItem != null &&
+                    _uiState.value.currentMediaSourceId != null
+            retryResumesCurrentItem = false
+            when {
+                canResume -> reloadAtCurrentPosition()
+                live != null ->
+                    loadLiveChannel(
+                        live.channelId,
+                        live.channelName,
+                        live.streamUrl,
+                        live.playbackInfo,
+                    )
+
+                attempt == null -> updateUiState { it.copy(isLoading = false) }
+                attempt.item.sources.isEmpty() -> playQueueItem(attempt.item)
+                else ->
+                    loadMedia(
+                        item = attempt.item,
+                        mediaSourceId = attempt.mediaSourceId,
+                        audioStreamIndex = attempt.audioStreamIndex,
+                        subtitleStreamIndex = attempt.subtitleStreamIndex,
+                        startPositionMs = attempt.startPositionMs,
+                    )
+            }
+        }
     }
 
     private fun retryWithTranscodeFallback(error: PlaybackException): Boolean {
@@ -1395,6 +1481,8 @@ constructor(
                         startPositionMs = 0L,
                     )
                 }
+
+                is PlayerEvent.RetryLoad -> retryLoad()
 
                 is PlayerEvent.RenegotiateTracks -> {
                     reloadAtCurrentPosition(
@@ -2073,6 +2161,11 @@ constructor(
         val shouldShowControls = !suppressNextControlShow
         suppressNextControlShow = false
         stopAudiobookshelfIfPlaying()
+        lastLoadAttempt =
+            LoadAttempt(item, mediaSourceId, audioStreamIndex, subtitleStreamIndex, startPositionMs)
+        lastLiveAttempt = null
+        retryResumesCurrentItem = false
+        clearPlaybackError()
         try {
             val previousSourceId = _uiState.value.currentMediaSourceId
             val previousSource = currentItem?.sources?.firstOrNull { it.id == previousSourceId }
@@ -2106,13 +2199,7 @@ constructor(
 
             if (actualMediaSourceId == null) {
                 Timber.e("No media source found for item: ${fullItem.name}")
-                updateUiState {
-                    it.copy(
-                        isLoading = false,
-                        showError = true,
-                        errorMessage = context.getString(R.string.error_no_media_sources),
-                    )
-                }
+                showPlaybackError(context.getString(R.string.error_no_media_sources))
                 return
             }
 
@@ -2293,23 +2380,10 @@ constructor(
                     if (blockedByPreference) {
                         val reasons = diagnoseDirectPlayFailure(fullItem.id, actualMediaSourceId)
                         Timber.w("Direct play not possible and transcoding is disabled: $reasons")
-                        updateUiState {
-                            it.copy(
-                                isLoading = false,
-                                showError = true,
-                                errorMessage = directPlayBlockedMessage(reasons),
-                                canPlayAnywayWithTranscoding = true,
-                            )
-                        }
+                        showPlaybackError(directPlayBlockedMessage(reasons), canPlayAnyway = true)
                     } else {
                         Timber.e("Stream URL is null or empty")
-                        updateUiState {
-                            it.copy(
-                                isLoading = false,
-                                showError = true,
-                                errorMessage = context.getString(R.string.error_load_stream),
-                            )
-                        }
+                        showPlaybackError(context.getString(R.string.error_load_stream))
                     }
                     return@coroutineScope
                 }
@@ -2452,6 +2526,7 @@ constructor(
                         .build()
 
                 withContext(Dispatchers.Main) {
+                    startedItemId = fullItem.id
                     player.setMediaItems(listOf(mediaItem), 0, startPositionMs)
                     player.prepare()
                     if (castManager.isCasting) {
@@ -2496,13 +2571,7 @@ constructor(
             throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load media")
-            updateUiState {
-                it.copy(
-                    isLoading = false,
-                    showError = true,
-                    errorMessage = context.getString(R.string.error_unexpected),
-                )
-            }
+            showPlaybackError(context.getString(R.string.error_unexpected))
         }
         updateCurrentTrackSelections()
     }
@@ -2514,6 +2583,11 @@ constructor(
         playbackInfo: LiveTvPlaybackInfo,
     ) {
         stopAudiobookshelfIfPlaying()
+        lastLiveAttempt =
+            PlayerEvent.LoadLiveChannel(channelId, channelName, streamUrl, playbackInfo)
+        lastLoadAttempt = null
+        retryResumesCurrentItem = false
+        clearPlaybackError()
         mpvLiveAutoHideTriggered = false
         currentLivePlaybackInfo = playbackInfo
         currentSessionId = playbackInfo.playSessionId
@@ -2605,6 +2679,7 @@ constructor(
                 )
 
             currentItem = channelItem
+            startedItemId = channelId
             hasStoppedPlayback = false
             exoDroppedFrames = 0
             playbackStateManager.trackPlaybackSession(
@@ -2633,13 +2708,7 @@ constructor(
             throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load live channel")
-            updateUiState {
-                it.copy(
-                    isLoading = false,
-                    showError = true,
-                    errorMessage = context.getString(R.string.error_load_live_channel),
-                )
-            }
+            showPlaybackError(context.getString(R.string.error_load_live_channel))
         }
     }
 
@@ -3455,7 +3524,16 @@ constructor(
     private suspend fun playQueueItem(item: AfinityItem) {
         val fullItem =
             if (item.sources.isEmpty()) {
-                withContext(Dispatchers.IO) { mediaRepository.getItemById(item.id) } ?: item
+                val fetched = withContext(Dispatchers.IO) { mediaRepository.getItemById(item.id) }
+                if (fetched == null) {
+                    Timber.w("Could not fetch queue item ${item.id} before playback")
+                    lastLoadAttempt = LoadAttempt(item, "", null, null, 0L)
+                    lastLiveAttempt = null
+                    retryResumesCurrentItem = false
+                    showPlaybackError(context.getString(R.string.player_error_connection))
+                    return
+                }
+                fetched
             } else {
                 item
             }
@@ -3682,7 +3760,7 @@ constructor(
         val item = currentItem
 
         if (item != null) {
-            if (!_uiState.value.isPlayingIntro) {
+            if (!_uiState.value.isPlayingIntro && item.id == startedItemId) {
                 playbackStateManager.notifyPlaybackStopped(
                     itemId = item.id,
                     positionMs = finalPosition,
@@ -3725,6 +3803,7 @@ constructor(
     private fun reportCurrentItemStopped(isEnded: Boolean = false) {
         val item = currentItem ?: return
         if (_uiState.value.isPlayingIntro) return
+        if (item.id != startedItemId) return
 
         val position =
             if (isEnded && player.duration > 0) player.duration else castOrLocalPositionMs()
@@ -4061,11 +4140,20 @@ constructor(
         val startPositionMs: Long,
     )
 
+    private data class LoadAttempt(
+        val item: AfinityItem,
+        val mediaSourceId: String,
+        val audioStreamIndex: Int?,
+        val subtitleStreamIndex: Int?,
+        val startPositionMs: Long,
+    )
+
     private companion object {
         const val SERVER_STATS_INTERVAL_TICKS = 5
         const val SLEEP_TIMER_GRACE_SECONDS = 60
         const val SLEEP_TIMER_FADE_MS = 5_000L
         const val SLEEP_TIMER_FADE_STEPS = 20
+        const val AUTO_RETRY_SETTLE_MS = 2_000L
     }
 }
 

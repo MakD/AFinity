@@ -198,7 +198,7 @@ fun PlayerScreen(
 
     var hasNavigatedBack by remember { mutableStateOf(false) }
 
-    BackHandler {
+    val exitPlayer: () -> Unit = {
         if (!hasNavigatedBack) {
             hasNavigatedBack = true
             if (syncPlayState.isInGroup) syncPlayViewModel.leaveGroup()
@@ -206,6 +206,8 @@ fun PlayerScreen(
             onBackPressed()
         }
     }
+
+    BackHandler { exitPlayer() }
     val castState by viewModel.castManager.castState.collectAsStateWithLifecycle()
     val isDarkTheme = isSystemInDarkTheme()
 
@@ -347,14 +349,7 @@ fun PlayerScreen(
                 playbackProgress = playbackProgress,
                 player = viewModel.player,
                 onPlayerEvent = viewModel::handlePlayerEvent,
-                onBackClick = {
-                    if (!hasNavigatedBack) {
-                        hasNavigatedBack = true
-                        if (syncPlayState.isInGroup) syncPlayViewModel.leaveGroup()
-                        viewModel.stopPlayback()
-                        onBackPressed()
-                    }
-                },
+                onBackClick = exitPlayer,
                 onNextClick = viewModel::onNextEpisode,
                 onPreviousClick = viewModel::onPreviousEpisode,
                 onPipToggle = { viewModel.handlePlayerEvent(PlayerEvent.EnterPictureInPicture) },
@@ -389,21 +384,12 @@ fun PlayerScreen(
             ErrorIndicator(
                 isVisible = uiState.showError,
                 errorMessage = uiState.errorMessage,
-                onRetryClick = {
-                    viewModel.handlePlayerEvent(
-                        PlayerEvent.LoadMedia(
-                            item = item,
-                            mediaSourceId = mediaSourceId,
-                            audioStreamIndex = audioStreamIndex,
-                            subtitleStreamIndex = subtitleStreamIndex,
-                            startPositionMs = startPositionMs,
-                        )
-                    )
-                },
+                onRetryClick = { viewModel.handlePlayerEvent(PlayerEvent.RetryLoad) },
                 canPlayAnyway = uiState.canPlayAnywayWithTranscoding,
                 onPlayAnywayClick = {
                     viewModel.handlePlayerEvent(PlayerEvent.PlayAnywayWithTranscoding)
                 },
+                onCloseClick = exitPlayer,
                 modifier = Modifier.align(Alignment.Center),
             )
 
