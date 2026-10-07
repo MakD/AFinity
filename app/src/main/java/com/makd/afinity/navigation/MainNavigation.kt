@@ -1615,6 +1615,12 @@ fun MainNavigation(
                                                         .d(
                                                             "MainNavigation: Music onCloseClick — calling stop()+ACTION_STOP"
                                                         )
+                                                    if (
+                                                        viewModel.castManager.castState.value
+                                                            .isMusicCasting
+                                                    ) {
+                                                        viewModel.castManager.stop()
+                                                    }
                                                     viewModel.musicPlaybackManager.stop()
                                                     navController.context.startService(
                                                         android.content

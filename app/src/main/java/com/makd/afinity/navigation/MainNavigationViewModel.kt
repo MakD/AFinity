@@ -2,6 +2,7 @@ package com.makd.afinity.navigation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.cast.CastManager
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PendingNavigationManager
 import com.makd.afinity.data.manager.SessionManager
@@ -47,6 +48,7 @@ constructor(
     val audiobookshelfPlayer: AudiobookshelfPlayer,
     val audiobookshelfPlaybackManager: AudiobookshelfPlaybackManager,
     val musicPlaybackManager: MusicPlaybackManager,
+    val castManager: CastManager,
     private val liveTvRepository: LiveTvRepository,
     private val offlineModeManager: OfflineModeManager,
     private val sessionManager: SessionManager,

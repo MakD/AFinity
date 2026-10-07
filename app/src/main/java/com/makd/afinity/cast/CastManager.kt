@@ -23,6 +23,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -41,9 +42,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.MediaStreamType
+import org.json.JSONObject
 import timber.log.Timber
 
 private const val DEFAULT_MAX_BITRATE = 16_000_000
+private const val MUSIC_TRACK_ID_KEY = "afinityTrackId"
+private val MUSIC_STREAM_ID_REGEX = Regex("/Audio/([0-9a-fA-F-]{32,36})/stream")
 
 @Singleton
 class CastManager
@@ -77,6 +81,11 @@ constructor(
     private var currentEnableHevc: Boolean = false
     private var absAudioTracks: List<AudioTrack> = emptyList()
     private var absTrackStartOffsets: Map<Int, Long> = emptyMap()
+
+    private var musicCastTrackId: UUID? = null
+    private var musicCastPlaySessionId: String? = null
+    private var musicCastPositionMs: Long = 0L
+    private var musicCastProgressJob: Job? = null
 
     fun initialize(context: Context) {
         try {
@@ -358,6 +367,9 @@ constructor(
                             .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
                             .setStreamDuration(durationMs)
                             .setMetadata(metadata)
+                            .setCustomData(
+                                JSONObject().put(MUSIC_TRACK_ID_KEY, track.id.toString())
+                            )
                             .build()
 
                     MediaQueueItem.Builder(mediaInfo).build()
@@ -551,6 +563,7 @@ constructor(
     }
 
     fun stop() {
+        stopMusicCastReport()
         scope.launch {
             try {
                 reportFinalPosition()
@@ -784,10 +797,84 @@ constructor(
                 _castState.value =
                     _castState.value.copy(volume = session.volume, isMuted = session.isMute)
             }
+
+            syncMusicCastReport()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             Timber.e(e, "Error polling cast position")
+        }
+    }
+
+    private fun syncMusicCastReport() {
+        if (!_castState.value.isMusicCasting) return
+        val client = remoteMediaClient ?: return
+        val trackId = currentMusicCastTrackId(client)
+        if (trackId == musicCastTrackId) {
+            if (trackId != null) {
+                musicCastPositionMs = client.approximateStreamPosition.coerceAtLeast(0L)
+            }
+            return
+        }
+        stopMusicCastReport()
+        if (trackId != null) startMusicCastReport(trackId)
+    }
+
+    private fun currentMusicCastTrackId(client: RemoteMediaClient): UUID? {
+        val status = client.mediaStatus ?: return null
+        if (status.playerState == MediaStatus.PLAYER_STATE_IDLE) return null
+        val info = client.mediaInfo ?: return null
+        val rawId =
+            info.customData?.optString(MUSIC_TRACK_ID_KEY).orEmpty().ifEmpty {
+                MUSIC_STREAM_ID_REGEX.find(info.contentId.orEmpty())?.groupValues?.get(1).orEmpty()
+            }
+        return runCatching { UUID.fromString(rawId) }.getOrNull()
+    }
+
+    private fun startMusicCastReport(trackId: UUID) {
+        val playSessionId = UUID.randomUUID().toString()
+        musicCastTrackId = trackId
+        musicCastPlaySessionId = playSessionId
+        musicCastPositionMs = 0L
+        scope.launch {
+            playbackRepository.reportPlaybackStart(
+                itemId = trackId,
+                sessionId = playSessionId,
+                mediaSourceId = trackId.toString(),
+            )
+        }
+        musicCastProgressJob?.cancel()
+        musicCastProgressJob = scope.launch {
+            while (true) {
+                delay(10_000)
+                val state = _castState.value
+                playbackRepository.reportPlaybackProgress(
+                    itemId = trackId,
+                    sessionId = playSessionId,
+                    positionTicks = musicCastPositionMs * 10_000,
+                    isPaused = state.isPaused,
+                    isMuted = state.isMuted,
+                )
+            }
+        }
+    }
+
+    private fun stopMusicCastReport() {
+        val trackId = musicCastTrackId ?: return
+        val playSessionId = musicCastPlaySessionId ?: return
+        val positionMs = musicCastPositionMs
+        musicCastProgressJob?.cancel()
+        musicCastProgressJob = null
+        musicCastTrackId = null
+        musicCastPlaySessionId = null
+        musicCastPositionMs = 0L
+        scope.launch {
+            playbackRepository.reportPlaybackStop(
+                itemId = trackId,
+                sessionId = playSessionId,
+                positionTicks = positionMs * 10_000,
+                mediaSourceId = trackId.toString(),
+            )
         }
     }
 
@@ -893,6 +980,7 @@ constructor(
                 val finalState = _castState.value
                 val wasMusicCasting = finalState.isMusicCasting
                 val wasAbsCasting = finalState.isAbsCasting
+                stopMusicCastReport()
                 remoteMediaClient?.unregisterCallback(remoteMediaClientCallback)
                 remoteMediaClient = null
                 castSession = null

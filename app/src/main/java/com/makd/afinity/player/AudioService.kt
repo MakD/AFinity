@@ -364,6 +364,9 @@ class AudioService : MediaSessionService() {
 
     private fun tearDown() {
         Timber.d("AudioService: tear down")
+        if (activeEngine == ActiveEngine.MUSIC) {
+            musicProgressReporter.onPlaybackStopped(exoPlayer?.currentPosition ?: 0L)
+        }
         absPlaybackManager.clearSession()
         musicPlaybackManager.clearPlayer()
         musicPlaybackManager.updateTrack(null)
@@ -495,6 +498,15 @@ class AudioService : MediaSessionService() {
 
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                 if (activeEngine != ActiveEngine.MUSIC) return
+                if (mediaItem == null) {
+                    musicProgressReporter.onPlaybackStopped(
+                        musicPlaybackManager.state.value.positionMs
+                    )
+                    if (musicQueueManager.queue.value.isEmpty()) {
+                        musicPlaybackManager.updateTrack(null)
+                    }
+                    return
+                }
                 val newIndex = exoPlayer?.currentMediaItemIndex ?: 0
                 musicQueueManager.onTrackChanged(newIndex)
                 val track = musicQueueManager.currentTrack
