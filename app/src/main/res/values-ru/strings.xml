@@ -2343,4 +2343,21 @@
     <string name="admin_identify_apply_still_running">Сервер все еще применяет результат. Проверьте элемент еще раз через несколько минут.</string>
     <string name="admin_image_type_thumb">Эскиз</string>
     <string name="admin_image_type_banner">Баннер</string>
+    <string name="admin_image_type_art">Вырезка</string>
+    <string name="admin_image_type_disc">Диск</string>
+    <string name="admin_images_none_title">Изображения пока нет</string>
+    <string name="admin_images_none_message">Загрузите изображение или выберите его у одного из провайдеров внизу.</string>
+    <string name="admin_images_reorder_hint">Первое изображение используется как основное. Зажмите, и затем перетащите для изменения порядка.</string>
+    <string name="admin_images_all_providers">Все провайдеры</string>
+    <string name="admin_images_sort_recommended">Рекомендуемые</string>
+    <string name="admin_images_sort_largest">Самые большие</string>
+    <string name="admin_images_load_failed_title">Не удалось загрузить изображения</string>
+    <string name="admin_images_load_failed_message">Запрос не удался. Изменения не были внесены.</string>
+    <string name="admin_images_empty_title">Изображения не найдены</string>
+    <string name="admin_images_empty_message">Изображения этого типа отсутствуют у ваших провайдеров.</string>
+    <string name="admin_images_empty_language_message">У пройвайдеров может быть больше вариантов на других языках.</string>
+    <string name="admin_images_show_all_languages">Показать на всех языках</string>
+    <string name="admin_image_use">Использовать это изображение</string>
+    <string name="admin_image_add">Добавить изображение</string>
+    <string name="admin_image_replaces_current">Заменит существующее изображение.</string>
 </resources>
