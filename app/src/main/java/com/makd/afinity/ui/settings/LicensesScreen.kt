@@ -1,17 +1,22 @@
 package com.makd.afinity.ui.settings
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -24,7 +29,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -45,18 +53,46 @@ import com.mikepenz.aboutlibraries.ui.compose.variant.LibraryActionMode
 import com.mikepenz.aboutlibraries.ui.compose.variant.LibraryBadges
 import com.mikepenz.aboutlibraries.ui.compose.variant.LibraryDetailMode
 
+private data class AboutLink(val iconRes: Int, val labelRes: Int, val url: String)
+
+private val aboutLinks =
+    listOf(
+        AboutLink(
+            R.drawable.ic_brand_github,
+            R.string.about_link_github,
+            "https://github.com/MakD/AFinity",
+        ),
+        AboutLink(
+            R.drawable.ic_brand_discord,
+            R.string.about_link_discord,
+            "https://discord.gg/v7P9CAvCKZ",
+        ),
+        AboutLink(
+            R.drawable.ic_brand_kofi,
+            R.string.about_link_kofi,
+            "https://ko-fi.com/m0rph3us",
+        ),
+    )
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LicensesScreen(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
     val libraries by produceLibraries(R.raw.aboutlibraries)
     val playerOffset = LocalPlayerOffset.current
+    val uriHandler = LocalUriHandler.current
+    val bannerRes =
+        if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+            R.drawable.afinity_banner_light
+        } else {
+            R.drawable.afinity_banner
+        }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = stringResource(R.string.licenses_title),
+                        text = stringResource(R.string.pref_group_about),
                         style =
                             MaterialTheme.typography.headlineMedium.copy(
                                 fontWeight = FontWeight.Bold
@@ -128,12 +164,30 @@ fun LicensesScreen(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
                             modifier = Modifier.padding(horizontal = 16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_launcher_foreground),
-                                contentDescription = null,
-                                modifier = Modifier.size(120.dp),
-                                tint = MaterialTheme.colorScheme.primary,
+                            Image(
+                                painter = painterResource(bannerRes),
+                                contentDescription = stringResource(R.string.app_name),
+                                contentScale = ContentScale.Fit,
+                                modifier =
+                                    Modifier.widthIn(max = 340.dp)
+                                        .fillMaxWidth()
+                                        .aspectRatio(1200f / 423f),
                             )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                aboutLinks.forEach { link ->
+                                    FilledTonalIconButton(
+                                        onClick = { uriHandler.openUri(link.url) }
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(link.iconRes),
+                                            contentDescription = stringResource(link.labelRes),
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            HorizontalDivider()
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(

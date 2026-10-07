@@ -656,36 +656,6 @@ fun SettingsScreen(
                                             else -> stringResource(R.string.build_release)
                                         }
                                     SettingsItem(
-                                        icon = painterResource(id = R.drawable.ic_versions),
-                                        title = stringResource(R.string.pref_version),
-                                        subtitle =
-                                            stringResource(
-                                                R.string.version_fmt,
-                                                AppConstants.VERSION_NAME,
-                                                buildType,
-                                            ),
-                                        onClick = null,
-                                    )
-                                    SettingsDivider()
-                                    SettingsItem(
-                                        icon = painterResource(id = R.drawable.ic_source_code),
-                                        title = stringResource(R.string.pref_licenses),
-                                        subtitle = stringResource(R.string.pref_licenses_summary),
-                                        onClick = {
-                                            if (isDualPane) {
-                                                scope.launch {
-                                                    navigator.navigateTo(
-                                                        ListDetailPaneScaffoldRole.Detail,
-                                                        SettingsPaneDestination.Licenses,
-                                                    )
-                                                }
-                                            } else {
-                                                navController.navigate(Destination.LICENSES_ROUTE)
-                                            }
-                                        },
-                                    )
-                                    SettingsDivider()
-                                    SettingsItem(
                                         icon = painterResource(id = R.drawable.ic_logs),
                                         title = stringResource(R.string.pref_view_logs),
                                         subtitle = stringResource(R.string.pref_view_logs_summary),
@@ -701,6 +671,29 @@ fun SettingsScreen(
                                                 navController.navigate(
                                                     Destination.createLogsRoute()
                                                 )
+                                            }
+                                        },
+                                    )
+                                    SettingsDivider()
+                                    SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_source_code),
+                                        title = stringResource(R.string.pref_about_app),
+                                        subtitle =
+                                            stringResource(
+                                                R.string.version_fmt,
+                                                AppConstants.VERSION_NAME,
+                                                buildType,
+                                            ),
+                                        onClick = {
+                                            if (isDualPane) {
+                                                scope.launch {
+                                                    navigator.navigateTo(
+                                                        ListDetailPaneScaffoldRole.Detail,
+                                                        SettingsPaneDestination.Licenses,
+                                                    )
+                                                }
+                                            } else {
+                                                navController.navigate(Destination.LICENSES_ROUTE)
                                             }
                                         },
                                     )

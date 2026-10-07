@@ -1426,6 +1426,10 @@
 
     <string name="pref_licenses">Licenses</string>
     <string name="pref_licenses_summary">Open source libraries</string>
+    <string name="pref_about_app">About AFinity</string>
+    <string name="about_link_github" translatable="false">GitHub</string>
+    <string name="about_link_discord" translatable="false">Discord</string>
+    <string name="about_link_kofi" translatable="false">Ko-fi</string>
 
     <string name="action_logout">Log Out</string>
 
