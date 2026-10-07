@@ -392,11 +392,13 @@ constructor(
 
     private fun observeCastState() {
         viewModelScope.launch {
+            var wasConnected = castManager.castState.value.isConnected
             castManager.castState.collect { castState ->
                 updateUiState { it.copy(isCasting = castState.isConnected) }
-                if (castState.isConnected && castState.currentItem == null) {
+                if (castState.isConnected && !wasConnected) {
                     startCasting()
                 }
+                wasConnected = castState.isConnected
             }
         }
         viewModelScope.launch {
@@ -411,11 +413,13 @@ constructor(
                             player.seekTo(event.lastPositionMs)
                         }
                         updateUiState { it.copy(isCasting = false) }
+                        trackLocalPlaybackSession()
                         startProgressReporting()
                     }
                     is CastEvent.PlaybackStarted -> {
                         Timber.d("Cast playback started")
                     }
+                    is CastEvent.PlaybackFinished -> onCastPlaybackFinished(event.itemId)
                     is CastEvent.PlaybackError -> {
                         Timber.e("Cast error: ${event.message}")
                         updateUiState { it.copy(isCasting = false) }
@@ -457,6 +461,31 @@ constructor(
     fun stopCasting() {
         castManager.disconnect()
         updateUiState { it.copy(isCasting = false) }
+    }
+
+    fun stopCastPlayback() {
+        hasStoppedPlayback = true
+        progressReportingJob?.cancel()
+        castManager.stop()
+    }
+
+    private fun trackLocalPlaybackSession() {
+        val item = currentItem ?: return
+        val sessionId = currentSessionId ?: return
+        playbackStateManager.trackPlaybackSession(
+            sessionId = sessionId,
+            itemId = item.id,
+            mediaSourceId =
+                _uiState.value.currentMediaSourceId ?: item.sources.firstOrNull()?.id ?: "",
+            liveStreamId = currentLivePlaybackInfo?.liveStreamId,
+        )
+    }
+
+    private fun onCastPlaybackFinished(itemId: UUID) {
+        if (currentItem?.id != itemId) return
+        hasStoppedPlayback = true
+        playlistManager.markCurrentItemAsPlayed()
+        advanceAfterItemEnd()
     }
 
     fun dismissCastChooser() {
@@ -969,35 +998,39 @@ constructor(
         if (!playWhenReady && reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM) {
             reportCurrentItemStopped(isEnded = true)
             playlistManager.markCurrentItemAsPlayed()
-            viewModelScope.launch {
-                val isIntro = _uiState.value.isPlayingIntro
-                val autoPlay = preferencesRepository.getAutoPlay()
-                val stopAtItemEnd =
-                    !isIntro && _uiState.value.sleepTimerMode is SleepTimerMode.EndOfItem
-                val nextItem =
-                    if (
-                        (isIntro || autoPlay) && !stopAtItemEnd && playlistManager.canAutoAdvance()
-                    ) {
-                        playlistManager.next()
-                    } else null
-                when {
-                    nextItem != null -> {
-                        Timber.d("Episode ended, auto-advancing to: ${nextItem.name}")
-                        playQueueItem(nextItem)
-                    }
-                    stopAtItemEnd -> {
-                        Timber.d("Item ended with an end-of-item sleep timer armed")
-                        sleepTimerStopPoint = SleepTimerStopPoint.ITEM_END
-                        onSleepTimerExpired()
-                    }
-                    !_uiState.value.isLiveChannel -> {
-                        Timber.d("Playback ended with no next item, closing player")
-                        _closePlayerEvent.tryEmit(Unit)
-                    }
+            advanceAfterItemEnd()
+        }
+        updatePlayerState()
+    }
+
+    private fun advanceAfterItemEnd() {
+        viewModelScope.launch {
+            val isIntro = _uiState.value.isPlayingIntro
+            val autoPlay = preferencesRepository.getAutoPlay()
+            val stopAtItemEnd =
+                !isIntro && _uiState.value.sleepTimerMode is SleepTimerMode.EndOfItem
+            val nextItem =
+                if ((isIntro || autoPlay) && !stopAtItemEnd && playlistManager.canAutoAdvance()) {
+                    playlistManager.next()
+                } else null
+            when {
+                nextItem != null -> {
+                    Timber.d("Episode ended, auto-advancing to: ${nextItem.name}")
+                    playQueueItem(nextItem)
+                }
+
+                stopAtItemEnd -> {
+                    Timber.d("Item ended with an end-of-item sleep timer armed")
+                    sleepTimerStopPoint = SleepTimerStopPoint.ITEM_END
+                    onSleepTimerExpired()
+                }
+
+                !_uiState.value.isLiveChannel -> {
+                    Timber.d("Playback ended with no next item, closing player")
+                    _closePlayerEvent.tryEmit(Unit)
                 }
             }
         }
-        updatePlayerState()
     }
 
     private var lastKnownPosition = 0L
@@ -3645,12 +3678,7 @@ constructor(
         hasStoppedPlayback = true
         progressReportingJob?.cancel()
 
-        val finalPosition =
-            if (_uiState.value.isCasting) {
-                castManager.castState.value.currentPosition
-            } else {
-                player.currentPosition
-            }
+        val finalPosition = castOrLocalPositionMs()
         val item = currentItem
 
         if (item != null) {
@@ -3699,13 +3727,7 @@ constructor(
         if (_uiState.value.isPlayingIntro) return
 
         val position =
-            if (isEnded && player.duration > 0) {
-                player.duration
-            } else if (_uiState.value.isCasting) {
-                castManager.castState.value.currentPosition
-            } else {
-                player.currentPosition
-            }
+            if (isEnded && player.duration > 0) player.duration else castOrLocalPositionMs()
 
         playbackStateManager.notifyPlaybackStopped(
             itemId = item.id,
@@ -3713,6 +3735,15 @@ constructor(
             runtimeTicks = currentItemRuntimeTicks(item),
             isEnded = isEnded && !_uiState.value.isLiveChannel,
         )
+    }
+
+    private fun castOrLocalPositionMs(): Long {
+        val castState = castManager.castState.value
+        return if (_uiState.value.isCasting && castState.currentItemId != null) {
+            castState.currentPosition
+        } else {
+            player.currentPosition
+        }
     }
 
     private fun currentItemRuntimeTicks(item: AfinityItem): Long {

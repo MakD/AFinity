@@ -40,5 +40,7 @@ sealed class CastEvent {
 
     data class PlaybackStarted(val itemId: UUID) : CastEvent()
 
+    data class PlaybackFinished(val itemId: UUID) : CastEvent()
+
     data class PlaybackError(val message: String) : CastEvent()
 }

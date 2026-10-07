@@ -82,6 +82,8 @@ constructor(
     private var absAudioTracks: List<AudioTrack> = emptyList()
     private var absTrackStartOffsets: Map<Int, Long> = emptyMap()
 
+    private var castItemStarted = false
+
     private var musicCastTrackId: UUID? = null
     private var musicCastPlaySessionId: String? = null
     private var musicCastPositionMs: Long = 0L
@@ -282,6 +284,7 @@ constructor(
                     }
                 }
 
+                castItemStarted = false
                 _castState.value =
                     _castState.value.copy(
                         currentItem = item,
@@ -934,6 +937,44 @@ constructor(
             )
         absAudioTracks = emptyList()
         absTrackStartOffsets = emptyMap()
+        castItemStarted = false
+    }
+
+    private fun handleCastItemCompletion() {
+        val state = _castState.value
+        val itemId = state.currentItemId ?: return
+        val status = remoteMediaClient?.mediaStatus ?: return
+        when (status.playerState) {
+            MediaStatus.PLAYER_STATE_PLAYING,
+            MediaStatus.PLAYER_STATE_PAUSED,
+            MediaStatus.PLAYER_STATE_BUFFERING -> castItemStarted = true
+
+            MediaStatus.PLAYER_STATE_IDLE -> {
+                if (!castItemStarted) return
+                if (status.idleReason != MediaStatus.IDLE_REASON_FINISHED) return
+                val sessionId = state.sessionId ?: return
+                val mediaSourceId = state.mediaSourceId ?: return
+                val endPositionMs =
+                    if (state.duration > 0) state.duration else state.currentPosition
+                stopProgressReporting()
+                stopPositionPolling()
+                resetPlaybackState()
+                scope.launch {
+                    playbackRepository.reportPlaybackStop(
+                        itemId = itemId,
+                        sessionId = sessionId,
+                        positionTicks = endPositionMs * 10000,
+                        mediaSourceId = mediaSourceId,
+                    )
+                    playbackStateManager.notifyPlaybackStopped(
+                        itemId = itemId,
+                        positionMs = endPositionMs,
+                        isEnded = true,
+                    )
+                    _castEvents.emit(CastEvent.PlaybackFinished(itemId))
+                }
+            }
+        }
     }
 
     private val castSessionManagerListener =
@@ -1012,6 +1053,7 @@ constructor(
                             finalState.currentPosition,
                         )
                     }
+                    playbackStateManager.clearSession()
                     if (wasMusicCasting) {
                         _castEvents.emit(
                             CastEvent.MusicCastDisconnected(
@@ -1029,7 +1071,6 @@ constructor(
                             CastEvent.Disconnected(lastPositionMs = finalState.currentPosition)
                         )
                     }
-                    playbackStateManager.clearSession()
                 }
             }
 
@@ -1076,6 +1117,7 @@ constructor(
                     }
                 }
                 updatePositionFromRemote()
+                handleCastItemCompletion()
             }
 
             override fun onMetadataUpdated() {

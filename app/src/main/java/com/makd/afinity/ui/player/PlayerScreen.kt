@@ -227,7 +227,7 @@ fun PlayerScreen(
                 onBackClick = {
                     if (!hasNavigatedBack) {
                         hasNavigatedBack = true
-                        viewModel.castManager.stop()
+                        viewModel.stopCastPlayback()
                         onBackPressed()
                     }
                 },
