@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.mediarouter.app.MediaRouteButton
 import com.google.android.gms.cast.framework.CastButtonFactory
+import com.makd.afinity.cast.hasGooglePlayServices
 import timber.log.Timber
 
 @Composable
@@ -18,8 +19,10 @@ fun rememberCastChooserLauncher(): () -> Unit {
     val button =
         remember(context) {
             MediaRouteButton(context).apply {
-                runCatching { CastButtonFactory.setUpMediaRouteButton(context, this) }
-                    .onFailure { Timber.w(it, "Failed to set up MediaRouteButton") }
+                if (context.hasGooglePlayServices()) {
+                    runCatching { CastButtonFactory.setUpMediaRouteButton(context, this) }
+                        .onFailure { Timber.w(it, "Failed to set up MediaRouteButton") }
+                }
                 visibility = View.GONE
             }
         }

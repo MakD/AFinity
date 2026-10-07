@@ -16,6 +16,8 @@ import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.cast.framework.media.RemoteMediaClient
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.images.WebImage
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.audiobookshelf.AudioTrack
@@ -44,6 +46,10 @@ import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.json.JSONObject
 import timber.log.Timber
+
+fun Context.hasGooglePlayServices(): Boolean =
+    GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this) ==
+        ConnectionResult.SUCCESS
 
 private const val DEFAULT_MAX_BITRATE = 16_000_000
 private const val MUSIC_TRACK_ID_KEY = "afinityTrackId"
@@ -91,10 +97,14 @@ constructor(
 
     fun initialize(context: Context) {
         try {
-            castContext = CastContext.getSharedInstance(context)
-            castContext
-                ?.sessionManager
-                ?.addSessionManagerListener(castSessionManagerListener, CastSession::class.java)
+            if (context.hasGooglePlayServices()) {
+                castContext = CastContext.getSharedInstance(context)
+                castContext
+                    ?.sessionManager
+                    ?.addSessionManagerListener(castSessionManagerListener, CastSession::class.java)
+            } else {
+                Timber.w("Google Play services unavailable, Chromecast disabled")
+            }
             MediaRouter.getInstance(context).routerParams =
                 MediaRouterParams.Builder()
                     .setDialogType(MediaRouterParams.DIALOG_TYPE_DYNAMIC_GROUP)
