@@ -1,7 +1,7 @@
 [versions]
 aboutlibrariesCore = "15.2.0"
 activityCompose = "1.13.0"
-agp = "9.2.1"
+agp = "9.4.1"
 android-desugar-jdk-libs = "2.1.5"
 androidx-benchmark = "1.5.0"
 androidx-profileinstaller = "1.4.1"
