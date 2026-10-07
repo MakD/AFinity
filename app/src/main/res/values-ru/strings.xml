@@ -2269,4 +2269,28 @@
     </plurals>
     <string name="abs_show_sessions">Показать сеансы</string>
     <string name="abs_continue_listening_label">Продолжить слушать</string>
+    <string name="cd_rewind_30">Отмотать на 30 секунд</string>
+    <string name="download_burn_subtitles_title">Встроить субтитры</string>
+    <string name="download_burn_subtitles_none">Без субтитров</string>
+    <string name="pref_group_audio_players">Музыка и аудиокниги</string>
+    <string name="pref_music_swipe_skip_title">Смена треков жестом</string>
+    <string name="pref_music_swipe_skip_summary">Смахните обложку в плеере влево или вправо</string>
+    <string name="pref_abs_swipe_skip_title">Смена глав жестом</string>
+    <string name="pref_abs_swipe_skip_summary">Смахните обложку в плеере влево или вправо; у подкастов сменяется эпизод</string>
+    <string name="task_stopping">Остановка…</string>
+    <string name="task_status_failed">Ошибка</string>
+    <string name="task_status_failed_reason">Ошибка · %1$s</string>
+    <string name="task_status_cancelled">Отменено</string>
+    <string name="task_status_aborted">Отменено из-за отключения сервера</string>
+    <string name="abs_first_episode_label">Первый эпизод</string>
+    <string name="abs_episode_type_bonus">Бонус</string>
+    <string name="abs_episode_type_trailer">Трейлер</string>
+    <string name="abs_from_episode_one">С 1 эпизода</string>
+    <string name="request_4k_already_requested">Уже запрошено или доступно в 4K</string>
+    <string name="request_root_folder_free_fmt">%1$s (%2$s свободно)</string>
+    <string name="admin_delete_message_item">С сервера будет навсегда удален элемент и его файлы.</string>
+    <string name="admin_delete_message_children">С сервера будет навсегда удален элемент, все его содержимое, и все связанные с ним файлы.</string>
+    <string name="admin_delete_message_container">Будет удалена только эта коллекция или плейлист. Содержащиеся элементы останутся в вашей библиотеке. Это действие нельзя отменить.</string>
+    <string name="admin_delete_failed">Не удалось удалить элемент. Попробуйте еще раз.</string>
+    <string name="admin_delete_not_allowed">У вас нет разрешения на удаление элемента.</string>
 </resources>
