@@ -2360,4 +2360,16 @@
     <string name="admin_image_use">Использовать это изображение</string>
     <string name="admin_image_add">Добавить изображение</string>
     <string name="admin_image_replaces_current">Заменит существующее изображение.</string>
+    <string name="admin_image_fact_provider">Провайдер</string>
+    <string name="admin_image_fact_resolution">Разрешение</string>
+    <string name="admin_image_fact_rating">Оценка</string>
+    <string name="admin_image_fact_likes">Лайки</string>
+    <string name="admin_image_fact_language">Язык</string>
+    <string name="admin_image_fact_size">Размер</string>
+    <string name="admin_image_updated">Изображение обновлено</string>
+    <string name="admin_image_removed">Изображение удалено</string>
+    <string name="admin_image_action_failed">Не удалось изменить изображение. Попробуйте еще раз.</string>
+    <string name="admin_image_file_unreadable">Не удалось прочесть выбранный файл.</string>
+    <string name="player_error_connection">Не удалось связаться с сервером. Проверьте ваше соединение и попробуйте еще раз.</string>
+    <string name="pref_about_app">Об AFinity</string>
 </resources>
