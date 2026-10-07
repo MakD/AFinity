@@ -67,10 +67,13 @@ private fun bucketedFillWidth(widthPx: Int): Int =
 private fun String.isResizableItemImage(): Boolean =
     contains("/Items/") && contains("/Images/") && SIZE_PARAMS.none { contains(it) }
 
+private fun String.isLogoImage(): Boolean = contains("/Images/Logo")
+
 internal fun optimizedImageUrl(
     imageUrl: String?,
     widthPx: Int,
     skipServerResize: Boolean = false,
+    heightPx: Int? = null,
 ): String? {
     if (imageUrl == null) return imageUrl
     if (skipServerResize) return imageUrl
@@ -78,7 +81,14 @@ internal fun optimizedImageUrl(
 
     val separator = if ('?' in imageUrl) "&" else "?"
     val quality = if (imageUrl.contains("quality=")) "" else "&quality=$IMAGE_QUALITY"
-    return "${imageUrl}${separator}fillWidth=${bucketedFillWidth(widthPx.coerceAtLeast(50))}$quality"
+    val fillHeight =
+        if (heightPx != null && imageUrl.isLogoImage()) {
+            "&fillHeight=${bucketedFillWidth(heightPx.coerceAtLeast(50))}"
+        } else {
+            ""
+        }
+    val fillWidth = bucketedFillWidth(widthPx.coerceAtLeast(50))
+    return "${imageUrl}${separator}fillWidth=$fillWidth$fillHeight$quality"
 }
 
 private fun snapBlurHashDimension(value: Int): Int =
@@ -222,11 +232,15 @@ fun AsyncImage(
             targetWidth?.let { with(density) { (it.toPx() * scaleFactor).toInt() } }
         }
 
+    val targetHeightPx =
+        remember(targetHeight, density, scaleFactor) {
+            targetHeight?.let { with(density) { (it.toPx() * scaleFactor).toInt() } }
+        }
+
     val imageSize =
-        remember(targetWidthPx, targetHeight, density, scaleFactor) {
-            val heightPx = targetHeight?.let { with(density) { (it.toPx() * scaleFactor).toInt() } }
-            if (targetWidthPx != null && heightPx != null) {
-                Size(width = targetWidthPx, height = heightPx)
+        remember(targetWidthPx, targetHeightPx) {
+            if (targetWidthPx != null && targetHeightPx != null) {
+                Size(width = targetWidthPx, height = targetHeightPx)
             } else {
                 null
             }
@@ -235,9 +249,9 @@ fun AsyncImage(
     val skipServerResize = LocalSkipServerImageResize.current
 
     val optimizedUrl =
-        remember(imageUrl, targetWidthPx, skipServerResize) {
+        remember(imageUrl, targetWidthPx, targetHeightPx, skipServerResize) {
             if (targetWidthPx == null) imageUrl
-            else optimizedImageUrl(imageUrl, targetWidthPx, skipServerResize)
+            else optimizedImageUrl(imageUrl, targetWidthPx, skipServerResize, targetHeightPx)
         }
 
     val blurHashPlaceholder = rememberBlurHashPainter(blurHash, targetWidth, targetHeight)
