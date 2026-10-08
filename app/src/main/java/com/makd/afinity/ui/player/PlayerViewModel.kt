@@ -185,6 +185,9 @@ constructor(
 
     var syncPlayInterceptor: SyncPlayInterceptor? = null
 
+    // Set by PlayerScreen while an in-window panel is open; keyboard shortcuts step aside then.
+    var isOverlayPanelOpen = false
+
     private var hasStoppedPlayback = false
     private var startedItemId: UUID? = null
     private var lastLoadAttempt: LoadAttempt? = null

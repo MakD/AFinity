@@ -60,6 +60,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
@@ -165,6 +166,7 @@ fun PlayerControls(
     syncPlayMembers: List<String> = emptyList(),
     syncPlayGroupName: String = "",
     syncPlayMemberInfo: Map<String, SyncPlayMemberInfo> = emptyMap(),
+    onPanelOpenChange: (Boolean) -> Unit = {},
 ) {
     var showTrackPanel by remember { mutableStateOf(false) }
     var showQualityPanel by remember { mutableStateOf(false) }
@@ -176,6 +178,20 @@ fun PlayerControls(
 
     LaunchedEffect(uiState.sleepTimerExpired) {
         if (uiState.sleepTimerExpired) showSleepTimerPanel = false
+    }
+
+    // Same conditions the panels render under, so a panel that vanished doesn't stay "open".
+    val isPanelOpen =
+        showTrackPanel ||
+            showQualityPanel ||
+            showSpeedDialog ||
+            (showEpisodeSwitcher && playlistQueue.isNotEmpty()) ||
+            (showChapterSwitcher && uiState.chapters.isNotEmpty()) ||
+            (showMembersPopup && isSyncPlay) ||
+            showSleepTimerPanel
+    DisposableEffect(isPanelOpen) {
+        onPanelOpenChange(isPanelOpen)
+        onDispose { onPanelOpenChange(false) }
     }
 
     val sleepTimerEndOfItemRemainingMs: () -> Long = {

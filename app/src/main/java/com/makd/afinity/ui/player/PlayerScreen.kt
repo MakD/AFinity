@@ -109,6 +109,13 @@ fun PlayerScreen(
     var dragStartVolume by remember { mutableIntStateOf(-1) }
     var dragStartBrightness by remember { mutableFloatStateOf(-1f) }
     var showVersionPicker by remember { mutableStateOf(false) }
+    var isControlsPanelOpen by remember { mutableStateOf(false) }
+    val isOverlayPanelOpen =
+        isControlsPanelOpen || (showVersionPicker && uiState.availableSources.size > 1)
+    DisposableEffect(isOverlayPanelOpen) {
+        viewModel.isOverlayPanelOpen = isOverlayPanelOpen
+        onDispose { viewModel.isOverlayPanelOpen = false }
+    }
     LocalLifecycleOwner.current
 
     LaunchedEffect(Unit) { viewModel.closePlayerEvent.collect { onBackPressed() } }
@@ -364,6 +371,7 @@ fun PlayerScreen(
                 syncPlayMembers = syncPlayState.members,
                 syncPlayGroupName = syncPlayState.groupName,
                 syncPlayMemberInfo = syncPlayMemberInfo,
+                onPanelOpenChange = { isControlsPanelOpen = it },
             )
 
             if (syncPlayState.isInGroup && syncPlayState.groupState == GroupStateType.WAITING) {

@@ -12,24 +12,30 @@ import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.drawable.Icon
+import android.media.AudioManager
 import android.os.Bundle
 import android.os.Process
 import android.util.Rational
+import android.view.InputDevice
+import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.data.models.player.PlayerEvent
@@ -48,9 +54,49 @@ class PlayerActivity : AppCompatActivity() {
 
     private val viewModel: PlayerViewModel by viewModels()
 
+    // Same activity-scoped instance PlayerScreen gets from hiltViewModel().
+    private val syncPlayViewModel: SyncPlayViewModel by viewModels()
+
     @Inject lateinit var preferencesRepository: PreferencesRepository
 
     private var wasPip: Boolean = false
+
+    private val audioManager by lazy { getSystemService(AudioManager::class.java) }
+
+    private var volumeStepBeforeMute = 1
+
+    private var playerUiHasFocus = false
+
+    private val consumedDownKeyCodes = mutableSetOf<Int>()
+
+    // Devices that pressed a letter or Space in this player. Some TV remotes report themselves
+    // as full keyboards (and have digit keys), so typingGatedKeys only become shortcuts on a
+    // device that has typed.
+    private val typingDeviceIds = mutableSetOf<Int>()
+
+    private val arrowKeys =
+        setOf(
+            KeyEvent.KEYCODE_DPAD_UP,
+            KeyEvent.KEYCODE_DPAD_DOWN,
+            KeyEvent.KEYCODE_DPAD_LEFT,
+            KeyEvent.KEYCODE_DPAD_RIGHT,
+        )
+
+    private val typingGatedKeys =
+        arrowKeys +
+            (KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9) +
+            (KeyEvent.KEYCODE_NUMPAD_0..KeyEvent.KEYCODE_NUMPAD_9) +
+            setOf(KeyEvent.KEYCODE_MOVE_HOME, KeyEvent.KEYCODE_MOVE_END)
+
+    private val repeatableVolumeKeys = setOf(KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN)
+
+    private val repeatableSeekKeys =
+        setOf(
+            KeyEvent.KEYCODE_J,
+            KeyEvent.KEYCODE_L,
+            KeyEvent.KEYCODE_DPAD_LEFT,
+            KeyEvent.KEYCODE_DPAD_RIGHT,
+        )
 
     companion object {
         private const val ACTION_PLAY_PAUSE = "com.makd.afinity.action.PLAY_PAUSE"
@@ -183,11 +229,220 @@ class PlayerActivity : AppCompatActivity() {
                         channelName = channelName,
                         liveStreamUrl = liveStreamUrl,
                         onBackPressed = { finish() },
-                        modifier = Modifier.fillMaxSize(),
+                        modifier =
+                            Modifier.fillMaxSize()
+                                .onFocusChanged { playerUiHasFocus = it.hasFocus }
+                                .focusGroup(),
                     )
                 }
             }
         }
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        // State can change between a key's DOWN and UP (e.g. Enter hides the skip button), so the
+        // UP of a consumed DOWN is consumed too rather than reaching Compose unpaired.
+        if (event.action == KeyEvent.ACTION_UP && consumedDownKeyCodes.remove(event.keyCode)) {
+            return true
+        }
+        val state = viewModel.uiState.value
+        // Only physical full keyboards get shortcuts: remotes, gamepads and D-pads keep plain
+        // focus navigation (HDMI-CEC remote keys arrive via the virtual alphabetic keyboard).
+        // viewModel.player is unset until isPlayerReady; while casting, the cast controller owns
+        // playback, the controls lock must block keyboard input like it blocks gestures, and an
+        // open in-window panel needs the keys for its own focus navigation.
+        if (
+            event.device?.keyboardType != InputDevice.KEYBOARD_TYPE_ALPHABETIC ||
+                event.device?.isVirtual != false ||
+                event.isFromSource(InputDevice.SOURCE_HDMI) ||
+                !state.isPlayerReady ||
+                state.currentItem == null ||
+                viewModel.isOverlayPanelOpen ||
+                state.isCasting ||
+                viewModel.castManager.castState.value.isConnected ||
+                state.isControlsLocked ||
+                event.isCtrlPressed ||
+                // Right Alt is AltGr, which some layouts need to type < and >.
+                (event.metaState and KeyEvent.META_ALT_LEFT_ON) != 0 ||
+                event.isMetaPressed
+        ) {
+            return super.dispatchKeyEvent(event)
+        }
+        if (
+            event.keyCode in KeyEvent.KEYCODE_A..KeyEvent.KEYCODE_Z ||
+                event.keyCode == KeyEvent.KEYCODE_SPACE
+        ) {
+            typingDeviceIds += event.deviceId
+        } else if (event.keyCode in typingGatedKeys && event.deviceId !in typingDeviceIds) {
+            return super.dispatchKeyEvent(event)
+        }
+        val shortcut = keyboardShortcut(event, state) ?: return super.dispatchKeyEvent(event)
+        // A focused control (e.g. Enter on a Tab-focused button) keeps its own key handling.
+        // Space and the arrows stay shortcuts: a lone focused control such as the skip button
+        // would otherwise swallow them.
+        if (
+            playerUiHasFocus &&
+                event.keyCode != KeyEvent.KEYCODE_SPACE &&
+                event.keyCode !in arrowKeys &&
+                super.dispatchKeyEvent(event)
+        ) {
+            return true
+        }
+        if (event.action == KeyEvent.ACTION_DOWN) {
+            consumedDownKeyCodes += event.keyCode
+            if (isShortcutRepeatAllowed(event)) shortcut()
+        }
+        return true
+    }
+
+    // Mirrors the YouTube web player's keyboard shortcuts.
+    private fun keyboardShortcut(
+        event: KeyEvent,
+        state: PlayerViewModel.PlayerUiState,
+    ): (() -> Unit)? {
+        val player = viewModel.player
+        val shift = event.isShiftPressed
+        val canSeek = !state.isLiveChannel && !state.isPlayingIntro
+        // Seek keys are swallowed rather than passed on when seeking is off, so they don't
+        // silently turn into focus navigation on live TV or intros.
+        val noOp: () -> Unit = {}
+        val playlist = viewModel.playlistState.value
+        return when (event.keyCode) {
+            KeyEvent.KEYCODE_SPACE,
+            KeyEvent.KEYCODE_K -> {
+                {
+                    viewModel.handlePlayerEvent(
+                        if (
+                            state.isPlaying ||
+                                (state.playWhenReady && player.playbackState != Player.STATE_ENDED)
+                        ) {
+                            PlayerEvent.Pause
+                        } else {
+                            PlayerEvent.Play
+                        }
+                    )
+                    viewModel.showControls()
+                }
+            }
+            KeyEvent.KEYCODE_ENTER,
+            KeyEvent.KEYCODE_NUMPAD_ENTER -> {
+                val segment = state.currentSegment
+                if (state.showSkipButton && segment != null && !state.sleepTimerExpired) {
+                    { viewModel.handlePlayerEvent(PlayerEvent.SkipSegment(segment)) }
+                } else null
+            }
+            KeyEvent.KEYCODE_J -> if (canSeek) seekBy(-10_000) else noOp
+            KeyEvent.KEYCODE_L -> if (canSeek) seekBy(10_000) else noOp
+            KeyEvent.KEYCODE_DPAD_LEFT -> if (canSeek) seekBy(-5_000) else noOp
+            KeyEvent.KEYCODE_DPAD_RIGHT -> if (canSeek) seekBy(5_000) else noOp
+            KeyEvent.KEYCODE_DPAD_UP -> {
+                { setVolumeStep(currentVolumeStep() + 1) }
+            }
+            KeyEvent.KEYCODE_DPAD_DOWN -> {
+                { setVolumeStep(currentVolumeStep() - 1) }
+            }
+            KeyEvent.KEYCODE_M -> {
+                {
+                    val step = currentVolumeStep()
+                    if (step > 0) {
+                        volumeStepBeforeMute = step
+                        setVolumeStep(0)
+                    } else {
+                        setVolumeStep(volumeStepBeforeMute)
+                    }
+                }
+            }
+            in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9,
+            in KeyEvent.KEYCODE_NUMPAD_0..KeyEvent.KEYCODE_NUMPAD_9 ->
+                if (shift || (event.keyCode >= KeyEvent.KEYCODE_NUMPAD_0 && !event.isNumLockOn)) {
+                    null
+                } else if (!canSeek) {
+                    noOp
+                } else {
+                    {
+                        val digit =
+                            if (event.keyCode <= KeyEvent.KEYCODE_9) {
+                                event.keyCode - KeyEvent.KEYCODE_0
+                            } else {
+                                event.keyCode - KeyEvent.KEYCODE_NUMPAD_0
+                            }
+                        if (player.duration > 0) seekTo(player.duration * digit / 10)
+                    }
+                }
+            KeyEvent.KEYCODE_MOVE_HOME ->
+                if (canSeek) {
+                    { seekTo(0) }
+                } else noOp
+            KeyEvent.KEYCODE_MOVE_END ->
+                if (canSeek) {
+                    { if (player.duration > 0) seekTo(player.duration) }
+                } else noOp
+            KeyEvent.KEYCODE_N ->
+                if (shift && canSeek && playlist.hasNext) {
+                    { viewModel.onNextEpisode() }
+                } else null
+            KeyEvent.KEYCODE_P ->
+                if (shift && canSeek && playlist.hasPrevious) {
+                    { viewModel.onPreviousEpisode() }
+                } else null
+            KeyEvent.KEYCODE_I ->
+                if (isPipSupported) {
+                    { viewModel.handlePlayerEvent(PlayerEvent.EnterPictureInPicture) }
+                } else null
+            // '<' and '>' sit on different physical keys across layouts (e.g. QWERTZ).
+            else ->
+                when (if (state.isSpeedingUp) null else event.unicodeChar.toChar()) {
+                    '>' -> {
+                        { changePlaybackSpeed(0.25f) }
+                    }
+                    '<' -> {
+                        { changePlaybackSpeed(-0.25f) }
+                    }
+                    else -> null
+                }
+        }
+    }
+
+    // Every repeated seek in a SyncPlay group is sent to the server and re-syncs all members.
+    private fun isShortcutRepeatAllowed(event: KeyEvent): Boolean =
+        event.repeatCount == 0 ||
+            event.keyCode in repeatableVolumeKeys ||
+            (event.keyCode in repeatableSeekKeys &&
+                !syncPlayViewModel.syncPlayState.value.isInGroup)
+
+    private fun seekBy(deltaMs: Long): () -> Unit = {
+        viewModel.handlePlayerEvent(PlayerEvent.SeekRelative(deltaMs))
+    }
+
+    private fun seekTo(positionMs: Long) {
+        viewModel.handlePlayerEvent(PlayerEvent.Seek(positionMs))
+        viewModel.showControls()
+    }
+
+    private fun changePlaybackSpeed(delta: Float) {
+        val speed = (viewModel.uiState.value.playbackSpeed + delta).coerceIn(0.25f, 2f)
+        viewModel.handlePlayerEvent(PlayerEvent.SetPlaybackSpeed(speed))
+        viewModel.showControls()
+    }
+
+    private fun currentVolumeStep(): Int = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+
+    private fun setVolumeStep(step: Int) {
+        val maxStep = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        val target = step.coerceIn(0, maxStep)
+        // SetVolume takes a percentage that VolumeManager truncates back to a stream step; pick
+        // the lowest percentage that lands on the target under that same conversion, so the
+        // indicator reads 0 when muted. With more than 100 steps not every step is reachable, so
+        // move to the nearest one in that direction.
+        val stepAt = { percent: Int -> ((percent.toFloat() / 100f) * maxStep).toInt() }
+        val percent =
+            (0..100).firstOrNull { stepAt(it) == target }
+                ?: if (target < currentVolumeStep()) {
+                    (100 downTo 0).firstOrNull { stepAt(it) <= target } ?: 0
+                } else {
+                    (0..100).firstOrNull { stepAt(it) >= target } ?: 100
+                }
+        viewModel.handlePlayerEvent(PlayerEvent.SetVolume(percent))
     }
 
     private fun hideSystemUI() {
