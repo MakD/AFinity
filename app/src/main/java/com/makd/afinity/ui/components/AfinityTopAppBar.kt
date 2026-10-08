@@ -39,8 +39,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
+import com.makd.afinity.data.manager.Connectivity
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.server.ConnectionType
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -55,8 +57,10 @@ class AfinityTopAppBarViewModel
 constructor(
     offlineModeManager: OfflineModeManager,
     private val serverRepository: ServerRepository,
+    private val preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
     val connectionType = offlineModeManager.connectionType
+    val connectivity = offlineModeManager.connectivity
 
     private val _isRetrying = MutableStateFlow(false)
     val isRetrying: StateFlow<Boolean> = _isRetrying.asStateFlow()
@@ -66,6 +70,19 @@ constructor(
         viewModelScope.launch {
             _isRetrying.value = true
             try {
+                serverRepository.forceReconnect()
+            } finally {
+                _isRetrying.value = false
+            }
+        }
+    }
+
+    fun goOnline() {
+        if (_isRetrying.value) return
+        viewModelScope.launch {
+            _isRetrying.value = true
+            try {
+                preferencesRepository.setOfflineMode(false)
                 serverRepository.forceReconnect()
             } finally {
                 _isRetrying.value = false
@@ -92,6 +109,8 @@ fun AfinityTopAppBar(
     isFetchingRandom: Boolean = false,
 ) {
     val connectionType by viewModel.connectionType.collectAsStateWithLifecycle()
+    val connectivity by viewModel.connectivity.collectAsStateWithLifecycle()
+    val isForcedOffline = connectivity == Connectivity.ForcedOffline
     val isRetrying by viewModel.isRetrying.collectAsStateWithLifecycle()
     val surfaceColor = MaterialTheme.colorScheme.surface
 
@@ -134,7 +153,8 @@ fun AfinityTopAppBar(
                             .clip(RoundedCornerShape(24.dp))
                             .background(Color.Black.copy(alpha = 0.3f))
                             .clickable(enabled = !isRetrying, role = Role.Button) {
-                                viewModel.retryConnection()
+                                if (isForcedOffline) viewModel.goOnline()
+                                else viewModel.retryConnection()
                             }
                             .padding(horizontal = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -148,7 +168,11 @@ fun AfinityTopAppBar(
                     } else {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_cloud_off),
-                            contentDescription = stringResource(R.string.cd_retry_connection),
+                            contentDescription =
+                                stringResource(
+                                    if (isForcedOffline) R.string.cd_go_online
+                                    else R.string.cd_retry_connection
+                                ),
                             tint = Color.White,
                             modifier = Modifier.size(20.dp),
                         )
@@ -157,8 +181,11 @@ fun AfinityTopAppBar(
                     Text(
                         text =
                             stringResource(
-                                if (isRetrying) R.string.connection_retrying
-                                else R.string.connection_retry
+                                when {
+                                    isRetrying -> R.string.connection_retrying
+                                    isForcedOffline -> R.string.connection_go_online
+                                    else -> R.string.connection_retry
+                                }
                             ),
                         style = MaterialTheme.typography.labelLarge,
                         color = Color.White,

@@ -47,6 +47,8 @@
     <string name="cd_retry_connection">Retry connection</string>
     <string name="connection_retry">Retry</string>
     <string name="connection_retrying">Connecting…</string>
+    <string name="cd_go_online">Turn off offline mode</string>
+    <string name="connection_go_online">Go online</string>
 
     <!--HomeScreen-->
     <string name="home_error_title">Something went wrong</string>
