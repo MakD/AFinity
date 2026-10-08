@@ -53,8 +53,10 @@ interface LiveTvRepository {
 
     suspend fun getChannelPlaybackInfo(
         channelId: UUID,
-        forceDirectPlay: Boolean = true,
+        allowDirectPlay: Boolean = true,
     ): LiveTvPlaybackInfo?
+
+    suspend fun closeLiveStream(liveStreamId: String)
 
     suspend fun getChannelStreamUrl(channelId: UUID): String?
 

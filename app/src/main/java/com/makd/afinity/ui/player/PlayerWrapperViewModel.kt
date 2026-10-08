@@ -63,11 +63,20 @@ constructor(
         loadLiveChannel(channelId, channelName)
     }
 
+    fun retuneLiveChannel() {
+        val (channelId, channelName) = liveChannelRequest ?: return
+        if (_isLoading.value) return
+        Timber.d("Re-tuning live channel $channelId")
+        loadLiveChannel(channelId, channelName)
+    }
+
     fun loadLiveChannel(channelId: UUID, channelName: String) {
         viewModelScope.launch {
-            if (liveChannelRequest?.first != channelId) {
+            val isSameChannel = liveChannelRequest?.first == channelId
+            if (!isSameChannel) {
                 liveDirectPlayFailed = false
             }
+            val staleLiveStreamId = _livePlaybackInfo.value?.liveStreamId.takeIf { isSameChannel }
             liveChannelRequest = channelId to channelName
             _isLoading.value = true
             _streamError.value = null
@@ -85,6 +94,11 @@ constructor(
             _item.value = placeholderChannel
 
             try {
+                if (staleLiveStreamId != null) {
+                    _livePlaybackInfo.value = null
+                    liveTvRepository.closeLiveStream(staleLiveStreamId)
+                }
+
                 val channelDeferred = viewModelScope.async {
                     try {
                         liveTvRepository.getChannel(channelId)
@@ -99,7 +113,7 @@ constructor(
                 val playbackInfoDeferred = viewModelScope.async {
                     liveTvRepository.getChannelPlaybackInfo(
                         channelId = channelId,
-                        forceDirectPlay = !liveDirectPlayFailed,
+                        allowDirectPlay = !liveDirectPlayFailed,
                     )
                 }
 

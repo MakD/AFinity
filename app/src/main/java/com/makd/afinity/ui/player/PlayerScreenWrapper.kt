@@ -19,7 +19,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.ui.player.components.BufferingIndicator
+import com.makd.afinity.ui.player.components.ErrorIndicator
 import java.util.UUID
+import kotlinx.coroutines.launch
 
 @androidx.media3.common.util.UnstableApi
 @Composable
@@ -58,9 +60,12 @@ fun PlayerScreenWrapper(
     val playerViewModel: PlayerViewModel = hiltViewModel()
     LaunchedEffect(isLiveChannel) {
         if (isLiveChannel) {
-            playerViewModel.liveStreamFailedEvent.collect {
-                viewModel.retryLiveChannelWithoutDirectPlay()
+            launch {
+                playerViewModel.liveStreamFailedEvent.collect {
+                    viewModel.retryLiveChannelWithoutDirectPlay()
+                }
             }
+            launch { playerViewModel.liveRetuneEvent.collect { viewModel.retuneLiveChannel() } }
         }
     }
 
@@ -97,9 +102,11 @@ fun PlayerScreenWrapper(
                 modifier = modifier.fillMaxSize().background(Color.Black),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    text = streamError ?: stringResource(R.string.player_error_stream_load),
-                    color = Color.White,
+                ErrorIndicator(
+                    isVisible = true,
+                    errorMessage = streamError ?: stringResource(R.string.player_error_stream_load),
+                    onRetryClick = viewModel::retuneLiveChannel,
+                    onCloseClick = onBackPressed,
                 )
             }
         }

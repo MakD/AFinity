@@ -403,6 +403,7 @@ class MPVPlayer(
     private var playbackParameters: PlaybackParameters = PlaybackParameters.DEFAULT
 
     private var isPlayerReady: Boolean = false
+    private var playerError: PlaybackException? = null
     private var isSeekable: Boolean = false
     private var currentMediaItemIndex: Int = 0
     private var currentPositionMs: Long? = null
@@ -514,7 +515,10 @@ class MPVPlayer(
                 }
 
                 "playlist-current-pos" -> {
-                    if (value < 0) return@post
+                    if (value < 0) {
+                        reportLoadFailureIfNeeded()
+                        return@post
+                    }
                     currentMediaItemIndex = value.toInt()
                     val newMediaItem = currentMediaItem
                     if (oldMediaItem?.mediaId != newMediaItem?.mediaId) {
@@ -580,6 +584,10 @@ class MPVPlayer(
                     }
                 }
 
+                MPVLib.MpvEvent.MPV_EVENT_END_FILE -> {
+                    reportLoadFailureIfNeeded()
+                }
+
                 MPVLib.MpvEvent.MPV_EVENT_SEEK -> {
                     setPlayerStateAndNotifyIfChanged(playbackState = STATE_BUFFERING)
                 }
@@ -601,6 +609,24 @@ class MPVPlayer(
                 }
             }
         }
+    }
+
+    private fun reportLoadFailureIfNeeded() {
+        if (isPlayerReady || playbackState != STATE_BUFFERING) return
+        val playlistCount = mpv.getPropertyInt("playlist-count") ?: return
+        val playlistPosition = mpv.getPropertyInt("playlist-current-pos") ?: return
+        if (playlistCount <= 0 || playlistPosition >= 0) return
+
+        Timber.e("MPV could not load ${currentMediaItem?.mediaId}")
+        val error =
+            PlaybackException(
+                "MPV failed to load media",
+                null,
+                PlaybackException.ERROR_CODE_IO_UNSPECIFIED,
+            )
+        playerError = error
+        setPlayerStateAndNotifyIfChanged(playbackState = STATE_IDLE)
+        listeners.sendEvent(EVENT_PLAYER_ERROR) { listener -> listener.onPlayerError(error) }
     }
 
     private fun setPlayerStateAndNotifyIfChanged(
@@ -796,7 +822,7 @@ class MPVPlayer(
 
     override fun getPlaybackSuppressionReason(): Int = PLAYBACK_SUPPRESSION_REASON_NONE
 
-    override fun getPlayerError(): PlaybackException? = null
+    override fun getPlayerError(): PlaybackException? = playerError
 
     override fun setPlayWhenReady(playWhenReady: Boolean) {
         if (currentPlayWhenReady != playWhenReady) {
@@ -1098,6 +1124,7 @@ class MPVPlayer(
 
     private fun resetInternalState() {
         isPlayerReady = false
+        playerError = null
         isSeekable = false
         playbackState = STATE_IDLE
         currentPlayWhenReady = false

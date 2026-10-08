@@ -193,6 +193,7 @@ constructor(
     private var autoRetryJob: Job? = null
     private var currentSessionId: String? = null
     private var currentLivePlaybackInfo: LiveTvPlaybackInfo? = null
+    private var liveFallbackRequested = false
     private var currentStreamDecision: StreamDecision? = null
     private var sessionVideoQuality: VideoQuality? = null
     private var forceTranscodeFallback = false
@@ -209,6 +210,9 @@ constructor(
 
     private val _liveStreamFailedEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val liveStreamFailedEvent: SharedFlow<Unit> = _liveStreamFailedEvent.asSharedFlow()
+
+    private val _liveRetuneEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val liveRetuneEvent: SharedFlow<Unit> = _liveRetuneEvent.asSharedFlow()
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
@@ -929,7 +933,13 @@ constructor(
 
     override fun onPlayerError(error: PlaybackException) {
         Timber.e(error, "Player error")
-        if (currentLivePlaybackInfo?.playMethod == PlayMethod.DIRECT_PLAY.serialName) {
+        val livePlayMethod = currentLivePlaybackInfo?.playMethod
+        if (
+            livePlayMethod != null &&
+                livePlayMethod != PlayMethod.TRANSCODE.serialName &&
+                !liveFallbackRequested
+        ) {
+            liveFallbackRequested = true
             _liveStreamFailedEvent.tryEmit(Unit)
             return
         }
@@ -995,14 +1005,7 @@ constructor(
             retryResumesCurrentItem = false
             when {
                 canResume -> reloadAtCurrentPosition()
-                live != null ->
-                    loadLiveChannel(
-                        live.channelId,
-                        live.channelName,
-                        live.streamUrl,
-                        live.playbackInfo,
-                    )
-
+                live != null -> _liveRetuneEvent.tryEmit(Unit)
                 attempt == null -> updateUiState { it.copy(isLoading = false) }
                 attempt.item.sources.isEmpty() -> playQueueItem(attempt.item)
                 else ->
@@ -2583,6 +2586,9 @@ constructor(
         playbackInfo: LiveTvPlaybackInfo,
     ) {
         stopAudiobookshelfIfPlaying()
+        if (lastLiveAttempt?.channelId != channelId) {
+            liveFallbackRequested = false
+        }
         lastLiveAttempt =
             PlayerEvent.LoadLiveChannel(channelId, channelName, streamUrl, playbackInfo)
         lastLoadAttempt = null
