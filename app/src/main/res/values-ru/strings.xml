@@ -2372,4 +2372,19 @@
     <string name="admin_image_file_unreadable">Не удалось прочесть выбранный файл.</string>
     <string name="player_error_connection">Не удалось связаться с сервером. Проверьте ваше соединение и попробуйте еще раз.</string>
     <string name="pref_about_app">Об AFinity</string>
+    <string name="cd_go_online">Выключить автономный режим</string>
+    <string name="connection_go_online">Выйти в сеть</string>
+    <string name="abs_latest_episode_label">Последний эпизод</string>
+    <string name="abs_play_latest">Воспроизвести последний</string>
+    <string name="abs_latest_short">Последний</string>
+    <string name="abs_last_played_label">последнее воспроизведение</string>
+    <plurals name="abs_listening_since_fmt">
+        <item quantity="one">Начато %2$s · %1$d день прослушивания</item>
+        <item quantity="few">Начато %2$s · %1$d дня прослушивания</item>
+        <item quantity="many">Начато %2$s · %1$d дней прослушивания</item>
+        <item quantity="other">Начато %2$s · %1$d дней прослушивания</item>
+    </plurals>
+    <string name="abs_next_unplayed_label">Следующий невоспроизведенный</string>
+    <string name="season_specials">Спецматериалы</string>
+    <string name="admin_identify_search_without_year">Поиск без года</string>
 </resources>
