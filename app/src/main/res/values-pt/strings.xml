@@ -571,4 +571,27 @@
     <string name="pref_cast_hevc_title">Ativar HEVC</string>
     <string name="pref_cast_hevc_description">Ativar para Chromecast Ultra/Google TV</string>
     <string name="pref_cast_max_bitrate_title">Taxa máxima de bits</string>
+    <string name="discovery_found_on_network">Encontrado na sua rede</string>
+    <string name="cd_local_connection">Conexão local</string>
+    <string name="cd_remote_connection">Conexão remota</string>
+    <string name="connection_retry">Tentar novamente</string>
+    <string name="connection_retrying">A conectar…</string>
+    <string name="cd_go_online">Desligar o modo offline</string>
+    <string name="connection_go_online">Ir online</string>
+    <string name="cd_scroll_to_top">Rolar para o topo</string>
+    <string name="cd_open_navigation_menu">Abrir menu de navegação</string>
+    <string name="cd_switch_account">Trocar conta</string>
+    <string name="connection_label_local">Local</string>
+    <string name="connection_label_vpn">VPN</string>
+    <string name="connection_label_remote">Remoto</string>
+    <string name="connection_label_offline">Offline</string>
+    <string name="drawer_admin_badge">Admin</string>
+    <string name="home_because_you_liked">Porque gostou de %1$s</string>
+    <string name="home_directed_by_from_watched">Dirigido por %1$s porque viu %2$s</string>
+    <string name="home_written_by_from_watched">Escrito por %1$s porque viu %2$s</string>
+    <string name="home_watch_again">Ver outra vez</string>
+    <string name="custom_sections_always_caption">As suas bibliotecas e o que estava a ver. Esses não podem ser desligados.</string>
+    <string name="custom_sections_always_on">Sempre ligado</string>
+    <string name="custom_sections_group_rows">Linhas embutidas</string>
+    <string name="custom_sections_rows_caption">Mostrado no topo, nesta ordem. Desligue o que não usar.</string>
 </resources>
