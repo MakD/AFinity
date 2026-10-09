@@ -22,7 +22,6 @@ import com.makd.afinity.data.models.music.AfinityPlaylistContents
 import com.makd.afinity.data.models.omdb.OmdbApiResult
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.StateFlow
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -33,9 +32,11 @@ interface MediaRepository {
     fun getBaseUrl(): String
 
     val libraries: Flow<List<AfinityCollection>>
-    val hasLiveTvLibrary: StateFlow<Boolean?>
+    val hasLiveTvLibrary: Flow<Boolean?>
     val continueWatching: Flow<List<AfinityItem>>
     val nextUp: Flow<List<AfinityEpisode>>
+
+    suspend fun seedHasLiveTvLibrary()
 
     fun getNextUpFlow(): Flow<List<AfinityEpisode>>
 

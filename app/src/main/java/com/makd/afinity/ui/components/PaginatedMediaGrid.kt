@@ -23,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.itemKey
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
@@ -44,7 +45,7 @@ fun PaginatedMediaGrid(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = modifier,
     ) {
-        items(count = items.itemCount, key = { index -> items[index]?.id ?: index }) { index ->
+        items(count = items.itemCount, key = items.itemKey { it.id }) { index ->
             items[index]?.let { item -> itemContent(item) }
         }
 

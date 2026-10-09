@@ -6,6 +6,7 @@ import com.makd.afinity.data.models.livetv.ChannelType
 import com.makd.afinity.data.models.livetv.LiveTvPlaybackInfo
 import java.time.LocalDateTime
 import java.util.UUID
+import kotlinx.coroutines.flow.Flow
 
 interface LiveTvRepository {
 
@@ -61,6 +62,8 @@ interface LiveTvRepository {
     suspend fun getChannelStreamUrl(channelId: UUID): String?
 
     suspend fun toggleChannelFavorite(channelId: UUID): Boolean
+
+    val hasLiveTvAccessFlow: Flow<Boolean>
 
     suspend fun hasLiveTvAccess(): Boolean
 }

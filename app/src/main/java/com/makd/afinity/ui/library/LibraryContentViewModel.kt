@@ -10,6 +10,7 @@ import androidx.paging.cachedIn
 import androidx.paging.filter
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
+import com.makd.afinity.data.manager.AdminChangeKind
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.resolveChangedItems
@@ -34,6 +35,7 @@ import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.data.store.withUserDataOverlay
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
+import com.makd.afinity.util.ItemIds
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
@@ -46,6 +48,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -209,9 +212,31 @@ constructor(
         return baseFlow
             .cachedIn(viewModelScope)
             .withUserDataOverlay(appDataRepository.userDataOverlay, itemStore)
-            .map { pagingData ->
-                pagingData.filter { item -> matchesStatusFilters(item, currentFilters) }
+            .combine(removedItemIds) { pagingData, removed ->
+                pagingData.filter { item ->
+                    item.id !in removed && matchesStatusFilters(item, currentFilters)
+                }
             }
+    }
+
+    private fun refreshItems() {
+        currentLibraryPagingSource?.invalidate() ?: loadItems()
+    }
+
+    private fun removesDeletedItemsLocally(): Boolean = libraryType != CollectionType.BoxSets
+
+    private fun String.toItemUuid(): UUID? =
+        ItemIds.canonical(this)?.let { canonical ->
+            try {
+                UUID.fromString(canonical)
+            } catch (_: IllegalArgumentException) {
+                null
+            }
+        }
+
+    private fun markRemoved(rawIds: List<String>) {
+        val ids = rawIds.mapNotNull { it.toItemUuid() }
+        if (ids.isNotEmpty()) removedItemIds.update { it + ids }
     }
 
     private fun matchesStatusFilters(item: AfinityItem, filters: LibraryFilters): Boolean {
@@ -229,6 +254,8 @@ constructor(
 
     private val _pagingData = MutableStateFlow<Flow<PagingData<AfinityItem>>>(emptyFlow())
     val pagingData: StateFlow<Flow<PagingData<AfinityItem>>> = _pagingData.asStateFlow()
+
+    private val removedItemIds = MutableStateFlow<Set<UUID>>(emptySet())
 
     private var currentSortBy = SortBy.NAME
 
@@ -277,15 +304,36 @@ constructor(
             }
         }
         viewModelScope.launch {
-            adminChangeBroadcaster.itemChanged.collect {
-                currentLibraryPagingSource?.invalidate() ?: loadItems()
+            adminChangeBroadcaster.changes.collect { change ->
+                if (change.kind != AdminChangeKind.DELETED) refreshItems()
+            }
+        }
+
+        viewModelScope.launch {
+            adminChangeBroadcaster.itemDeleted.collect { event ->
+                markRemoved(listOf(event.itemId))
+                val isMovieOrSeries = event.isMovie != null
+                if (!isMovieOrSeries || !removesDeletedItemsLocally()) refreshItems()
+            }
+        }
+
+        viewModelScope.launch { mediaChangeManager.itemsRemoved.collect { markRemoved(it) } }
+
+        viewModelScope.launch {
+            mediaChangeManager.itemsAdded.collect { rawIds ->
+                val ids = rawIds.mapNotNull { it.toItemUuid() }.toSet()
+                if (ids.isNotEmpty()) removedItemIds.update { it - ids }
             }
         }
 
         viewModelScope.launch {
             mediaChangeManager.libraryContentChanges.collect { event ->
+                if (event.removalOnly && removesDeletedItemsLocally()) {
+                    Timber.d("Library content changed (${event.reason}) — removed in $libraryName")
+                    return@collect
+                }
                 Timber.d("Library content changed (${event.reason}) — refreshing $libraryName")
-                currentLibraryPagingSource?.invalidate() ?: loadItems()
+                refreshItems()
             }
         }
 

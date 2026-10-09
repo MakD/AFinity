@@ -306,7 +306,10 @@ constructor(
             if (removed.isNotEmpty()) mediaChangeManager.notifyItemsRemoved(removed)
             if (added.isNotEmpty()) mediaChangeManager.notifyItemsAdded(added)
             mediaRefreshBus.emit(RefreshTrigger.LIBRARY_CHANGED)
-            mediaChangeManager.notifyLibraryContentChanged("library changed websocket event")
+            mediaChangeManager.notifyLibraryContentChanged(
+                "library changed websocket event",
+                removalOnly = added.isEmpty(),
+            )
             return
         }
 

@@ -229,6 +229,10 @@ interface PreferencesRepository {
 
     suspend fun setNavWatchlistCount(serverId: String, userId: String, count: Int)
 
+    suspend fun getNavHasLiveTv(serverId: String, userId: String): Boolean?
+
+    suspend fun setNavHasLiveTv(serverId: String, userId: String, hasLiveTv: Boolean)
+
     suspend fun setVideoCacheSizeMb(sizeMb: Int)
 
     suspend fun getVideoCacheSizeMb(): Int

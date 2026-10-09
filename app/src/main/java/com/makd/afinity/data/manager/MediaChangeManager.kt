@@ -66,8 +66,8 @@ constructor(
         scope.launch { _itemsAdded.emit(itemIds) }
     }
 
-    fun notifyLibraryContentChanged(reason: String) {
-        scope.launch { _libraryContentChanges.emit(LibraryContentChangeEvent(reason)) }
+    fun notifyLibraryContentChanged(reason: String, removalOnly: Boolean = false) {
+        scope.launch { _libraryContentChanges.emit(LibraryContentChangeEvent(reason, removalOnly)) }
     }
 
     fun notifyLibraryMetadataChanged(reason: String) {
@@ -416,4 +416,4 @@ enum class MediaChangeSource {
     WEBSOCKET,
 }
 
-data class LibraryContentChangeEvent(val reason: String)
+data class LibraryContentChangeEvent(val reason: String, val removalOnly: Boolean = false)

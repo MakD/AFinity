@@ -45,6 +45,7 @@ import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinApiInvoker
 import com.makd.afinity.data.repository.NoActiveSessionException
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.di.ApplicationScope
@@ -61,8 +62,9 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -109,6 +111,7 @@ constructor(
     private val mdbListApiService: MdbListApiService,
     private val omdbApiService: OmdbApiService,
     private val securePreferencesRepository: SecurePreferencesRepository,
+    private val preferencesRepository: PreferencesRepository,
     private val databaseRepository: DatabaseRepository,
     private val storageLocationProvider: StorageLocationProvider,
     private val apiInvoker: JellyfinApiInvoker,
@@ -328,8 +331,50 @@ constructor(
     private val _libraries = MutableStateFlow<List<AfinityCollection>>(emptyList())
     override val libraries: Flow<List<AfinityCollection>> = _libraries.asStateFlow()
 
-    private val _hasLiveTvLibrary = MutableStateFlow<Boolean?>(null)
-    override val hasLiveTvLibrary: StateFlow<Boolean?> = _hasLiveTvLibrary.asStateFlow()
+    private val _liveTvLibrary = MutableStateFlow<Pair<String, Boolean>?>(null)
+    override val hasLiveTvLibrary: Flow<Boolean?> =
+        combine(sessionManager.currentSession, _liveTvLibrary) { session, known ->
+                val sessionKey = session?.let { "${it.serverId}_${it.userId}" }
+                known?.takeIf { it.first == sessionKey }?.second
+            }
+            .distinctUntilChanged()
+
+    override suspend fun seedHasLiveTvLibrary() {
+        val session = sessionManager.currentSession.value ?: return
+        if (session.serverId.isBlank()) return
+        val sessionKey = "${session.serverId}_${session.userId}"
+        if (_liveTvLibrary.value?.first == sessionKey) return
+        try {
+            val cached =
+                preferencesRepository.getNavHasLiveTv(session.serverId, session.userId.toString())
+                    ?: return
+            _liveTvLibrary.update { known ->
+                if (known?.first == sessionKey) known else sessionKey to cached
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to read persisted Live TV availability")
+        }
+    }
+
+    private fun rememberHasLiveTvLibrary(serverId: String, userId: UUID, hasLiveTv: Boolean) {
+        val sessionKey = "${serverId}_$userId"
+        if (currentSessionKey() != sessionKey) return
+        val known = sessionKey to hasLiveTv
+        if (_liveTvLibrary.value == known) return
+        _liveTvLibrary.value = known
+        if (serverId.isBlank()) return
+        scope.launch {
+            try {
+                preferencesRepository.setNavHasLiveTv(serverId, userId.toString(), hasLiveTv)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to persist Live TV availability")
+            }
+        }
+    }
 
     override fun patchItemImages(updatedItem: AfinityItem) {
         _continueWatching.update { it.withPatchedImages(updatedItem) }
@@ -518,10 +563,14 @@ constructor(
 
     private suspend fun fetchLibraries(): Result<List<AfinityCollection>> =
         apiInvoker.apiResult { apiClient, userId ->
+            val sessionAtStart = sessionManager.currentSession.value
             val views = UserViewApi(apiClient).getUserViews(userId = userId).content.items
 
-            _hasLiveTvLibrary.value = views.any {
+            val hasLiveTv = views.any {
                 it.collectionType == org.jellyfin.sdk.model.api.CollectionType.LIVETV
+            }
+            if (sessionAtStart != null && sessionAtStart.userId == userId) {
+                rememberHasLiveTvLibrary(sessionAtStart.serverId, userId, hasLiveTv)
             }
 
             val libraries =

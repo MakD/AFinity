@@ -24,9 +24,7 @@ import com.makd.afinity.player.music.MusicPlaybackManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -59,8 +57,12 @@ constructor(
 
     val unsupportedServerVersion = serverRepository.unsupportedServerVersion
 
-    private val _hasLiveTvAccess = MutableStateFlow(true)
-    val hasLiveTvAccess = _hasLiveTvAccess.asStateFlow()
+    val hasLiveTvAccess =
+        liveTvRepository.hasLiveTvAccessFlow.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false,
+        )
 
     val pendingNavigationRoute = pendingNavigationManager.pendingRoute
 
@@ -177,17 +179,6 @@ constructor(
     init {
         observeAuthAndLoadData()
         refreshServerInfo()
-        observeDataLoaded()
-    }
-
-    private fun observeDataLoaded() {
-        viewModelScope.launch {
-            appDataRepository.isInitialDataLoaded.collect { isLoaded ->
-                if (isLoaded) {
-                    checkLiveTvAccess()
-                }
-            }
-        }
     }
 
     private fun observeAuthAndLoadData() {
@@ -203,28 +194,10 @@ constructor(
             authRepository.isAuthenticated.collect { isAuthenticated ->
                 if (isAuthenticated && !previousAuthState) {
                     Timber.d("Fresh login detected")
-                    _hasLiveTvAccess.value = false
                     loadAppData(skipOfflineCheck = true)
-                } else if (!isAuthenticated) {
-                    _hasLiveTvAccess.value = false
                 }
 
                 previousAuthState = isAuthenticated
-            }
-        }
-    }
-
-    private fun checkLiveTvAccess() {
-        viewModelScope.launch {
-            try {
-                val hasAccess = liveTvRepository.hasLiveTvAccess()
-                Timber.d("Live TV access check result: $hasAccess")
-                _hasLiveTvAccess.value = hasAccess
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to check Live TV access")
-                _hasLiveTvAccess.value = true
             }
         }
     }

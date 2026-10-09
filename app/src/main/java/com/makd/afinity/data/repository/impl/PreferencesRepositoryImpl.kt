@@ -1186,6 +1186,16 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         dataStore.edit { it[navWatchlistKey(serverId, userId)] = count }
     }
 
+    private fun navHasLiveTvKey(serverId: String, userId: String) =
+        booleanPreferencesKey("nav_has_live_tv_${serverId}_$userId")
+
+    override suspend fun getNavHasLiveTv(serverId: String, userId: String): Boolean? =
+        dataStore.data.first()[navHasLiveTvKey(serverId, userId)]
+
+    override suspend fun setNavHasLiveTv(serverId: String, userId: String, hasLiveTv: Boolean) {
+        dataStore.edit { it[navHasLiveTvKey(serverId, userId)] = hasLiveTv }
+    }
+
     override suspend fun setVideoCacheSizeMb(sizeMb: Int) {
         dataStore.edit { preferences -> preferences[Keys.VIDEO_CACHE_SIZE_MB] = sizeMb }
     }

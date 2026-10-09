@@ -287,7 +287,10 @@ constructor(
                 }
 
                 if (notifyLibraryChange) {
-                    mediaChangeManager.notifyLibraryContentChanged("item_deleted")
+                    mediaChangeManager.notifyLibraryContentChanged(
+                        "item_deleted",
+                        removalOnly = true,
+                    )
                 }
 
                 reloadHomeData()
@@ -487,6 +490,7 @@ constructor(
 
         if (hasSession) {
             seedNavCounts(session.serverId, session.userId.toString())
+            mediaRepository.seedHasLiveTvLibrary()
             val currentBaseUrl = mediaRepository.getBaseUrl()
             val cachedMovies =
                 homeCacheRepository.getLatestMovies("latest_movies_$cacheKey", currentBaseUrl)

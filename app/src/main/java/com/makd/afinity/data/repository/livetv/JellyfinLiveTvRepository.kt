@@ -25,6 +25,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -504,12 +507,19 @@ constructor(
             true
         }
 
+    override val hasLiveTvAccessFlow: Flow<Boolean> =
+        sessionManager.currentSession
+            .combine(mediaRepository.hasLiveTvLibrary) { session, hasLibrary ->
+                session != null && session.canAccessLiveTv != false && hasLibrary == true
+            }
+            .distinctUntilChanged()
+
     override suspend fun hasLiveTvAccess(): Boolean {
         if (sessionManager.currentSession.value?.canAccessLiveTv == false) return false
-        mediaRepository.hasLiveTvLibrary.value?.let {
+        mediaRepository.hasLiveTvLibrary.first()?.let {
             return it
         }
         mediaRepository.getLibraries()
-        return mediaRepository.hasLiveTvLibrary.value ?: false
+        return mediaRepository.hasLiveTvLibrary.first() ?: false
     }
 }
