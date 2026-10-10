@@ -760,7 +760,7 @@ private fun SearchHomeContent(
         )
 
         LazyVerticalGrid(
-            columns = CardDimensions.gridCells(widthSizeClass),
+            columns = CardDimensions.tileGridCells(widthSizeClass),
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),

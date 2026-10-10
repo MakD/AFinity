@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -19,16 +20,50 @@ val LocalCardContainerWidthPx = compositionLocalOf { -1 }
 
 val LocalCardRowGutter = compositionLocalOf { CardDimensions.RowGutter }
 
-private const val MIN_SHIFTED_GRID_COLUMNS = 2
+private const val FITTED_COUNT_BIAS = 0.75f
+private const val GRID_CONTAINER_FRACTION = 0.7f
+private const val UNCAPPED_COUNT = Int.MAX_VALUE
+
+private fun fittedCardCount(
+    rowPx: Int,
+    gapPx: Int,
+    basePx: Int,
+    countDelta: Int,
+    maxBaseCount: Int,
+): Int {
+    val baseCount = floor((rowPx + gapPx).toFloat() / (basePx + gapPx) + FITTED_COUNT_BIAS).toInt()
+    return baseCount.coerceIn(1, maxBaseCount) + countDelta
+}
+
+private fun gridCellSizes(availableSize: Int, spacing: Int, count: Int): List<Int> {
+    val cellsSize = availableSize - spacing * (count - 1)
+    val cellSize = cellsSize / count
+    val remainder = cellsSize % count
+    return List(count) { index -> cellSize + if (index < remainder) 1 else 0 }
+}
 
 private data class ShiftedAdaptiveCells(val minSize: Dp, val columnDelta: Int) : GridCells {
     override fun Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): List<Int> {
         val baseCount = maxOf((availableSize + spacing) / (minSize.roundToPx() + spacing), 1)
-        val count = maxOf(baseCount + columnDelta, minOf(baseCount, MIN_SHIFTED_GRID_COLUMNS))
-        val cellsSize = availableSize - spacing * (count - 1)
-        val cellSize = cellsSize / count
-        val remainder = cellsSize % count
-        return List(count) { index -> cellSize + if (index < remainder) 1 else 0 }
+        return gridCellSizes(availableSize, spacing, baseCount + columnDelta)
+    }
+}
+
+private data class FittedCardCells(
+    val base: Dp,
+    val countDelta: Int,
+    val maxBaseCount: Int,
+    val containerPx: Int,
+) : GridCells {
+    override fun Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): List<Int> {
+        val spansContainer =
+            availableSize <= containerPx && availableSize >= containerPx * GRID_CONTAINER_FRACTION
+        val rowPx =
+            if (spansContainer) containerPx - CardDimensions.RowGutter.roundToPx() * 2
+            else availableSize
+        val gapPx = if (spansContainer) CardDimensions.RowGap.roundToPx() else spacing
+        val count = fittedCardCount(rowPx, gapPx, base.roundToPx(), countDelta, maxBaseCount)
+        return gridCellSizes(availableSize, spacing, count)
     }
 }
 
@@ -42,10 +77,13 @@ object CardDimensions {
 
     private const val LANDSCAPE_HEIGHT_FRACTION = 0.4f
     private const val SQUARE_CAROUSEL_WIDTH_FRACTION = 0.48f
-    private const val ROW_COUNT_BIAS = 0.75f
     private const val MAX_LANDSCAPE_ROW_COUNT_DELTA = 1
     private const val MAX_TILE_ROW_COUNT_DELTA = 1
+    private const val MAX_COMPACT_PORTRAIT_COUNT = 3
+    private const val MAX_COMPACT_LANDSCAPE_COUNT = 2
     private const val SPLIT_PANE_FRACTION = 0.5f
+
+    private val CompactWindowMaxWidth = 600.dp
 
     val RowGutter = 14.dp
     val RowGap = 12.dp
@@ -140,9 +178,31 @@ object CardDimensions {
 
     @Composable
     @ReadOnlyComposable
+    private fun compactCountCap(cap: Int): Int {
+        val windowWidth =
+            with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
+        return if (windowWidth < CompactWindowMaxWidth) cap else UNCAPPED_COUNT
+    }
+
+    @Composable
+    @ReadOnlyComposable
+    private fun portraitCountCap(): Int = compactCountCap(MAX_COMPACT_PORTRAIT_COUNT)
+
+    @Composable
+    @ReadOnlyComposable
+    private fun landscapeCountCap(): Int = compactCountCap(MAX_COMPACT_LANDSCAPE_COUNT)
+
+    @Composable
+    @ReadOnlyComposable
+    private fun fittedGridCells(base: Dp, countDelta: Int, maxBaseCount: Int): GridCells =
+        FittedCardCells(base, countDelta, maxBaseCount, LocalCardContainerWidthPx.current)
+
+    @Composable
+    @ReadOnlyComposable
     private fun fittedRowWidth(
         base: Dp,
         countDelta: Int,
+        maxBaseCount: Int,
         gutter: Dp? = null,
         gap: Dp = RowGap,
         reserved: Dp = 0.dp,
@@ -156,35 +216,30 @@ object CardDimensions {
             val gapPx = gap.roundToPx()
             val basePx = base.roundToPx()
             if (rowPx <= 0 || basePx <= 0) return@with base.cardScaled()
-            val baseCount =
-                floor((rowPx + gapPx).toFloat() / (basePx + gapPx) + ROW_COUNT_BIAS).toInt()
-            val enlarge = countDelta < 0
-            val count = (if (enlarge) baseCount else baseCount + countDelta).coerceAtLeast(1)
-            val fittedPx = (rowPx - gapPx * (count - 1)) / count
-            val widthPx =
-                if (enlarge) {
-                    (fittedPx * LocalCardSize.current.scale).toInt().coerceAtMost(rowPx)
-                } else {
-                    fittedPx
-                }
-            widthPx.coerceAtLeast(1).toDp()
+            val count = fittedCardCount(rowPx, gapPx, basePx, countDelta, maxBaseCount)
+            ((rowPx - gapPx * (count - 1)) / count).coerceAtLeast(1).toDp()
         }
     }
 
     val WindowWidthSizeClass.portraitWidth: Dp
         @Composable
         @ReadOnlyComposable
-        get() = fittedRowWidth(basePortraitWidth(this), rowCountDelta())
+        get() = fittedRowWidth(basePortraitWidth(this), rowCountDelta(), portraitCountCap())
 
     val WindowWidthSizeClass.landscapeWidth: Dp
         @Composable
         @ReadOnlyComposable
-        get() = fittedRowWidth(baseLandscapeWidth(this), landscapeRowCountDelta())
+        get() =
+            fittedRowWidth(
+                baseLandscapeWidth(this),
+                landscapeRowCountDelta(),
+                landscapeCountCap(),
+            )
 
     val WindowWidthSizeClass.squareWidth: Dp
         @Composable
         @ReadOnlyComposable
-        get() = fittedRowWidth(baseSquareWidth(this), rowCountDelta())
+        get() = fittedRowWidth(baseSquareWidth(this), rowCountDelta(), portraitCountCap())
 
     val WindowWidthSizeClass.gridMinSize: Dp
         @Composable @ReadOnlyComposable get() = baseGridMinSize(this).cardScaled()
@@ -199,7 +254,9 @@ object CardDimensions {
         @Composable @ReadOnlyComposable get() = Values.MusicCard.cardScaled()
 
     val musicCardWidth: Dp
-        @Composable @ReadOnlyComposable get() = fittedRowWidth(Values.MusicCard, rowCountDelta())
+        @Composable
+        @ReadOnlyComposable
+        get() = fittedRowWidth(Values.MusicCard, rowCountDelta(), portraitCountCap())
 
     val squareTileWidth: Dp
         @Composable
@@ -207,7 +264,8 @@ object CardDimensions {
         get() =
             fittedRowWidth(
                 Values.SquareTile,
-                rowCountDelta().coerceIn(-MAX_TILE_ROW_COUNT_DELTA, MAX_TILE_ROW_COUNT_DELTA),
+                rowCountDelta().coerceAtMost(MAX_TILE_ROW_COUNT_DELTA),
+                UNCAPPED_COUNT,
             )
 
     val squareCarouselWidthFraction: Float
@@ -223,7 +281,14 @@ object CardDimensions {
         gap: Dp = RowGap,
         reserved: Dp = 0.dp,
     ): Dp =
-        fittedRowWidth(basePortraitWidth(widthSizeClass), rowCountDelta(), gutter, gap, reserved)
+        fittedRowWidth(
+            basePortraitWidth(widthSizeClass),
+            rowCountDelta(),
+            portraitCountCap(),
+            gutter,
+            gap,
+            reserved,
+        )
 
     @Composable
     @ReadOnlyComposable
@@ -236,6 +301,7 @@ object CardDimensions {
         fittedRowWidth(
             baseLandscapeWidth(widthSizeClass),
             landscapeRowCountDelta(),
+            landscapeCountCap(),
             gutter,
             gap,
             reserved,
@@ -244,7 +310,14 @@ object CardDimensions {
     @Composable
     @ReadOnlyComposable
     fun musicCardRowWidth(gutter: Dp? = null, gap: Dp = RowGap, reserved: Dp = 0.dp): Dp =
-        fittedRowWidth(Values.MusicCard, rowCountDelta(), gutter, gap, reserved)
+        fittedRowWidth(
+            Values.MusicCard,
+            rowCountDelta(),
+            portraitCountCap(),
+            gutter,
+            gap,
+            reserved,
+        )
 
     @Composable
     @ReadOnlyComposable
@@ -257,6 +330,7 @@ object CardDimensions {
         fittedRowWidth(
             if (isLandscape) Values.MusicCardLandscape else Values.MusicCard,
             rowCountDelta(),
+            portraitCountCap(),
             gutter,
             gap,
             reserved,
@@ -268,6 +342,7 @@ object CardDimensions {
         fittedRowWidth(
             Values.MusicCard,
             rowCountDelta(),
+            portraitCountCap(),
             gutter = MusicDetailGutter,
             gap = MusicDetailGap,
             containerFraction = if (splitPane) SPLIT_PANE_FRACTION else 1f,
@@ -283,28 +358,45 @@ object CardDimensions {
                 else -> Values.LandscapeExpanded
             },
             landscapeRowCountDelta(),
+            landscapeCountCap(),
         )
 
     @Composable
     @ReadOnlyComposable
     fun gridCells(widthSizeClass: WindowWidthSizeClass): GridCells =
-        shiftedGridCells(baseGridMinSize(widthSizeClass))
+        portraitGridCells(widthSizeClass)
 
     @Composable
     @ReadOnlyComposable
     fun portraitGridCells(widthSizeClass: WindowWidthSizeClass): GridCells =
-        shiftedGridCells(basePortraitWidth(widthSizeClass))
+        fittedGridCells(basePortraitWidth(widthSizeClass), rowCountDelta(), portraitCountCap())
 
     @Composable
     @ReadOnlyComposable
     fun landscapeGridCells(widthSizeClass: WindowWidthSizeClass): GridCells =
-        shiftedGridCells(baseLandscapeWidth(widthSizeClass))
+        fittedGridCells(
+            baseLandscapeWidth(widthSizeClass),
+            landscapeRowCountDelta(),
+            landscapeCountCap(),
+        )
+
+    @Composable
+    @ReadOnlyComposable
+    fun tileGridCells(widthSizeClass: WindowWidthSizeClass): GridCells =
+        shiftedGridCells(baseGridMinSize(widthSizeClass))
 
     val musicGridCells: GridCells
+        @Composable
+        @ReadOnlyComposable
+        get() = fittedGridCells(Values.MusicCard, rowCountDelta(), portraitCountCap())
+
+    val musicGenreGridCells: GridCells
         @Composable @ReadOnlyComposable get() = shiftedGridCells(Values.MusicCard)
 
     val audiobookGridCells: GridCells
-        @Composable @ReadOnlyComposable get() = shiftedGridCells(Values.AudiobookGrid)
+        @Composable
+        @ReadOnlyComposable
+        get() = fittedGridCells(Values.AudiobookGrid, rowCountDelta(), portraitCountCap())
 
     val channelGridCells: GridCells
         @Composable @ReadOnlyComposable get() = shiftedGridCells(Values.ChannelGrid)

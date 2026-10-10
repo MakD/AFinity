@@ -347,7 +347,6 @@ private fun getCardSizeDisplayName(size: CardSize): String {
         CardSize.EXTRA_SMALL -> stringResource(R.string.card_size_extra_small)
         CardSize.SMALL -> stringResource(R.string.card_size_small)
         CardSize.DEFAULT -> stringResource(R.string.card_size_default)
-        CardSize.LARGE -> stringResource(R.string.card_size_large)
     }
 }
 

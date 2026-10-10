@@ -481,7 +481,7 @@ internal fun GenresGrid(
     }
     val playerOffset = LocalPlayerOffset.current
     LazyVerticalGrid(
-        columns = CardDimensions.musicGridCells,
+        columns = CardDimensions.musicGenreGridCells,
         state = gridState,
         contentPadding =
             PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + playerOffset),

@@ -76,7 +76,7 @@ fun LibrariesScreen(
 
             else -> {
                 LazyVerticalGrid(
-                    columns = CardDimensions.gridCells(widthSizeClass),
+                    columns = CardDimensions.tileGridCells(widthSizeClass),
                     state = lazyGridState,
                     contentPadding =
                         PaddingValues(

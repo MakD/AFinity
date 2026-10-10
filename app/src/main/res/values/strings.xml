@@ -1013,7 +1013,6 @@
     <string name="card_size_extra_small">Extra Small</string>
     <string name="card_size_small">Small</string>
     <string name="card_size_default">Default</string>
-    <string name="card_size_large">Large</string>
     <string name="pref_show_ratings_title">Show Ratings</string>
     <string name="pref_show_ratings_summary">Display IMDb and Rotten Tomatoes ratings on cards</string>
 

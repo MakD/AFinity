@@ -65,7 +65,9 @@ fun MediaCategoryGrid(
 
     Box(modifier = modifier.fillMaxSize()) {
         LazyVerticalGrid(
-            columns = CardDimensions.gridCells(widthSizeClass),
+            columns =
+                if (landscape) CardDimensions.landscapeGridCells(widthSizeClass)
+                else CardDimensions.gridCells(widthSizeClass),
             modifier = Modifier.fillMaxSize(),
             contentPadding =
                 PaddingValues(
