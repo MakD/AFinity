@@ -317,7 +317,7 @@ internal fun AlbumsGrid(
     val playerOffset = LocalPlayerOffset.current
     Row(modifier = modifier.fillMaxSize()) {
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(150.dp),
+            columns = CardDimensions.musicGridCells,
             state = gridState,
             contentPadding =
                 PaddingValues(
@@ -370,7 +370,7 @@ internal fun ArtistsGrid(
     val playerOffset = LocalPlayerOffset.current
     Row(modifier = modifier.fillMaxSize()) {
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(140.dp),
+            columns = CardDimensions.musicGridCells,
             state = gridState,
             contentPadding =
                 PaddingValues(
@@ -411,7 +411,7 @@ internal fun PlaylistsGrid(
 ) {
     val playerOffset = LocalPlayerOffset.current
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(150.dp),
+        columns = CardDimensions.musicGridCells,
         state = gridState,
         contentPadding =
             PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + playerOffset),
@@ -460,7 +460,7 @@ internal fun GenresGrid(
     }
     val playerOffset = LocalPlayerOffset.current
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(150.dp),
+        columns = CardDimensions.musicGridCells,
         state = gridState,
         contentPadding =
             PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + playerOffset),
@@ -823,13 +823,7 @@ private fun LibraryShortcutsRow(
     onBrowse: (LibraryFilter) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val configuration = LocalConfiguration.current
-    val cardWidth =
-        when {
-            configuration.screenWidthDp < 600 -> 240.dp
-            configuration.screenWidthDp < 840 -> 260.dp
-            else -> 320.dp
-        }
+    val cardWidth = CardDimensions.shortcutCardWidth(LocalConfiguration.current.screenWidthDp)
 
     val shortcuts = remember {
         listOf(
@@ -1230,7 +1224,7 @@ internal fun MusicArtistsRow(
     onViewAllClick: (() -> Unit)? = null,
 ) {
     val isLandscape = isLandscapeWindow()
-    val cardSize = if (isLandscape) 170.dp else 140.dp
+    val cardSize = CardDimensions.musicRowCardWidth(isLandscape)
     Column(modifier = modifier) {
         if (onViewAllClick != null) {
             SectionRowHeader(

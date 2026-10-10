@@ -1,9 +1,30 @@
 package com.makd.afinity.ui.theme
 
+import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.CustomSectionCardStyle
+import com.makd.afinity.data.models.common.CardSize
+
+val LocalCardSize = compositionLocalOf { CardSize.DEFAULT }
+
+private const val MIN_SHIFTED_GRID_COLUMNS = 2
+
+private data class ShiftedAdaptiveCells(val minSize: Dp, val columnDelta: Int) : GridCells {
+    override fun Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): List<Int> {
+        val baseCount = maxOf((availableSize + spacing) / (minSize.roundToPx() + spacing), 1)
+        val count = maxOf(baseCount + columnDelta, minOf(baseCount, MIN_SHIFTED_GRID_COLUMNS))
+        val cellsSize = availableSize - spacing * (count - 1)
+        val cellSize = cellsSize / count
+        val remainder = cellsSize % count
+        return List(count) { index -> cellSize + if (index < remainder) 1 else 0 }
+    }
+}
 
 object CardDimensions {
 
@@ -14,6 +35,7 @@ object CardDimensions {
     const val ASPECT_RATIO_SPOTLIGHT_PORTRAIT = 1.5f
 
     private const val LANDSCAPE_HEIGHT_FRACTION = 0.4f
+    private const val SQUARE_CAROUSEL_WIDTH_FRACTION = 0.48f
 
     val CardTextSpacing = 8.dp
     val TitleLine = 20.dp
@@ -39,45 +61,122 @@ object CardDimensions {
         val SpotlightCompact = 230.dp
         val SpotlightMedium = 270.dp
         val SpotlightExpanded = 330.dp
+
+        val MusicCard = 140.dp
+        val MusicCardLandscape = 175.dp
+
+        val AudiobookGrid = 140.dp
+        val ChannelGrid = 160.dp
+        val DownloadGrid = 110.dp
+        val SquareTile = 100.dp
     }
 
     data class CarouselItemSize(val width: Dp, val height: Dp)
 
+    private fun basePortraitWidth(widthSizeClass: WindowWidthSizeClass): Dp =
+        when (widthSizeClass) {
+            WindowWidthSizeClass.Compact -> Values.PortraitCompact
+            WindowWidthSizeClass.Medium -> Values.PortraitMedium
+            WindowWidthSizeClass.Expanded -> Values.PortraitExpanded
+            else -> Values.PortraitCompact
+        }
+
+    private fun baseLandscapeWidth(widthSizeClass: WindowWidthSizeClass): Dp =
+        when (widthSizeClass) {
+            WindowWidthSizeClass.Compact -> Values.LandscapeCompact
+            WindowWidthSizeClass.Medium -> Values.LandscapeMedium
+            WindowWidthSizeClass.Expanded -> Values.LandscapeExpanded
+            else -> Values.LandscapeCompact
+        }
+
+    private fun baseSquareWidth(widthSizeClass: WindowWidthSizeClass): Dp =
+        when (widthSizeClass) {
+            WindowWidthSizeClass.Compact -> Values.SquareCompact
+            WindowWidthSizeClass.Medium -> Values.SquareMedium
+            WindowWidthSizeClass.Expanded -> Values.SquareExpanded
+            else -> Values.SquareCompact
+        }
+
+    private fun baseGridMinSize(widthSizeClass: WindowWidthSizeClass): Dp =
+        when (widthSizeClass) {
+            WindowWidthSizeClass.Compact -> Values.GridCompact
+            WindowWidthSizeClass.Medium -> Values.GridMedium
+            WindowWidthSizeClass.Expanded -> Values.GridExpanded
+            else -> Values.GridCompact
+        }
+
+    @Composable
+    @ReadOnlyComposable
+    private fun Dp.cardScaled(): Dp = this * LocalCardSize.current.scale
+
+    @Composable
+    @ReadOnlyComposable
+    private fun shiftedGridCells(minSize: Dp): GridCells =
+        ShiftedAdaptiveCells(minSize, LocalCardSize.current.gridColumnDelta)
+
     val WindowWidthSizeClass.portraitWidth: Dp
-        get() =
-            when (this) {
-                WindowWidthSizeClass.Compact -> Values.PortraitCompact
-                WindowWidthSizeClass.Medium -> Values.PortraitMedium
-                WindowWidthSizeClass.Expanded -> Values.PortraitExpanded
-                else -> Values.PortraitCompact
-            }
+        @Composable @ReadOnlyComposable get() = basePortraitWidth(this).cardScaled()
 
     val WindowWidthSizeClass.landscapeWidth: Dp
-        get() =
-            when (this) {
-                WindowWidthSizeClass.Compact -> Values.LandscapeCompact
-                WindowWidthSizeClass.Medium -> Values.LandscapeMedium
-                WindowWidthSizeClass.Expanded -> Values.LandscapeExpanded
-                else -> Values.LandscapeCompact
-            }
+        @Composable @ReadOnlyComposable get() = baseLandscapeWidth(this).cardScaled()
 
     val WindowWidthSizeClass.squareWidth: Dp
-        get() =
-            when (this) {
-                WindowWidthSizeClass.Compact -> Values.SquareCompact
-                WindowWidthSizeClass.Medium -> Values.SquareMedium
-                WindowWidthSizeClass.Expanded -> Values.SquareExpanded
-                else -> Values.SquareCompact
-            }
+        @Composable @ReadOnlyComposable get() = baseSquareWidth(this).cardScaled()
 
     val WindowWidthSizeClass.gridMinSize: Dp
-        get() =
-            when (this) {
-                WindowWidthSizeClass.Compact -> Values.GridCompact
-                WindowWidthSizeClass.Medium -> Values.GridMedium
-                WindowWidthSizeClass.Expanded -> Values.GridExpanded
-                else -> Values.GridCompact
-            }
+        @Composable @ReadOnlyComposable get() = baseGridMinSize(this).cardScaled()
+
+    val musicCardWidth: Dp
+        @Composable @ReadOnlyComposable get() = Values.MusicCard.cardScaled()
+
+    val squareTileWidth: Dp
+        @Composable @ReadOnlyComposable get() = Values.SquareTile.cardScaled()
+
+    val squareCarouselWidthFraction: Float
+        @Composable
+        @ReadOnlyComposable
+        get() = SQUARE_CAROUSEL_WIDTH_FRACTION * LocalCardSize.current.scale
+
+    @Composable
+    @ReadOnlyComposable
+    fun musicRowCardWidth(isLandscape: Boolean): Dp =
+        (if (isLandscape) Values.MusicCardLandscape else Values.MusicCard).cardScaled()
+
+    @Composable
+    @ReadOnlyComposable
+    fun shortcutCardWidth(screenWidthDp: Int): Dp =
+        when {
+            screenWidthDp < 600 -> Values.LandscapeCompact
+            screenWidthDp < 840 -> Values.LandscapeMedium
+            else -> Values.LandscapeExpanded
+        }.cardScaled()
+
+    @Composable
+    @ReadOnlyComposable
+    fun gridCells(widthSizeClass: WindowWidthSizeClass): GridCells =
+        shiftedGridCells(baseGridMinSize(widthSizeClass))
+
+    @Composable
+    @ReadOnlyComposable
+    fun portraitGridCells(widthSizeClass: WindowWidthSizeClass): GridCells =
+        shiftedGridCells(basePortraitWidth(widthSizeClass))
+
+    @Composable
+    @ReadOnlyComposable
+    fun landscapeGridCells(widthSizeClass: WindowWidthSizeClass): GridCells =
+        shiftedGridCells(baseLandscapeWidth(widthSizeClass))
+
+    val musicGridCells: GridCells
+        @Composable @ReadOnlyComposable get() = shiftedGridCells(Values.MusicCard)
+
+    val audiobookGridCells: GridCells
+        @Composable @ReadOnlyComposable get() = shiftedGridCells(Values.AudiobookGrid)
+
+    val channelGridCells: GridCells
+        @Composable @ReadOnlyComposable get() = shiftedGridCells(Values.ChannelGrid)
+
+    val downloadGridCells: GridCells
+        @Composable @ReadOnlyComposable get() = shiftedGridCells(Values.DownloadGrid)
 
     fun spotlightAspectRatio(isLandscape: Boolean): Float =
         if (isLandscape) ASPECT_RATIO_SPOTLIGHT else ASPECT_RATIO_SPOTLIGHT_PORTRAIT
@@ -113,6 +212,8 @@ object CardDimensions {
         metadataHeight: Dp = MetadataLine,
     ): Dp = calculateHeight(cardWidth, aspectRatio) + CardTextSpacing + titleHeight + metadataHeight
 
+    @Composable
+    @ReadOnlyComposable
     fun cardWidthFor(style: CustomSectionCardStyle, widthSizeClass: WindowWidthSizeClass): Dp =
         when (style) {
             CustomSectionCardStyle.LANDSCAPE -> widthSizeClass.landscapeWidth

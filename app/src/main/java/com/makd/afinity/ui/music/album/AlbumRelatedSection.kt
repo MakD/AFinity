@@ -27,8 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.ui.music.components.MusicAlbumCard
-
-private val AlbumCardWidth = 140.dp
+import com.makd.afinity.ui.theme.CardDimensions
 
 @Composable
 fun AlbumRelatedSection(
@@ -81,7 +80,7 @@ fun AlbumRelatedSection(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             items(albums, key = { it.id }) { album ->
-                Box(modifier = Modifier.width(AlbumCardWidth)) {
+                Box(modifier = Modifier.width(CardDimensions.musicCardWidth)) {
                     MusicAlbumCard(
                         album = album,
                         onClick = { onAlbumClick(album) },

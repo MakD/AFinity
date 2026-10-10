@@ -84,6 +84,7 @@ import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
+import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 import java.util.UUID
 
@@ -286,7 +287,7 @@ fun MusicGenreScreen(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                             ) {
                                 items(uiState.albums, key = { it.id }) { album ->
-                                    Box(modifier = Modifier.width(140.dp)) {
+                                    Box(modifier = Modifier.width(CardDimensions.musicCardWidth)) {
                                         MusicAlbumCard(
                                             album = album,
                                             onClick = {
@@ -320,7 +321,7 @@ fun MusicGenreScreen(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                             ) {
                                 items(uiState.recentlyAdded, key = { it.id }) { album ->
-                                    Box(modifier = Modifier.width(140.dp)) {
+                                    Box(modifier = Modifier.width(CardDimensions.musicCardWidth)) {
                                         MusicAlbumCard(
                                             album = album,
                                             onClick = {
@@ -476,7 +477,7 @@ fun MusicGenreScreen(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             items(uiState.albums, key = { it.id }) { album ->
-                                Box(modifier = Modifier.width(140.dp)) {
+                                Box(modifier = Modifier.width(CardDimensions.musicCardWidth)) {
                                     MusicAlbumCard(
                                         album = album,
                                         onClick = {
@@ -509,7 +510,7 @@ fun MusicGenreScreen(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             items(uiState.recentlyAdded, key = { it.id }) { album ->
-                                Box(modifier = Modifier.width(140.dp)) {
+                                Box(modifier = Modifier.width(CardDimensions.musicCardWidth)) {
                                     MusicAlbumCard(
                                         album = album,
                                         onClick = {

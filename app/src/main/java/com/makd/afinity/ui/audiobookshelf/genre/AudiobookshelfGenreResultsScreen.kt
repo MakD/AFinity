@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -42,7 +41,7 @@ import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
-import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
+import com.makd.afinity.ui.theme.CardDimensions
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -237,7 +236,7 @@ private fun AudiobookshelfItemGrid(
 ) {
     val playerOffset = LocalPlayerOffset.current
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(widthSizeClass.gridMinSize),
+        columns = CardDimensions.gridCells(widthSizeClass),
         modifier = Modifier.fillMaxSize(),
         contentPadding =
             PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + playerOffset),
@@ -257,7 +256,10 @@ private fun AudiobookshelfItemGrid(
 
 @Composable
 private fun EmptyStateMessage(message: String) {
-    Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+    Box(
+        modifier = Modifier.fillMaxSize().padding(32.dp),
+        contentAlignment = Alignment.Center,
+    ) {
         Text(
             text = message,
             style = MaterialTheme.typography.bodyLarge,

@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
@@ -113,7 +112,7 @@ import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
-import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
+import com.makd.afinity.ui.theme.CardDimensions
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
@@ -761,7 +760,7 @@ private fun SearchHomeContent(
         )
 
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(widthSizeClass.gridMinSize),
+            columns = CardDimensions.gridCells(widthSizeClass),
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),

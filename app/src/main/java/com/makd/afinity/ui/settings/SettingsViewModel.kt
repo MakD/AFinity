@@ -8,6 +8,7 @@ import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.HomeRow
 import com.makd.afinity.data.models.auth.QuickConnectAuthorization
+import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.mdblist.MdbListUsage
@@ -155,6 +156,15 @@ constructor(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = DetailLayout.CLASSIC,
+            )
+
+    val cardSize: StateFlow<CardSize> =
+        preferencesRepository
+            .getCardSizeFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = CardSize.DEFAULT,
             )
 
     private val _manualOfflineMode = MutableStateFlow(false)
@@ -1137,6 +1147,18 @@ constructor(
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set detail layout")
+            }
+        }
+    }
+
+    fun setCardSize(size: CardSize) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setCardSize(size)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set card size")
             }
         }
     }

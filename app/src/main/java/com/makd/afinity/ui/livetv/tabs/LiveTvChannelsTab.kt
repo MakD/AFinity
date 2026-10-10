@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -37,6 +36,7 @@ import com.makd.afinity.ui.components.AlphabetScroller
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.livetv.LiveTvUiState
 import com.makd.afinity.ui.livetv.components.ChannelCard
+import com.makd.afinity.ui.theme.CardDimensions
 
 @Composable
 fun LiveTvChannelsTab(
@@ -89,7 +89,7 @@ fun LiveTvChannelsTab(
                     }
                 } else {
                     LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = 160.dp),
+                        columns = CardDimensions.channelGridCells,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding =
                             PaddingValues(

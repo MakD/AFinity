@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.navigation.LocalPlayerOffset
@@ -62,6 +63,7 @@ fun AppearanceOptionsScreen(
     val sideSheetEnabled by viewModel.sideSheetEnabled.collectAsStateWithLifecycle()
     val episodeLayout by viewModel.episodeLayout.collectAsStateWithLifecycle()
     val detailLayout by viewModel.detailLayout.collectAsStateWithLifecycle()
+    val cardSize by viewModel.cardSize.collectAsStateWithLifecycle()
     val showRatings by viewModel.showRatings.collectAsStateWithLifecycle()
     val showAwards by viewModel.showAwards.collectAsStateWithLifecycle()
     val appFont by viewModel.appFont.collectAsStateWithLifecycle()
@@ -204,6 +206,11 @@ fun AppearanceOptionsScreen(
 
             item {
                 SettingsGroup(title = stringResource(R.string.settings_group_content_layout)) {
+                    CardSizeSelectorItem(
+                        selectedSize = cardSize,
+                        onSizeSelected = viewModel::setCardSize,
+                    )
+                    SettingsDivider()
                     DetailLayoutSelectorItem(
                         selectedLayout = detailLayout,
                         onLayoutSelected = viewModel::setDetailLayout,
@@ -283,6 +290,64 @@ private fun ThemeSelectorItem(currentThemeMode: String, onThemeModeChange: (Stri
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun CardSizeSelectorItem(selectedSize: CardSize, onSizeSelected: (CardSize) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        SettingsItem(
+            icon = painterResource(id = R.drawable.ic_layout_grid),
+            title = stringResource(R.string.pref_card_size_title),
+            subtitle = getCardSizeDisplayName(selectedSize),
+            onClick = { expanded = true },
+            trailing = {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp),
+                )
+            },
+        )
+
+        EndAlignedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        ) {
+            CardSize.entries.forEach { size ->
+                DropdownMenuItem(
+                    text = { Text(getCardSizeDisplayName(size)) },
+                    onClick = {
+                        onSizeSelected(size)
+                        expanded = false
+                    },
+                    leadingIcon =
+                        if (size == selectedSize) {
+                            {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_check),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else null,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun getCardSizeDisplayName(size: CardSize): String {
+    return when (size) {
+        CardSize.EXTRA_SMALL -> stringResource(R.string.card_size_extra_small)
+        CardSize.SMALL -> stringResource(R.string.card_size_small)
+        CardSize.DEFAULT -> stringResource(R.string.card_size_default)
+        CardSize.LARGE -> stringResource(R.string.card_size_large)
     }
 }
 

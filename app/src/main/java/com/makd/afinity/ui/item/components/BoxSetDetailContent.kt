@@ -43,9 +43,6 @@ fun LazyListScope.boxSetDetailItems(
     horizontalPadding: Dp,
     detailLayout: DetailLayout,
 ) {
-    val portraitWidth = widthSizeClass.portraitWidth
-    val landscapeWidth = widthSizeClass.landscapeWidth
-
     val movies = boxSetItems.filterIsInstance<AfinityMovie>()
     val shows = boxSetItems.filterIsInstance<AfinityShow>()
     val seasons = boxSetItems.filterIsInstance<AfinitySeason>()
@@ -71,7 +68,7 @@ fun LazyListScope.boxSetDetailItems(
                     title = stringResource(R.string.section_movies),
                     items = movies,
                     onItemClick = onItemClick,
-                    cardWidth = portraitWidth,
+                    cardWidth = widthSizeClass.portraitWidth,
                 )
             }
         }
@@ -82,7 +79,7 @@ fun LazyListScope.boxSetDetailItems(
                     title = stringResource(R.string.section_tv_shows),
                     items = shows,
                     onItemClick = onItemClick,
-                    cardWidth = portraitWidth,
+                    cardWidth = widthSizeClass.portraitWidth,
                 )
             }
         }
@@ -93,7 +90,7 @@ fun LazyListScope.boxSetDetailItems(
                     title = stringResource(R.string.section_seasons),
                     items = seasons,
                     onItemClick = onItemClick,
-                    cardWidth = portraitWidth,
+                    cardWidth = widthSizeClass.portraitWidth,
                 )
             }
         }
@@ -104,7 +101,7 @@ fun LazyListScope.boxSetDetailItems(
                     title = stringResource(R.string.section_episodes),
                     episodes = episodes,
                     onEpisodeClick = { onItemClick(it) },
-                    cardWidth = landscapeWidth,
+                    cardWidth = widthSizeClass.landscapeWidth,
                 )
             }
         }
@@ -115,7 +112,7 @@ fun LazyListScope.boxSetDetailItems(
                     title = stringResource(R.string.not_in_library_title),
                     titles = missingParts,
                     onSeerrItemClick = onMissingPartClick,
-                    cardWidth = portraitWidth,
+                    cardWidth = widthSizeClass.portraitWidth,
                 )
             }
         }

@@ -84,7 +84,7 @@ private fun MusicCarouselSection(
                     availableWidth = maxWidth,
                     windowHeight = windowHeight,
                     isLandscape = isLandscape,
-                    widthFraction = 0.48f,
+                    widthFraction = CardDimensions.squareCarouselWidthFraction,
                     aspectRatio = CardDimensions.ASPECT_RATIO_SQUARE,
                     maxHeight = CardDimensions.spotlightMaxHeight(windowWidth),
                 )
@@ -222,7 +222,7 @@ fun MostPlayedAlbumsSection(
     if (albums.isEmpty()) return
 
     val isLandscape = isLandscapeWindow()
-    val cardWidth = if (isLandscape) 175.dp else 140.dp
+    val cardWidth = CardDimensions.musicRowCardWidth(isLandscape)
     val rowHeight = cardWidth + 12.dp + 8.dp + 20.dp + 18.dp
 
     Column(modifier = modifier) {
@@ -317,7 +317,7 @@ fun MusicAlbumRowSection(
 ) {
     if (albums.isEmpty()) return
     val isLandscape = isLandscapeWindow()
-    val cardWidth = if (isLandscape) 175.dp else 140.dp
+    val cardWidth = CardDimensions.musicRowCardWidth(isLandscape)
     Column(modifier = modifier) {
         if (onViewAllClick != null) {
             SectionRowHeader(
@@ -363,7 +363,7 @@ fun MusicPlaylistRowSection(
 ) {
     if (playlists.isEmpty()) return
     val isLandscape = isLandscapeWindow()
-    val cardWidth = if (isLandscape) 175.dp else 140.dp
+    val cardWidth = CardDimensions.musicRowCardWidth(isLandscape)
     Column(modifier = modifier) {
         if (onViewAllClick != null) {
             SectionRowHeader(

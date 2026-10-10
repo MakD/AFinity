@@ -128,6 +128,7 @@ import com.makd.afinity.ui.settings.player.PlayerOptionsScreen
 import com.makd.afinity.ui.settings.servers.AddEditServerScreen
 import com.makd.afinity.ui.settings.servers.ServerManagementScreen
 import com.makd.afinity.ui.settings.update.GlobalUpdateDialog
+import com.makd.afinity.ui.theme.LocalCardSize
 import com.makd.afinity.ui.watchlist.WatchlistCategory
 import com.makd.afinity.ui.watchlist.WatchlistCategoryScreen
 import com.makd.afinity.ui.watchlist.WatchlistScreen
@@ -169,6 +170,7 @@ fun MainNavigation(
     val musicPlaybackState by viewModel.musicPlaybackManager.state.collectAsStateWithLifecycle()
     val showRatings by viewModel.showRatings.collectAsStateWithLifecycle()
     val showAwards by viewModel.showAwards.collectAsStateWithLifecycle()
+    val cardSize by viewModel.cardSize.collectAsStateWithLifecycle()
     val sideSheetEnabled by viewModel.sideSheetEnabled.collectAsStateWithLifecycle()
     val navigationDrawerEnabled by viewModel.navigationDrawerEnabled.collectAsStateWithLifecycle()
     val librariesInDrawer by viewModel.librariesInDrawer.collectAsStateWithLifecycle()
@@ -420,6 +422,7 @@ fun MainNavigation(
                     LocalSideSheetEnabled provides sideSheetEnabled,
                     LocalShowRatings provides showRatings,
                     LocalShowAwards provides showAwards,
+                    LocalCardSize provides cardSize,
                 ) {
                     SharedTransitionLayout {
                         Box(modifier = Modifier.fillMaxSize()) {

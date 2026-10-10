@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -103,6 +102,7 @@ import com.makd.afinity.ui.downloads.jellyfinChildrenOf
 import com.makd.afinity.ui.player.components.musicQualityLabel
 import com.makd.afinity.ui.player.components.qualityLabel
 import com.makd.afinity.ui.player.components.settingsQualityLabel
+import com.makd.afinity.ui.theme.CardDimensions
 import java.util.UUID
 import kotlin.math.ceil
 
@@ -333,7 +333,7 @@ fun DownloadSettingsScreen(
             else uiState.deviceStorageStats
 
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(110.dp),
+            columns = CardDimensions.downloadGridCells,
             modifier = Modifier.fillMaxSize(),
             contentPadding =
                 PaddingValues(

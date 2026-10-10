@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.theme.CardDimensions
 
 @Composable
 fun SquareMediaTile(
@@ -31,9 +32,11 @@ fun SquareMediaTile(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
 ) {
-    Column(modifier = modifier.width(100.dp).clickable(role = Role.Button, onClick = onClick)) {
+    val tileWidth = CardDimensions.squareTileWidth
+
+    Column(modifier = modifier.width(tileWidth).clickable(role = Role.Button, onClick = onClick)) {
         Card(
-            modifier = Modifier.width(100.dp).aspectRatio(1f),
+            modifier = Modifier.width(tileWidth).aspectRatio(1f),
             shape = RoundedCornerShape(8.dp),
             colors =
                 CardDefaults.cardColors(
@@ -45,8 +48,8 @@ fun SquareMediaTile(
                 contentDescription = contentDescription,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
-                targetWidth = 100.dp,
-                targetHeight = 100.dp,
+                targetWidth = tileWidth,
+                targetHeight = tileWidth,
             )
         }
         Spacer(modifier = Modifier.height(4.dp))
@@ -60,7 +63,7 @@ fun SquareMediaTile(
             color = MaterialTheme.colorScheme.onBackground,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.width(100.dp),
+            modifier = Modifier.width(tileWidth),
         )
         if (subtitle != null) {
             Text(
@@ -69,7 +72,7 @@ fun SquareMediaTile(
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.width(100.dp),
+                modifier = Modifier.width(tileWidth),
             )
         }
     }

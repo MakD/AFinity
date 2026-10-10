@@ -21,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -47,6 +46,7 @@ import com.makd.afinity.ui.music.components.MusicPlaylistCard
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.player.PlayerLauncher
+import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
@@ -187,7 +187,7 @@ fun FavoritesCategoryScreen(
 
                 FavoritesCategory.CHANNELS ->
                     FavoritesGrid(
-                        cardWidth = widthSizeClass.landscapeWidth,
+                        columns = CardDimensions.landscapeGridCells(widthSizeClass),
                         contentPadding = contentPadding,
                         modifier = gridModifier,
                         items = uiState.channels,
@@ -208,7 +208,7 @@ fun FavoritesCategoryScreen(
 
                 FavoritesCategory.PEOPLE ->
                     FavoritesGrid(
-                        cardWidth = widthSizeClass.portraitWidth,
+                        columns = CardDimensions.portraitGridCells(widthSizeClass),
                         contentPadding = contentPadding,
                         modifier = gridModifier,
                         items = uiState.people,
@@ -223,7 +223,7 @@ fun FavoritesCategoryScreen(
 
                 FavoritesCategory.ALBUMS ->
                     FavoritesGrid(
-                        cardWidth = widthSizeClass.portraitWidth,
+                        columns = CardDimensions.portraitGridCells(widthSizeClass),
                         contentPadding = contentPadding,
                         modifier = gridModifier,
                         items = uiState.favoriteAlbums,
@@ -241,7 +241,7 @@ fun FavoritesCategoryScreen(
 
                 FavoritesCategory.ARTISTS ->
                     FavoritesGrid(
-                        cardWidth = widthSizeClass.portraitWidth,
+                        columns = CardDimensions.portraitGridCells(widthSizeClass),
                         contentPadding = contentPadding,
                         modifier = gridModifier,
                         items = uiState.favoriteArtists,
@@ -262,7 +262,7 @@ fun FavoritesCategoryScreen(
 
                 FavoritesCategory.TRACKS ->
                     FavoritesGrid(
-                        cardWidth = 140.dp,
+                        columns = CardDimensions.musicGridCells,
                         contentPadding = contentPadding,
                         modifier = gridModifier,
                         items = uiState.favoriteTracks,
@@ -290,7 +290,7 @@ fun FavoritesCategoryScreen(
 
                 FavoritesCategory.PLAYLISTS ->
                     FavoritesGrid(
-                        cardWidth = widthSizeClass.portraitWidth,
+                        columns = CardDimensions.portraitGridCells(widthSizeClass),
                         contentPadding = contentPadding,
                         modifier = gridModifier,
                         items = uiState.favoritePlaylists,
@@ -335,7 +335,7 @@ fun FavoritesCategoryScreen(
 
 @Composable
 private fun <T> FavoritesGrid(
-    cardWidth: Dp,
+    columns: GridCells,
     contentPadding: PaddingValues,
     items: List<T>,
     key: (T) -> Any,
@@ -343,7 +343,7 @@ private fun <T> FavoritesGrid(
     itemContent: @Composable (T) -> Unit,
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(cardWidth),
+        columns = columns,
         modifier = modifier.fillMaxSize(),
         contentPadding = contentPadding,
         horizontalArrangement = Arrangement.spacedBy(12.dp),

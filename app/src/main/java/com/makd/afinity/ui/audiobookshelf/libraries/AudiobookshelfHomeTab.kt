@@ -239,13 +239,7 @@ private fun LibraryShortcutsRow(
     onBrowseLibrary: (Library) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val configuration = LocalConfiguration.current
-    val cardWidth =
-        when {
-            configuration.screenWidthDp < 600 -> 240.dp
-            configuration.screenWidthDp < 840 -> 260.dp
-            else -> 320.dp
-        }
+    val cardWidth = CardDimensions.shortcutCardWidth(LocalConfiguration.current.screenWidthDp)
 
     val seriesLabel = stringResource(R.string.abs_tab_series)
     val shortcuts =

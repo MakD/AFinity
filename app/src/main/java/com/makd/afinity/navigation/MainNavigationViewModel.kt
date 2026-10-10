@@ -6,6 +6,7 @@ import com.makd.afinity.cast.CastManager
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PendingNavigationManager
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.AppDataRepository
@@ -91,6 +92,15 @@ constructor(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = true,
+            )
+
+    val cardSize =
+        preferencesRepository
+            .getCardSizeFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = CardSize.DEFAULT,
             )
 
     val sideSheetEnabled =

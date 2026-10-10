@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -38,7 +37,7 @@ import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.LibraryCard
 import com.makd.afinity.ui.main.MainUiState
-import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
+import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 
 @Composable
@@ -77,7 +76,7 @@ fun LibrariesScreen(
 
             else -> {
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(widthSizeClass.gridMinSize),
+                    columns = CardDimensions.gridCells(widthSizeClass),
                     state = lazyGridState,
                     contentPadding =
                         PaddingValues(

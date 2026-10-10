@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -85,6 +86,7 @@ import com.makd.afinity.ui.music.library.MusicArtistsRow
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.player.PlayerLauncher
+import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
@@ -467,7 +469,8 @@ internal fun FavoritePersonCard(person: AfinityPersonDetail, onClick: () -> Unit
             contentDescription = person.name,
             targetWidth = cardWidth,
             targetHeight = cardWidth,
-            modifier = Modifier.size(cardWidth).clip(CircleShape),
+            modifier =
+                Modifier.widthIn(max = cardWidth).fillMaxWidth().aspectRatio(1f).clip(CircleShape),
             contentScale = ContentScale.Crop,
             placeholder = painterResource(id = R.drawable.ic_person_heart),
             error = painterResource(id = R.drawable.ic_person_heart),
@@ -610,7 +613,7 @@ internal fun FavoriteTrackCard(
     onFavorite: () -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
-    val cardWidth = 140.dp
+    val cardWidth = CardDimensions.musicCardWidth
 
     Column(
         modifier =

@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.Button
@@ -46,7 +45,7 @@ import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.main.MainUiState
-import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
+import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
 enum class FilterType {
@@ -178,7 +177,7 @@ fun FilteredMediaScreen(
 
             else -> {
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(widthSizeClass.gridMinSize),
+                    columns = CardDimensions.gridCells(widthSizeClass),
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
                     contentPadding =
                         PaddingValues(

@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.common.SortBy
@@ -110,6 +111,7 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val VIDEO_ZOOM_MODE = intPreferencesKey("video_zoom_mode")
         val EPISODE_LAYOUT = stringPreferencesKey("episode_layout")
         val DETAIL_LAYOUT = stringPreferencesKey("detail_layout")
+        val CARD_SIZE = stringPreferencesKey("card_size")
 
         val SUBTITLE_TEXT_COLOR = intPreferencesKey("subtitle_text_color")
         val SUBTITLE_TEXT_SIZE = stringPreferencesKey("subtitle_text_size")
@@ -1111,6 +1113,16 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         return dataStore.data.map { preferences ->
             preferences[Keys.DETAIL_LAYOUT]?.let { DetailLayout.fromValue(it) }
                 ?: DetailLayout.CLASSIC
+        }
+    }
+
+    override suspend fun setCardSize(size: CardSize) {
+        dataStore.edit { preferences -> preferences[Keys.CARD_SIZE] = size.value }
+    }
+
+    override fun getCardSizeFlow(): Flow<CardSize> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.CARD_SIZE]?.let { CardSize.fromValue(it) } ?: CardSize.DEFAULT
         }
     }
 

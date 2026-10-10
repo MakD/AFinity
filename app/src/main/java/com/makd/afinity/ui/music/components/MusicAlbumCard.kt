@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,6 +39,7 @@ import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityMusicGenre
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.theme.CardDimensions
 
 private val GENRE_CARD_GRADIENTS =
     listOf(
@@ -145,7 +147,7 @@ fun MusicArtistCard(
     imageUrl: String?,
     blurHash: String? = null,
     onClick: () -> Unit,
-    size: Dp = 140.dp,
+    size: Dp = CardDimensions.musicCardWidth,
 ) {
     val imageSize = size * 0.86f
     Column(
@@ -167,7 +169,8 @@ fun MusicArtistCard(
             blurHash = blurHash,
             targetWidth = imageSize,
             targetHeight = imageSize,
-            modifier = Modifier.size(imageSize).clip(CircleShape),
+            modifier =
+                Modifier.widthIn(max = imageSize).fillMaxWidth().aspectRatio(1f).clip(CircleShape),
             contentScale = ContentScale.Crop,
             placeholder = painterResource(R.drawable.ic_person_placeholder),
             error = painterResource(R.drawable.ic_person_placeholder),

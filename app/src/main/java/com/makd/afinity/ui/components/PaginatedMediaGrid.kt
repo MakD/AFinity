@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -26,7 +25,7 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemKey
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
+import com.makd.afinity.ui.theme.CardDimensions
 
 @Composable
 fun PaginatedMediaGrid(
@@ -38,7 +37,7 @@ fun PaginatedMediaGrid(
     itemContent: @Composable (AfinityItem) -> Unit,
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(widthSizeClass.gridMinSize),
+        columns = CardDimensions.gridCells(widthSizeClass),
         state = state,
         contentPadding = contentPadding,
         horizontalArrangement = Arrangement.spacedBy(12.dp),

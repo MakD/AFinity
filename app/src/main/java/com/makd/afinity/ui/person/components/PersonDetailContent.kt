@@ -254,7 +254,7 @@ private fun LandscapePersonDetailContent(
                             movies = movies,
                             shows = shows,
                             onItemClick = onItemClick,
-                            cardWidth = 140.dp,
+                            cardWidth = WindowWidthSizeClass.Compact.portraitWidth,
                             awards = awards,
                             missingCredits = missingCredits,
                             onExternalItemClick = onExternalItemClick,

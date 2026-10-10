@@ -1,5 +1,6 @@
 package com.makd.afinity.data.repository
 
+import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.common.SortBy
@@ -412,6 +413,10 @@ interface PreferencesRepository {
     suspend fun setDetailLayout(layout: DetailLayout)
 
     fun getDetailLayoutFlow(): Flow<DetailLayout>
+
+    suspend fun setCardSize(size: CardSize)
+
+    fun getCardSizeFlow(): Flow<CardSize>
 
     suspend fun setShowRatings(enabled: Boolean)
 
