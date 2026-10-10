@@ -33,6 +33,10 @@ interface MusicRepository {
         nameStartsWith: String? = null,
     ): List<AfinityTrack>
 
+    suspend fun getTrackCount(libraryId: UUID, filters: MusicFilters = MusicFilters()): Int?
+
+    suspend fun getLibraryRuntimeTicks(libraryId: UUID): Long?
+
     suspend fun getAlbums(
         libraryId: UUID,
         sortBy: ItemSortBy = ItemSortBy.SORT_NAME,

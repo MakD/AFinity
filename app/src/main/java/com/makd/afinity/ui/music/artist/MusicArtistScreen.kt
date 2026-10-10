@@ -117,6 +117,7 @@ fun MusicArtistScreen(
     var radioSeed by remember { mutableStateOf<RadioSeed?>(null) }
     var showAllTracks by remember { mutableStateOf(false) }
     val isLandscape = isLandscapeWindow()
+    val relatedCardWidth = CardDimensions.musicDetailCardWidth(splitPane = isLandscape)
     val portraitListState = rememberLazyListState()
     val landscapeListState = rememberLazyListState()
     val lazyListState = if (isLandscape) landscapeListState else portraitListState
@@ -521,7 +522,7 @@ fun MusicArtistScreen(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                             ) {
                                 items(uiState.albums, key = { it.id }) { album ->
-                                    Box(modifier = Modifier.width(CardDimensions.musicCardWidth)) {
+                                    Box(modifier = Modifier.width(relatedCardWidth)) {
                                         MusicAlbumCard(
                                             album = album,
                                             onClick = {
@@ -555,7 +556,7 @@ fun MusicArtistScreen(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                             ) {
                                 items(uiState.appearsOn, key = { it.id }) { album ->
-                                    Box(modifier = Modifier.width(CardDimensions.musicCardWidth)) {
+                                    Box(modifier = Modifier.width(relatedCardWidth)) {
                                         MusicAlbumCard(
                                             album = album,
                                             onClick = {
@@ -961,7 +962,7 @@ fun MusicArtistScreen(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             items(uiState.albums, key = { it.id }) { album ->
-                                Box(modifier = Modifier.width(CardDimensions.musicCardWidth)) {
+                                Box(modifier = Modifier.width(relatedCardWidth)) {
                                     MusicAlbumCard(
                                         album = album,
                                         onClick = {
@@ -994,7 +995,7 @@ fun MusicArtistScreen(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             items(uiState.appearsOn, key = { it.id }) { album ->
-                                Box(modifier = Modifier.width(CardDimensions.musicCardWidth)) {
+                                Box(modifier = Modifier.width(relatedCardWidth)) {
                                     MusicAlbumCard(
                                         album = album,
                                         onClick = {

@@ -51,12 +51,15 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -175,6 +178,8 @@ private const val SLOT_SURPRISE = "mfy_surprise"
 private fun radioSlotId(index: Int) = "mfy_radio_$index"
 
 private fun genreSlotId(index: Int) = "mfy_genre_$index"
+
+data class TrackTotals(val count: Int? = null, val runtimeTicks: Long? = null)
 
 private data class AlbumQuery(
     val field: MusicSortField,
@@ -388,6 +393,30 @@ constructor(
                 if (overlay.isEmpty()) pagingData
                 else pagingData.map { artist -> itemStore.mergeOwner(artist) }
             }
+
+    private var cachedLibraryRuntime: Pair<Int, Long>? = null
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val trackTotals: StateFlow<TrackTotals> =
+        combine(_trackFilters, _refreshTrigger) { filters, refresh -> filters to refresh }
+            .mapLatest { (filters, refresh) ->
+                coroutineScope {
+                    val count = async { musicRepository.getTrackCount(libraryId, filters) }
+                    val runtime = async {
+                        if (filters.isActive) null else loadLibraryRuntimeTicks(refresh)
+                    }
+                    TrackTotals(count = count.await(), runtimeTicks = runtime.await())
+                }
+            }
+            .stateIn(viewModelScope, SharingStarted.Lazily, TrackTotals())
+
+    private suspend fun loadLibraryRuntimeTicks(refresh: Int): Long? {
+        val cached = cachedLibraryRuntime
+        if (cached != null && cached.first == refresh) return cached.second
+        val ticks = musicRepository.getLibraryRuntimeTicks(libraryId) ?: return null
+        cachedLibraryRuntime = refresh to ticks
+        return ticks
+    }
 
     init {
         loadPersistedPrefs()

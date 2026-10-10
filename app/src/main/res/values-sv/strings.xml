@@ -2062,8 +2062,8 @@
         <item quantity="other">%1$d avsnitt</item>
     </plurals>
     <plurals name="download_count_tracks">
-        <item quantity="one">%1$d spår</item>
-        <item quantity="other">%1$d spår</item>
+        <item quantity="one">%1$,d spår</item>
+        <item quantity="other">%1$,d spår</item>
     </plurals>
     <plurals name="downloads_delete_selected_fmt">
         <item quantity="one">Ta bort %1$d objekt</item>

@@ -46,7 +46,7 @@ import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
+import com.makd.afinity.ui.theme.CardDimensions.scaledPortraitWidth
 
 enum class FilterType {
     GENRE_MOVIE,
@@ -85,7 +85,7 @@ fun FilteredMediaScreen(
 
     LaunchedEffect(filterParams) { viewModel.loadContent(filterParams) }
 
-    val cardWidth = widthSizeClass.portraitWidth
+    val cardWidth = widthSizeClass.scaledPortraitWidth
     val isTv =
         filterParams.type == FilterType.GENRE_TV ||
             filterParams.type == FilterType.POPULAR_TV ||

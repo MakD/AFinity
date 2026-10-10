@@ -79,6 +79,7 @@ import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.navigation.LocalShowAwards
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.CardRowContainer
 import com.makd.afinity.ui.components.FavoriteToggleButton
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.components.isLandscapeWindow
@@ -86,6 +87,7 @@ import com.makd.afinity.ui.item.components.shared.AwardsSectionStyle
 import com.makd.afinity.ui.item.components.shared.ExternalTitlesSection
 import com.makd.afinity.ui.item.components.shared.OverviewSection
 import com.makd.afinity.ui.item.components.shared.WikidataAwardsSection
+import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import com.makd.afinity.ui.utils.IntentUtils
 import com.makd.afinity.ui.utils.verticalLayoutOffset
@@ -248,18 +250,20 @@ private fun LandscapePersonDetailContent(
                 }
 
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        PersonSharedContentBlocks(
-                            person = person,
-                            movies = movies,
-                            shows = shows,
-                            onItemClick = onItemClick,
-                            cardWidth = WindowWidthSizeClass.Compact.portraitWidth,
-                            awards = awards,
-                            missingCredits = missingCredits,
-                            onExternalItemClick = onExternalItemClick,
-                            onViewAllCredits = onViewAllCredits,
-                        )
+                    CardRowContainer(modifier = Modifier.fillMaxWidth(), gutter = 0.dp) {
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            PersonSharedContentBlocks(
+                                person = person,
+                                movies = movies,
+                                shows = shows,
+                                onItemClick = onItemClick,
+                                cardWidth = WindowWidthSizeClass.Compact.portraitWidth,
+                                awards = awards,
+                                missingCredits = missingCredits,
+                                onExternalItemClick = onExternalItemClick,
+                                onViewAllCredits = onViewAllCredits,
+                            )
+                        }
                     }
                 }
             }
@@ -283,7 +287,7 @@ private fun PortraitPersonDetailContent(
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
 ) {
-    val cardWidth = widthSizeClass.portraitWidth
+    val cardWidth = CardDimensions.portraitRowWidth(widthSizeClass, gutter = 16.dp)
     val playerOffset = LocalPlayerOffset.current
 
     LazyColumn(

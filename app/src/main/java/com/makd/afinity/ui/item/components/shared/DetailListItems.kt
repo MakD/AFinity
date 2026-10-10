@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.item.components.shared
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
@@ -13,6 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.common.DetailLayout
+import com.makd.afinity.ui.components.CardRowContainer
 import com.makd.afinity.ui.utils.gapIfNotEmpty
 
 val DetailSectionGap = 16.dp
@@ -33,9 +33,10 @@ fun LazyListScope.detailItem(
 
 @Composable
 fun DetailItemBox(horizontalPadding: Dp, gap: Dp, content: @Composable () -> Unit) {
-    Box(
+    CardRowContainer(
         modifier =
-            Modifier.fillMaxWidth().gapIfNotEmpty(gap).padding(horizontal = horizontalPadding)
+            Modifier.fillMaxWidth().gapIfNotEmpty(gap).padding(horizontal = horizontalPadding),
+        gutter = 0.dp,
     ) {
         content()
     }

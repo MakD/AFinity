@@ -147,7 +147,7 @@ fun MusicArtistCard(
     imageUrl: String?,
     blurHash: String? = null,
     onClick: () -> Unit,
-    size: Dp = CardDimensions.musicCardWidth,
+    size: Dp = CardDimensions.scaledMusicCardWidth,
 ) {
     val imageSize = size * 0.86f
     Column(

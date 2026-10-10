@@ -36,9 +36,12 @@ fun AlbumRelatedSection(
     onAlbumClick: (AfinityAlbum) -> Unit,
     modifier: Modifier = Modifier,
     showArtist: Boolean = true,
+    splitPane: Boolean = false,
     onViewAllClick: (() -> Unit)? = null,
 ) {
     if (albums.isEmpty()) return
+
+    val cardWidth = CardDimensions.musicDetailCardWidth(splitPane = splitPane)
 
     Column(modifier = modifier.padding(horizontal = 20.dp)) {
         Row(
@@ -80,7 +83,7 @@ fun AlbumRelatedSection(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             items(albums, key = { it.id }) { album ->
-                Box(modifier = Modifier.width(CardDimensions.musicCardWidth)) {
+                Box(modifier = Modifier.width(cardWidth)) {
                     MusicAlbumCard(
                         album = album,
                         onClick = { onAlbumClick(album) },

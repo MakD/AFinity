@@ -48,7 +48,6 @@ import com.makd.afinity.ui.components.MediaCountBadge
 import com.makd.afinity.ui.components.PlayedBadge
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import java.util.Locale
 
 @Composable
@@ -57,7 +56,7 @@ fun HighestRatedSection(
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
 ) {
-    val cardWidth = widthSizeClass.portraitWidth
+    val cardWidth = CardDimensions.portraitRowWidth(widthSizeClass, gap = 22.dp, reserved = 20.dp)
     val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
     Column(modifier = Modifier.padding(horizontal = 14.dp)) {

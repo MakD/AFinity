@@ -47,8 +47,8 @@ import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
-import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
+import com.makd.afinity.ui.theme.CardDimensions.scaledLandscapeWidth
+import com.makd.afinity.ui.theme.CardDimensions.scaledPortraitWidth
 
 enum class FavoritesCategory {
     BOXSETS,
@@ -202,7 +202,7 @@ fun FavoritesCategoryScreen(
                                     channel.name,
                                 )
                             },
-                            cardWidth = widthSizeClass.landscapeWidth,
+                            cardWidth = widthSizeClass.scaledLandscapeWidth,
                         )
                     }
 
@@ -217,7 +217,7 @@ fun FavoritesCategoryScreen(
                         FavoritePersonCard(
                             person = person,
                             onClick = { onPersonClick(person.id.toString()) },
-                            cardWidth = widthSizeClass.portraitWidth,
+                            cardWidth = widthSizeClass.scaledPortraitWidth,
                         )
                     }
 
@@ -256,7 +256,7 @@ fun FavoritesCategoryScreen(
                                     Destination.createMusicArtistRoute(artist.id.toString())
                                 )
                             },
-                            size = widthSizeClass.portraitWidth,
+                            size = widthSizeClass.scaledPortraitWidth,
                         )
                     }
 

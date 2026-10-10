@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,7 +37,7 @@ fun SquareMediaTile(
 
     Column(modifier = modifier.width(tileWidth).clickable(role = Role.Button, onClick = onClick)) {
         Card(
-            modifier = Modifier.width(tileWidth).aspectRatio(1f),
+            modifier = Modifier.fillMaxWidth().aspectRatio(1f),
             shape = RoundedCornerShape(8.dp),
             colors =
                 CardDefaults.cardColors(
@@ -63,7 +64,7 @@ fun SquareMediaTile(
             color = MaterialTheme.colorScheme.onBackground,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.width(tileWidth),
+            modifier = Modifier.fillMaxWidth(),
         )
         if (subtitle != null) {
             Text(
@@ -72,7 +73,7 @@ fun SquareMediaTile(
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.width(tileWidth),
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }

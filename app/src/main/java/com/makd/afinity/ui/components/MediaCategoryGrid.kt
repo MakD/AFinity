@@ -45,7 +45,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
+import com.makd.afinity.ui.theme.CardDimensions.scaledLandscapeWidth
 
 @Composable
 fun MediaCategoryGrid(
@@ -82,7 +82,7 @@ fun MediaCategoryGrid(
                     ContinueWatchingCard(
                         item = item,
                         onClick = { onItemClick(item) },
-                        cardWidth = widthSizeClass.landscapeWidth,
+                        cardWidth = widthSizeClass.scaledLandscapeWidth,
                         fillWidth = true,
                     )
                 } else {

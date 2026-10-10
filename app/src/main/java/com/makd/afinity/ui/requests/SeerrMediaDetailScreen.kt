@@ -87,7 +87,7 @@ import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.SeparatedFlowRow
 import com.makd.afinity.ui.components.getAutoFlagUrl
 import com.makd.afinity.ui.components.isLandscapeWindow
-import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
+import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 import com.makd.afinity.ui.utils.verticalLayoutOffset
 import com.makd.afinity.util.DateSkeleton
@@ -392,6 +392,7 @@ private fun SeerrDetailSections(
             onItemClick = handleMediaItemClick,
             widthSizeClass = widthSizeClass,
             horizontalPadding = 0.dp,
+            rowGutter = 16.dp,
         )
     }
 
@@ -402,6 +403,7 @@ private fun SeerrDetailSections(
             onItemClick = handleMediaItemClick,
             widthSizeClass = widthSizeClass,
             horizontalPadding = 0.dp,
+            rowGutter = 16.dp,
         )
     }
 
@@ -412,6 +414,7 @@ private fun SeerrDetailSections(
             onItemClick = handleMediaItemClick,
             widthSizeClass = widthSizeClass,
             horizontalPadding = 0.dp,
+            rowGutter = 16.dp,
         )
     }
 }
@@ -422,7 +425,7 @@ private fun SeerrCastSection(
     onPersonClick: (CastMember) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
 ) {
-    val cardWidth = widthSizeClass.portraitWidth
+    val cardWidth = CardDimensions.portraitRowWidth(widthSizeClass, gutter = 16.dp)
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(

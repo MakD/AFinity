@@ -141,7 +141,6 @@ fun AudiobookshelfItemScreen(
     val isLandscape = isLandscapeWindow()
     val playerOffset = LocalPlayerOffset.current
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val cardWidth = widthSizeClass.portraitWidth
 
     var showAllChapters by rememberSaveable { mutableStateOf(false) }
     var showListenedChapters by rememberSaveable { mutableStateOf(false) }
@@ -361,7 +360,7 @@ fun AudiobookshelfItemScreen(
                                         RecommendationRowSection(
                                             row = row,
                                             serverUrl = config?.serverUrl,
-                                            cardWidth = cardWidth,
+                                            cardWidth = widthSizeClass.portraitWidth,
                                             onItemClick = { onNavigateToItem(it.id) },
                                             onSeriesClick = { series ->
                                                 onNavigateToSeries(

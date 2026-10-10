@@ -1041,8 +1041,8 @@
         <item quantity="other">%1$d episodes</item>
     </plurals>
     <plurals name="download_count_tracks">
-        <item quantity="one">%1$d track</item>
-        <item quantity="other">%1$d tracks</item>
+        <item quantity="one">%1$,d track</item>
+        <item quantity="other">%1$,d tracks</item>
     </plurals>
     <string name="downloads_storage_used_fmt">%1$s used by downloads</string>
     <string name="downloads_group_summary_fmt">%1$d items · %2$s</string>

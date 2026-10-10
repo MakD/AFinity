@@ -43,6 +43,7 @@ import com.makd.afinity.ui.item.components.shared.baseMediaDetailItems
 import com.makd.afinity.ui.item.components.shared.detailItem
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
+import com.makd.afinity.ui.theme.CardDimensions.scaledLandscapeWidth
 
 fun LazyListScope.seasonDetailItems(
     season: AfinitySeason,
@@ -134,7 +135,7 @@ private fun LazyListScope.episodesItems(
                         EpisodeListCard(
                             item = episode,
                             onClick = { onEpisodeClick(episode) },
-                            thumbnailWidth = widthSizeClass.landscapeWidth,
+                            thumbnailWidth = widthSizeClass.scaledLandscapeWidth,
                         )
                     }
                 }

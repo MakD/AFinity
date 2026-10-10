@@ -83,6 +83,7 @@ import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.HeroCarousel
 import com.makd.afinity.ui.components.heroCarouselLayoutHeight
+import com.makd.afinity.ui.downloads.DownloadedCategory
 import com.makd.afinity.ui.home.components.DownloadedAudiobooksSection
 import com.makd.afinity.ui.home.components.DownloadedMusicAlbumsSection
 import com.makd.afinity.ui.home.components.DownloadedMusicTracksSection
@@ -360,6 +361,13 @@ fun HomeScreen(
                                         onItemClick = onItemClick,
                                         widthSizeClass = widthSizeClass,
                                         unavailableItemIds = uiState.unavailableDownloadIds,
+                                        onViewAllClick = {
+                                            navController.navigate(
+                                                Destination.createDownloadedCategoryRoute(
+                                                    DownloadedCategory.MOVIES.name
+                                                )
+                                            )
+                                        },
                                     )
                                 }
                             }
@@ -374,6 +382,13 @@ fun HomeScreen(
                                         onItemClick = onItemClick,
                                         widthSizeClass = widthSizeClass,
                                         unavailableItemIds = uiState.unavailableDownloadIds,
+                                        onViewAllClick = {
+                                            navController.navigate(
+                                                Destination.createDownloadedCategoryRoute(
+                                                    DownloadedCategory.SHOWS.name
+                                                )
+                                            )
+                                        },
                                     )
                                 }
                             }
@@ -386,6 +401,13 @@ fun HomeScreen(
                                         title = stringResource(R.string.home_downloaded_audiobooks),
                                         items = uiState.downloadedAudiobooks,
                                         onItemClick = { onAbsItemClick(it.libraryItemId) },
+                                        onViewAllClick = {
+                                            navController.navigate(
+                                                Destination.createDownloadedCategoryRoute(
+                                                    DownloadedCategory.AUDIOBOOKS.name
+                                                )
+                                            )
+                                        },
                                     )
                                 }
                             }
@@ -398,6 +420,13 @@ fun HomeScreen(
                                         title = stringResource(R.string.home_downloaded_episodes),
                                         items = uiState.downloadedPodcastEpisodes,
                                         onItemClick = { onAbsItemClick(it.libraryItemId) },
+                                        onViewAllClick = {
+                                            navController.navigate(
+                                                Destination.createDownloadedCategoryRoute(
+                                                    DownloadedCategory.PODCASTS.name
+                                                )
+                                            )
+                                        },
                                     )
                                 }
                             }
@@ -409,6 +438,13 @@ fun HomeScreen(
                                     DownloadedMusicAlbumsSection(
                                         title = stringResource(R.string.home_downloaded_albums),
                                         albums = uiState.downloadedMusicAlbums,
+                                        onViewAllClick = {
+                                            navController.navigate(
+                                                Destination.createDownloadedCategoryRoute(
+                                                    DownloadedCategory.ALBUMS.name
+                                                )
+                                            )
+                                        },
                                         onAlbumClick = { album ->
                                             navController.navigate(
                                                 Destination.createMusicAlbumRoute(
@@ -427,6 +463,13 @@ fun HomeScreen(
                                     DownloadedMusicTracksSection(
                                         title = stringResource(R.string.home_downloaded_tracks),
                                         tracks = uiState.downloadedMusicTracks,
+                                        onViewAllClick = {
+                                            navController.navigate(
+                                                Destination.createDownloadedCategoryRoute(
+                                                    DownloadedCategory.TRACKS.name
+                                                )
+                                            )
+                                        },
                                         onTrackClick = { track ->
                                             val tracks = uiState.downloadedMusicTracks
                                             val index = tracks.indexOf(track).coerceAtLeast(0)

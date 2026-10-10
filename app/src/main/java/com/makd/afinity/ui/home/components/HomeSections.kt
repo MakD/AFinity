@@ -191,12 +191,13 @@ fun OptimizedLatestTvSeriesSection(
     widthSizeClass: WindowWidthSizeClass,
     title: String = stringResource(R.string.home_latest_tv_series),
     unavailableItemIds: Set<java.util.UUID> = emptySet(),
+    onViewAllClick: (() -> Unit)? = null,
 ) {
     val cardWidth = widthSizeClass.portraitWidth
     val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
     Column(modifier = Modifier.padding(horizontal = 14.dp)) {
-        HomeSectionHeader(title = title)
+        HomeSectionHeader(title = title, onViewAllClick = onViewAllClick)
 
         val uniqueItems = items.distinctBy { it.id }
         val firstItemId = uniqueItems.firstOrNull()?.id
@@ -370,9 +371,10 @@ fun DownloadedAudiobooksSection(
     items: List<AbsDownloadInfo>,
     onItemClick: (AbsDownloadInfo) -> Unit,
     modifier: Modifier = Modifier,
+    onViewAllClick: (() -> Unit)? = null,
 ) {
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
-        HomeSectionHeader(title = title)
+        HomeSectionHeader(title = title, onViewAllClick = onViewAllClick)
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
@@ -395,9 +397,10 @@ fun DownloadedMusicAlbumsSection(
     albums: List<AfinityAlbum>,
     onAlbumClick: (AfinityAlbum) -> Unit,
     modifier: Modifier = Modifier,
+    onViewAllClick: (() -> Unit)? = null,
 ) {
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
-        HomeSectionHeader(title = title)
+        HomeSectionHeader(title = title, onViewAllClick = onViewAllClick)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(items = albums, key = { "album_${it.id}" }) { album ->
                 SquareMediaTile(
@@ -418,9 +421,10 @@ fun DownloadedMusicTracksSection(
     tracks: List<AfinityTrack>,
     onTrackClick: (AfinityTrack) -> Unit,
     modifier: Modifier = Modifier,
+    onViewAllClick: (() -> Unit)? = null,
 ) {
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
-        HomeSectionHeader(title = title)
+        HomeSectionHeader(title = title, onViewAllClick = onViewAllClick)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(items = tracks, key = { "track_${it.id}" }) { track ->
                 SquareMediaTile(

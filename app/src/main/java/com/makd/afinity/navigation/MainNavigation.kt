@@ -86,12 +86,16 @@ import com.makd.afinity.ui.audiobookshelf.player.AudiobookshelfPlayerScreen
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinitySplashScreen
 import com.makd.afinity.ui.components.AppNavigationDrawerContent
+import com.makd.afinity.ui.components.CardRowContainer
 import com.makd.afinity.ui.components.LocalNetworkPermissionGrantButton
 import com.makd.afinity.ui.components.UnsupportedServerDialog
+import com.makd.afinity.ui.downloads.DownloadedCategory
+import com.makd.afinity.ui.downloads.DownloadedCategoryScreen
 import com.makd.afinity.ui.favorites.FavoritesCategory
 import com.makd.afinity.ui.favorites.FavoritesCategoryScreen
 import com.makd.afinity.ui.favorites.FavoritesScreen
 import com.makd.afinity.ui.home.HomeScreen
+import com.makd.afinity.ui.home.HomeViewModel
 import com.makd.afinity.ui.item.ItemDetailScreen
 import com.makd.afinity.ui.libraries.LibrariesScreen
 import com.makd.afinity.ui.library.LibraryContentScreen
@@ -425,7 +429,10 @@ fun MainNavigation(
                     LocalCardSize provides cardSize,
                 ) {
                     SharedTransitionLayout {
-                        Box(modifier = Modifier.fillMaxSize()) {
+                        CardRowContainer(
+                            modifier = Modifier.fillMaxSize(),
+                            excludeDisplayCutout = true,
+                        ) {
                             NavHost(
                                 navController = navController,
                                 startDestination = Destination.SPLASH_ROUTE,
@@ -897,6 +904,41 @@ fun MainNavigation(
                                         onPersonClick = { personId ->
                                             val route = Destination.createPersonRoute(personId)
                                             navController.navigate(route)
+                                        },
+                                        navController = navController,
+                                        widthSizeClass = widthSizeClass,
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                }
+
+                                composable(
+                                    route = Destination.DOWNLOADED_CATEGORY_ROUTE,
+                                    arguments =
+                                        listOf(
+                                            navArgument("category") { type = NavType.StringType }
+                                        ),
+                                ) { backStackEntry ->
+                                    val categoryName =
+                                        backStackEntry.arguments?.getString("category")
+                                            ?: return@composable
+                                    val category = DownloadedCategory.valueOf(categoryName)
+                                    val homeEntry =
+                                        remember(backStackEntry) {
+                                            navController.getBackStackEntry(Destination.HOME.route)
+                                        }
+                                    val homeViewModel: HomeViewModel = hiltViewModel(homeEntry)
+
+                                    DownloadedCategoryScreen(
+                                        category = category,
+                                        mainUiState = mainUiState,
+                                        homeViewModel = homeViewModel,
+                                        onItemClick = { item ->
+                                            navController.navigateToItem(item)
+                                        },
+                                        onAbsItemClick = { itemId ->
+                                            navController.navigate(
+                                                Destination.createAudiobookshelfItemRoute(itemId)
+                                            )
                                         },
                                         navController = navController,
                                         widthSizeClass = widthSizeClass,

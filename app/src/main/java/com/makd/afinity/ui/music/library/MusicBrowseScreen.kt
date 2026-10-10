@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -45,6 +46,10 @@ import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
+import com.makd.afinity.ui.music.components.SortFilterHeaderActions
+import com.makd.afinity.ui.music.components.musicFiltersSummary
+import com.makd.afinity.ui.music.components.musicSortSummary
+import com.makd.afinity.ui.music.components.musicTotalRuntimeLabel
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import java.util.UUID
 import kotlinx.coroutines.launch
@@ -161,27 +166,36 @@ fun MusicBrowseScreen(
                             active = allArtistFilters.isActive,
                             onClick = { showAllArtistFilterSheet = true },
                         )
-                    LibraryFilter.Tracks ->
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            horizontalAlignment = Alignment.End,
-                        ) {
-                            FilterFab(
-                                active = trackFilters.isActive,
-                                onClick = { showTrackFilterSheet = true },
-                            )
-                            FloatingActionButton(onClick = { showTrackSortDialog = true }) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_arrows_sort),
-                                    contentDescription = stringResource(R.string.cd_sort_fab),
-                                )
-                            }
-                        }
                     else -> Unit
                 }
             }
         },
     ) { innerPadding ->
+        val trackTotals =
+            if (tab == LibraryFilter.Tracks) {
+                viewModel.trackTotals.collectAsStateWithLifecycle().value
+            } else {
+                TrackTotals()
+            }
+        val trackSortSummary = musicSortSummary(trackSortField, trackSortDescending)
+        val trackCount = trackTotals.count
+        val trackHeaderTitle =
+            if (trackCount != null) {
+                pluralStringResource(R.plurals.download_count_tracks, trackCount, trackCount)
+            } else {
+                trackSortSummary
+            }
+        val trackHeaderSubtitle =
+            listOfNotNull(
+                    trackTotals.runtimeTicks
+                        ?.takeIf { !trackFilters.isActive }
+                        ?.let { musicTotalRuntimeLabel(it) },
+                    trackSortSummary.takeIf { trackCount != null },
+                    musicFiltersSummary(trackFilters),
+                )
+                .joinToString(" · ")
+                .ifEmpty { null }
+
         when (tab) {
             LibraryFilter.Playlists ->
                 PlaylistsGrid(
@@ -242,6 +256,15 @@ fun MusicBrowseScreen(
                     tracks = lazyTracks,
                     favoriteOverrides = uiState.trackFavoriteOverrides,
                     currentTrackId = playbackState.currentTrack?.id?.toString(),
+                    headerTitle = trackHeaderTitle,
+                    headerSubtitle = trackHeaderSubtitle,
+                    headerActions = {
+                        SortFilterHeaderActions(
+                            onSortClick = { showTrackSortDialog = true },
+                            onFilterClick = { showTrackFilterSheet = true },
+                            filterActive = trackFilters.isActive,
+                        )
+                    },
                     onPlayAll = {
                         scope.launch {
                             val queue = viewModel.getAllFilteredTracks()

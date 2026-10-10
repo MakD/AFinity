@@ -137,6 +137,53 @@ constructor(
             }
         }
 
+    override suspend fun getTrackCount(libraryId: UUID, filters: MusicFilters): Int? =
+        apiCall<Int?>(null, "Failed to fetch track count for library: $libraryId") {
+            apiClient,
+            userId ->
+            val itemFilters = buildList {
+                if (filters.favoritesOnly) add(ItemFilter.IS_FAVORITE)
+                if (filters.unplayedOnly) add(ItemFilter.IS_UNPLAYED)
+                if (filters.playedOnly) add(ItemFilter.IS_PLAYED)
+            }
+
+            LibraryApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    parentId = libraryId,
+                    includeItemTypes = listOf(BaseItemKind.AUDIO),
+                    filters = itemFilters.ifEmpty { null },
+                    genres = filters.genres.toList().ifEmpty { null },
+                    years = filters.years.toList().ifEmpty { null },
+                    limit = 0,
+                    recursive = true,
+                    enableUserData = false,
+                    enableImages = false,
+                    enableTotalRecordCount = true,
+                )
+                .content
+                .totalRecordCount
+        }
+
+    override suspend fun getLibraryRuntimeTicks(libraryId: UUID): Long? =
+        apiCall<Long?>(null, "Failed to fetch total runtime for library: $libraryId") {
+            apiClient,
+            userId ->
+            LibraryApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    parentId = libraryId,
+                    includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
+                    recursive = true,
+                    enableUserData = false,
+                    enableImages = false,
+                    enableTotalRecordCount = false,
+                )
+                .content
+                .items
+                .sumOf { it.runTimeTicks ?: 0L }
+        }
+
     override suspend fun getAlbums(
         libraryId: UUID,
         sortBy: ItemSortBy,

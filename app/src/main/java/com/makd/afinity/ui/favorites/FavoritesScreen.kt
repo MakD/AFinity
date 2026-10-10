@@ -73,6 +73,7 @@ import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.CardRowContainer
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
@@ -130,9 +131,6 @@ fun FavoritesScreen(
 
     LaunchedEffect(Unit) { viewModel.loadFavorites() }
 
-    val portraitWidth = widthSizeClass.portraitWidth
-    val landscapeWidth = widthSizeClass.landscapeWidth
-
     Scaffold(
         topBar = {
             AfinityTopAppBar(
@@ -158,7 +156,10 @@ fun FavoritesScreen(
         },
         modifier = modifier,
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+        CardRowContainer(
+            modifier = Modifier.fillMaxSize().padding(paddingValues),
+            gutter = 16.dp,
+        ) {
             when {
                 uiState.isLoading -> FullScreenLoading()
 
@@ -170,6 +171,8 @@ fun FavoritesScreen(
                     )
 
                 else -> {
+                    val portraitWidth = widthSizeClass.portraitWidth
+                    val landscapeWidth = widthSizeClass.landscapeWidth
                     val hasAnyFavorites =
                         uiState.movies.isNotEmpty() ||
                             uiState.shows.isNotEmpty() ||

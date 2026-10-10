@@ -222,7 +222,7 @@ fun MostPlayedAlbumsSection(
     if (albums.isEmpty()) return
 
     val isLandscape = isLandscapeWindow()
-    val cardWidth = CardDimensions.musicRowCardWidth(isLandscape)
+    val cardWidth = CardDimensions.musicRowCardWidth(isLandscape, gap = 22.dp, reserved = 20.dp)
     val rowHeight = cardWidth + 12.dp + 8.dp + 20.dp + 18.dp
 
     Column(modifier = modifier) {
@@ -317,7 +317,11 @@ fun MusicAlbumRowSection(
 ) {
     if (albums.isEmpty()) return
     val isLandscape = isLandscapeWindow()
-    val cardWidth = CardDimensions.musicRowCardWidth(isLandscape)
+    val cardWidth =
+        CardDimensions.musicRowCardWidth(
+            isLandscape,
+            gutter = horizontalPadding.takeIf { it > 0.dp },
+        )
     Column(modifier = modifier) {
         if (onViewAllClick != null) {
             SectionRowHeader(
@@ -363,7 +367,11 @@ fun MusicPlaylistRowSection(
 ) {
     if (playlists.isEmpty()) return
     val isLandscape = isLandscapeWindow()
-    val cardWidth = CardDimensions.musicRowCardWidth(isLandscape)
+    val cardWidth =
+        CardDimensions.musicRowCardWidth(
+            isLandscape,
+            gutter = horizontalPadding.takeIf { it > 0.dp },
+        )
     Column(modifier = modifier) {
         if (onViewAllClick != null) {
             SectionRowHeader(

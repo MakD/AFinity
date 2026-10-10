@@ -1958,10 +1958,10 @@
         <item quantity="other">%1$d эпизодов</item>
     </plurals>
     <plurals name="download_count_tracks">
-        <item quantity="one">%1$d трек</item>
-        <item quantity="few">%1$d трека</item>
-        <item quantity="many">%1$d треков</item>
-        <item quantity="other">%1$d треков</item>
+        <item quantity="one">%1$,d трек</item>
+        <item quantity="few">%1$,d трека</item>
+        <item quantity="many">%1$,d треков</item>
+        <item quantity="other">%1$,d треков</item>
     </plurals>
     <string name="downloads_storage_used_fmt">%1$s используется загруженными файлами</string>
     <string name="downloads_group_summary_fmt">%1$d элементов · %2$s</string>

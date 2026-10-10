@@ -103,6 +103,7 @@ fun MusicGenreScreen(
     val playerOffset = LocalPlayerOffset.current
     val context = LocalContext.current
     val isLandscape = isLandscapeWindow()
+    val relatedCardWidth = CardDimensions.musicDetailCardWidth(splitPane = isLandscape)
     val listState = rememberLazyListState()
     val topBarOpacity by rememberTopBarOpacity(listState)
     var showAllTracks by remember { mutableStateOf(false) }
@@ -257,6 +258,7 @@ fun MusicGenreScreen(
                                         name = artist.name,
                                         imageUrl = artist.images.primary?.toString(),
                                         blurHash = artist.images.primaryImageBlurHash,
+                                        size = relatedCardWidth,
                                         onClick = {
                                             navController.navigate(
                                                 Destination.createMusicArtistRoute(
@@ -287,7 +289,7 @@ fun MusicGenreScreen(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                             ) {
                                 items(uiState.albums, key = { it.id }) { album ->
-                                    Box(modifier = Modifier.width(CardDimensions.musicCardWidth)) {
+                                    Box(modifier = Modifier.width(relatedCardWidth)) {
                                         MusicAlbumCard(
                                             album = album,
                                             onClick = {
@@ -321,7 +323,7 @@ fun MusicGenreScreen(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                             ) {
                                 items(uiState.recentlyAdded, key = { it.id }) { album ->
-                                    Box(modifier = Modifier.width(CardDimensions.musicCardWidth)) {
+                                    Box(modifier = Modifier.width(relatedCardWidth)) {
                                         MusicAlbumCard(
                                             album = album,
                                             onClick = {
@@ -450,6 +452,7 @@ fun MusicGenreScreen(
                                     name = artist.name,
                                     imageUrl = artist.images.primary?.toString(),
                                     blurHash = artist.images.primaryImageBlurHash,
+                                    size = relatedCardWidth,
                                     onClick = {
                                         navController.navigate(
                                             Destination.createMusicArtistRoute(artist.id.toString())
@@ -477,7 +480,7 @@ fun MusicGenreScreen(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             items(uiState.albums, key = { it.id }) { album ->
-                                Box(modifier = Modifier.width(CardDimensions.musicCardWidth)) {
+                                Box(modifier = Modifier.width(relatedCardWidth)) {
                                     MusicAlbumCard(
                                         album = album,
                                         onClick = {
@@ -510,7 +513,7 @@ fun MusicGenreScreen(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             items(uiState.recentlyAdded, key = { it.id }) { album ->
-                                Box(modifier = Modifier.width(CardDimensions.musicCardWidth)) {
+                                Box(modifier = Modifier.width(relatedCardWidth)) {
                                     MusicAlbumCard(
                                         album = album,
                                         onClick = {

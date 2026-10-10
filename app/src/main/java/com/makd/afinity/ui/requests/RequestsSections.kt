@@ -124,8 +124,9 @@ fun DiscoverSection(
     modifier: Modifier = Modifier,
     onViewAllClick: (() -> Unit)? = null,
     horizontalPadding: androidx.compose.ui.unit.Dp = 14.dp,
+    rowGutter: androidx.compose.ui.unit.Dp = horizontalPadding,
 ) {
-    val cardWidth = widthSizeClass.portraitWidth
+    val cardWidth = CardDimensions.portraitRowWidth(widthSizeClass, gutter = rowGutter)
     val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
     val headerBottomPadding = if (onViewAllClick != null) 4.dp else 16.dp

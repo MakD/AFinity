@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -34,13 +35,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.carousel.CarouselDefaults
@@ -111,6 +110,7 @@ import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.music.components.MusicArtistCard
 import com.makd.afinity.ui.music.components.MusicGenreCard
 import com.makd.afinity.ui.music.components.MusicTrackRow
+import com.makd.afinity.ui.music.components.TracksHeaderPanel
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.utils.shimmerEffect
@@ -232,19 +232,22 @@ internal fun TracksList(
     tracks: LazyPagingItems<AfinityTrack>,
     favoriteOverrides: Map<UUID, Boolean>,
     currentTrackId: String?,
+    headerTitle: String,
     onPlayAll: () -> Unit,
     onShuffleAll: () -> Unit,
     onTrackClick: (AfinityTrack, List<AfinityTrack>, Int) -> Unit,
     onInstantMix: ((AfinityTrack) -> Unit)?,
-    onStartRadio: (AfinityTrack) -> Unit,
+    onStartRadio: ((AfinityTrack) -> Unit)?,
     onAddNext: (AfinityTrack) -> Unit,
     onAddLast: (AfinityTrack) -> Unit,
-    onFavorite: (AfinityTrack, Boolean) -> Unit,
+    onFavorite: ((AfinityTrack, Boolean) -> Unit)?,
     onAddToPlaylist: ((AfinityTrack) -> Unit)?,
     onDownload: ((AfinityTrack) -> Unit)? = null,
     onCancelDownload: ((AfinityTrack) -> Unit)? = null,
     isDownloadEnabled: Boolean = true,
     trackDownloadInfos: Map<UUID, DownloadInfo> = emptyMap(),
+    headerSubtitle: String? = null,
+    headerActions: @Composable RowScope.() -> Unit = {},
 ) {
     val isInitialLoading = tracks.loadState.refresh is LoadState.Loading && tracks.itemCount == 0
     if (isInitialLoading) {
@@ -258,8 +261,26 @@ internal fun TracksList(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = playerOffset),
     ) {
-        item(key = "tracks_controls") {
-            TrackPlayShuffleRow(onPlayAll = onPlayAll, onShuffleAll = onShuffleAll)
+        item(key = "tracks_header") {
+            val snapshot = tracks.itemSnapshotList
+            val coverUrls =
+                remember(snapshot) {
+                    snapshot.items
+                        .asSequence()
+                        .distinctBy { it.albumId ?: it.id }
+                        .mapNotNull { it.images.primary?.toString() }
+                        .distinct()
+                        .take(5)
+                        .toList()
+                }
+            TracksHeaderPanel(
+                coverUrls = coverUrls,
+                title = headerTitle,
+                subtitle = headerSubtitle,
+                onPlayAll = onPlayAll,
+                onShuffleAll = onShuffleAll,
+                leadingActions = headerActions,
+            )
         }
         items(count = tracks.itemCount, key = tracks.itemKey { it.id }) { index ->
             val track = tracks[index] ?: return@items
@@ -277,10 +298,10 @@ internal fun TracksList(
                     onTrackClick(track, queue, queueIndex)
                 },
                 onInstantMix = onInstantMix?.let { mix -> { mix(track) } },
-                onStartRadio = { onStartRadio(track) },
+                onStartRadio = onStartRadio?.let { radio -> { radio(track) } },
                 onAddNext = { onAddNext(track) },
                 onAddLast = { onAddLast(track) },
-                onFavorite = { onFavorite(track, effectiveFavorite) },
+                onFavorite = onFavorite?.let { fav -> { fav(track, effectiveFavorite) } },
                 onAddToPlaylist = onAddToPlaylist?.let { atp -> { atp(track) } },
                 onDownload = onDownload?.let { dl -> { dl(track) } },
                 onCancelDownload = onCancelDownload?.let { c -> { c(track) } },
@@ -474,46 +495,6 @@ internal fun GenresGrid(
                 genre = genre,
                 index = index,
                 onClick = { onGenreClick(genre) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun TrackPlayShuffleRow(onPlayAll: () -> Unit, onShuffleAll: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        OutlinedButton(
-            onClick = onShuffleAll,
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_arrows_shuffle),
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-            )
-            Spacer(Modifier.width(4.dp))
-            Text(
-                stringResource(R.string.music_action_shuffle),
-                style = MaterialTheme.typography.labelLarge,
-            )
-        }
-        Button(
-            onClick = onPlayAll,
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_player_play_filled),
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-            )
-            Spacer(Modifier.width(4.dp))
-            Text(
-                stringResource(R.string.music_action_play_all),
-                style = MaterialTheme.typography.labelLarge,
             )
         }
     }
@@ -1224,7 +1205,11 @@ internal fun MusicArtistsRow(
     onViewAllClick: (() -> Unit)? = null,
 ) {
     val isLandscape = isLandscapeWindow()
-    val cardSize = CardDimensions.musicRowCardWidth(isLandscape)
+    val cardSize =
+        CardDimensions.musicRowCardWidth(
+            isLandscape,
+            gutter = horizontalPadding.takeIf { it > 0.dp },
+        )
     Column(modifier = modifier) {
         if (onViewAllClick != null) {
             SectionRowHeader(

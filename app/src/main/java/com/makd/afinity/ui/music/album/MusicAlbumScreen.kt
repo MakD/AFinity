@@ -245,6 +245,7 @@ fun MusicAlbumScreen(
                     title = stringResource(R.string.music_section_more_from_fmt, artist),
                     albums = uiState.moreFromArtist,
                     showArtist = false,
+                    splitPane = isLandscape,
                     onViewAllClick =
                         artistId?.let {
                             {
@@ -264,6 +265,7 @@ fun MusicAlbumScreen(
             AlbumRelatedSection(
                 title = stringResource(R.string.music_section_more_like_this),
                 albums = uiState.similarAlbums,
+                splitPane = isLandscape,
                 onAlbumClick = { album ->
                     navController.navigate(Destination.createMusicAlbumRoute(album.id.toString()))
                 },
