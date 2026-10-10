@@ -146,7 +146,9 @@ private fun LazyListScope.episodesItems(
     if (lazyEpisodeItems.loadState.append is LoadState.Loading) {
         detailItem("episodes_loading", horizontalPadding, gap = EpisodesInnerGap) {
             Box(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator(modifier = Modifier.size(32.dp))
@@ -161,9 +163,7 @@ private fun HorizontalEpisodesList(
     onEpisodeClick: (AfinityEpisode) -> Unit,
     cardWidth: Dp,
 ) {
-    val cardHeight =
-        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
 
     LazyRow(
         modifier = Modifier.height(fixedRowHeight),

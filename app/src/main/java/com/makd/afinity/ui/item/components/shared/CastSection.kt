@@ -37,6 +37,7 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import java.util.UUID
 import org.jellyfin.sdk.model.api.PersonKind
@@ -160,7 +161,8 @@ private fun CastMemberCard(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
-            modifier = Modifier.height(16.dp),
+            modifier =
+                Modifier.height(CardDimensions.textHeight(MaterialTheme.typography.bodySmall)),
         )
     }
 }

@@ -45,6 +45,7 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.MediaCountBadge
+import com.makd.afinity.ui.components.MetadataOverflowRow
 import com.makd.afinity.ui.components.PlayedBadge
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.ui.theme.CardDimensions
@@ -160,48 +161,76 @@ fun HighestRatedCard(item: AfinityItem, ranking: Int, onClick: () -> Unit, cardW
                 overflow = TextOverflow.Ellipsis,
             )
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                val metadataItems = mutableListOf<@Composable () -> Unit>()
+            val metadataItems = mutableListOf<@Composable () -> Unit>()
 
+            when (item) {
+                is AfinityMovie -> item.productionYear
+                is AfinityShow -> item.productionYear
+                else -> null
+            }?.let { year ->
+                metadataItems.add {
+                    Text(
+                        text = year.toString(),
+                        style =
+                            MaterialTheme.typography.bodySmall.copy(fontSize = metadataFontSize),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            if (LocalShowRatings.current) {
                 when (item) {
-                    is AfinityMovie -> item.productionYear
-                    is AfinityShow -> item.productionYear
+                    is AfinityMovie -> item.communityRating
+                    is AfinityShow -> item.communityRating
                     else -> null
-                }?.let { year ->
+                }?.let { rating ->
                     metadataItems.add {
-                        Text(
-                            text = year.toString(),
-                            style =
-                                MaterialTheme.typography.bodySmall.copy(
-                                    fontSize = metadataFontSize
-                                ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_community_rating),
+                                contentDescription = stringResource(R.string.cd_imdb),
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(rtIconSize),
+                            )
+                            Text(
+                                text = String.format(Locale.US, "%.1f", rating),
+                                style =
+                                    MaterialTheme.typography.bodySmall.copy(
+                                        fontSize = metadataFontSize
+                                    ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
 
-                if (LocalShowRatings.current) {
-                    when (item) {
-                        is AfinityMovie -> item.communityRating
-                        is AfinityShow -> item.communityRating
-                        else -> null
-                    }?.let { rating ->
+                if (item is AfinityMovie) {
+                    item.criticRating?.let { rtRating ->
                         metadataItems.add {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(2.dp),
                             ) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.ic_community_rating),
-                                    contentDescription = stringResource(R.string.cd_imdb),
+                                    painter =
+                                        painterResource(
+                                            id =
+                                                if (rtRating > 60) {
+                                                    R.drawable.ic_rotten_tomato_fresh
+                                                } else {
+                                                    R.drawable.ic_rotten_tomato_rotten
+                                                }
+                                        ),
+                                    contentDescription =
+                                        stringResource(R.string.cd_rotten_tomatoes),
                                     tint = Color.Unspecified,
                                     modifier = Modifier.size(rtIconSize),
                                 )
                                 Text(
-                                    text = String.format(Locale.US, "%.1f", rating),
+                                    text = "${rtRating.toInt()}%",
                                     style =
                                         MaterialTheme.typography.bodySmall.copy(
                                             fontSize = metadataFontSize
@@ -211,54 +240,10 @@ fun HighestRatedCard(item: AfinityItem, ranking: Int, onClick: () -> Unit, cardW
                             }
                         }
                     }
-
-                    if (item is AfinityMovie) {
-                        item.criticRating?.let { rtRating ->
-                            metadataItems.add {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                ) {
-                                    Icon(
-                                        painter =
-                                            painterResource(
-                                                id =
-                                                    if (rtRating > 60) {
-                                                        R.drawable.ic_rotten_tomato_fresh
-                                                    } else {
-                                                        R.drawable.ic_rotten_tomato_rotten
-                                                    }
-                                            ),
-                                        contentDescription =
-                                            stringResource(R.string.cd_rotten_tomatoes),
-                                        tint = Color.Unspecified,
-                                        modifier = Modifier.size(rtIconSize),
-                                    )
-                                    Text(
-                                        text = "${rtRating.toInt()}%",
-                                        style =
-                                            MaterialTheme.typography.bodySmall.copy(
-                                                fontSize = metadataFontSize
-                                            ),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                metadataItems.forEachIndexed { index, item ->
-                    item()
-                    if (index < metadataItems.size - 1) {
-                        Text(
-                            text = "•",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
                 }
             }
+
+            MetadataOverflowRow(items = metadataItems)
         }
     }
 }

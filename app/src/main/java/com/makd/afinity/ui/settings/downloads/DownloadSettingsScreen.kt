@@ -509,7 +509,7 @@ private fun DownloadSelectionBar(
                         containerColor = MaterialTheme.colorScheme.errorContainer,
                         contentColor = MaterialTheme.colorScheme.onErrorContainer,
                     ),
-                modifier = Modifier.height(48.dp),
+                modifier = Modifier.heightIn(min = 48.dp),
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_delete),

@@ -46,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.tmdb.TmdbReview
+import com.makd.afinity.ui.theme.CardDimensions
 import org.commonmark.ext.autolink.AutolinkExtension
 import org.commonmark.parser.Parser
 import org.commonmark.renderer.html.HtmlRenderer
@@ -162,7 +163,9 @@ private fun ReviewCard(
 
     Card(
         modifier =
-            Modifier.width(340.dp).height(200.dp).clickable(role = Role.Button) {
+            Modifier.width(340.dp).height(CardDimensions.reviewCardHeight).clickable(
+                role = Role.Button
+            ) {
                 onReadMoreClick()
             },
         colors =
@@ -224,7 +227,7 @@ private fun ReviewCard(
                 text = AnnotatedString.fromHtml(getHtml(review.content), linkStyles = linkStyles),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 5,
+                maxLines = CardDimensions.REVIEW_CARD_BODY_LINES,
                 overflow = TextOverflow.Ellipsis,
                 onTextLayout = { textLayoutResult ->
                     if (textLayoutResult.hasVisualOverflow) {

@@ -126,8 +126,7 @@ private fun BoxSetTypeSection(
     onItemClick: (AfinityItem) -> Unit,
     cardWidth: Dp,
 ) {
-    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         DetailSectionTitle(text = title)

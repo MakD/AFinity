@@ -49,7 +49,7 @@ fun MediaRowSkeleton(
                 Spacer(modifier = Modifier.height(CardDimensions.CardTextSpacing))
 
                 Box(
-                    modifier = Modifier.fillMaxWidth().height(CardDimensions.TitleLine),
+                    modifier = Modifier.fillMaxWidth().height(CardDimensions.titleLine),
                     contentAlignment = Alignment.CenterStart,
                 ) {
                     Box(
@@ -62,7 +62,7 @@ fun MediaRowSkeleton(
                 }
 
                 Box(
-                    modifier = Modifier.fillMaxWidth().height(CardDimensions.MetadataLine),
+                    modifier = Modifier.fillMaxWidth().height(CardDimensions.metadataLine),
                     contentAlignment = Alignment.CenterStart,
                 ) {
                     Box(

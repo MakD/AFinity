@@ -223,7 +223,12 @@ fun MostPlayedAlbumsSection(
 
     val isLandscape = isLandscapeWindow()
     val cardWidth = CardDimensions.musicRowCardWidth(isLandscape, gap = 22.dp, reserved = 20.dp)
-    val rowHeight = cardWidth + 12.dp + 8.dp + 20.dp + 18.dp
+    val rowHeight =
+        CardDimensions.rowHeight(
+            cardWidth,
+            CardDimensions.ASPECT_RATIO_SQUARE,
+            metadataHeight = CardDimensions.subtitleLine,
+        ) + 12.dp
 
     Column(modifier = modifier) {
         HomeSectionHeader(

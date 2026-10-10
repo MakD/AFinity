@@ -462,10 +462,11 @@ fun RecommendationRowSection(
                 stringResource(R.string.related_more_in_genre_fmt, row.subject)
         }
     val rowHeight =
-        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_SQUARE) +
-            CardDimensions.CardTextSpacing +
-            CardDimensions.TitleLine +
-            18.dp
+        CardDimensions.rowHeight(
+            cardWidth,
+            CardDimensions.ASPECT_RATIO_SQUARE,
+            metadataHeight = CardDimensions.subtitleLine,
+        )
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         DetailSectionTitle(text = title)

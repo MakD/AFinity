@@ -91,7 +91,9 @@ fun AudiobookshelfHomeTab(
                 }
                 item(key = "no_personalized_content") {
                     Box(
-                        modifier = Modifier.fillMaxWidth().padding(top = 48.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 48.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
@@ -106,8 +108,12 @@ fun AudiobookshelfHomeTab(
 
         else -> {
             val cardWidth = widthSizeClass.portraitWidth
-            val cardHeight = CardDimensions.calculateHeight(cardWidth, 1f)
-            val fixedRowHeight = cardHeight + 8.dp + 20.dp + 18.dp
+            val fixedRowHeight =
+                CardDimensions.rowHeight(
+                    cardWidth,
+                    CardDimensions.ASPECT_RATIO_SQUARE,
+                    metadataHeight = CardDimensions.subtitleLine,
+                )
             val playerOffset = LocalPlayerOffset.current
             val columnState = rememberLazyListState()
 
@@ -322,7 +328,9 @@ private fun LibraryShortcutCard(
     modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier.width(cardWidth).aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
+        modifier = modifier
+            .width(cardWidth)
+            .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
@@ -330,7 +338,8 @@ private fun LibraryShortcutCard(
     ) {
         Box(
             modifier =
-                Modifier.fillMaxSize()
+                Modifier
+                    .fillMaxSize()
                     .background(Brush.linearGradient(colors = listOf(gradientStart, gradientEnd)))
         ) {
             Icon(
@@ -338,7 +347,8 @@ private fun LibraryShortcutCard(
                 contentDescription = null,
                 tint = Color.White.copy(alpha = 0.25f),
                 modifier =
-                    Modifier.fillMaxHeight(0.85f)
+                    Modifier
+                        .fillMaxHeight(0.85f)
                         .aspectRatio(1f)
                         .align(Alignment.BottomEnd)
                         .offset(x = 20.dp, y = 20.dp)
@@ -347,7 +357,8 @@ private fun LibraryShortcutCard(
 
             Box(
                 modifier =
-                    Modifier.fillMaxWidth()
+                    Modifier
+                        .fillMaxWidth()
                         .fillMaxHeight(0.5f)
                         .align(Alignment.BottomCenter)
                         .background(
@@ -359,7 +370,9 @@ private fun LibraryShortcutCard(
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.align(Alignment.BottomStart).padding(16.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp),
             ) {
                 Icon(
                     painter = painterResource(iconRes),

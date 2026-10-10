@@ -51,9 +51,7 @@ fun MyRequestsSection(
     modifier: Modifier = Modifier,
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
-    val cardHeight =
-        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
         HomeSectionHeader(title = stringResource(R.string.section_recent_requests))
@@ -88,8 +86,7 @@ fun AvailableRequestsSection(
     modifier: Modifier = Modifier,
 ) {
     val cardWidth = widthSizeClass.portraitWidth
-    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
         HomeSectionHeader(title = stringResource(R.string.section_available_requests))
@@ -127,8 +124,7 @@ fun DiscoverSection(
     rowGutter: androidx.compose.ui.unit.Dp = horizontalPadding,
 ) {
     val cardWidth = CardDimensions.portraitRowWidth(widthSizeClass, gutter = rowGutter)
-    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
     val headerBottomPadding = if (onViewAllClick != null) 4.dp else 16.dp
 
     Column(modifier = modifier.padding(horizontal = horizontalPadding)) {

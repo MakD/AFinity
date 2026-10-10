@@ -38,6 +38,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.utils.horizontalBleed
 import java.util.UUID
 import org.jellyfin.sdk.model.api.PersonKind
@@ -88,7 +89,8 @@ fun CastRibbon(
             ) {
                 Box(
                     modifier =
-                        Modifier.size(10.dp)
+                        Modifier
+                            .size(10.dp)
                             .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
                 )
 
@@ -111,7 +113,8 @@ private fun RibbonFace(entry: RibbonEntry, onPersonClick: ((UUID) -> Unit)?) {
 
     Column(
         modifier =
-            Modifier.width(RibbonItemWidth)
+            Modifier
+                .width(RibbonItemWidth)
                 .then(
                     if (onPersonClick != null)
                         Modifier.clickable(
@@ -133,7 +136,8 @@ private fun RibbonFace(entry: RibbonEntry, onPersonClick: ((UUID) -> Unit)?) {
             targetWidth = RibbonAvatarSize,
             targetHeight = RibbonAvatarSize,
             modifier =
-                Modifier.size(RibbonAvatarSize)
+                Modifier
+                    .size(RibbonAvatarSize)
                     .border(2.dp, ringColor, CircleShape)
                     .padding(3.dp)
                     .clip(CircleShape),
@@ -159,7 +163,7 @@ private fun RibbonFace(entry: RibbonEntry, onPersonClick: ((UUID) -> Unit)?) {
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
-            modifier = Modifier.height(14.dp),
+            modifier = Modifier.height(CardDimensions.fontScaled(14.dp)),
         )
     }
 }
@@ -168,13 +172,16 @@ private fun RibbonFace(entry: RibbonEntry, onPersonClick: ((UUID) -> Unit)?) {
 private fun SeeAllChevron(onClick: () -> Unit) {
     Box(
         modifier =
-            Modifier.height(RibbonAvatarSize).width(40.dp).clickable(
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() },
-                role = Role.Button,
-            ) {
-                onClick()
-            },
+            Modifier
+                .height(RibbonAvatarSize)
+                .width(40.dp)
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() },
+                    role = Role.Button,
+                ) {
+                    onClick()
+                },
         contentAlignment = Alignment.Center,
     ) {
         Icon(

@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.MetadataOverflowRow
 import com.makd.afinity.ui.theme.CardDimensions
 
 @Composable
@@ -47,7 +48,9 @@ fun DiscoverMediaCard(
     Column(modifier = modifier.width(cardWidth)) {
         Card(
             onClick = onClick,
-            modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
             colors =
                 CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -67,7 +70,9 @@ fun DiscoverMediaCard(
                     item.getDisplayStatus()?.let { status ->
                         StatusChip(
                             attributes = mediaStatusAttributes(status),
-                            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp),
                         )
                     }
                 }
@@ -84,69 +89,55 @@ fun DiscoverMediaCard(
             overflow = TextOverflow.Ellipsis,
         )
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            val metadataItems = mutableListOf<@Composable () -> Unit>()
+        val metadataItems = mutableListOf<@Composable () -> Unit>()
 
-            item.getReleaseYear()?.let { year ->
-                metadataItems.add {
+        item.getReleaseYear()?.let { year ->
+            metadataItems.add {
+                Text(
+                    text = year,
+                    style =
+                        MaterialTheme.typography.bodySmall.copy(
+                            fontSize =
+                                MaterialTheme.typography.bodySmall.fontSize *
+                                        if (fontScale > 1.3f) 0.8f
+                                        else if (fontScale > 1.15f) 0.9f else 1f
+                        ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        item.getRating()?.let { rating ->
+            metadataItems.add {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_tmdb_short),
+                        contentDescription = stringResource(R.string.cd_tmdb_rating),
+                        tint = Color.Unspecified,
+                        modifier =
+                            Modifier.size(
+                                if (fontScale > 1.3f) 12.dp
+                                else if (fontScale > 1.15f) 14.dp else 16.dp
+                            ),
+                    )
                     Text(
-                        text = year,
+                        text = rating,
                         style =
                             MaterialTheme.typography.bodySmall.copy(
                                 fontSize =
                                     MaterialTheme.typography.bodySmall.fontSize *
-                                        if (fontScale > 1.3f) 0.8f
-                                        else if (fontScale > 1.15f) 0.9f else 1f
+                                            if (fontScale > 1.3f) 0.8f
+                                            else if (fontScale > 1.15f) 0.9f else 1f
                             ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
-
-            item.getRating()?.let { rating ->
-                metadataItems.add {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(2.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_tmdb_short),
-                            contentDescription = stringResource(R.string.cd_tmdb_rating),
-                            tint = Color.Unspecified,
-                            modifier =
-                                Modifier.size(
-                                    if (fontScale > 1.3f) 12.dp
-                                    else if (fontScale > 1.15f) 14.dp else 16.dp
-                                ),
-                        )
-                        Text(
-                            text = rating,
-                            style =
-                                MaterialTheme.typography.bodySmall.copy(
-                                    fontSize =
-                                        MaterialTheme.typography.bodySmall.fontSize *
-                                            if (fontScale > 1.3f) 0.8f
-                                            else if (fontScale > 1.15f) 0.9f else 1f
-                                ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-
-            metadataItems.forEachIndexed { index, metadataItem ->
-                metadataItem()
-                if (index < metadataItems.size - 1) {
-                    Text(
-                        text = "•",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
         }
+
+        MetadataOverflowRow(items = metadataItems)
     }
 }

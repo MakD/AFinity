@@ -55,7 +55,7 @@ private val RowStartPadding = 20.dp
 private val TimeColumnWidth = 50.sp
 private val TimeGutter = 12.dp
 private val RailColumnWidth = 18.dp
-private val FirstLineHeight = 18.dp
+private val FirstLineHeight = 18.sp
 private val TagColumnWidth = 100.sp
 private val RibbonWidth = 3.dp
 private const val GapContentType = "gap"
@@ -142,7 +142,8 @@ private fun CompactRow(
 
     Row(
         modifier =
-            Modifier.fillMaxWidth()
+            Modifier
+                .fillMaxWidth()
                 .background(LogLevelColors.rowTint(entry.level))
                 .clickable(onClick = onClick)
                 .drawBehind {
@@ -169,7 +170,9 @@ private fun CompactRow(
             color = tint,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.width(tagWidth).padding(start = 8.dp),
+            modifier = Modifier
+                .width(tagWidth)
+                .padding(start = 8.dp),
         )
         Text(
             text = highlighted(compactMessage(entry.message, entry.stackTrace), row.highlights),
@@ -177,7 +180,9 @@ private fun CompactRow(
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f).padding(start = 8.dp, end = 12.dp),
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 8.dp, end = 12.dp),
         )
     }
 }
@@ -198,13 +203,15 @@ private fun ComfortableRow(
     val railColor = MaterialTheme.colorScheme.outlineVariant
     val density = LocalDensity.current
     val timeWidth = with(density) { TimeColumnWidth.toDp() }
+    val firstLineHeight = with(density) { FirstLineHeight.toDp() }
     val railCenterPx =
         with(density) { (RowStartPadding + timeWidth + TimeGutter + RailColumnWidth / 2).toPx() }
     val railWidthPx = with(density) { 1.dp.toPx() }
 
     Row(
         modifier =
-            Modifier.fillMaxWidth()
+            Modifier
+                .fillMaxWidth()
                 .clickable(onClick = onClick)
                 .drawBehind {
                     val center =
@@ -224,30 +231,39 @@ private fun ComfortableRow(
             color = MaterialTheme.colorScheme.outline,
             textAlign = TextAlign.End,
             modifier =
-                Modifier.width(timeWidth)
-                    .height(FirstLineHeight)
+                Modifier
+                    .width(timeWidth)
+                    .height(firstLineHeight)
                     .wrapContentHeight(Alignment.CenterVertically),
         )
 
         Spacer(modifier = Modifier.width(TimeGutter))
 
         Box(
-            modifier = Modifier.width(RailColumnWidth).height(FirstLineHeight),
+            modifier = Modifier
+                .width(RailColumnWidth)
+                .height(firstLineHeight),
             contentAlignment = Alignment.Center,
         ) {
             Box(
                 modifier =
-                    Modifier.size(17.dp)
+                    Modifier
+                        .size(17.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surface)
                         .border(2.dp, tint, CircleShape)
             )
-            Box(modifier = Modifier.size(9.dp).clip(CircleShape).background(tint))
+            Box(modifier = Modifier
+                .size(9.dp)
+                .clip(CircleShape)
+                .background(tint))
         }
 
-        Column(modifier = Modifier.weight(1f).padding(start = 14.dp, end = 20.dp, bottom = 20.dp)) {
+        Column(modifier = Modifier
+            .weight(1f)
+            .padding(start = 14.dp, end = 20.dp, bottom = 20.dp)) {
             Row(
-                modifier = Modifier.height(FirstLineHeight),
+                modifier = Modifier.height(firstLineHeight),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -264,7 +280,8 @@ private fun ComfortableRow(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.surface,
                         modifier =
-                            Modifier.clip(RoundedCornerShape(9.dp))
+                            Modifier
+                                .clip(RoundedCornerShape(9.dp))
                                 .background(tint)
                                 .padding(horizontal = 7.dp, vertical = 2.dp),
                     )
@@ -287,7 +304,8 @@ private fun ComfortableRow(
             entry.stackTrace?.let { trace ->
                 Box(
                     modifier =
-                        Modifier.fillMaxWidth()
+                        Modifier
+                            .fillMaxWidth()
                             .padding(top = 8.dp)
                             .clip(RoundedCornerShape(10.dp))
                             .background(LogLevelColors.container(entry.level))
@@ -303,13 +321,16 @@ private fun ComfortableRow(
 
             if (grouped) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Box(
                         modifier =
-                            Modifier.weight(1f)
+                            Modifier
+                                .weight(1f)
                                 .height(1.dp)
                                 .background(MaterialTheme.colorScheme.outlineVariant)
                     )
@@ -350,7 +371,8 @@ private fun ExpandedRow(
 
     Row(
         modifier =
-            Modifier.fillMaxWidth()
+            Modifier
+                .fillMaxWidth()
                 .background(LogLevelColors.expandedTint(entry.level))
                 .drawBehind {
                     val start =
@@ -366,7 +388,8 @@ private fun ExpandedRow(
     ) {
         Column(
             modifier =
-                Modifier.weight(1f)
+                Modifier
+                    .weight(1f)
                     .clickable(onClick = onCollapse)
                     .padding(start = 10.dp, end = 12.dp, top = 11.dp, bottom = 10.dp)
         ) {
@@ -380,7 +403,8 @@ private fun ExpandedRow(
                     fontWeight = FontWeight.SemiBold,
                     color = LogLevelColors.container(entry.level),
                     modifier =
-                        Modifier.clip(RoundedCornerShape(8.dp))
+                        Modifier
+                            .clip(RoundedCornerShape(8.dp))
                             .background(tint)
                             .padding(horizontal = 7.dp, vertical = 2.dp),
                 )
@@ -408,7 +432,8 @@ private fun ExpandedRow(
             entry.stackTrace?.let { trace ->
                 Box(
                     modifier =
-                        Modifier.fillMaxWidth()
+                        Modifier
+                            .fillMaxWidth()
                             .padding(top = 9.dp)
                             .clip(RoundedCornerShape(10.dp))
                             .background(LogLevelColors.container(entry.level))
@@ -469,7 +494,8 @@ private fun RowActions(
 private fun RowAction(icon: Int, label: String, color: Color, onClick: () -> Unit) {
     Row(
         modifier =
-            Modifier.clip(RoundedCornerShape(8.dp))
+            Modifier
+                .clip(RoundedCornerShape(8.dp))
                 .clickable(onClick = onClick)
                 .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -493,13 +519,16 @@ private fun RowAction(icon: Int, label: String, color: Color, onClick: () -> Uni
 @Composable
 private fun LaunchRow(row: TimelineRow.Launch, formatter: SimpleDateFormat) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 13.dp, vertical = 9.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 13.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Box(
             modifier =
-                Modifier.weight(1f)
+                Modifier
+                    .weight(1f)
                     .height(1.dp)
                     .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
         )
@@ -515,7 +544,8 @@ private fun LaunchRow(row: TimelineRow.Launch, formatter: SimpleDateFormat) {
         )
         Box(
             modifier =
-                Modifier.weight(1f)
+                Modifier
+                    .weight(1f)
                     .height(1.dp)
                     .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
         )
@@ -526,24 +556,31 @@ private fun LaunchRow(row: TimelineRow.Launch, formatter: SimpleDateFormat) {
 private fun GapRow(row: TimelineRow.Gap) {
     val timeWidth = with(LocalDensity.current) { TimeColumnWidth.toDp() }
 
-    Row(modifier = Modifier.fillMaxWidth().padding(start = RowStartPadding)) {
+    Row(modifier = Modifier
+        .fillMaxWidth()
+        .padding(start = RowStartPadding)) {
         Text(
             text = formatGap(row.durationMillis),
             style = LogTextStyles.badge,
             color = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
             textAlign = TextAlign.End,
-            modifier = Modifier.width(timeWidth).padding(top = 14.dp),
+            modifier = Modifier
+                .width(timeWidth)
+                .padding(top = 14.dp),
         )
         Spacer(modifier = Modifier.width(TimeGutter))
         Column(
-            modifier = Modifier.width(RailColumnWidth).height(40.dp),
+            modifier = Modifier
+                .width(RailColumnWidth)
+                .height(40.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(5.dp),
         ) {
             repeat(4) {
                 Box(
                     modifier =
-                        Modifier.width(1.dp)
+                        Modifier
+                            .width(1.dp)
                             .height(4.dp)
                             .background(MaterialTheme.colorScheme.outlineVariant)
                 )

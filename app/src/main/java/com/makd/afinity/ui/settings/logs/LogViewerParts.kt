@@ -248,7 +248,7 @@ fun LogCountChip(
     Box {
         Row(
             modifier =
-                Modifier.height(32.dp)
+                Modifier.heightIn(min = 32.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(
                         if (selected) tint else MaterialTheme.colorScheme.surfaceContainerLow

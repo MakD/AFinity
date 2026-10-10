@@ -935,7 +935,7 @@ fun ProfileHeader(
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainer,
                 shape = RoundedCornerShape(50),
-                modifier = Modifier.height(32.dp),
+                modifier = Modifier.heightIn(min = 32.dp),
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 12.dp),

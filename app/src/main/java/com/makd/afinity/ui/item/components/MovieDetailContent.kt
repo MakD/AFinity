@@ -156,9 +156,13 @@ private fun PartsSection(
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
-    val cardHeight =
-        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
-    val fixedRowHeight = cardHeight + 8.dp + 40.dp
+    val fixedRowHeight =
+        CardDimensions.rowHeight(
+            cardWidth,
+            CardDimensions.ASPECT_RATIO_LANDSCAPE,
+            titleHeight = CardDimensions.titleLines(2),
+            metadataHeight = 0.dp,
+        )
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         DetailSectionTitle(text = stringResource(R.string.parts_title))
@@ -282,9 +286,13 @@ internal fun ChaptersSection(
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
-    val cardHeight =
-        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
-    val fixedRowHeight = cardHeight + 8.dp + 40.dp
+    val fixedRowHeight =
+        CardDimensions.rowHeight(
+            cardWidth,
+            CardDimensions.ASPECT_RATIO_LANDSCAPE,
+            titleHeight = CardDimensions.titleLines(2),
+            metadataHeight = 0.dp,
+        )
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         DetailSectionTitle(text = stringResource(R.string.chapters_title))

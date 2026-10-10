@@ -33,6 +33,7 @@ import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import org.jellyfin.sdk.model.api.ExtraType
 
@@ -96,7 +97,8 @@ private fun SpecialFeatureCard(feature: AfinityItem, onClick: () -> Unit, cardWi
             color = MaterialTheme.colorScheme.primary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.height(16.dp),
+            modifier =
+                Modifier.height(CardDimensions.textHeight(MaterialTheme.typography.labelSmall)),
         )
 
         Text(

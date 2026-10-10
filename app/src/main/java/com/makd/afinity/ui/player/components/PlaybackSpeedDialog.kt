@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -60,15 +61,20 @@ fun PlaybackSpeedDialog(
     ) {
         Box(
             modifier =
-                Modifier.fillMaxSize().padding(16.dp).pointerInput(Unit) {
-                    detectTapGestures(onTap = { onDismiss() })
-                },
+                Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .pointerInput(Unit) {
+                        detectTapGestures(onTap = { onDismiss() })
+                    },
             contentAlignment = Alignment.BottomCenter,
         ) {
             PlaybackSpeedPanel(
                 currentSpeed = currentSpeed,
                 onSpeedChange = onSpeedChange,
-                modifier = Modifier.fillMaxWidth(cardWidthFraction).playerOverlayInsets(),
+                modifier = Modifier
+                    .fillMaxWidth(cardWidthFraction)
+                    .playerOverlayInsets(),
             )
         }
     }
@@ -92,7 +98,9 @@ fun PlaybackSpeedPanel(
             CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(24.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
@@ -115,7 +123,8 @@ fun PlaybackSpeedPanel(
                         onSpeedChange(sliderSpeed)
                     },
                     modifier =
-                        Modifier.size(48.dp)
+                        Modifier
+                            .size(48.dp)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.surfaceVariant),
                 ) {
@@ -132,7 +141,9 @@ fun PlaybackSpeedPanel(
                     onValueChangeFinished = { onSpeedChange(sliderSpeed) },
                     valueRange = 0.25f..2.0f,
                     steps = 6,
-                    modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 16.dp),
                 )
 
                 IconButton(
@@ -141,7 +152,8 @@ fun PlaybackSpeedPanel(
                         onSpeedChange(sliderSpeed)
                     },
                     modifier =
-                        Modifier.size(48.dp)
+                        Modifier
+                            .size(48.dp)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.surfaceVariant),
                 ) {
@@ -208,7 +220,7 @@ fun PlaybackSpeedPanel(
 private fun SpeedChip(speed: Float, isSelected: Boolean, onClick: () -> Unit) {
     Button(
         onClick = onClick,
-        modifier = Modifier.height(40.dp),
+        modifier = Modifier.heightIn(min = 40.dp),
         shape = RoundedCornerShape(20.dp),
         colors =
             ButtonDefaults.buttonColors(

@@ -56,8 +56,12 @@ fun AudiobookshelfSeriesTab(
 
         else -> {
             val cardWidth = widthSizeClass.portraitWidth
-            val cardHeight = CardDimensions.calculateHeight(cardWidth, 1f)
-            val fixedRowHeight = cardHeight + 8.dp + 20.dp + 18.dp
+            val fixedRowHeight =
+                CardDimensions.rowHeight(
+                    cardWidth,
+                    CardDimensions.ASPECT_RATIO_SQUARE,
+                    metadataHeight = CardDimensions.subtitleLine,
+                )
             val playerOffset = LocalPlayerOffset.current
 
             LazyColumn(

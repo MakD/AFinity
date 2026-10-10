@@ -1,15 +1,18 @@
 package com.makd.afinity.ui.theme
 
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.common.CardSize
 import kotlin.math.floor
@@ -91,8 +94,20 @@ object CardDimensions {
     val MusicDetailGap = 16.dp
 
     val CardTextSpacing = 8.dp
-    val TitleLine = 20.dp
-    val MetadataLine = 22.dp
+
+    private val MetadataLineSlack = 6.dp
+    private val SubtitleLineSlack = 2.dp
+
+    private val InfoTilePadding = 16.dp
+    private val RatingTileContentWidth = 100.dp
+    private val RatingTileLineGap = 12.dp
+    private val ReviewCardHeaderGap = 12.dp
+    private val ReviewCardFooterGap = 8.dp
+    private val ReviewCardSlack = 4.dp
+    private val CompactTrackRowPadding = 8.dp
+    private val EpgRowChrome = 38.dp
+
+    const val REVIEW_CARD_BODY_LINES = 5
 
     private object Values {
         val PortraitCompact = 140.dp
@@ -431,11 +446,85 @@ object CardDimensions {
 
     fun calculateHeight(width: Dp, aspectRatio: Float): Dp = width / aspectRatio
 
+    @Composable
+    @ReadOnlyComposable
+    fun textHeight(style: TextStyle, lines: Int = 1): Dp =
+        with(LocalDensity.current) { style.lineHeight.toDp() } * lines
+
+    @Composable
+    @ReadOnlyComposable
+    fun fontScaled(height: Dp): Dp = with(LocalDensity.current) { height.value.sp.toDp() }
+
+    val titleLine: Dp
+        @Composable @ReadOnlyComposable get() = textHeight(MaterialTheme.typography.bodyMedium)
+
+    val metadataLine: Dp
+        @Composable
+        @ReadOnlyComposable
+        get() = textHeight(MaterialTheme.typography.bodySmall) + MetadataLineSlack
+
+    val subtitleLine: Dp
+        @Composable
+        @ReadOnlyComposable
+        get() = textHeight(MaterialTheme.typography.bodySmall) + SubtitleLineSlack
+
+    @Composable
+    @ReadOnlyComposable
+    fun titleLines(lines: Int): Dp = textHeight(MaterialTheme.typography.bodyMedium, lines)
+
+    val ratingTileWidth: Dp
+        @Composable
+        @ReadOnlyComposable
+        get() {
+            val fontSize = MaterialTheme.typography.headlineMedium.fontSize
+            val fontScale = with(LocalDensity.current) { fontSize.toDp() } / fontSize.value.dp
+            return InfoTilePadding * 2 + RatingTileContentWidth * fontScale
+        }
+
+    val ratingTileHeight: Dp
+        @Composable
+        @ReadOnlyComposable
+        get() =
+            InfoTilePadding * 2 +
+                    textHeight(MaterialTheme.typography.labelSmall) +
+                    RatingTileLineGap +
+                    textHeight(MaterialTheme.typography.headlineMedium)
+
+    val reviewCardHeight: Dp
+        @Composable
+        @ReadOnlyComposable
+        get() =
+            InfoTilePadding * 2 +
+                    textHeight(MaterialTheme.typography.titleMedium) +
+                    ReviewCardHeaderGap +
+                    textHeight(MaterialTheme.typography.bodyMedium, REVIEW_CARD_BODY_LINES) +
+                    ReviewCardFooterGap +
+                    textHeight(MaterialTheme.typography.labelLarge) +
+                    ReviewCardSlack
+
+    @Composable
+    @ReadOnlyComposable
+    fun compactTrackRowHeight(isLandscape: Boolean): Dp =
+        maxOf(
+            if (isLandscape) 70.dp else 64.dp,
+            titleLine + textHeight(MaterialTheme.typography.bodySmall) + CompactTrackRowPadding,
+        )
+
+    val epgRowHeight: Dp
+        @Composable
+        @ReadOnlyComposable
+        get() =
+            EpgRowChrome +
+                    textHeight(MaterialTheme.typography.bodySmall) +
+                    textHeight(MaterialTheme.typography.labelSmall)
+
+    @Composable
+    @ReadOnlyComposable
     fun rowHeight(
         cardWidth: Dp,
         aspectRatio: Float,
-        titleHeight: Dp = TitleLine,
-        metadataHeight: Dp = MetadataLine,
+        titleHeight: Dp = titleLine,
+        metadataHeight: Dp = metadataLine,
     ): Dp = calculateHeight(cardWidth, aspectRatio) + CardTextSpacing + titleHeight + metadataHeight
 
     @Composable

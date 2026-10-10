@@ -53,6 +53,7 @@ import com.makd.afinity.ui.components.ratings.criticRatingOf
 import com.makd.afinity.ui.components.ratings.displayPriority
 import com.makd.afinity.ui.components.ratings.excludingSupersededBy
 import com.makd.afinity.ui.components.ratings.toDisplay
+import com.makd.afinity.ui.theme.CardDimensions
 import java.util.UUID
 
 fun LazyListScope.baseMediaDetailItems(
@@ -341,7 +342,8 @@ private fun BadgeCard(sourceName: String, iconRes: Int, label: String) {
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
-        modifier = Modifier.width(132.dp).height(96.dp),
+        modifier =
+            Modifier.width(CardDimensions.ratingTileWidth).height(CardDimensions.ratingTileHeight),
     ) {
         val parts = label.split(" ", limit = 2)
         val prefixText = if (parts.size > 1) parts[0].uppercase() else ""
@@ -408,7 +410,8 @@ private fun Scorecard(sourceName: String, iconRes: Int?, score: String, subtext:
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
-        modifier = Modifier.width(132.dp).height(96.dp),
+        modifier =
+            Modifier.width(CardDimensions.ratingTileWidth).height(CardDimensions.ratingTileHeight),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),

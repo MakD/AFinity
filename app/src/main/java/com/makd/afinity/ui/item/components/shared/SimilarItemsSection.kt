@@ -26,8 +26,7 @@ fun SimilarItemsSection(
     title: String = stringResource(R.string.similar_items_title),
 ) {
     val cardWidth = widthSizeClass.portraitWidth
-    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         DetailSectionTitle(text = title)

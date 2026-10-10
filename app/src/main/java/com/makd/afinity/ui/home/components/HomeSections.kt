@@ -154,7 +154,7 @@ fun LibrariesSection(
         CardDimensions.rowHeight(
             cardWidth,
             CardDimensions.ASPECT_RATIO_LANDSCAPE,
-            titleHeight = 24.dp,
+            titleHeight = CardDimensions.textHeight(MaterialTheme.typography.titleMedium),
             metadataHeight = 0.dp,
         )
 
@@ -276,7 +276,9 @@ fun UpcomingEpisodeCard(
     Column(modifier = modifier.width(cardWidth)) {
         Card(
             onClick = onClick,
-            modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
             colors =
                 CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -330,6 +332,7 @@ fun UpcomingEpisodeCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
             }
 

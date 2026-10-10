@@ -1165,7 +1165,7 @@ private fun ServiceTile(
         modifier = modifier.clickable(onClick = onClick),
     ) {
         Column(
-            modifier = Modifier.height(120.dp).padding(14.dp),
+            modifier = Modifier.heightIn(min = 120.dp).padding(14.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Row(

@@ -267,7 +267,9 @@ private fun SeerrRequestActionButton(
         if (showRequest4k) {
             OutlinedButton(
                 onClick = { openRequestDialog(true) },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -299,7 +301,9 @@ private fun SeerrPrimaryActionButton(
         status == MediaStatus.AVAILABLE && jellyfinId != null -> {
             Button(
                 onClick = { onItemClick(jellyfinId, mappedType) },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
             ) {
                 Text(stringResource(R.string.seerr_detail_open_library))
             }
@@ -308,7 +312,9 @@ private fun SeerrPrimaryActionButton(
             Button(
                 onClick = {},
                 enabled = false,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
             ) {
                 Text(MediaStatus.getDisplayName(status))
             }
@@ -320,7 +326,9 @@ private fun SeerrPrimaryActionButton(
             Button(
                 onClick = {},
                 enabled = false,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
             ) {
                 Text(MediaStatus.getDisplayName(status))
             }
@@ -329,7 +337,9 @@ private fun SeerrPrimaryActionButton(
             Button(
                 onClick = onRequest,
                 enabled = requestEnabled,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -438,12 +448,14 @@ private fun SeerrCastSection(
             items(cast.take(15), key = { it.id }) { member ->
                 Column(
                     modifier =
-                        Modifier.width(cardWidth).clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() },
-                        ) {
-                            onPersonClick(member)
-                        },
+                        Modifier
+                            .width(cardWidth)
+                            .clickable(
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() },
+                            ) {
+                                onPersonClick(member)
+                            },
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
@@ -453,7 +465,9 @@ private fun SeerrCastSection(
                         blurHash = null,
                         targetWidth = cardWidth,
                         targetHeight = cardWidth,
-                        modifier = Modifier.size(cardWidth).clip(CircleShape),
+                        modifier = Modifier
+                            .size(cardWidth)
+                            .clip(CircleShape),
                         contentScale = ContentScale.Crop,
                         placeholder = painterResource(id = R.drawable.ic_person_placeholder),
                         error = painterResource(id = R.drawable.ic_person_placeholder),
@@ -475,7 +489,10 @@ private fun SeerrCastSection(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.height(16.dp),
+                        modifier =
+                            Modifier.height(
+                                CardDimensions.textHeight(MaterialTheme.typography.bodySmall)
+                            ),
                     )
                 }
             }
@@ -593,7 +610,8 @@ private fun SeerrPortraitContent(
         item {
             Column(
                 modifier =
-                    Modifier.fillMaxWidth()
+                    Modifier
+                        .fillMaxWidth()
                         .verticalLayoutOffset((-110).dp)
                         .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -676,7 +694,9 @@ private fun SeerrLandscapeContent(
                 )
             }
 
-            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.4f)))
 
             Image(
                 painter = painterResource(id = R.drawable.mask),
@@ -750,7 +770,8 @@ private fun ColumnScope.SeerrTitleHeader(title: String, logoUrl: String?, isLand
             targetWidth = if (isLandscape) 300.dp else screenWidthDp * 0.8f,
             targetHeight = if (isLandscape) 150.dp else 120.dp,
             modifier =
-                Modifier.fillMaxWidth(0.8f)
+                Modifier
+                    .fillMaxWidth(0.8f)
                     .height(if (isLandscape) 150.dp else 120.dp)
                     .align(if (isLandscape) Alignment.Start else Alignment.CenterHorizontally),
             contentScale = ContentScale.Fit,
@@ -781,7 +802,9 @@ private fun SeerrHeroSection(imageUrl: String?) {
     val screenWidth = with(density) { containerSize.width.toDp() }
     val screenHeight = with(density) { containerSize.height.toDp() }
 
-    Box(modifier = Modifier.fillMaxWidth().height(screenHeight * 0.5f)) {
+    Box(modifier = Modifier
+        .fillMaxWidth()
+        .height(screenHeight * 0.5f)) {
         AsyncImage(
             imageUrl = imageUrl,
             contentDescription = null,
@@ -789,7 +812,8 @@ private fun SeerrHeroSection(imageUrl: String?) {
             targetWidth = screenWidth,
             targetHeight = screenHeight * 0.5f,
             modifier =
-                Modifier.fillMaxSize()
+                Modifier
+                    .fillMaxSize()
                     .graphicsLayer { alpha = 0.99f }
                     .drawWithCache {
                         val gradient =
@@ -1158,7 +1182,10 @@ private fun SeerrScorecard(sourceName: String, iconRes: Int?, score: String, sub
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
-        modifier = Modifier.width(132.dp).height(96.dp),
+        modifier =
+            Modifier
+                .width(CardDimensions.ratingTileWidth)
+                .height(CardDimensions.ratingTileHeight),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -1222,7 +1249,8 @@ private fun SeerrLoadingPreview(title: String?, imageUrl: String?) {
         item {
             Column(
                 modifier =
-                    Modifier.fillMaxWidth()
+                    Modifier
+                        .fillMaxWidth()
                         .verticalLayoutOffset((-110).dp)
                         .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -1244,7 +1272,9 @@ private fun SeerrLoadingPreview(title: String?, imageUrl: String?) {
                 }
 
                 Box(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 24.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator(
@@ -1278,7 +1308,9 @@ private fun SeerrDetailsCard(
             shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
-            modifier = Modifier.widthIn(max = 520.dp).fillMaxWidth(),
+            modifier = Modifier
+                .widthIn(max = 520.dp)
+                .fillMaxWidth(),
         ) {
             Column {
                 rows.forEachIndexed { index, row ->
@@ -1298,7 +1330,9 @@ private fun SeerrDetailsCard(
 @Composable
 private fun SeerrDetailLedgerRow(row: SeerrDetailRowData) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -1308,7 +1342,9 @@ private fun SeerrDetailLedgerRow(row: SeerrDetailRowData) {
         )
 
         Row(
-            modifier = Modifier.weight(1f).padding(start = 16.dp),
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 16.dp),
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically,
         ) {

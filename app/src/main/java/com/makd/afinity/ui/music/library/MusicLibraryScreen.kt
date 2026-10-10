@@ -1256,9 +1256,9 @@ fun CompactTrackGridSection(
 ) {
     val isLandscape = isLandscapeWindow()
     val rowsCount = if (tracks.size >= 6) 3 else if (tracks.size >= 3) 2 else 1
-    val rowHeight = if (isLandscape) 70 else 64
+    val rowHeight = CardDimensions.compactTrackRowHeight(isLandscape)
     val itemWidth = if (isLandscape) 320.dp else 280.dp
-    val gridHeight = (rowsCount * rowHeight + (rowsCount - 1) * 12).dp
+    val gridHeight = rowHeight * rowsCount + 12.dp * (rowsCount - 1)
 
     Column(modifier = modifier) {
         Text(
