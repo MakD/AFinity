@@ -158,8 +158,16 @@ object CardDimensions {
             if (rowPx <= 0 || basePx <= 0) return@with base.cardScaled()
             val baseCount =
                 floor((rowPx + gapPx).toFloat() / (basePx + gapPx) + ROW_COUNT_BIAS).toInt()
-            val count = (baseCount + countDelta).coerceAtLeast(1)
-            ((rowPx - gapPx * (count - 1)) / count).coerceAtLeast(1).toDp()
+            val enlarge = countDelta < 0
+            val count = (if (enlarge) baseCount else baseCount + countDelta).coerceAtLeast(1)
+            val fittedPx = (rowPx - gapPx * (count - 1)) / count
+            val widthPx =
+                if (enlarge) {
+                    (fittedPx * LocalCardSize.current.scale).toInt().coerceAtMost(rowPx)
+                } else {
+                    fittedPx
+                }
+            widthPx.coerceAtLeast(1).toDp()
         }
     }
 
