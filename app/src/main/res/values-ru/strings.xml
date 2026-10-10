@@ -2387,4 +2387,8 @@
     <string name="abs_next_unplayed_label">Следующий невоспроизведенный</string>
     <string name="season_specials">Спецматериалы</string>
     <string name="admin_identify_search_without_year">Поиск без года</string>
+    <string name="pref_card_size_title">Размер карточки</string>
+    <string name="card_size_extra_small">Очень маленький</string>
+    <string name="card_size_small">Маленький</string>
+    <string name="card_size_default">По умолчанию</string>
 </resources>
