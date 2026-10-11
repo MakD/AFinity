@@ -216,6 +216,8 @@ fun SessionRemoteSheet(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
+            SessionPlaybackDetails(session = session)
+
             val basePositionTicks = session.playState?.positionTicks ?: 0L
             val serverPaused = session.playState?.isPaused ?: true
             val isPaused = pendingPause ?: serverPaused

@@ -3,16 +3,16 @@ package com.makd.afinity.ui.settings.servers
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.SessionManager
-import com.makd.afinity.data.models.server.ServerStorage
+import com.makd.afinity.data.models.server.StorageDevice
 import com.makd.afinity.data.repository.JellyfinRepository
-import com.makd.afinity.data.websocket.JellyfinWebSocketManager
+import com.makd.afinity.data.repository.admin.ServerAdminRepository
+import com.makd.afinity.ui.admin.plugins.isProblem
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
+import javax.inject.Provider
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,40 +22,41 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.GeneralCommandType
 import org.jellyfin.sdk.model.api.PlaystateCommand
+import org.jellyfin.sdk.model.api.PluginInfo
+import org.jellyfin.sdk.model.api.PluginStatus
 import org.jellyfin.sdk.model.api.SessionInfoDto
+import org.jellyfin.sdk.model.api.SystemInfo
 import org.jellyfin.sdk.model.api.TaskInfo
 import org.jellyfin.sdk.model.api.TaskState
-import timber.log.Timber
 
 @HiltViewModel
 class ControlPanelViewModel
 @Inject
 constructor(
-    private val jellyfinRepository: JellyfinRepository,
+    private val adminRepository: ServerAdminRepository,
     private val sessionManager: SessionManager,
-    private val jellyfinWebSocketManager: JellyfinWebSocketManager,
+    private val jellyfinRepositoryProvider: Provider<JellyfinRepository>,
 ) : ViewModel() {
 
     companion object {
-        private val taskCache = ConcurrentHashMap<String, List<TaskInfo>>()
-        private val sessionCache = ConcurrentHashMap<String, List<SessionInfoDto>>()
+        private const val FULL_DISK_FRACTION = 0.95f
         private const val TICKS_PER_SECOND = 10_000_000L
         private const val MESSAGE_TIMEOUT_MS = 5_000L
+        private const val STOP_TIMEOUT_MS = 5_000L
+        private const val TASK_REFRESH_DELAY_MS = 500L
         private const val APP_NAME = "AFinity"
+        private const val REFRESH_LIBRARY_TASK_KEY = "RefreshLibrary"
     }
-
-    private var currentServerId: String = ""
-
-    private val _scheduledTasks = MutableStateFlow<List<TaskInfo>?>(null)
-    val scheduledTasks: StateFlow<List<TaskInfo>?> = _scheduledTasks.asStateFlow()
 
     private val _pendingTaskCommands = MutableStateFlow<Set<String>>(emptySet())
     val pendingTaskCommands: StateFlow<Set<String>> = _pendingTaskCommands.asStateFlow()
@@ -63,22 +64,97 @@ constructor(
     private val _isRefreshInitiated = MutableStateFlow(false)
     private val isRefreshExecuting = AtomicBoolean(false)
 
+    private val _pendingPause = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    val pendingPause: StateFlow<Map<String, Boolean>> = _pendingPause.asStateFlow()
+
+    private val _commandError = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val commandError: SharedFlow<Unit> = _commandError.asSharedFlow()
+
+    val scheduledTasks: StateFlow<List<TaskInfo>?> =
+        adminRepository.scheduledTasks
+            .map { it?.getOrNull() }
+            .onEach { tasks -> if (isRefreshTaskRunning(tasks)) _isRefreshInitiated.value = false }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS),
+                adminRepository.scheduledTasks.value?.getOrNull(),
+            )
+
+    val tasksFailed: StateFlow<Boolean> =
+        adminRepository.scheduledTasks
+            .map { it?.isFailure == true }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), false)
+
+    val activeSessions: StateFlow<List<SessionInfoDto>?> =
+        adminRepository.sessions
+            .map { it?.getOrNull() }
+            .onEach { sessions -> if (sessions != null) reconcilePendingPause(sessions) }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS),
+                adminRepository.sessions.value?.getOrNull(),
+            )
+
+    val sessionsFailed: StateFlow<Boolean> =
+        adminRepository.sessions
+            .map { it?.isFailure == true }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), false)
+
     val isLibraryRefreshing: StateFlow<Boolean> =
         combine(_isRefreshInitiated, scheduledTasks) { initiated, tasks ->
-                val isRunningOnServer = isRefreshTaskRunning(tasks)
-                initiated || isRunningOnServer
+                initiated || isRefreshTaskRunning(tasks)
             }
             .stateIn(
                 scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
+                started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS),
                 initialValue = false,
             )
 
-    private val _serverStorage = MutableStateFlow<ServerStorage?>(null)
-    val serverStorage: StateFlow<ServerStorage?> = _serverStorage.asStateFlow()
+    val systemInfo: StateFlow<SystemInfo?> =
+        adminRepository.systemInfo
+            .map { it?.getOrNull() }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS),
+                adminRepository.systemInfo.value?.getOrNull(),
+            )
 
-    private val _activeSessions = MutableStateFlow<List<SessionInfoDto>?>(null)
-    val activeSessions: StateFlow<List<SessionInfoDto>?> = _activeSessions.asStateFlow()
+    val pluginProblems: StateFlow<List<PluginInfo>> =
+        adminRepository.plugins
+            .map { result -> result?.getOrNull().orEmpty().filter { it.status.isProblem } }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
+
+    val pluginsPendingRestart: StateFlow<Boolean> =
+        adminRepository.plugins
+            .map { result ->
+                result?.getOrNull().orEmpty().any { it.status == PluginStatus.RESTART }
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), false)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val fullDisks: StateFlow<List<StorageDevice>> =
+        sessionManager.currentSession
+            .map { session -> session?.takeIf { it.isAdmin == true }?.serverId }
+            .distinctUntilChanged()
+            .flatMapLatest { serverId ->
+                if (serverId == null) {
+                    flowOf(emptyList())
+                } else {
+                    jellyfinRepositoryProvider.get().getServerStorageFlow(serverId).map { storage ->
+                        storage.devices.filter { device ->
+                            device.totalSpace > 0 && device.usedFraction >= FULL_DISK_FRACTION
+                        }
+                    }
+                }
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
+
+    val isCreatingBackup: StateFlow<Boolean> = adminRepository.isCreatingBackup
+
+    val failedSignIns: StateFlow<Int> =
+        adminRepository.recentFailedSignIns
+            .map { it?.getOrNull() ?: 0 }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), 0)
 
     val baseUrl: String
         get() = sessionManager.currentSession.value?.serverUrl ?: ""
@@ -92,61 +168,40 @@ constructor(
                 sessionManager.currentSession.value?.isAdmin,
             )
 
-    private var pollingJob: Job? = null
-    private var storageJob: Job? = null
+    val serverName: StateFlow<String> =
+        sessionManager.currentSession
+            .map { it?.server?.name.orEmpty() }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.Eagerly,
+                sessionManager.currentSession.value?.server?.name.orEmpty(),
+            )
 
-    private val _pendingPause = MutableStateFlow<Map<String, Boolean>>(emptyMap())
-    val pendingPause: StateFlow<Map<String, Boolean>> = _pendingPause.asStateFlow()
-
-    private val _commandError = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-    val commandError: SharedFlow<Unit> = _commandError.asSharedFlow()
+    val serverVersion: StateFlow<String?> =
+        sessionManager.currentSession
+            .map { it?.server?.version }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.Eagerly,
+                sessionManager.currentSession.value?.server?.version,
+            )
 
     val currentUserId: UUID?
         get() = sessionManager.currentSession.value?.userId
 
-    init {
-        viewModelScope.launch {
-            jellyfinWebSocketManager.liveSessions.collect { instantSessions ->
-                _activeSessions.value = instantSessions
-                sessionCache[currentServerId] = instantSessions
-                reconcilePendingPause(instantSessions)
-            }
-        }
+    val userCount: StateFlow<Int?> =
+        adminRepository.userCountUpdates.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-        viewModelScope.launch {
-            jellyfinWebSocketManager.liveTasks.collect { instantTasks ->
-                updateTasksState(instantTasks)
-            }
-        }
+    val deviceCount: StateFlow<Int?> =
+        adminRepository.deviceCountUpdates.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    init {
+        viewModelScope.launch { adminRepository.getUsers() }
+        viewModelScope.launch { adminRepository.getDevices() }
     }
 
-    fun initialize(serverId: String) {
-        currentServerId = serverId
-        taskCache[serverId]?.let { updateTasksState(it) }
-        _activeSessions.value = null
-        _serverStorage.value = null
-        loadServerStorage(serverId)
-        pollingJob?.cancel()
-        pollingJob = viewModelScope.launch {
-            pollTasksNow()
-
-            while (isActive) {
-                try {
-                    val result = jellyfinRepository.getActiveSessions()
-                    if (result.isSuccess) {
-                        val sessions = result.getOrNull() ?: emptyList()
-                        _activeSessions.value = sessions
-                        sessionCache[serverId] = sessions
-                    }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed session fetch")
-                }
-                delay(5000)
-                if (hasActiveTask()) pollTasksNow()
-            }
-        }
+    fun retry() {
+        adminRepository.refresh()
     }
 
     private fun reconcilePendingPause(sessions: List<SessionInfoDto>) {
@@ -166,7 +221,7 @@ constructor(
         val target = !(session.playState?.isPaused ?: true)
         _pendingPause.update { it + (sessionId to target) }
         dispatch(sessionId) {
-            jellyfinRepository.sendSessionPlaystateCommand(
+            adminRepository.sendPlaystateCommand(
                 sessionId = sessionId,
                 command = if (target) PlaystateCommand.PAUSE else PlaystateCommand.UNPAUSE,
             )
@@ -175,7 +230,7 @@ constructor(
 
     fun sendPlaystate(sessionId: String, command: PlaystateCommand) {
         dispatch(sessionId) {
-            jellyfinRepository.sendSessionPlaystateCommand(sessionId = sessionId, command = command)
+            adminRepository.sendPlaystateCommand(sessionId = sessionId, command = command)
         }
     }
 
@@ -188,7 +243,7 @@ constructor(
                 if (runtime != null && runtime > 0) it.coerceAtMost(runtime) else it
             }
         dispatch(sessionId) {
-            jellyfinRepository.sendSessionPlaystateCommand(
+            adminRepository.sendPlaystateCommand(
                 sessionId = sessionId,
                 command = PlaystateCommand.SEEK,
                 seekPositionTicks = target,
@@ -198,7 +253,7 @@ constructor(
 
     fun seekTo(sessionId: String, positionTicks: Long) {
         dispatch(sessionId) {
-            jellyfinRepository.sendSessionPlaystateCommand(
+            adminRepository.sendPlaystateCommand(
                 sessionId = sessionId,
                 command = PlaystateCommand.SEEK,
                 seekPositionTicks = positionTicks.coerceAtLeast(0L),
@@ -207,12 +262,12 @@ constructor(
     }
 
     fun setVolume(sessionId: String, volume: Int) {
-        dispatch(sessionId) { jellyfinRepository.setSessionVolume(sessionId, volume) }
+        dispatch(sessionId) { adminRepository.setVolume(sessionId, volume) }
     }
 
     fun toggleMute(sessionId: String, muted: Boolean) {
         dispatch(sessionId) {
-            jellyfinRepository.sendSessionGeneralCommand(
+            adminRepository.sendGeneralCommand(
                 sessionId = sessionId,
                 command = if (muted) GeneralCommandType.UNMUTE else GeneralCommandType.MUTE,
             )
@@ -221,7 +276,7 @@ constructor(
 
     fun sendMessage(sessionId: String, text: String) {
         dispatch(sessionId) {
-            jellyfinRepository.sendSessionMessage(
+            adminRepository.sendMessage(
                 sessionId = sessionId,
                 header = APP_NAME,
                 text = text,
@@ -240,45 +295,20 @@ constructor(
         }
     }
 
-    private fun updateTasksState(tasks: List<TaskInfo>?) {
-        _scheduledTasks.value = tasks
-        taskCache[currentServerId] = tasks ?: emptyList()
-
-        if (isRefreshTaskRunning(tasks)) {
-            _isRefreshInitiated.value = false
-        }
-    }
-
     private fun isRefreshTaskRunning(tasks: List<TaskInfo>?): Boolean {
         return tasks?.any { task ->
-            val isRefreshTask = task.key == "RefreshLibrary"
+            val isRefreshTask = task.key == REFRESH_LIBRARY_TASK_KEY
             val isActive = task.state == TaskState.RUNNING || task.state == TaskState.CANCELLING
             isRefreshTask && isActive
         } ?: false
     }
 
-    private fun hasActiveTask(): Boolean {
-        return _scheduledTasks.value?.any { task ->
-            task.state == TaskState.RUNNING || task.state == TaskState.CANCELLING
-        } ?: false
-    }
-
-    private fun loadServerStorage(serverId: String) {
-        storageJob?.cancel()
-        storageJob = viewModelScope.launch {
-            if (isAdmin.first { it != null } != true) return@launch
-            jellyfinRepository.getServerStorageFlow(serverId).collect { storage ->
-                _serverStorage.value = storage
-            }
-        }
-    }
-
     fun restartServer() {
-        viewModelScope.launch { jellyfinRepository.restartServer() }
+        viewModelScope.launch { adminRepository.restartServer() }
     }
 
     fun shutdownServer() {
-        viewModelScope.launch { jellyfinRepository.shutdownServer() }
+        viewModelScope.launch { adminRepository.shutdownServer() }
     }
 
     fun refreshAllLibraries() {
@@ -288,7 +318,7 @@ constructor(
 
         viewModelScope.launch {
             try {
-                val result = jellyfinRepository.refreshAllLibraries()
+                val result = adminRepository.scanAllLibraries()
                 if (result.isFailure) {
                     _isRefreshInitiated.value = false
                 }
@@ -298,12 +328,8 @@ constructor(
         }
     }
 
-    fun runTask(taskId: String) {
-        sendTaskCommand(taskId) { jellyfinRepository.startScheduledTask(taskId) }
-    }
-
     fun stopTask(taskId: String) {
-        sendTaskCommand(taskId) { jellyfinRepository.stopScheduledTask(taskId) }
+        sendTaskCommand(taskId) { adminRepository.stopTask(taskId) }
     }
 
     private fun sendTaskCommand(taskId: String, block: suspend () -> Result<Unit>) {
@@ -312,32 +338,14 @@ constructor(
         viewModelScope.launch {
             try {
                 if (block().isSuccess) {
-                    delay(500)
+                    delay(TASK_REFRESH_DELAY_MS)
                 } else {
                     _commandError.tryEmit(Unit)
                 }
-                pollTasksNow()
+                adminRepository.refresh()
             } finally {
                 _pendingTaskCommands.update { it - taskId }
             }
         }
-    }
-
-    private suspend fun pollTasksNow() {
-        try {
-            val result = jellyfinRepository.getScheduledTasks()
-            if (result.isSuccess) {
-                updateTasksState(result.getOrNull())
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to force poll scheduled tasks")
-        }
-    }
-
-    override fun onCleared() {
-        pollingJob?.cancel()
-        storageJob?.cancel()
     }
 }

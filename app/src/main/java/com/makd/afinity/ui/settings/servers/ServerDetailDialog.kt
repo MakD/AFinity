@@ -2,15 +2,9 @@ package com.makd.afinity.ui.settings.servers
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,10 +28,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -51,17 +43,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.data.models.server.ServerStorage
 import com.makd.afinity.ui.settings.servers.tabs.AudiobookshelfTabContent
 import com.makd.afinity.ui.settings.servers.tabs.JellyfinTabContent
 import com.makd.afinity.ui.settings.servers.tabs.JellyseerrTabContent
-
-internal enum class DialogView {
-    STATS,
-    CONTROL_PANEL,
-}
 
 private enum class DetailTab(
     @param:StringRes val labelRes: Int,
@@ -89,9 +75,11 @@ internal fun ServerDetailContent(
     serverWithCount: ServerWithUserCount,
     stats: ServerDetailStats?,
     statsLoading: Boolean,
+    serverStorage: ServerStorage?,
+    isAdmin: Boolean?,
     onDismiss: () -> Unit,
+    onControlPanelClick: () -> Unit,
     modifier: Modifier = Modifier,
-    controlPanelViewModel: ControlPanelViewModel = hiltViewModel(key = serverWithCount.server.id),
 ) {
     val status = serverWithCount.currentUserServiceStatus
     val tabs = buildList {
@@ -101,155 +89,113 @@ internal fun ServerDetailContent(
     }
 
     var selectedTabIndex by remember(serverWithCount.server.id) { mutableIntStateOf(0) }
-    var dialogView by remember(serverWithCount.server.id) { mutableStateOf(DialogView.STATS) }
-    val isAdmin by controlPanelViewModel.isAdmin.collectAsStateWithLifecycle()
-    val serverStorage by controlPanelViewModel.serverStorage.collectAsStateWithLifecycle()
 
-    LaunchedEffect(serverWithCount.server.id) {
-        controlPanelViewModel.initialize(serverWithCount.server.id)
-    }
-
-    AnimatedContent(
-        targetState = dialogView,
-        modifier = modifier,
-        transitionSpec = {
-            if (targetState != DialogView.STATS) {
-                (slideInHorizontally { it } + fadeIn()) togetherWith
-                    (slideOutHorizontally { -it } + fadeOut())
-            } else {
-                (slideInHorizontally { -it } + fadeIn()) togetherWith
-                    (slideOutHorizontally { it } + fadeOut())
+    Column(modifier = modifier.fillMaxSize()) {
+        Row(
+            modifier =
+                Modifier.fillMaxWidth()
+                    .padding(start = 24.dp, end = 16.dp, top = 24.dp, bottom = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier =
+                    Modifier.size(48.dp)
+                        .background(
+                            MaterialTheme.colorScheme.primaryContainer,
+                            RoundedCornerShape(14.dp),
+                        ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_server),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(24.dp),
+                )
             }
-        },
-        label = "DialogTransition",
-    ) { viewState ->
-        when (viewState) {
-            DialogView.STATS -> {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    Row(
-                        modifier =
-                            Modifier.fillMaxWidth()
-                                .padding(
-                                    start = 24.dp,
-                                    end = 16.dp,
-                                    top = 24.dp,
-                                    bottom = 16.dp,
-                                ),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Box(
-                            modifier =
-                                Modifier.size(48.dp)
-                                    .background(
-                                        MaterialTheme.colorScheme.primaryContainer,
-                                        RoundedCornerShape(14.dp),
-                                    ),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_server),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(24.dp),
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = serverWithCount.server.name,
-                                style =
-                                    MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            if (serverWithCount.server.version != null) {
-                                Text(
-                                    text =
-                                        stringResource(
-                                            R.string.server_version_fmt,
-                                            serverWithCount.server.version,
-                                        ),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                        IconButton(
-                            onClick = onDismiss,
-                            modifier =
-                                Modifier.background(
-                                    MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    CircleShape,
-                                ),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_close),
-                                contentDescription = stringResource(R.string.action_close),
-                                modifier = Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
-                    }
-
-                    if (tabs.size > 1) {
-                        SegmentedTabBar(
-                            tabs = tabs,
-                            selectedTabIndex = selectedTabIndex,
-                            onTabSelected = { selectedTabIndex = it },
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-
-                    Crossfade(
-                        targetState = tabs.getOrNull(selectedTabIndex) ?: DetailTab.JELLYFIN,
-                        animationSpec = tween(300),
-                        modifier = Modifier.weight(1f),
-                        label = "TabContentCrossfade",
-                    ) { currentTab ->
-                        Column(
-                            modifier =
-                                Modifier.fillMaxSize()
-                                    .verticalScroll(rememberScrollState())
-                                    .padding(horizontal = 24.dp, vertical = 12.dp),
-                            verticalArrangement = Arrangement.spacedBy(20.dp),
-                        ) {
-                            when (currentTab) {
-                                DetailTab.JELLYFIN ->
-                                    JellyfinTabContent(
-                                        serverWithCount = serverWithCount,
-                                        jellyfinStats = stats?.jellyfinStats,
-                                        statsLoading = statsLoading,
-                                        serverStorage = serverStorage,
-                                        isAdmin = isAdmin,
-                                        onControlPanelClick = {
-                                            dialogView = DialogView.CONTROL_PANEL
-                                        },
-                                    )
-                                DetailTab.JELLYSEERR ->
-                                    JellyseerrTabContent(
-                                        serverWithCount = serverWithCount,
-                                        jellyseerrStats = stats?.jellyseerrStats,
-                                        statsLoading = statsLoading,
-                                    )
-                                DetailTab.AUDIOBOOKSHELF ->
-                                    AudiobookshelfTabContent(
-                                        serverWithCount = serverWithCount,
-                                        absStats = stats?.audiobookshelfStats,
-                                        statsLoading = statsLoading,
-                                    )
-                            }
-                        }
-                    }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = serverWithCount.server.name,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (serverWithCount.server.version != null) {
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.server_version_fmt,
+                                serverWithCount.server.version,
+                            ),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
-            DialogView.CONTROL_PANEL ->
-                ControlPanelView(
-                    serverWithCount = serverWithCount,
-                    onBack = { dialogView = DialogView.STATS },
-                    viewModel = controlPanelViewModel,
+            IconButton(
+                onClick = onDismiss,
+                modifier =
+                    Modifier.background(
+                        MaterialTheme.colorScheme.surfaceContainerHigh,
+                        CircleShape,
+                    ),
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_close),
+                    contentDescription = stringResource(R.string.action_close),
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurface,
                 )
+            }
+        }
+
+        if (tabs.size > 1) {
+            SegmentedTabBar(
+                tabs = tabs,
+                selectedTabIndex = selectedTabIndex,
+                onTabSelected = { selectedTabIndex = it },
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        Crossfade(
+            targetState = tabs.getOrNull(selectedTabIndex) ?: DetailTab.JELLYFIN,
+            animationSpec = tween(300),
+            modifier = Modifier.weight(1f),
+            label = "TabContentCrossfade",
+        ) { currentTab ->
+            Column(
+                modifier =
+                    Modifier.fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 24.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                when (currentTab) {
+                    DetailTab.JELLYFIN ->
+                        JellyfinTabContent(
+                            serverWithCount = serverWithCount,
+                            jellyfinStats = stats?.jellyfinStats,
+                            statsLoading = statsLoading,
+                            serverStorage = serverStorage,
+                            isAdmin = isAdmin,
+                            onControlPanelClick = onControlPanelClick,
+                        )
+                    DetailTab.JELLYSEERR ->
+                        JellyseerrTabContent(
+                            serverWithCount = serverWithCount,
+                            jellyseerrStats = stats?.jellyseerrStats,
+                            statsLoading = statsLoading,
+                        )
+                    DetailTab.AUDIOBOOKSHELF ->
+                        AudiobookshelfTabContent(
+                            serverWithCount = serverWithCount,
+                            absStats = stats?.audiobookshelfStats,
+                            statsLoading = statsLoading,
+                        )
+                }
+            }
         }
     }
 }
@@ -259,8 +205,10 @@ internal fun ServerDetailDialog(
     serverWithCount: ServerWithUserCount,
     stats: ServerDetailStats?,
     statsLoading: Boolean,
+    serverStorage: ServerStorage?,
+    isAdmin: Boolean?,
     onDismiss: () -> Unit,
-    controlPanelViewModel: ControlPanelViewModel = hiltViewModel(key = serverWithCount.server.id),
+    onControlPanelClick: () -> Unit,
 ) {
     Dialog(
         onDismissRequest = onDismiss,
@@ -276,9 +224,11 @@ internal fun ServerDetailDialog(
                 serverWithCount = serverWithCount,
                 stats = stats,
                 statsLoading = statsLoading,
+                serverStorage = serverStorage,
+                isAdmin = isAdmin,
                 onDismiss = onDismiss,
+                onControlPanelClick = onControlPanelClick,
                 modifier = Modifier.fillMaxSize(),
-                controlPanelViewModel = controlPanelViewModel,
             )
         }
     }

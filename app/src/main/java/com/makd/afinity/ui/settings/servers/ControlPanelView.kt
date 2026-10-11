@@ -30,13 +30,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -57,15 +55,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.data.models.admin.ActivityFilter
+import com.makd.afinity.data.models.server.StorageDevice
+import com.makd.afinity.ui.admin.components.AdminPill
+import com.makd.afinity.ui.admin.components.AdminScaffold
+import com.makd.afinity.ui.admin.config.ConfigFormIds
+import com.makd.afinity.ui.admin.plugins.labelRes
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.SettingsDivider
+import com.makd.afinity.ui.components.SettingsGroup
+import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.settings.servers.components.SectionHeader
 import com.makd.afinity.ui.settings.servers.components.SessionRemoteSheet
+import com.makd.afinity.ui.settings.servers.components.playMethodLabelRes
 import com.makd.afinity.ui.settings.servers.utils.formatLastRun
 import com.makd.afinity.ui.settings.servers.utils.formatTicks
+import com.makd.afinity.util.formatFileSize
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.ImageType
+import org.jellyfin.sdk.model.api.PluginInfo
 import org.jellyfin.sdk.model.api.SessionInfoDto
 import org.jellyfin.sdk.model.api.TaskCompletionStatus
 import org.jellyfin.sdk.model.api.TaskInfo
@@ -73,30 +85,308 @@ import org.jellyfin.sdk.model.api.TaskResult
 import org.jellyfin.sdk.model.api.TaskState
 
 @Composable
-internal fun ControlPanelView(
-    serverWithCount: ServerWithUserCount,
-    onBack: () -> Unit,
+fun ControlPanelScreen(
+    onBackClick: () -> Unit,
+    onOpenUsers: () -> Unit,
+    onOpenLibraries: () -> Unit,
+    onOpenActivity: (ActivityFilter) -> Unit,
+    onOpenDevices: () -> Unit,
+    onOpenLogs: () -> Unit,
+    onOpenPlugins: () -> Unit,
+    onOpenTasks: () -> Unit,
+    onOpenTask: (String) -> Unit,
+    onOpenApiKeys: () -> Unit,
+    onOpenBackups: () -> Unit,
+    onOpenSettings: (formId: String) -> Unit,
+    modifier: Modifier = Modifier,
+    isDualPane: Boolean = false,
+    viewModel: ControlPanelViewModel = hiltViewModel(),
+) {
+    val tasks by viewModel.scheduledTasks.collectAsStateWithLifecycle()
+    val serverName by viewModel.serverName.collectAsStateWithLifecycle()
+    val serverVersion by viewModel.serverVersion.collectAsStateWithLifecycle()
+    val systemInfo by viewModel.systemInfo.collectAsStateWithLifecycle()
+    val pluginProblems by viewModel.pluginProblems.collectAsStateWithLifecycle()
+    val pluginsPendingRestart by viewModel.pluginsPendingRestart.collectAsStateWithLifecycle()
+    val isCreatingBackup by viewModel.isCreatingBackup.collectAsStateWithLifecycle()
+    val userCount by viewModel.userCount.collectAsStateWithLifecycle()
+    val deviceCount by viewModel.deviceCount.collectAsStateWithLifecycle()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    if (!isDualPane) {
+        CommandErrorEffect(viewModel = viewModel, snackbarHostState = snackbarHostState)
+    }
+
+    AdminScaffold(
+        title = stringResource(R.string.title_control_panel),
+        onBackClick = onBackClick,
+        modifier = modifier,
+        snackbarHostState = snackbarHostState,
+    ) { contentPadding ->
+        Column(
+            modifier =
+                Modifier.fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(contentPadding)
+                    .padding(
+                        start = 16.dp,
+                        top = 16.dp,
+                        end = if (isDualPane) 0.dp else 16.dp,
+                        bottom = 16.dp,
+                    ),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            ServerHeader(name = serverName, version = systemInfo?.version ?: serverVersion)
+
+            if (!isDualPane) {
+                ControlPanelOverview(
+                    viewModel = viewModel,
+                    onOpenActivity = onOpenActivity,
+                    onOpenPlugins = onOpenPlugins,
+                    onOpenTask = onOpenTask,
+                )
+            }
+
+            val runningTasks = tasks.orEmpty().filter { it.state != TaskState.IDLE }
+
+            SettingsGroup(
+                title = stringResource(R.string.section_server),
+                startPadding = 0.dp,
+                endPadding = 0.dp,
+            ) {
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_users_group),
+                    title = stringResource(R.string.title_users),
+                    subtitle =
+                        userCount?.let { stringResource(R.string.users_count_fmt, it) }
+                            ?: stringResource(R.string.users_summary),
+                    onClick = onOpenUsers,
+                )
+                SettingsDivider()
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_video_library),
+                    title = stringResource(R.string.libraries_title),
+                    subtitle = stringResource(R.string.libraries_admin_summary),
+                    onClick = onOpenLibraries,
+                )
+            }
+
+            SettingsGroup(
+                title = stringResource(R.string.section_admin_settings),
+                startPadding = 0.dp,
+                endPadding = 0.dp,
+            ) {
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_settings),
+                    title = stringResource(R.string.config_general_title),
+                    subtitle = stringResource(R.string.config_general_summary),
+                    onClick = { onOpenSettings(ConfigFormIds.GENERAL) },
+                )
+                SettingsDivider()
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_layout_grid),
+                    title = stringResource(R.string.config_library_display_title),
+                    subtitle = stringResource(R.string.config_library_display_summary),
+                    onClick = { onOpenSettings(ConfigFormIds.LIBRARY_DISPLAY) },
+                )
+                SettingsDivider()
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_info),
+                    title = stringResource(R.string.config_metadata_title),
+                    subtitle = stringResource(R.string.config_metadata_summary),
+                    onClick = { onOpenSettings(ConfigFormIds.LIBRARY_METADATA) },
+                )
+                SettingsDivider()
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_edit),
+                    title = stringResource(R.string.config_nfo_title),
+                    subtitle = stringResource(R.string.config_nfo_summary),
+                    onClick = { onOpenSettings(ConfigFormIds.NFO) },
+                )
+                SettingsDivider()
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_player_play_filled),
+                    title = stringResource(R.string.config_playback_title),
+                    subtitle = stringResource(R.string.config_playback_summary),
+                    onClick = { onOpenSettings(ConfigFormIds.PLAYBACK) },
+                )
+                SettingsDivider()
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_movie),
+                    title = stringResource(R.string.config_transcoding_title),
+                    subtitle = stringResource(R.string.config_transcoding_summary),
+                    onClick = { onOpenSettings(ConfigFormIds.TRANSCODING) },
+                )
+                SettingsDivider()
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_photo_search),
+                    title = stringResource(R.string.config_trickplay_title),
+                    subtitle = stringResource(R.string.config_trickplay_summary),
+                    onClick = { onOpenSettings(ConfigFormIds.TRICKPLAY) },
+                )
+                SettingsDivider()
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_world),
+                    title = stringResource(R.string.config_networking_title),
+                    subtitle = stringResource(R.string.config_networking_summary),
+                    onClick = { onOpenSettings(ConfigFormIds.NETWORKING) },
+                )
+            }
+
+            SettingsGroup(
+                title = stringResource(R.string.section_monitor),
+                startPadding = 0.dp,
+                endPadding = 0.dp,
+            ) {
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_history),
+                    title = stringResource(R.string.title_activity),
+                    subtitle = stringResource(R.string.activity_summary),
+                    onClick = { onOpenActivity(ActivityFilter.ALL) },
+                )
+                SettingsDivider()
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_devices),
+                    title = stringResource(R.string.title_devices),
+                    subtitle =
+                        deviceCount?.let { stringResource(R.string.devices_count_fmt, it) }
+                            ?: stringResource(R.string.devices_summary),
+                    onClick = onOpenDevices,
+                )
+                SettingsDivider()
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_logs),
+                    title = stringResource(R.string.title_server_logs),
+                    subtitle = stringResource(R.string.server_logs_summary),
+                    onClick = onOpenLogs,
+                )
+            }
+
+            SettingsGroup(
+                title = stringResource(R.string.section_maintenance),
+                startPadding = 0.dp,
+                endPadding = 0.dp,
+            ) {
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_schedule),
+                    title = stringResource(R.string.title_scheduled_tasks),
+                    subtitle =
+                        runningTasks.firstOrNull()?.name?.let {
+                            stringResource(R.string.tasks_running_fmt, it)
+                        } ?: stringResource(R.string.scheduled_tasks_summary),
+                    onClick = onOpenTasks,
+                )
+                SettingsDivider()
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_lock_filled),
+                    title = stringResource(R.string.title_api_keys),
+                    subtitle = stringResource(R.string.api_keys_summary),
+                    onClick = onOpenApiKeys,
+                )
+                SettingsDivider()
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_database),
+                    title = stringResource(R.string.title_server_backups),
+                    subtitle =
+                        if (isCreatingBackup) stringResource(R.string.server_backup_creating)
+                        else stringResource(R.string.server_backups_summary),
+                    onClick = onOpenBackups,
+                )
+            }
+
+            SettingsGroup(
+                title = stringResource(R.string.section_plugins),
+                startPadding = 0.dp,
+                endPadding = 0.dp,
+            ) {
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_view_module),
+                    title = stringResource(R.string.plugins_installed),
+                    subtitle =
+                        when {
+                            pluginsPendingRestart -> stringResource(R.string.plugin_status_restart)
+                            pluginProblems.isNotEmpty() -> pluginProblems.first().name
+                            else -> stringResource(R.string.plugins_summary)
+                        },
+                    onClick = onOpenPlugins,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ControlPanelOverviewScreen(
+    onOpenActivity: (ActivityFilter) -> Unit,
+    onOpenPlugins: () -> Unit,
+    onOpenTask: (String) -> Unit,
     viewModel: ControlPanelViewModel,
+    modifier: Modifier = Modifier,
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    CommandErrorEffect(viewModel = viewModel, snackbarHostState = snackbarHostState)
+
+    AdminScaffold(
+        title = stringResource(R.string.control_panel_overview),
+        onBackClick = null,
+        modifier = modifier,
+        snackbarHostState = snackbarHostState,
+    ) { contentPadding ->
+        Column(
+            modifier =
+                Modifier.fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(contentPadding)
+                    .padding(16.dp)
+        ) {
+            ControlPanelOverview(
+                viewModel = viewModel,
+                onOpenActivity = onOpenActivity,
+                onOpenPlugins = onOpenPlugins,
+                onOpenTask = onOpenTask,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CommandErrorEffect(
+    viewModel: ControlPanelViewModel,
+    snackbarHostState: SnackbarHostState,
+) {
+    val commandFailedMessage = stringResource(R.string.session_command_failed)
+
+    LaunchedEffect(viewModel, snackbarHostState) {
+        viewModel.commandError.collect { snackbarHostState.showSnackbar(commandFailedMessage) }
+    }
+}
+
+@Composable
+private fun ControlPanelOverview(
+    viewModel: ControlPanelViewModel,
+    onOpenActivity: (ActivityFilter) -> Unit,
+    onOpenPlugins: () -> Unit,
+    onOpenTask: (String) -> Unit,
 ) {
     val tasks by viewModel.scheduledTasks.collectAsStateWithLifecycle()
     val sessions by viewModel.activeSessions.collectAsStateWithLifecycle()
     val isLibraryRefreshing by viewModel.isLibraryRefreshing.collectAsStateWithLifecycle()
     val pendingPause by viewModel.pendingPause.collectAsStateWithLifecycle()
     val pendingTaskCommands by viewModel.pendingTaskCommands.collectAsStateWithLifecycle()
+    val sessionsFailed by viewModel.sessionsFailed.collectAsStateWithLifecycle()
+    val tasksFailed by viewModel.tasksFailed.collectAsStateWithLifecycle()
+    val serverName by viewModel.serverName.collectAsStateWithLifecycle()
+    val systemInfo by viewModel.systemInfo.collectAsStateWithLifecycle()
+    val pluginProblems by viewModel.pluginProblems.collectAsStateWithLifecycle()
+    val pluginsPendingRestart by viewModel.pluginsPendingRestart.collectAsStateWithLifecycle()
+    val failedSignIns by viewModel.failedSignIns.collectAsStateWithLifecycle()
+    val fullDisks by viewModel.fullDisks.collectAsStateWithLifecycle()
 
     var showRestartConfirm by remember { mutableStateOf(false) }
     var showShutdownConfirm by remember { mutableStateOf(false) }
     var remoteSessionId by remember { mutableStateOf<String?>(null) }
-    val serverId = serverWithCount.server.id
 
     val remoteSession = sessions?.firstOrNull { it.id != null && it.id == remoteSessionId }
-
-    val snackbarHostState = remember { SnackbarHostState() }
-    val commandFailedMessage = stringResource(R.string.session_command_failed)
-
-    LaunchedEffect(Unit) {
-        viewModel.commandError.collect { snackbarHostState.showSnackbar(commandFailedMessage) }
-    }
 
     if (remoteSession != null) {
         SessionRemoteSheet(
@@ -121,12 +411,6 @@ internal fun ControlPanelView(
         )
     }
 
-    DisposableEffect(serverId) {
-        viewModel.initialize(serverId)
-
-        onDispose {}
-    }
-
     if (showRestartConfirm) {
         AlertDialog(
             onDismissRequest = { showRestartConfirm = false },
@@ -146,11 +430,7 @@ internal fun ControlPanelView(
             },
             text = {
                 Text(
-                    text =
-                        stringResource(
-                            R.string.dialog_restart_server_message,
-                            serverWithCount.server.name,
-                        ),
+                    text = stringResource(R.string.dialog_restart_server_message, serverName),
                     style = MaterialTheme.typography.bodyLarge,
                 )
             },
@@ -198,11 +478,7 @@ internal fun ControlPanelView(
             },
             text = {
                 Text(
-                    text =
-                        stringResource(
-                            R.string.dialog_shutdown_server_message,
-                            serverWithCount.server.name,
-                        ),
+                    text = stringResource(R.string.dialog_shutdown_server_message, serverName),
                     style = MaterialTheme.typography.bodyLarge,
                 )
             },
@@ -231,103 +507,232 @@ internal fun ControlPanelView(
         )
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier =
-                    Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 16.dp),
-            ) {
-                IconButton(
-                    onClick = onBack,
-                    modifier =
-                        Modifier.background(
-                            MaterialTheme.colorScheme.surfaceContainerHigh,
-                            CircleShape,
-                        ),
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_chevron_left),
-                        contentDescription = stringResource(R.string.cd_back),
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-                Spacer(modifier = Modifier.width(16.dp))
-                Text(
-                    text = stringResource(R.string.title_control_panel),
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        if (sessionsFailed || tasksFailed) {
+            LoadFailedCard(onRetry = viewModel::retry)
+        }
 
-            Column(
-                modifier =
-                    Modifier.fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 24.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                ActiveSessionsSection(
-                    sessions = sessions ?: emptyList(),
-                    baseUrl = viewModel.baseUrl,
-                    loading = sessions == null,
-                    pendingPause = pendingPause,
-                    onTogglePause = viewModel::togglePause,
-                    onOpenRemote = { remoteSessionId = it.id },
-                )
+        val restartRequired = systemInfo?.hasPendingRestart == true || pluginsPendingRestart
+        val failedTasks =
+            tasks.orEmpty().filter { it.lastExecutionResult?.status == TaskCompletionStatus.FAILED }
+        val needsAttention =
+            restartRequired ||
+                failedSignIns > 0 ||
+                fullDisks.isNotEmpty() ||
+                pluginProblems.isNotEmpty() ||
+                failedTasks.isNotEmpty()
+        if (needsAttention) {
+            AttentionCard(
+                restartRequired = restartRequired,
+                failedSignIns = failedSignIns,
+                fullDisks = fullDisks,
+                pluginProblems = pluginProblems,
+                failedTasks = failedTasks,
+                onRestart = { showRestartConfirm = true },
+                onOpenSignIns = { onOpenActivity(ActivityFilter.SIGN_INS) },
+                onOpenPlugins = onOpenPlugins,
+                onOpenTask = onOpenTask,
+            )
+        }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    QuickActionButton(
-                        label = stringResource(R.string.action_refresh_libraries),
-                        icon = painterResource(R.drawable.ic_refresh),
-                        onClick = { viewModel.refreshAllLibraries() },
-                        isLoading = isLibraryRefreshing,
-                        enabled = !isLibraryRefreshing,
-                        modifier = Modifier.weight(1f),
-                    )
-                    QuickActionButton(
-                        label = stringResource(R.string.action_restart),
-                        icon = painterResource(R.drawable.ic_restart),
-                        onClick = { showRestartConfirm = true },
-                        isDangerous = true,
-                        modifier = Modifier.weight(1f),
-                    )
-                    QuickActionButton(
-                        label = stringResource(R.string.action_shutdown),
-                        icon = painterResource(R.drawable.ic_power),
-                        onClick = { showShutdownConfirm = true },
-                        isDangerous = true,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
+        if (!sessionsFailed) {
+            ActiveSessionsSection(
+                sessions = sessions ?: emptyList(),
+                baseUrl = viewModel.baseUrl,
+                loading = sessions == null,
+                pendingPause = pendingPause,
+                onTogglePause = viewModel::togglePause,
+                onOpenRemote = { remoteSessionId = it.id },
+            )
+        }
 
-                val currentTasks = tasks
-                when {
-                    currentTasks == null ->
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    currentTasks.isNotEmpty() ->
-                        ScheduledTasksSection(
-                            tasks = currentTasks,
-                            pendingTaskIds = pendingTaskCommands,
-                            onRunTask = { viewModel.runTask(it) },
-                            onStopTask = { viewModel.stopTask(it) },
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            QuickActionButton(
+                label = stringResource(R.string.action_refresh_libraries),
+                icon = painterResource(R.drawable.ic_refresh),
+                onClick = { viewModel.refreshAllLibraries() },
+                isLoading = isLibraryRefreshing,
+                enabled = !isLibraryRefreshing,
+                modifier = Modifier.weight(1f),
+            )
+            QuickActionButton(
+                label = stringResource(R.string.action_restart),
+                icon = painterResource(R.drawable.ic_restart),
+                onClick = { showRestartConfirm = true },
+                isDangerous = true,
+                modifier = Modifier.weight(1f),
+            )
+            QuickActionButton(
+                label = stringResource(R.string.action_shutdown),
+                icon = painterResource(R.drawable.ic_power),
+                onClick = { showShutdownConfirm = true },
+                isDangerous = true,
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        val runningTasks = tasks.orEmpty().filter { it.state != TaskState.IDLE }
+        if (runningTasks.isNotEmpty()) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SectionHeader(stringResource(R.string.category_running))
+                runningTasks.forEach { task ->
+                    val taskId = task.id ?: return@forEach
+                    androidx.compose.runtime.key(taskId) {
+                        ScheduledTaskRow(
+                            task = task,
+                            isPending = taskId in pendingTaskCommands,
+                            onOpen = { onOpenTask(taskId) },
+                            onRun = {},
+                            onStop = { viewModel.stopTask(taskId) },
                         )
+                    }
                 }
             }
         }
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
-        )
+    }
+}
+
+@Composable
+private fun ServerHeader(name: String, version: String?) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier =
+                Modifier.size(48.dp)
+                    .background(
+                        MaterialTheme.colorScheme.primaryContainer,
+                        RoundedCornerShape(14.dp),
+                    ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_server),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(24.dp),
+            )
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (version != null) {
+                Text(
+                    text = stringResource(R.string.server_version_fmt, version),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AttentionCard(
+    restartRequired: Boolean,
+    failedSignIns: Int,
+    fullDisks: List<StorageDevice>,
+    pluginProblems: List<PluginInfo>,
+    failedTasks: List<TaskInfo>,
+    onRestart: () -> Unit,
+    onOpenSignIns: () -> Unit,
+    onOpenPlugins: () -> Unit,
+    onOpenTask: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SectionHeader(stringResource(R.string.section_needs_attention))
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                var shown = 0
+                if (restartRequired) {
+                    shown++
+                    SettingsItem(
+                        icon = painterResource(id = R.drawable.ic_restart),
+                        title = stringResource(R.string.attention_restart_required),
+                        subtitle = stringResource(R.string.attention_restart_required_summary),
+                        trailing = {
+                            TextButton(onClick = onRestart) {
+                                Text(stringResource(R.string.action_restart))
+                            }
+                        },
+                    )
+                }
+                if (failedSignIns > 0) {
+                    if (shown++ > 0) SettingsDivider()
+                    SettingsItem(
+                        icon = painterResource(id = R.drawable.ic_security),
+                        title = stringResource(R.string.attention_failed_sign_ins),
+                        subtitle = stringResource(R.string.attention_failed_sign_ins_summary),
+                        onClick = onOpenSignIns,
+                        trailing = { AdminPill(text = failedSignIns.toString()) },
+                    )
+                }
+                val context = LocalContext.current
+                fullDisks.forEach { disk ->
+                    if (shown++ > 0) SettingsDivider()
+                    SettingsItem(
+                        icon = painterResource(id = R.drawable.ic_database),
+                        title = disk.label,
+                        subtitle =
+                            stringResource(
+                                R.string.attention_disk_full_fmt,
+                                formatFileSize(context, disk.freeSpace),
+                            ),
+                    )
+                }
+                pluginProblems.forEach { plugin ->
+                    if (shown++ > 0) SettingsDivider()
+                    SettingsItem(
+                        icon = painterResource(id = R.drawable.ic_view_module),
+                        title = plugin.name,
+                        subtitle = plugin.status.labelRes()?.let { stringResource(it) },
+                        onClick = onOpenPlugins,
+                    )
+                }
+                failedTasks.forEach { task ->
+                    val taskId = task.id ?: return@forEach
+                    if (shown++ > 0) SettingsDivider()
+                    SettingsItem(
+                        icon = painterResource(id = R.drawable.ic_alert_triangle),
+                        title = task.name.orEmpty(),
+                        subtitle = stringResource(R.string.attention_task_failed),
+                        onClick = { onOpenTask(taskId) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoadFailedCard(onRetry: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.error_load_content_generic),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f).padding(vertical = 16.dp),
+            )
+            TextButton(onClick = onRetry) { Text(stringResource(R.string.action_retry)) }
+        }
     }
 }
 
@@ -536,7 +941,7 @@ private fun PlayingSessionCard(
     LaunchedEffect(basePositionTicks, isPaused) {
         if (!isPaused) {
             while (true) {
-                delay(1000)
+                delay(1.seconds)
                 localPositionTicks += 10_000_000L
             }
         }
@@ -616,7 +1021,21 @@ private fun PlayingSessionCard(
                         color = Color.White.copy(alpha = 0.85f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
                     )
+                    val playMethod = session.playMethodLabelRes()
+                    if (playMethod != null) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(playMethod),
+                            style =
+                                MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                            color = Color.White,
+                            maxLines = 1,
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -734,9 +1153,10 @@ private fun PlayingSessionCard(
 }
 
 @Composable
-private fun ScheduledTasksSection(
+internal fun ScheduledTasksSection(
     tasks: List<TaskInfo>,
     pendingTaskIds: Set<String>,
+    onOpenTask: (String) -> Unit,
     onRunTask: (String) -> Unit,
     onStopTask: (String) -> Unit,
 ) {
@@ -756,6 +1176,7 @@ private fun ScheduledTasksSection(
                     ScheduledTaskRow(
                         task = task,
                         isPending = taskId in pendingTaskIds,
+                        onOpen = { onOpenTask(taskId) },
                         onRun = { onRunTask(taskId) },
                         onStop = { onStopTask(taskId) },
                     )
@@ -772,6 +1193,7 @@ private fun ScheduledTasksSection(
                         ScheduledTaskRow(
                             task = task,
                             isPending = taskId in pendingTaskIds,
+                            onOpen = { onOpenTask(taskId) },
                             onRun = { onRunTask(taskId) },
                             onStop = { onStopTask(taskId) },
                         )
@@ -785,6 +1207,7 @@ private fun ScheduledTasksSection(
 private fun ScheduledTaskRow(
     task: TaskInfo,
     isPending: Boolean,
+    onOpen: () -> Unit,
     onRun: () -> Unit,
     onStop: () -> Unit,
 ) {
@@ -792,6 +1215,7 @@ private fun ScheduledTaskRow(
     val isCancelling = task.state == TaskState.CANCELLING
 
     Surface(
+        onClick = onOpen,
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = Modifier.fillMaxWidth(),

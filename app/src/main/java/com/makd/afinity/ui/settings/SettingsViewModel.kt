@@ -32,6 +32,7 @@ import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
+import com.makd.afinity.data.repository.admin.ServerAdminRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsDownloadRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
@@ -56,6 +57,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jellyfin.sdk.model.api.PluginStatus
+import org.jellyfin.sdk.model.api.TaskState
 import timber.log.Timber
 
 @HiltViewModel
@@ -80,10 +83,33 @@ constructor(
     private val omdbApiService: OmdbApiService,
     private val downloadRepository: DownloadRepository,
     private val absDownloadRepository: AbsDownloadRepository,
+    private val adminRepository: ServerAdminRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+
+    val controlPanelStatus: StateFlow<ControlPanelStatus> =
+        combine(
+                adminRepository.systemInfo,
+                adminRepository.plugins,
+                adminRepository.scheduledTasks,
+            ) { systemInfo, plugins, tasks ->
+                ControlPanelStatus(
+                    restartRequired =
+                        systemInfo?.getOrNull()?.hasPendingRestart == true ||
+                            plugins?.getOrNull().orEmpty().any {
+                                it.status == PluginStatus.RESTART
+                            },
+                    runningTask =
+                        tasks
+                            ?.getOrNull()
+                            .orEmpty()
+                            .firstOrNull { it.state != TaskState.IDLE }
+                            ?.name,
+                )
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ControlPanelStatus())
 
     val hasOfflineMedia: StateFlow<Boolean> =
         combine(
@@ -1512,6 +1538,8 @@ constructor(
         _uiState.value = _uiState.value.copy(error = null)
     }
 }
+
+data class ControlPanelStatus(val restartRequired: Boolean = false, val runningTask: String? = null)
 
 data class SettingsUiState(
     val currentUser: User? = null,

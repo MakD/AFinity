@@ -1254,6 +1254,18 @@ fun MainNavigation(
                                                 )
                                             navController.navigate(route)
                                         },
+                                        onOpenControlPanel = {
+                                            navController.navigate(Destination.ADMIN_SERVER_ROUTE) {
+                                                launchSingleTop = true
+                                            }
+                                        },
+                                    )
+                                }
+
+                                composable(Destination.ADMIN_SERVER_ROUTE) {
+                                    ControlPanelRoute(
+                                        onBackClick =
+                                            dropUnlessResumed { navController.popBackStack() }
                                     )
                                 }
 

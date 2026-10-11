@@ -103,6 +103,8 @@ fun SettingsItem(
     enabled: Boolean = true,
     role: Role = Role.Button,
     subtitleColor: Color? = null,
+    iconTint: Color? = null,
+    leading: @Composable (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
 ) {
     val contentAlpha = if (enabled) 1f else 0.38f
@@ -119,11 +121,17 @@ fun SettingsItem(
                 .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (icon != null) {
+        if (leading != null) {
+            leading()
+            Spacer(modifier = Modifier.width(16.dp))
+        } else if (icon != null) {
             Icon(
                 painter = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha),
+                tint =
+                    (iconTint ?: MaterialTheme.colorScheme.onSurfaceVariant).copy(
+                        alpha = contentAlpha
+                    ),
                 modifier = Modifier.size(24.dp),
             )
             Spacer(modifier = Modifier.width(16.dp))

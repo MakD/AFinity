@@ -6,7 +6,7 @@ object LogRedactor {
 
     private val jsonCredentialFields =
         Regex(
-            "\"(token|accessToken|refreshToken|access_token|refresh_token|apiKey|api_key|password|sessionSecret)\"\\s*:\\s*\"[^\"]*\"",
+            "\"(token|accessToken|refreshToken|access_token|refresh_token|apiKey|api_key|password|pw|newPw|currentPw|currentPassword|sessionSecret)\"\\s*:\\s*\"[^\"]*\"",
             RegexOption.IGNORE_CASE,
         )
 
@@ -15,6 +15,8 @@ object LogRedactor {
             "([?&](?:api_key|apikey|token|access_token|refresh_token|X-Emby-Token)=)[^&\\s\"]+",
             RegexOption.IGNORE_CASE,
         )
+
+    private val apiKeyPath = Regex("(/Auth/Keys/)[^/?#\\s\"]+", RegexOption.IGNORE_CASE)
 
     private val bearerHeader = Regex("(Bearer\\s+)[A-Za-z0-9._~+/=-]{8,}", RegexOption.IGNORE_CASE)
 
@@ -31,6 +33,7 @@ object LogRedactor {
         return input
             .replace(jsonCredentialFields) { "\"${it.groupValues[1]}\":\"$MASK\"" }
             .replace(queryCredentials) { "${it.groupValues[1]}$MASK" }
+            .replace(apiKeyPath) { "${it.groupValues[1]}$MASK" }
             .replace(bearerHeader) { "${it.groupValues[1]}$MASK" }
             .replace(cookieValues) { "${it.groupValues[1]}$MASK" }
             .replace(jsonWebToken, MASK)

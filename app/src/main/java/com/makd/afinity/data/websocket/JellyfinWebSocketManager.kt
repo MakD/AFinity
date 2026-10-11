@@ -39,6 +39,7 @@ import org.jellyfin.sdk.model.api.PlayMessage
 import org.jellyfin.sdk.model.api.PlayRequest
 import org.jellyfin.sdk.model.api.PlaystateMessage
 import org.jellyfin.sdk.model.api.PlaystateRequest
+import org.jellyfin.sdk.model.api.RestartRequiredMessage
 import org.jellyfin.sdk.model.api.ScheduledTasksInfoMessage
 import org.jellyfin.sdk.model.api.SendCommand
 import org.jellyfin.sdk.model.api.ServerRestartingMessage
@@ -78,8 +79,11 @@ constructor(
     private val _liveSessions = MutableSharedFlow<List<SessionInfoDto>>(replay = 0)
     val liveSessions: SharedFlow<List<SessionInfoDto>> = _liveSessions.asSharedFlow()
 
-    private val _liveTasks = MutableSharedFlow<List<TaskInfo>>(replay = 1)
+    private val _liveTasks = MutableSharedFlow<List<TaskInfo>>(replay = 0)
     val liveTasks = _liveTasks.asSharedFlow()
+
+    private val _restartRequired = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val restartRequired: SharedFlow<Unit> = _restartRequired.asSharedFlow()
 
     private val _syncPlayCommands = MutableSharedFlow<SendCommand>(extraBufferCapacity = 16)
     val syncPlayCommands: SharedFlow<SendCommand> = _syncPlayCommands.asSharedFlow()
@@ -289,6 +293,15 @@ constructor(
                     { apiClient.webSocket.subscribe(ServerShuttingDownMessage::class) },
                 ) {
                     handleServerShutdown()
+                }
+            }
+
+            launch {
+                collectWithRetry(
+                    "Restart required",
+                    { apiClient.webSocket.subscribe(RestartRequiredMessage::class) },
+                ) {
+                    _restartRequired.tryEmit(Unit)
                 }
             }
         }

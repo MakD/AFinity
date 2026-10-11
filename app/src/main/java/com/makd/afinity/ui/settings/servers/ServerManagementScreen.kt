@@ -34,7 +34,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -58,11 +57,13 @@ fun ServerManagementScreen(
     onBackClick: () -> Unit,
     onAddServerClick: () -> Unit,
     onEditServerClick: (serverId: String) -> Unit,
+    onOpenControlPanel: () -> Unit,
     isDualPane: Boolean = false,
     viewModel: ServerManagementViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
+    val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val playerOffset = LocalPlayerOffset.current
 
@@ -96,19 +97,24 @@ fun ServerManagementScreen(
                 serverWithCount = inlineServer,
                 stats = state.detailStats,
                 statsLoading = state.statsLoading,
+                serverStorage = state.detailStorage,
+                isAdmin = isAdmin,
                 onDismiss = { viewModel.hideServerDetail() },
+                onControlPanelClick = onOpenControlPanel,
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
             ServerListPane(
                 state = state,
                 isOffline = isOffline,
+                isAdmin = isAdmin,
                 snackbarHostState = snackbarHostState,
                 playerOffset = playerOffset,
                 showDetailDialog = !isDualPane,
                 onBackClick = onBackClick,
                 onAddServerClick = onAddServerClick,
                 onEditServerClick = onEditServerClick,
+                onOpenControlPanel = onOpenControlPanel,
                 viewModel = viewModel,
             )
         }
@@ -120,12 +126,14 @@ fun ServerManagementScreen(
 private fun ServerListPane(
     state: ServerManagementState,
     isOffline: Boolean,
+    isAdmin: Boolean?,
     snackbarHostState: SnackbarHostState,
     playerOffset: androidx.compose.ui.unit.Dp,
     showDetailDialog: Boolean,
     onBackClick: () -> Unit,
     onAddServerClick: () -> Unit,
     onEditServerClick: (serverId: String) -> Unit,
+    onOpenControlPanel: () -> Unit,
     viewModel: ServerManagementViewModel,
 ) {
     Scaffold(
@@ -148,7 +156,10 @@ private fun ServerListPane(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
             )
         },
         floatingActionButton = {
@@ -173,7 +184,7 @@ private fun ServerListPane(
             SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) })
         },
         modifier = Modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = MaterialTheme.colorScheme.surface,
     ) { paddingValues ->
         val layoutDirection = LocalLayoutDirection.current
         val customPadding =
@@ -269,7 +280,13 @@ private fun ServerListPane(
                     serverWithCount = detailServer,
                     stats = state.detailStats,
                     statsLoading = state.statsLoading,
+                    serverStorage = state.detailStorage,
+                    isAdmin = isAdmin,
                     onDismiss = { viewModel.hideServerDetail() },
+                    onControlPanelClick = {
+                        viewModel.hideServerDetail()
+                        onOpenControlPanel()
+                    },
                 )
             }
         }

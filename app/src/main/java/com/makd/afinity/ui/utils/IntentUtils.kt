@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.browser.customtabs.CustomTabsIntent
 import com.makd.afinity.R
 import timber.log.Timber
 
@@ -52,6 +53,15 @@ object IntentUtils {
             Timber.e(e, "Failed to open YouTube URL: $youtubeUrl")
         }
     }
+
+    fun openCustomTab(context: Context, url: String): Boolean =
+        try {
+            CustomTabsIntent.Builder().setShowTitle(true).build().launchUrl(context, Uri.parse(url))
+            true
+        } catch (e: ActivityNotFoundException) {
+            Timber.w(e, "No browser available to open a custom tab")
+            false
+        }
 
     fun openMapLocation(context: Context, location: String?) {
         if (location.isNullOrBlank()) return

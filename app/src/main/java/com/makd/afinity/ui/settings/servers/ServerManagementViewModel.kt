@@ -17,6 +17,7 @@ import com.makd.afinity.data.models.server.AddressCheck
 import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.server.ServerAddress
+import com.makd.afinity.data.models.server.ServerStorage
 import com.makd.afinity.data.network.UrlCandidates
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.DatabaseRepository
@@ -35,6 +36,7 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Provider
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -42,6 +44,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -57,6 +60,7 @@ data class ServerManagementState(
     val serverToDelete: ServerWithUserCount? = null,
     val detailServer: ServerWithUserCount? = null,
     val detailStats: ServerDetailStats? = null,
+    val detailStorage: ServerStorage? = null,
     val statsLoading: Boolean = false,
     val pendingAddress: PendingAddress? = null,
 )
@@ -170,6 +174,17 @@ constructor(
 
     private val _state = MutableStateFlow(ServerManagementState())
     val state: StateFlow<ServerManagementState> = _state.asStateFlow()
+
+    val isAdmin: StateFlow<Boolean?> =
+        sessionManager.currentSession
+            .map { it?.isAdmin }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.Eagerly,
+                sessionManager.currentSession.value?.isAdmin,
+            )
+
+    private var storageJob: Job? = null
 
     val isOffline: StateFlow<Boolean> =
         offlineModeManager.isOffline.stateIn(viewModelScope, SharingStarted.Eagerly, false)
@@ -320,15 +335,29 @@ constructor(
             _state.value.copy(
                 detailServer = serverWithUserCount,
                 detailStats = ServerDetailStats(),
+                detailStorage = null,
                 statsLoading = serverWithUserCount.isActiveServer,
             )
+        storageJob?.cancel()
         if (serverWithUserCount.isActiveServer) {
             loadDetailStats(serverWithUserCount)
+            loadDetailStorage(serverWithUserCount.server.id)
         }
     }
 
     fun hideServerDetail() {
-        _state.value = _state.value.copy(detailServer = null, detailStats = null)
+        storageJob?.cancel()
+        _state.value =
+            _state.value.copy(detailServer = null, detailStats = null, detailStorage = null)
+    }
+
+    private fun loadDetailStorage(serverId: String) {
+        storageJob = viewModelScope.launch {
+            if (isAdmin.first { it != null } != true) return@launch
+            jellyfinRepositoryProvider.get().getServerStorageFlow(serverId).collect { storage ->
+                _state.value = _state.value.copy(detailStorage = storage)
+            }
+        }
     }
 
     private fun loadDetailStats(serverWithCount: ServerWithUserCount) {

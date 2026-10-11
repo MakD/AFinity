@@ -8,6 +8,7 @@ androidx-profileinstaller = "1.4.1"
 androidx-uiautomator = "2.4.0"
 assMedia = "0.5.1"
 blurhash = "0.3.0"
+browser = "1.10.0"
 coilCompose = "3.6.3"
 commonmark = "0.30.0"
 composeBom = "2026.09.00"
@@ -61,6 +62,7 @@ android-desugar-jdk = { group = "com.android.tools", name = "desugar_jdk_libs", 
 ass-media = { group = "io.github.peerless2012", name = "ass-media", version.ref = "assMedia" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-benchmark-macro-junit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "androidx-benchmark" }
+androidx-browser = { group = "androidx.browser", name = "browser", version.ref = "browser" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-compose-material3-adaptive-navigation-suite = { module = "androidx.compose.material3:material3-adaptive-navigation-suite" }
