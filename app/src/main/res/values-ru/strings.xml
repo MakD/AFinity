@@ -695,7 +695,7 @@
     <string name="permission_manage">Управление</string>
     <string name="label_movie_quota">Квота на фильмы</string>
     <string name="label_tv_quota">Квота на сериалы</string>
-    <string name="label_unlimited">Не ограничена</string>
+    <string name="label_unlimited">Без ограничений</string>
     <string name="time_today">Сегодня</string>
     <string name="time_this_week">На этой неделе</string>
     <string name="time_this_month">В этом месяце</string>
@@ -2090,7 +2090,7 @@
     <string name="local_network_permission_offline_body">Afinity не сожет связаться с вашим сервром, так как доступ к локальной сети запрещен. Для подключения, дайте это разрешение.</string>
     <string name="local_network_permission_settings">Открыть настройки</string>
     <string name="local_network_permission_discovery_body">Сервера не найдены. Разрешите AFinity доступ к локальной сети для их поиска.</string>
-    <string name="pref_view_logs">Просмотреть логи</string>
+    <string name="pref_view_logs">Просмотр логов</string>
     <string name="pref_view_logs_summary">Смотреть работу приложения в реальном времени</string>
     <string name="library_filter_audio_language">Язык аудио</string>
     <string name="library_filter_subtitle_language">Язык субтитров</string>
@@ -2391,4 +2391,17 @@
     <string name="card_size_extra_small">Очень маленький</string>
     <string name="card_size_small">Маленький</string>
     <string name="card_size_default">По умолчанию</string>
+    <string name="library_folders">Папки</string>
+    <string name="pref_merge_continue_next_up_title">Совмещать «Продолжить просмотр» и «Далее»</string>
+    <string name="pref_merge_continue_next_up_summary">Показывать их в одном ряду, начиная от недавно просмотренных</string>
+    <string name="pref_next_up_max_days_title">Максимум дней в разделе «Далее»</string>
+    <string name="pref_next_up_max_days_hint">Как долго сериал будет оставаться в разделе «Далее» после вашего последнего просмотра. Укажите 0, чтобы убрать ограничение.</string>
+    <string name="pref_next_up_max_days_label">Дни</string>
+    <plurals name="pref_next_up_max_days_fmt">
+        <item quantity="one">%1$d день</item>
+        <item quantity="few">%1$d дня</item>
+        <item quantity="many">%1$d дней</item>
+        <item quantity="other">%1$d дней</item>
+    </plurals>
+    <string name="pref_requires_next_up_row">Включите раздел «Далее» для использования</string>
 </resources>
