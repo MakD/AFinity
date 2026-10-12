@@ -288,65 +288,65 @@ fun SessionRemoteSheet(
             }
 
             if (item != null) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = { onPlaystate(PlaystateCommand.PREVIOUS_TRACK) }) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_player_skip_back),
-                        contentDescription = stringResource(R.string.cd_session_previous),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(24.dp),
-                    )
-                }
-                if (canSeek) {
-                    IconButton(onClick = { onSeekBy(-10L) }) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(onClick = { onPlaystate(PlaystateCommand.PREVIOUS_TRACK) }) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_rewind_backward_10),
-                            contentDescription = stringResource(R.string.cd_session_rewind),
+                            painter = painterResource(id = R.drawable.ic_player_skip_back),
+                            contentDescription = stringResource(R.string.cd_session_previous),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                    if (canSeek) {
+                        IconButton(onClick = { onSeekBy(-10L) }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_rewind_backward_10),
+                                contentDescription = stringResource(R.string.cd_session_rewind),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+                    }
+                    FilledIconButton(onClick = onTogglePause, modifier = Modifier.size(56.dp)) {
+                        Icon(
+                            painter =
+                                painterResource(
+                                    id =
+                                        if (isPaused) R.drawable.ic_player_play_filled
+                                        else R.drawable.ic_player_pause_filled
+                                ),
+                            contentDescription =
+                                stringResource(
+                                    if (isPaused) R.string.cd_session_play
+                                    else R.string.cd_session_pause
+                                ),
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+                    if (canSeek) {
+                        IconButton(onClick = { onSeekBy(30L) }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_rewind_forward_30),
+                                contentDescription = stringResource(R.string.cd_session_forward),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+                    }
+                    IconButton(onClick = { onPlaystate(PlaystateCommand.NEXT_TRACK) }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_player_skip_forward),
+                            contentDescription = stringResource(R.string.cd_session_next),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(24.dp),
                         )
                     }
                 }
-                FilledIconButton(onClick = onTogglePause, modifier = Modifier.size(56.dp)) {
-                    Icon(
-                        painter =
-                            painterResource(
-                                id =
-                                    if (isPaused) R.drawable.ic_player_play_filled
-                                    else R.drawable.ic_player_pause_filled
-                            ),
-                        contentDescription =
-                            stringResource(
-                                if (isPaused) R.string.cd_session_play
-                                else R.string.cd_session_pause
-                            ),
-                        modifier = Modifier.size(28.dp),
-                    )
-                }
-                if (canSeek) {
-                    IconButton(onClick = { onSeekBy(30L) }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_rewind_forward_30),
-                            contentDescription = stringResource(R.string.cd_session_forward),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
-                }
-                IconButton(onClick = { onPlaystate(PlaystateCommand.NEXT_TRACK) }) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_player_skip_forward),
-                        contentDescription = stringResource(R.string.cd_session_next),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(24.dp),
-                    )
-                }
-            }
-
             }
 
             if (item != null && (canMute || canSetVolume)) {
@@ -387,42 +387,43 @@ fun SessionRemoteSheet(
                 }
             }
 
-            if (canMessage || item != null) Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                if (canMessage) {
-                    FilledTonalButton(
-                        onClick = { showMessageDialog = true },
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_message_outgoing),
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Box(modifier = Modifier.size(8.dp))
-                        Text(text = stringResource(R.string.action_session_message))
+            if (canMessage || item != null)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    if (canMessage) {
+                        FilledTonalButton(
+                            onClick = { showMessageDialog = true },
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_message_outgoing),
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Box(modifier = Modifier.size(8.dp))
+                            Text(text = stringResource(R.string.action_session_message))
+                        }
+                    }
+                    if (item != null) {
+                        FilledTonalButton(
+                            onClick = {
+                                onPlaystate(PlaystateCommand.STOP)
+                                onDismiss()
+                            },
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_close),
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Box(modifier = Modifier.size(8.dp))
+                            Text(text = stringResource(R.string.action_session_stop))
+                        }
                     }
                 }
-                if (item != null) {
-                    FilledTonalButton(
-                        onClick = {
-                            onPlaystate(PlaystateCommand.STOP)
-                            onDismiss()
-                        },
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_close),
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Box(modifier = Modifier.size(8.dp))
-                        Text(text = stringResource(R.string.action_session_stop))
-                    }
-                }
-            }
         }
     }
 }
