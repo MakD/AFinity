@@ -5,4 +5,5 @@ enum class ServerConfigSource(val path: String) {
     ENCODING("/System/Configuration/encoding"),
     NETWORK("/System/Configuration/network"),
     NFO("/System/Configuration/xbmcmetadata"),
+    METADATA("/System/Configuration/metadata"),
 }

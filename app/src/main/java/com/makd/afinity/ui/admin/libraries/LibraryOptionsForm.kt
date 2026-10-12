@@ -65,7 +65,13 @@ internal fun libraryOptionsForm(collectionType: String?): ConfigFormSpec {
     val hasEmbeddedTitles = type !in NO_EMBEDDED_TITLE_TYPES
 
     val library = buildList {
-        add(SwitchField("Enabled", R.string.library_opt_enabled))
+        add(
+            SwitchField(
+                "Enabled",
+                R.string.library_opt_enabled,
+                R.string.library_opt_enabled_summary,
+            )
+        )
         add(
             SwitchField(
                 "EnableRealtimeMonitor",
@@ -74,7 +80,13 @@ internal fun libraryOptionsForm(collectionType: String?): ConfigFormSpec {
             )
         )
         if (type == TYPE_HOME_VIDEOS || type == TYPE_PHOTOS) {
-            add(SwitchField("EnablePhotos", R.string.library_opt_photos))
+            add(
+                SwitchField(
+                    "EnablePhotos",
+                    R.string.library_opt_photos,
+                    R.string.library_opt_photos_summary,
+                )
+            )
         }
         add(
             ChoiceField(
@@ -86,6 +98,7 @@ internal fun libraryOptionsForm(collectionType: String?): ConfigFormSpec {
                     ChoiceOption("60", R.string.library_opt_refresh_60),
                     ChoiceOption("90", R.string.library_opt_refresh_90),
                 ),
+                R.string.library_opt_refresh_interval_summary,
                 numeric = true,
             )
         )
@@ -123,15 +136,34 @@ internal fun libraryOptionsForm(collectionType: String?): ConfigFormSpec {
                     required = true,
                 )
             )
-            add(SwitchField("EnableAutomaticSeriesGrouping", R.string.library_opt_group_series))
-            add(SwitchField("EnableEmbeddedEpisodeInfos", R.string.library_opt_embedded_episode))
+            add(
+                SwitchField(
+                    "EnableAutomaticSeriesGrouping",
+                    R.string.library_opt_group_series,
+                    R.string.library_opt_group_series_summary,
+                )
+            )
+            add(
+                SwitchField(
+                    "EnableEmbeddedEpisodeInfos",
+                    R.string.library_opt_embedded_episode,
+                    R.string.library_opt_embedded_episode_summary,
+                )
+            )
         }
         if (hasEmbeddedTitles) {
-            add(SwitchField("EnableEmbeddedTitles", R.string.library_opt_embedded_titles))
+            add(
+                SwitchField(
+                    "EnableEmbeddedTitles",
+                    R.string.library_opt_embedded_titles,
+                    R.string.library_opt_embedded_titles_summary,
+                )
+            )
             add(
                 SwitchField(
                     "EnableEmbeddedExtrasTitles",
                     R.string.library_opt_embedded_extras_titles,
+                    R.string.library_opt_embedded_extras_titles_summary,
                     visibleWhen = FieldCondition("EnableEmbeddedTitles", setOf("true")),
                 )
             )
@@ -149,20 +181,34 @@ internal fun libraryOptionsForm(collectionType: String?): ConfigFormSpec {
 
     val trickplay =
         listOf<ConfigField>(
-            SwitchField("EnableTrickplayImageExtraction", R.string.library_opt_trickplay),
+            SwitchField(
+                "EnableTrickplayImageExtraction",
+                R.string.library_opt_trickplay,
+                R.string.library_opt_trickplay_summary,
+            ),
             SwitchField(
                 "ExtractTrickplayImagesDuringLibraryScan",
-                R.string.library_opt_during_scan,
+                R.string.library_opt_trickplay_during_scan,
+                R.string.library_opt_trickplay_during_scan_summary,
             ),
-            SwitchField("SaveTrickplayWithMedia", R.string.library_opt_trickplay_with_media),
+            SwitchField(
+                "SaveTrickplayWithMedia",
+                R.string.library_opt_trickplay_with_media,
+                R.string.library_opt_trickplay_with_media_summary,
+            ),
         )
 
     val chapters =
         listOf<ConfigField>(
-            SwitchField("EnableChapterImageExtraction", R.string.library_opt_chapter_images),
+            SwitchField(
+                "EnableChapterImageExtraction",
+                R.string.library_opt_chapter_images,
+                R.string.library_opt_chapter_images_summary,
+            ),
             SwitchField(
                 "ExtractChapterImagesDuringLibraryScan",
-                R.string.library_opt_during_scan,
+                R.string.library_opt_chapters_during_scan,
+                R.string.library_opt_chapters_during_scan_summary,
             ),
         )
 
@@ -177,6 +223,7 @@ internal fun libraryOptionsForm(collectionType: String?): ConfigFormSpec {
                     ChoiceOption("AllowImage", R.string.library_opt_embedded_subtitles_image),
                     ChoiceOption("AllowNone", R.string.library_opt_embedded_subtitles_none),
                 ),
+                R.string.library_opt_embedded_subtitles_summary,
             ),
             SwitchField(
                 "RequirePerfectSubtitleMatch",
@@ -186,12 +233,18 @@ internal fun libraryOptionsForm(collectionType: String?): ConfigFormSpec {
             SwitchField(
                 "SkipSubtitlesIfAudioTrackMatches",
                 R.string.library_opt_skip_if_audio_matches,
+                R.string.library_opt_skip_if_audio_matches_summary,
             ),
             SwitchField(
                 "SkipSubtitlesIfEmbeddedSubtitlesPresent",
                 R.string.library_opt_skip_if_embedded,
+                R.string.library_opt_skip_if_embedded_summary,
             ),
-            SwitchField("SaveSubtitlesWithMedia", R.string.library_opt_subtitles_with_media),
+            SwitchField(
+                "SaveSubtitlesWithMedia",
+                R.string.library_opt_subtitles_with_media,
+                R.string.library_opt_subtitles_with_media_summary,
+            ),
         )
 
     val music =
@@ -201,9 +254,21 @@ internal fun libraryOptionsForm(collectionType: String?): ConfigFormSpec {
                 R.string.library_opt_lufs,
                 R.string.library_opt_lufs_summary,
             ),
-            SwitchField("SaveLyricsWithMedia", R.string.library_opt_lyrics_with_media),
-            SwitchField("PreferNonstandardArtistsTag", R.string.library_opt_artists_tag),
-            SwitchField("UseCustomTagDelimiters", R.string.library_opt_tag_delimiters),
+            SwitchField(
+                "SaveLyricsWithMedia",
+                R.string.library_opt_lyrics_with_media,
+                R.string.library_opt_lyrics_with_media_summary,
+            ),
+            SwitchField(
+                "PreferNonstandardArtistsTag",
+                R.string.library_opt_artists_tag,
+                R.string.library_opt_artists_tag_summary,
+            ),
+            SwitchField(
+                "UseCustomTagDelimiters",
+                R.string.library_opt_tag_delimiters,
+                R.string.library_opt_tag_delimiters_summary,
+            ),
         )
 
     val sections = buildList {

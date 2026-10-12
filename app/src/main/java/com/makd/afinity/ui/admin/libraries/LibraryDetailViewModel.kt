@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.admin.ServerFolder
 import com.makd.afinity.data.repository.NoActiveSessionException
 import com.makd.afinity.data.repository.admin.ServerAdminRepository
+import com.makd.afinity.ui.admin.config.ChoiceOptionsLoader
+import com.makd.afinity.ui.admin.config.ConfigFormEditor
+import com.makd.afinity.ui.admin.config.LoadedConfigForm
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -52,8 +55,22 @@ constructor(
     private val _commandError = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val commandError: SharedFlow<Unit> = _commandError.asSharedFlow()
 
-    private val _closed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-    val closed: SharedFlow<Unit> = _closed.asSharedFlow()
+    private val optionsLoader = ChoiceOptionsLoader(adminRepository)
+
+    val optionsEditor =
+        ConfigFormEditor(
+            scope = viewModelScope,
+            loadForm = {
+                adminRepository.getLibraryOptions(libraryName).map { document ->
+                    LoadedConfigForm(
+                        spec = optionsLoader.resolve(libraryOptionsForm(document.collectionType)),
+                        document = document.options,
+                        title = libraryName,
+                    )
+                }
+            },
+            saveChanges = { changes -> adminRepository.updateLibraryOptions(libraryName, changes) },
+        )
 
     fun load() {
         _state.update { it.copy(failed = false) }
@@ -79,16 +96,6 @@ constructor(
         runCommand { adminRepository.removeLibraryFolder(libraryName, path) }
     }
 
-    fun rename(newName: String) {
-        val trimmed = newName.trim()
-        if (trimmed.isEmpty() || trimmed == libraryName) return
-        runClosingCommand { adminRepository.renameLibrary(libraryName, trimmed) }
-    }
-
-    fun remove() {
-        runClosingCommand { adminRepository.removeLibrary(libraryName) }
-    }
-
     private fun runCommand(block: suspend () -> Result<Unit>) {
         if (_state.value.isBusy) return
         _state.update { it.copy(isBusy = true) }
@@ -96,23 +103,6 @@ constructor(
             try {
                 if (block().isFailure) _commandError.tryEmit(Unit)
                 fetch()
-            } finally {
-                _state.update { it.copy(isBusy = false) }
-            }
-        }
-    }
-
-    private fun runClosingCommand(block: suspend () -> Result<Unit>) {
-        if (_state.value.isBusy) return
-        _state.update { it.copy(isBusy = true) }
-        viewModelScope.launch {
-            try {
-                if (block().isSuccess) {
-                    _closed.tryEmit(Unit)
-                } else {
-                    _commandError.tryEmit(Unit)
-                    fetch()
-                }
             } finally {
                 _state.update { it.copy(isBusy = false) }
             }

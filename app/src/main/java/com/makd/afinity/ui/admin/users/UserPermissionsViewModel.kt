@@ -410,5 +410,6 @@ constructor(
 
     private fun List<BaseItemDto>.toPermissionEntries(): List<PermissionLibrary> = map {
         PermissionLibrary(id = normalizeId(it.id.toString()), name = it.name.orEmpty())
-    }.sortedBy { it.name.lowercase() }
+    }
+        .sortedBy { it.name.lowercase() }
 }

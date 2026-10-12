@@ -187,6 +187,10 @@ interface ServerAdminRepository {
 
     suspend fun scanAllLibraries(): Result<Unit>
 
+    suspend fun scanLibrary(itemId: UUID): Result<Unit>
+
+    suspend fun getLibraryImageTags(itemIds: List<UUID>): Result<Map<UUID, String>>
+
     suspend fun startTask(taskId: String): Result<Unit>
 
     suspend fun stopTask(taskId: String): Result<Unit>

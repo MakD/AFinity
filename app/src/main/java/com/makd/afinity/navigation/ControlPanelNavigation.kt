@@ -49,11 +49,11 @@ import com.makd.afinity.ui.admin.components.AdminNavigationGuard
 import com.makd.afinity.ui.admin.components.LocalAdminNavigationGuard
 import com.makd.afinity.ui.admin.config.ConfigFormScreen
 import com.makd.afinity.ui.admin.devices.DevicesScreen
+import com.makd.afinity.ui.admin.images.EditImagesScreen
 import com.makd.afinity.ui.admin.keys.ApiKeysScreen
 import com.makd.afinity.ui.admin.libraries.AddLibraryScreen
 import com.makd.afinity.ui.admin.libraries.LibrariesScreen
 import com.makd.afinity.ui.admin.libraries.LibraryDetailScreen
-import com.makd.afinity.ui.admin.libraries.LibraryOptionsScreen
 import com.makd.afinity.ui.admin.logs.ServerLogViewerScreen
 import com.makd.afinity.ui.admin.logs.ServerLogsScreen
 import com.makd.afinity.ui.admin.plugins.PluginCatalogScreen
@@ -307,7 +307,19 @@ private fun NavGraphBuilder.adminDestinations(navController: NavHostController) 
                     launchSingleTop = true
                 }
             },
+            onEditImage = { itemId ->
+                navController.navigate(Destination.createEditImagesRoute(itemId.toString())) {
+                    launchSingleTop = true
+                }
+            },
         )
+    }
+
+    composable(
+        route = Destination.EDIT_IMAGES_ROUTE,
+        arguments = listOf(navArgument("itemId") { type = NavType.StringType }),
+    ) {
+        EditImagesScreen(onNavigateUp = dropUnlessResumed { navController.popBackStack() })
     }
 
     composable(Destination.ADMIN_LIBRARY_ADD_ROUTE) {
@@ -317,23 +329,8 @@ private fun NavGraphBuilder.adminDestinations(navController: NavHostController) 
     composable(
         route = Destination.ADMIN_LIBRARY_DETAIL_ROUTE,
         arguments = listOf(navArgument("libraryName") { type = NavType.StringType }),
-    ) { backStackEntry ->
-        val libraryName = backStackEntry.arguments?.getString("libraryName").orEmpty()
-        LibraryDetailScreen(
-            onBackClick = dropUnlessResumed { navController.popBackStack() },
-            onOpenOptions = {
-                navController.navigate(Destination.createAdminLibraryOptionsRoute(libraryName)) {
-                    launchSingleTop = true
-                }
-            },
-        )
-    }
-
-    composable(
-        route = Destination.ADMIN_LIBRARY_OPTIONS_ROUTE,
-        arguments = listOf(navArgument("libraryName") { type = NavType.StringType }),
     ) {
-        LibraryOptionsScreen(onBackClick = dropUnlessResumed { navController.popBackStack() })
+        LibraryDetailScreen(onBackClick = dropUnlessResumed { navController.popBackStack() })
     }
 
     composable(

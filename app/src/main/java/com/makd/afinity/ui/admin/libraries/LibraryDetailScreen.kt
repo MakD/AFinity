@@ -1,9 +1,10 @@
 package com.makd.afinity.ui.admin.libraries
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,30 +33,34 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.admin.ServerFolder
+import com.makd.afinity.ui.admin.components.AdminDiscardDialog
 import com.makd.afinity.ui.admin.components.AdminLoadContent
 import com.makd.afinity.ui.admin.components.AdminPill
 import com.makd.afinity.ui.admin.components.AdminRemoveButton
 import com.makd.afinity.ui.admin.components.AdminScaffold
-import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.admin.components.ReportUnsavedChanges
+import com.makd.afinity.ui.admin.components.adminContentBottomPadding
+import com.makd.afinity.ui.admin.config.ChoiceField
+import com.makd.afinity.ui.admin.config.ConfigField
+import com.makd.afinity.ui.admin.config.ConfigFormSections
+import com.makd.afinity.ui.admin.config.ConfigFormUiState
+import com.makd.afinity.ui.admin.config.ConfigSaveButton
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 
-private enum class LibraryDialog {
-    ADD_FOLDER,
-    RENAME,
-    REMOVE,
-}
+private const val LEADING_OPTION_SECTIONS = 1
 
 @Composable
 fun LibraryDetailScreen(
     onBackClick: () -> Unit,
-    onOpenOptions: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LibraryDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val editor = viewModel.optionsEditor
+    val formState by editor.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val commandFailedMessage = stringResource(R.string.session_command_failed)
 
@@ -68,20 +73,26 @@ fun LibraryDetailScreen(
         viewModel.commandError.collect { snackbarHostState.showSnackbar(commandFailedMessage) }
     }
 
-    LaunchedEffect(Unit) { viewModel.closed.collect { onBackClick() } }
+    LaunchedEffect(editor) {
+        editor.commandError.collect { snackbarHostState.showSnackbar(commandFailedMessage) }
+    }
 
     LibraryDetailContent(
         state = state,
+        formState = formState,
         snackbarHostState = snackbarHostState,
         onBackClick = onBackClick,
         onRetry = viewModel::load,
-        onOpenOptions = onOpenOptions,
+        onRetryOptions = editor::load,
         loadFolders = viewModel::browseFolders,
         isFolderInLibrary = viewModel::isFolderInLibrary,
         onAddFolder = viewModel::addFolder,
         onRemoveFolder = viewModel::removeFolder,
-        onRename = viewModel::rename,
-        onRemove = viewModel::remove,
+        onSetFlag = editor::setFlag,
+        onSetChoice = editor::setChoice,
+        onSetSelected = editor::setSelected,
+        onSetText = editor::setText,
+        onSave = editor::save,
         modifier = modifier,
     )
 }
@@ -89,53 +100,53 @@ fun LibraryDetailScreen(
 @Composable
 private fun LibraryDetailContent(
     state: LibraryDetailUiState,
+    formState: ConfigFormUiState,
     snackbarHostState: SnackbarHostState,
     onBackClick: () -> Unit,
     onRetry: () -> Unit,
-    onOpenOptions: () -> Unit,
+    onRetryOptions: () -> Unit,
     loadFolders: suspend (path: String?) -> Result<List<ServerFolder>>,
     isFolderInLibrary: (String) -> Boolean,
     onAddFolder: (String) -> Unit,
     onRemoveFolder: (String) -> Unit,
-    onRename: (String) -> Unit,
-    onRemove: () -> Unit,
+    onSetFlag: (key: String, enabled: Boolean) -> Unit,
+    onSetChoice: (field: ChoiceField, value: String) -> Unit,
+    onSetSelected: (key: String, value: String, selected: Boolean) -> Unit,
+    onSetText: (field: ConfigField, text: String) -> Unit,
+    onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var dialog by rememberSaveable { mutableStateOf<LibraryDialog?>(null) }
+    var showAddFolder by rememberSaveable { mutableStateOf(false) }
+    var showDiscard by rememberSaveable { mutableStateOf(false) }
     var folderToRemove by rememberSaveable { mutableStateOf<String?>(null) }
     val library = state.library
+    val requestClose: () -> Unit = { if (formState.isDirty) showDiscard = true else onBackClick() }
+
+    BackHandler(enabled = formState.isDirty) { showDiscard = true }
+    ReportUnsavedChanges(formState.isDirty)
+
+    if (showDiscard) {
+        AdminDiscardDialog(
+            message = stringResource(R.string.config_discard_message),
+            onDiscard = {
+                showDiscard = false
+                onBackClick()
+            },
+            onDismiss = { showDiscard = false },
+        )
+    }
 
     if (library != null) {
-        when (dialog) {
-            LibraryDialog.ADD_FOLDER ->
-                ServerFolderPickerDialog(
-                    loadFolders = loadFolders,
-                    isDuplicate = isFolderInLibrary,
-                    onConfirm = { path ->
-                        onAddFolder(path)
-                        dialog = null
-                    },
-                    onDismiss = { dialog = null },
-                )
-            LibraryDialog.RENAME ->
-                RenameLibraryDialog(
-                    currentName = library.name,
-                    onConfirm = { name ->
-                        onRename(name)
-                        dialog = null
-                    },
-                    onDismiss = { dialog = null },
-                )
-            LibraryDialog.REMOVE ->
-                RemoveLibraryDialog(
-                    name = library.name,
-                    onConfirm = {
-                        onRemove()
-                        dialog = null
-                    },
-                    onDismiss = { dialog = null },
-                )
-            null -> Unit
+        if (showAddFolder) {
+            ServerFolderPickerDialog(
+                loadFolders = loadFolders,
+                isDuplicate = isFolderInLibrary,
+                onConfirm = { path ->
+                    onAddFolder(path)
+                    showAddFolder = false
+                },
+                onDismiss = { showAddFolder = false },
+            )
         }
 
         folderToRemove
@@ -156,9 +167,18 @@ private fun LibraryDetailContent(
 
     AdminScaffold(
         title = library?.name ?: stringResource(R.string.libraries_title),
-        onBackClick = onBackClick,
+        onBackClick = requestClose,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
+        floatingActionButton = {
+            if (formState.isDirty) {
+                ConfigSaveButton(
+                    saving = formState.isSaving,
+                    enabled = formState.canSave,
+                    onSave = onSave,
+                )
+            }
+        },
     ) { contentPadding ->
         if (state.missing) {
             FullScreenEmpty(
@@ -172,66 +192,62 @@ private fun LibraryDetailContent(
                 onRetry = onRetry,
                 contentPadding = contentPadding,
             ) { loaded ->
-                val enabled = !state.isBusy
+                val sections = formState.spec?.sections.orEmpty()
+                val optionsReady = formState.document != null && sections.isNotEmpty()
+                val optionsEditable = !formState.isSaving
                 Column(
                     modifier =
                         Modifier.fillMaxSize()
                             .padding(contentPadding)
                             .verticalScroll(rememberScrollState())
-                            .padding(vertical = 16.dp),
+                            .padding(
+                                top = 16.dp,
+                                bottom = adminContentBottomPadding(formState.isDirty),
+                            ),
                     verticalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
-                    val removeLabel = stringResource(R.string.cd_library_folder_remove)
-                    SettingsGroup(title = stringResource(R.string.library_folders)) {
-                        loaded.locations.forEach { path ->
+                    ScanStatus(scanState = loaded.scanState)
+
+                    if (optionsReady) {
+                        ConfigFormSections(
+                            state = formState,
+                            enabled = optionsEditable,
+                            showAdvanced = true,
+                            onSetFlag = onSetFlag,
+                            onSetChoice = onSetChoice,
+                            onSetSelected = onSetSelected,
+                            onSetText = onSetText,
+                            sections = sections.take(LEADING_OPTION_SECTIONS),
+                        )
+                    }
+
+                    LibraryFolders(
+                        locations = loaded.locations,
+                        enabled = !state.isBusy,
+                        onAdd = { showAddFolder = true },
+                        onRemove = { path -> folderToRemove = path },
+                    )
+
+                    if (optionsReady) {
+                        ConfigFormSections(
+                            state = formState,
+                            enabled = optionsEditable,
+                            showAdvanced = true,
+                            onSetFlag = onSetFlag,
+                            onSetChoice = onSetChoice,
+                            onSetSelected = onSetSelected,
+                            onSetText = onSetText,
+                            sections = sections.drop(LEADING_OPTION_SECTIONS),
+                        )
+                    } else if (formState.failed) {
+                        SettingsGroup(title = stringResource(R.string.library_options_title)) {
                             SettingsItem(
-                                icon = painterResource(id = R.drawable.ic_folder),
-                                title = path,
-                                trailing = {
-                                    AdminRemoveButton(
-                                        contentDescription = removeLabel,
-                                        onClick = { folderToRemove = path },
-                                        enabled = enabled && loaded.locations.size > 1,
-                                    )
-                                },
+                                icon = painterResource(id = R.drawable.ic_refresh),
+                                title = stringResource(R.string.library_options_load_failed),
+                                subtitle = stringResource(R.string.action_retry),
+                                onClick = onRetryOptions,
                             )
-                            SettingsDivider()
                         }
-                        SettingsItem(
-                            icon = painterResource(id = R.drawable.ic_add),
-                            title = stringResource(R.string.library_folder_add),
-                            onClick = { dialog = LibraryDialog.ADD_FOLDER },
-                            enabled = enabled,
-                        )
-                    }
-
-                    SettingsGroup {
-                        SettingsItem(
-                            icon = painterResource(id = R.drawable.ic_settings),
-                            title = stringResource(R.string.library_options_title),
-                            subtitle = stringResource(R.string.library_options_summary),
-                            onClick = onOpenOptions,
-                            trailing = scanPill(scanState = loaded.scanState),
-                        )
-                    }
-
-                    SettingsGroup(title = stringResource(R.string.library_section_manage)) {
-                        SettingsItem(
-                            icon = painterResource(id = R.drawable.ic_edit),
-                            title = stringResource(R.string.action_rename),
-                            subtitle = stringResource(R.string.library_rename_summary),
-                            onClick = { dialog = LibraryDialog.RENAME },
-                            enabled = enabled,
-                        )
-                        SettingsDivider()
-                        SettingsItem(
-                            icon = painterResource(id = R.drawable.ic_delete),
-                            iconTint = MaterialTheme.colorScheme.error,
-                            title = stringResource(R.string.library_remove),
-                            subtitle = stringResource(R.string.library_remove_summary),
-                            onClick = { dialog = LibraryDialog.REMOVE },
-                            enabled = enabled,
-                        )
                     }
                 }
             }
@@ -240,91 +256,48 @@ private fun LibraryDetailContent(
 }
 
 @Composable
-private fun scanPill(scanState: LibraryScanState): (@Composable () -> Unit)? {
+private fun LibraryFolders(
+    locations: List<String>,
+    enabled: Boolean,
+    onAdd: () -> Unit,
+    onRemove: (String) -> Unit,
+) {
+    val removeLabel = stringResource(R.string.cd_library_folder_remove)
+    SettingsGroup(title = stringResource(R.string.library_folders)) {
+        locations.forEach { path ->
+            SettingsItem(
+                icon = painterResource(id = R.drawable.ic_folder),
+                title = path,
+                trailing = {
+                    AdminRemoveButton(
+                        contentDescription = removeLabel,
+                        onClick = { onRemove(path) },
+                        enabled = enabled && locations.size > 1,
+                    )
+                },
+            )
+            SettingsDivider()
+        }
+        SettingsItem(
+            icon = painterResource(id = R.drawable.ic_add),
+            title = stringResource(R.string.library_folder_add),
+            onClick = onAdd,
+            enabled = enabled,
+        )
+    }
+}
+
+@Composable
+private fun ScanStatus(scanState: LibraryScanState) {
     val label =
         when (scanState) {
             LibraryScanState.ACTIVE -> stringResource(R.string.library_scanning)
             LibraryScanState.QUEUED -> stringResource(R.string.library_scan_queued)
-            LibraryScanState.IDLE -> return null
+            LibraryScanState.IDLE -> return
         }
-    return { AdminPill(text = label, emphasised = scanState == LibraryScanState.ACTIVE) }
-}
-
-@Composable
-private fun RenameLibraryDialog(
-    currentName: String,
-    onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var name by rememberSaveable { mutableStateOf(currentName) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { DialogTitle(text = stringResource(R.string.library_rename_title)) },
-        text = {
-            AfinityTextField(
-                value = name,
-                onValueChange = { name = it },
-                modifier = Modifier.fillMaxWidth(),
-                label = stringResource(R.string.library_name_label),
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onConfirm(name) },
-                enabled = name.isNotBlank() && name.trim() != currentName,
-            ) {
-                Text(stringResource(R.string.action_save))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        },
-        shape = RoundedCornerShape(28.dp),
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-    )
-}
-
-@Composable
-private fun RemoveLibraryDialog(name: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    var typed by rememberSaveable { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { DialogTitle(text = stringResource(R.string.library_remove_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = stringResource(R.string.library_remove_message, name),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                AfinityTextField(
-                    value = typed,
-                    onValueChange = { typed = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = stringResource(R.string.library_remove_type_name),
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                enabled = typed.trim() == name,
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError,
-                    ),
-            ) {
-                Text(stringResource(R.string.action_remove))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        },
-        shape = RoundedCornerShape(28.dp),
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-    )
+    Row(modifier = Modifier.padding(horizontal = 16.dp)) {
+        AdminPill(text = label, emphasised = scanState == LibraryScanState.ACTIVE)
+    }
 }
 
 @Composable

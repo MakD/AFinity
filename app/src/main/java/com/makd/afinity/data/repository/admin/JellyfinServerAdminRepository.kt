@@ -106,9 +106,11 @@ import org.jellyfin.sdk.model.api.DeviceOptionsDto
 import org.jellyfin.sdk.model.api.FileSystemEntryType
 import org.jellyfin.sdk.model.api.GeneralCommand
 import org.jellyfin.sdk.model.api.GeneralCommandType
+import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.LogFile
 import org.jellyfin.sdk.model.api.MediaPathDto
 import org.jellyfin.sdk.model.api.MessageCommand
+import org.jellyfin.sdk.model.api.MetadataRefreshMode
 import org.jellyfin.sdk.model.api.PackageInfo
 import org.jellyfin.sdk.model.api.ParentalRating
 import org.jellyfin.sdk.model.api.PlaystateCommand
@@ -852,6 +854,35 @@ constructor(
 
     override suspend fun scanAllLibraries(): Result<Unit> =
         execute("scan libraries") { api, _ -> LibraryApi(api).refreshLibrary() }
+
+    override suspend fun scanLibrary(itemId: UUID): Result<Unit> =
+        execute("scan library $itemId") { api, _ ->
+            LibraryApi(api)
+                .refreshItem(
+                    itemId = itemId,
+                    metadataRefreshMode = MetadataRefreshMode.DEFAULT,
+                    imageRefreshMode = MetadataRefreshMode.DEFAULT,
+                    replaceAllMetadata = false,
+                    replaceAllImages = false,
+                    regenerateTrickplay = false,
+                )
+        }
+
+    override suspend fun getLibraryImageTags(itemIds: List<UUID>): Result<Map<UUID, String>> =
+        if (itemIds.isEmpty()) {
+            Result.success(emptyMap())
+        } else {
+            apiInvoker.apiResult { api, userId ->
+                LibraryApi(api)
+                    .getItems(userId = userId, ids = itemIds)
+                    .content
+                    .items
+                    .mapNotNull { item ->
+                        item.imageTags?.get(ImageType.PRIMARY)?.let { tag -> item.id to tag }
+                    }
+                    .toMap()
+            }
+        }
 
     override suspend fun startTask(taskId: String): Result<Unit> =
         execute("start task $taskId") { api, _ -> ScheduledTaskApi(api).startTask(taskId) }

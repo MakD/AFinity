@@ -6,6 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.repository.admin.ServerAdminRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+
+private const val NESTED_SEPARATOR = '.'
 
 @HiltViewModel
 class ConfigFormViewModel
@@ -28,7 +32,7 @@ constructor(
                 if (current == null) {
                     Result.failure(IllegalArgumentException("Unknown settings form"))
                 } else {
-                    adminRepository.getServerConfig(current.source).map { document ->
+                    loadDocument(current).map { document ->
                         LoadedConfigForm(
                             spec = optionsLoader.resolve(current.spec),
                             document = document,
@@ -41,9 +45,52 @@ constructor(
                 if (current == null) {
                     Result.failure(IllegalArgumentException("Unknown settings form"))
                 } else {
-                    adminRepository.updateServerConfig(current.source, changes)
+                    saveDocument(current, changes)
                 }
             },
             initialSpec = form?.spec,
         )
+
+    private suspend fun loadDocument(form: ServerConfigForm): Result<JsonObject> {
+        val main =
+            adminRepository.getServerConfig(form.source).getOrElse {
+                return Result.failure(it)
+            }
+        val nested =
+            form.nestedSources.mapValues { (_, source) ->
+                adminRepository.getServerConfig(source).getOrElse {
+                    return Result.failure(it)
+                }
+            }
+        return Result.success(JsonObject(main + nested))
+    }
+
+    private suspend fun saveDocument(
+        form: ServerConfigForm,
+        changes: Map<String, JsonElement>,
+    ): Result<Unit> {
+        val nestedChanges =
+            form.nestedSources.mapValues { (name, _) ->
+                changes
+                    .filterKeys { it.substringBefore(NESTED_SEPARATOR) == name }
+                    .mapKeys { (key, _) -> key.substringAfter(NESTED_SEPARATOR) }
+            }
+        val mainChanges = changes.filterKeys {
+            it.substringBefore(NESTED_SEPARATOR) !in form.nestedSources
+        }
+        if (mainChanges.isNotEmpty()) {
+            adminRepository.updateServerConfig(form.source, mainChanges).onFailure {
+                return Result.failure(it)
+            }
+        }
+        nestedChanges.forEach { (name, partial) ->
+            val source = form.nestedSources.getValue(name)
+            if (partial.isNotEmpty()) {
+                adminRepository.updateServerConfig(source, partial).onFailure {
+                    return Result.failure(it)
+                }
+            }
+        }
+        return Result.success(Unit)
+    }
 }

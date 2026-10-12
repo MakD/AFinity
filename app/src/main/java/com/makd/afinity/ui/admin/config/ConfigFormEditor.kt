@@ -203,10 +203,11 @@ class ConfigFormEditor(
 
     fun setChoice(field: ChoiceField, value: String) {
         val number = value.toLongOrNull()
-        if (field.numeric && number != null) {
-            change(field.key, JsonPrimitive(number))
-        } else {
-            change(field.key, JsonPrimitive(value))
+        val flag = value.toBooleanStrictOrNull()
+        when {
+            field.boolean && flag != null -> change(field.key, JsonPrimitive(flag))
+            field.numeric && number != null -> change(field.key, JsonPrimitive(number))
+            else -> change(field.key, JsonPrimitive(value))
         }
     }
 

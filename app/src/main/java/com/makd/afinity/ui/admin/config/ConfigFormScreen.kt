@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -46,6 +47,8 @@ import com.makd.afinity.R
 import com.makd.afinity.ui.admin.components.AdminDiscardDialog
 import com.makd.afinity.ui.admin.components.AdminLoadContent
 import com.makd.afinity.ui.admin.components.AdminScaffold
+import com.makd.afinity.ui.admin.components.AdminToggleChip
+import com.makd.afinity.ui.admin.components.AdminToggleChipFlow
 import com.makd.afinity.ui.admin.components.ReportUnsavedChanges
 import com.makd.afinity.ui.admin.components.adminContentBottomPadding
 import com.makd.afinity.ui.components.AfinityTextField
@@ -136,7 +139,7 @@ private fun ConfigFormContent(
         snackbarHostState = snackbarHostState,
         floatingActionButton = {
             if (state.isDirty) {
-                SaveButton(saving = state.isSaving, enabled = state.canSave, onSave = onSave)
+                ConfigSaveButton(saving = state.isSaving, enabled = state.canSave, onSave = onSave)
             }
         },
     ) { contentPadding ->
@@ -188,11 +191,18 @@ fun ConfigFormSections(
     onSetChoice: (field: ChoiceField, value: String) -> Unit,
     onSetSelected: (key: String, value: String, selected: Boolean) -> Unit,
     onSetText: (field: ConfigField, text: String) -> Unit,
+    sections: List<ConfigSection> = state.spec?.sections.orEmpty(),
 ) {
-    state.spec?.sections?.forEach { section ->
+    sections.forEach { section ->
         val fields = section.fields.filter { state.isVisible(it.visibleWhen) }
         if (fields.isNotEmpty() && (showAdvanced || !section.advanced)) {
             SettingsGroup(title = stringResource(section.title)) {
+                section.note?.let { note ->
+                    FieldHelp(
+                        text = stringResource(note),
+                        modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                    )
+                }
                 fields.forEachIndexed { index, field ->
                     if (index > 0) SettingsDivider()
                     ConfigFieldRow(
@@ -250,24 +260,29 @@ private fun ConfigFieldRow(
     val summary = field.summary?.let { stringResource(it) }
     when (field) {
         is ReadOnlyField ->
-            SettingsItem(
-                title = stringResource(field.label),
-                subtitle =
-                    when (state.flagOrNull(field.key)) {
-                        true -> stringResource(R.string.state_toggle_on)
-                        false -> stringResource(R.string.state_toggle_off)
-                        null ->
-                            state.display(field.key).ifEmpty {
-                                summary ?: stringResource(R.string.config_not_set)
-                            }
-                    },
-            )
+            Column {
+                SettingsItem(
+                    title = stringResource(field.label),
+                    subtitle =
+                        when (state.flagOrNull(field.key)) {
+                            true -> stringResource(R.string.state_toggle_on)
+                            false -> stringResource(R.string.state_toggle_off)
+                            null ->
+                                state.display(field.key).ifEmpty {
+                                    stringResource(R.string.config_not_set)
+                                }
+                        },
+                    subtitleMaxLines = Int.MAX_VALUE,
+                )
+                summary?.let { FieldHelp(text = it, modifier = Modifier.padding(bottom = 16.dp)) }
+            }
         is MultiChoiceField ->
-            MultiChoiceRows(
+            MultiChoiceChips(
                 field = field,
                 state = state,
                 enabled = enabled,
                 onSetSelected = onSetSelected,
+                onSetFlag = onSetFlag,
             )
         is DecimalField ->
             TextRow(
@@ -285,14 +300,18 @@ private fun ConfigFieldRow(
                 checked = state.flag(field.key),
                 onCheckedChange = { onSetFlag(field.key, it) },
                 enabled = enabled,
+                subtitleMaxLines = Int.MAX_VALUE,
             )
         is ChoiceField ->
-            ChoiceRow(
-                field = field,
-                selected = state.choice(field.key),
-                enabled = enabled,
-                onSelect = { onSetChoice(field, it) },
-            )
+            Column {
+                ChoiceRow(
+                    field = field,
+                    selected = state.choice(field.key),
+                    enabled = enabled,
+                    onSelect = { onSetChoice(field, it) },
+                )
+                summary?.let { FieldHelp(text = it, modifier = Modifier.padding(bottom = 16.dp)) }
+            }
         is NumberField ->
             TextRow(
                 field = field,
@@ -323,6 +342,16 @@ private fun ConfigFieldRow(
                 onSetText = onSetText,
             )
     }
+}
+
+@Composable
+private fun FieldHelp(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp),
+    )
 }
 
 @Composable
@@ -440,35 +469,51 @@ private fun ChoiceSearchDialog(
 @Composable private fun ChoiceOption.display(): String = label?.let { stringResource(it) } ?: text
 
 @Composable
-private fun MultiChoiceRows(
+private fun MultiChoiceChips(
     field: MultiChoiceField,
     state: ConfigFormUiState,
     enabled: Boolean,
     onSetSelected: (key: String, value: String, selected: Boolean) -> Unit,
+    onSetFlag: (key: String, enabled: Boolean) -> Unit,
 ) {
     val selected = state.selected(field.key)
     Column {
         Text(
             text = stringResource(field.label),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp),
         )
-        field.options
-            .filter { state.isVisible(it.visibleWhen) }
-            .forEach { option ->
-                SettingsSwitchItem(
-                    title = option.display(),
-                    checked = option.value in selected,
-                    onCheckedChange = { onSetSelected(field.key, option.value, it) },
-                    enabled = enabled,
-                )
-            }
+        AdminToggleChipFlow {
+            field.options
+                .filter { state.isVisible(it.visibleWhen) }
+                .forEach { option ->
+                    AdminToggleChip(
+                        label = option.display(),
+                        selected = option.value in selected,
+                        onSelectedChange = { onSetSelected(field.key, option.value, it) },
+                        enabled = enabled,
+                    )
+                }
+            field.flags
+                .filter { state.isVisible(it.visibleWhen) }
+                .forEach { flag ->
+                    AdminToggleChip(
+                        label = stringResource(flag.label),
+                        selected = state.flag(flag.key),
+                        onSelectedChange = { onSetFlag(flag.key, it) },
+                        enabled = enabled,
+                    )
+                }
+        }
+        field.summary?.let { summary ->
+            FieldHelp(text = stringResource(summary), modifier = Modifier.padding(bottom = 16.dp))
+        }
     }
 }
 
 @Composable
-private fun SaveButton(saving: Boolean, enabled: Boolean, onSave: () -> Unit) {
+internal fun ConfigSaveButton(saving: Boolean, enabled: Boolean, onSave: () -> Unit) {
     val contentColor =
         if (enabled || saving) MaterialTheme.colorScheme.onPrimaryContainer
         else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)

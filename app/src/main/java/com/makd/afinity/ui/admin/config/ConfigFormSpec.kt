@@ -78,7 +78,14 @@ data class ChoiceField(
     val numeric: Boolean = false,
     override val visibleWhen: FieldCondition? = null,
     val optionsSource: ChoiceOptionsSource? = null,
+    val boolean: Boolean = false,
 ) : ConfigField
+
+data class FlagChoice(
+    val key: String,
+    @param:StringRes val label: Int,
+    val visibleWhen: FieldCondition? = null,
+)
 
 data class MultiChoiceField(
     override val key: String,
@@ -86,6 +93,7 @@ data class MultiChoiceField(
     val options: List<ChoiceOption>,
     @param:StringRes override val summary: Int? = null,
     override val visibleWhen: FieldCondition? = null,
+    val flags: List<FlagChoice> = emptyList(),
 ) : ConfigField
 
 data class ReadOnlyField(
@@ -99,6 +107,7 @@ data class ConfigSection(
     @param:StringRes val title: Int,
     val fields: List<ConfigField>,
     val advanced: Boolean = false,
+    @param:StringRes val note: Int? = null,
 )
 
 data class FieldOrder(val lowerKey: String, val higherKey: String)
@@ -117,4 +126,8 @@ data class ConfigFormSpec(
         get() = sections.any { it.advanced }
 }
 
-data class ServerConfigForm(val source: ServerConfigSource, val spec: ConfigFormSpec)
+data class ServerConfigForm(
+    val source: ServerConfigSource,
+    val spec: ConfigFormSpec,
+    val nestedSources: Map<String, ServerConfigSource> = emptyMap(),
+)

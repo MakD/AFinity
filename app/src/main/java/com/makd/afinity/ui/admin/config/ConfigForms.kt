@@ -23,6 +23,7 @@ private const val MAX_BITRATE_MEGABITS = 2147.25
 private const val MAX_SLOW_RESPONSE_MS = 60_000L
 private const val MAX_TRICKPLAY_WIDTH = 3_840L
 private const val MAX_PROCESS_THREADS = 64L
+private const val METADATA_DOCUMENT = "MetadataConfiguration"
 
 private val GENERAL_FORM =
     ConfigFormSpec(
@@ -36,13 +37,10 @@ private val GENERAL_FORM =
                         TextInputField(
                             "ServerName",
                             R.string.config_server_name,
+                            R.string.config_server_name_summary,
                             required = true,
                         ),
-                        SwitchField(
-                            "QuickConnectAvailable",
-                            R.string.config_quick_connect,
-                            R.string.config_quick_connect_summary,
-                        ),
+                        SwitchField("QuickConnectAvailable", R.string.config_quick_connect),
                     ),
                 ),
                 ConfigSection(
@@ -51,13 +49,13 @@ private val GENERAL_FORM =
                         NumberField(
                             "LibraryScanFanoutConcurrency",
                             R.string.config_scan_concurrency,
-                            R.string.config_zero_automatic,
+                            R.string.config_scan_concurrency_summary,
                             max = MAX_CONCURRENCY,
                         ),
                         NumberField(
                             "ParallelImageEncodingLimit",
                             R.string.config_image_encoding_limit,
-                            R.string.config_zero_automatic,
+                            R.string.config_image_encoding_limit_summary,
                             max = MAX_CONCURRENCY,
                         ),
                     ),
@@ -92,12 +90,12 @@ private val GENERAL_FORM =
                         TextInputField(
                             "CachePath",
                             R.string.config_cache_path,
-                            R.string.config_path_summary,
+                            R.string.config_cache_path_summary,
                         ),
                         TextInputField(
                             "MetadataPath",
                             R.string.config_metadata_path,
-                            R.string.config_path_summary,
+                            R.string.config_metadata_path_summary,
                         ),
                     ),
                 ),
@@ -113,6 +111,16 @@ private val LIBRARY_DISPLAY_FORM =
                 ConfigSection(
                     R.string.config_section_display,
                     listOf(
+                        ChoiceField(
+                            "$METADATA_DOCUMENT.UseFileCreationTimeForDateAdded",
+                            R.string.config_date_added,
+                            listOf(
+                                ChoiceOption("false", R.string.config_date_added_import),
+                                ChoiceOption("true", R.string.config_date_added_file),
+                            ),
+                            R.string.config_date_added_summary,
+                            boolean = true,
+                        ),
                         SwitchField(
                             "EnableFolderView",
                             R.string.config_folder_view,
@@ -125,10 +133,12 @@ private val LIBRARY_DISPLAY_FORM =
                         SwitchField(
                             "EnableGroupingMoviesIntoCollections",
                             R.string.config_group_movies,
+                            R.string.config_group_movies_summary,
                         ),
                         SwitchField(
                             "EnableGroupingShowsIntoCollections",
                             R.string.config_group_shows,
+                            R.string.config_group_shows_summary,
                         ),
                         SwitchField(
                             "EnableExternalContentInSuggestions",
@@ -171,11 +181,13 @@ private val PLAYBACK_FORM =
                         NumberField(
                             "MinAudiobookResume",
                             R.string.config_min_audiobook_resume,
+                            R.string.config_min_audiobook_resume_summary,
                             max = MAX_AUDIOBOOK_MINUTES,
                         ),
                         NumberField(
                             "MaxAudiobookResume",
                             R.string.config_max_audiobook_resume,
+                            R.string.config_max_audiobook_resume_summary,
                             min = 1,
                             max = MAX_AUDIOBOOK_MINUTES,
                         ),
@@ -214,6 +226,7 @@ private val TRICKPLAY_FORM =
                         SwitchField(
                             "TrickplayOptions.EnableHwEncoding",
                             R.string.config_trickplay_hw_encoding,
+                            R.string.config_trickplay_hw_encoding_summary,
                         ),
                         SwitchField(
                             "TrickplayOptions.EnableKeyFrameOnlyExtraction",
@@ -227,6 +240,7 @@ private val TRICKPLAY_FORM =
                                 ChoiceOption("NonBlocking", R.string.config_scan_non_blocking),
                                 ChoiceOption("Blocking", R.string.config_scan_blocking),
                             ),
+                            R.string.config_trickplay_scan_behavior_summary,
                         ),
                         ChoiceField(
                             "TrickplayOptions.ProcessPriority",
@@ -238,11 +252,12 @@ private val TRICKPLAY_FORM =
                                 ChoiceOption("BelowNormal", R.string.config_priority_below_normal),
                                 ChoiceOption("Idle", R.string.config_priority_idle),
                             ),
+                            R.string.config_trickplay_priority_summary,
                         ),
                         NumberField(
                             "TrickplayOptions.ProcessThreads",
                             R.string.config_trickplay_threads,
-                            R.string.config_zero_automatic,
+                            R.string.config_trickplay_threads_summary,
                             max = MAX_PROCESS_THREADS,
                         ),
                     ),
@@ -253,6 +268,7 @@ private val TRICKPLAY_FORM =
                         NumberField(
                             "TrickplayOptions.Interval",
                             R.string.config_trickplay_interval,
+                            R.string.config_trickplay_interval_summary,
                             min = 1,
                         ),
                         NumberListField(
@@ -264,11 +280,13 @@ private val TRICKPLAY_FORM =
                         NumberField(
                             "TrickplayOptions.TileWidth",
                             R.string.config_trickplay_tile_width,
+                            R.string.config_trickplay_tile_width_summary,
                             min = 1,
                         ),
                         NumberField(
                             "TrickplayOptions.TileHeight",
                             R.string.config_trickplay_tile_height,
+                            R.string.config_trickplay_tile_height_summary,
                             min = 1,
                         ),
                         NumberField(
@@ -281,6 +299,7 @@ private val TRICKPLAY_FORM =
                         NumberField(
                             "TrickplayOptions.JpegQuality",
                             R.string.config_trickplay_jpeg_quality,
+                            R.string.config_trickplay_jpeg_quality_summary,
                             min = 1,
                             max = 100,
                         ),
@@ -338,6 +357,7 @@ private val LIBRARY_METADATA_FORM =
                                 ChoiceOption("P240", text = "240p"),
                                 ChoiceOption("P144", text = "144p"),
                             ),
+                            R.string.config_chapter_image_resolution_summary,
                         ),
                     ),
                 ),
@@ -358,6 +378,7 @@ private val NFO_FORM =
                             "UserId",
                             R.string.config_nfo_user,
                             listOf(ChoiceOption("", R.string.config_none)),
+                            R.string.config_nfo_user_summary,
                             optionsSource = ChoiceOptionsSource.USERS,
                         ),
                         SwitchField(
@@ -383,7 +404,11 @@ private val NFO_FORM =
 private val SERVER_CONFIG_FORMS =
     listOf(
             ServerConfigForm(ServerConfigSource.SYSTEM, GENERAL_FORM),
-            ServerConfigForm(ServerConfigSource.SYSTEM, LIBRARY_DISPLAY_FORM),
+            ServerConfigForm(
+                ServerConfigSource.SYSTEM,
+                LIBRARY_DISPLAY_FORM,
+                nestedSources = mapOf(METADATA_DOCUMENT to ServerConfigSource.METADATA),
+            ),
             ServerConfigForm(ServerConfigSource.SYSTEM, LIBRARY_METADATA_FORM),
             ServerConfigForm(ServerConfigSource.NFO, NFO_FORM),
             ServerConfigForm(ServerConfigSource.SYSTEM, PLAYBACK_FORM),

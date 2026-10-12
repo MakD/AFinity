@@ -184,6 +184,14 @@ private fun UserParentalContent(
             ) {
                 SettingsGroup(title = stringResource(R.string.section_parental_rating)) {
                     MaxRatingRow(state = state, enabled = editable, onSelect = onSetMaxRating)
+                    Text(
+                        text = stringResource(R.string.parental_max_rating_help),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
+                    )
                 }
 
                 SettingsGroup(title = stringResource(R.string.section_parental_unrated)) {

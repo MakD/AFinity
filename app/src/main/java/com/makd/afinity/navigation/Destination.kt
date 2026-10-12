@@ -103,7 +103,6 @@ enum class Destination(
         const val ADMIN_LIBRARIES_ROUTE = "admin/server/libraries"
         const val ADMIN_LIBRARY_ADD_ROUTE = "admin/server/library-add"
         const val ADMIN_LIBRARY_DETAIL_ROUTE = "admin/server/libraries/{libraryName}"
-        const val ADMIN_LIBRARY_OPTIONS_ROUTE = "admin/server/libraries/{libraryName}/options"
         const val ADMIN_DEVICES_ROUTE = "admin/server/devices"
         const val ADMIN_ACTIVITY_ROUTE = "admin/server/activity?filter={filter}"
         const val ADMIN_PLUGINS_ROUTE = "admin/server/plugins"
@@ -123,9 +122,6 @@ enum class Destination(
 
         fun createAdminLibraryDetailRoute(libraryName: String): String =
             "admin/server/libraries/${android.net.Uri.encode(libraryName)}"
-
-        fun createAdminLibraryOptionsRoute(libraryName: String): String =
-            "admin/server/libraries/${android.net.Uri.encode(libraryName)}/options"
 
         fun createAdminUserDetailRoute(userId: String): String = "admin/server/users/$userId"
 

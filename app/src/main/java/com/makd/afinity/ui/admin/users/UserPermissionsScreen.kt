@@ -61,7 +61,11 @@ private data class PolicyToggle(
 private val ACCESS_TOGGLES =
     listOf(
         PolicyToggle(PolicyKeys.IS_HIDDEN, R.string.perm_hidden, R.string.perm_hidden_summary),
-        PolicyToggle(PolicyKeys.ENABLE_REMOTE_ACCESS, R.string.perm_remote_access),
+        PolicyToggle(
+            PolicyKeys.ENABLE_REMOTE_ACCESS,
+            R.string.perm_remote_access,
+            R.string.perm_remote_access_summary,
+        ),
     )
 
 private val PLAYBACK_TOGGLES =
@@ -69,16 +73,8 @@ private val PLAYBACK_TOGGLES =
         PolicyToggle(PolicyKeys.ENABLE_MEDIA_PLAYBACK, R.string.perm_media_playback),
         PolicyToggle(PolicyKeys.ENABLE_AUDIO_TRANSCODING, R.string.perm_audio_transcoding),
         PolicyToggle(PolicyKeys.ENABLE_VIDEO_TRANSCODING, R.string.perm_video_transcoding),
-        PolicyToggle(
-            PolicyKeys.ENABLE_REMUXING,
-            R.string.perm_remuxing,
-            R.string.perm_remuxing_summary,
-        ),
-        PolicyToggle(
-            PolicyKeys.FORCE_REMOTE_TRANSCODING,
-            R.string.perm_force_remote_transcoding,
-            R.string.perm_force_remote_transcoding_summary,
-        ),
+        PolicyToggle(PolicyKeys.ENABLE_REMUXING, R.string.perm_remuxing),
+        PolicyToggle(PolicyKeys.FORCE_REMOTE_TRANSCODING, R.string.perm_force_remote_transcoding),
     )
 
 private data class SyncPlayOption(val value: String, @param:StringRes val label: Int)
@@ -92,7 +88,11 @@ private val SYNC_PLAY_OPTIONS =
 
 private val MEDIA_TOGGLES =
     listOf(
-        PolicyToggle(PolicyKeys.ENABLE_DOWNLOADING, R.string.perm_downloads),
+        PolicyToggle(
+            PolicyKeys.ENABLE_DOWNLOADING,
+            R.string.perm_downloads,
+            R.string.perm_downloads_summary,
+        ),
         PolicyToggle(PolicyKeys.ENABLE_COLLECTIONS, R.string.perm_collections),
         PolicyToggle(PolicyKeys.ENABLE_SUBTITLES, R.string.perm_subtitles),
     )
@@ -106,7 +106,11 @@ private val LIVE_TV_TOGGLES =
 private val REMOTE_CONTROL_TOGGLES =
     listOf(
         PolicyToggle(PolicyKeys.ENABLE_CONTROL_OTHERS, R.string.perm_control_others),
-        PolicyToggle(PolicyKeys.ENABLE_SHARED_DEVICES, R.string.perm_shared_devices),
+        PolicyToggle(
+            PolicyKeys.ENABLE_SHARED_DEVICES,
+            R.string.perm_shared_devices,
+            R.string.perm_shared_devices_summary,
+        ),
     )
 
 @Composable
@@ -209,7 +213,7 @@ private fun UserPermissionsContent(
                                 state.isSelf -> stringResource(R.string.perm_administrator_self)
                                 state.isOnlyAdmin ->
                                     stringResource(R.string.perm_administrator_last)
-                                else -> stringResource(R.string.perm_administrator_summary)
+                                else -> null
                             },
                         checked = state.flag(PolicyKeys.IS_ADMINISTRATOR),
                         onCheckedChange = { onSetFlag(PolicyKeys.IS_ADMINISTRATOR, it) },
@@ -239,6 +243,7 @@ private fun UserPermissionsContent(
                                 )
                             }
                         }
+                        PermissionHelp(text = stringResource(R.string.perm_libraries_help))
                     }
                 }
 
@@ -264,18 +269,21 @@ private fun UserPermissionsContent(
                                     )
                                 }
                             }
+                            PermissionHelp(text = stringResource(R.string.perm_channels_help))
                         }
                     }
                 }
 
                 SettingsGroup(title = stringResource(R.string.section_perm_playback)) {
                     ToggleRows(PLAYBACK_TOGGLES, state, editable, onSetFlag)
+                    PermissionHelp(text = stringResource(R.string.perm_playback_help))
                     SettingsDivider()
                     SyncPlayRow(
                         selected = state.syncPlayAccess,
                         enabled = editable,
                         onSelect = onSetSyncPlayAccess,
                     )
+                    PermissionHelp(text = stringResource(R.string.perm_syncplay_help))
                 }
                 SettingsGroup(title = stringResource(R.string.section_perm_media)) {
                     ToggleRows(MEDIA_TOGGLES, state, editable, onSetFlag)
@@ -284,8 +292,7 @@ private fun UserPermissionsContent(
                 SettingsGroup(title = stringResource(R.string.section_perm_deletion)) {
                     val deleteEverywhere = state.flag(PolicyKeys.ENABLE_DELETION)
                     SettingsSwitchItem(
-                        title = stringResource(R.string.perm_all_libraries),
-                        subtitle = stringResource(R.string.perm_deletion_summary),
+                        title = stringResource(R.string.perm_deletion_all_libraries),
                         checked = deleteEverywhere,
                         onCheckedChange = { onSetFlag(PolicyKeys.ENABLE_DELETION, it) },
                         enabled = editable,
@@ -391,6 +398,17 @@ private fun UserPermissionsContent(
 }
 
 @Composable
+private fun PermissionHelp(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier =
+            Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
+    )
+}
+
+@Composable
 private fun SyncPlayRow(selected: String?, enabled: Boolean, onSelect: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     val selectedLabel = SYNC_PLAY_OPTIONS.firstOrNull { it.value == selected }?.label
@@ -436,6 +454,7 @@ private fun ToggleRows(
             checked = state.flag(toggle.key),
             onCheckedChange = { onSetFlag(toggle.key, it) },
             enabled = enabled,
+            subtitleMaxLines = Int.MAX_VALUE,
         )
     }
 }
