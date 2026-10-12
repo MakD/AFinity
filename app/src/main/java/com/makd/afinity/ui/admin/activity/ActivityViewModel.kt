@@ -10,6 +10,7 @@ import androidx.paging.insertSeparators
 import androidx.paging.map
 import com.makd.afinity.data.models.admin.ActivityEntry
 import com.makd.afinity.data.models.admin.ActivityFilter
+import com.makd.afinity.data.models.admin.ActivityToday
 import com.makd.afinity.data.repository.admin.ServerAdminRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
@@ -54,19 +55,28 @@ constructor(
             .map { pagingData -> pagingData.withDayHeaders() }
             .cachedIn(viewModelScope)
 
+    private val _today = MutableStateFlow<ActivityToday?>(null)
+    val today: StateFlow<ActivityToday?> = _today.asStateFlow()
+
     init {
         viewModelScope.launch {
             adminRepository.activityLogChanges().collect { _hasNewActivity.value = true }
         }
+        loadToday()
     }
 
-    fun setFilter(filter: ActivityFilter) {
-        _filter.value = filter
+    fun toggleFilter(filter: ActivityFilter) {
+        _filter.value = if (_filter.value == filter) ActivityFilter.ALL else filter
         _hasNewActivity.value = false
     }
 
     fun onRefreshed() {
         _hasNewActivity.value = false
+        loadToday()
+    }
+
+    private fun loadToday() {
+        viewModelScope.launch { adminRepository.getTodayActivity().onSuccess { _today.value = it } }
     }
 
     private fun PagingData<ActivityEntry>.withDayHeaders(): PagingData<ActivityListItem> {

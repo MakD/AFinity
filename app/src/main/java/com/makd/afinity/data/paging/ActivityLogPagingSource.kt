@@ -5,6 +5,7 @@ import androidx.paging.PagingState
 import com.makd.afinity.data.models.admin.ActivityEntry
 import com.makd.afinity.data.models.admin.ActivityFilter
 import com.makd.afinity.data.repository.JellyfinApiInvoker
+import java.util.UUID
 import org.jellyfin.sdk.api.operations.SystemApi
 import org.jellyfin.sdk.model.api.ActivityLogEntry
 import org.jellyfin.sdk.model.api.LogLevel
@@ -41,7 +42,9 @@ class ActivityLogPagingSource(
     override fun getRefreshKey(state: PagingState<Int, ActivityEntry>): Int? = null
 }
 
-private fun ActivityLogEntry.toActivityEntry() =
+private val NO_USER_ID = UUID(0L, 0L)
+
+internal fun ActivityLogEntry.toActivityEntry() =
     ActivityEntry(
         id = id,
         title = name,
@@ -49,4 +52,5 @@ private fun ActivityLogEntry.toActivityEntry() =
         type = type,
         date = date,
         isError = severity == LogLevel.ERROR || severity == LogLevel.CRITICAL,
+        userId = userId.takeIf { it != NO_USER_ID },
     )

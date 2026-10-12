@@ -1592,9 +1592,12 @@
     <string name="devices_idle">Idle for over 30 days</string>
     <string name="title_activity">Activity</string>
     <string name="activity_summary">Sign-ins, playback and alerts</string>
-    <string name="activity_filter_alerts">Alerts</string>
-    <string name="activity_filter_sign_ins">Sign-ins</string>
-    <string name="activity_filter_playback">Playback</string>
+    <string name="activity_tile_plays">Plays today</string>
+    <string name="activity_tile_people">People</string>
+    <string name="activity_tile_sign_ins">Sign-ins</string>
+    <string name="activity_tile_failed">Failed</string>
+    <string name="activity_tile_loading">–</string>
+    <string name="activity_tile_at_least_fmt">%1$d+</string>
     <string name="activity_empty">No activity to show</string>
     <string name="time_yesterday">Yesterday</string>
     <string name="section_plugins">Plugins</string>

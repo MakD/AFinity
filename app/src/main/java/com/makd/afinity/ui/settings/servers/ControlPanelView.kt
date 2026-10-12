@@ -529,7 +529,7 @@ private fun ControlPanelOverview(
                 pluginProblems = pluginProblems,
                 failedTasks = failedTasks,
                 onRestart = { showRestartConfirm = true },
-                onOpenSignIns = { onOpenActivity(ActivityFilter.SIGN_INS) },
+                onOpenSignIns = { onOpenActivity(ActivityFilter.FAILED_SIGN_INS) },
                 onOpenPlugins = onOpenPlugins,
                 onOpenTask = onOpenTask,
             )

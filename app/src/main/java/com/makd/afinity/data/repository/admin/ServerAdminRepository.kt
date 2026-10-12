@@ -3,6 +3,7 @@ package com.makd.afinity.data.repository.admin
 import androidx.paging.PagingData
 import com.makd.afinity.data.models.admin.ActivityEntry
 import com.makd.afinity.data.models.admin.ActivityFilter
+import com.makd.afinity.data.models.admin.ActivityToday
 import com.makd.afinity.data.models.admin.LibraryOptionsDocument
 import com.makd.afinity.data.models.admin.ServerConfigSource
 import com.makd.afinity.data.models.admin.ServerFolder
@@ -157,6 +158,8 @@ interface ServerAdminRepository {
     suspend fun revokeApiKey(key: String): Result<Unit>
 
     fun getActivityPaging(filter: ActivityFilter): Flow<PagingData<ActivityEntry>>
+
+    suspend fun getTodayActivity(): Result<ActivityToday>
 
     fun activityLogChanges(): Flow<Unit>
 
