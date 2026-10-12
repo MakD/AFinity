@@ -2278,6 +2278,8 @@
     <string name="active_sessions_empty">No active sessions.</string>
     <string name="session_command_failed">Command failed</string>
     <string name="session_remote_other_user_warning">You are controlling %1$s\'s session.</string>
+    <string name="session_remote_stopped">Playback stopped</string>
+    <string name="session_remote_stopped_hint">The controls return when this device starts playing again.</string>
     <string name="action_session_stop">Stop playback</string>
     <string name="cd_session_play">Resume</string>
     <string name="cd_session_pause">Pause</string>

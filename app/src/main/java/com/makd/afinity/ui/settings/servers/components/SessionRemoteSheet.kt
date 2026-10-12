@@ -201,7 +201,7 @@ fun SessionRemoteSheet(
             }
 
             Text(
-                text = item?.name ?: stringResource(R.string.unknown_title),
+                text = item?.name ?: stringResource(R.string.session_remote_stopped),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -217,7 +217,15 @@ fun SessionRemoteSheet(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            SessionPlaybackDetails(session = session)
+            if (item == null) {
+                Text(
+                    text = stringResource(R.string.session_remote_stopped_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                SessionPlaybackDetails(session = session)
+            }
 
             val basePositionTicks = session.playState?.positionTicks ?: 0L
             val serverPaused = session.playState?.isPaused ?: true
@@ -229,8 +237,8 @@ fun SessionRemoteSheet(
             var scrubbing by remember { mutableStateOf(false) }
             var scrubValue by remember { mutableFloatStateOf(0f) }
 
-            LaunchedEffect(basePositionTicks, serverPaused) {
-                if (!serverPaused) {
+            LaunchedEffect(basePositionTicks, serverPaused, item?.id) {
+                if (!serverPaused && item != null) {
                     while (true) {
                         delay(1000)
                         localPositionTicks += TICKS_PER_SECOND
@@ -279,6 +287,7 @@ fun SessionRemoteSheet(
                 }
             }
 
+            if (item != null) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
@@ -338,7 +347,9 @@ fun SessionRemoteSheet(
                 }
             }
 
-            if (canMute || canSetVolume) {
+            }
+
+            if (item != null && (canMute || canSetVolume)) {
                 val isMuted = session.playState?.isMuted == true
                 val volumeLevel = session.playState?.volumeLevel
                 var localVolume by
@@ -376,7 +387,7 @@ fun SessionRemoteSheet(
                 }
             }
 
-            Row(
+            if (canMessage || item != null) Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -394,20 +405,22 @@ fun SessionRemoteSheet(
                         Text(text = stringResource(R.string.action_session_message))
                     }
                 }
-                FilledTonalButton(
-                    onClick = {
-                        onPlaystate(PlaystateCommand.STOP)
-                        onDismiss()
-                    },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_close),
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Box(modifier = Modifier.size(8.dp))
-                    Text(text = stringResource(R.string.action_session_stop))
+                if (item != null) {
+                    FilledTonalButton(
+                        onClick = {
+                            onPlaystate(PlaystateCommand.STOP)
+                            onDismiss()
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_close),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Box(modifier = Modifier.size(8.dp))
+                        Text(text = stringResource(R.string.action_session_stop))
+                    }
                 }
             }
         }
