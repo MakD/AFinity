@@ -1200,6 +1200,8 @@
     <string name="pause_screen_delay_seconds_fmt">%1$ds</string>
     <string name="pref_chapter_skip_gesture_title">Chapter skip gesture</string>
     <string name="pref_chapter_skip_gesture_summary">Long-press the left or right edge to skip chapters (middle keeps 2× speed)</string>
+    <string name="pref_swap_gesture_indicators_title">Swap gesture indicators</string>
+    <string name="pref_swap_gesture_indicators_summary">Show brightness and volume levels on the opposite side from your finger</string>
     <string name="pref_edit_mpv_conf_title">Edit mpv.conf</string>
     <string name="pref_edit_input_conf_title">Edit input.conf</string>
     <string name="pref_edit_config_summary">Advanced MPV configuration</string>

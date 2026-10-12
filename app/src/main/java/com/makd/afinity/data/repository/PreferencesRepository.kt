@@ -410,6 +410,12 @@ interface PreferencesRepository {
 
     fun getChapterSkipGestureFlow(): Flow<Boolean>
 
+    suspend fun setSwapGestureIndicators(enabled: Boolean)
+
+    suspend fun getSwapGestureIndicators(): Boolean
+
+    fun getSwapGestureIndicatorsFlow(): Flow<Boolean>
+
     suspend fun setDefaultVideoZoomMode(mode: VideoZoomMode)
 
     suspend fun getDefaultVideoZoomMode(): VideoZoomMode

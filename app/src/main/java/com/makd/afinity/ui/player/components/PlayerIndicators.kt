@@ -27,6 +27,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,16 +54,20 @@ fun PlayerIndicators(uiState: PlayerViewModel.PlayerUiState, modifier: Modifier 
             modifier = Modifier.align(Alignment.Center),
         )
 
+        val brightnessOnLeft = !uiState.swapGestureIndicators
+
         BrightnessIndicator(
             show = uiState.showBrightnessIndicator,
             level = uiState.brightnessLevel,
-            modifier = Modifier.align(Alignment.CenterStart),
+            onLeft = brightnessOnLeft,
+            modifier = Modifier.align(sideAlignment(brightnessOnLeft)),
         )
 
         VolumeIndicator(
             show = uiState.showVolumeIndicator,
             level = uiState.volumeLevel,
-            modifier = Modifier.align(Alignment.CenterEnd),
+            onLeft = !brightnessOnLeft,
+            modifier = Modifier.align(sideAlignment(!brightnessOnLeft)),
         )
 
         SpeedIndicator(
@@ -120,15 +125,30 @@ private fun SeekIndicator(show: Boolean, direction: Int, modifier: Modifier = Mo
     }
 }
 
+private fun sideAlignment(onLeft: Boolean): Alignment =
+    if (onLeft) AbsoluteAlignment.CenterLeft else AbsoluteAlignment.CenterRight
+
 @Composable
-private fun BrightnessIndicator(show: Boolean, level: Float, modifier: Modifier = Modifier) {
+private fun BrightnessIndicator(
+    show: Boolean,
+    level: Float,
+    onLeft: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val slideSign = if (onLeft) -1 else 1
     AnimatedVisibility(
         visible = show,
         enter =
-            slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(200)) + fadeIn(),
+            slideInHorizontally(
+                initialOffsetX = { it * slideSign },
+                animationSpec = tween(200),
+            ) + fadeIn(),
         exit =
-            slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(200)) + fadeOut(),
-        modifier = modifier.padding(start = 32.dp),
+            slideOutHorizontally(
+                targetOffsetX = { it * slideSign },
+                animationSpec = tween(200),
+            ) + fadeOut(),
+        modifier = modifier.padding(horizontal = 32.dp),
     ) {
         Card(
             modifier = Modifier.width(80.dp).height(200.dp).clip(RoundedCornerShape(16.dp)),
@@ -173,12 +193,26 @@ private fun BrightnessIndicator(show: Boolean, level: Float, modifier: Modifier 
 }
 
 @Composable
-private fun VolumeIndicator(show: Boolean, level: Int, modifier: Modifier = Modifier) {
+private fun VolumeIndicator(
+    show: Boolean,
+    level: Int,
+    onLeft: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val slideSign = if (onLeft) -1 else 1
     AnimatedVisibility(
         visible = show,
-        enter = slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(200)) + fadeIn(),
-        exit = slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(200)) + fadeOut(),
-        modifier = modifier.padding(end = 32.dp),
+        enter =
+            slideInHorizontally(
+                initialOffsetX = { it * slideSign },
+                animationSpec = tween(200),
+            ) + fadeIn(),
+        exit =
+            slideOutHorizontally(
+                targetOffsetX = { it * slideSign },
+                animationSpec = tween(200),
+            ) + fadeOut(),
+        modifier = modifier.padding(horizontal = 32.dp),
     ) {
         Card(
             modifier = Modifier.width(80.dp).height(200.dp).clip(RoundedCornerShape(16.dp)),

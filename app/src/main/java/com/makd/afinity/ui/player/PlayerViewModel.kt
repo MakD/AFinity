@@ -305,6 +305,7 @@ constructor(
             initializeLogoAutoHide()
             initializePauseScreen()
             initializeChapterSkipGesture()
+            initializeSwapGestureIndicators()
             initializeBackgroundPlay()
             observeCastState()
             observeServerUrlChanges()
@@ -396,6 +397,13 @@ constructor(
     private fun initializeChapterSkipGesture() {
         viewModelScope.launch {
             chapterSkipGestureEnabled = preferencesRepository.getChapterSkipGesture()
+        }
+    }
+
+    private fun initializeSwapGestureIndicators() {
+        viewModelScope.launch {
+            val swapGestureIndicators = preferencesRepository.getSwapGestureIndicators()
+            updateUiState { it.copy(swapGestureIndicators = swapGestureIndicators) }
         }
     }
 
@@ -4115,6 +4123,7 @@ constructor(
         val omdbAwards: String? = null,
         val resolvedOrientation: Int = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,
         val logoAutoHide: Boolean = false,
+        val swapGestureIndicators: Boolean = false,
         val pauseScreenEnabled: Boolean = false,
         val pauseScreenDelaySeconds: Int = 0,
         val isLiveChannel: Boolean = false,

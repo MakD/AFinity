@@ -136,6 +136,8 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
         val CHAPTER_SKIP_GESTURE = booleanPreferencesKey("chapter_skip_gesture")
 
+        val SWAP_GESTURE_INDICATORS = booleanPreferencesKey("swap_gesture_indicators")
+
         val ASS_RENDER_MODE = stringPreferencesKey("ass_render_mode")
         val MPV_HW_DEC = stringPreferencesKey("mpv_hw_dec")
         val MPV_GPU_API = stringPreferencesKey("mpv_gpu_api")
@@ -1104,6 +1106,20 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
     override fun getChapterSkipGestureFlow(): Flow<Boolean> {
         return dataStore.data.map { preferences -> preferences[Keys.CHAPTER_SKIP_GESTURE] ?: true }
+    }
+
+    override suspend fun setSwapGestureIndicators(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.SWAP_GESTURE_INDICATORS] = enabled }
+    }
+
+    override suspend fun getSwapGestureIndicators(): Boolean {
+        return dataStore.data.first()[Keys.SWAP_GESTURE_INDICATORS] ?: false
+    }
+
+    override fun getSwapGestureIndicatorsFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.SWAP_GESTURE_INDICATORS] ?: false
+        }
     }
 
     override suspend fun setDefaultVideoZoomMode(mode: VideoZoomMode) {

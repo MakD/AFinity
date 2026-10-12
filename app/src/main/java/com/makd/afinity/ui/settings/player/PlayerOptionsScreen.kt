@@ -504,6 +504,15 @@ fun PlayerOptionsScreen(
                             onCheckedChange = viewModel::toggleChapterSkipGesture,
                         )
                         SettingsDivider()
+                        SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_switch_horizontal),
+                            title = stringResource(R.string.pref_swap_gesture_indicators_title),
+                            subtitle =
+                                stringResource(R.string.pref_swap_gesture_indicators_summary),
+                            checked = uiState.swapGestureIndicators,
+                            onCheckedChange = viewModel::toggleSwapGestureIndicators,
+                        )
+                        SettingsDivider()
                         VideoZoomModeSelectorItem(
                             selectedMode = uiState.defaultVideoZoomMode,
                             onModeSelected = viewModel::setDefaultVideoZoomMode,

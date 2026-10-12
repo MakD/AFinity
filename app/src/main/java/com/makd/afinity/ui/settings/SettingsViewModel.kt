@@ -456,6 +456,12 @@ constructor(
         }
 
         viewModelScope.launch {
+            preferencesRepository.getSwapGestureIndicatorsFlow().collect {
+                _uiState.value = _uiState.value.copy(swapGestureIndicators = it)
+            }
+        }
+
+        viewModelScope.launch {
             preferencesRepository.getDefaultVideoZoomModeFlow().collect { mode ->
                 _uiState.value = _uiState.value.copy(defaultVideoZoomMode = mode)
             }
@@ -856,6 +862,19 @@ constructor(
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle chapter skip gesture")
+            }
+        }
+    }
+
+    fun toggleSwapGestureIndicators(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setSwapGestureIndicators(enabled)
+                Timber.d("Swap gesture indicators set to: $enabled")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle swap gesture indicators")
             }
         }
     }
@@ -1562,6 +1581,7 @@ data class SettingsUiState(
     val pauseScreenEnabled: Boolean = false,
     val pauseScreenDelaySeconds: Int = 0,
     val chapterSkipGesture: Boolean = true,
+    val swapGestureIndicators: Boolean = false,
     val defaultVideoZoomMode: VideoZoomMode = VideoZoomMode.FIT,
     val mpvHwDec: MpvHwDec = MpvHwDec.default,
     val mpvVideoOutput: MpvVideoOutput = MpvVideoOutput.default,
