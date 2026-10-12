@@ -49,13 +49,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
 import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
-import androidx.compose.material3.adaptive.layout.PaneScaffoldDirective
 import androidx.compose.material3.adaptive.layout.ThreePaneScaffoldDestinationItem
-import androidx.compose.material3.adaptive.layout.calculatePaneScaffoldDirective
 import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -81,8 +78,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -102,6 +97,7 @@ import com.makd.afinity.ui.components.SettingsSwitchItem
 import com.makd.afinity.ui.components.connectionIndicatorColor
 import com.makd.afinity.ui.components.connectionLabel
 import com.makd.afinity.ui.components.isLandscapeWindow
+import com.makd.afinity.ui.components.listDetailPaneDirective
 import com.makd.afinity.ui.settings.appearance.AppearanceOptionsScreen
 import com.makd.afinity.ui.settings.backup.BackupBottomSheet
 import com.makd.afinity.ui.settings.backup.BackupScreen
@@ -110,8 +106,6 @@ import com.makd.afinity.ui.settings.downloads.StorageSettingsScreen
 import com.makd.afinity.ui.settings.home.CustomSectionsScreen
 import com.makd.afinity.ui.settings.logs.LogViewerScreen
 import com.makd.afinity.ui.settings.player.PlayerOptionsScreen
-import com.makd.afinity.ui.settings.servers.ControlPanelView
-import com.makd.afinity.ui.settings.servers.ControlPanelViewModel
 import com.makd.afinity.ui.settings.servers.ServerManagementScreen
 import com.makd.afinity.ui.settings.update.UpdateSection
 import kotlinx.coroutines.launch
@@ -150,26 +144,11 @@ fun SettingsScreen(
     var showBackupSheet by remember { mutableStateOf(false) }
     var showQuickConnectDialog by remember { mutableStateOf(false) }
     var showSessionSwitcherSheet by remember { mutableStateOf(false) }
-    var showControlPanel by remember { mutableStateOf(false) }
     val sessionSwitcherSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val backupSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val playerOffset = LocalPlayerOffset.current
-    val controlPanelViewModel: ControlPanelViewModel = hiltViewModel(key = "settings_control_panel")
-    val isAdmin by controlPanelViewModel.isAdmin.collectAsStateWithLifecycle()
-    val windowAdaptiveInfo = currentWindowAdaptiveInfoV2()
-    val defaultDirective = calculatePaneScaffoldDirective(windowAdaptiveInfo)
     val isLandscape = isLandscapeWindow()
-
-    val customDirective =
-        PaneScaffoldDirective(
-            maxHorizontalPartitions =
-                if (isLandscape) 2 else defaultDirective.maxHorizontalPartitions,
-            horizontalPartitionSpacerSize = 0.dp,
-            maxVerticalPartitions = defaultDirective.maxVerticalPartitions,
-            verticalPartitionSpacerSize = defaultDirective.verticalPartitionSpacerSize,
-            defaultPanePreferredWidth = 420.dp,
-            excludedBounds = defaultDirective.excludedBounds,
-        )
+    val customDirective = listDetailPaneDirective()
 
     var activeRole by rememberSaveable { mutableStateOf(ListDetailPaneScaffoldRole.List) }
     var activePane by rememberSaveable { mutableStateOf<SettingsPaneDestination?>(null) }
@@ -249,38 +228,6 @@ fun SettingsScreen(
             },
             sheetState = sessionSwitcherSheetState,
         )
-    }
-
-    if (showControlPanel) {
-        LaunchedEffect(uiState.serverId) {
-            uiState.serverId?.let { controlPanelViewModel.initialize(it) }
-        }
-        Dialog(
-            onDismissRequest = { showControlPanel = false },
-            properties = DialogProperties(usePlatformDefaultWidth = false),
-        ) {
-            Surface(
-                modifier = Modifier.fillMaxWidth().height(750.dp).padding(16.dp),
-                shape = MaterialTheme.shapes.extraLarge,
-                color = MaterialTheme.colorScheme.surfaceContainerLow,
-            ) {
-                uiState.activeServer?.let { activeServer ->
-                    ControlPanelView(
-                        serverWithCount = activeServer,
-                        onBack = { showControlPanel = false },
-                        viewModel = controlPanelViewModel,
-                    )
-                }
-                    ?: run {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    }
-            }
-        }
     }
 
     uiState.error?.let { error ->
@@ -375,20 +322,47 @@ fun SettingsScreen(
                                             top = 8.dp,
                                             bottom = 8.dp,
                                         ),
-                                    isAdmin = isAdmin == true,
-                                    onControlPanelClick = {
-                                        if (isDualPane) {
-                                            scope.launch {
-                                                navigator.navigateTo(
-                                                    ListDetailPaneScaffoldRole.Detail,
-                                                    SettingsPaneDestination.ControlPanel,
-                                                )
-                                            }
-                                        } else {
-                                            showControlPanel = true
-                                        }
-                                    },
                                 )
+                            }
+
+                            if (uiState.isAdmin) {
+                                item(key = "control_panel") {
+                                    val status by
+                                        viewModel.controlPanelStatus.collectAsStateWithLifecycle()
+                                    val runningTask = status.runningTask
+                                    SettingsGroup(endPadding = listEndPadding) {
+                                        SettingsItem(
+                                            icon =
+                                                painterResource(
+                                                    id = R.drawable.ic_admin_panel_settings
+                                                ),
+                                            title = stringResource(R.string.title_control_panel),
+                                            subtitle =
+                                                when {
+                                                    status.restartRequired ->
+                                                        stringResource(
+                                                            R.string.attention_restart_required
+                                                        )
+                                                    runningTask != null ->
+                                                        stringResource(
+                                                            R.string.tasks_running_fmt,
+                                                            runningTask,
+                                                        )
+                                                    else ->
+                                                        stringResource(
+                                                            R.string.control_panel_summary
+                                                        )
+                                                },
+                                            onClick = {
+                                                navController.navigate(
+                                                    Destination.ADMIN_SERVER_ROUTE
+                                                ) {
+                                                    launchSingleTop = true
+                                                }
+                                            },
+                                        )
+                                    }
+                                }
                             }
 
                             item {
@@ -808,6 +782,11 @@ fun SettingsScreen(
                                     Destination.createAddEditServerRoute(serverId = serverId)
                                 )
                             },
+                            onOpenControlPanel = {
+                                navController.navigate(Destination.ADMIN_SERVER_ROUTE) {
+                                    launchSingleTop = true
+                                }
+                            },
                             isDualPane = isDualPane,
                         )
                     is SettingsPaneDestination.Licenses ->
@@ -839,24 +818,6 @@ fun SettingsScreen(
                                 viewModel.clearQuickConnectAuthState()
                             },
                         )
-                    is SettingsPaneDestination.ControlPanel -> {
-                        LaunchedEffect(uiState.serverId) {
-                            uiState.serverId?.let { controlPanelViewModel.initialize(it) }
-                        }
-                        uiState.activeServer?.let { activeServer ->
-                            ControlPanelView(
-                                serverWithCount = activeServer,
-                                onBack = { scope.launch { navigator.navigateBack() } },
-                                viewModel = controlPanelViewModel,
-                            )
-                        }
-                            ?: Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                CircularProgressIndicator()
-                            }
-                    }
                     null -> Box(modifier = Modifier.fillMaxSize())
                 }
             }
@@ -873,8 +834,6 @@ fun ProfileHeader(
     serverVersion: String? = null,
     userProfileImageUrl: String?,
     connectionType: ConnectionType,
-    isAdmin: Boolean = false,
-    onControlPanelClick: (() -> Unit)? = null,
 ) {
     Column(
         modifier = modifier.fillMaxWidth().padding(top = 24.dp, bottom = 0.dp),
@@ -967,25 +926,6 @@ fun ProfileHeader(
                         style = MaterialTheme.typography.labelLarge,
                         color = connectionIndicatorColor(connectionType),
                     )
-                }
-            }
-            if (isAdmin && onControlPanelClick != null) {
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(50),
-                    modifier =
-                        Modifier.size(32.dp).clip(RoundedCornerShape(50)).clickable {
-                            onControlPanelClick()
-                        },
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_admin_panel_settings),
-                            contentDescription = stringResource(R.string.cd_control_panel),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(16.dp),
-                        )
-                    }
                 }
             }
         }

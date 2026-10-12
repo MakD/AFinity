@@ -53,7 +53,9 @@ fun UserAvatar(
                         when {
                             size < 32.dp -> MaterialTheme.typography.labelMedium
                             size < 48.dp -> MaterialTheme.typography.titleMedium
-                            else -> MaterialTheme.typography.titleLarge
+                            size < 64.dp -> MaterialTheme.typography.titleLarge
+                            size < 88.dp -> MaterialTheme.typography.headlineMedium
+                            else -> MaterialTheme.typography.displaySmall
                         },
                     fontWeight = FontWeight.Bold,
                     color = contentColor,

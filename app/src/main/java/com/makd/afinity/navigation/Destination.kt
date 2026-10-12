@@ -92,6 +92,53 @@ enum class Destination(
         const val EDIT_METADATA_ROUTE = "admin/edit_metadata/{itemId}"
         const val IDENTIFY_ITEM_ROUTE = "admin/identify/{itemId}/{itemType}"
         const val EDIT_IMAGES_ROUTE = "admin/edit_images/{itemId}"
+        const val ADMIN_SERVER_ROUTE = "admin/server"
+        const val ADMIN_OVERVIEW_ROUTE = "admin/server/overview"
+        const val ADMIN_TASKS_ROUTE = "admin/server/tasks"
+        const val ADMIN_TASK_DETAIL_ROUTE = "admin/server/tasks/{taskId}"
+        const val ADMIN_USERS_ROUTE = "admin/server/users"
+        const val ADMIN_USER_DETAIL_ROUTE = "admin/server/users/{userId}"
+        const val ADMIN_USER_PERMISSIONS_ROUTE = "admin/server/users/{userId}/permissions"
+        const val ADMIN_USER_PARENTAL_ROUTE = "admin/server/users/{userId}/parental"
+        const val ADMIN_LIBRARIES_ROUTE = "admin/server/libraries"
+        const val ADMIN_LIBRARY_ADD_ROUTE = "admin/server/library-add"
+        const val ADMIN_LIBRARY_DETAIL_ROUTE = "admin/server/libraries/{libraryName}"
+        const val ADMIN_DEVICES_ROUTE = "admin/server/devices"
+        const val ADMIN_ACTIVITY_ROUTE = "admin/server/activity?filter={filter}"
+        const val ADMIN_PLUGINS_ROUTE = "admin/server/plugins"
+        const val ADMIN_PLUGIN_DETAIL_ROUTE = "admin/server/plugins/detail/{pluginId}"
+        const val ADMIN_PLUGIN_REPOSITORIES_ROUTE = "admin/server/plugins/repositories"
+        const val ADMIN_API_KEYS_ROUTE = "admin/server/keys"
+        const val ADMIN_BACKUPS_ROUTE = "admin/server/backups"
+        const val ADMIN_SETTINGS_ROUTE = "admin/server/settings/{formId}"
+
+        const val ADMIN_LOGS_ROUTE = "admin/server/logs"
+        const val ADMIN_LOG_VIEWER_ROUTE = "admin/server/logs/{name}"
+
+        fun createAdminActivityRoute(filter: String): String =
+            "admin/server/activity?filter=$filter"
+
+        fun createAdminSettingsRoute(formId: String): String = "admin/server/settings/$formId"
+
+        fun createAdminLibraryDetailRoute(libraryName: String): String =
+            "admin/server/libraries/${android.net.Uri.encode(libraryName)}"
+
+        fun createAdminUserDetailRoute(userId: String): String = "admin/server/users/$userId"
+
+        fun createAdminUserPermissionsRoute(userId: String): String =
+            "admin/server/users/$userId/permissions"
+
+        fun createAdminUserParentalRoute(userId: String): String =
+            "admin/server/users/$userId/parental"
+
+        fun createAdminTaskDetailRoute(taskId: String): String =
+            "admin/server/tasks/${android.net.Uri.encode(taskId)}"
+
+        fun createAdminPluginDetailRoute(pluginId: String): String =
+            "admin/server/plugins/detail/$pluginId"
+
+        fun createAdminLogViewerRoute(name: String): String =
+            "admin/server/logs/${android.net.Uri.encode(name)}"
 
         fun createEditMetadataRoute(itemId: String): String = "admin/edit_metadata/$itemId"
 

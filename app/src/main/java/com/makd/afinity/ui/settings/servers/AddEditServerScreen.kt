@@ -48,7 +48,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -119,13 +118,17 @@ fun AddEditServerScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
             )
         },
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) })
         },
         modifier = modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.surface,
     ) { paddingValues ->
         val layoutDirection = LocalLayoutDirection.current
         val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()

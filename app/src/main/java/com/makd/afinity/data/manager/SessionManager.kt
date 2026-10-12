@@ -57,6 +57,7 @@ data class Session(
     val isAdmin: Boolean? = null,
     val canAccessLiveTv: Boolean? = null,
     val canDownload: Boolean? = null,
+    val canDeleteMedia: Boolean? = null,
     val userConfiguration: UserConfiguration? = null,
 )
 
@@ -268,13 +269,23 @@ constructor(
                         val isAdmin = userDto.policy?.isAdministrator == true
                         val canAccessLiveTv = userDto.policy?.enableLiveTvAccess
                         val canDownload = userDto.policy?.enableContentDownloading
+                        val canDeleteMedia =
+                            userDto.policy?.let { policy ->
+                                policy.enableContentDeletion ||
+                                    !policy.enableContentDeletionFromFolders.isNullOrEmpty() ||
+                                    policy.enableCollectionManagement
+                            }
 
                         val refreshedUser =
-                            user?.copy(
-                                isAdmin = isAdmin,
-                                canAccessLiveTv = canAccessLiveTv,
-                                canDownload = canDownload,
-                            )
+                            user?.let { existing ->
+                                existing.copy(
+                                    name = userDto.name ?: existing.name,
+                                    primaryImageTag = userDto.primaryImageTag,
+                                    isAdmin = isAdmin,
+                                    canAccessLiveTv = canAccessLiveTv,
+                                    canDownload = canDownload,
+                                )
+                            }
                                 ?: User(
                                     id = userDto.id,
                                     name = userDto.name ?: "",
@@ -294,6 +305,7 @@ constructor(
                                     isAdmin = isAdmin,
                                     canAccessLiveTv = canAccessLiveTv,
                                     canDownload = canDownload,
+                                    canDeleteMedia = canDeleteMedia,
                                     user = refreshedUser,
                                     userConfiguration = userDto.configuration,
                                 )
@@ -321,6 +333,20 @@ constructor(
     fun setServerReachable(reachable: Boolean, reason: UnreachableReason? = null) {
         _isServerReachable.value = reachable
         _unreachableReason.value = if (reachable) null else reason
+    }
+
+    suspend fun updateCurrentUserImageTag(userId: UUID, imageTag: String?) {
+        val current = _currentSession.value ?: return
+        val user = current.user ?: return
+        if (current.userId != userId || user.primaryImageTag == imageTag) return
+
+        val updated = user.copy(primaryImageTag = imageTag)
+        databaseRepository.insertUser(updated)
+
+        val latest = _currentSession.value
+        if (latest?.serverId == current.serverId && latest.userId == userId) {
+            _currentSession.value = latest.copy(user = updated)
+        }
     }
 
     suspend fun updateSessionUrl(newUrl: String) {

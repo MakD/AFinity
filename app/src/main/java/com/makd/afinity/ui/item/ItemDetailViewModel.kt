@@ -191,6 +191,11 @@ constructor(
             .map { it?.isAdmin == true }
             .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    val mayDeleteMedia: StateFlow<Boolean> =
+        sessionManager.currentSession
+            .map { it?.isAdmin == true || it?.canDeleteMedia == true }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     private val _deletableItemIds = MutableStateFlow<Set<UUID>>(emptySet())
     val deletableItemIds: StateFlow<Set<UUID>> = _deletableItemIds.asStateFlow()
 

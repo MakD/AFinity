@@ -172,6 +172,7 @@ fun ItemDetailScreen(
         viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
     val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
+    val mayDeleteMedia by viewModel.mayDeleteMedia.collectAsStateWithLifecycle()
     val deletableItemIds by viewModel.deletableItemIds.collectAsStateWithLifecycle()
     var showEpisodeRefreshDialog by remember { mutableStateOf(false) }
     var showEpisodeDeleteDialog by remember { mutableStateOf(false) }
@@ -326,8 +327,8 @@ fun ItemDetailScreen(
         }
 
         selectedEpisode?.let { episode ->
-            LaunchedEffect(episode.id, isAdmin) {
-                if (isAdmin) viewModel.checkCanDelete(episode.id)
+            LaunchedEffect(episode.id, mayDeleteMedia) {
+                if (mayDeleteMedia) viewModel.checkCanDelete(episode.id)
             }
 
             EpisodeDetailOverlay(
@@ -650,8 +651,11 @@ private fun LandscapeItemDetailContent(
         viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
     val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
+    val mayDeleteMedia by viewModel.mayDeleteMedia.collectAsStateWithLifecycle()
     val deletableItemIds by viewModel.deletableItemIds.collectAsStateWithLifecycle()
-    LaunchedEffect(item.id, isAdmin) { if (isAdmin) viewModel.checkCanDelete(item.id) }
+    LaunchedEffect(item.id, mayDeleteMedia) {
+        if (mayDeleteMedia) viewModel.checkCanDelete(item.id)
+    }
     var showRefreshDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showAddToPlaylist by remember { mutableStateOf(false) }
@@ -999,8 +1003,11 @@ private fun PortraitItemDetailContent(
         viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
     val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
+    val mayDeleteMedia by viewModel.mayDeleteMedia.collectAsStateWithLifecycle()
     val deletableItemIds by viewModel.deletableItemIds.collectAsStateWithLifecycle()
-    LaunchedEffect(item.id, isAdmin) { if (isAdmin) viewModel.checkCanDelete(item.id) }
+    LaunchedEffect(item.id, mayDeleteMedia) {
+        if (mayDeleteMedia) viewModel.checkCanDelete(item.id)
+    }
     var showRefreshDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showAddToPlaylist by remember { mutableStateOf(false) }

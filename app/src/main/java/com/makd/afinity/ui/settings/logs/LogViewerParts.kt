@@ -51,6 +51,9 @@ fun TagFilterSheetContent(
     onClear: () -> Unit,
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
+    subtitle: String = stringResource(R.string.logs_tags_subtitle),
+    warningTint: Color = LogLevelColors.content(LogLevel.WARN),
+    errorTint: Color = LogLevelColors.content(LogLevel.ERROR),
 ) {
     var filter by remember { mutableStateOf("") }
     val visible =
@@ -67,7 +70,7 @@ fun TagFilterSheetContent(
             modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 4.dp),
         )
         Text(
-            text = stringResource(R.string.logs_tags_subtitle),
+            text = subtitle,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 16.dp),
@@ -86,6 +89,8 @@ fun TagFilterSheetContent(
                 TagRow(
                     tag = tag,
                     checked = tag.tag in selected,
+                    warningTint = warningTint,
+                    errorTint = errorTint,
                     onToggle = { onToggle(tag.tag) },
                 )
             }
@@ -118,7 +123,13 @@ fun TagFilterSheetContent(
 }
 
 @Composable
-private fun TagRow(tag: LogTagCount, checked: Boolean, onToggle: () -> Unit) {
+private fun TagRow(
+    tag: LogTagCount,
+    checked: Boolean,
+    warningTint: Color,
+    errorTint: Color,
+    onToggle: () -> Unit,
+) {
     Row(
         modifier =
             Modifier.fillMaxWidth()
@@ -142,9 +153,9 @@ private fun TagRow(tag: LogTagCount, checked: Boolean, onToggle: () -> Unit) {
             modifier = Modifier.weight(1f),
         )
         if (tag.errors > 0) {
-            SeverityBadge(count = tag.errors, level = LogLevel.ERROR)
+            SeverityBadge(count = tag.errors, tint = errorTint)
         } else if (tag.warnings > 0) {
-            SeverityBadge(count = tag.warnings, level = LogLevel.WARN)
+            SeverityBadge(count = tag.warnings, tint = warningTint)
         }
         Text(
             text = tag.total.toString(),
@@ -157,15 +168,15 @@ private fun TagRow(tag: LogTagCount, checked: Boolean, onToggle: () -> Unit) {
 }
 
 @Composable
-private fun SeverityBadge(count: Int, level: LogLevel) {
+private fun SeverityBadge(count: Int, tint: Color) {
     Text(
         text = count.toString(),
         style = LogTextStyles.metaSmall,
         fontWeight = FontWeight.SemiBold,
-        color = LogLevelColors.content(level),
+        color = tint,
         modifier =
             Modifier.clip(RoundedCornerShape(8.dp))
-                .background(LogLevelColors.content(level).copy(alpha = 0.16f))
+                .background(tint.copy(alpha = 0.16f))
                 .padding(horizontal = 7.dp, vertical = 2.dp),
     )
 }

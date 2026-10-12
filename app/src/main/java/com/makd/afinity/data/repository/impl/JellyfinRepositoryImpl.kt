@@ -30,17 +30,11 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.api.operations.LibraryApi
-import org.jellyfin.sdk.api.operations.ScheduledTaskApi
 import org.jellyfin.sdk.api.operations.SessionApi
 import org.jellyfin.sdk.api.operations.SystemApi
 import org.jellyfin.sdk.model.api.FolderStorageDto
-import org.jellyfin.sdk.model.api.GeneralCommand
-import org.jellyfin.sdk.model.api.GeneralCommandType
-import org.jellyfin.sdk.model.api.MessageCommand
-import org.jellyfin.sdk.model.api.PlaystateCommand
 import org.jellyfin.sdk.model.api.SessionInfoDto
 import org.jellyfin.sdk.model.api.SystemStorageDto
-import org.jellyfin.sdk.model.api.TaskInfo
 import timber.log.Timber
 
 @Singleton
@@ -290,108 +284,6 @@ constructor(
             }
         }
 
-    override suspend fun sendSessionPlaystateCommand(
-        sessionId: String,
-        command: PlaystateCommand,
-        seekPositionTicks: Long?,
-    ): Result<Unit> =
-        withContext(Dispatchers.IO) {
-            val apiClient =
-                sessionManager.getCurrentApiClient()
-                    ?: return@withContext Result.failure(Exception("No active session"))
-            return@withContext try {
-                SessionApi(apiClient)
-                    .sendPlaystateCommand(
-                        sessionId = sessionId,
-                        command = command,
-                        seekPositionTicks = seekPositionTicks,
-                    )
-                Result.success(Unit)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to send playstate command $command to session $sessionId")
-                Result.failure(e)
-            }
-        }
-
-    override suspend fun sendSessionGeneralCommand(
-        sessionId: String,
-        command: GeneralCommandType,
-    ): Result<Unit> =
-        withContext(Dispatchers.IO) {
-            val apiClient =
-                sessionManager.getCurrentApiClient()
-                    ?: return@withContext Result.failure(Exception("No active session"))
-            return@withContext try {
-                SessionApi(apiClient).sendGeneralCommand(sessionId = sessionId, command = command)
-                Result.success(Unit)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to send general command $command to session $sessionId")
-                Result.failure(e)
-            }
-        }
-
-    override suspend fun setSessionVolume(sessionId: String, volume: Int): Result<Unit> =
-        withContext(Dispatchers.IO) {
-            val apiClient =
-                sessionManager.getCurrentApiClient()
-                    ?: return@withContext Result.failure(Exception("No active session"))
-            val controllingUserId =
-                sessionManager.currentSession.value?.userId
-                    ?: return@withContext Result.failure(Exception("No current user"))
-            return@withContext try {
-                SessionApi(apiClient)
-                    .sendFullGeneralCommand(
-                        sessionId = sessionId,
-                        data =
-                            GeneralCommand(
-                                name = GeneralCommandType.SET_VOLUME,
-                                controllingUserId = controllingUserId,
-                                arguments = mapOf("Volume" to volume.coerceIn(0, 100).toString()),
-                            ),
-                    )
-                Result.success(Unit)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to set volume on session $sessionId")
-                Result.failure(e)
-            }
-        }
-
-    override suspend fun sendSessionMessage(
-        sessionId: String,
-        header: String,
-        text: String,
-        timeoutMs: Long?,
-    ): Result<Unit> =
-        withContext(Dispatchers.IO) {
-            val apiClient =
-                sessionManager.getCurrentApiClient()
-                    ?: return@withContext Result.failure(Exception("No active session"))
-            return@withContext try {
-                SessionApi(apiClient)
-                    .sendMessageCommand(
-                        sessionId = sessionId,
-                        data =
-                            MessageCommand(
-                                header = header,
-                                text = text,
-                                timeoutMs = timeoutMs,
-                            ),
-                    )
-                Result.success(Unit)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to send message to session $sessionId")
-                Result.failure(e)
-            }
-        }
-
     override fun getServerStorageFlow(serverId: String): Flow<ServerStorage> = flow {
         serverStorageDao
             .getStorage(serverId)
@@ -491,100 +383,4 @@ constructor(
         val prefix = first.take(shared).joinToString(separator)
         return if (separator == "/") "/$prefix" else prefix
     }
-
-    override suspend fun restartServer(): Result<Unit> =
-        withContext(Dispatchers.IO) {
-            val apiClient =
-                sessionManager.getCurrentApiClient()
-                    ?: return@withContext Result.failure(Exception("No active session"))
-            return@withContext try {
-                SystemApi(apiClient).restartApplication()
-                Result.success(Unit)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to restart server")
-                Result.failure(e)
-            }
-        }
-
-    override suspend fun shutdownServer(): Result<Unit> =
-        withContext(Dispatchers.IO) {
-            val apiClient =
-                sessionManager.getCurrentApiClient()
-                    ?: return@withContext Result.failure(Exception("No active session"))
-            return@withContext try {
-                SystemApi(apiClient).shutdownApplication()
-                Result.success(Unit)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to shutdown server")
-                Result.failure(e)
-            }
-        }
-
-    override suspend fun refreshAllLibraries(): Result<Unit> =
-        withContext(Dispatchers.IO) {
-            val apiClient =
-                sessionManager.getCurrentApiClient()
-                    ?: return@withContext Result.failure(Exception("No active session"))
-            return@withContext try {
-                LibraryApi(apiClient).refreshLibrary()
-                Result.success(Unit)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to refresh libraries")
-                Result.failure(e)
-            }
-        }
-
-    override suspend fun getScheduledTasks(): Result<List<TaskInfo>> =
-        withContext(Dispatchers.IO) {
-            val apiClient =
-                sessionManager.getCurrentApiClient()
-                    ?: return@withContext Result.failure(Exception("No active session"))
-            return@withContext try {
-                val tasks = ScheduledTaskApi(apiClient).getTasks(isHidden = false).content
-                Result.success(tasks)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get scheduled tasks")
-                Result.failure(e)
-            }
-        }
-
-    override suspend fun startScheduledTask(taskId: String): Result<Unit> =
-        withContext(Dispatchers.IO) {
-            val apiClient =
-                sessionManager.getCurrentApiClient()
-                    ?: return@withContext Result.failure(Exception("No active session"))
-            return@withContext try {
-                ScheduledTaskApi(apiClient).startTask(taskId)
-                Result.success(Unit)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to start task $taskId")
-                Result.failure(e)
-            }
-        }
-
-    override suspend fun stopScheduledTask(taskId: String): Result<Unit> =
-        withContext(Dispatchers.IO) {
-            val apiClient =
-                sessionManager.getCurrentApiClient()
-                    ?: return@withContext Result.failure(Exception("No active session"))
-            return@withContext try {
-                ScheduledTaskApi(apiClient).stopTask(taskId)
-                Result.success(Unit)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to stop task $taskId")
-                Result.failure(e)
-            }
-        }
 }

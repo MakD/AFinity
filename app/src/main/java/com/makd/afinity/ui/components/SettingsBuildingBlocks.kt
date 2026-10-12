@@ -22,6 +22,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -34,6 +35,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+
+val LocalSettingsSubtitleMaxLines = staticCompositionLocalOf { 1 }
 
 @Composable
 fun BoxScope.EndAlignedDropdownMenu(
@@ -86,9 +89,9 @@ fun SettingsGroupTitle(title: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun SettingsDivider() {
+fun SettingsDivider(startPadding: Dp = 56.dp) {
     HorizontalDivider(
-        modifier = Modifier.padding(start = 56.dp, end = 16.dp),
+        modifier = Modifier.padding(start = startPadding, end = 16.dp),
         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
     )
 }
@@ -103,6 +106,9 @@ fun SettingsItem(
     enabled: Boolean = true,
     role: Role = Role.Button,
     subtitleColor: Color? = null,
+    subtitleMaxLines: Int = LocalSettingsSubtitleMaxLines.current,
+    iconTint: Color? = null,
+    leading: @Composable (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
 ) {
     val contentAlpha = if (enabled) 1f else 0.38f
@@ -119,11 +125,17 @@ fun SettingsItem(
                 .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (icon != null) {
+        if (leading != null) {
+            leading()
+            Spacer(modifier = Modifier.width(16.dp))
+        } else if (icon != null) {
             Icon(
                 painter = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha),
+                tint =
+                    (iconTint ?: MaterialTheme.colorScheme.onSurfaceVariant).copy(
+                        alpha = contentAlpha
+                    ),
                 modifier = Modifier.size(24.dp),
             )
             Spacer(modifier = Modifier.width(16.dp))
@@ -143,7 +155,7 @@ fun SettingsItem(
                         (subtitleColor ?: MaterialTheme.colorScheme.onSurfaceVariant).copy(
                             alpha = contentAlpha
                         ),
-                    maxLines = 1,
+                    maxLines = subtitleMaxLines,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 2.dp),
                 )
@@ -172,11 +184,13 @@ fun SettingsSwitchItem(
     icon: Painter? = null,
     subtitle: String? = null,
     enabled: Boolean = true,
+    subtitleMaxLines: Int = LocalSettingsSubtitleMaxLines.current,
 ) {
     SettingsItem(
         icon = icon,
         title = title,
         subtitle = subtitle,
+        subtitleMaxLines = subtitleMaxLines,
         onClick =
             if (enabled) {
                 { onCheckedChange(!checked) }

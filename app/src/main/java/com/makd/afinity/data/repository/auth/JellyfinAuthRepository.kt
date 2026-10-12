@@ -207,6 +207,10 @@ constructor(
     private fun friendlyAuthError(e: Exception): String =
         when {
             e is InvalidStatusException && e.status == 401 -> "Invalid username or password."
+            e is InvalidStatusException && e.status == 403 ->
+                "The server refused this sign-in. The account may be disabled, or limited to " +
+                    "certain devices, hours or a number of sessions. " +
+                    "Contact the server's administrator."
             e is InvalidStatusException ->
                 "The server returned an error (${e.status}). Please try again."
             e is ApiClientException ->
