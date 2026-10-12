@@ -564,7 +564,11 @@ fun LogViewerScreen(
 }
 
 @Composable
-private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
+internal fun SearchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    placeholder: String = stringResource(R.string.logs_search_placeholder),
+) {
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
@@ -599,7 +603,7 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
                 Box(contentAlignment = Alignment.CenterStart) {
                     if (query.isEmpty()) {
                         Text(
-                            text = stringResource(R.string.logs_search_placeholder),
+                            text = placeholder,
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -612,7 +616,7 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
 }
 
 @Composable
-private fun TagChip(tag: String, onRemove: () -> Unit) {
+internal fun TagChip(tag: String, onRemove: () -> Unit) {
     Row(
         modifier =
             Modifier.height(32.dp)
@@ -639,7 +643,7 @@ private fun TagChip(tag: String, onRemove: () -> Unit) {
 }
 
 @Composable
-private fun MetaBar(text: String, action: String, onAction: () -> Unit) {
+internal fun MetaBar(text: String, action: String, onAction: () -> Unit) {
     Row(
         modifier =
             Modifier.fillMaxWidth()

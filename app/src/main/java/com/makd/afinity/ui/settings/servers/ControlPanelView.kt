@@ -231,6 +231,18 @@ fun ControlPanelScreen(
                     subtitle = stringResource(R.string.config_networking_summary),
                     onClick = { onOpenSettings(ConfigFormIds.NETWORKING) },
                 )
+                SettingsDivider()
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_puzzle),
+                    title = stringResource(R.string.title_plugins),
+                    subtitle =
+                        when {
+                            pluginsPendingRestart -> stringResource(R.string.plugin_status_restart)
+                            pluginProblems.isNotEmpty() -> pluginProblems.first().name
+                            else -> stringResource(R.string.plugins_summary)
+                        },
+                    onClick = onOpenPlugins,
+                )
             }
 
             SettingsGroup(
@@ -291,24 +303,6 @@ fun ControlPanelScreen(
                         if (isCreatingBackup) stringResource(R.string.server_backup_creating)
                         else stringResource(R.string.server_backups_summary),
                     onClick = onOpenBackups,
-                )
-            }
-
-            SettingsGroup(
-                title = stringResource(R.string.section_plugins),
-                startPadding = 0.dp,
-                endPadding = 0.dp,
-            ) {
-                SettingsItem(
-                    icon = painterResource(id = R.drawable.ic_view_module),
-                    title = stringResource(R.string.plugins_installed),
-                    subtitle =
-                        when {
-                            pluginsPendingRestart -> stringResource(R.string.plugin_status_restart)
-                            pluginProblems.isNotEmpty() -> pluginProblems.first().name
-                            else -> stringResource(R.string.plugins_summary)
-                        },
-                    onClick = onOpenPlugins,
                 )
             }
         }
@@ -693,7 +687,7 @@ private fun AttentionCard(
                 pluginProblems.forEach { plugin ->
                     if (shown++ > 0) SettingsDivider()
                     SettingsItem(
-                        icon = painterResource(id = R.drawable.ic_view_module),
+                        icon = painterResource(id = R.drawable.ic_puzzle),
                         title = plugin.name,
                         subtitle = plugin.status.labelRes()?.let { stringResource(it) },
                         onClick = onOpenPlugins,

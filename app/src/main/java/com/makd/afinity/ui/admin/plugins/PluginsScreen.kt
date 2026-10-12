@@ -1,25 +1,25 @@
 package com.makd.afinity.ui.admin.plugins
 
-import androidx.compose.foundation.background
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -32,14 +32,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -47,19 +46,19 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.ui.admin.components.AdminLoadContent
-import com.makd.afinity.ui.admin.components.AdminPill
 import com.makd.afinity.ui.admin.components.AdminScaffold
-import com.makd.afinity.ui.components.SettingsDivider
-import com.makd.afinity.ui.components.SettingsGroup
+import com.makd.afinity.ui.admin.components.AdminToggleChip
 import com.makd.afinity.ui.components.SettingsItem
-import com.makd.afinity.ui.utils.IntentUtils
-import kotlinx.coroutines.launch
+import com.makd.afinity.ui.settings.logs.SearchField
+import java.util.UUID
 import org.jellyfin.sdk.model.api.PluginStatus
+
+private val PLUGIN_CARD_MIN_WIDTH = 156.dp
 
 @Composable
 fun PluginsScreen(
     onBackClick: () -> Unit,
-    onOpenCatalog: () -> Unit,
+    onOpenPlugin: (UUID) -> Unit,
     onOpenRepositories: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PluginsViewModel = hiltViewModel(),
@@ -67,8 +66,6 @@ fun PluginsScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val commandFailedMessage = stringResource(R.string.session_command_failed)
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         viewModel.commandError.collect { snackbarHostState.showSnackbar(commandFailedMessage) }
@@ -79,16 +76,13 @@ fun PluginsScreen(
         snackbarHostState = snackbarHostState,
         onBackClick = onBackClick,
         onRetry = viewModel::retry,
-        onOpenSettings = { url ->
-            if (!IntentUtils.openCustomTab(context, url)) {
-                scope.launch { snackbarHostState.showSnackbar(commandFailedMessage) }
-            }
-        },
-        onSetEnabled = viewModel::setEnabled,
-        onUninstall = viewModel::uninstall,
-        onUpdate = viewModel::update,
+        onSelectTab = viewModel::selectTab,
+        onSelectCategory = viewModel::selectCategory,
+        onQueryChange = viewModel::setQuery,
+        onSearchActiveChange = viewModel::setSearchActive,
+        onInstall = viewModel::install,
         onRestart = viewModel::restartServer,
-        onOpenCatalog = onOpenCatalog,
+        onOpenPlugin = onOpenPlugin,
         onOpenRepositories = onOpenRepositories,
         modifier = modifier,
     )
@@ -100,35 +94,37 @@ private fun PluginsContent(
     snackbarHostState: SnackbarHostState,
     onBackClick: () -> Unit,
     onRetry: () -> Unit,
-    onOpenSettings: (url: String) -> Unit,
-    onSetEnabled: (plugin: AdminPluginRow, enabled: Boolean) -> Unit,
-    onUninstall: (AdminPluginRow) -> Unit,
-    onUpdate: (CatalogPluginRow) -> Unit,
+    onSelectTab: (PluginTab) -> Unit,
+    onSelectCategory: (String?) -> Unit,
+    onQueryChange: (String) -> Unit,
+    onSearchActiveChange: (Boolean) -> Unit,
+    onInstall: (CatalogPluginRow) -> Unit,
     onRestart: () -> Unit,
-    onOpenCatalog: () -> Unit,
+    onOpenPlugin: (UUID) -> Unit,
     onOpenRepositories: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var uninstallTarget by rememberSaveable { mutableStateOf<String?>(null) }
+    var installTarget by rememberSaveable { mutableStateOf<String?>(null) }
     var showRestartConfirm by rememberSaveable { mutableStateOf(false) }
 
-    state.plugins
-        ?.firstOrNull { it.key == uninstallTarget }
+    BackHandler(enabled = state.searchActive) { onSearchActiveChange(false) }
+
+    state.cards
+        ?.firstOrNull { it.id.toString() == installTarget }
+        ?.installable
         ?.let { plugin ->
-            ConfirmDialog(
-                title = stringResource(R.string.plugin_uninstall_title),
-                message = stringResource(R.string.plugin_uninstall_message, plugin.name),
-                confirmLabel = stringResource(R.string.plugin_action_uninstall),
+            PluginInstallDialog(
+                plugin = plugin,
                 onConfirm = {
-                    onUninstall(plugin)
-                    uninstallTarget = null
+                    onInstall(plugin)
+                    installTarget = null
                 },
-                onDismiss = { uninstallTarget = null },
+                onDismiss = { installTarget = null },
             )
         }
 
     if (showRestartConfirm) {
-        ConfirmDialog(
+        PluginConfirmDialog(
             title = stringResource(R.string.dialog_restart_server_title),
             message = stringResource(R.string.dialog_restart_server_message, state.serverName),
             confirmLabel = stringResource(R.string.action_restart),
@@ -142,90 +138,85 @@ private fun PluginsContent(
 
     AdminScaffold(
         title = stringResource(R.string.title_plugins),
-        onBackClick = onBackClick,
+        onBackClick = { if (state.searchActive) onSearchActiveChange(false) else onBackClick() },
         modifier = modifier,
         snackbarHostState = snackbarHostState,
+        titleContent =
+            if (state.searchActive) {
+                {
+                    SearchField(
+                        query = state.query,
+                        onQueryChange = onQueryChange,
+                        placeholder = stringResource(R.string.plugin_catalog_search),
+                    )
+                }
+            } else {
+                null
+            },
+        actions = {
+            if (state.searchActive) {
+                IconButton(onClick = { onSearchActiveChange(false) }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_close),
+                        contentDescription = stringResource(R.string.action_cancel),
+                    )
+                }
+            } else {
+                IconButton(onClick = { onSearchActiveChange(true) }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_search),
+                        contentDescription = stringResource(R.string.plugin_catalog_search),
+                    )
+                }
+                IconButton(onClick = onOpenRepositories) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_database),
+                        contentDescription = stringResource(R.string.title_plugin_repositories),
+                    )
+                }
+            }
+        },
     ) { contentPadding ->
         AdminLoadContent(
-            data = state.plugins,
+            data = state.cards,
             failed = state.failed,
             onRetry = onRetry,
             contentPadding = contentPadding,
-        ) { plugins ->
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(contentPadding),
-                contentPadding = PaddingValues(vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                if (state.restartRequired) {
-                    item(key = "restart") {
-                        RestartBanner(
-                            enabled = !state.isBusy,
-                            onRestart = { showRestartConfirm = true },
-                        )
-                    }
-                }
-                if (state.updates.isNotEmpty()) {
-                    item(key = "updates") {
-                        SettingsGroup(title = stringResource(R.string.plugins_updates)) {
-                            state.updates.forEachIndexed { index, update ->
-                                if (index > 0) SettingsDivider()
-                                SettingsItem(
-                                    icon = painterResource(id = R.drawable.ic_view_module),
-                                    title = update.name,
-                                    subtitle =
-                                        stringResource(
-                                            R.string.plugin_update_versions_fmt,
-                                            update.installedVersion.orEmpty(),
-                                            update.latestVersion,
-                                        ),
-                                    trailing = {
-                                        FilledTonalButton(
-                                            onClick = { onUpdate(update) },
-                                            enabled = !state.isBusy,
-                                        ) {
-                                            Text(stringResource(R.string.plugin_action_update))
-                                        }
-                                    },
-                                )
-                            }
-                        }
-                    }
-                }
-                item(key = "installed") {
-                    SettingsGroup(title = stringResource(R.string.plugins_installed)) {
-                        plugins.forEachIndexed { index, plugin ->
-                            if (index > 0) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(start = 72.dp, end = 16.dp),
-                                    color =
-                                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
-                                )
-                            }
-                            PluginRow(
-                                plugin = plugin,
-                                actionsEnabled = !state.isBusy,
-                                onOpenSettings = onOpenSettings,
-                                onSetEnabled = { enabled -> onSetEnabled(plugin, enabled) },
-                                onUninstall = { uninstallTarget = plugin.key },
+        ) { cards ->
+            Column(modifier = Modifier.fillMaxSize().padding(contentPadding)) {
+                PluginFilters(
+                    state = state,
+                    onSelectTab = onSelectTab,
+                    onSelectCategory = onSelectCategory,
+                )
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = PLUGIN_CARD_MIN_WIDTH),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding =
+                        PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                ) {
+                    if (state.restartRequired) {
+                        item(key = "restart", span = { GridItemSpan(maxLineSpan) }) {
+                            RestartBanner(
+                                enabled = !state.isBusy,
+                                onRestart = { showRestartConfirm = true },
                             )
                         }
                     }
-                }
-                item(key = "more") {
-                    SettingsGroup {
-                        SettingsItem(
-                            icon = painterResource(id = R.drawable.ic_add),
-                            title = stringResource(R.string.plugins_catalog),
-                            subtitle = stringResource(R.string.plugins_catalog_summary),
-                            onClick = onOpenCatalog,
-                        )
-                        SettingsDivider()
-                        SettingsItem(
-                            icon = painterResource(id = R.drawable.ic_database),
-                            title = stringResource(R.string.title_plugin_repositories),
-                            subtitle = stringResource(R.string.plugin_repositories_summary),
-                            onClick = onOpenRepositories,
+                    if (cards.isEmpty()) {
+                        item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
+                            EmptyPlugins(state = state, onRetry = onRetry)
+                        }
+                    }
+                    items(items = cards, key = { it.id.toString() }) { card ->
+                        PluginCard(
+                            card = card,
+                            isInstalling = card.id == state.installingId,
+                            actionsEnabled = !state.isBusy,
+                            onClick = { onOpenPlugin(card.id) },
+                            onInstall = { installTarget = card.id.toString() },
                         )
                     }
                 }
@@ -235,11 +226,88 @@ private fun PluginsContent(
 }
 
 @Composable
+private fun PluginFilters(
+    state: PluginsUiState,
+    onSelectTab: (PluginTab) -> Unit,
+    onSelectCategory: (String?) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        AdminToggleChip(
+            label = stringResource(R.string.plugins_tab_installed_fmt, state.installedCount),
+            selected = state.tab == PluginTab.INSTALLED,
+            onSelectedChange = { onSelectTab(PluginTab.INSTALLED) },
+        )
+        AdminToggleChip(
+            label =
+                state.availableCount?.let { count ->
+                    stringResource(R.string.plugins_tab_available_fmt, count)
+                } ?: stringResource(R.string.plugins_tab_available),
+            selected = state.tab == PluginTab.AVAILABLE,
+            onSelectedChange = { onSelectTab(PluginTab.AVAILABLE) },
+        )
+    }
+    if (state.categories.isNotEmpty()) {
+        Row(
+            modifier =
+                Modifier.fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            AdminToggleChip(
+                label = stringResource(R.string.plugins_category_all),
+                selected = state.category == null,
+                onSelectedChange = { onSelectCategory(null) },
+            )
+            state.categories.forEach { category ->
+                AdminToggleChip(
+                    label = pluginCategoryLabel(category)?.let { stringResource(it) } ?: category,
+                    selected = state.category == category,
+                    onSelectedChange = { onSelectCategory(category) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyPlugins(state: PluginsUiState, onRetry: () -> Unit) {
+    val showsCatalog = state.tab == PluginTab.AVAILABLE
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        when {
+            showsCatalog && state.isCatalogLoading ->
+                CircularProgressIndicator(modifier = Modifier.size(28.dp), strokeWidth = 3.dp)
+            showsCatalog && state.catalogFailed -> {
+                Text(
+                    text = stringResource(R.string.error_load_content_generic),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                TextButton(onClick = onRetry) { Text(stringResource(R.string.action_retry)) }
+            }
+            else ->
+                Text(
+                    text = stringResource(R.string.plugin_catalog_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+        }
+    }
+}
+
+@Composable
 private fun RestartBanner(enabled: Boolean, onRestart: () -> Unit) {
     Surface(
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        modifier = Modifier.fillMaxWidth(),
     ) {
         SettingsItem(
             icon = painterResource(id = R.drawable.ic_restart),
@@ -255,174 +323,111 @@ private fun RestartBanner(enabled: Boolean, onRestart: () -> Unit) {
 }
 
 @Composable
-private fun PluginRow(
-    plugin: AdminPluginRow,
+private fun PluginCard(
+    card: PluginCardRow,
+    isInstalling: Boolean,
     actionsEnabled: Boolean,
-    onOpenSettings: (String) -> Unit,
-    onSetEnabled: (Boolean) -> Unit,
-    onUninstall: () -> Unit,
+    onClick: () -> Unit,
+    onInstall: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, bottom = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    val statusLabel = card.status?.labelRes()
+    val detail =
+        when {
+            !card.isInstalled ->
+                stringResource(
+                    R.string.plugin_catalog_version_fmt,
+                    card.version,
+                    card.catalog?.repositoryName.orEmpty(),
+                )
+            card.hasUpdate ->
+                stringResource(
+                    R.string.plugin_catalog_version_fmt,
+                    card.version,
+                    stringResource(R.string.plugin_update_available),
+                )
+            statusLabel != null ->
+                stringResource(
+                    R.string.plugin_catalog_version_fmt,
+                    card.version,
+                    stringResource(statusLabel),
+                )
+            card.isBuiltIn ->
+                stringResource(
+                    R.string.plugin_catalog_version_fmt,
+                    card.version,
+                    stringResource(R.string.plugin_built_in),
+                )
+            else -> card.version
+        }
+    val isHighlighted = card.hasUpdate || card.status == PluginStatus.RESTART
+    val detailColor =
+        when {
+            card.status?.isProblem == true -> MaterialTheme.colorScheme.error
+            isHighlighted -> MaterialTheme.colorScheme.primary
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
+
+    Column(
+        modifier =
+            Modifier.clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                role = Role.Button,
+                onClick = onClick,
+            ),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        PluginIcon(imageUrl = plugin.imageUrl)
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = plugin.name,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = plugin.version,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            val pendingLabel = plugin.pendingChange?.labelRes()
-            if (pendingLabel != null) {
+        PluginCover(imageUrl = card.imageUrl)
+        Row(verticalAlignment = Alignment.Top) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(pendingLabel),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    text = card.name,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = detail,
+                    style =
+                        if (isHighlighted) {
+                            MaterialTheme.typography.bodySmall.copy(
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        } else {
+                            MaterialTheme.typography.bodySmall
+                        },
+                    color = detailColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-        }
-        val statusLabel = plugin.status.labelRes()
-        when {
-            statusLabel != null ->
-                AdminPill(
-                    text = stringResource(statusLabel),
-                    emphasised = plugin.status == PluginStatus.RESTART,
-                )
-            plugin.isBuiltIn -> AdminPill(text = stringResource(R.string.plugin_built_in))
-        }
-        if (plugin.hasActions) {
-            PluginMenu(
-                plugin = plugin,
-                enabled = actionsEnabled,
-                onOpenSettings = onOpenSettings,
-                onSetEnabled = onSetEnabled,
-                onUninstall = onUninstall,
-            )
-        } else {
-            Spacer(modifier = Modifier.width(16.dp))
-        }
-    }
-}
-
-@Composable
-private fun PluginMenu(
-    plugin: AdminPluginRow,
-    enabled: Boolean,
-    onOpenSettings: (String) -> Unit,
-    onSetEnabled: (Boolean) -> Unit,
-    onUninstall: () -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Box {
-        IconButton(onClick = { expanded = true }) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_dots_vertical),
-                contentDescription = stringResource(R.string.cd_plugin_actions),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
-        ) {
-            if (plugin.settingsUrl != null) {
-                DropdownMenuItem(
-                    text = { Text(text = stringResource(R.string.plugin_action_settings)) },
-                    onClick = {
-                        expanded = false
-                        onOpenSettings(plugin.settingsUrl)
-                    },
-                )
-            }
-            if (plugin.canEnable) {
-                DropdownMenuItem(
-                    text = { Text(text = stringResource(R.string.plugin_action_enable)) },
-                    onClick = {
-                        expanded = false
-                        onSetEnabled(true)
-                    },
-                    enabled = enabled,
-                )
-            }
-            if (plugin.canDisable) {
-                DropdownMenuItem(
-                    text = { Text(text = stringResource(R.string.plugin_action_disable)) },
-                    onClick = {
-                        expanded = false
-                        onSetEnabled(false)
-                    },
-                    enabled = enabled,
-                )
-            }
-            if (plugin.canUninstall) {
-                DropdownMenuItem(
-                    text = { Text(text = stringResource(R.string.plugin_action_uninstall)) },
-                    onClick = {
-                        expanded = false
-                        onUninstall()
-                    },
-                    enabled = enabled,
-                )
+            when {
+                isInstalling ->
+                    Box(modifier = Modifier.size(36.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    }
+                card.installable != null ->
+                    IconButton(
+                        onClick = onInstall,
+                        modifier = Modifier.size(36.dp),
+                        enabled = actionsEnabled,
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_download_arrow),
+                            contentDescription =
+                                stringResource(
+                                    if (card.hasUpdate) R.string.plugin_action_update
+                                    else R.string.plugin_action_install
+                                ),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
             }
         }
     }
 }
-
-@Composable
-private fun ConfirmDialog(
-    title: String,
-    message: String,
-    confirmLabel: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            )
-        },
-        text = { Text(text = message, style = MaterialTheme.typography.bodyLarge) },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError,
-                    ),
-            ) {
-                Text(confirmLabel)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        },
-        shape = RoundedCornerShape(28.dp),
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-    )
-}
-
-private fun PendingPluginChange.labelRes(): Int =
-    when (this) {
-        PendingPluginChange.ENABLE -> R.string.plugin_pending_enable
-        PendingPluginChange.DISABLE -> R.string.plugin_pending_disable
-        PendingPluginChange.UNINSTALL -> R.string.plugin_pending_uninstall
-    }

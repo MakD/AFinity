@@ -106,7 +106,7 @@ enum class Destination(
         const val ADMIN_DEVICES_ROUTE = "admin/server/devices"
         const val ADMIN_ACTIVITY_ROUTE = "admin/server/activity?filter={filter}"
         const val ADMIN_PLUGINS_ROUTE = "admin/server/plugins"
-        const val ADMIN_PLUGIN_CATALOG_ROUTE = "admin/server/plugins/catalog"
+        const val ADMIN_PLUGIN_DETAIL_ROUTE = "admin/server/plugins/detail/{pluginId}"
         const val ADMIN_PLUGIN_REPOSITORIES_ROUTE = "admin/server/plugins/repositories"
         const val ADMIN_API_KEYS_ROUTE = "admin/server/keys"
         const val ADMIN_BACKUPS_ROUTE = "admin/server/backups"
@@ -133,6 +133,9 @@ enum class Destination(
 
         fun createAdminTaskDetailRoute(taskId: String): String =
             "admin/server/tasks/${android.net.Uri.encode(taskId)}"
+
+        fun createAdminPluginDetailRoute(pluginId: String): String =
+            "admin/server/plugins/detail/$pluginId"
 
         fun createAdminLogViewerRoute(name: String): String =
             "admin/server/logs/${android.net.Uri.encode(name)}"

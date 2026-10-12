@@ -6,11 +6,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.repository.NoActiveSessionException
 import com.makd.afinity.data.repository.admin.ServerAdminRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -24,6 +24,7 @@ import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.PackageInfo
 import org.jellyfin.sdk.model.api.PluginInfo
 import org.jellyfin.sdk.model.api.PluginStatus
+import timber.log.Timber
 
 enum class PendingPluginChange {
     ENABLE,
@@ -61,19 +62,27 @@ data class AdminPluginRow(
 
     val canUninstall: Boolean
         get() = !isBuiltIn && status != PluginStatus.RESTART && status != PluginStatus.DELETED
-
-    val hasActions: Boolean
-        get() = settingsUrl != null || canEnable || canDisable || canUninstall
 }
 
 data class PluginsUiState(
-    val plugins: List<AdminPluginRow>? = null,
-    val updates: List<CatalogPluginRow> = emptyList(),
+    val cards: List<PluginCardRow>? = null,
+    val tab: PluginTab = PluginTab.INSTALLED,
+    val installedCount: Int = 0,
+    val availableCount: Int? = null,
+    val categories: List<String> = emptyList(),
+    val category: String? = null,
+    val query: String = "",
+    val searchActive: Boolean = false,
     val failed: Boolean = false,
+    val catalogFailed: Boolean = false,
     val restartRequired: Boolean = false,
     val serverName: String = "",
+    val installingId: UUID? = null,
     val isBusy: Boolean = false,
-)
+) {
+    val isCatalogLoading: Boolean
+        get() = availableCount == null && !catalogFailed
+}
 
 @StringRes
 internal fun PluginStatus.labelRes(): Int? =
@@ -91,6 +100,47 @@ internal fun PluginStatus.labelRes(): Int? =
 internal val PluginStatus.isProblem: Boolean
     get() = this == PluginStatus.MALFUNCTIONED || this == PluginStatus.NOT_SUPPORTED
 
+internal fun PluginInfo.toAdminRow(
+    baseUrl: String?,
+    settingsPages: Map<UUID, String>,
+    pendingChange: PendingPluginChange?,
+): AdminPluginRow {
+    val settingsPage = settingsPages[id]
+    return AdminPluginRow(
+        id = id,
+        name = name,
+        version = version,
+        status = status,
+        isBuiltIn = !canUninstall,
+        imageUrl = pluginImageUrl(this, baseUrl),
+        settingsUrl =
+            if (settingsPage != null && baseUrl != null) {
+                "$baseUrl/web/#/configurationpage?name=${Uri.encode(settingsPage)}"
+            } else {
+                null
+            },
+        pendingChange = pendingChange.takeIf { status == PluginStatus.RESTART },
+    )
+}
+
+private data class PluginFilters(
+    val tab: PluginTab = PluginTab.INSTALLED,
+    val category: String? = null,
+    val query: String = "",
+    val searchActive: Boolean = false,
+)
+
+private data class PluginActivity(val installingId: UUID? = null, val isBusy: Boolean = false)
+
+private data class PluginData(
+    val cards: List<PluginCardRow>?,
+    val failed: Boolean,
+    val catalogLoaded: Boolean,
+    val catalogFailed: Boolean,
+    val restartRequired: Boolean,
+    val serverName: String,
+)
+
 @HiltViewModel
 class PluginsViewModel
 @Inject
@@ -103,46 +153,68 @@ constructor(
         private const val STOP_TIMEOUT_MS = 5_000L
     }
 
-    private val settingsPages = MutableStateFlow<Map<UUID, String>>(emptyMap())
-    private val pendingChanges = MutableStateFlow<Map<String, PendingPluginChange>>(emptyMap())
-    private val isBusy = MutableStateFlow(false)
-
     private val catalog = MutableStateFlow<List<PackageInfo>?>(null)
-
-    private val updates: Flow<List<CatalogPluginRow>> =
-        combine(adminRepository.plugins, catalog) { pluginsResult, packages ->
-            val plugins = pluginsResult?.getOrNull()
-            if (plugins == null || packages == null) {
-                emptyList()
-            } else {
-                buildCatalogRows(packages, plugins).filter { it.hasUpdate }.sortedBy { it.name }
-            }
-        }
+    private val catalogFailed = MutableStateFlow(false)
+    private val filters = MutableStateFlow(PluginFilters())
+    private val activity = MutableStateFlow(PluginActivity())
 
     private val _commandError = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val commandError: SharedFlow<Unit> = _commandError.asSharedFlow()
 
+    private val data =
+        combine(adminRepository.plugins, adminRepository.systemInfo, catalog, catalogFailed) {
+            pluginsResult,
+            systemInfoResult,
+            packages,
+            packagesFailed ->
+            val plugins = pluginsResult?.getOrNull()
+            val systemInfo = systemInfoResult?.getOrNull()
+            val baseUrl = sessionManager.currentSession.value?.serverUrl?.trimEnd('/')
+            PluginData(
+                cards = plugins?.let { buildPluginCards(it, packages, baseUrl) },
+                failed = pluginsResult?.isFailure == true,
+                catalogLoaded = packages != null,
+                catalogFailed = packagesFailed,
+                restartRequired =
+                    systemInfo?.hasPendingRestart == true ||
+                        plugins.orEmpty().any { it.status == PluginStatus.RESTART },
+                serverName = systemInfo?.serverName.orEmpty(),
+            )
+        }
+
     val state: StateFlow<PluginsUiState> =
-        combine(
-                adminRepository.plugins,
-                adminRepository.systemInfo,
-                settingsPages,
-                pendingChanges,
-                isBusy,
-            ) { pluginsResult, systemInfoResult, pages, pending, busy ->
-                val plugins = pluginsResult?.getOrNull()
-                val systemInfo = systemInfoResult?.getOrNull()
+        combine(data, filters, activity) { loaded, chosen, running ->
+                val all = loaded.cards
+                val inTab = all?.filter { it.isInstalled == (chosen.tab == PluginTab.INSTALLED) }
+                val categories = inTab.orEmpty().mapNotNull { it.category }.distinct().sorted()
+                val category = chosen.category?.takeIf { it in categories }
+                val needle = chosen.query.trim()
                 PluginsUiState(
-                    plugins = plugins?.map { it.toRow(pages, pending) },
-                    failed = pluginsResult?.isFailure == true,
-                    restartRequired =
-                        systemInfo?.hasPendingRestart == true ||
-                            plugins.orEmpty().any { it.status == PluginStatus.RESTART },
-                    serverName = systemInfo?.serverName.orEmpty(),
-                    isBusy = busy,
+                    cards =
+                        inTab
+                            ?.filter { card ->
+                                (category == null || card.category == category) &&
+                                    (needle.isEmpty() ||
+                                        card.name.contains(needle, ignoreCase = true) ||
+                                        card.summary.contains(needle, ignoreCase = true))
+                            }
+                            ?.sortedBy { it.name.lowercase() },
+                    tab = chosen.tab,
+                    installedCount = all.orEmpty().count { it.isInstalled },
+                    availableCount =
+                        if (loaded.catalogLoaded) all.orEmpty().count { !it.isInstalled } else null,
+                    categories = categories,
+                    category = category,
+                    query = chosen.query,
+                    searchActive = chosen.searchActive,
+                    failed = loaded.failed,
+                    catalogFailed = loaded.catalogFailed,
+                    restartRequired = loaded.restartRequired,
+                    serverName = loaded.serverName,
+                    installingId = running.installingId,
+                    isBusy = running.isBusy || running.installingId != null,
                 )
             }
-            .combine(updates) { state, available -> state.copy(updates = available) }
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS),
@@ -150,44 +222,35 @@ constructor(
             )
 
     init {
-        viewModelScope.launch {
-            adminRepository.getPluginCatalog().onSuccess { catalog.value = it }
-        }
-        viewModelScope.launch {
-            adminRepository.plugins.collect { result ->
-                val plugins = result?.getOrNull() ?: return@collect
-                val stillPending =
-                    plugins
-                        .filter { it.status == PluginStatus.RESTART }
-                        .map { "${it.id}|${it.version}" }
-                        .toSet()
-                pendingChanges.update { changes -> changes.filterKeys { it in stillPending } }
-                loadSettingsPages()
-            }
-        }
+        loadCatalog(forceRefresh = false)
     }
 
     fun retry() {
         adminRepository.refresh()
+        loadCatalog(forceRefresh = true)
     }
 
-    fun setEnabled(plugin: AdminPluginRow, enabled: Boolean) {
-        val change = if (enabled) PendingPluginChange.ENABLE else PendingPluginChange.DISABLE
-        runCommand(plugin, change) {
-            adminRepository.setPluginEnabled(plugin.id, plugin.version, enabled)
-        }
+    fun selectTab(tab: PluginTab) {
+        filters.update { it.copy(tab = tab, category = null) }
     }
 
-    fun uninstall(plugin: AdminPluginRow) {
-        if (!plugin.canUninstall) return
-        runCommand(plugin, PendingPluginChange.UNINSTALL) {
-            adminRepository.uninstallPlugin(plugin.id, plugin.version)
-        }
+    fun selectCategory(category: String?) {
+        filters.update { it.copy(category = category) }
     }
 
-    fun update(plugin: CatalogPluginRow) {
-        if (!plugin.hasUpdate || isBusy.value) return
-        isBusy.value = true
+    fun setQuery(query: String) {
+        filters.update { it.copy(query = query) }
+    }
+
+    fun setSearchActive(active: Boolean) {
+        filters.update { it.copy(searchActive = active, query = if (active) it.query else "") }
+    }
+
+    fun install(plugin: CatalogPluginRow) {
+        val running = activity.value
+        if (running.isBusy || running.installingId != null) return
+        if (plugin.isInstalled && !plugin.hasUpdate) return
+        activity.update { it.copy(installingId = plugin.id) }
         viewModelScope.launch {
             try {
                 val result =
@@ -200,71 +263,34 @@ constructor(
                 if (result.isFailure) _commandError.tryEmit(Unit)
                 adminRepository.refresh()
             } finally {
-                isBusy.value = false
+                activity.update { it.copy(installingId = null) }
             }
         }
     }
 
     fun restartServer() {
-        if (isBusy.value) return
-        isBusy.value = true
+        val running = activity.value
+        if (running.isBusy || running.installingId != null) return
+        activity.update { it.copy(isBusy = true) }
         viewModelScope.launch {
             try {
                 if (adminRepository.restartServer().isFailure) _commandError.tryEmit(Unit)
             } finally {
-                isBusy.value = false
+                activity.update { it.copy(isBusy = false) }
             }
         }
     }
 
-    private fun runCommand(
-        plugin: AdminPluginRow,
-        change: PendingPluginChange,
-        block: suspend () -> Result<Unit>,
-    ) {
-        if (isBusy.value) return
-        isBusy.value = true
+    private fun loadCatalog(forceRefresh: Boolean) {
+        catalogFailed.value = false
         viewModelScope.launch {
-            try {
-                if (block().isSuccess) {
-                    pendingChanges.update { it + (plugin.key to change) }
-                } else {
-                    _commandError.tryEmit(Unit)
+            adminRepository
+                .getPluginCatalog(forceRefresh)
+                .onSuccess { catalog.value = it }
+                .onFailure { e ->
+                    if (e !is NoActiveSessionException) Timber.w(e, "Failed to load plugin catalog")
+                    catalogFailed.value = catalog.value == null
                 }
-                adminRepository.refresh()
-            } finally {
-                isBusy.value = false
-            }
         }
-    }
-
-    private fun loadSettingsPages() {
-        viewModelScope.launch {
-            adminRepository.getPluginSettingsPages().onSuccess { settingsPages.value = it }
-        }
-    }
-
-    private fun PluginInfo.toRow(
-        pages: Map<UUID, String>,
-        pending: Map<String, PendingPluginChange>,
-    ): AdminPluginRow {
-        val baseUrl = sessionManager.currentSession.value?.serverUrl?.trimEnd('/')
-        val settingsPage = pages[id]
-        return AdminPluginRow(
-            id = id,
-            name = name,
-            version = version,
-            status = status,
-            isBuiltIn = !canUninstall,
-            imageUrl =
-                if (hasImage && baseUrl != null) "$baseUrl/Plugins/$id/$version/Image" else null,
-            settingsUrl =
-                if (settingsPage != null && baseUrl != null) {
-                    "$baseUrl/web/#/configurationpage?name=${Uri.encode(settingsPage)}"
-                } else {
-                    null
-                },
-            pendingChange = pending["$id|$version"].takeIf { status == PluginStatus.RESTART },
-        )
     }
 }

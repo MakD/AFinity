@@ -105,7 +105,7 @@ private enum class ActivityKind(
     SESSION_ENDED(R.drawable.ic_logout, R.string.activity_kind_session, ActivityTone.QUIET),
     SIGN_IN(R.drawable.ic_security, R.string.activity_kind_sign_in, ActivityTone.SIGN_IN),
     USER(R.drawable.ic_user, R.string.activity_kind_user, ActivityTone.CHANGE),
-    PLUGIN(R.drawable.ic_view_module, R.string.activity_kind_plugin, ActivityTone.CHANGE),
+    PLUGIN(R.drawable.ic_puzzle, R.string.activity_kind_plugin, ActivityTone.CHANGE),
     TASK(R.drawable.ic_schedule, R.string.activity_kind_task, ActivityTone.CHANGE),
     OTHER(R.drawable.ic_info, R.string.activity_kind_server, ActivityTone.QUIET),
 }

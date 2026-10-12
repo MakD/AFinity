@@ -13,7 +13,6 @@ import com.makd.afinity.data.models.admin.ActivityToday
 import com.makd.afinity.data.models.admin.LibraryOptionsDocument
 import com.makd.afinity.data.models.admin.ServerConfigSource
 import com.makd.afinity.data.models.admin.ServerFolder
-import com.makd.afinity.data.models.admin.ServerLogTail
 import com.makd.afinity.data.paging.ActivityLogPagingSource
 import com.makd.afinity.data.paging.toActivityEntry
 import com.makd.afinity.data.repository.JellyfinApiInvoker
@@ -23,6 +22,7 @@ import com.makd.afinity.data.websocket.WebSocketState
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.di.DownloadClient
 import com.makd.afinity.util.forUser
+import java.io.File
 import java.io.IOException
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -139,7 +139,7 @@ private const val SIGN_IN_TYPE = "AuthenticationSucceeded"
 private const val PLAYBACK_TYPE = "Playback"
 private const val PLAYBACK_STOPPED_MARKER = "Stopped"
 private const val TODAY_ACTIVITY_SAMPLE = 500
-private const val LOG_CANCEL_CHECK_LINES = 500
+private const val LOG_COPY_BUFFER_BYTES = 64 * 1024
 private const val CATALOG_TTL_MS = 10 * 60 * 1000L
 private const val BACKUP_TIMEOUT_MINUTES = 30L
 private const val CONFIG_PATH_SEPARATOR = '.'
@@ -533,7 +533,7 @@ constructor(
         SystemApi(api).getServerLogs().content
     }
 
-    override suspend fun getLogTail(name: String, maxLines: Int): Result<ServerLogTail> =
+    override suspend fun downloadLog(name: String, target: File): Result<Unit> =
         withContext(Dispatchers.IO) {
             val apiClient = sessionManager.getCurrentApiClient()
             val baseUrl = apiClient?.baseUrl
@@ -553,17 +553,18 @@ constructor(
                     if (!response.isSuccessful) {
                         return@withContext Result.failure(IOException("HTTP ${response.code}"))
                     }
-                    val tail = ArrayDeque<String>()
-                    var total = 0
-                    response.body.charStream().buffered().useLines { lines ->
-                        for (line in lines) {
-                            if (total % LOG_CANCEL_CHECK_LINES == 0) ensureActive()
-                            total++
-                            if (tail.size == maxLines) tail.removeFirst()
-                            tail.addLast(line)
+                    response.body.byteStream().use { input ->
+                        target.outputStream().use { output ->
+                            val buffer = ByteArray(LOG_COPY_BUFFER_BYTES)
+                            while (true) {
+                                ensureActive()
+                                val read = input.read(buffer)
+                                if (read < 0) break
+                                output.write(buffer, 0, read)
+                            }
                         }
                     }
-                    Result.success(ServerLogTail(lines = tail.toList(), totalLines = total))
+                    Result.success(Unit)
                 }
             } catch (e: CancellationException) {
                 throw e

@@ -56,7 +56,7 @@ import com.makd.afinity.ui.admin.libraries.LibrariesScreen
 import com.makd.afinity.ui.admin.libraries.LibraryDetailScreen
 import com.makd.afinity.ui.admin.logs.ServerLogViewerScreen
 import com.makd.afinity.ui.admin.logs.ServerLogsScreen
-import com.makd.afinity.ui.admin.plugins.PluginCatalogScreen
+import com.makd.afinity.ui.admin.plugins.PluginDetailScreen
 import com.makd.afinity.ui.admin.plugins.PluginRepositoriesScreen
 import com.makd.afinity.ui.admin.plugins.PluginsScreen
 import com.makd.afinity.ui.admin.tasks.TaskDetailScreen
@@ -350,8 +350,10 @@ private fun NavGraphBuilder.adminDestinations(navController: NavHostController) 
     composable(Destination.ADMIN_PLUGINS_ROUTE) {
         PluginsScreen(
             onBackClick = dropUnlessResumed { navController.popBackStack() },
-            onOpenCatalog = {
-                navController.navigate(Destination.ADMIN_PLUGIN_CATALOG_ROUTE) {
+            onOpenPlugin = { pluginId ->
+                navController.navigate(
+                    Destination.createAdminPluginDetailRoute(pluginId.toString())
+                ) {
                     launchSingleTop = true
                 }
             },
@@ -363,8 +365,11 @@ private fun NavGraphBuilder.adminDestinations(navController: NavHostController) 
         )
     }
 
-    composable(Destination.ADMIN_PLUGIN_CATALOG_ROUTE) {
-        PluginCatalogScreen(onBackClick = dropUnlessResumed { navController.popBackStack() })
+    composable(
+        route = Destination.ADMIN_PLUGIN_DETAIL_ROUTE,
+        arguments = listOf(navArgument("pluginId") { type = NavType.StringType }),
+    ) {
+        PluginDetailScreen(onBackClick = dropUnlessResumed { navController.popBackStack() })
     }
 
     composable(Destination.ADMIN_PLUGIN_REPOSITORIES_ROUTE) {

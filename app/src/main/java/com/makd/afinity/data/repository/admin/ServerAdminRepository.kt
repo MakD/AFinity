@@ -7,7 +7,7 @@ import com.makd.afinity.data.models.admin.ActivityToday
 import com.makd.afinity.data.models.admin.LibraryOptionsDocument
 import com.makd.afinity.data.models.admin.ServerConfigSource
 import com.makd.afinity.data.models.admin.ServerFolder
-import com.makd.afinity.data.models.admin.ServerLogTail
+import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -165,7 +165,7 @@ interface ServerAdminRepository {
 
     suspend fun getLogFiles(): Result<List<LogFile>>
 
-    suspend fun getLogTail(name: String, maxLines: Int): Result<ServerLogTail>
+    suspend fun downloadLog(name: String, target: File): Result<Unit>
 
     suspend fun sendPlaystateCommand(
         sessionId: String,
