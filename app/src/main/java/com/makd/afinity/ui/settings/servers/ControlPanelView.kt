@@ -1147,57 +1147,6 @@ private fun PlayingSessionCard(
 }
 
 @Composable
-internal fun ScheduledTasksSection(
-    tasks: List<TaskInfo>,
-    pendingTaskIds: Set<String>,
-    onOpenTask: (String) -> Unit,
-    onRunTask: (String) -> Unit,
-    onStopTask: (String) -> Unit,
-) {
-    val running = tasks.filter { it.state == TaskState.RUNNING || it.state == TaskState.CANCELLING }
-    val grouped =
-        tasks
-            .filter { it.state != TaskState.RUNNING && it.state != TaskState.CANCELLING }
-            .groupBy { it.category ?: stringResource(R.string.category_other) }
-            .toSortedMap()
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (running.isNotEmpty()) {
-            SectionHeader(stringResource(R.string.category_running))
-            running.forEach { task ->
-                val taskId = task.id ?: return@forEach
-                androidx.compose.runtime.key(taskId) {
-                    ScheduledTaskRow(
-                        task = task,
-                        isPending = taskId in pendingTaskIds,
-                        onOpen = { onOpenTask(taskId) },
-                        onRun = { onRunTask(taskId) },
-                        onStop = { onStopTask(taskId) },
-                    )
-                }
-            }
-        }
-        grouped.forEach { (category, categoryTasks) ->
-            SectionHeader(category)
-            categoryTasks
-                .sortedBy { it.name }
-                .forEach { task ->
-                    val taskId = task.id ?: return@forEach
-                    androidx.compose.runtime.key(taskId) {
-                        ScheduledTaskRow(
-                            task = task,
-                            isPending = taskId in pendingTaskIds,
-                            onOpen = { onOpenTask(taskId) },
-                            onRun = { onRunTask(taskId) },
-                            onStop = { onStopTask(taskId) },
-                        )
-                    }
-                }
-        }
-    }
-}
-
-@Composable
 private fun ScheduledTaskRow(
     task: TaskInfo,
     isPending: Boolean,

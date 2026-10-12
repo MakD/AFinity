@@ -88,6 +88,17 @@ constructor(
         updateTriggers { current -> if (trigger in current) current else current + trigger }
     }
 
+    fun replaceTrigger(old: TaskTriggerInfo, new: TaskTriggerInfo) {
+        updateTriggers { current ->
+            val index = current.indexOf(old)
+            when {
+                index < 0 -> current
+                new != old && new in current -> current - old
+                else -> current.toMutableList().also { it[index] = new }
+            }
+        }
+    }
+
     fun removeTrigger(trigger: TaskTriggerInfo) {
         updateTriggers { current -> current - trigger }
     }
