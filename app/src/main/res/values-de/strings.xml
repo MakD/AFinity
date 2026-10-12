@@ -2,10 +2,10 @@
 <resources>
     <string name="splash_status_authenticating">Authentifiziere...</string>
     <string name="loading_phase_offline">Bereit (Offline-Modus)</string>
-    <string name="loading_phase_connecting">Mit Server verbinden...</string>
-    <string name="loading_phase_fetching">Inhalte laden...</string>
-    <string name="loading_phase_processing">Bibliotheken verarbeiten...</string>
-    <string name="loading_phase_finalizing">Startbildschirm vorbereiten...</string>
+    <string name="loading_phase_connecting">Mit Server verbinden …</string>
+    <string name="loading_phase_fetching">Inhalt laden …</string>
+    <string name="loading_phase_processing">Bibliotheken verarbeiten …</string>
+    <string name="loading_phase_finalizing">Startbildschirm finalisieren …</string>
     <string name="loading_phase_ready">Bereit!</string>
     <string name="login_connect_to_jellyfin">Mit Jellyfin verbinden</string>
     <string name="login_welcome_back">Willkommen zurück</string>
@@ -898,4 +898,19 @@
     <string name="home_watch_again">Nochmal schauen</string>
     <string name="where_to_watch_stream">Stream</string>
     <string name="discovery_found_on_network">wurde auf dem Netzwerk gefunden.</string>
+    <plurals name="pref_next_up_max_days_fmt">
+        <item quantity="one">%1$d Tag</item>
+        <item quantity="other">%1$d Tage</item>
+    </plurals>
+    <string name="cd_go_online">Offline-Modus ausschalten</string>
+    <string name="connection_go_online">Online gehen</string>
+    <string name="custom_sections_group_always">Immer angezeigt</string>
+    <string name="custom_sections_always_on">Immer ein</string>
+    <string name="custom_sections_field_density">Dichte</string>
+    <string name="custom_sections_advanced">Erweitert</string>
+    <string name="discovery_density_off">Aus</string>
+    <string name="discovery_density_light">Hell</string>
+    <string name="discovery_density_full">Voll</string>
+    <string name="discovery_count_range_fmt">0 bis %1$d</string>
+    <string name="discovery_off">Aus</string>
 </resources>
