@@ -34,7 +34,6 @@ fun PaginatedMediaGrid(
     modifier: Modifier = Modifier,
     state: LazyGridState = rememberLazyGridState(),
     contentPadding: PaddingValues = PaddingValues(0.dp),
-    header: (@Composable () -> Unit)? = null,
     itemContent: @Composable (AfinityItem) -> Unit,
 ) {
     LazyVerticalGrid(
@@ -45,10 +44,6 @@ fun PaginatedMediaGrid(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = modifier,
     ) {
-        if (header != null) {
-            item(key = "grid_header", span = { GridItemSpan(maxLineSpan) }) { header() }
-        }
-
         items(count = items.itemCount, key = items.itemKey { it.id }) { index ->
             items[index]?.let { item -> itemContent(item) }
         }

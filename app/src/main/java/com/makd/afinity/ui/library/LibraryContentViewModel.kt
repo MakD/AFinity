@@ -404,18 +404,16 @@ constructor(
                 nameStartsWith = null,
                 studioNames = sectionStudios.ifEmpty { listOfNotNull(studioName) },
                 includeItemTypes = browseItemTypes(),
-                recursive = folderId == null,
+                recursive = !isFolderBrowse(),
                 onSourceCreated = { source -> currentLibraryPagingSource = source },
             )
         _pagingData.value = applyUpdatesToPagingFlow(baseFlow)
     }
 
+    private fun isFolderBrowse(): Boolean = folderId != null || isMixedLibrary
+
     private fun browseItemTypes(): List<String>? =
-        when {
-            folderId != null -> FOLDER_ITEM_TYPES
-            isMixedLibrary -> MIXED_LIBRARY_ITEM_TYPES
-            else -> sectionItemTypes
-        }
+        if (isFolderBrowse()) FOLDER_ITEM_TYPES else sectionItemTypes
 
     private fun sectionLibraryType(): CollectionType {
         val types = customSection?.itemTypes.orEmpty()
@@ -481,14 +479,14 @@ constructor(
                     currentSortBy = preferencesRepository.getDefaultSortBy()
                     currentSortDescending = preferencesRepository.getSortDescending()
                     currentFilters =
-                        if (folderId != null) LibraryFilters() else loadPersistedFilters()
+                        if (isFolderBrowse()) LibraryFilters() else loadPersistedFilters()
                 }
 
                 _uiState.value =
                     _uiState.value.copy(
                         libraryName = section?.title ?: _uiState.value.libraryName,
                         libraryType = type,
-                        showFoldersShortcut = isMixedLibrary,
+                        filtersLocked = sectionId != null || isFolderBrowse(),
                         currentSortBy = currentSortBy,
                         currentSortDescending = currentSortDescending,
                         currentFilters = currentFilters,
@@ -533,7 +531,6 @@ constructor(
                     mediaRepository.getFilterOptions(
                         parentId = browseParentId,
                         libraryType = type,
-                        includeItemTypes = browseItemTypes().orEmpty(),
                     )
                 _uiState.value = _uiState.value.copy(filterOptions = options)
             } catch (e: CancellationException) {
@@ -643,7 +640,7 @@ constructor(
                         nameStartsWith = letterFilter,
                         studioNames = sectionStudios.ifEmpty { listOfNotNull(studioName) },
                         includeItemTypes = browseItemTypes(),
-                        recursive = folderId == null,
+                        recursive = !isFolderBrowse(),
                         onSourceCreated = { source -> currentLibraryPagingSource = source },
                     )
                 _pagingData.value = applyUpdatesToPagingFlow(baseFlow)
@@ -679,9 +676,6 @@ data class LibraryContentUiState(
     val isStudioMode: Boolean = false,
     val selectedLetter: String? = null,
     val filtersLocked: Boolean = false,
-    val showFoldersShortcut: Boolean = false,
 )
-
-private val MIXED_LIBRARY_ITEM_TYPES = listOf("MOVIE", "SERIES")
 
 private val FOLDER_ITEM_TYPES = listOf("FOLDER", "MOVIE", "SERIES", "VIDEO")

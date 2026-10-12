@@ -52,7 +52,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -88,9 +87,7 @@ import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.MediaItemGridCard
 import com.makd.afinity.ui.components.PaginatedMediaGrid
-import com.makd.afinity.ui.music.library.LibraryShortcutCard
 import com.makd.afinity.ui.player.PlayerLauncher
-import com.makd.afinity.ui.theme.CardDimensions
 
 @Composable
 fun LibraryContentScreen(
@@ -139,20 +136,6 @@ fun LibraryContentScreen(
             )
         }
     }
-    val libraryId = uiState.libraryId
-    val foldersTitle = stringResource(R.string.library_folders)
-    val browseHeader: (@Composable () -> Unit)? =
-        if (uiState.showFoldersShortcut && libraryId != null) {
-            {
-                LibraryBrowseHeader(
-                    onFoldersClick = {
-                        navController.navigate(
-                            Destination.createFolderContentRoute(libraryId.toString(), foldersTitle)
-                        )
-                    }
-                )
-            }
-        } else null
 
     LaunchedEffect(scrollToIndex) {
         if (scrollToIndex >= 0) {
@@ -310,7 +293,6 @@ fun LibraryContentScreen(
                                             top = 16.dp,
                                             bottom = 80.dp + playerOffset,
                                         ),
-                                    header = browseHeader,
                                 ) { item ->
                                     MediaItemGridCard(
                                         item = item,
@@ -437,28 +419,6 @@ fun LibraryContentScreen(
             navController.navigate(Destination.createPersonRoute(personId))
         },
     )
-}
-
-@Composable
-private fun LibraryBrowseHeader(onFoldersClick: () -> Unit) {
-    val cardWidth = CardDimensions.shortcutCardWidth(LocalConfiguration.current.screenWidthDp)
-
-    Column(modifier = Modifier.padding(bottom = 8.dp)) {
-        Text(
-            text = stringResource(R.string.music_action_browse),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 12.dp),
-        )
-        LibraryShortcutCard(
-            label = stringResource(R.string.library_folders),
-            iconRes = R.drawable.ic_folder,
-            gradientStart = Color(0xFFA4C4D6),
-            gradientEnd = Color(0xFF50787A),
-            cardWidth = cardWidth,
-            onClick = onFoldersClick,
-        )
-    }
 }
 
 @Composable
