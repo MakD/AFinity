@@ -204,7 +204,7 @@ fun ConfigFormSections(
                     )
                 }
                 fields.forEachIndexed { index, field ->
-                    if (index > 0) SettingsDivider()
+                    if (index > 0) SettingsDivider(startPadding = 16.dp)
                     ConfigFieldRow(
                         field = field,
                         state = state,
@@ -223,8 +223,8 @@ fun ConfigFormSections(
 @Composable
 private fun FormNote(text: String) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
     ) {
         Row(
@@ -440,7 +440,12 @@ private fun ChoiceSearchDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = title, style = MaterialTheme.typography.titleLarge) },
+        title = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            )
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 AfinityTextField(

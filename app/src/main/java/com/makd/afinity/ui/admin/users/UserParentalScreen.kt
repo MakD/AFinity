@@ -33,8 +33,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -190,7 +192,7 @@ private fun UserParentalContent(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier =
                             Modifier.fillMaxWidth()
-                                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
+                                .padding(start = 56.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
                     )
                 }
 
@@ -244,6 +246,7 @@ private fun UserParentalContent(
                     state.schedules.forEach { window ->
                         SettingsDivider()
                         RemovableRow(
+                            icon = painterResource(id = R.drawable.ic_clock),
                             title = accessDayLabel(window.day),
                             subtitle =
                                 stringResource(
@@ -275,6 +278,7 @@ private fun MaxRatingRow(
 
     Box {
         SettingsItem(
+            icon = painterResource(id = R.drawable.ic_family),
             title = stringResource(R.string.parental_max_rating),
             subtitle = selected,
             onClick = { expanded = true },
@@ -325,6 +329,7 @@ private fun TagGroup(
         tags.forEach { tag ->
             SettingsDivider()
             RemovableRow(
+                icon = painterResource(id = R.drawable.ic_bookmark),
                 title = tag,
                 subtitle = null,
                 enabled = enabled,
@@ -336,12 +341,14 @@ private fun TagGroup(
 
 @Composable
 private fun RemovableRow(
+    icon: Painter,
     title: String,
     subtitle: String?,
     enabled: Boolean,
     onRemove: () -> Unit,
 ) {
     SettingsItem(
+        icon = icon,
         title = title,
         subtitle = subtitle,
         enabled = enabled,
@@ -364,7 +371,7 @@ private fun AddTagDialog(onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
         title = {
             Text(
                 stringResource(R.string.parental_add_tag),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             )
         },
         text = {

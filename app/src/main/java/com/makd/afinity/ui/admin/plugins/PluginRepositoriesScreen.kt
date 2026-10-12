@@ -120,7 +120,7 @@ private fun PluginRepositoriesContent(
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(contentPadding),
                 contentPadding = PaddingValues(vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
                 item(key = "repositories") {
                     SettingsGroup {

@@ -186,7 +186,7 @@ private fun ApiKeysContent(
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(contentPadding),
                 contentPadding = PaddingValues(top = 16.dp, bottom = 96.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
                 item(key = "note") { KeysNote() }
                 item(key = "keys") {
@@ -220,8 +220,8 @@ private fun ApiKeysContent(
 @Composable
 private fun KeysNote() {
     Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
     ) {
         Row(
@@ -260,7 +260,7 @@ private fun ApiKeyRow(
 
     Row(
         modifier =
-            Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, end = 8.dp, bottom = 12.dp),
+            Modifier.fillMaxWidth().padding(start = 16.dp, top = 16.dp, end = 8.dp, bottom = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(

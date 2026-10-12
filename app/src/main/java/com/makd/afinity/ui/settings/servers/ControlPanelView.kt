@@ -27,7 +27,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
@@ -67,11 +66,10 @@ import com.makd.afinity.ui.admin.plugins.labelRes
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
+import com.makd.afinity.ui.components.SettingsGroupTitle
 import com.makd.afinity.ui.components.SettingsItem
-import com.makd.afinity.ui.settings.servers.components.SectionHeader
 import com.makd.afinity.ui.settings.servers.components.SessionRemoteSheet
 import com.makd.afinity.ui.settings.servers.components.playMethodLabelRes
-import com.makd.afinity.ui.settings.servers.utils.formatLastRun
 import com.makd.afinity.ui.settings.servers.utils.formatTicks
 import com.makd.afinity.util.formatFileSize
 import kotlin.time.Duration.Companion.seconds
@@ -81,7 +79,6 @@ import org.jellyfin.sdk.model.api.PluginInfo
 import org.jellyfin.sdk.model.api.SessionInfoDto
 import org.jellyfin.sdk.model.api.TaskCompletionStatus
 import org.jellyfin.sdk.model.api.TaskInfo
-import org.jellyfin.sdk.model.api.TaskResult
 import org.jellyfin.sdk.model.api.TaskState
 
 @Composable
@@ -134,7 +131,7 @@ fun ControlPanelScreen(
                         end = if (isDualPane) 0.dp else 16.dp,
                         bottom = 16.dp,
                     ),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             ServerHeader(name = serverName, version = systemInfo?.version ?: serverVersion)
 
@@ -501,7 +498,7 @@ private fun ControlPanelOverview(
         )
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
         if (sessionsFailed || tasksFailed) {
             LoadFailedCard(onRetry = viewModel::retry)
         }
@@ -570,12 +567,16 @@ private fun ControlPanelOverview(
 
         val runningTasks = tasks.orEmpty().filter { it.state != TaskState.IDLE }
         if (runningTasks.isNotEmpty()) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SectionHeader(stringResource(R.string.category_running))
-                runningTasks.forEach { task ->
-                    val taskId = task.id ?: return@forEach
+            SettingsGroup(
+                title = stringResource(R.string.category_running),
+                startPadding = 0.dp,
+                endPadding = 0.dp,
+            ) {
+                runningTasks.forEachIndexed { index, task ->
+                    val taskId = task.id ?: return@forEachIndexed
                     androidx.compose.runtime.key(taskId) {
-                        ScheduledTaskRow(
+                        if (index > 0) TaskDivider()
+                        TaskRow(
                             task = task,
                             isPending = taskId in pendingTaskCommands,
                             onOpen = { onOpenTask(taskId) },
@@ -639,8 +640,8 @@ private fun AttentionCard(
     onOpenPlugins: () -> Unit,
     onOpenTask: (String) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SectionHeader(stringResource(R.string.section_needs_attention))
+    Column {
+        SettingsGroupTitle(title = stringResource(R.string.section_needs_attention))
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
@@ -711,7 +712,7 @@ private fun AttentionCard(
 @Composable
 private fun LoadFailedCard(onRetry: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
         modifier = modifier.fillMaxWidth(),
     ) {
@@ -744,16 +745,16 @@ private fun QuickActionButton(
         if (isDangerous) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
     val containerColor =
         if (isDangerous) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-        else MaterialTheme.colorScheme.surfaceContainerHigh
+        else MaterialTheme.colorScheme.surfaceContainerLow
 
     val alpha = if (enabled) 1f else 0.5f
 
     Surface(
         onClick = onClick,
         enabled = enabled && !isLoading,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         color = containerColor.copy(alpha = containerColor.alpha * alpha),
-        modifier = modifier.clip(RoundedCornerShape(16.dp)),
+        modifier = modifier.clip(RoundedCornerShape(24.dp)),
     ) {
         Column(
             modifier = Modifier.padding(vertical = 16.dp, horizontal = 8.dp),
@@ -798,15 +799,19 @@ private fun ActiveSessionsSection(
     val playingSessions = sessions.filter { it.nowPlayingItem != null }
     val idleCount = sessions.count { it.nowPlayingItem == null }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            SectionHeader(
-                if (loading) stringResource(R.string.active_sessions_title)
-                else stringResource(R.string.active_sessions_count_fmt, sessions.size)
+            Text(
+                text =
+                    if (loading) stringResource(R.string.active_sessions_title)
+                    else stringResource(R.string.active_sessions_count_fmt, sessions.size),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
             )
             if (idleCount > 0) {
                 Surface(
@@ -842,7 +847,7 @@ private fun ActiveSessionsSection(
                     text = stringResource(R.string.active_sessions_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 4.dp, top = 8.dp),
+                    modifier = Modifier.padding(start = 16.dp),
                 )
             else -> {
                 val pagerState = rememberPagerState { playingSessions.size }
@@ -862,7 +867,7 @@ private fun ActiveSessionsSection(
                 }
                 if (playingSessions.size > 1) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -960,7 +965,7 @@ private fun PlayingSessionCard(
     ElevatedCard(
         onClick = onOpenRemote,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
     ) {
         Box(modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
@@ -975,7 +980,7 @@ private fun PlayingSessionCard(
                 Box(
                     modifier =
                         Modifier.fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                            .background(MaterialTheme.colorScheme.surfaceContainerLow)
                 )
             }
 
@@ -1143,166 +1148,5 @@ private fun PlayingSessionCard(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ScheduledTaskRow(
-    task: TaskInfo,
-    isPending: Boolean,
-    onOpen: () -> Unit,
-    onRun: () -> Unit,
-    onStop: () -> Unit,
-) {
-    val isRunning = task.state == TaskState.RUNNING
-    val isCancelling = task.state == TaskState.CANCELLING
-
-    Surface(
-        onClick = onOpen,
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .padding(
-                            start = 16.dp,
-                            end = 8.dp,
-                            top = 12.dp,
-                            bottom = if (isRunning) 4.dp else 12.dp,
-                        ),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    if (isRunning) {
-                        Box(
-                            modifier =
-                                Modifier.size(6.dp).background(Color(0xFF4CAF50), CircleShape)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                    }
-                    Text(
-                        text = task.name ?: "",
-                        style =
-                            MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Medium
-                            ),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    val result = task.lastExecutionResult
-                    val subtitle =
-                        when {
-                            isCancelling -> stringResource(R.string.task_stopping)
-                            result != null ->
-                                formatLastRun(
-                                    LocalContext.current,
-                                    result.startTimeUtc,
-                                    result.endTimeUtc,
-                                )
-
-                            isRunning -> null
-                            else -> stringResource(R.string.task_never_run)
-                        }
-                    if (subtitle != null) {
-                        Text(
-                            text = subtitle,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                            modifier = Modifier.padding(top = 2.dp),
-                        )
-                    }
-                    val outcome = if (isCancelling) null else result?.let { taskOutcomeLabel(it) }
-                    if (outcome != null) {
-                        Text(
-                            text = outcome,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.error,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(top = 2.dp),
-                        )
-                    }
-                }
-
-                when {
-                    isCancelling || isPending ->
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp).padding(end = 8.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    isRunning ->
-                        IconButton(onClick = onStop, modifier = Modifier.size(40.dp)) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_close),
-                                contentDescription = stringResource(R.string.cd_stop_task),
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(18.dp),
-                            )
-                        }
-                    else ->
-                        IconButton(onClick = onRun, modifier = Modifier.size(40.dp)) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_player_play_filled),
-                                contentDescription = stringResource(R.string.cd_run_task),
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp),
-                            )
-                        }
-                }
-            }
-
-            if (isRunning) {
-                val progress = task.currentProgressPercentage
-                Row(
-                    modifier =
-                        Modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp, bottom = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    if (progress != null) {
-                        LinearProgressIndicator(
-                            progress = { (progress / 100.0).toFloat() },
-                            modifier = Modifier.weight(1f).height(4.dp),
-                            color = Color(0xFF4CAF50),
-                            trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        )
-                        Text(
-                            text = "${"%.1f".format(progress)}%",
-                            style =
-                                MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
-                            color = Color(0xFF4CAF50),
-                        )
-                    } else {
-                        LinearProgressIndicator(
-                            modifier = Modifier.weight(1f).height(4.dp),
-                            color = Color(0xFF4CAF50),
-                            trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun taskOutcomeLabel(result: TaskResult): String? {
-    return when (result.status) {
-        TaskCompletionStatus.COMPLETED -> null
-        TaskCompletionStatus.FAILED -> {
-            val reason = result.errorMessage?.trim().orEmpty()
-            if (reason.isEmpty()) stringResource(R.string.task_status_failed)
-            else stringResource(R.string.task_status_failed_reason, reason)
-        }
-
-        TaskCompletionStatus.CANCELLED -> stringResource(R.string.task_status_cancelled)
-        TaskCompletionStatus.ABORTED -> stringResource(R.string.task_status_aborted)
     }
 }

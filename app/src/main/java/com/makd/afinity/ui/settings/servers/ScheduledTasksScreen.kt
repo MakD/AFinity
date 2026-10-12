@@ -120,8 +120,8 @@ private fun ScheduledTaskList(
 
     LazyColumn(
         modifier = modifier,
-        contentPadding = PaddingValues(top = 4.dp, bottom = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+        contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         if (running.isNotEmpty()) {
             item(key = "running") {
@@ -179,13 +179,7 @@ private fun TaskGroup(
             tasks.forEachIndexed { index, task ->
                 val taskId = task.id ?: return@forEachIndexed
                 key(taskId) {
-                    if (index > 0) {
-                        HorizontalDivider(
-                            modifier =
-                                Modifier.padding(start = TASK_TEXT_START_PADDING, end = 16.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
-                        )
-                    }
+                    if (index > 0) TaskDivider()
                     TaskRow(
                         task = task,
                         isPending = taskId in pendingTaskIds,
@@ -200,7 +194,15 @@ private fun TaskGroup(
 }
 
 @Composable
-private fun TaskRow(
+internal fun TaskDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(start = TASK_TEXT_START_PADDING, end = 16.dp),
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
+    )
+}
+
+@Composable
+internal fun TaskRow(
     task: TaskInfo,
     isPending: Boolean,
     onOpen: () -> Unit,

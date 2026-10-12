@@ -43,7 +43,7 @@ data class PluginDetailUiState(
             when (installed?.status) {
                 null,
                 PluginStatus.DISABLED -> false
-                PluginStatus.RESTART -> installed?.pendingChange != PendingPluginChange.DISABLE
+                PluginStatus.RESTART -> installed.pendingChange != PendingPluginChange.DISABLE
                 else -> true
             }
 

@@ -3,9 +3,12 @@ package com.makd.afinity.ui.admin.components
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -105,13 +108,15 @@ fun AdminScaffold(
         containerColor = MaterialTheme.colorScheme.surface,
     ) { paddingValues ->
         val layoutDirection = LocalLayoutDirection.current
+        val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
         CompositionLocalProvider(LocalSettingsSubtitleMaxLines provides SUBTITLE_MAX_LINES) {
             content(
                 PaddingValues(
                     top = paddingValues.calculateTopPadding(),
                     start = paddingValues.calculateStartPadding(layoutDirection),
                     end = paddingValues.calculateEndPadding(layoutDirection),
-                    bottom = max(paddingValues.calculateBottomPadding(), playerOffset),
+                    bottom =
+                        max(max(paddingValues.calculateBottomPadding(), playerOffset), imeBottom),
                 )
             )
         }

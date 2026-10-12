@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import com.makd.afinity.R
 
 class AdminNavigationGuard {
@@ -36,7 +37,7 @@ fun AdminDiscardDialog(message: String, onDiscard: () -> Unit, onDismiss: () -> 
         title = {
             Text(
                 stringResource(R.string.admin_metadata_discard_title),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             )
         },
         text = { Text(message, style = MaterialTheme.typography.bodyMedium) },

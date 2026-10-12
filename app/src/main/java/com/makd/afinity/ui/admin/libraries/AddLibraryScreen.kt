@@ -187,6 +187,7 @@ private fun AddLibraryContent(
                 state.paths.forEach { path ->
                     SettingsDivider()
                     SettingsItem(
+                        icon = painterResource(id = R.drawable.ic_folder),
                         title = path,
                         enabled = editable,
                         trailing = {
@@ -223,6 +224,7 @@ private fun TypeRow(
 
     Box {
         SettingsItem(
+            icon = painterResource(id = R.drawable.ic_video_library),
             title = stringResource(R.string.library_add_type),
             subtitle = stringResource(selected.label),
             onClick = { expanded = true },

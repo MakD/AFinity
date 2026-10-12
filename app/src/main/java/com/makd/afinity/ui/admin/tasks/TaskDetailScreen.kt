@@ -148,7 +148,7 @@ private fun TaskDetailContent(
                                 text = description,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 20.dp),
+                                modifier = Modifier.padding(horizontal = 32.dp),
                             )
                         }
                         LastRunGroup(task = task)
@@ -209,6 +209,7 @@ private fun LastRunGroup(task: TaskInfo) {
 
     SettingsGroup(title = stringResource(R.string.task_last_run)) {
         SettingsItem(
+            icon = painterResource(id = R.drawable.ic_circle_check_outline),
             title = stringResource(R.string.task_result_label),
             trailing = {
                 ResultPill(
@@ -225,11 +226,13 @@ private fun LastRunGroup(task: TaskInfo) {
         if (result != null) {
             SettingsDivider()
             SettingsItem(
+                icon = painterResource(id = R.drawable.ic_clock),
                 title = stringResource(R.string.task_finished_label),
                 trailing = { FactValue(text = formatFinishTime(result.endTimeUtc)) },
             )
             SettingsDivider()
             SettingsItem(
+                icon = painterResource(id = R.drawable.ic_timer),
                 title = stringResource(R.string.task_took_label),
                 trailing = {
                     FactValue(

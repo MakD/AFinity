@@ -137,7 +137,7 @@ private fun PluginDetailContent(
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(contentPadding),
                 contentPadding = PaddingValues(vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
                 item(key = "cover") {
                     PluginCover(
@@ -287,26 +287,45 @@ private fun PluginDetails(plugin: PluginDetailUiState) {
     val rows = buildList {
         if (installed != null) {
             add(
-                stringResource(R.string.plugin_detail_status) to
-                    stringResource(installed.status.labelRes() ?: R.string.plugin_status_active)
+                Triple(
+                    R.drawable.ic_circle_check_outline,
+                    stringResource(R.string.plugin_detail_status),
+                    stringResource(installed.status.labelRes() ?: R.string.plugin_status_active),
+                )
             )
         }
         add(
-            stringResource(R.string.plugin_detail_version) to
-                (installed?.version ?: entry?.latestVersion.orEmpty())
+            Triple(
+                R.drawable.ic_versions,
+                stringResource(R.string.plugin_detail_version),
+                installed?.version ?: entry?.latestVersion.orEmpty(),
+            )
         )
         if (entry != null && entry.owner.isNotBlank()) {
-            add(stringResource(R.string.plugin_detail_developer) to entry.owner)
+            add(
+                Triple(
+                    R.drawable.ic_user,
+                    stringResource(R.string.plugin_detail_developer),
+                    entry.owner,
+                )
+            )
         }
         if (entry != null && entry.repositoryName.isNotBlank()) {
-            add(stringResource(R.string.plugin_detail_repository) to entry.repositoryName)
+            add(
+                Triple(
+                    R.drawable.ic_database,
+                    stringResource(R.string.plugin_detail_repository),
+                    entry.repositoryName,
+                )
+            )
         }
     }
 
     SettingsGroup(title = stringResource(R.string.plugin_detail_details)) {
-        rows.forEachIndexed { index, (label, value) ->
+        rows.forEachIndexed { index, (iconRes, label, value) ->
             if (index > 0) SettingsDivider()
             SettingsItem(
+                icon = painterResource(id = iconRes),
                 title = label,
                 trailing = {
                     Text(

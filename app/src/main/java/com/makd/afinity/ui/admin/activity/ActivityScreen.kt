@@ -186,7 +186,7 @@ private fun ActivityTiles(
     onSelect: (ActivityFilter) -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         ActivityTile(
@@ -261,7 +261,7 @@ private fun ActivityTile(
 
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = modifier,
     ) {
@@ -314,7 +314,7 @@ private fun NewActivityStrip(onRefresh: () -> Unit) {
 private fun ActivityTimeline(pagingItems: LazyPagingItems<ActivityListItem>) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 8.dp, top = 4.dp, end = 8.dp, bottom = 24.dp),
+        contentPadding = PaddingValues(start = 8.dp, top = 4.dp, end = 8.dp, bottom = 16.dp),
     ) {
         items(
             count = pagingItems.itemCount,

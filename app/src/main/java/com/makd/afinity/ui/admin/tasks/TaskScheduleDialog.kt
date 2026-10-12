@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -159,7 +160,7 @@ internal fun TaskScheduleDialog(
                         if (initial == null) R.string.task_schedule_add
                         else R.string.task_schedule_edit
                     ),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             )
         },
         text = {
@@ -351,7 +352,7 @@ private fun CustomTimeLimitDialog(
         title = {
             Text(
                 text = stringResource(R.string.task_schedule_time_limit),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             )
         },
         text = {

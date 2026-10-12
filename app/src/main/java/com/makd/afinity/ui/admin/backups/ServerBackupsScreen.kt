@@ -104,7 +104,7 @@ private fun ServerBackupsContent(
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(contentPadding),
                 contentPadding = PaddingValues(vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
                 item(key = "note") { BackupsNote() }
                 item(key = "create") {
@@ -154,8 +154,8 @@ private fun ServerBackupsContent(
 @Composable
 private fun BackupsNote() {
     Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
     ) {
         Row(

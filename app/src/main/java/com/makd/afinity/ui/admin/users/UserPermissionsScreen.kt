@@ -232,7 +232,7 @@ private fun UserPermissionsContent(
                     )
                     if (!allLibraries && state.libraries.isNotEmpty()) {
                         val enabledFolders = state.enabledFolders
-                        SettingsDivider()
+                        SettingsDivider(startPadding = 16.dp)
                         AdminToggleChipFlow {
                             state.libraries.forEach { library ->
                                 AdminToggleChip(
@@ -258,7 +258,7 @@ private fun UserPermissionsContent(
                         )
                         if (!allChannels) {
                             val enabledChannels = state.enabledChannels
-                            SettingsDivider()
+                            SettingsDivider(startPadding = 16.dp)
                             AdminToggleChipFlow {
                                 state.channels.forEach { channel ->
                                     AdminToggleChip(
@@ -277,7 +277,7 @@ private fun UserPermissionsContent(
                 SettingsGroup(title = stringResource(R.string.section_perm_playback)) {
                     ToggleRows(PLAYBACK_TOGGLES, state, editable, onSetFlag)
                     PermissionHelp(text = stringResource(R.string.perm_playback_help))
-                    SettingsDivider()
+                    SettingsDivider(startPadding = 16.dp)
                     SyncPlayRow(
                         selected = state.syncPlayAccess,
                         enabled = editable,
@@ -300,7 +300,7 @@ private fun UserPermissionsContent(
                     val deletionTargets = state.libraries + state.deletableChannels
                     if (!deleteEverywhere && deletionTargets.isNotEmpty()) {
                         val deletionFolders = state.deletionFolders
-                        SettingsDivider()
+                        SettingsDivider(startPadding = 16.dp)
                         AdminToggleChipFlow {
                             deletionTargets.forEach { library ->
                                 AdminToggleChip(
@@ -343,7 +343,7 @@ private fun UserPermissionsContent(
                         if (!allDevices) {
                             val enabledDevices = state.enabledDevices
                             state.devices.forEach { device ->
-                                SettingsDivider()
+                                SettingsDivider(startPadding = 16.dp)
                                 SettingsSwitchItem(
                                     title = device.name,
                                     subtitle = device.appName,
@@ -447,7 +447,7 @@ private fun ToggleRows(
     leadingDivider: Boolean = false,
 ) {
     toggles.forEachIndexed { index, toggle ->
-        if (index > 0 || leadingDivider) SettingsDivider()
+        if (index > 0 || leadingDivider) SettingsDivider(startPadding = 16.dp)
         SettingsSwitchItem(
             title = stringResource(toggle.label),
             subtitle = toggle.summary?.let { stringResource(it) },
