@@ -1597,6 +1597,13 @@
     <string name="activity_tile_sign_ins">Sign-ins</string>
     <string name="activity_tile_failed">Failed</string>
     <string name="activity_tile_loading">–</string>
+    <string name="activity_kind_playback">Playback</string>
+    <string name="activity_kind_session">Session</string>
+    <string name="activity_kind_sign_in">Sign-in</string>
+    <string name="activity_kind_user">User</string>
+    <string name="activity_kind_plugin">Plugin</string>
+    <string name="activity_kind_task">Task</string>
+    <string name="activity_kind_server">Server</string>
     <string name="activity_tile_at_least_fmt">%1$d+</string>
     <string name="activity_empty">No activity to show</string>
     <string name="time_yesterday">Yesterday</string>
