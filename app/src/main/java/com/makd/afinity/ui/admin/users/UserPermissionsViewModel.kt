@@ -7,6 +7,7 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.repository.NoActiveSessionException
 import com.makd.afinity.data.repository.admin.ServerAdminRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.math.BigDecimal
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -24,6 +25,8 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.longOrNull
+import org.jellyfin.sdk.model.api.BaseItemDto
 import timber.log.Timber
 
 internal object PolicyKeys {
@@ -32,12 +35,18 @@ internal object PolicyKeys {
     const val ENABLE_REMOTE_ACCESS = "EnableRemoteAccess"
     const val ENABLE_ALL_FOLDERS = "EnableAllFolders"
     const val ENABLED_FOLDERS = "EnabledFolders"
+    const val ENABLE_ALL_CHANNELS = "EnableAllChannels"
+    const val ENABLED_CHANNELS = "EnabledChannels"
     const val ENABLE_MEDIA_PLAYBACK = "EnableMediaPlayback"
     const val ENABLE_AUDIO_TRANSCODING = "EnableAudioPlaybackTranscoding"
     const val ENABLE_VIDEO_TRANSCODING = "EnableVideoPlaybackTranscoding"
     const val ENABLE_REMUXING = "EnablePlaybackRemuxing"
     const val ENABLE_DOWNLOADING = "EnableContentDownloading"
     const val ENABLE_DELETION = "EnableContentDeletion"
+    const val DELETION_FOLDERS = "EnableContentDeletionFromFolders"
+    const val FORCE_REMOTE_TRANSCODING = "ForceRemoteSourceTranscoding"
+    const val SYNC_PLAY_ACCESS = "SyncPlayAccess"
+    const val REMOTE_BITRATE_LIMIT = "RemoteClientBitrateLimit"
     const val ENABLE_COLLECTIONS = "EnableCollectionManagement"
     const val ENABLE_SUBTITLES = "EnableSubtitleManagement"
     const val ENABLE_LIVE_TV_ACCESS = "EnableLiveTvAccess"
@@ -59,6 +68,19 @@ internal object PolicyKeys {
 private const val MAX_SESSIONS_LIMIT = 999
 private const val LOCKOUT_DISABLED = -1
 private const val MAX_LOCKOUT_ATTEMPTS = 999
+private const val BITRATE_DECIMALS = 6
+private val MAX_BITRATE_MEGABITS = BigDecimal("2147.25")
+
+private fun megabitsOrNull(text: String): BigDecimal? =
+    if (text.isBlank()) BigDecimal.ZERO else text.toBigDecimalOrNull()
+
+private fun megabitsText(bitsPerSecond: Long): String =
+    if (bitsPerSecond <= 0) ""
+    else
+        BigDecimal(bitsPerSecond)
+            .movePointLeft(BITRATE_DECIMALS)
+            .stripTrailingZeros()
+            .toPlainString()
 
 data class PermissionLibrary(val id: String, val name: String)
 
@@ -69,9 +91,12 @@ data class UserPermissionsUiState(
     val policy: JsonObject? = null,
     val changes: Map<String, JsonElement> = emptyMap(),
     val libraries: List<PermissionLibrary> = emptyList(),
+    val channels: List<PermissionLibrary> = emptyList(),
+    val deletableChannels: List<PermissionLibrary> = emptyList(),
     val devices: List<PermissionDevice> = emptyList(),
     val maxSessionsText: String = "",
     val lockoutText: String = "",
+    val bitrateText: String = "",
     val isSelf: Boolean = false,
     val isOnlyAdmin: Boolean = false,
     val failed: Boolean = false,
@@ -90,11 +115,26 @@ data class UserPermissionsUiState(
         get() =
             lockoutText.toIntOrNull()?.let { it in LOCKOUT_DISABLED..MAX_LOCKOUT_ATTEMPTS } == true
 
+    val isBitrateValid: Boolean
+        get() =
+            megabitsOrNull(bitrateText)?.let {
+                it >= BigDecimal.ZERO && it <= MAX_BITRATE_MEGABITS
+            } == true
+
     val canSave: Boolean
-        get() = isDirty && isMaxSessionsValid && isLockoutValid && !isSaving
+        get() = isDirty && isMaxSessionsValid && isLockoutValid && isBitrateValid && !isSaving
 
     val enabledFolders: Set<String>
         get() = folderIds(value(PolicyKeys.ENABLED_FOLDERS))
+
+    val enabledChannels: Set<String>
+        get() = folderIds(value(PolicyKeys.ENABLED_CHANNELS))
+
+    val deletionFolders: Set<String>
+        get() = folderIds(value(PolicyKeys.DELETION_FOLDERS))
+
+    val syncPlayAccess: String?
+        get() = (value(PolicyKeys.SYNC_PLAY_ACCESS) as? JsonPrimitive)?.contentOrNull
 
     val enabledDevices: Set<String>
         get() = stringSet(value(PolicyKeys.ENABLED_DEVICES))
@@ -142,6 +182,7 @@ constructor(
         viewModelScope.launch {
             loadUserFacts(id)
             loadLibraries()
+            loadChannels()
             loadDevices()
             loadPolicy(id)
         }
@@ -153,16 +194,61 @@ constructor(
     }
 
     fun setLibraryEnabled(libraryId: String, enabled: Boolean) {
-        val current = _state.value.enabledFolders
-        val updated = if (enabled) current + libraryId else current - libraryId
+        setFolderListed(
+            PolicyKeys.ENABLED_FOLDERS,
+            _state.value.enabledFolders,
+            libraryId,
+            enabled,
+        )
+    }
+
+    fun setChannelEnabled(channelId: String, enabled: Boolean) {
+        setFolderListed(
+            PolicyKeys.ENABLED_CHANNELS,
+            _state.value.enabledChannels,
+            channelId,
+            enabled,
+        )
+    }
+
+    fun setDeletionLibraryEnabled(libraryId: String, enabled: Boolean) {
+        setFolderListed(
+            PolicyKeys.DELETION_FOLDERS,
+            _state.value.deletionFolders,
+            libraryId,
+            enabled,
+        )
+    }
+
+    fun setSyncPlayAccess(access: String) {
+        change(PolicyKeys.SYNC_PLAY_ACCESS, JsonPrimitive(access))
+    }
+
+    fun setBitrateText(text: String) {
+        val cleaned = text.replace(',', '.').filter { it.isDigit() || it == '.' }
+        _state.update { it.copy(bitrateText = cleaned) }
+        val megabits = megabitsOrNull(cleaned) ?: return
+        if (megabits >= BigDecimal.ZERO && megabits <= MAX_BITRATE_MEGABITS) {
+            val bitsPerSecond = megabits.movePointRight(BITRATE_DECIMALS).toLong()
+            change(PolicyKeys.REMOTE_BITRATE_LIMIT, JsonPrimitive(bitsPerSecond))
+        }
+    }
+
+    private fun setFolderListed(
+        key: String,
+        current: Set<String>,
+        libraryId: String,
+        listed: Boolean,
+    ) {
+        val updated = if (listed) current + libraryId else current - libraryId
         _state.update { state ->
-            val original = folderIds(state.policy?.get(PolicyKeys.ENABLED_FOLDERS))
+            val original = folderIds(state.policy?.get(key))
             val changes =
                 if (updated == original) {
-                    state.changes - PolicyKeys.ENABLED_FOLDERS
+                    state.changes - key
                 } else {
                     val ids = JsonArray(updated.sorted().map { JsonPrimitive(it) })
-                    state.changes + (PolicyKeys.ENABLED_FOLDERS to ids)
+                    state.changes + (key to ids)
                 }
             state.copy(changes = changes)
         }
@@ -242,12 +328,16 @@ constructor(
                 val lockout =
                     (policy[PolicyKeys.LOGIN_ATTEMPTS] as? JsonPrimitive)?.intOrNull
                         ?: LOCKOUT_DISABLED
+                val bitrate =
+                    (policy[PolicyKeys.REMOTE_BITRATE_LIMIT] as? JsonPrimitive)?.longOrNull ?: 0L
                 _state.update { state ->
                     state.copy(
                         policy = policy,
                         maxSessionsText =
                             if (state.isDirty) state.maxSessionsText else sessions.toString(),
                         lockoutText = if (state.isDirty) state.lockoutText else lockout.toString(),
+                        bitrateText =
+                            if (state.isDirty) state.bitrateText else megabitsText(bitrate),
                         failed = false,
                     )
                 }
@@ -304,4 +394,21 @@ constructor(
             _state.update { it.copy(libraries = libraries) }
         }
     }
+
+    private suspend fun loadChannels() {
+        val channels = adminRepository.getChannels().getOrNull()?.toPermissionEntries().orEmpty()
+        val deletable =
+            if (channels.isEmpty()) emptyList()
+            else
+                adminRepository
+                    .getChannels(deletableOnly = true)
+                    .getOrNull()
+                    ?.toPermissionEntries()
+                    .orEmpty()
+        _state.update { it.copy(channels = channels, deletableChannels = deletable) }
+    }
+
+    private fun List<BaseItemDto>.toPermissionEntries(): List<PermissionLibrary> = map {
+        PermissionLibrary(id = normalizeId(it.id.toString()), name = it.name.orEmpty())
+    }.sortedBy { it.name.lowercase() }
 }

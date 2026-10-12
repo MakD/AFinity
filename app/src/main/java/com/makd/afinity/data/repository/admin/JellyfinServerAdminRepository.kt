@@ -2,6 +2,7 @@ package com.makd.afinity.data.repository.admin
 
 import android.net.Uri
 import android.os.SystemClock
+import android.util.Base64
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -77,8 +78,10 @@ import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.HttpMethod
 import org.jellyfin.sdk.api.operations.AuthenticationApi
 import org.jellyfin.sdk.api.operations.BackupApi
+import org.jellyfin.sdk.api.operations.ChannelApi
 import org.jellyfin.sdk.api.operations.DeviceApi
 import org.jellyfin.sdk.api.operations.EnvironmentApi
+import org.jellyfin.sdk.api.operations.ImageApi
 import org.jellyfin.sdk.api.operations.LibraryApi
 import org.jellyfin.sdk.api.operations.LibraryStructureApi
 import org.jellyfin.sdk.api.operations.LocalizationApi
@@ -89,9 +92,11 @@ import org.jellyfin.sdk.api.operations.SystemApi
 import org.jellyfin.sdk.api.operations.UserApi
 import org.jellyfin.sdk.model.ClientInfo
 import org.jellyfin.sdk.model.DeviceInfo
+import org.jellyfin.sdk.model.FileInfo
 import org.jellyfin.sdk.model.api.ActivityLogEntryMessage
 import org.jellyfin.sdk.model.api.AuthenticationInfo
 import org.jellyfin.sdk.model.api.BackupManifestDto
+import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.CollectionTypeOptions
 import org.jellyfin.sdk.model.api.CountryInfo
 import org.jellyfin.sdk.model.api.CreateUserByName
@@ -296,6 +301,35 @@ constructor(
 
     override suspend fun deleteUser(id: UUID): Result<Unit> =
         execute("delete user $id") { api, _ -> UserApi(api).deleteUser(id) }
+
+    override suspend fun setUserImage(
+        id: UUID,
+        imageData: ByteArray,
+        mimeType: String,
+    ): Result<Unit> =
+        execute("set the picture of user $id") { api, _ ->
+                val encoded =
+                    Base64.encodeToString(imageData, Base64.NO_WRAP).toByteArray(Charsets.US_ASCII)
+                ImageApi(api)
+                    .postUserImage(
+                        userId = id,
+                        data = FileInfo(content = encoded, mediaType = mimeType),
+                    )
+            }
+            .onSuccess { syncOwnImageTag(id) }
+
+    override suspend fun deleteUserImage(id: UUID): Result<Unit> =
+        execute("remove the picture of user $id") { api, _ ->
+                ImageApi(api).deleteUserImage(userId = id)
+            }
+            .onSuccess { syncOwnImageTag(id) }
+
+    private suspend fun syncOwnImageTag(id: UUID) {
+        if (sessionManager.currentSession.value?.userId != id) return
+        apiInvoker
+            .apiResult { api, _ -> UserApi(api).getUserById(id).content.primaryImageTag }
+            .onSuccess { tag -> sessionManager.updateCurrentUserImageTag(id, tag) }
+    }
 
     override suspend fun getUserPolicy(id: UUID): Result<JsonObject> =
         apiInvoker.apiResult { api, _ ->
@@ -550,6 +584,14 @@ constructor(
     override suspend fun getLibraries(): Result<List<VirtualFolderInfo>> =
         apiInvoker.apiResult { api, _ ->
             LibraryStructureApi(api).getVirtualFolders().content
+        }
+
+    override suspend fun getChannels(deletableOnly: Boolean): Result<List<BaseItemDto>> =
+        apiInvoker.apiResult { api, _ ->
+            ChannelApi(api)
+                .getChannels(supportsMediaDeletion = deletableOnly.takeIf { it })
+                .content
+                .items
         }
 
     override suspend fun getServerFolders(path: String?): Result<List<ServerFolder>> =

@@ -14,6 +14,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import org.jellyfin.sdk.model.api.AuthenticationInfo
 import org.jellyfin.sdk.model.api.BackupManifestDto
+import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.CollectionTypeOptions
 import org.jellyfin.sdk.model.api.CountryInfo
 import org.jellyfin.sdk.model.api.CultureDto
@@ -83,6 +84,10 @@ interface ServerAdminRepository {
 
     suspend fun deleteUser(id: UUID): Result<Unit>
 
+    suspend fun setUserImage(id: UUID, imageData: ByteArray, mimeType: String): Result<Unit>
+
+    suspend fun deleteUserImage(id: UUID): Result<Unit>
+
     suspend fun getUserPolicy(id: UUID): Result<JsonObject>
 
     suspend fun updateUserPolicy(id: UUID, changes: Map<String, JsonElement>): Result<Unit>
@@ -102,6 +107,8 @@ interface ServerAdminRepository {
     suspend fun signOutDevices(ids: List<String>): Result<Unit>
 
     suspend fun getLibraries(): Result<List<VirtualFolderInfo>>
+
+    suspend fun getChannels(deletableOnly: Boolean = false): Result<List<BaseItemDto>>
 
     suspend fun getServerFolders(path: String?): Result<List<ServerFolder>>
 

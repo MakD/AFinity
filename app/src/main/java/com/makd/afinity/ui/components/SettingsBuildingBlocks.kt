@@ -22,6 +22,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -34,6 +35,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+
+val LocalSettingsSubtitleMaxLines = staticCompositionLocalOf { 1 }
 
 @Composable
 fun BoxScope.EndAlignedDropdownMenu(
@@ -103,6 +106,7 @@ fun SettingsItem(
     enabled: Boolean = true,
     role: Role = Role.Button,
     subtitleColor: Color? = null,
+    subtitleMaxLines: Int = LocalSettingsSubtitleMaxLines.current,
     iconTint: Color? = null,
     leading: @Composable (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
@@ -151,7 +155,7 @@ fun SettingsItem(
                         (subtitleColor ?: MaterialTheme.colorScheme.onSurfaceVariant).copy(
                             alpha = contentAlpha
                         ),
-                    maxLines = 1,
+                    maxLines = subtitleMaxLines,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 2.dp),
                 )
@@ -180,11 +184,13 @@ fun SettingsSwitchItem(
     icon: Painter? = null,
     subtitle: String? = null,
     enabled: Boolean = true,
+    subtitleMaxLines: Int = LocalSettingsSubtitleMaxLines.current,
 ) {
     SettingsItem(
         icon = icon,
         title = title,
         subtitle = subtitle,
+        subtitleMaxLines = subtitleMaxLines,
         onClick =
             if (enabled) {
                 { onCheckedChange(!checked) }

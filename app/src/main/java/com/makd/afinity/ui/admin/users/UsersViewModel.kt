@@ -13,12 +13,17 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+
+private const val STOP_TIMEOUT_MS = 5_000L
 
 data class AdminUserRow(
     val id: UUID,
@@ -33,7 +38,13 @@ data class UsersUiState(
     val users: List<AdminUserRow>? = null,
     val failed: Boolean = false,
     val isBusy: Boolean = false,
-)
+) {
+    val adminCount: Int
+        get() = users.orEmpty().count { it.isAdmin }
+
+    val disabledCount: Int
+        get() = users.orEmpty().count { it.isDisabled }
+}
 
 @HiltViewModel
 class UsersViewModel
@@ -52,6 +63,18 @@ constructor(
 
     private val _userCreated = MutableSharedFlow<UUID>(extraBufferCapacity = 1)
     val userCreated: SharedFlow<UUID> = _userCreated.asSharedFlow()
+
+    val playingUserIds: StateFlow<Set<UUID>> =
+        adminRepository.sessions
+            .map { result ->
+                result
+                    ?.getOrNull()
+                    .orEmpty()
+                    .filter { it.nowPlayingItem != null }
+                    .map { it.userId }
+                    .toSet()
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptySet())
 
     fun load() {
         _state.update { it.copy(failed = false) }

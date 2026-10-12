@@ -19,12 +19,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import com.makd.afinity.R
@@ -32,6 +34,14 @@ import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.LocalSettingsSubtitleMaxLines
+
+private const val SUBTITLE_MAX_LINES = 3
+private val FLOATING_BUTTON_CLEARANCE = 96.dp
+private val CONTENT_END_PADDING = 16.dp
+
+fun adminContentBottomPadding(hasFloatingButton: Boolean): Dp =
+    if (hasFloatingButton) FLOATING_BUTTON_CLEARANCE else CONTENT_END_PADDING
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,14 +97,16 @@ fun AdminScaffold(
         containerColor = MaterialTheme.colorScheme.surface,
     ) { paddingValues ->
         val layoutDirection = LocalLayoutDirection.current
-        content(
-            PaddingValues(
-                top = paddingValues.calculateTopPadding(),
-                start = paddingValues.calculateStartPadding(layoutDirection),
-                end = paddingValues.calculateEndPadding(layoutDirection),
-                bottom = max(paddingValues.calculateBottomPadding(), playerOffset),
+        CompositionLocalProvider(LocalSettingsSubtitleMaxLines provides SUBTITLE_MAX_LINES) {
+            content(
+                PaddingValues(
+                    top = paddingValues.calculateTopPadding(),
+                    start = paddingValues.calculateStartPadding(layoutDirection),
+                    end = paddingValues.calculateEndPadding(layoutDirection),
+                    bottom = max(paddingValues.calculateBottomPadding(), playerOffset),
+                )
             )
-        )
+        }
     }
 }
 
@@ -122,19 +134,20 @@ fun <T : Any> AdminLoadContent(
 @Composable
 fun AdminPill(text: String, modifier: Modifier = Modifier, emphasised: Boolean = false) {
     Surface(
-        shape = RoundedCornerShape(50),
+        shape = RoundedCornerShape(8.dp),
         color =
             if (emphasised) MaterialTheme.colorScheme.primaryContainer
-            else MaterialTheme.colorScheme.secondaryContainer,
+            else MaterialTheme.colorScheme.surfaceContainerHighest,
         modifier = modifier,
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
             color =
                 if (emphasised) MaterialTheme.colorScheme.onPrimaryContainer
-                else MaterialTheme.colorScheme.onSecondaryContainer,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
         )
     }
 }

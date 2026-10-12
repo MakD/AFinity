@@ -1,20 +1,37 @@
 package com.makd.afinity.ui.admin.users
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -24,13 +41,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -45,6 +65,9 @@ import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.settings.servers.utils.formatRelativeTime
+
+private val USER_HEADER_AVATAR_SIZE = 96.dp
+private const val DISABLED_HEADER_ALPHA = 0.5f
 
 private enum class UserDialog {
     RENAME,
@@ -62,8 +85,13 @@ fun UserDetailScreen(
     viewModel: UserDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val commandFailedMessage = stringResource(R.string.session_command_failed)
+    val picturePicker =
+        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            if (uri != null) viewModel.setPicture(uri)
+        }
 
     LifecycleResumeEffect(Unit) {
         viewModel.load()
@@ -78,11 +106,18 @@ fun UserDetailScreen(
 
     UserDetailContent(
         state = state,
+        isPlaying = isPlaying,
         snackbarHostState = snackbarHostState,
         onBackClick = onBackClick,
         onRetry = viewModel::load,
         onOpenPermissions = onOpenPermissions,
         onOpenParentalControls = onOpenParentalControls,
+        onChoosePicture = {
+            picturePicker.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+        },
+        onRemovePicture = viewModel::removePicture,
         onRename = viewModel::rename,
         onSetPassword = viewModel::setPassword,
         onSetDisabled = viewModel::setDisabled,
@@ -94,11 +129,14 @@ fun UserDetailScreen(
 @Composable
 private fun UserDetailContent(
     state: UserDetailUiState,
+    isPlaying: Boolean,
     snackbarHostState: SnackbarHostState,
     onBackClick: () -> Unit,
     onRetry: () -> Unit,
     onOpenPermissions: () -> Unit,
     onOpenParentalControls: () -> Unit,
+    onChoosePicture: () -> Unit,
+    onRemovePicture: () -> Unit,
     onRename: (String) -> Unit,
     onSetPassword: (newPassword: String, currentPassword: String?) -> Unit,
     onSetDisabled: (Boolean) -> Unit,
@@ -155,7 +193,7 @@ private fun UserDetailContent(
     }
 
     AdminScaffold(
-        title = user?.name ?: stringResource(R.string.title_users),
+        title = stringResource(R.string.title_user),
         onBackClick = onBackClick,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
@@ -180,7 +218,23 @@ private fun UserDetailContent(
                             .padding(vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
-                    UserSummaryGroup(user = loaded)
+                    UserHeader(
+                        user = loaded,
+                        isPlaying = isPlaying,
+                        isUpdatingPicture = state.isUpdatingPicture,
+                        enabled = !state.isBusy,
+                        onChoosePicture = onChoosePicture,
+                        onRemovePicture = onRemovePicture,
+                    )
+                    loaded.access?.let { access ->
+                        UserAccessTiles(
+                            access = access,
+                            libraryIds = state.libraryIds,
+                            ratings = state.ratings,
+                            onOpenPermissions = onOpenPermissions,
+                            onOpenParentalControls = onOpenParentalControls,
+                        )
+                    }
                     SettingsGroup {
                         SettingsItem(
                             icon = painterResource(id = R.drawable.ic_security),
@@ -212,33 +266,305 @@ private fun UserDetailContent(
 }
 
 @Composable
-private fun UserSummaryGroup(user: AdminUserDetail) {
+private fun UserHeader(
+    user: AdminUserDetail,
+    isPlaying: Boolean,
+    isUpdatingPicture: Boolean,
+    enabled: Boolean,
+    onChoosePicture: () -> Unit,
+    onRemovePicture: () -> Unit,
+) {
     val context = LocalContext.current
-    val lastActive =
-        if (user.lastActivity != null) {
-            stringResource(
-                R.string.admin_last_active_fmt,
-                formatRelativeTime(context, user.lastActivity),
-            )
-        } else {
-            stringResource(R.string.admin_never_active)
+    val showsPlaying = isPlaying && !user.isDisabled
+    val status =
+        when {
+            user.isDisabled -> stringResource(R.string.user_disabled)
+            showsPlaying -> stringResource(R.string.user_playing_now)
+            user.isSelf -> stringResource(R.string.user_this_account)
+            user.lastActivity != null ->
+                stringResource(
+                    R.string.admin_last_active_fmt,
+                    formatRelativeTime(context, user.lastActivity),
+                )
+            else -> stringResource(R.string.admin_never_active)
         }
-    SettingsGroup {
-        SettingsItem(
-            title = user.name,
-            subtitle = if (user.isSelf) stringResource(R.string.user_this_account) else lastActive,
-            leading = { UserAvatar(imageUrl = user.imageUrl) },
-            trailing = {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    if (user.isAdmin) {
-                        AdminPill(text = stringResource(R.string.role_admin), emphasised = true)
-                    }
-                    if (user.isDisabled) {
-                        AdminPill(text = stringResource(R.string.user_disabled))
-                    }
-                }
-            },
+    val contentAlpha = if (user.isDisabled) DISABLED_HEADER_ALPHA else 1f
+    val statusColor =
+        if (showsPlaying) UserPlayingColor else MaterialTheme.colorScheme.onSurfaceVariant
+
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box {
+            AdminUserAvatar(
+                imageUrl = user.imageUrl,
+                name = user.name,
+                size = USER_HEADER_AVATAR_SIZE,
+                modifier = Modifier.alpha(contentAlpha),
+            )
+            PictureEditButton(
+                hasPicture = user.imageUrl != null,
+                isUpdating = isUpdatingPicture,
+                enabled = enabled,
+                onChoosePicture = onChoosePicture,
+                onRemovePicture = onRemovePicture,
+                modifier = Modifier.align(Alignment.BottomEnd).offset(x = 4.dp, y = 4.dp),
+            )
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = user.name,
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.alpha(contentAlpha),
         )
+        Text(
+            text = status,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = if (showsPlaying) FontWeight.SemiBold else FontWeight.Normal,
+            color = statusColor,
+            modifier = Modifier.padding(top = 2.dp).alpha(contentAlpha),
+        )
+        if (user.isAdmin) {
+            AdminPill(
+                text = stringResource(R.string.role_admin),
+                modifier = Modifier.padding(top = 10.dp),
+                emphasised = true,
+            )
+        }
+    }
+}
+
+@Composable
+private fun UserAccessTiles(
+    access: UserAccess,
+    libraryIds: Set<String>?,
+    ratings: List<RatingOption>?,
+    onOpenPermissions: () -> Unit,
+    onOpenParentalControls: () -> Unit,
+) {
+    val on = stringResource(R.string.state_toggle_on)
+    val off = stringResource(R.string.state_toggle_off)
+    val libraries =
+        when {
+            access.allLibraries -> stringResource(R.string.user_tile_all)
+            libraryIds != null ->
+                stringResource(
+                    R.string.user_tile_count_of_fmt,
+                    access.enabledLibraryIds.count { it in libraryIds },
+                    libraryIds.size,
+                )
+            else -> access.enabledLibraryIds.size.toString()
+        }
+    val ratingScore = access.maxRatingScore
+    val rating =
+        when {
+            ratingScore == null -> stringResource(R.string.config_none)
+            else ->
+                ratings
+                    ?.lastOrNull {
+                        it.score == ratingScore && it.subScore == access.maxRatingSubScore
+                    }
+                    ?.name
+                    ?: ratings?.lastOrNull { it.score <= ratingScore }?.name
+                    ?: ratingScore.toString()
+        }
+    val sessions =
+        if (access.maxSessions > 0) access.maxSessions.toString()
+        else stringResource(R.string.user_tile_no_limit)
+
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            AccessTile(
+                icon = R.drawable.ic_video_library,
+                label = stringResource(R.string.libraries_title),
+                value = libraries,
+                isOff = !access.allLibraries && access.enabledLibraryIds.isEmpty(),
+                onClick = onOpenPermissions,
+                modifier = Modifier.weight(1f),
+            )
+            AccessTile(
+                icon = R.drawable.ic_lock_filled,
+                label = stringResource(R.string.user_tile_rating),
+                value = rating,
+                isOff = ratingScore == null,
+                onClick = onOpenParentalControls,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            AccessTile(
+                icon = R.drawable.ic_world,
+                label = stringResource(R.string.user_tile_remote_access),
+                value = if (access.remoteAccess) on else off,
+                isOff = !access.remoteAccess,
+                onClick = onOpenPermissions,
+                modifier = Modifier.weight(1f),
+            )
+            AccessTile(
+                icon = R.drawable.ic_movie,
+                label = stringResource(R.string.user_tile_transcoding),
+                value = if (access.transcoding) on else off,
+                isOff = !access.transcoding,
+                onClick = onOpenPermissions,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            AccessTile(
+                icon = R.drawable.ic_download,
+                label = stringResource(R.string.user_tile_downloads),
+                value = if (access.downloads) on else off,
+                isOff = !access.downloads,
+                onClick = onOpenPermissions,
+                modifier = Modifier.weight(1f),
+            )
+            AccessTile(
+                icon = R.drawable.ic_devices,
+                label = stringResource(R.string.user_tile_sessions),
+                value = sessions,
+                isOff = access.maxSessions <= 0,
+                onClick = onOpenPermissions,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun AccessTile(
+    @DrawableRes icon: Int,
+    label: String,
+    value: String,
+    isOff: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = modifier,
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    painter = painterResource(id = icon),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
+                )
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = if (isOff) FontWeight.Medium else FontWeight.SemiBold,
+                color =
+                    if (isOff) MaterialTheme.colorScheme.onSurfaceVariant
+                    else MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 6.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun PictureEditButton(
+    hasPicture: Boolean,
+    isUpdating: Boolean,
+    enabled: Boolean,
+    onChoosePicture: () -> Unit,
+    onRemovePicture: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box(modifier = modifier) {
+        Surface(
+            onClick = { expanded = true },
+            enabled = enabled && !isUpdating,
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            border = BorderStroke(3.dp, MaterialTheme.colorScheme.surface),
+            modifier = Modifier.size(36.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                if (isUpdating) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                } else {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_photo_edit),
+                        contentDescription = stringResource(R.string.user_picture_change),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.user_picture_choose)) },
+                onClick = {
+                    expanded = false
+                    onChoosePicture()
+                },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_photo_search),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                },
+            )
+            if (hasPicture) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = stringResource(R.string.user_picture_remove),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        onRemovePicture()
+                    },
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_delete),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    },
+                )
+            }
+        }
     }
 }
 

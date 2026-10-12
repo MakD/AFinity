@@ -104,7 +104,7 @@ fun EpisodeDetailOverlay(
     onDownloadLongClick: (() -> Unit)? = null,
     onGoToSeries: (() -> Unit)? = null,
     isAdmin: Boolean = false,
-    canDelete: Boolean = true,
+    canDelete: Boolean = false,
     onAdminAction: (AdminAction) -> Unit = {},
     onPersonClick: ((UUID) -> Unit)? = null,
 ) {
@@ -378,7 +378,7 @@ fun EpisodeDetailOverlay(
                             )
                         }
 
-                        if (isAdmin) {
+                        if (isAdmin || canDelete) {
                             var menuExpanded by remember { mutableStateOf(false) }
                             Box {
                                 IconButton(onClick = { menuExpanded = true }) {
@@ -394,65 +394,75 @@ fun EpisodeDetailOverlay(
                                     expanded = menuExpanded,
                                     onDismissRequest = { menuExpanded = false },
                                 ) {
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                stringResource(R.string.admin_action_edit_metadata)
-                                            )
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                painter =
-                                                    painterResource(id = R.drawable.ic_edit_circle),
-                                                contentDescription = null,
-                                                modifier = Modifier.size(20.dp),
-                                            )
-                                        },
-                                        onClick = {
-                                            menuExpanded = false
-                                            onAdminAction(AdminAction.EditMetadata)
-                                        },
-                                    )
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(stringResource(R.string.admin_action_edit_images))
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                painter =
-                                                    painterResource(
-                                                        id = R.drawable.ic_photo_search
-                                                    ),
-                                                contentDescription = null,
-                                                modifier = Modifier.size(20.dp),
-                                            )
-                                        },
-                                        onClick = {
-                                            menuExpanded = false
-                                            onAdminAction(AdminAction.EditImages)
-                                        },
-                                    )
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                stringResource(
-                                                    R.string.admin_action_refresh_metadata
+                                    if (isAdmin) {
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    stringResource(
+                                                        R.string.admin_action_edit_metadata
+                                                    )
                                                 )
-                                            )
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                painter =
-                                                    painterResource(id = R.drawable.ic_refresh),
-                                                contentDescription = null,
-                                                modifier = Modifier.size(20.dp),
-                                            )
-                                        },
-                                        onClick = {
-                                            menuExpanded = false
-                                            onAdminAction(AdminAction.Refresh)
-                                        },
-                                    )
+                                            },
+                                            leadingIcon = {
+                                                Icon(
+                                                    painter =
+                                                        painterResource(
+                                                            id = R.drawable.ic_edit_circle
+                                                        ),
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(20.dp),
+                                                )
+                                            },
+                                            onClick = {
+                                                menuExpanded = false
+                                                onAdminAction(AdminAction.EditMetadata)
+                                            },
+                                        )
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    stringResource(
+                                                        R.string.admin_action_edit_images
+                                                    )
+                                                )
+                                            },
+                                            leadingIcon = {
+                                                Icon(
+                                                    painter =
+                                                        painterResource(
+                                                            id = R.drawable.ic_photo_search
+                                                        ),
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(20.dp),
+                                                )
+                                            },
+                                            onClick = {
+                                                menuExpanded = false
+                                                onAdminAction(AdminAction.EditImages)
+                                            },
+                                        )
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    stringResource(
+                                                        R.string.admin_action_refresh_metadata
+                                                    )
+                                                )
+                                            },
+                                            leadingIcon = {
+                                                Icon(
+                                                    painter =
+                                                        painterResource(id = R.drawable.ic_refresh),
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(20.dp),
+                                                )
+                                            },
+                                            onClick = {
+                                                menuExpanded = false
+                                                onAdminAction(AdminAction.Refresh)
+                                            },
+                                        )
+                                    }
                                     if (canDelete) {
                                         DropdownMenuItem(
                                             text = {

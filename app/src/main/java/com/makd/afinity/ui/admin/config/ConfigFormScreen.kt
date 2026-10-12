@@ -47,6 +47,7 @@ import com.makd.afinity.ui.admin.components.AdminDiscardDialog
 import com.makd.afinity.ui.admin.components.AdminLoadContent
 import com.makd.afinity.ui.admin.components.AdminScaffold
 import com.makd.afinity.ui.admin.components.ReportUnsavedChanges
+import com.makd.afinity.ui.admin.components.adminContentBottomPadding
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
@@ -151,7 +152,7 @@ private fun ConfigFormContent(
                     Modifier.fillMaxSize()
                         .padding(contentPadding)
                         .verticalScroll(rememberScrollState())
-                        .padding(top = 16.dp, bottom = 96.dp),
+                        .padding(top = 16.dp, bottom = adminContentBottomPadding(state.isDirty)),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
                 spec?.note?.let { note -> FormNote(text = stringResource(note)) }

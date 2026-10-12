@@ -93,7 +93,7 @@ private fun windows(element: JsonElement?): List<AccessWindow> =
         if (day == null || start == null || end == null) null else AccessWindow(day, start, end)
     }
 
-private fun groupRatings(ratings: List<ParentalRating>): List<RatingOption> {
+internal fun groupRatings(ratings: List<ParentalRating>): List<RatingOption> {
     val grouped = mutableListOf<RatingOption>()
     ratings.forEach { rating ->
         val score = rating.ratingScore ?: return@forEach
@@ -180,9 +180,10 @@ constructor(
         setTags(PolicyKeys.BLOCKED_TAGS, _state.value.blockedTags - tag)
     }
 
-    fun addSchedule(window: AccessWindow) {
-        if (window.startHour >= window.endHour) return
-        setSchedules(_state.value.schedules + window)
+    fun addSchedules(windows: List<AccessWindow>) {
+        val valid = windows.filter { it.startHour < it.endHour }
+        if (valid.isEmpty()) return
+        setSchedules(_state.value.schedules + valid)
     }
 
     fun removeSchedule(window: AccessWindow) {

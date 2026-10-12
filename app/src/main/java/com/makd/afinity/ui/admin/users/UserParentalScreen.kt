@@ -27,7 +27,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -44,24 +43,14 @@ import com.makd.afinity.ui.admin.components.AdminDiscardDialog
 import com.makd.afinity.ui.admin.components.AdminLoadContent
 import com.makd.afinity.ui.admin.components.AdminRemoveButton
 import com.makd.afinity.ui.admin.components.AdminScaffold
+import com.makd.afinity.ui.admin.components.AdminToggleChip
+import com.makd.afinity.ui.admin.components.AdminToggleChipFlow
 import com.makd.afinity.ui.admin.components.ReportUnsavedChanges
+import com.makd.afinity.ui.admin.components.adminContentBottomPadding
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
-import com.makd.afinity.ui.components.SettingsSwitchItem
-import java.time.DayOfWeek
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
-import java.time.format.TextStyle
-import java.util.Locale
-
-private const val HALF_HOUR = 0.5
-private const val HOURS_PER_DAY = 24
-private const val MINUTES_PER_HALF_HOUR = 30
-private const val DEFAULT_START_HOUR = 8.0
-private const val DEFAULT_END_HOUR = 20.0
 
 private data class UnratedType(val value: String, @param:StringRes val label: Int)
 
@@ -75,23 +64,6 @@ private val UNRATED_TYPES =
         UnratedType("Trailer", R.string.parental_unrated_trailers),
         UnratedType("Series", R.string.parental_unrated_shows),
     )
-
-private val SCHEDULE_DAYS =
-    listOf(
-        "Everyday",
-        "Weekday",
-        "Weekend",
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday",
-    )
-
-private val START_HOURS = List(HOURS_PER_DAY * 2) { it * HALF_HOUR }
-private val END_HOURS = List(HOURS_PER_DAY * 2) { (it + 1) * HALF_HOUR }
 
 private enum class TagList {
     ALLOWED,
@@ -123,7 +95,7 @@ fun UserParentalScreen(
         onRemoveAllowedTag = viewModel::removeAllowedTag,
         onAddBlockedTag = viewModel::addBlockedTag,
         onRemoveBlockedTag = viewModel::removeBlockedTag,
-        onAddSchedule = viewModel::addSchedule,
+        onAddSchedules = viewModel::addSchedules,
         onRemoveSchedule = viewModel::removeSchedule,
         onSave = viewModel::save,
         modifier = modifier,
@@ -142,7 +114,7 @@ private fun UserParentalContent(
     onRemoveAllowedTag: (String) -> Unit,
     onAddBlockedTag: (String) -> Unit,
     onRemoveBlockedTag: (String) -> Unit,
-    onAddSchedule: (AccessWindow) -> Unit,
+    onAddSchedules: (List<AccessWindow>) -> Unit,
     onRemoveSchedule: (AccessWindow) -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
@@ -177,9 +149,9 @@ private fun UserParentalContent(
     }
 
     if (showAddSchedule) {
-        AddScheduleDialog(
-            onConfirm = { window ->
-                onAddSchedule(window)
+        AccessScheduleDialog(
+            onConfirm = { windows ->
+                onAddSchedules(windows)
                 showAddSchedule = false
             },
             onDismiss = { showAddSchedule = false },
@@ -187,7 +159,7 @@ private fun UserParentalContent(
     }
 
     AdminScaffold(
-        title = state.userName.ifEmpty { stringResource(R.string.title_user_parental) },
+        title = stringResource(R.string.title_user_parental),
         onBackClick = requestClose,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
@@ -207,7 +179,7 @@ private fun UserParentalContent(
                     Modifier.fillMaxSize()
                         .padding(contentPadding)
                         .verticalScroll(rememberScrollState())
-                        .padding(top = 16.dp, bottom = 96.dp),
+                        .padding(top = 16.dp, bottom = adminContentBottomPadding(state.isDirty)),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
                 SettingsGroup(title = stringResource(R.string.section_parental_rating)) {
@@ -215,15 +187,16 @@ private fun UserParentalContent(
                 }
 
                 SettingsGroup(title = stringResource(R.string.section_parental_unrated)) {
-                    val blocked = state.blockedUnrated
-                    UNRATED_TYPES.forEachIndexed { index, type ->
-                        if (index > 0) SettingsDivider()
-                        SettingsSwitchItem(
-                            title = stringResource(type.label),
-                            checked = type.value in blocked,
-                            onCheckedChange = { onSetUnratedBlocked(type.value, it) },
-                            enabled = editable,
-                        )
+                    val blockedUnrated = state.blockedUnrated
+                    AdminToggleChipFlow {
+                        UNRATED_TYPES.forEach { type ->
+                            AdminToggleChip(
+                                label = stringResource(type.label),
+                                selected = type.value in blockedUnrated,
+                                onSelectedChange = { onSetUnratedBlocked(type.value, it) },
+                                enabled = editable,
+                            )
+                        }
                     }
                 }
 
@@ -245,8 +218,13 @@ private fun UserParentalContent(
                     onRemove = onRemoveBlockedTag,
                 )
 
-                if (!state.isAdministrator) {
-                    SettingsGroup(title = stringResource(R.string.section_parental_schedule)) {
+                SettingsGroup(title = stringResource(R.string.section_parental_schedule)) {
+                    if (state.isAdministrator) {
+                        SettingsItem(
+                            title = stringResource(R.string.parental_schedule_admin),
+                            icon = painterResource(id = R.drawable.ic_info),
+                        )
+                    } else {
                         SettingsItem(
                             title = stringResource(R.string.parental_add_schedule),
                             subtitle = stringResource(R.string.parental_schedule_help),
@@ -254,20 +232,20 @@ private fun UserParentalContent(
                             onClick = { showAddSchedule = true },
                             enabled = editable,
                         )
-                        state.schedules.forEach { window ->
-                            SettingsDivider()
-                            RemovableRow(
-                                title = dayLabel(window.day),
-                                subtitle =
-                                    stringResource(
-                                        R.string.parental_schedule_fmt,
-                                        formatHour(window.startHour),
-                                        formatHour(window.endHour),
-                                    ),
-                                enabled = editable,
-                                onRemove = { onRemoveSchedule(window) },
-                            )
-                        }
+                    }
+                    state.schedules.forEach { window ->
+                        SettingsDivider()
+                        RemovableRow(
+                            title = accessDayLabel(window.day),
+                            subtitle =
+                                stringResource(
+                                    R.string.parental_schedule_fmt,
+                                    formatAccessHour(window.startHour),
+                                    formatAccessHour(window.endHour),
+                                ),
+                            enabled = editable,
+                            onRemove = { onRemoveSchedule(window) },
+                        )
                     }
                 }
             }
@@ -400,119 +378,6 @@ private fun AddTagDialog(onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
         shape = RoundedCornerShape(28.dp),
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
     )
-}
-
-@Composable
-private fun AddScheduleDialog(onConfirm: (AccessWindow) -> Unit, onDismiss: () -> Unit) {
-    var day by rememberSaveable { mutableStateOf(SCHEDULE_DAYS.first()) }
-    var startHour by rememberSaveable { mutableDoubleStateOf(DEFAULT_START_HOUR) }
-    var endHour by rememberSaveable { mutableDoubleStateOf(DEFAULT_END_HOUR) }
-    val isValid = startHour < endHour
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                stringResource(R.string.parental_add_schedule),
-                style = MaterialTheme.typography.titleLarge,
-            )
-        },
-        text = {
-            Column {
-                PickerRow(
-                    title = stringResource(R.string.parental_schedule_day),
-                    selected = dayLabel(day),
-                    options = SCHEDULE_DAYS,
-                    optionLabel = { dayLabel(it) },
-                    onSelect = { day = it },
-                )
-                PickerRow(
-                    title = stringResource(R.string.parental_schedule_start),
-                    selected = formatHour(startHour),
-                    options = START_HOURS,
-                    optionLabel = { formatHour(it) },
-                    onSelect = { startHour = it },
-                )
-                PickerRow(
-                    title = stringResource(R.string.parental_schedule_end),
-                    selected = formatHour(endHour),
-                    options = END_HOURS,
-                    optionLabel = { formatHour(it) },
-                    onSelect = { endHour = it },
-                )
-                if (!isValid) {
-                    Text(
-                        text = stringResource(R.string.parental_schedule_invalid),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(start = 16.dp, top = 8.dp),
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onConfirm(AccessWindow(day, startHour, endHour)) },
-                enabled = isValid,
-            ) {
-                Text(stringResource(R.string.action_add))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        },
-        shape = RoundedCornerShape(28.dp),
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-    )
-}
-
-@Composable
-private fun <T> PickerRow(
-    title: String,
-    selected: String,
-    options: List<T>,
-    optionLabel: @Composable (T) -> String,
-    onSelect: (T) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Box {
-        SettingsItem(title = title, subtitle = selected, onClick = { expanded = true })
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
-        ) {
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(optionLabel(option)) },
-                    onClick = {
-                        expanded = false
-                        onSelect(option)
-                    },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun dayLabel(day: String): String =
-    when (day) {
-        "Everyday" -> stringResource(R.string.parental_day_everyday)
-        "Weekday" -> stringResource(R.string.parental_day_weekday)
-        "Weekend" -> stringResource(R.string.parental_day_weekend)
-        else ->
-            runCatching { DayOfWeek.valueOf(day.uppercase()) }
-                .getOrNull()
-                ?.getDisplayName(TextStyle.FULL, Locale.getDefault()) ?: day
-    }
-
-private fun formatHour(hour: Double): String {
-    val wholeHours = hour.toInt()
-    val minutes = if (hour - wholeHours >= HALF_HOUR) MINUTES_PER_HALF_HOUR else 0
-    val time = LocalTime.of(wholeHours % HOURS_PER_DAY, minutes)
-    return time.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
 }
 
 @Composable

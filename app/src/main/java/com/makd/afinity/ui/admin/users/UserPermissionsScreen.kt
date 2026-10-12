@@ -2,7 +2,9 @@ package com.makd.afinity.ui.admin.users
 
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +16,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -38,10 +42,14 @@ import com.makd.afinity.R
 import com.makd.afinity.ui.admin.components.AdminDiscardDialog
 import com.makd.afinity.ui.admin.components.AdminLoadContent
 import com.makd.afinity.ui.admin.components.AdminScaffold
+import com.makd.afinity.ui.admin.components.AdminToggleChip
+import com.makd.afinity.ui.admin.components.AdminToggleChipFlow
 import com.makd.afinity.ui.admin.components.ReportUnsavedChanges
+import com.makd.afinity.ui.admin.components.adminContentBottomPadding
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
+import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
 
 private data class PolicyToggle(
@@ -66,16 +74,25 @@ private val PLAYBACK_TOGGLES =
             R.string.perm_remuxing,
             R.string.perm_remuxing_summary,
         ),
+        PolicyToggle(
+            PolicyKeys.FORCE_REMOTE_TRANSCODING,
+            R.string.perm_force_remote_transcoding,
+            R.string.perm_force_remote_transcoding_summary,
+        ),
+    )
+
+private data class SyncPlayOption(val value: String, @param:StringRes val label: Int)
+
+private val SYNC_PLAY_OPTIONS =
+    listOf(
+        SyncPlayOption("CreateAndJoinGroups", R.string.perm_syncplay_create_and_join),
+        SyncPlayOption("JoinGroups", R.string.perm_syncplay_join),
+        SyncPlayOption("None", R.string.perm_syncplay_none),
     )
 
 private val MEDIA_TOGGLES =
     listOf(
         PolicyToggle(PolicyKeys.ENABLE_DOWNLOADING, R.string.perm_downloads),
-        PolicyToggle(
-            PolicyKeys.ENABLE_DELETION,
-            R.string.perm_deletion,
-            R.string.perm_deletion_summary,
-        ),
         PolicyToggle(PolicyKeys.ENABLE_COLLECTIONS, R.string.perm_collections),
         PolicyToggle(PolicyKeys.ENABLE_SUBTITLES, R.string.perm_subtitles),
     )
@@ -113,8 +130,12 @@ fun UserPermissionsScreen(
         onRetry = viewModel::load,
         onSetFlag = viewModel::setFlag,
         onSetLibraryEnabled = viewModel::setLibraryEnabled,
+        onSetChannelEnabled = viewModel::setChannelEnabled,
+        onSetDeletionLibraryEnabled = viewModel::setDeletionLibraryEnabled,
         onSetDeviceEnabled = viewModel::setDeviceEnabled,
+        onSetSyncPlayAccess = viewModel::setSyncPlayAccess,
         onMaxSessionsChange = viewModel::setMaxSessionsText,
+        onBitrateChange = viewModel::setBitrateText,
         onLockoutChange = viewModel::setLockoutText,
         onSave = viewModel::save,
         modifier = modifier,
@@ -129,8 +150,12 @@ private fun UserPermissionsContent(
     onRetry: () -> Unit,
     onSetFlag: (key: String, enabled: Boolean) -> Unit,
     onSetLibraryEnabled: (libraryId: String, enabled: Boolean) -> Unit,
+    onSetChannelEnabled: (channelId: String, enabled: Boolean) -> Unit,
+    onSetDeletionLibraryEnabled: (libraryId: String, enabled: Boolean) -> Unit,
     onSetDeviceEnabled: (deviceId: String, enabled: Boolean) -> Unit,
+    onSetSyncPlayAccess: (String) -> Unit,
     onMaxSessionsChange: (String) -> Unit,
+    onBitrateChange: (String) -> Unit,
     onLockoutChange: (String) -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
@@ -153,7 +178,7 @@ private fun UserPermissionsContent(
     }
 
     AdminScaffold(
-        title = state.userName.ifEmpty { stringResource(R.string.title_user_permissions) },
+        title = stringResource(R.string.title_user_permissions),
         onBackClick = requestClose,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
@@ -173,7 +198,7 @@ private fun UserPermissionsContent(
                     Modifier.fillMaxSize()
                         .padding(contentPadding)
                         .verticalScroll(rememberScrollState())
-                        .padding(top = 16.dp, bottom = 96.dp),
+                        .padding(top = 16.dp, bottom = adminContentBottomPadding(state.isDirty)),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
                 SettingsGroup(title = stringResource(R.string.section_perm_access)) {
@@ -201,26 +226,89 @@ private fun UserPermissionsContent(
                         onCheckedChange = { onSetFlag(PolicyKeys.ENABLE_ALL_FOLDERS, it) },
                         enabled = editable,
                     )
-                    if (!allLibraries) {
+                    if (!allLibraries && state.libraries.isNotEmpty()) {
                         val enabledFolders = state.enabledFolders
-                        state.libraries.forEach { library ->
+                        SettingsDivider()
+                        AdminToggleChipFlow {
+                            state.libraries.forEach { library ->
+                                AdminToggleChip(
+                                    label = library.name,
+                                    selected = library.id in enabledFolders,
+                                    onSelectedChange = { onSetLibraryEnabled(library.id, it) },
+                                    enabled = editable,
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (state.channels.isNotEmpty()) {
+                    SettingsGroup(title = stringResource(R.string.section_perm_channels)) {
+                        val allChannels = state.flag(PolicyKeys.ENABLE_ALL_CHANNELS)
+                        SettingsSwitchItem(
+                            title = stringResource(R.string.perm_all_channels),
+                            checked = allChannels,
+                            onCheckedChange = { onSetFlag(PolicyKeys.ENABLE_ALL_CHANNELS, it) },
+                            enabled = editable,
+                        )
+                        if (!allChannels) {
+                            val enabledChannels = state.enabledChannels
                             SettingsDivider()
-                            SettingsSwitchItem(
-                                title = library.name,
-                                checked = library.id in enabledFolders,
-                                onCheckedChange = { onSetLibraryEnabled(library.id, it) },
-                                enabled = editable,
-                            )
+                            AdminToggleChipFlow {
+                                state.channels.forEach { channel ->
+                                    AdminToggleChip(
+                                        label = channel.name,
+                                        selected = channel.id in enabledChannels,
+                                        onSelectedChange = { onSetChannelEnabled(channel.id, it) },
+                                        enabled = editable,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
 
                 SettingsGroup(title = stringResource(R.string.section_perm_playback)) {
                     ToggleRows(PLAYBACK_TOGGLES, state, editable, onSetFlag)
+                    SettingsDivider()
+                    SyncPlayRow(
+                        selected = state.syncPlayAccess,
+                        enabled = editable,
+                        onSelect = onSetSyncPlayAccess,
+                    )
                 }
                 SettingsGroup(title = stringResource(R.string.section_perm_media)) {
                     ToggleRows(MEDIA_TOGGLES, state, editable, onSetFlag)
                 }
+
+                SettingsGroup(title = stringResource(R.string.section_perm_deletion)) {
+                    val deleteEverywhere = state.flag(PolicyKeys.ENABLE_DELETION)
+                    SettingsSwitchItem(
+                        title = stringResource(R.string.perm_all_libraries),
+                        subtitle = stringResource(R.string.perm_deletion_summary),
+                        checked = deleteEverywhere,
+                        onCheckedChange = { onSetFlag(PolicyKeys.ENABLE_DELETION, it) },
+                        enabled = editable,
+                    )
+                    val deletionTargets = state.libraries + state.deletableChannels
+                    if (!deleteEverywhere && deletionTargets.isNotEmpty()) {
+                        val deletionFolders = state.deletionFolders
+                        SettingsDivider()
+                        AdminToggleChipFlow {
+                            deletionTargets.forEach { library ->
+                                AdminToggleChip(
+                                    label = library.name,
+                                    selected = library.id in deletionFolders,
+                                    onSelectedChange = {
+                                        onSetDeletionLibraryEnabled(library.id, it)
+                                    },
+                                    enabled = editable,
+                                )
+                            }
+                        }
+                    }
+                }
+
                 SettingsGroup(title = stringResource(R.string.section_perm_live_tv)) {
                     ToggleRows(LIVE_TV_TOGGLES, state, editable, onSetFlag)
                 }
@@ -228,7 +316,14 @@ private fun UserPermissionsContent(
                     ToggleRows(REMOTE_CONTROL_TOGGLES, state, editable, onSetFlag)
                 }
 
-                if (!state.flag(PolicyKeys.IS_ADMINISTRATOR)) {
+                if (state.flag(PolicyKeys.IS_ADMINISTRATOR)) {
+                    SettingsGroup(title = stringResource(R.string.section_perm_devices)) {
+                        SettingsItem(
+                            title = stringResource(R.string.perm_devices_admin),
+                            icon = painterResource(id = R.drawable.ic_info),
+                        )
+                    }
+                } else {
                     SettingsGroup(title = stringResource(R.string.section_perm_devices)) {
                         val allDevices = state.flag(PolicyKeys.ENABLE_ALL_DEVICES)
                         SettingsSwitchItem(
@@ -266,6 +361,18 @@ private fun UserPermissionsContent(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     )
                     AfinityTextField(
+                        value = state.bitrateText,
+                        onValueChange = onBitrateChange,
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                        label = stringResource(R.string.perm_bitrate_label),
+                        enabled = editable,
+                        isError = !state.isBitrateValid,
+                        supportingText = stringResource(R.string.perm_bitrate_hint),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    )
+                    AfinityTextField(
                         value = state.lockoutText,
                         onValueChange = onLockoutChange,
                         modifier =
@@ -278,6 +385,36 @@ private fun UserPermissionsContent(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SyncPlayRow(selected: String?, enabled: Boolean, onSelect: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = SYNC_PLAY_OPTIONS.firstOrNull { it.value == selected }?.label
+
+    Box {
+        SettingsItem(
+            title = stringResource(R.string.perm_syncplay),
+            subtitle = selectedLabel?.let { stringResource(it) } ?: selected,
+            onClick = { expanded = true },
+            enabled = enabled,
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        ) {
+            SYNC_PLAY_OPTIONS.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(option.label)) },
+                    onClick = {
+                        expanded = false
+                        onSelect(option.value)
+                    },
+                )
             }
         }
     }
