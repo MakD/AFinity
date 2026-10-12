@@ -39,6 +39,11 @@ import org.jellyfin.sdk.model.api.SystemInfo
 import org.jellyfin.sdk.model.api.TaskInfo
 import org.jellyfin.sdk.model.api.TaskState
 
+enum class ServerPowerAction {
+    RESTART,
+    SHUTDOWN,
+}
+
 @HiltViewModel
 class ControlPanelViewModel
 @Inject
@@ -70,6 +75,12 @@ constructor(
     private val _commandError = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val commandError: SharedFlow<Unit> = _commandError.asSharedFlow()
 
+    private val _remoteSessionId = MutableStateFlow<String?>(null)
+    val remoteSessionId: StateFlow<String?> = _remoteSessionId.asStateFlow()
+
+    private val _pendingPowerAction = MutableStateFlow<ServerPowerAction?>(null)
+    val pendingPowerAction: StateFlow<ServerPowerAction?> = _pendingPowerAction.asStateFlow()
+
     val scheduledTasks: StateFlow<List<TaskInfo>?> =
         adminRepository.scheduledTasks
             .map { it?.getOrNull() }
@@ -88,7 +99,12 @@ constructor(
     val activeSessions: StateFlow<List<SessionInfoDto>?> =
         adminRepository.sessions
             .map { it?.getOrNull() }
-            .onEach { sessions -> if (sessions != null) reconcilePendingPause(sessions) }
+            .onEach { sessions ->
+                if (sessions != null) {
+                    reconcilePendingPause(sessions)
+                    closeRemoteIfGone(sessions)
+                }
+            }
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS),
@@ -216,6 +232,11 @@ constructor(
         }
     }
 
+    private fun closeRemoteIfGone(sessions: List<SessionInfoDto>) {
+        val openId = _remoteSessionId.value ?: return
+        if (sessions.none { it.id == openId }) _remoteSessionId.value = null
+    }
+
     fun togglePause(session: SessionInfoDto) {
         val sessionId = session.id ?: return
         val target = !(session.playState?.isPaused ?: true)
@@ -304,11 +325,23 @@ constructor(
     }
 
     fun restartServer() {
-        viewModelScope.launch { adminRepository.restartServer() }
+        viewModelScope.launch {
+            if (adminRepository.restartServer().isFailure) _commandError.tryEmit(Unit)
+        }
     }
 
     fun shutdownServer() {
-        viewModelScope.launch { adminRepository.shutdownServer() }
+        viewModelScope.launch {
+            if (adminRepository.shutdownServer().isFailure) _commandError.tryEmit(Unit)
+        }
+    }
+
+    fun showRemote(sessionId: String?) {
+        _remoteSessionId.value = sessionId
+    }
+
+    fun confirmPowerAction(action: ServerPowerAction?) {
+        _pendingPowerAction.value = action
     }
 
     fun refreshAllLibraries() {
@@ -342,7 +375,7 @@ constructor(
                 } else {
                     _commandError.tryEmit(Unit)
                 }
-                adminRepository.refresh()
+                adminRepository.refreshTasks()
             } finally {
                 _pendingTaskCommands.update { it - taskId }
             }

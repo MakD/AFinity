@@ -99,6 +99,7 @@ data class UserPermissionsUiState(
     val bitrateText: String = "",
     val isSelf: Boolean = false,
     val isOnlyAdmin: Boolean = false,
+    val areUserFactsLoaded: Boolean = false,
     val failed: Boolean = false,
     val isSaving: Boolean = false,
 ) {
@@ -106,7 +107,7 @@ data class UserPermissionsUiState(
         get() = changes.isNotEmpty()
 
     val canChangeAdministrator: Boolean
-        get() = !isSelf && !isOnlyAdmin
+        get() = areUserFactsLoaded && !isSelf && !isOnlyAdmin
 
     val isMaxSessionsValid: Boolean
         get() = maxSessionsText.toIntOrNull()?.let { it in 0..MAX_SESSIONS_LIMIT } == true
@@ -179,13 +180,11 @@ constructor(
     fun load() {
         val id = userId ?: return
         _state.update { it.copy(failed = false) }
-        viewModelScope.launch {
-            loadUserFacts(id)
-            loadLibraries()
-            loadChannels()
-            loadDevices()
-            loadPolicy(id)
-        }
+        viewModelScope.launch { loadPolicy(id) }
+        viewModelScope.launch { loadUserFacts(id) }
+        viewModelScope.launch { loadLibraries() }
+        viewModelScope.launch { loadChannels() }
+        viewModelScope.launch { loadDevices() }
     }
 
     fun setFlag(key: String, enabled: Boolean) {
@@ -299,8 +298,9 @@ constructor(
             try {
                 if (adminRepository.updateUserPolicy(id, current.changes).isSuccess) {
                     _state.update { it.copy(changes = emptyMap()) }
-                    loadUserFacts(id)
+                    val facts = launch { loadUserFacts(id) }
                     loadPolicy(id)
+                    facts.join()
                 } else {
                     _commandError.tryEmit(Unit)
                 }
@@ -322,7 +322,8 @@ constructor(
     private suspend fun loadPolicy(id: UUID) {
         adminRepository
             .getUserPolicy(id)
-            .onSuccess { policy ->
+            .onSuccess { user ->
+                val policy = user.policy
                 val sessions =
                     (policy[PolicyKeys.MAX_ACTIVE_SESSIONS] as? JsonPrimitive)?.intOrNull ?: 0
                 val lockout =
@@ -358,6 +359,7 @@ constructor(
                     userName = user.name.orEmpty(),
                     isSelf = id == sessionManager.currentSession.value?.userId,
                     isOnlyAdmin = isAdmin && adminCount == 1,
+                    areUserFactsLoaded = true,
                 )
             }
         }

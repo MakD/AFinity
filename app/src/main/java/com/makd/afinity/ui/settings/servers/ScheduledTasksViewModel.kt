@@ -50,7 +50,7 @@ constructor(private val adminRepository: ServerAdminRepository) : ViewModel() {
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), false)
 
     fun retry() {
-        adminRepository.refresh()
+        adminRepository.refreshTasks()
     }
 
     fun runTask(taskId: String) {
@@ -71,7 +71,7 @@ constructor(private val adminRepository: ServerAdminRepository) : ViewModel() {
                 } else {
                     _commandError.tryEmit(Unit)
                 }
-                adminRepository.refresh()
+                adminRepository.refreshTasks()
             } finally {
                 _pendingTaskCommands.update { it - taskId }
             }

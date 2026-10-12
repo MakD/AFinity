@@ -73,7 +73,7 @@ constructor(
             )
 
     fun retry() {
-        adminRepository.refresh()
+        adminRepository.refreshTasks()
     }
 
     fun run() {
@@ -89,6 +89,10 @@ constructor(
     }
 
     fun replaceTrigger(old: TaskTriggerInfo, new: TaskTriggerInfo) {
+        if (old !in currentTask()?.triggers.orEmpty()) {
+            _commandError.tryEmit(Unit)
+            return
+        }
         updateTriggers { current ->
             val index = current.indexOf(old)
             when {
@@ -118,7 +122,7 @@ constructor(
                 } else {
                     _commandError.tryEmit(Unit)
                 }
-                adminRepository.refresh()
+                adminRepository.refreshTasks()
             } finally {
                 isRunCommandPending.value = false
             }
@@ -136,7 +140,7 @@ constructor(
             try {
                 val saved = adminRepository.updateTaskTriggers(taskId, updated).isSuccess
                 if (!saved) _commandError.tryEmit(Unit)
-                adminRepository.refresh()
+                adminRepository.refreshTasks()
                 if (saved) {
                     withTimeoutOrNull(TRIGGER_CONFIRM_TIMEOUT_MS) {
                         adminRepository.scheduledTasks.first { result ->

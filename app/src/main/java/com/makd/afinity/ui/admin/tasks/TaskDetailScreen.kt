@@ -31,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -52,13 +53,21 @@ import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
+import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.TaskCompletionStatus
 import org.jellyfin.sdk.model.api.TaskInfo
 import org.jellyfin.sdk.model.api.TaskState
 import org.jellyfin.sdk.model.api.TaskTriggerInfo
 
-private const val NEW_SCHEDULE_INDEX = -1
 private const val DISABLED_ALPHA = 0.38f
+
+private val TriggerSaver =
+    Saver<TaskTriggerInfo?, String>(
+        save = { trigger ->
+            trigger?.let { Json.encodeToString(TaskTriggerInfo.serializer(), it) }
+        },
+        restore = { saved -> Json.decodeFromString(TaskTriggerInfo.serializer(), saved) },
+    )
 
 @Composable
 fun TaskDetailScreen(
@@ -101,17 +110,23 @@ private fun TaskDetailContent(
     onRemoveTrigger: (TaskTriggerInfo) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var dialogIndex by rememberSaveable { mutableStateOf<Int?>(null) }
+    var showScheduleDialog by rememberSaveable { mutableStateOf(false) }
+    var editedTrigger by
+        rememberSaveable(stateSaver = TriggerSaver) { mutableStateOf<TaskTriggerInfo?>(null) }
 
-    dialogIndex?.let { index ->
-        val editing = state.task?.triggers.orEmpty().getOrNull(index)
+    if (showScheduleDialog) {
+        val editing = editedTrigger
+        val closeDialog = {
+            showScheduleDialog = false
+            editedTrigger = null
+        }
         TaskScheduleDialog(
             initial = editing,
             onSave = { trigger ->
                 if (editing == null) onAddTrigger(trigger) else onReplaceTrigger(editing, trigger)
-                dialogIndex = null
+                closeDialog()
             },
-            onDismiss = { dialogIndex = null },
+            onDismiss = closeDialog,
         )
     }
 
@@ -155,8 +170,14 @@ private fun TaskDetailContent(
                         ScheduleGroup(
                             triggers = task.triggers.orEmpty(),
                             enabled = !state.isSavingTriggers,
-                            onAdd = { dialogIndex = NEW_SCHEDULE_INDEX },
-                            onEdit = { index -> dialogIndex = index },
+                            onAdd = {
+                                editedTrigger = null
+                                showScheduleDialog = true
+                            },
+                            onEdit = { trigger ->
+                                editedTrigger = trigger
+                                showScheduleDialog = true
+                            },
                             onRemove = onRemoveTrigger,
                         )
                     }
@@ -350,7 +371,7 @@ private fun ScheduleGroup(
     triggers: List<TaskTriggerInfo>,
     enabled: Boolean,
     onAdd: () -> Unit,
-    onEdit: (Int) -> Unit,
+    onEdit: (TaskTriggerInfo) -> Unit,
     onRemove: (TaskTriggerInfo) -> Unit,
 ) {
     val contentAlpha = if (enabled) 1f else DISABLED_ALPHA
@@ -366,7 +387,7 @@ private fun ScheduleGroup(
                 )
                 ScheduleDivider()
             }
-            triggers.forEachIndexed { index, trigger ->
+            triggers.forEach { trigger ->
                 SettingsItem(
                     leading = {
                         TaskTile(iconRes = trigger.type.iconRes(), tone = TaskTone.NEUTRAL)
@@ -379,7 +400,7 @@ private fun ScheduleGroup(
                                 formatDurationTicks(ticks),
                             )
                         },
-                    onClick = { onEdit(index) },
+                    onClick = { onEdit(trigger) },
                     enabled = enabled,
                     trailing = {
                         IconButton(

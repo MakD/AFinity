@@ -44,6 +44,8 @@ class ApiKeysViewModel @Inject constructor(private val adminRepository: ServerAd
     private val _commandError = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val commandError: SharedFlow<Unit> = _commandError.asSharedFlow()
 
+    private var tokensBeforeCreate: Set<String>? = null
+
     init {
         load()
     }
@@ -66,12 +68,8 @@ class ApiKeysViewModel @Inject constructor(private val adminRepository: ServerAd
         runCommand {
             val tokensBefore = _state.value.keys.orEmpty().map { it.token }.toSet()
             val result = adminRepository.createApiKey(appName)
+            if (result.isSuccess) tokensBeforeCreate = tokensBefore
             fetch()
-            if (result.isSuccess) {
-                val created =
-                    _state.value.keys.orEmpty().firstOrNull { it.token !in tokensBefore }?.rowId
-                _state.update { it.copy(createdRowId = created) }
-            }
             result
         }
     }
@@ -121,19 +119,28 @@ class ApiKeysViewModel @Inject constructor(private val adminRepository: ServerAd
                             }
                         }
                         .sortedWith(compareByDescending<AdminApiKeyRow> { it.created })
+                val knownTokens = tokensBeforeCreate
+                tokensBeforeCreate = null
+                val created = knownTokens?.let { known ->
+                    rows.firstOrNull { it.token !in known }?.rowId
+                }
                 _state.update { state ->
                     val rowIds = rows.map { it.rowId }.toSet()
                     state.copy(
                         keys = rows,
                         revealedRowIds = state.revealedRowIds intersect rowIds,
-                        createdRowId = state.createdRowId?.takeIf { it in rowIds },
+                        createdRowId = created ?: state.createdRowId?.takeIf { it in rowIds },
                         failed = false,
                     )
                 }
             }
             .onFailure { e ->
                 if (e !is NoActiveSessionException) Timber.w(e, "Failed to load api keys")
-                _state.update { it.copy(failed = it.keys == null) }
+                val isAwaitingCreatedKey = tokensBeforeCreate != null
+                _state.update {
+                    if (isAwaitingCreatedKey) it.copy(keys = null, failed = true)
+                    else it.copy(failed = it.keys == null)
+                }
             }
     }
 }

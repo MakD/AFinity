@@ -6,11 +6,11 @@ import android.icu.util.MeasureUnit
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.makd.afinity.R
+import com.makd.afinity.ui.admin.components.rememberAdminTimeFormatter
+import com.makd.afinity.util.DateSkeleton
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
 import java.util.Locale
@@ -28,12 +28,14 @@ private const val NANOS_PER_TICK = 100L
 private const val SECONDS_PER_MINUTE = 60L
 private const val SECONDS_PER_HOUR = 60 * SECONDS_PER_MINUTE
 
+@Composable
 internal fun formatTimeOfDay(hour: Int, minute: Int): String =
-    LocalTime.of(hour, minute).format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
+    LocalTime.of(hour, minute).format(rememberAdminTimeFormatter())
 
+@Composable
 internal fun formatTimeOfDayTicks(ticks: Long): String {
     val nanos = ticks.coerceIn(0L, TICKS_PER_DAY - 1) * NANOS_PER_TICK
-    return LocalTime.ofNanoOfDay(nanos).format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
+    return LocalTime.ofNanoOfDay(nanos).format(rememberAdminTimeFormatter())
 }
 
 internal fun formatDurationMinutes(totalMinutes: Long): String =
@@ -95,12 +97,12 @@ internal fun formatRunDuration(start: LocalDateTime, end: LocalDateTime): String
 @Composable
 internal fun formatFinishTime(end: LocalDateTime): String {
     val today = LocalDate.now()
-    val time = end.toLocalTime().format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
+    val time = end.toLocalTime().format(rememberAdminTimeFormatter())
+    val dateAndTime = end.format(rememberAdminTimeFormatter(DateSkeleton.MONTH_DAY_YEAR))
     return when (end.toLocalDate()) {
         today -> stringResource(R.string.task_finished_today_fmt, time)
         today.minusDays(1) -> stringResource(R.string.task_finished_yesterday_fmt, time)
-        else ->
-            end.format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT))
+        else -> dateAndTime
     }
 }
 

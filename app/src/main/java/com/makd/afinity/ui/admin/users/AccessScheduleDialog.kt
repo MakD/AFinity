@@ -28,10 +28,9 @@ import com.makd.afinity.R
 import com.makd.afinity.ui.admin.components.AdminDayToggles
 import com.makd.afinity.ui.admin.components.AdminTimeDialog
 import com.makd.afinity.ui.admin.components.AdminValueTile
+import com.makd.afinity.ui.admin.components.rememberAdminTimeFormatter
 import java.time.DayOfWeek
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -225,6 +224,7 @@ internal fun accessDayLabel(day: String): String =
                 ?.getDisplayName(TextStyle.FULL, Locale.getDefault()) ?: day
     }
 
+@Composable
 internal fun formatAccessHour(hour: Double): String {
     val totalMinutes = (hour * MINUTES_PER_HOUR).roundToInt().coerceIn(0, MINUTES_PER_DAY)
     val time =
@@ -232,5 +232,5 @@ internal fun formatAccessHour(hour: Double): String {
             totalMinutes / MINUTES_PER_HOUR % 24,
             totalMinutes % MINUTES_PER_HOUR,
         )
-    return time.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
+    return time.format(rememberAdminTimeFormatter())
 }

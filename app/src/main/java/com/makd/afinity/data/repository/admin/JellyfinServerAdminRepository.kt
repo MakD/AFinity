@@ -13,6 +13,7 @@ import com.makd.afinity.data.models.admin.ActivityToday
 import com.makd.afinity.data.models.admin.LibraryOptionsDocument
 import com.makd.afinity.data.models.admin.ServerConfigSource
 import com.makd.afinity.data.models.admin.ServerFolder
+import com.makd.afinity.data.models.admin.UserPolicyDocument
 import com.makd.afinity.data.paging.ActivityLogPagingSource
 import com.makd.afinity.data.paging.toActivityEntry
 import com.makd.afinity.data.repository.JellyfinApiInvoker
@@ -183,6 +184,8 @@ constructor(
 ) : ServerAdminRepository {
 
     private val refreshRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    private val taskRefreshRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    private val pluginRefreshRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
     private val _isCreatingBackup = MutableStateFlow(false)
     override val isCreatingBackup: StateFlow<Boolean> = _isCreatingBackup.asStateFlow()
@@ -213,7 +216,7 @@ constructor(
 
     override val systemInfo: StateFlow<Result<SystemInfo>?> =
         shared(
-            triggers = merge(webSocketManager.restartRequired, reconnects),
+            triggers = merge(webSocketManager.restartRequired, reconnects, pluginRefreshRequests),
             pollWhile = { false },
         ) { api ->
             SystemApi(api).getSystemInfo().content
@@ -221,7 +224,7 @@ constructor(
 
     override val plugins: StateFlow<Result<List<PluginInfo>>?> =
         shared(
-            triggers = merge(webSocketManager.restartRequired, reconnects),
+            triggers = merge(webSocketManager.restartRequired, reconnects, pluginRefreshRequests),
             pollWhile = { false },
         ) { api ->
             PluginApi(api).getPlugins().content
@@ -245,6 +248,7 @@ constructor(
     override val scheduledTasks: StateFlow<Result<List<TaskInfo>>?> =
         shared(
             pushes = webSocketManager.liveTasks,
+            triggers = taskRefreshRequests,
             pollWhile = { tasks -> tasks.any { it.state != TaskState.IDLE } },
         ) { api ->
             ScheduledTaskApi(api).getTasks(isHidden = false).content
@@ -252,6 +256,14 @@ constructor(
 
     override fun refresh() {
         refreshRequests.tryEmit(Unit)
+    }
+
+    override fun refreshTasks() {
+        taskRefreshRequests.tryEmit(Unit)
+    }
+
+    override fun refreshPlugins() {
+        pluginRefreshRequests.tryEmit(Unit)
     }
 
     override suspend fun getUsers(): Result<List<UserDto>> =
@@ -340,9 +352,13 @@ constructor(
             .onSuccess { tag -> sessionManager.updateCurrentUserImageTag(id, tag) }
     }
 
-    override suspend fun getUserPolicy(id: UUID): Result<JsonObject> =
+    override suspend fun getUserPolicy(id: UUID): Result<UserPolicyDocument> =
         apiInvoker.apiResult { api, _ ->
-            readUserPolicy(api, id)
+            val user = getJson(api, USER_PATH, mapOf(USER_ID to id))
+            UserPolicyDocument(
+                userName = (user[USER_NAME_KEY] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+                policy = user.policyOf(id),
+            )
         }
 
     override suspend fun updateUserPolicy(
@@ -351,11 +367,12 @@ constructor(
     ): Result<Unit> =
         execute("update policy of user $id") { api, _ -> patchUserPolicy(api, id, changes) }
 
-    private suspend fun readUserPolicy(api: ApiClient, id: UUID): JsonObject {
-        val user = getJson(api, USER_PATH, mapOf(USER_ID to id))
-        return user[USER_POLICY_KEY] as? JsonObject
+    private suspend fun readUserPolicy(api: ApiClient, id: UUID): JsonObject =
+        getJson(api, USER_PATH, mapOf(USER_ID to id)).policyOf(id)
+
+    private fun JsonObject.policyOf(id: UUID): JsonObject =
+        this[USER_POLICY_KEY] as? JsonObject
             ?: throw IOException("User $id has no policy in the server's answer")
-    }
 
     private suspend fun patchUserPolicy(
         api: ApiClient,

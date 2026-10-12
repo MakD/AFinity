@@ -3,11 +3,13 @@ package com.makd.afinity.ui.admin.users
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.models.admin.UserPolicyDocument
 import com.makd.afinity.data.repository.NoActiveSessionException
 import com.makd.afinity.data.repository.admin.ServerAdminRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -135,9 +137,10 @@ constructor(
         val id = userId ?: return
         _state.update { it.copy(failed = false) }
         viewModelScope.launch {
-            loadUserFacts(id)
-            loadRatings()
-            loadPolicy(id)
+            val ratings = launch { loadRatings() }
+            val user = async { adminRepository.getUserPolicy(id) }
+            ratings.join()
+            applyPolicy(user.await())
         }
     }
 
@@ -253,26 +256,28 @@ constructor(
     }
 
     private suspend fun loadPolicy(id: UUID) {
-        adminRepository
-            .getUserPolicy(id)
-            .onSuccess { policy ->
+        applyPolicy(adminRepository.getUserPolicy(id))
+    }
+
+    private fun applyPolicy(result: Result<UserPolicyDocument>) {
+        result
+            .onSuccess { user ->
+                val policy = user.policy
                 val isAdministrator =
                     (policy[PolicyKeys.IS_ADMINISTRATOR] as? JsonPrimitive)?.contentOrNull == "true"
                 _state.update {
-                    it.copy(policy = policy, isAdministrator = isAdministrator, failed = false)
+                    it.copy(
+                        userName = user.userName,
+                        policy = policy,
+                        isAdministrator = isAdministrator,
+                        failed = false,
+                    )
                 }
             }
             .onFailure { e ->
                 if (e !is NoActiveSessionException) Timber.w(e, "Failed to load user policy")
                 _state.update { it.copy(failed = it.policy == null) }
             }
-    }
-
-    private suspend fun loadUserFacts(id: UUID) {
-        adminRepository.getUsers().onSuccess { users ->
-            val user = users.firstOrNull { it.id == id } ?: return@onSuccess
-            _state.update { it.copy(userName = user.name.orEmpty()) }
-        }
     }
 
     private suspend fun loadRatings() {

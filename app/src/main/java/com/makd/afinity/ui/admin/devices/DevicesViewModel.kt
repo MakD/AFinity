@@ -11,6 +11,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDateTime
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -55,7 +56,9 @@ constructor(
     val commandError: SharedFlow<Unit> = _commandError.asSharedFlow()
 
     private var allGroups: List<AdminDeviceGroup>? = null
+    private var devices: List<DeviceInfoDto>? = null
     private var userImageUrls: Map<UUID, String> = emptyMap()
+    private var areUserImagesLoaded = false
 
     init {
         load()
@@ -133,17 +136,25 @@ constructor(
     }
 
     private suspend fun fetch() {
-        adminRepository
-            .getDevices()
-            .onSuccess { devices ->
-                loadUserImages()
-                allGroups = buildDeviceGroups(devices.toRecords(), userImageUrls)
-                publish()
-            }
-            .onFailure { e ->
-                if (e !is NoActiveSessionException) Timber.w(e, "Failed to load devices")
-                _state.update { it.copy(failed = it.groups == null) }
-            }
+        coroutineScope {
+            if (!areUserImagesLoaded) launch { loadUserImages() }
+            adminRepository
+                .getDevices()
+                .onSuccess { found ->
+                    devices = found
+                    rebuildGroups()
+                }
+                .onFailure { e ->
+                    if (e !is NoActiveSessionException) Timber.w(e, "Failed to load devices")
+                    _state.update { it.copy(failed = it.groups == null) }
+                }
+        }
+    }
+
+    private fun rebuildGroups() {
+        val current = devices ?: return
+        allGroups = buildDeviceGroups(current.toRecords(), userImageUrls)
+        publish()
     }
 
     private suspend fun loadUserImages() {
@@ -162,6 +173,8 @@ constructor(
                             )
                     }
                     .toMap()
+            areUserImagesLoaded = true
+            rebuildGroups()
         }
     }
 

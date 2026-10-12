@@ -108,7 +108,7 @@ constructor(
         viewModelScope.launch {
             try {
                 if (adminRepository.scanAllLibraries().isSuccess) {
-                    adminRepository.refresh()
+                    adminRepository.refreshTasks()
                     followScan()
                 } else {
                     _messages.tryEmit(LibrariesMessage.COMMAND_FAILED)

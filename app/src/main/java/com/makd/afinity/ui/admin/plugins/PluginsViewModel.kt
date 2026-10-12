@@ -226,7 +226,7 @@ constructor(
     }
 
     fun retry() {
-        adminRepository.refresh()
+        adminRepository.refreshPlugins()
         loadCatalog(forceRefresh = true)
     }
 
@@ -261,7 +261,7 @@ constructor(
                         repositoryUrl = plugin.repositoryUrl,
                     )
                 if (result.isFailure) _commandError.tryEmit(Unit)
-                adminRepository.refresh()
+                adminRepository.refreshPlugins()
             } finally {
                 activity.update { it.copy(installingId = null) }
             }

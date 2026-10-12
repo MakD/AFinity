@@ -2,6 +2,7 @@ package com.makd.afinity.ui.admin.config
 
 import com.makd.afinity.data.repository.NoActiveSessionException
 import java.math.BigDecimal
+import java.math.RoundingMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -148,11 +149,16 @@ private fun ConfigField.parse(text: String): JsonElement? =
                 ?.takeIf { it in min..max }
                 ?.let { JsonPrimitive(it * storedPerShown) }
         is DecimalField -> {
-            val shown = text.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it in min..max }
+            val shown =
+                text.trim().replace(',', '.').toBigDecimalOrNull()?.takeIf {
+                    it.toDouble() in min..max
+                }
+            val stored = shown?.multiply(BigDecimal.valueOf(storedPerShown))
             when {
-                shown == null -> null
-                storedAsWholeNumber -> JsonPrimitive((shown * storedPerShown).toLong())
-                else -> JsonPrimitive(shown * storedPerShown)
+                stored == null -> null
+                storedAsWholeNumber ->
+                    JsonPrimitive(stored.setScale(0, RoundingMode.HALF_UP).toLong())
+                else -> JsonPrimitive(stored.toDouble())
             }
         }
         is TextInputField -> {

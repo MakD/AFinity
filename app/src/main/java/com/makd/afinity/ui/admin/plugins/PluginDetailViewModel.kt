@@ -131,7 +131,7 @@ constructor(
     }
 
     fun retry() {
-        adminRepository.refresh()
+        adminRepository.refreshPlugins()
         loadCatalog(forceRefresh = true)
         loadSettingsPages()
     }
@@ -167,7 +167,7 @@ constructor(
                         repositoryUrl = plugin.repositoryUrl,
                     )
                 if (result.isFailure) _commandError.tryEmit(Unit)
-                adminRepository.refresh()
+                adminRepository.refreshPlugins()
             } finally {
                 activity.update { it.copy(isInstalling = false) }
             }
@@ -185,7 +185,7 @@ constructor(
                 } else {
                     _commandError.tryEmit(Unit)
                 }
-                adminRepository.refresh()
+                adminRepository.refreshPlugins()
             } finally {
                 activity.update { it.copy(isBusy = false) }
             }

@@ -7,6 +7,7 @@ import com.makd.afinity.data.models.admin.ActivityToday
 import com.makd.afinity.data.models.admin.LibraryOptionsDocument
 import com.makd.afinity.data.models.admin.ServerConfigSource
 import com.makd.afinity.data.models.admin.ServerFolder
+import com.makd.afinity.data.models.admin.UserPolicyDocument
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
@@ -54,6 +55,10 @@ interface ServerAdminRepository {
 
     fun refresh()
 
+    fun refreshTasks()
+
+    fun refreshPlugins()
+
     suspend fun getServerConfig(source: ServerConfigSource): Result<JsonObject>
 
     suspend fun updateServerConfig(
@@ -89,7 +94,7 @@ interface ServerAdminRepository {
 
     suspend fun deleteUserImage(id: UUID): Result<Unit>
 
-    suspend fun getUserPolicy(id: UUID): Result<JsonObject>
+    suspend fun getUserPolicy(id: UUID): Result<UserPolicyDocument>
 
     suspend fun updateUserPolicy(id: UUID, changes: Map<String, JsonElement>): Result<Unit>
 

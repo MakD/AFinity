@@ -37,7 +37,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -373,9 +372,8 @@ private fun ControlPanelOverview(
     val failedSignIns by viewModel.failedSignIns.collectAsStateWithLifecycle()
     val fullDisks by viewModel.fullDisks.collectAsStateWithLifecycle()
 
-    var showRestartConfirm by remember { mutableStateOf(false) }
-    var showShutdownConfirm by remember { mutableStateOf(false) }
-    var remoteSessionId by remember { mutableStateOf<String?>(null) }
+    val remoteSessionId by viewModel.remoteSessionId.collectAsStateWithLifecycle()
+    val pendingPowerAction by viewModel.pendingPowerAction.collectAsStateWithLifecycle()
 
     val remoteSession = sessions?.firstOrNull { it.id != null && it.id == remoteSessionId }
 
@@ -385,7 +383,7 @@ private fun ControlPanelOverview(
             baseUrl = viewModel.baseUrl,
             isOwnSession = remoteSession.userId == viewModel.currentUserId,
             pendingPause = remoteSession.id?.let { pendingPause[it] },
-            onDismiss = { remoteSessionId = null },
+            onDismiss = { viewModel.showRemote(null) },
             onTogglePause = { viewModel.togglePause(remoteSession) },
             onSeekBy = { viewModel.seekBy(remoteSession, it) },
             onSeekTo = { ticks -> remoteSession.id?.let { viewModel.seekTo(it, ticks) } },
@@ -402,9 +400,9 @@ private fun ControlPanelOverview(
         )
     }
 
-    if (showRestartConfirm) {
+    if (pendingPowerAction == ServerPowerAction.RESTART) {
         AlertDialog(
-            onDismissRequest = { showRestartConfirm = false },
+            onDismissRequest = { viewModel.confirmPowerAction(null) },
             icon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_restart),
@@ -429,7 +427,7 @@ private fun ControlPanelOverview(
                 Button(
                     onClick = {
                         viewModel.restartServer()
-                        showRestartConfirm = false
+                        viewModel.confirmPowerAction(null)
                     },
                     colors =
                         ButtonDefaults.buttonColors(
@@ -441,7 +439,7 @@ private fun ControlPanelOverview(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showRestartConfirm = false }) {
+                TextButton(onClick = { viewModel.confirmPowerAction(null) }) {
                     Text(stringResource(R.string.action_cancel))
                 }
             },
@@ -450,9 +448,9 @@ private fun ControlPanelOverview(
         )
     }
 
-    if (showShutdownConfirm) {
+    if (pendingPowerAction == ServerPowerAction.SHUTDOWN) {
         AlertDialog(
-            onDismissRequest = { showShutdownConfirm = false },
+            onDismissRequest = { viewModel.confirmPowerAction(null) },
             icon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_power),
@@ -477,7 +475,7 @@ private fun ControlPanelOverview(
                 Button(
                     onClick = {
                         viewModel.shutdownServer()
-                        showShutdownConfirm = false
+                        viewModel.confirmPowerAction(null)
                     },
                     colors =
                         ButtonDefaults.buttonColors(
@@ -489,7 +487,7 @@ private fun ControlPanelOverview(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showShutdownConfirm = false }) {
+                TextButton(onClick = { viewModel.confirmPowerAction(null) }) {
                     Text(stringResource(R.string.action_cancel))
                 }
             },
@@ -519,7 +517,7 @@ private fun ControlPanelOverview(
                 fullDisks = fullDisks,
                 pluginProblems = pluginProblems,
                 failedTasks = failedTasks,
-                onRestart = { showRestartConfirm = true },
+                onRestart = { viewModel.confirmPowerAction(ServerPowerAction.RESTART) },
                 onOpenSignIns = { onOpenActivity(ActivityFilter.FAILED_SIGN_INS) },
                 onOpenPlugins = onOpenPlugins,
                 onOpenTask = onOpenTask,
@@ -533,7 +531,7 @@ private fun ControlPanelOverview(
                 loading = sessions == null,
                 pendingPause = pendingPause,
                 onTogglePause = viewModel::togglePause,
-                onOpenRemote = { remoteSessionId = it.id },
+                onOpenRemote = { viewModel.showRemote(it.id) },
             )
         }
 
@@ -552,14 +550,14 @@ private fun ControlPanelOverview(
             QuickActionButton(
                 label = stringResource(R.string.action_restart),
                 icon = painterResource(R.drawable.ic_restart),
-                onClick = { showRestartConfirm = true },
+                onClick = { viewModel.confirmPowerAction(ServerPowerAction.RESTART) },
                 isDangerous = true,
                 modifier = Modifier.weight(1f),
             )
             QuickActionButton(
                 label = stringResource(R.string.action_shutdown),
                 icon = painterResource(R.drawable.ic_power),
-                onClick = { showShutdownConfirm = true },
+                onClick = { viewModel.confirmPowerAction(ServerPowerAction.SHUTDOWN) },
                 isDangerous = true,
                 modifier = Modifier.weight(1f),
             )

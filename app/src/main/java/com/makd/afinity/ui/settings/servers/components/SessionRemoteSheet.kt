@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,7 +18,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.AfinitySlider
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.settings.servers.utils.formatTicks
@@ -247,7 +248,7 @@ fun SessionRemoteSheet(
                             .toFloat()
                             .coerceIn(0f, 1f)
 
-                Slider(
+                AfinitySlider(
                     value = fraction,
                     onValueChange = {
                         scrubbing = true
@@ -258,7 +259,7 @@ fun SessionRemoteSheet(
                         onSeekTo((scrubValue * runtimeTicks).toLong())
                     },
                     enabled = canSeek,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().height(24.dp),
                 )
 
                 Row(
@@ -364,12 +365,12 @@ fun SessionRemoteSheet(
                         }
                     }
                     if (canSetVolume) {
-                        Slider(
+                        AfinitySlider(
                             value = localVolume,
                             onValueChange = { localVolume = it },
                             onValueChangeFinished = { onSetVolume(localVolume.toInt()) },
                             valueRange = 0f..100f,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).height(24.dp),
                         )
                     }
                 }

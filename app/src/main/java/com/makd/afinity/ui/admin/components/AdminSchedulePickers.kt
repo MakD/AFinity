@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.admin.components
 
+import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,17 +22,30 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.util.DateSkeleton
+import com.makd.afinity.util.localizedDateFormatter
 import java.time.DayOfWeek
+import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.time.temporal.WeekFields
 import java.util.Locale
 
 private const val MINUTES_PER_HOUR = 60
+
+@Composable
+fun rememberAdminTimeFormatter(dateSkeleton: String = ""): DateTimeFormatter {
+    val is24Hour = DateFormat.is24HourFormat(LocalContext.current)
+    val locale = Locale.getDefault()
+    return remember(dateSkeleton, is24Hour, locale) {
+        localizedDateFormatter(locale, DateSkeleton.withTime(dateSkeleton, is24Hour))
+    }
+}
 
 @Composable
 fun AdminDayToggles(
