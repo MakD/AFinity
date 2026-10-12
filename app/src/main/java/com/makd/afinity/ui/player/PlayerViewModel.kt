@@ -2081,14 +2081,12 @@ constructor(
         return VideoQuality.fromBitrate(bitrate)
     }
 
-    private fun applyZoomMode(mode: VideoZoomMode, saveAsCurrent: Boolean = true) {
+    private fun applyZoomMode(mode: VideoZoomMode) {
         if (player is MPVPlayer) {
             applyMPVZoomMode(mode)
         }
 
-        if (saveAsCurrent) {
-            currentZoomMode = mode
-        }
+        currentZoomMode = mode
         updateUiState { it.copy(videoZoomMode = mode) }
     }
 
@@ -3326,7 +3324,6 @@ constructor(
                     )
 
                 updateUiState { it.copy(isPlayingIntro = true) }
-                applyZoomMode(VideoZoomMode.ZOOM, saveAsCurrent = false)
 
                 Timber.d("Intro found ${firstItem.name}")
                 suppressNextControlShow = true
@@ -3560,7 +3557,6 @@ constructor(
                 it.copy(isPlayingIntro = false, showControls = false, showPlayButton = false)
             }
             controlsHideJob?.cancel()
-            applyZoomMode(currentZoomMode, saveAsCurrent = true)
 
             Timber.d("Intro finished, restoring settings: ${fullItem.name}")
             handlePlayerEvent(
