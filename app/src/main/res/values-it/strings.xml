@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="splash_status_authenticating">Autenticazione...</string>
+    <string name="splash_status_authenticating">Autenticazione in corso…</string>
     <string name="loading_phase_offline">Pronto (Offline Mode)</string>
-    <string name="loading_phase_connecting">Connessione al server...</string>
+    <string name="loading_phase_connecting">Connessione al server…</string>
     <string name="loading_phase_fetching">Ricerca contenuti...</string>
     <string name="loading_phase_processing">Processo librerie...</string>
     <string name="loading_phase_finalizing">Completamento pagina iniziale...</string>
@@ -469,4 +469,29 @@
     <string name="custom_sections_yours_caption">Le tue righe, visualizzate sopra quelle generate. Trascina per riordinare, tocca per modificare.</string>
     <string name="custom_sections_discovery_caption">Righe create a partire dalla tua libreria. Cambiano ogni volta che apri l\'app.</string>
     <string name="custom_sections_group_discovery">Scoperta</string>
+    <string name="cd_go_online">Disattiva la modalità offline</string>
+    <string name="connection_go_online">Vai online</string>
+    <string name="custom_sections_group_yours">Le tue righe</string>
+    <string name="custom_sections_field_density">Densità</string>
+    <string name="custom_sections_advanced">Avanzato</string>
+    <string name="custom_sections_advanced_summary">Quante righe di ciascun tipo costruire. Imposta un tipo su 0 per disattivarlo.</string>
+    <string name="discovery_density_off">Spento</string>
+    <string name="discovery_density_light">Leggero</string>
+    <string name="discovery_density_balanced">Equilibrato</string>
+    <string name="discovery_density_full">Pieno</string>
+    <string name="discovery_density_custom">Costume</string>
+    <string name="discovery_count_label">File</string>
+    <string name="discovery_count_range_fmt">Da 0 a %1$d</string>
+    <string name="discovery_off">Spento</string>
+    <string name="discovery_section_genres">Generi</string>
+    <string name="discovery_section_spotlights">Riflettori</string>
+    <string name="discovery_section_directed_by">Diretto da</string>
+    <string name="discovery_section_written_by">Scritto da</string>
+    <string name="discovery_section_because_watched">Perché hai guardato</string>
+    <string name="discovery_section_because_liked">Perché ti è piaciuto</string>
+    <string name="discovery_section_actor_from">Con, tratto da un film visto</string>
+    <string name="discovery_section_director_from">Regia di, tratto da un film visto</string>
+    <string name="discovery_section_writer_from">Scritto da, tratto da un film visto</string>
+    <string name="home_row_popular_studios">Studi popolari</string>
+    <string name="home_row_hero_carousel">Carosello in evidenza</string>
 </resources>
