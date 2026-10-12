@@ -1,8 +1,6 @@
 package com.makd.afinity.ui.admin.keys
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -17,8 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,6 +39,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.SecureFlagPolicy
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
@@ -59,6 +57,11 @@ import kotlinx.coroutines.launch
 
 private const val MASKED_KEY_PREFIX = "•••• •••• •••• "
 private const val VISIBLE_KEY_SUFFIX_LENGTH = 4
+private const val KEY_GROUP_LENGTH = 4
+private const val DISABLED_ALPHA = 0.38f
+
+private val ROW_ACTION_SIZE = 40.dp
+private val ROW_ACTION_ICON_SIZE = 22.dp
 
 @Composable
 fun ApiKeysScreen(
@@ -91,6 +94,7 @@ fun ApiKeysScreen(
             }
         },
         onCreate = viewModel::create,
+        onDismissCreated = viewModel::dismissCreated,
         onRevoke = viewModel::revoke,
         modifier = modifier,
     )
@@ -105,13 +109,26 @@ private fun ApiKeysContent(
     onToggleRevealed: (rowId: String) -> Unit,
     onCopy: (token: String) -> Unit,
     onCreate: (appName: String) -> Unit,
+    onDismissCreated: () -> Unit,
     onRevoke: (rowId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showCreate by rememberSaveable { mutableStateOf(false) }
     var revokeTarget by rememberSaveable { mutableStateOf<String?>(null) }
+    val createdKey = state.keys?.firstOrNull { it.rowId == state.createdRowId }
 
-    SecureWindowEffect(enabled = state.revealedRowIds.isNotEmpty())
+    SecureWindowEffect(enabled = state.revealedRowIds.isNotEmpty() || createdKey != null)
+
+    if (createdKey != null) {
+        KeyCreatedDialog(
+            key = createdKey,
+            onCopy = {
+                onCopy(createdKey.token)
+                onDismissCreated()
+            },
+            onDismiss = onDismissCreated,
+        )
+    }
 
     if (showCreate) {
         CreateKeyDialog(
@@ -242,7 +259,8 @@ private fun ApiKeyRow(
         }
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, bottom = 12.dp),
+        modifier =
+            Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, end = 8.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
@@ -273,7 +291,7 @@ private fun ApiKeyRow(
                 modifier = Modifier.padding(top = 2.dp),
             )
         }
-        IconButton(onClick = onToggleRevealed) {
+        IconButton(onClick = onToggleRevealed, modifier = Modifier.size(ROW_ACTION_SIZE)) {
             Icon(
                 painter =
                     painterResource(
@@ -284,46 +302,79 @@ private fun ApiKeyRow(
                     if (revealed) stringResource(R.string.cd_api_key_hide)
                     else stringResource(R.string.cd_api_key_show),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(ROW_ACTION_ICON_SIZE),
             )
         }
-        ApiKeyMenu(enabled = actionsEnabled, onCopy = onCopy, onRevoke = onRevoke)
+        IconButton(onClick = onCopy, modifier = Modifier.size(ROW_ACTION_SIZE)) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_copy),
+                contentDescription = stringResource(R.string.api_key_copy),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(ROW_ACTION_ICON_SIZE),
+            )
+        }
+        IconButton(
+            onClick = onRevoke,
+            enabled = actionsEnabled,
+            modifier = Modifier.size(ROW_ACTION_SIZE),
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_delete),
+                contentDescription = stringResource(R.string.api_key_revoke),
+                tint =
+                    MaterialTheme.colorScheme.error.copy(
+                        alpha = if (actionsEnabled) 1f else DISABLED_ALPHA
+                    ),
+                modifier = Modifier.size(ROW_ACTION_ICON_SIZE),
+            )
+        }
     }
 }
 
 @Composable
-private fun ApiKeyMenu(enabled: Boolean, onCopy: () -> Unit, onRevoke: () -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Box {
-        IconButton(onClick = { expanded = true }) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_dots_vertical),
-                contentDescription = stringResource(R.string.cd_api_key_actions),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+private fun KeyCreatedDialog(key: AdminApiKeyRow, onCopy: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(R.string.api_key_created_title),
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             )
-        }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
-        ) {
-            DropdownMenuItem(
-                text = { Text(text = stringResource(R.string.api_key_copy)) },
-                onClick = {
-                    expanded = false
-                    onCopy()
-                },
-            )
-            DropdownMenuItem(
-                text = { Text(text = stringResource(R.string.api_key_revoke)) },
-                onClick = {
-                    expanded = false
-                    onRevoke()
-                },
-                enabled = enabled,
-            )
-        }
-    }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text(
+                    text = stringResource(R.string.api_key_created_message, key.appName),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = key.token.chunked(KEY_GROUP_LENGTH).joinToString(" "),
+                        style =
+                            MaterialTheme.typography.bodyMedium.copy(
+                                fontFamily = FontFamily.Monospace
+                            ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onCopy) { Text(stringResource(R.string.action_copy)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_done)) }
+        },
+        properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn),
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+    )
 }
 
 @Composable

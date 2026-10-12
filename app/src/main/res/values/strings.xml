@@ -2265,7 +2265,10 @@
     <string name="api_key_revoke_message">%1$s will lose access to the server at once. This cannot be undone.</string>
     <string name="cd_api_key_show">Show key</string>
     <string name="cd_api_key_hide">Hide key</string>
-    <string name="cd_api_key_actions">Key actions</string>
+    <string name="api_key_created_title">Key created</string>
+    <string name="api_key_created_message">Paste it into %1$s. You can come back for it later; the server keeps it readable.</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_done">Done</string>
     <string name="action_refresh_libraries">Refresh Libraries</string>
     <string name="active_sessions_title">Active Sessions</string>
     <string name="active_sessions_count_fmt">Active Sessions (%1$d)</string>

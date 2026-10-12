@@ -29,6 +29,7 @@ data class AdminApiKeyRow(
 data class ApiKeysUiState(
     val keys: List<AdminApiKeyRow>? = null,
     val revealedRowIds: Set<String> = emptySet(),
+    val createdRowId: String? = null,
     val failed: Boolean = false,
     val isBusy: Boolean = false,
 )
@@ -68,14 +69,15 @@ class ApiKeysViewModel @Inject constructor(private val adminRepository: ServerAd
             fetch()
             if (result.isSuccess) {
                 val created =
-                    _state.value.keys
-                        .orEmpty()
-                        .filter { it.token !in tokensBefore }
-                        .map { it.rowId }
-                _state.update { it.copy(revealedRowIds = it.revealedRowIds + created) }
+                    _state.value.keys.orEmpty().firstOrNull { it.token !in tokensBefore }?.rowId
+                _state.update { it.copy(createdRowId = created) }
             }
             result
         }
+    }
+
+    fun dismissCreated() {
+        _state.update { it.copy(createdRowId = null) }
     }
 
     fun revoke(rowId: String) {
@@ -124,6 +126,7 @@ class ApiKeysViewModel @Inject constructor(private val adminRepository: ServerAd
                     state.copy(
                         keys = rows,
                         revealedRowIds = state.revealedRowIds intersect rowIds,
+                        createdRowId = state.createdRowId?.takeIf { it in rowIds },
                         failed = false,
                     )
                 }
