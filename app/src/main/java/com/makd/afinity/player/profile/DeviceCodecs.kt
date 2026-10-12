@@ -175,7 +175,7 @@ object DeviceCodecs {
             audioCodecs = audio,
             videoProfiles = profiles.mapValues { orderedProfiles(it.key, it.value) },
             videoLevels = levels,
-            videoRanges = videoRanges(dolbyVisionProfiles),
+            videoRanges = videoRanges(dolbyVisionProfiles, profiles["hevc"].orEmpty()),
         )
     }
 
@@ -186,7 +186,10 @@ object DeviceCodecs {
             .toSet()
     }
 
-    private fun videoRanges(dolbyVisionProfiles: Set<Int>): Set<VideoRangeType> {
+    private fun videoRanges(
+        dolbyVisionProfiles: Set<Int>,
+        hevcProfiles: Set<String>,
+    ): Set<VideoRangeType> {
         val ranges =
             mutableSetOf(
                 VideoRangeType.SDR,
@@ -198,6 +201,9 @@ object DeviceCodecs {
                 VideoRangeType.DOVI_WITH_HDR10_PLUS,
                 VideoRangeType.DOVI_WITH_HLG,
             )
+        if ("Main 10 HDR 10" in hevcProfiles) {
+            ranges.add(VideoRangeType.DOVI_INVALID)
+        }
         if (dolbyVisionProfiles.isNotEmpty()) {
             ranges.add(VideoRangeType.DOVI_WITH_EL)
             ranges.add(VideoRangeType.DOVI_WITH_ELHDR10_PLUS)
