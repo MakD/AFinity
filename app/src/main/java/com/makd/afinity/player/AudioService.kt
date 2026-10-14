@@ -65,6 +65,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import kotlin.math.pow
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -677,7 +678,7 @@ class AudioService : MediaSessionService() {
                     }
                     ActiveEngine.NONE -> break
                 }
-                delay(1_000L)
+                delay(1.seconds)
             }
         }
     }

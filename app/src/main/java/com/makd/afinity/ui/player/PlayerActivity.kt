@@ -27,7 +27,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.core.view.WindowCompat
@@ -60,6 +62,8 @@ class PlayerActivity : AppCompatActivity() {
     @Inject lateinit var preferencesRepository: PreferencesRepository
 
     private var wasPip: Boolean = false
+
+    private var playbackRequest by mutableStateOf<PlaybackRequest?>(null)
 
     private val audioManager by lazy { getSystemService(AudioManager::class.java) }
 
@@ -159,27 +163,13 @@ class PlayerActivity : AppCompatActivity() {
 
         window.colorMode = ActivityInfo.COLOR_MODE_HDR
 
-        val itemId =
-            intent.getStringExtra("itemId")?.let { UUID.fromString(it) }
+        playbackRequest =
+            intent.toPlaybackRequest()
                 ?: run {
                     Timber.e("PlayerActivity: No itemId provided")
                     finish()
                     return
                 }
-        val mediaSourceId = intent.getStringExtra("mediaSourceId") ?: ""
-        val audioStreamIndex = intent.getIntExtra("audioStreamIndex", -1).takeIf { it != -1 }
-        val subtitleStreamIndex = intent.getIntExtra("subtitleStreamIndex", -1).takeIf { it != -1 }
-        val startPositionMs = intent.getLongExtra("startPositionMs", 0L)
-        val seasonId = intent.getStringExtra("seasonId")?.let { UUID.fromString(it) }
-        val shuffle = intent.getBooleanExtra("shuffle", false)
-        val playlistId = intent.getStringExtra("playlistId")?.let { UUID.fromString(it) }
-        val isLiveChannel = intent.getBooleanExtra("isLiveChannel", false)
-        val channelName = intent.getStringExtra("channelName")
-        val liveStreamUrl = intent.getStringExtra("liveStreamUrl")
-
-        Timber.d(
-            "PlayerActivity: Starting playback for item $itemId, seasonId=$seasonId, shuffle=$shuffle, isLive=$isLiveChannel"
-        )
 
         setContent {
             val themeModeFlow = remember { preferencesRepository.getThemeModeFlow() }
@@ -216,27 +206,45 @@ class PlayerActivity : AppCompatActivity() {
                     LocalShowRatings provides showRatings,
                     LocalShowAwards provides showAwards,
                 ) {
-                    PlayerScreenWrapper(
-                        itemId = itemId,
-                        mediaSourceId = mediaSourceId,
-                        audioStreamIndex = audioStreamIndex,
-                        subtitleStreamIndex = subtitleStreamIndex,
-                        startPositionMs = startPositionMs,
-                        seasonId = seasonId,
-                        shuffle = shuffle,
-                        playlistId = playlistId,
-                        isLiveChannel = isLiveChannel,
-                        channelName = channelName,
-                        liveStreamUrl = liveStreamUrl,
-                        onBackPressed = { finish() },
-                        modifier =
-                            Modifier.fillMaxSize()
-                                .onFocusChanged { playerUiHasFocus = it.hasFocus }
-                                .focusGroup(),
-                    )
+                    playbackRequest?.let { request ->
+                        PlayerScreenWrapper(
+                            itemId = request.itemId,
+                            mediaSourceId = request.mediaSourceId,
+                            audioStreamIndex = request.audioStreamIndex,
+                            subtitleStreamIndex = request.subtitleStreamIndex,
+                            startPositionMs = request.startPositionMs,
+                            seasonId = request.seasonId,
+                            shuffle = request.shuffle,
+                            playlistId = request.playlistId,
+                            isLiveChannel = request.isLiveChannel,
+                            channelName = request.channelName,
+                            liveStreamUrl = request.liveStreamUrl,
+                            onBackPressed = { finish() },
+                            modifier =
+                                Modifier.fillMaxSize()
+                                    .onFocusChanged { playerUiHasFocus = it.hasFocus }
+                                    .focusGroup(),
+                        )
+                    }
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        val request = intent.toPlaybackRequest() ?: return
+        val current = playbackRequest
+        if (
+            current != null &&
+                current.itemId == request.itemId &&
+                current.mediaSourceId == request.mediaSourceId
+        ) {
+            return
+        }
+        setIntent(intent)
+        viewModel.onNewPlaybackRequest()
+        playbackRequest = request
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
@@ -391,7 +399,10 @@ class PlayerActivity : AppCompatActivity() {
                 } else null
             // '<' and '>' sit on different physical keys across layouts (e.g. QWERTZ).
             else ->
-                when (if (state.isSpeedingUp) null else event.unicodeChar.toChar()) {
+                when (
+                    if (state.isSpeedingUp || state.isLiveChannel) null
+                    else event.unicodeChar.toChar()
+                ) {
                     '>' -> {
                         { changePlaybackSpeed(0.25f) }
                     }
@@ -618,4 +629,40 @@ class PlayerActivity : AppCompatActivity() {
 
         return actions
     }
+}
+
+private data class PlaybackRequest(
+    val itemId: UUID,
+    val mediaSourceId: String,
+    val audioStreamIndex: Int?,
+    val subtitleStreamIndex: Int?,
+    val startPositionMs: Long,
+    val seasonId: UUID?,
+    val shuffle: Boolean,
+    val playlistId: UUID?,
+    val isLiveChannel: Boolean,
+    val channelName: String?,
+    val liveStreamUrl: String?,
+)
+
+private fun Intent.toPlaybackRequest(): PlaybackRequest? {
+    val itemId = getStringExtra("itemId")?.let { UUID.fromString(it) } ?: return null
+    val request =
+        PlaybackRequest(
+            itemId = itemId,
+            mediaSourceId = getStringExtra("mediaSourceId") ?: "",
+            audioStreamIndex = getIntExtra("audioStreamIndex", -1).takeIf { it != -1 },
+            subtitleStreamIndex = getIntExtra("subtitleStreamIndex", -1).takeIf { it != -1 },
+            startPositionMs = getLongExtra("startPositionMs", 0L),
+            seasonId = getStringExtra("seasonId")?.let { UUID.fromString(it) },
+            shuffle = getBooleanExtra("shuffle", false),
+            playlistId = getStringExtra("playlistId")?.let { UUID.fromString(it) },
+            isLiveChannel = getBooleanExtra("isLiveChannel", false),
+            channelName = getStringExtra("channelName"),
+            liveStreamUrl = getStringExtra("liveStreamUrl"),
+        )
+    Timber.d(
+        "PlayerActivity: Starting playback for item $itemId, seasonId=${request.seasonId}, shuffle=${request.shuffle}, isLive=${request.isLiveChannel}"
+    )
+    return request
 }

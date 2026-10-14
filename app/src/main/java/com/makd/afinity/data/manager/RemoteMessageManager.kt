@@ -4,6 +4,7 @@ import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import com.makd.afinity.di.ApplicationScope
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -58,7 +59,7 @@ constructor(
         _message.value = message
         hideJob?.cancel()
         hideJob = scope.launch {
-            delay(timeoutMs.coerceIn(MIN_TIMEOUT_MS, MAX_TIMEOUT_MS))
+            delay(timeoutMs.coerceIn(MIN_TIMEOUT_MS, MAX_TIMEOUT_MS).milliseconds)
             _message.value = null
         }
     }

@@ -5,6 +5,7 @@ import com.makd.afinity.di.ApplicationScope
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -92,7 +93,7 @@ constructor(
             activeSocket = null
             if (!started) return
             scope.launch {
-                delay(3_000L)
+                delay(3.seconds)
                 if (!started) return@launch
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@launch
                 val baseUrl = apiClient.baseUrl ?: return@launch

@@ -55,6 +55,7 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
@@ -483,7 +484,10 @@ constructor(
                                                     if (totalBytes > 0) {
                                                         launch {
                                                             while (isActive) {
-                                                                delay(PROGRESS_UPDATE_INTERVAL_MS)
+                                                                delay(
+                                                                    PROGRESS_UPDATE_INTERVAL_MS
+                                                                        .milliseconds
+                                                                )
                                                                 val bytes = downloadedBytes.get()
                                                                 val shownTotal =
                                                                     if (estimatedTotal != null) {

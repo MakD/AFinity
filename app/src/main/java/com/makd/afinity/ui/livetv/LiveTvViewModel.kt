@@ -15,6 +15,7 @@ import java.time.temporal.ChronoUnit
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -58,7 +59,9 @@ constructor(
     init {
         checkLiveTvAccess()
         viewModelScope.launch {
-            tabSwitchTrigger.debounce(200L).collect { tab -> refreshCurrentTabData(tab) }
+            tabSwitchTrigger.debounce(200.milliseconds).collect { tab ->
+                refreshCurrentTabData(tab)
+            }
         }
     }
 
@@ -338,7 +341,7 @@ constructor(
         refreshJob?.cancel()
         refreshJob = viewModelScope.launch {
             while (isActive && isScreenVisible) {
-                delay(REFRESH_INTERVAL_MS)
+                delay(REFRESH_INTERVAL_MS.milliseconds)
                 refreshCurrentTabData(_uiState.value.selectedTab, force = true)
             }
         }

@@ -13,6 +13,8 @@ import com.makd.afinity.util.ItemIds
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -222,7 +224,7 @@ constructor(
                 Timber.e(e, "$name subscription failed ($consecutiveFailures) - resubscribing")
             }
             if (consecutiveFailures > SUBSCRIPTION_IMMEDIATE_RETRIES) {
-                delay(SUBSCRIPTION_RETRY_DELAY_MS)
+                delay(SUBSCRIPTION_RETRY_DELAY_MS.milliseconds)
             }
         }
     }
@@ -427,7 +429,7 @@ constructor(
         _connectionState.value = WebSocketState.SERVER_RESTARTING
         reconnectJob?.cancel()
         reconnectJob = scope.launch {
-            delay(20_000L)
+            delay(20.seconds)
             Timber.d("Server restart grace elapsed — restarting socket")
             restartEpoch.update { it + 1 }
         }

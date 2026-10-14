@@ -19,6 +19,7 @@ import com.makd.afinity.data.repository.jellyseerr.JellyseerrLoginException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -170,7 +171,7 @@ constructor(
         }
 
         probeJob = viewModelScope.launch {
-            delay(PROBE_DEBOUNCE_MS)
+            delay(PROBE_DEBOUNCE_MS.milliseconds)
             for (url in UrlCandidates.jellyseerr(trimmed)) {
                 val settings = jellyseerrRepository.verifyServer(url) ?: continue
                 _uiState.update { it.copy(publicSettings = settings) }

@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executor
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -184,7 +185,7 @@ constructor(
                 }
 
             launch {
-                delay(timeoutMs)
+                delay(timeoutMs.milliseconds)
                 closeDiagnosed()
             }
 

@@ -23,6 +23,7 @@ import com.makd.afinity.data.websocket.WebSocketState
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.di.DownloadClient
 import com.makd.afinity.util.forUser
+import com.makd.afinity.util.redactSecrets
 import java.io.File
 import java.io.IOException
 import java.time.LocalDate
@@ -32,6 +33,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -141,6 +143,23 @@ private const val PLAYBACK_TYPE = "Playback"
 private const val PLAYBACK_STOPPED_MARKER = "Stopped"
 private const val TODAY_ACTIVITY_SAMPLE = 500
 private const val LOG_COPY_BUFFER_BYTES = 64 * 1024
+private const val FFMPEG_LOG_PREFIX = "FFmpeg."
+private const val FAILURE_LOG_MAX_BYTES = 256 * 1024L
+private const val FAILURE_REASON_MAX_CHARS = 200
+private val FFMPEG_ERROR_LINE =
+    Regex("(?i)error|failed|invalid|denied|refused|not found|unable|forbidden")
+private val FFMPEG_CONTEXT_PREFIX = Regex("^\\[[^\\]]+\\]\\s*")
+private val FFMPEG_GENERIC_LINES = setOf("Conversion failed!")
+
+internal fun ffmpegFailureLine(log: String): String? =
+    log.lineSequence()
+        .map { it.trim() }
+        .filter {
+            it.isNotEmpty() && it !in FFMPEG_GENERIC_LINES && FFMPEG_ERROR_LINE.containsMatchIn(it)
+        }
+        .lastOrNull()
+        ?.replace(FFMPEG_CONTEXT_PREFIX, "")
+        ?.take(FAILURE_REASON_MAX_CHARS)
 private const val CATALOG_TTL_MS = 10 * 60 * 1000L
 private const val BACKUP_TIMEOUT_MINUTES = 30L
 private const val CONFIG_PATH_SEPARATOR = '.'
@@ -590,6 +609,49 @@ constructor(
             }
         }
 
+    override suspend fun getTranscodeFailureReason(
+        mediaSourceId: String,
+        since: LocalDateTime,
+    ): String? {
+        val key = "_${mediaSourceId.replace("-", "").lowercase()}_"
+        val log =
+            getLogFiles()
+                .getOrNull()
+                ?.filter {
+                    it.name.startsWith(FFMPEG_LOG_PREFIX) &&
+                        key in it.name.lowercase() &&
+                        it.dateModified >= since &&
+                        it.size <= FAILURE_LOG_MAX_BYTES
+                }
+                ?.maxByOrNull { it.dateModified } ?: return null
+        val text = readLogText(log.name) ?: return null
+        return ffmpegFailureLine(text)?.let(::redactSecrets)
+    }
+
+    private suspend fun readLogText(name: String): String? =
+        withContext(Dispatchers.IO) {
+            val apiClient = sessionManager.getCurrentApiClient()
+            val baseUrl = apiClient?.baseUrl ?: return@withContext null
+            try {
+                val request =
+                    Request.Builder()
+                        .url("$baseUrl/System/Logs/Log?name=${Uri.encode(name)}")
+                        .header(
+                            "Authorization",
+                            "MediaBrowser Token=\"${apiClient.accessToken ?: ""}\"",
+                        )
+                        .build()
+                downloadClient.newCall(request).execute().use { response ->
+                    if (response.isSuccessful) response.body.string() else null
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to read server log $name")
+                null
+            }
+        }
+
     override fun findOwnDeviceId(devices: List<DeviceInfoDto>): String? {
         val session = sessionManager.currentSession.value ?: return null
         val knownIds =
@@ -1018,7 +1080,7 @@ constructor(
 
         load()
         while (isActive) {
-            delay(POLL_INTERVAL_MS)
+            delay(POLL_INTERVAL_MS.milliseconds)
             val current = latest.get()
             if (current == null || pollWhile(current)) load()
         }

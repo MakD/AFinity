@@ -20,6 +20,7 @@ import com.makd.afinity.util.logging.RingBufferTree
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -58,7 +59,7 @@ constructor(
             val source = tree ?: return@launch
             source.updates
                 .onStart { emit(Unit) }
-                .debounce(REFRESH_DEBOUNCE_MS)
+                .debounce(REFRESH_DEBOUNCE_MS.milliseconds)
                 .collect { rebuild() }
         }
         viewModelScope.launch { loadCrashes() }

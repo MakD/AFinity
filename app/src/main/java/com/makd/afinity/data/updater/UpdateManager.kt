@@ -21,6 +21,8 @@ import java.io.File
 import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -242,7 +244,7 @@ constructor(
                         DownloadManager.STATUS_SUCCESSFUL -> {
                             Timber.d("Download successful, stopping progress tracking")
                             cursor.close()
-                            delay(1000)
+                            delay(1.seconds)
                             if (_updateState.value is UpdateState.Downloading) {
                                 Timber.w(
                                     "Broadcast receiver didn't fire, handling completion manually"
@@ -266,7 +268,7 @@ constructor(
                     return@launch
                 }
                 cursor.close()
-                delay(500)
+                delay(500.milliseconds)
             }
         }
     }
@@ -395,7 +397,7 @@ constructor(
 
             val elapsed = System.currentTimeMillis() - startTime
             if (elapsed < MIN_VERIFY_DURATION_MS) {
-                delay(MIN_VERIFY_DURATION_MS - elapsed)
+                delay((MIN_VERIFY_DURATION_MS - elapsed).milliseconds)
             }
 
             val verification =

@@ -121,6 +121,7 @@ import com.makd.afinity.ui.player.toLocalizedLanguageName
 import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.PersonKind
@@ -420,7 +421,7 @@ fun PlayerControls(
         var showPauseDetails by remember { mutableStateOf(false) }
         LaunchedEffect(pauseDetailsEligible, uiState.pauseScreenDelaySeconds) {
             if (pauseDetailsEligible) {
-                delay(uiState.pauseScreenDelaySeconds * 1000L)
+                delay(uiState.pauseScreenDelaySeconds.seconds)
                 showPauseDetails = true
             } else {
                 showPauseDetails = false
@@ -1334,12 +1335,14 @@ private fun BottomControls(
                             showLabel = false,
                             onClick = onTrackPanelToggle,
                         )
-                        LabeledControl(
-                            painter = painterResource(id = R.drawable.ic_speed),
-                            label = stringResource(R.string.cd_speed),
-                            showLabel = false,
-                            onClick = onSpeedToggle,
-                        )
+                        if (!uiState.isLiveChannel) {
+                            LabeledControl(
+                                painter = painterResource(id = R.drawable.ic_speed),
+                                label = stringResource(R.string.cd_speed),
+                                showLabel = false,
+                                onClick = onSpeedToggle,
+                            )
+                        }
                         val sleepTimerArmed = uiState.isSleepTimerArmed
                         LabeledControl(
                             painter =

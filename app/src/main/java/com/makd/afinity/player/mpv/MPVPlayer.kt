@@ -198,7 +198,12 @@ class MPVPlayer(
 
         mpv = MPVLib.create(context) ?: throw IllegalStateException("MPVLib.create() returned null")
 
-        Timber.d("MPVPlayer init: vo=$videoOutput, ao=$audioOutput, hwdec=$hwDec")
+        val useVulkan = gpuApi == "vulkan"
+        val effectiveHwDec = if (useVulkan && hwDec == "mediacodec") "mediacodec-copy" else hwDec
+
+        Timber.d(
+            "MPVPlayer init: vo=$videoOutput, ao=$audioOutput, hwdec=$effectiveHwDec, gpu-api=$gpuApi"
+        )
 
         mpv.setOptionString("config", "yes")
         mpv.setOptionString("config-dir", configDir.path)
@@ -210,18 +215,19 @@ class MPVPlayer(
         mpv.setOptionString("vo", videoOutput)
         mpv.setOptionString("ao", audioOutput)
         mpv.setOptionString("gpu-api", gpuApi)
-        mpv.setOptionString("gpu-context", "android")
-        if (gpuApi == "opengl") mpv.setOptionString("opengl-es", "yes")
+        mpv.setOptionString("gpu-context", if (useVulkan) "androidvk" else "android")
+        if (!useVulkan) mpv.setOptionString("opengl-es", "yes")
         mpv.setOptionString("vid", "no")
 
         mpv.setOptionString("target-colorspace-hint", if (hdrPassthrough) "yes" else "no")
         if (toneMapping != "auto") mpv.setOptionString("tone-mapping", toneMapping)
         mpv.setOptionString("hdr-compute-peak", if (hdrPeakDetection) "auto" else "no")
 
-        mpv.setOptionString("hwdec", hwDec)
+        mpv.setOptionString("hwdec", effectiveHwDec)
         mpv.setOptionString("hwdec-codecs", "h264,hevc,mpeg4,mpeg2video,vp8,vp9,av1")
 
         mpv.setOptionString("tls-verify", "no")
+        mpv.setOptionString("stop-playback-on-init-failure", "yes")
 
         mpv.setOptionString("cache", "auto")
         mpv.setOptionString("demuxer-max-bytes", "${bufferSizeMb}MiB")
@@ -392,6 +398,7 @@ class MPVPlayer(
     private val videoListeners = CopyOnWriteArraySet<Player.Listener>()
 
     @Volatile private var isReleased = false
+    private var lastEndFileError = MPVLib.MpvError.MPV_ERROR_SUCCESS
 
     private var internalMediaItems = mutableListOf<MediaItem>()
 
@@ -572,6 +579,15 @@ class MPVPlayer(
         }
     }
 
+    override fun endFile(reason: Int, error: Int) {
+        Timber.d("MPV end-file: reason=$reason, error=$error")
+        handler.post {
+            lastEndFileError =
+                if (reason == MPVLib.MpvEndFileReason.MPV_END_FILE_REASON_ERROR) error
+                else MPVLib.MpvError.MPV_ERROR_SUCCESS
+        }
+    }
+
     override fun event(eventId: Int) {
         handler.post {
             if (isReleased) return@post
@@ -586,6 +602,7 @@ class MPVPlayer(
 
                 MPVLib.MpvEvent.MPV_EVENT_END_FILE -> {
                     reportLoadFailureIfNeeded()
+                    reportOutputFailureIfNeeded()
                 }
 
                 MPVLib.MpvEvent.MPV_EVENT_SEEK -> {
@@ -617,13 +634,33 @@ class MPVPlayer(
         val playlistPosition = mpv.getPropertyInt("playlist-current-pos") ?: return
         if (playlistCount <= 0 || playlistPosition >= 0) return
 
-        Timber.e("MPV could not load ${currentMediaItem?.mediaId}")
-        val error =
-            PlaybackException(
-                "MPV failed to load media",
-                null,
-                PlaybackException.ERROR_CODE_IO_UNSPECIFIED,
-            )
+        Timber.e("MPV could not load ${currentMediaItem?.mediaId} (mpv error $lastEndFileError)")
+        val errorCode =
+            outputFailureErrorCode(lastEndFileError)
+                ?: if (lastEndFileError == MPVLib.MpvError.MPV_ERROR_NOTHING_TO_PLAY) {
+                    PlaybackException.ERROR_CODE_DECODING_FAILED
+                } else {
+                    PlaybackException.ERROR_CODE_IO_UNSPECIFIED
+                }
+        reportPlayerError("MPV failed to load media", errorCode)
+    }
+
+    private fun reportOutputFailureIfNeeded() {
+        if (!isPlayerReady) return
+        val errorCode = outputFailureErrorCode(lastEndFileError) ?: return
+        Timber.e("MPV output failed during playback (mpv error $lastEndFileError)")
+        reportPlayerError("MPV output failed", errorCode)
+    }
+
+    private fun outputFailureErrorCode(mpvError: Int): Int? =
+        when (mpvError) {
+            MPVLib.MpvError.MPV_ERROR_VO_INIT_FAILED -> ERROR_CODE_VIDEO_OUTPUT_FAILED
+            MPVLib.MpvError.MPV_ERROR_AO_INIT_FAILED -> ERROR_CODE_AUDIO_OUTPUT_FAILED
+            else -> null
+        }
+
+    private fun reportPlayerError(message: String, errorCode: Int) {
+        val error = PlaybackException(message, null, errorCode)
         playerError = error
         setPlayerStateAndNotifyIfChanged(playbackState = STATE_IDLE)
         listeners.sendEvent(EVENT_PLAYER_ERROR) { listener -> listener.onPlayerError(error) }
@@ -1199,6 +1236,8 @@ class MPVPlayer(
     }
 
     companion object {
+        const val ERROR_CODE_VIDEO_OUTPUT_FAILED = PlaybackException.CUSTOM_ERROR_CODE_BASE + 1
+        const val ERROR_CODE_AUDIO_OUTPUT_FAILED = PlaybackException.CUSTOM_ERROR_CODE_BASE + 2
         private const val AUDIO_FOCUS_DUCKING = 0.5f
         private const val GESTURE_KEYCODE_CENTER = 0x10002
         private const val GESTURE_KEYCODE_LONG_PRESS = 0x10004

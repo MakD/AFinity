@@ -53,6 +53,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -147,7 +148,8 @@ constructor(
         observeSelectedEpisodeDownload()
 
         viewModelScope.launch {
-            searchQueryFlow.debounce(300).distinctUntilChanged().collectLatest { query ->
+            searchQueryFlow.debounce(300.milliseconds).distinctUntilChanged().collectLatest { query
+                ->
                 if (query.length >= 2) {
                     runSearchForCurrentFilter()
                 }

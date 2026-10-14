@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.sign
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -110,7 +111,7 @@ fun GestureHandler(
                         onPress = { offset ->
                             wasLongPress = false
                             val job = coroutineScope.launch {
-                                delay(500)
+                                delay(500.milliseconds)
                                 if (!isDragging && gestureType == null) {
                                     isLongPressActive = true
                                     wasLongPress = true

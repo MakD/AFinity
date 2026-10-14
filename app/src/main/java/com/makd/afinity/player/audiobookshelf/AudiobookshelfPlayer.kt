@@ -38,6 +38,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -627,7 +629,7 @@ constructor(
         playbackManager.setSleepTimer(endTime)
 
         sleepTimerJob = scope.launch {
-            delay(durationMinutes * 60 * 1000L)
+            delay(durationMinutes.minutes)
             pause()
             playbackManager.setSleepTimer(null)
             Timber.d("Sleep timer triggered")
@@ -665,7 +667,10 @@ constructor(
 
                 val speed = current.playbackSpeed.coerceAtLeast(0.1f)
                 val remainingMs = (remainingSeconds / speed * 1000).toLong()
-                delay(if (current.isPlaying) remainingMs.coerceAtMost(1_000L) else 1_000L)
+                delay(
+                    (if (current.isPlaying) remainingMs.coerceAtMost(1_000L) else 1_000L)
+                        .milliseconds
+                )
             }
             pause()
             playbackManager.setSleepTimerTarget(null, null)

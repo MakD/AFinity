@@ -80,7 +80,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.player.AssRenderMode
 import com.makd.afinity.data.models.player.MpvAudioOutput
+import com.makd.afinity.data.models.player.MpvGpuApi
+import com.makd.afinity.data.models.player.MpvHdrOutput
 import com.makd.afinity.data.models.player.MpvHwDec
+import com.makd.afinity.data.models.player.MpvToneMapping
 import com.makd.afinity.data.models.player.MpvVideoOutput
 import com.makd.afinity.data.models.player.MusicQuality
 import com.makd.afinity.data.models.player.SkipMode
@@ -345,8 +348,6 @@ fun PlayerOptionsScreen(
                                             stringResource(R.string.pref_edit_input_conf_summary),
                                         onClick = { editingConfigFile = "input.conf" },
                                     )
-                                    // Temporarily hidden; backend prefs retained.
-                                    /*
                                     SettingsDivider()
                                     SubtitleDropdownItem(
                                         title = stringResource(R.string.pref_mpv_gpu_api_title),
@@ -368,7 +369,8 @@ fun PlayerOptionsScreen(
                                     )
                                     SettingsDivider()
                                     SubtitleDropdownItem(
-                                        title = stringResource(R.string.pref_mpv_tone_mapping_title),
+                                        title =
+                                            stringResource(R.string.pref_mpv_tone_mapping_title),
                                         selectedOption = uiState.mpvToneMapping,
                                         options = MpvToneMapping.entries.toList(),
                                         onValueChange = viewModel::setMpvToneMapping,
@@ -385,7 +387,6 @@ fun PlayerOptionsScreen(
                                         checked = uiState.mpvHdrPeakDetection,
                                         onCheckedChange = viewModel::setMpvHdrPeakDetection,
                                     )
-                                    */
                                 }
                             }
                         }

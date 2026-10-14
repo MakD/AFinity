@@ -11,6 +11,7 @@ import java.net.InetAddress
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -74,7 +75,7 @@ constructor(
             return runCatching { listOf(InetAddresses.parseNumericAddress(host)) }.getOrNull()
         }
         return withContext(Dispatchers.IO) {
-            withTimeoutOrNull(RESOLVE_TIMEOUT_MS) {
+            withTimeoutOrNull(RESOLVE_TIMEOUT_MS.milliseconds) {
                 runCatching { network.getAllByName(host).toList() }
                     .onFailure { Timber.d("Locality: could not resolve $host (${it.message})") }
                     .getOrNull()

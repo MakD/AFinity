@@ -6,6 +6,7 @@ import java.time.ZoneOffset
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -57,7 +58,7 @@ constructor(
         reSyncJob?.cancel()
         reSyncJob = scope.launch {
             while (isActive) {
-                delay(RESYNC_INTERVAL_MS)
+                delay(RESYNC_INTERVAL_MS.milliseconds)
                 if (isActive) performSync()
             }
         }

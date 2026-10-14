@@ -12,6 +12,7 @@ import com.makd.afinity.util.forUser
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -364,7 +365,7 @@ constructor(
 
             try {
                 val completed =
-                    withTimeoutOrNull(TOKEN_REVOKE_TIMEOUT_MS) {
+                    withTimeoutOrNull(TOKEN_REVOKE_TIMEOUT_MS.milliseconds) {
                         sessionManager.getDetachedApiClient(serverId, userId)?.let { client ->
                             SessionApi(client).reportSessionEnded()
                         }

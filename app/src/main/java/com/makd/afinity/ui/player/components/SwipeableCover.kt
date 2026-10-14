@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.abs
 import kotlin.math.sign
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -149,7 +150,7 @@ fun <T> SwipeableCover(
                                 }
                                 state.floatValue = target
                                 action()
-                                delay(SLIDE_SETTLE_TIMEOUT_MS)
+                                delay(SLIDE_SETTLE_TIMEOUT_MS.milliseconds)
                                 animate(
                                     initialValue = state.floatValue,
                                     targetValue = 0f,

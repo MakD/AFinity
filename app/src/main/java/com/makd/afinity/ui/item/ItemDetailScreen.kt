@@ -147,6 +147,7 @@ import com.makd.afinity.ui.utils.rememberTopBarOpacity
 import com.makd.afinity.ui.utils.verticalLayoutOffset
 import com.makd.afinity.util.rememberPreferencesRepository
 import java.util.UUID
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.MediaType
@@ -403,7 +404,7 @@ fun ItemDetailScreen(
 
         LaunchedEffect(selectedEpisode, pendingNavigationSeriesId) {
             if (selectedEpisode == null && pendingNavigationSeriesId != null) {
-                kotlinx.coroutines.delay(300)
+                kotlinx.coroutines.delay(300.milliseconds)
                 val route =
                     Destination.createItemDetailRoute(
                         itemId = pendingNavigationSeriesId!!,
@@ -416,7 +417,7 @@ fun ItemDetailScreen(
 
         LaunchedEffect(selectedEpisode, pendingNavigationPersonId) {
             if (selectedEpisode == null && pendingNavigationPersonId != null) {
-                kotlinx.coroutines.delay(300)
+                kotlinx.coroutines.delay(300.milliseconds)
                 navController.navigate(Destination.createPersonRoute(pendingNavigationPersonId!!))
                 pendingNavigationPersonId = null
             }

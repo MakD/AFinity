@@ -18,6 +18,7 @@ import io.socket.engineio.client.transports.WebSocket
 import java.net.URI
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -141,7 +142,7 @@ constructor(
     private fun restartIdleTimer() {
         idleJob?.cancel()
         idleJob = scope.launch {
-            delay(IDLE_TIMEOUT_MS)
+            delay(IDLE_TIMEOUT_MS.milliseconds)
             val state = playbackManager.playbackState.value
             val playing = state.sessionId != null && state.isPlaying
             if (!playing) {

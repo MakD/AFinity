@@ -71,6 +71,7 @@ import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.navigation.LocalSkipServerImageResize
 import com.makd.afinity.ui.utils.bottomOverlap
 import java.util.Locale
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import timber.log.Timber
 
@@ -212,7 +213,7 @@ private fun HeroCarouselAutoScrollAndPrefetch(
                 }
             }
 
-            delay(5000)
+            delay(5.seconds)
 
             try {
                 pagerState.animateScrollToPage(

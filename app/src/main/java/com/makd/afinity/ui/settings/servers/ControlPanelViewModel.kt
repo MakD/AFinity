@@ -12,6 +12,7 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Provider
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -371,7 +372,7 @@ constructor(
         viewModelScope.launch {
             try {
                 if (block().isSuccess) {
-                    delay(TASK_REFRESH_DELAY_MS)
+                    delay(TASK_REFRESH_DELAY_MS.milliseconds)
                 } else {
                     _commandError.tryEmit(Unit)
                 }

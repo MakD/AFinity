@@ -11,6 +11,7 @@ import com.makd.afinity.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -239,7 +240,7 @@ constructor(
         val endMs = System.currentTimeMillis() + durationMs
         _state.update { it.copy(sleepTimerEndMs = endMs) }
         sleepTimerJob = scope.launch {
-            delay(durationMs)
+            delay(durationMs.milliseconds)
             exoPlayer?.pause()
             _state.update { it.copy(sleepTimerEndMs = null) }
         }

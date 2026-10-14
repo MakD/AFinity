@@ -37,6 +37,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -112,7 +113,7 @@ constructor(
                 if (_showPlaybackStats.value) {
                     _playbackStats.value = gatherPlaybackStats()
                 }
-                delay(1000L)
+                delay(1.seconds)
             }
         }
     }

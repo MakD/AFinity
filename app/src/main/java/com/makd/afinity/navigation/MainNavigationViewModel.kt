@@ -24,6 +24,7 @@ import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.player.music.MusicPlaybackManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -267,7 +268,7 @@ constructor(
                     Timber.e(e, "Failed to load app data on attempt $currentAttempt")
 
                     if (currentAttempt < maxRetries) {
-                        kotlinx.coroutines.delay(1000L * currentAttempt)
+                        kotlinx.coroutines.delay(currentAttempt.seconds)
                     }
                 }
             }

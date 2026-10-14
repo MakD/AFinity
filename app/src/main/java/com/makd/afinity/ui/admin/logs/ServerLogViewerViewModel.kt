@@ -18,6 +18,7 @@ import java.io.IOException
 import java.util.BitSet
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
@@ -204,7 +205,7 @@ constructor(
         val current = document ?: return
         viewJob?.cancel()
         viewJob = viewModelScope.launch {
-            if (debounce) delay(SEARCH_DEBOUNCE_MS)
+            if (debounce) delay(SEARCH_DEBOUNCE_MS.milliseconds)
             val snapshot = _state.value
             val query = snapshot.query.trim()
             val view =

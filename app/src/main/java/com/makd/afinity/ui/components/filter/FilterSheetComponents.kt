@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.isLandscapeWindow
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -170,7 +171,7 @@ fun <T> SearchableChipMultiSelect(
         if (editing) {
             focusRequester.requestFocus()
             keyboardController?.show()
-            delay(150)
+            delay(150.milliseconds)
             bringIntoViewRequester.bringIntoView()
         }
     }
@@ -257,7 +258,7 @@ fun <T> SearchableChipMultiSelect(
                                     if (state.isFocused) {
                                         expanded = true
                                         coroutineScope.launch {
-                                            delay(150)
+                                            delay(150.milliseconds)
                                             bringIntoViewRequester.bringIntoView()
                                         }
                                     } else {

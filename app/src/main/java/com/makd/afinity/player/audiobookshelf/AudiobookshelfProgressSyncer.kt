@@ -10,6 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -70,7 +71,7 @@ constructor(
         syncJob = scope.launch {
             while (true) {
                 val interval = getSyncInterval()
-                delay(interval)
+                delay(interval.milliseconds)
 
                 syncProgress()
             }

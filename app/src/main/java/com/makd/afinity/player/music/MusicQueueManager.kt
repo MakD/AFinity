@@ -34,6 +34,7 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -441,7 +442,7 @@ constructor(
 
     private fun emitLoadEvent(tracks: List<AfinityTrack>, startIndex: Int, startPositionMs: Long) {
         scope.launch {
-            withTimeoutOrNull(DOWNLOADS_READY_TIMEOUT_MS) {
+            withTimeoutOrNull(DOWNLOADS_READY_TIMEOUT_MS.milliseconds) {
                 downloadedTrackPaths.filterNotNull().first()
             }
             tracks.getOrNull(startIndex)?.let { ensureResolved(it) }

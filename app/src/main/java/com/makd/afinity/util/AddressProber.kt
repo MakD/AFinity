@@ -1,5 +1,6 @@
 package com.makd.afinity.util
 
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -32,7 +33,7 @@ private suspend fun resolveLocalities(
     logTag: String,
 ): Map<String, Locality>? {
     val resolved =
-        withTimeoutOrNull(LOCALITY_BUDGET_MS) {
+        withTimeoutOrNull(LOCALITY_BUDGET_MS.milliseconds) {
             coroutineScope {
                 addresses
                     .map { address -> async { address to networkLocality.resolve(address) } }
@@ -143,7 +144,7 @@ suspend fun probeAddresses(
         while (received < orderedAddresses.size) {
             val result =
                 if (fallbackWinner != null) {
-                    withTimeoutOrNull(graceDeadline - System.currentTimeMillis()) {
+                    withTimeoutOrNull((graceDeadline - System.currentTimeMillis()).milliseconds) {
                         results.receive()
                     }
                 } else {

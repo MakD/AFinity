@@ -21,6 +21,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -562,7 +563,7 @@ constructor(
     private suspend fun pollQuickConnectStatus(secret: String) {
         try {
             repeat(120) {
-                delay(1000)
+                delay(1.seconds)
 
                 val state = authRepository.getQuickConnectState(_connectedServerUrl.value, secret)
                 if (state?.authenticated == true) {

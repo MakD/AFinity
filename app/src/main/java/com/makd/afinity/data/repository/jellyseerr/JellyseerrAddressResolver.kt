@@ -9,6 +9,7 @@ import com.makd.afinity.util.probeAddresses
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
@@ -69,7 +70,7 @@ constructor(
     private suspend fun pingService(address: String, timeoutMs: Long = 2000L): Boolean {
         val normalizedUrl = address.trimEnd('/') + "/api/v1/status"
         return try {
-            withTimeoutOrNull(timeoutMs) { pingClient.pingUrl(normalizedUrl) } == true
+            withTimeoutOrNull(timeoutMs.milliseconds) { pingClient.pingUrl(normalizedUrl) } == true
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

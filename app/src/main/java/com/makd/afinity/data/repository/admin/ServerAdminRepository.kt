@@ -9,6 +9,7 @@ import com.makd.afinity.data.models.admin.ServerConfigSource
 import com.makd.afinity.data.models.admin.ServerFolder
 import com.makd.afinity.data.models.admin.UserPolicyDocument
 import java.io.File
+import java.time.LocalDateTime
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -171,6 +172,8 @@ interface ServerAdminRepository {
     suspend fun getLogFiles(): Result<List<LogFile>>
 
     suspend fun downloadLog(name: String, target: File): Result<Unit>
+
+    suspend fun getTranscodeFailureReason(mediaSourceId: String, since: LocalDateTime): String?
 
     suspend fun sendPlaystateCommand(
         sessionId: String,

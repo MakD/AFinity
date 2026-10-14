@@ -84,12 +84,14 @@ import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.repository.admin.ServerAdminRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.metadata.ItemRatingsLoader
 import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.data.repository.playback.TranscodingUrl
 import com.makd.afinity.data.repository.segments.SegmentsRepository
+import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.player.common.TrackMapping
@@ -107,10 +109,13 @@ import io.github.peerless2012.ass.media.kt.withAssMkvSupport
 import io.github.peerless2012.ass.media.kt.withAssSupport
 import io.github.peerless2012.ass.media.parser.AssSubtitleParserFactory
 import io.github.peerless2012.ass.media.type.AssRenderType
+import java.time.LocalDateTime
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
@@ -125,6 +130,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.model.api.GeneralCommandType
 import org.jellyfin.sdk.model.api.MediaStreamProtocol
@@ -168,6 +174,8 @@ constructor(
     private val jellyfinWebSocketManager: JellyfinWebSocketManager,
     private val remoteMessageManager: RemoteMessageManager,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
+    private val serverRepository: ServerRepository,
+    private val serverAdminRepository: ServerAdminRepository,
 ) : ViewModel(), Player.Listener {
 
     lateinit var player: Player
@@ -194,6 +202,7 @@ constructor(
     private var lastLiveAttempt: PlayerEvent.LoadLiveChannel? = null
     private var retryResumesCurrentItem = false
     private var autoRetryJob: Job? = null
+    private var playbackErrorJob: Job? = null
     private var currentSessionId: String? = null
     private var currentLivePlaybackInfo: LiveTvPlaybackInfo? = null
     private var liveFallbackRequested = false
@@ -558,7 +567,7 @@ constructor(
             var lastPreloadedTileIndex = -1
 
             while (true) {
-                delay(100)
+                delay(100.milliseconds)
                 val isMpvLive = player is MPVPlayer && _uiState.value.isLiveChannel
                 if (!player.isPlaying && !isMpvLive) {
                     updatePlayerState()
@@ -617,7 +626,7 @@ constructor(
         progressReportingJob?.cancel()
         progressReportingJob = viewModelScope.launch {
             while (true) {
-                delay(5000L)
+                delay(5.seconds)
                 currentItem?.let { item ->
                     if (_uiState.value.isPlayingIntro) {
                         return@let
@@ -955,13 +964,72 @@ constructor(
             return
         }
         if (retryWithTranscodeFallback(error)) return
-        retryResumesCurrentItem = !_uiState.value.isLiveChannel
-        showPlaybackError(
-            context.getString(
-                if (isConnectionFailure(error)) R.string.player_error_connection
-                else R.string.error_unexpected
+        val isLive = _uiState.value.isLiveChannel
+        retryResumesCurrentItem = !isLive
+        val outputFailureMessage =
+            when (error.errorCode) {
+                MPVPlayer.ERROR_CODE_VIDEO_OUTPUT_FAILED -> R.string.player_error_video_output
+                MPVPlayer.ERROR_CODE_AUDIO_OUTPUT_FAILED -> R.string.player_error_audio_output
+                else -> null
+            }
+        if (outputFailureMessage != null) {
+            showPlaybackError(context.getString(outputFailureMessage))
+            return
+        }
+        if (
+            !isConnectionFailure(error) &&
+                error.errorCode != PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS
+        ) {
+            showPlaybackError(context.getString(R.string.error_unexpected))
+            return
+        }
+        val isLocal =
+            _uiState.value.currentItem
+                ?.sources
+                ?.firstOrNull { it.id == _uiState.value.currentMediaSourceId }
+                ?.type == AfinitySourceType.LOCAL
+        playbackErrorJob?.cancel()
+        playbackErrorJob = viewModelScope.launch {
+            val streamFailed = !isLocal && isServerReachable()
+            val message =
+                context.getString(
+                    when {
+                        isLocal -> R.string.player_error_media_load
+                        !streamFailed -> R.string.player_error_connection
+                        isLive -> R.string.player_error_live_channel_unavailable
+                        else -> R.string.player_error_stream_failed
+                    }
+                )
+            showPlaybackError(message)
+            if (streamFailed) appendServerFailureReason(message, isLive)
+        }
+    }
+
+    private suspend fun appendServerFailureReason(message: String, isLive: Boolean) {
+        if (sessionManager.currentSession.value?.isAdmin != true) return
+        val mediaSourceId =
+            (if (isLive) currentLivePlaybackInfo?.mediaSourceId
+            else _uiState.value.currentMediaSourceId) ?: return
+        val reason =
+            withTimeoutOrNull(FAILURE_REASON_TIMEOUT_MS.milliseconds) {
+                serverAdminRepository.getTranscodeFailureReason(
+                    mediaSourceId,
+                    LocalDateTime.now().minusMinutes(FAILURE_LOG_WINDOW_MINUTES),
+                )
+            } ?: return
+        if (_uiState.value.errorMessage != message) return
+        updateUiState {
+            it.copy(
+                errorMessage =
+                    context.getString(R.string.player_error_server_reason_fmt, message, reason)
             )
-        )
+        }
+    }
+
+    private suspend fun isServerReachable(): Boolean {
+        if (!networkConnectivityMonitor.isNetworkAvailable.value) return false
+        val baseUrl = apiClient.baseUrl ?: return false
+        return serverRepository.pingServer(baseUrl, SERVER_PING_TIMEOUT_MS)
     }
 
     private fun isConnectionFailure(error: PlaybackException): Boolean =
@@ -983,6 +1051,7 @@ constructor(
 
     private fun clearPlaybackError() {
         autoRetryJob?.cancel()
+        playbackErrorJob?.cancel()
         updateUiState {
             it.copy(showError = false, errorMessage = null, canPlayAnywayWithTranscoding = false)
         }
@@ -996,7 +1065,7 @@ constructor(
                 if (!available) {
                     sawOffline = true
                 } else if (sawOffline) {
-                    delay(AUTO_RETRY_SETTLE_MS)
+                    delay(AUTO_RETRY_SETTLE_MS.milliseconds)
                     if (networkConnectivityMonitor.isNetworkAvailable.value) retryLoad()
                 }
             }
@@ -1298,7 +1367,7 @@ constructor(
 
                     volumeHideJob?.cancel()
                     volumeHideJob = viewModelScope.launch {
-                        delay(2000)
+                        delay(2.seconds)
                         updateUiState { it.copy(showVolumeIndicator = false) }
                     }
                 }
@@ -1373,7 +1442,7 @@ constructor(
                                 for (i in steps downTo 0) {
                                     val progress = i.toFloat() / steps
                                     setInternalVolume(originalVolume * progress)
-                                    delay(stepDelay)
+                                    delay(stepDelay.milliseconds)
                                 }
 
                                 playlistManager.markCurrentItemAsPlayed()
@@ -1547,7 +1616,7 @@ constructor(
                     tick = 0
                     currentTranscodingInfo = null
                 }
-                delay(1000L)
+                delay(1.seconds)
             }
         }
     }
@@ -2310,6 +2379,7 @@ constructor(
             updateUiState {
                 it.copy(
                     currentItem = fullItem,
+                    isLiveChannel = false,
                     audioStreamIndex = targetAudioStreamIndex,
                     subtitleStreamIndex = targetSubtitleStreamIndex,
                     subtitleUserSelected = false,
@@ -2603,6 +2673,10 @@ constructor(
         lastLoadAttempt = null
         retryResumesCurrentItem = false
         clearPlaybackError()
+        if (_uiState.value.playbackSpeed != 1f) {
+            player.setPlaybackSpeed(1f)
+            updateUiState { it.copy(playbackSpeed = 1f) }
+        }
         mpvLiveAutoHideTriggered = false
         currentLivePlaybackInfo = playbackInfo
         currentSessionId = playbackInfo.playSessionId
@@ -3142,10 +3216,10 @@ constructor(
     private fun startSegmentMonitoring() {
         segmentCheckingJob?.cancel()
         segmentCheckingJob = viewModelScope.launch {
-            delay(2000L)
+            delay(2.seconds)
             while (true) {
                 updateCurrentSegment()
-                delay(1000L)
+                delay(1.seconds)
             }
         }
     }
@@ -3192,7 +3266,7 @@ constructor(
 
                     skipButtonHideJob?.cancel()
                     skipButtonHideJob = viewModelScope.launch {
-                        delay(SKIP_BUTTON_TIMEOUT_MS)
+                        delay(SKIP_BUTTON_TIMEOUT_MS.milliseconds)
 
                         if (skipMode == SkipMode.AUTO_SKIP) {
                             handlePlayerEvent(PlayerEvent.SkipSegment(segment))
@@ -3435,6 +3509,7 @@ constructor(
     }
 
     fun onLongPressStart() {
+        if (_uiState.value.isLiveChannel) return
         val currentSpeed = _uiState.value.playbackSpeed
         if (currentSpeed < 2.0f) {
             speedBeforeLongPress = currentSpeed
@@ -3506,6 +3581,10 @@ constructor(
 
     private fun onLockToggle() {
         updateUiState { it.copy(isControlsLocked = !it.isControlsLocked) }
+    }
+
+    fun onNewPlaybackRequest() {
+        reportCurrentItemStopped()
     }
 
     fun onNextEpisode() {
@@ -3619,7 +3698,7 @@ constructor(
 
         brightnessHideJob?.cancel()
         brightnessHideJob = viewModelScope.launch {
-            delay(2000)
+            delay(2.seconds)
             updateUiState { it.copy(showBrightnessIndicator = false) }
         }
     }
@@ -3664,17 +3743,17 @@ constructor(
             for (i in steps downTo 0) {
                 val progress = i.toFloat() / steps
                 setInternalVolume(originalVolume * progress)
-                delay(stepDelay)
+                delay(stepDelay.milliseconds)
             }
 
             player.seekTo(targetPositionMs)
 
-            delay(50)
+            delay(50.milliseconds)
 
             for (i in 1..steps) {
                 val progress = i.toFloat() / steps
                 setInternalVolume(originalVolume * progress)
-                delay(stepDelay)
+                delay(stepDelay.milliseconds)
             }
 
             setInternalVolume(originalVolume)
@@ -3804,7 +3883,7 @@ constructor(
     private fun startControlsAutoHide() {
         controlsHideJob?.cancel()
         controlsHideJob = viewModelScope.launch {
-            delay(3000)
+            delay(3.seconds)
             if (uiState.value.isPlaying && uiState.value.showControls && !uiState.value.isSeeking) {
                 hideControls()
             } else if (uiState.value.isSeeking) {
@@ -3884,7 +3963,7 @@ constructor(
                     it.copy(
                         sleepTimerRemainingMs = remaining,
                         showSleepTimerExtendPrompt =
-                            remaining > 0L && remaining <= SLEEP_TIMER_PROMPT_THRESHOLD_MS,
+                            remaining in 1L..SLEEP_TIMER_PROMPT_THRESHOLD_MS,
                     )
                 }
 
@@ -3892,7 +3971,7 @@ constructor(
                     onSleepTimerExpired()
                     break
                 }
-                delay(1000)
+                delay(1.seconds)
             }
         }
     }
@@ -3937,7 +4016,7 @@ constructor(
                 volumeBeforeSleepFade = originalVolume
                 for (step in SLEEP_TIMER_FADE_STEPS downTo 0) {
                     setInternalVolume(originalVolume * (step.toFloat() / SLEEP_TIMER_FADE_STEPS))
-                    delay(SLEEP_TIMER_FADE_MS / SLEEP_TIMER_FADE_STEPS)
+                    delay((SLEEP_TIMER_FADE_MS / SLEEP_TIMER_FADE_STEPS).milliseconds)
                 }
                 player.pause()
                 restoreVolumeAfterSleepFade()
@@ -3952,7 +4031,7 @@ constructor(
             var remaining = SLEEP_TIMER_GRACE_SECONDS
             while (remaining > 0) {
                 updateUiState { it.copy(sleepTimerCloseInSeconds = remaining) }
-                delay(1000)
+                delay(1.seconds)
                 remaining--
             }
             updateUiState { it.copy(sleepTimerCloseInSeconds = 0) }
@@ -4168,6 +4247,9 @@ constructor(
         const val SLEEP_TIMER_FADE_MS = 5_000L
         const val SLEEP_TIMER_FADE_STEPS = 20
         const val AUTO_RETRY_SETTLE_MS = 2_000L
+        const val SERVER_PING_TIMEOUT_MS = 2_000L
+        const val FAILURE_REASON_TIMEOUT_MS = 5_000L
+        const val FAILURE_LOG_WINDOW_MINUTES = 5L
     }
 }
 
