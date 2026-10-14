@@ -22,6 +22,7 @@ import com.makd.afinity.player.common.EqualizerPreset
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -399,7 +400,7 @@ constructor(
                     _uiState.value =
                         _uiState.value.copy(playbackStats = audiobookshelfPlayer.getPlaybackStats())
                 }
-                delay(1000L)
+                delay(1.seconds)
             }
         }
     }

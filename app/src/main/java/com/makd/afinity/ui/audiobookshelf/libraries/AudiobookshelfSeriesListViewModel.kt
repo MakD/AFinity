@@ -10,6 +10,7 @@ import com.makd.afinity.data.websocket.AbsSocketEvent
 import com.makd.afinity.data.websocket.AudiobookshelfSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -71,7 +72,7 @@ constructor(
                 if (event == AbsSocketEvent.SeriesChanged) {
                     seriesRefreshJob?.cancel()
                     seriesRefreshJob = viewModelScope.launch {
-                        delay(2_000L)
+                        delay(2.seconds)
                         loadSeries()
                     }
                 }

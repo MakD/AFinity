@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.repository.admin.ServerAdminRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -67,7 +68,7 @@ constructor(private val adminRepository: ServerAdminRepository) : ViewModel() {
         viewModelScope.launch {
             try {
                 if (block().isSuccess) {
-                    delay(TASK_REFRESH_DELAY_MS)
+                    delay(TASK_REFRESH_DELAY_MS.milliseconds)
                 } else {
                     _commandError.tryEmit(Unit)
                 }

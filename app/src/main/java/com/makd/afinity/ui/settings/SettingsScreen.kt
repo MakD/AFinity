@@ -108,6 +108,7 @@ import com.makd.afinity.ui.settings.logs.LogViewerScreen
 import com.makd.afinity.ui.settings.player.PlayerOptionsScreen
 import com.makd.afinity.ui.settings.servers.ServerManagementScreen
 import com.makd.afinity.ui.settings.update.UpdateSection
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -1111,7 +1112,7 @@ private fun QuickConnectPane(
     val code = codeState.value
 
     LaunchedEffect(isSuccess) {
-        if (isSuccess) kotlinx.coroutines.delay(1200)
+        if (isSuccess) kotlinx.coroutines.delay(1200.milliseconds)
         if (isSuccess) onBackClick()
     }
 
@@ -1188,7 +1189,7 @@ private fun AuthorizeQuickConnectDialog(
     val code = codeState.value
 
     LaunchedEffect(isSuccess) {
-        if (isSuccess) kotlinx.coroutines.delay(1200)
+        if (isSuccess) kotlinx.coroutines.delay(1200.milliseconds)
         if (isSuccess) onDismiss()
     }
 

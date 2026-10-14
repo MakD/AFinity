@@ -20,6 +20,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -132,7 +134,7 @@ constructor(
                                 )
                                 .also { it.update(accessToken = accessToken) }
                         val response =
-                            withTimeoutOrNull(3000L) { UserApi(tempClient).getCurrentUser() }
+                            withTimeoutOrNull(3.seconds) { UserApi(tempClient).getCurrentUser() }
                         response?.content?.let { probedUser.compareAndSet(null, it) }
                         response?.content != null
                     } catch (e: InvalidStatusException) {
@@ -450,7 +452,7 @@ constructor(
             startSession(serverUrl, serverId, userId, token)
         } finally {
             val remaining = MIN_SWITCH_DISPLAY_MS - (System.currentTimeMillis() - switchStartTime)
-            if (remaining > 0) delay(remaining)
+            if (remaining > 0) delay(remaining.milliseconds)
             if (switchingCallCount.decrementAndGet() == 0) {
                 _isSwitchingSession.value = false
             }

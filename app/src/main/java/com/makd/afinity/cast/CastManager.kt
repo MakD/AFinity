@@ -28,6 +28,8 @@ import com.makd.afinity.data.repository.playback.PlaybackRepository
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -595,7 +597,7 @@ constructor(
     fun setVolume(volume: Double) {
         volumeDebounceJob?.cancel()
         volumeDebounceJob = scope.launch {
-            delay(300)
+            delay(300.milliseconds)
             try {
                 castSession?.volume = volume.coerceIn(0.0, 1.0)
                 _castState.update { it.copy(volume = volume.coerceIn(0.0, 1.0)) }
@@ -746,7 +748,7 @@ constructor(
         stopProgressReporting()
         progressReportingJob = scope.launch {
             while (true) {
-                delay(10_000)
+                delay(10.seconds)
                 reportProgress()
             }
         }
@@ -761,7 +763,7 @@ constructor(
         stopPositionPolling()
         positionPollingJob = scope.launch {
             while (true) {
-                delay(1_000)
+                delay(1.seconds)
                 updatePositionFromRemote()
             }
         }
@@ -859,7 +861,7 @@ constructor(
         musicCastProgressJob?.cancel()
         musicCastProgressJob = scope.launch {
             while (true) {
-                delay(10_000)
+                delay(10.seconds)
                 val state = _castState.value
                 playbackRepository.reportPlaybackProgress(
                     itemId = trackId,

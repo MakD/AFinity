@@ -22,6 +22,7 @@ import com.makd.afinity.ui.item.components.QualitySelectionDialog
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.util.rememberItemDownloadDelegate
 import java.util.UUID
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 
 @Composable
@@ -135,7 +136,7 @@ fun EpisodeOverlayHandler(
 
     LaunchedEffect(selectedEpisode, pendingNavigationSeriesId) {
         if (selectedEpisode == null && pendingNavigationSeriesId != null) {
-            delay(300)
+            delay(300.milliseconds)
             onNavigateToSeries(pendingNavigationSeriesId!!)
             pendingNavigationSeriesId = null
         }
@@ -143,7 +144,7 @@ fun EpisodeOverlayHandler(
 
     LaunchedEffect(selectedEpisode, pendingNavigationPersonId) {
         if (selectedEpisode == null && pendingNavigationPersonId != null) {
-            delay(300)
+            delay(300.milliseconds)
             onNavigateToPerson?.invoke(pendingNavigationPersonId!!)
             pendingNavigationPersonId = null
         }

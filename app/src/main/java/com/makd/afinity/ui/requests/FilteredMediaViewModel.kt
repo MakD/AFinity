@@ -16,6 +16,7 @@ import com.makd.afinity.data.repository.JellyseerrRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -296,7 +297,7 @@ constructor(
         }
 
         keywordSearchJob = viewModelScope.launch {
-            delay(300)
+            delay(300.milliseconds)
             jellyseerrRepository.searchKeywords(query).onSuccess { response ->
                 _uiState.update { it.copy(keywordSearchResults = response.results) }
             }

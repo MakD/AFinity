@@ -121,6 +121,7 @@ import com.makd.afinity.ui.player.toLocalizedLanguageName
 import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.PersonKind
@@ -420,7 +421,7 @@ fun PlayerControls(
         var showPauseDetails by remember { mutableStateOf(false) }
         LaunchedEffect(pauseDetailsEligible, uiState.pauseScreenDelaySeconds) {
             if (pauseDetailsEligible) {
-                delay(uiState.pauseScreenDelaySeconds * 1000L)
+                delay(uiState.pauseScreenDelaySeconds.seconds)
                 showPauseDetails = true
             } else {
                 showPauseDetails = false

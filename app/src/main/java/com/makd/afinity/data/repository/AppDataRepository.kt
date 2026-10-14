@@ -49,6 +49,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -653,7 +654,7 @@ constructor(
             launch {
                 mediaRefreshBus.events
                     .filter { it == RefreshTrigger.USER_DATA_CHANGED }
-                    .debounce(1_500L)
+                    .debounce(1500.milliseconds)
                     .collect {
                         Timber.d("Bus: user data changed — refreshing playback sections")
                         refreshPlaybackSections()
@@ -663,7 +664,7 @@ constructor(
             launch {
                 mediaRefreshBus.events
                     .filter { it == RefreshTrigger.LIBRARY_CHANGED }
-                    .debounce(1_500L)
+                    .debounce(1500.milliseconds)
                     .collect {
                         if (!_isInitialDataLoaded.value) return@collect
                         Timber.d("Bus: library changed — refreshing library sections")
@@ -675,7 +676,7 @@ constructor(
             launch {
                 mediaRefreshBus.events
                     .filter { it == RefreshTrigger.CONTENT_RESYNC }
-                    .debounce(1_500L)
+                    .debounce(1500.milliseconds)
                     .collect {
                         if (!_isInitialDataLoaded.value) return@collect
                         Timber.d("Bus: content resync — refreshing library sections")
@@ -710,7 +711,7 @@ constructor(
                 }
             }
 
-            launch {
+            launch mediaChanges@{
                 mediaChangeManager.mediaChanges.collect { event ->
                     val userData = event.userData
                     val previous = heldItemById(event.itemId)
@@ -755,7 +756,7 @@ constructor(
                         }
                     if (watchlistChanged) {
                         updateWatchlistStatus(item, shouldBeOnWatchlist)
-                        launch {
+                        this@mediaChanges.launch {
                             try {
                                 watchlistRepository.refreshWatchlistCount()
                             } catch (e: CancellationException) {
@@ -1611,7 +1612,7 @@ constructor(
     private fun scheduleFavoritesRecount() {
         favoritesRecountJob?.cancel()
         favoritesRecountJob = scope.launch {
-            delay(FAVORITES_RECOUNT_DEBOUNCE_MS)
+            delay(FAVORITES_RECOUNT_DEBOUNCE_MS.milliseconds)
             backgroundWorkQueue.run("favorites recount") { refreshFavoritesProbe() }
         }
     }

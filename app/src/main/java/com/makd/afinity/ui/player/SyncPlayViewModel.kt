@@ -17,6 +17,7 @@ import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -375,7 +376,7 @@ constructor(
 
         scheduledCommandJob?.cancel()
         scheduledCommandJob = viewModelScope.launch {
-            if (delayMs > 0) delay(delayMs)
+            if (delayMs > 0) delay(delayMs.milliseconds)
             executeCommand(command)
         }
     }

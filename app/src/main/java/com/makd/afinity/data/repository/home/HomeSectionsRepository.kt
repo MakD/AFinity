@@ -39,6 +39,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -675,7 +676,7 @@ constructor(
         if (_pinnedLayout.value.isEmpty()) return
         customRefreshJob?.cancel()
         customRefreshJob = scope.launch {
-            delay(debounceMs)
+            delay(debounceMs.milliseconds)
             if (sessionKey() == null) return@launch
             refreshPinnedSections(reason)
         }

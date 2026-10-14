@@ -17,6 +17,7 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -120,7 +121,7 @@ constructor(
                     networkConnectivityMonitor.networkSwitchEvents,
                     networkConnectivityMonitor.networkDropEvents,
                 )
-                .debounce(500)
+                .debounce(500.milliseconds)
                 .collectLatest {
                     val session = sessionManager.currentSession.value ?: return@collectLatest
                     if (_currentBaseUrl.value.isBlank()) return@collectLatest
@@ -152,7 +153,7 @@ constructor(
                         ) {
                             break
                         }
-                        delay(delayMs)
+                        delay(delayMs.milliseconds)
                         delayMs = (delayMs * 2).coerceAtMost(RECONNECT_MAX_DELAY_MS)
                     }
                 }
@@ -211,7 +212,7 @@ constructor(
 
     private suspend fun confirmUnreachable(serverId: String) {
         if (!sessionManager.isServerReachable.value) return
-        delay(UNREACHABLE_CONFIRM_DELAY_MS)
+        delay(UNREACHABLE_CONFIRM_DELAY_MS.milliseconds)
         if (!networkConnectivityMonitor.isCurrentlyConnected()) return
         if (sessionManager.currentSession.value?.serverId != serverId) return
         if (!sessionManager.isServerReachable.value) return
@@ -386,7 +387,7 @@ constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val result =
-                    withTimeoutOrNull(timeoutMs) {
+                    withTimeoutOrNull(timeoutMs.milliseconds) {
                         val testClient = proberJellyfin.createApi(baseUrl = address)
                         val systemApi = SystemApi(testClient)
                         systemApi.getPingSystem()

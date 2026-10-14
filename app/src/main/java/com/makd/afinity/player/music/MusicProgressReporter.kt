@@ -4,6 +4,7 @@ import com.makd.afinity.data.repository.playback.PlaybackRepository
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -56,7 +57,7 @@ constructor(private val playbackRepository: PlaybackRepository) {
         progressJob?.cancel()
         progressJob = scope.launch {
             while (isActive) {
-                delay(10_000L)
+                delay(10.seconds)
                 val trackId = currentTrackId ?: break
                 runCatching {
                     playbackRepository.reportPlaybackProgress(

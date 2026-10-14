@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.repository.admin.ServerAdminRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -118,7 +119,7 @@ constructor(
         viewModelScope.launch {
             try {
                 if (block().isSuccess) {
-                    delay(TASK_REFRESH_DELAY_MS)
+                    delay(TASK_REFRESH_DELAY_MS.milliseconds)
                 } else {
                     _commandError.tryEmit(Unit)
                 }
@@ -142,7 +143,7 @@ constructor(
                 if (!saved) _commandError.tryEmit(Unit)
                 adminRepository.refreshTasks()
                 if (saved) {
-                    withTimeoutOrNull(TRIGGER_CONFIRM_TIMEOUT_MS) {
+                    withTimeoutOrNull(TRIGGER_CONFIRM_TIMEOUT_MS.milliseconds) {
                         adminRepository.scheduledTasks.first { result ->
                             result?.getOrNull().findTask(taskId)?.triggers.orEmpty() == updated
                         }

@@ -67,6 +67,8 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -147,7 +149,7 @@ constructor(
                     _uiState.update { it.copy(isLoading = false) }
                     secondaryLoadJob?.cancel()
                     secondaryLoadJob = launch {
-                        withTimeoutOrNull(ESSENTIALS_WAIT_MS) {
+                        withTimeoutOrNull(ESSENTIALS_WAIT_MS.milliseconds) {
                             appDataRepository.homeEssentialsReady.first { it }
                         }
                         Timber.d(
@@ -434,7 +436,7 @@ constructor(
                             ) { _, _, _, _ ->
                                 userId
                             }
-                            .debounce(300L)
+                            .debounce(300.milliseconds)
                     } else {
                         flowOf()
                     }
@@ -509,7 +511,7 @@ constructor(
                 Timber.d("HomeViewModel received library content change: ${event.reason}")
                 libraryContentReloadJob?.cancel()
                 libraryContentReloadJob = launch {
-                    delay(2_000L)
+                    delay(2.seconds)
                     coroutineScope {
                         launch { loadCombinedGenres() }
                         launch { loadUpcomingEpisodes() }

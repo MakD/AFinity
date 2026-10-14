@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import java.util.Locale
 import kotlin.math.abs
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 
 @Composable
@@ -19,7 +20,7 @@ fun rememberSleepTimerRemainingMs(endTimeMs: Long?): Long {
         while (true) {
             now = System.currentTimeMillis()
             if (now >= endTimeMs) break
-            delay(1_000L)
+            delay(1.seconds)
         }
     }
 

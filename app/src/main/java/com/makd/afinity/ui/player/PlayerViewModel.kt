@@ -111,6 +111,8 @@ import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
@@ -558,7 +560,7 @@ constructor(
             var lastPreloadedTileIndex = -1
 
             while (true) {
-                delay(100)
+                delay(100.milliseconds)
                 val isMpvLive = player is MPVPlayer && _uiState.value.isLiveChannel
                 if (!player.isPlaying && !isMpvLive) {
                     updatePlayerState()
@@ -617,7 +619,7 @@ constructor(
         progressReportingJob?.cancel()
         progressReportingJob = viewModelScope.launch {
             while (true) {
-                delay(5000L)
+                delay(5.seconds)
                 currentItem?.let { item ->
                     if (_uiState.value.isPlayingIntro) {
                         return@let
@@ -996,7 +998,7 @@ constructor(
                 if (!available) {
                     sawOffline = true
                 } else if (sawOffline) {
-                    delay(AUTO_RETRY_SETTLE_MS)
+                    delay(AUTO_RETRY_SETTLE_MS.milliseconds)
                     if (networkConnectivityMonitor.isNetworkAvailable.value) retryLoad()
                 }
             }
@@ -1298,7 +1300,7 @@ constructor(
 
                     volumeHideJob?.cancel()
                     volumeHideJob = viewModelScope.launch {
-                        delay(2000)
+                        delay(2.seconds)
                         updateUiState { it.copy(showVolumeIndicator = false) }
                     }
                 }
@@ -1373,7 +1375,7 @@ constructor(
                                 for (i in steps downTo 0) {
                                     val progress = i.toFloat() / steps
                                     setInternalVolume(originalVolume * progress)
-                                    delay(stepDelay)
+                                    delay(stepDelay.milliseconds)
                                 }
 
                                 playlistManager.markCurrentItemAsPlayed()
@@ -1547,7 +1549,7 @@ constructor(
                     tick = 0
                     currentTranscodingInfo = null
                 }
-                delay(1000L)
+                delay(1.seconds)
             }
         }
     }
@@ -3147,10 +3149,10 @@ constructor(
     private fun startSegmentMonitoring() {
         segmentCheckingJob?.cancel()
         segmentCheckingJob = viewModelScope.launch {
-            delay(2000L)
+            delay(2.seconds)
             while (true) {
                 updateCurrentSegment()
-                delay(1000L)
+                delay(1.seconds)
             }
         }
     }
@@ -3197,7 +3199,7 @@ constructor(
 
                     skipButtonHideJob?.cancel()
                     skipButtonHideJob = viewModelScope.launch {
-                        delay(SKIP_BUTTON_TIMEOUT_MS)
+                        delay(SKIP_BUTTON_TIMEOUT_MS.milliseconds)
 
                         if (skipMode == SkipMode.AUTO_SKIP) {
                             handlePlayerEvent(PlayerEvent.SkipSegment(segment))
@@ -3629,7 +3631,7 @@ constructor(
 
         brightnessHideJob?.cancel()
         brightnessHideJob = viewModelScope.launch {
-            delay(2000)
+            delay(2.seconds)
             updateUiState { it.copy(showBrightnessIndicator = false) }
         }
     }
@@ -3674,17 +3676,17 @@ constructor(
             for (i in steps downTo 0) {
                 val progress = i.toFloat() / steps
                 setInternalVolume(originalVolume * progress)
-                delay(stepDelay)
+                delay(stepDelay.milliseconds)
             }
 
             player.seekTo(targetPositionMs)
 
-            delay(50)
+            delay(50.milliseconds)
 
             for (i in 1..steps) {
                 val progress = i.toFloat() / steps
                 setInternalVolume(originalVolume * progress)
-                delay(stepDelay)
+                delay(stepDelay.milliseconds)
             }
 
             setInternalVolume(originalVolume)
@@ -3814,7 +3816,7 @@ constructor(
     private fun startControlsAutoHide() {
         controlsHideJob?.cancel()
         controlsHideJob = viewModelScope.launch {
-            delay(3000)
+            delay(3.seconds)
             if (uiState.value.isPlaying && uiState.value.showControls && !uiState.value.isSeeking) {
                 hideControls()
             } else if (uiState.value.isSeeking) {
@@ -3894,7 +3896,7 @@ constructor(
                     it.copy(
                         sleepTimerRemainingMs = remaining,
                         showSleepTimerExtendPrompt =
-                            remaining > 0L && remaining <= SLEEP_TIMER_PROMPT_THRESHOLD_MS,
+                            remaining in 1L..SLEEP_TIMER_PROMPT_THRESHOLD_MS,
                     )
                 }
 
@@ -3902,7 +3904,7 @@ constructor(
                     onSleepTimerExpired()
                     break
                 }
-                delay(1000)
+                delay(1.seconds)
             }
         }
     }
@@ -3947,7 +3949,7 @@ constructor(
                 volumeBeforeSleepFade = originalVolume
                 for (step in SLEEP_TIMER_FADE_STEPS downTo 0) {
                     setInternalVolume(originalVolume * (step.toFloat() / SLEEP_TIMER_FADE_STEPS))
-                    delay(SLEEP_TIMER_FADE_MS / SLEEP_TIMER_FADE_STEPS)
+                    delay((SLEEP_TIMER_FADE_MS / SLEEP_TIMER_FADE_STEPS).milliseconds)
                 }
                 player.pause()
                 restoreVolumeAfterSleepFade()
@@ -3962,7 +3964,7 @@ constructor(
             var remaining = SLEEP_TIMER_GRACE_SECONDS
             while (remaining > 0) {
                 updateUiState { it.copy(sleepTimerCloseInSeconds = remaining) }
-                delay(1000)
+                delay(1.seconds)
                 remaining--
             }
             updateUiState { it.copy(sleepTimerCloseInSeconds = 0) }

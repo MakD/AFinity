@@ -16,6 +16,8 @@ import com.makd.afinity.data.websocket.AudiobookshelfSocketManager
 import com.makd.afinity.data.websocket.WebSocketState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -156,7 +158,7 @@ constructor(
     private fun scheduleShelfRefresh() {
         shelfRefreshJob?.cancel()
         shelfRefreshJob = viewModelScope.launch {
-            delay(2_000L)
+            delay(2.seconds)
             val activeLibraries = libraries.value
             if (activeLibraries.isNotEmpty()) {
                 refreshContinueListening(activeLibraries)
@@ -167,7 +169,7 @@ constructor(
     private fun scheduleFullRefresh() {
         fullRefreshJob?.cancel()
         fullRefreshJob = viewModelScope.launch {
-            delay(2_000L)
+            delay(2.seconds)
             refreshLibraries(force = true)
         }
     }
@@ -178,7 +180,8 @@ constructor(
         refreshJob = viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true, error = null) }
             val cachedLibraries =
-                withTimeoutOrNull(200) { libraries.first { it.isNotEmpty() } } ?: libraries.value
+                withTimeoutOrNull(200.milliseconds) { libraries.first { it.isNotEmpty() } }
+                    ?: libraries.value
 
             val refreshLibrariesDeferred =
                 async(Dispatchers.IO) { audiobookshelfRepository.refreshLibraries() }

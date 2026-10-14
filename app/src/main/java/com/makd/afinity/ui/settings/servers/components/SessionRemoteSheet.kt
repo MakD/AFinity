@@ -44,6 +44,7 @@ import com.makd.afinity.ui.components.AfinitySlider
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.settings.servers.utils.formatTicks
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.GeneralCommandType
 import org.jellyfin.sdk.model.api.ImageType
@@ -240,7 +241,7 @@ fun SessionRemoteSheet(
             LaunchedEffect(basePositionTicks, serverPaused, item?.id) {
                 if (!serverPaused && item != null) {
                     while (true) {
-                        delay(1000)
+                        delay(1.seconds)
                         localPositionTicks += TICKS_PER_SECOND
                     }
                 }
