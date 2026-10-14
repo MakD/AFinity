@@ -10,14 +10,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.AspectRatioFrameLayout
-import com.makd.afinity.player.mpv.MpvHandle
+import dev.jdtech.mpv.MPVLib
 import timber.log.Timber
 
 @UnstableApi
 @Composable
 fun MpvSurface(
     modifier: Modifier = Modifier,
-    mpv: MpvHandle,
+    mpv: MPVLib,
     videoOutput: String = "gpu",
     aspectRatio: Float = 0f,
     fitToVideo: Boolean = true,

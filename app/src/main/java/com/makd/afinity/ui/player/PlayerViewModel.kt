@@ -84,12 +84,14 @@ import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.repository.admin.ServerAdminRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.metadata.ItemRatingsLoader
 import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.data.repository.playback.TranscodingUrl
 import com.makd.afinity.data.repository.segments.SegmentsRepository
+import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.player.common.TrackMapping
@@ -107,6 +109,7 @@ import io.github.peerless2012.ass.media.kt.withAssMkvSupport
 import io.github.peerless2012.ass.media.kt.withAssSupport
 import io.github.peerless2012.ass.media.parser.AssSubtitleParserFactory
 import io.github.peerless2012.ass.media.type.AssRenderType
+import java.time.LocalDateTime
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
@@ -127,6 +130,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.model.api.GeneralCommandType
 import org.jellyfin.sdk.model.api.MediaStreamProtocol
@@ -170,6 +174,8 @@ constructor(
     private val jellyfinWebSocketManager: JellyfinWebSocketManager,
     private val remoteMessageManager: RemoteMessageManager,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
+    private val serverRepository: ServerRepository,
+    private val serverAdminRepository: ServerAdminRepository,
 ) : ViewModel(), Player.Listener {
 
     lateinit var player: Player
@@ -196,6 +202,7 @@ constructor(
     private var lastLiveAttempt: PlayerEvent.LoadLiveChannel? = null
     private var retryResumesCurrentItem = false
     private var autoRetryJob: Job? = null
+    private var playbackErrorJob: Job? = null
     private var currentSessionId: String? = null
     private var currentLivePlaybackInfo: LiveTvPlaybackInfo? = null
     private var liveFallbackRequested = false
@@ -957,13 +964,72 @@ constructor(
             return
         }
         if (retryWithTranscodeFallback(error)) return
-        retryResumesCurrentItem = !_uiState.value.isLiveChannel
-        showPlaybackError(
-            context.getString(
-                if (isConnectionFailure(error)) R.string.player_error_connection
-                else R.string.error_unexpected
+        val isLive = _uiState.value.isLiveChannel
+        retryResumesCurrentItem = !isLive
+        val outputFailureMessage =
+            when (error.errorCode) {
+                MPVPlayer.ERROR_CODE_VIDEO_OUTPUT_FAILED -> R.string.player_error_video_output
+                MPVPlayer.ERROR_CODE_AUDIO_OUTPUT_FAILED -> R.string.player_error_audio_output
+                else -> null
+            }
+        if (outputFailureMessage != null) {
+            showPlaybackError(context.getString(outputFailureMessage))
+            return
+        }
+        if (
+            !isConnectionFailure(error) &&
+                error.errorCode != PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS
+        ) {
+            showPlaybackError(context.getString(R.string.error_unexpected))
+            return
+        }
+        val isLocal =
+            _uiState.value.currentItem
+                ?.sources
+                ?.firstOrNull { it.id == _uiState.value.currentMediaSourceId }
+                ?.type == AfinitySourceType.LOCAL
+        playbackErrorJob?.cancel()
+        playbackErrorJob = viewModelScope.launch {
+            val streamFailed = !isLocal && isServerReachable()
+            val message =
+                context.getString(
+                    when {
+                        isLocal -> R.string.player_error_media_load
+                        !streamFailed -> R.string.player_error_connection
+                        isLive -> R.string.player_error_live_channel_unavailable
+                        else -> R.string.player_error_stream_failed
+                    }
+                )
+            showPlaybackError(message)
+            if (streamFailed) appendServerFailureReason(message, isLive)
+        }
+    }
+
+    private suspend fun appendServerFailureReason(message: String, isLive: Boolean) {
+        if (sessionManager.currentSession.value?.isAdmin != true) return
+        val mediaSourceId =
+            (if (isLive) currentLivePlaybackInfo?.mediaSourceId
+            else _uiState.value.currentMediaSourceId) ?: return
+        val reason =
+            withTimeoutOrNull(FAILURE_REASON_TIMEOUT_MS.milliseconds) {
+                serverAdminRepository.getTranscodeFailureReason(
+                    mediaSourceId,
+                    LocalDateTime.now().minusMinutes(FAILURE_LOG_WINDOW_MINUTES),
+                )
+            } ?: return
+        if (_uiState.value.errorMessage != message) return
+        updateUiState {
+            it.copy(
+                errorMessage =
+                    context.getString(R.string.player_error_server_reason_fmt, message, reason)
             )
-        )
+        }
+    }
+
+    private suspend fun isServerReachable(): Boolean {
+        if (!networkConnectivityMonitor.isNetworkAvailable.value) return false
+        val baseUrl = apiClient.baseUrl ?: return false
+        return serverRepository.pingServer(baseUrl, SERVER_PING_TIMEOUT_MS)
     }
 
     private fun isConnectionFailure(error: PlaybackException): Boolean =
@@ -985,6 +1051,7 @@ constructor(
 
     private fun clearPlaybackError() {
         autoRetryJob?.cancel()
+        playbackErrorJob?.cancel()
         updateUiState {
             it.copy(showError = false, errorMessage = null, canPlayAnywayWithTranscoding = false)
         }
@@ -4180,6 +4247,9 @@ constructor(
         const val SLEEP_TIMER_FADE_MS = 5_000L
         const val SLEEP_TIMER_FADE_STEPS = 20
         const val AUTO_RETRY_SETTLE_MS = 2_000L
+        const val SERVER_PING_TIMEOUT_MS = 2_000L
+        const val FAILURE_REASON_TIMEOUT_MS = 5_000L
+        const val FAILURE_LOG_WINDOW_MINUTES = 5L
     }
 }
 

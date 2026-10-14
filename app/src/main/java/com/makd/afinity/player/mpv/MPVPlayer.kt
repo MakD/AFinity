@@ -34,8 +34,7 @@ import androidx.media3.common.util.Clock
 import androidx.media3.common.util.ListenerSet
 import androidx.media3.common.util.Size
 import androidx.media3.common.util.Util
-import `is`.xyz.mpv.MPVLib
-import `is`.xyz.mpv.MPVNode
+import dev.jdtech.mpv.MPVLib
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -66,7 +65,7 @@ class MPVPlayer(
     private val initialOptions: List<Pair<String, String>> = emptyList(),
 ) : BasePlayer(), MPVLib.EventObserver, AudioManager.OnAudioFocusChangeListener {
 
-    val mpv: MpvHandle
+    val mpv: MPVLib
     private val audioManager: AudioManager by lazy { context.getSystemService()!! }
     private var audioFocusCallback: () -> Unit = {}
     private lateinit var audioFocusRequest: AudioFocusRequestCompat
@@ -197,7 +196,7 @@ class MPVPlayer(
 
         setupDirectories(context, configDir, cacheDir)
 
-        mpv = MpvHandle.create(context)
+        mpv = MPVLib.create(context) ?: throw IllegalStateException("MPVLib.create() returned null")
 
         val useVulkan = gpuApi == "vulkan"
         val effectiveHwDec = if (useVulkan && hwDec == "mediacodec") "mediacodec-copy" else hwDec
@@ -228,6 +227,7 @@ class MPVPlayer(
         mpv.setOptionString("hwdec-codecs", "h264,hevc,mpeg4,mpeg2video,vp8,vp9,av1")
 
         mpv.setOptionString("tls-verify", "no")
+        mpv.setOptionString("stop-playback-on-init-failure", "yes")
 
         mpv.setOptionString("cache", "auto")
         mpv.setOptionString("demuxer-max-bytes", "${bufferSizeMb}MiB")
@@ -323,7 +323,7 @@ class MPVPlayer(
         val key = "0x%x".format(keycode)
         if (key !in boundInputKeys) return false
 
-        mpv.command("keypress", key)
+        mpv.command(arrayOf("keypress", key))
         return true
     }
 
@@ -398,6 +398,7 @@ class MPVPlayer(
     private val videoListeners = CopyOnWriteArraySet<Player.Listener>()
 
     @Volatile private var isReleased = false
+    private var lastEndFileError = MPVLib.MpvError.MPV_ERROR_SUCCESS
 
     private var internalMediaItems = mutableListOf<MediaItem>()
 
@@ -578,22 +579,30 @@ class MPVPlayer(
         }
     }
 
-    override fun eventProperty(property: String, value: MPVNode) {}
+    override fun endFile(reason: Int, error: Int) {
+        Timber.d("MPV end-file: reason=$reason, error=$error")
+        handler.post {
+            lastEndFileError =
+                if (reason == MPVLib.MpvEndFileReason.MPV_END_FILE_REASON_ERROR) error
+                else MPVLib.MpvError.MPV_ERROR_SUCCESS
+        }
+    }
 
-    override fun event(eventId: Int, data: MPVNode) {
+    override fun event(eventId: Int) {
         handler.post {
             if (isReleased) return@post
             when (eventId) {
                 MPVLib.MpvEvent.MPV_EVENT_START_FILE -> {
                     if (!isPlayerReady) {
                         for (command in initialCommands) {
-                            mpv.command(*command)
+                            mpv.command(command)
                         }
                     }
                 }
 
                 MPVLib.MpvEvent.MPV_EVENT_END_FILE -> {
                     reportLoadFailureIfNeeded()
+                    reportOutputFailureIfNeeded()
                 }
 
                 MPVLib.MpvEvent.MPV_EVENT_SEEK -> {
@@ -625,13 +634,33 @@ class MPVPlayer(
         val playlistPosition = mpv.getPropertyInt("playlist-current-pos") ?: return
         if (playlistCount <= 0 || playlistPosition >= 0) return
 
-        Timber.e("MPV could not load ${currentMediaItem?.mediaId}")
-        val error =
-            PlaybackException(
-                "MPV failed to load media",
-                null,
-                PlaybackException.ERROR_CODE_IO_UNSPECIFIED,
-            )
+        Timber.e("MPV could not load ${currentMediaItem?.mediaId} (mpv error $lastEndFileError)")
+        val errorCode =
+            outputFailureErrorCode(lastEndFileError)
+                ?: if (lastEndFileError == MPVLib.MpvError.MPV_ERROR_NOTHING_TO_PLAY) {
+                    PlaybackException.ERROR_CODE_DECODING_FAILED
+                } else {
+                    PlaybackException.ERROR_CODE_IO_UNSPECIFIED
+                }
+        reportPlayerError("MPV failed to load media", errorCode)
+    }
+
+    private fun reportOutputFailureIfNeeded() {
+        if (!isPlayerReady) return
+        val errorCode = outputFailureErrorCode(lastEndFileError) ?: return
+        Timber.e("MPV output failed during playback (mpv error $lastEndFileError)")
+        reportPlayerError("MPV output failed", errorCode)
+    }
+
+    private fun outputFailureErrorCode(mpvError: Int): Int? =
+        when (mpvError) {
+            MPVLib.MpvError.MPV_ERROR_VO_INIT_FAILED -> ERROR_CODE_VIDEO_OUTPUT_FAILED
+            MPVLib.MpvError.MPV_ERROR_AO_INIT_FAILED -> ERROR_CODE_AUDIO_OUTPUT_FAILED
+            else -> null
+        }
+
+    private fun reportPlayerError(message: String, errorCode: Int) {
+        val error = PlaybackException(message, null, errorCode)
         playerError = error
         setPlayerStateAndNotifyIfChanged(playbackState = STATE_IDLE)
         listeners.sendEvent(EVENT_PLAYER_ERROR) { listener -> listener.onPlayerError(error) }
@@ -733,8 +762,8 @@ class MPVPlayer(
     }
 
     override fun setMediaItems(mediaItems: MutableList<MediaItem>, resetPosition: Boolean) {
-        mpv.command("playlist-clear")
-        mpv.command("playlist-remove", "current")
+        mpv.command(arrayOf("playlist-clear"))
+        mpv.command(arrayOf("playlist-remove", "current"))
         internalMediaItems = mediaItems
     }
 
@@ -743,8 +772,8 @@ class MPVPlayer(
         startIndex: Int,
         startPositionMs: Long,
     ) {
-        mpv.command("playlist-clear")
-        mpv.command("playlist-remove", "current")
+        mpv.command(arrayOf("playlist-clear"))
+        mpv.command(arrayOf("playlist-remove", "current"))
         internalMediaItems = mediaItems
         initialIndex = startIndex
         initialSeekTo = startPositionMs
@@ -754,10 +783,12 @@ class MPVPlayer(
         internalMediaItems.addAll(index, mediaItems)
         mediaItems.forEach { mediaItem ->
             mpv.command(
-                "loadfile",
-                "${mediaItem.localConfiguration?.uri}",
-                "insert-at",
-                index.toString(),
+                arrayOf(
+                    "loadfile",
+                    "${mediaItem.localConfiguration?.uri}",
+                    "insert-at",
+                    index.toString(),
+                )
             )
         }
     }
@@ -775,9 +806,11 @@ class MPVPlayer(
     override fun prepare() {
         internalMediaItems.forEachIndexed { index, mediaItem ->
             mpv.command(
-                "loadfile",
-                "${mediaItem.localConfiguration?.uri}",
-                if (index == 0) "replace" else "append",
+                arrayOf(
+                    "loadfile",
+                    "${mediaItem.localConfiguration?.uri}",
+                    if (index == 0) "replace" else "append",
+                )
             )
         }
 
@@ -795,7 +828,7 @@ class MPVPlayer(
                 )
             }
             if (initialIndex > 0) {
-                mpv.command("playlist-play-index", "$initialIndex")
+                mpv.command(arrayOf("playlist-play-index", "$initialIndex"))
             }
             setPlayerStateAndNotifyIfChanged(playbackState = STATE_BUFFERING)
         }
@@ -816,7 +849,7 @@ class MPVPlayer(
                 )
             }
             if (currentMediaItemIndex != index) {
-                mpv.command("playlist-play-index", "$index")
+                mpv.command(arrayOf("playlist-play-index", "$index"))
             }
             setPlayerStateAndNotifyIfChanged(playbackState = STATE_BUFFERING)
         }
@@ -881,9 +914,7 @@ class MPVPlayer(
             initialSeekTo =
                 if (isPlayerReady) {
                     mpv.command(
-                        "seek",
-                        "${seekTo.toDouble().div(C.MILLIS_PER_SECOND)}",
-                        "absolute",
+                        arrayOf("seek", "${seekTo.toDouble().div(C.MILLIS_PER_SECOND)}", "absolute")
                     )
 
                     currentPositionMs = targetMs
@@ -1205,6 +1236,8 @@ class MPVPlayer(
     }
 
     companion object {
+        const val ERROR_CODE_VIDEO_OUTPUT_FAILED = PlaybackException.CUSTOM_ERROR_CODE_BASE + 1
+        const val ERROR_CODE_AUDIO_OUTPUT_FAILED = PlaybackException.CUSTOM_ERROR_CODE_BASE + 2
         private const val AUDIO_FOCUS_DUCKING = 0.5f
         private const val GESTURE_KEYCODE_CENTER = 0x10002
         private const val GESTURE_KEYCODE_LONG_PRESS = 0x10004

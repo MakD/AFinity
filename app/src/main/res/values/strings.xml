@@ -893,6 +893,11 @@
     <string name="error_load_stream">Failed to load stream.</string>
     <string name="error_unexpected">An unexpected error occurred.</string>
     <string name="player_error_connection">Couldn\'t reach the server. Check your connection and try again.</string>
+    <string name="player_error_live_channel_unavailable">This channel isn\'t available right now. Its source may be offline.</string>
+    <string name="player_error_stream_failed">The server couldn\'t start this video.</string>
+    <string name="player_error_server_reason_fmt">%1$s\n\nServer: %2$s</string>
+    <string name="player_error_video_output">Video output failed to start. Try GPU API: OpenGL in the player settings.</string>
+    <string name="player_error_audio_output">Audio output failed to start. Try a different Audio Output in the player settings.</string>
     <string name="error_load_live_channel">Failed to load live channel.</string>
 
     <string name="skip_intro">Skip Intro</string>

@@ -20,6 +20,3 @@
 # Google Cast SDK
 -keep class com.google.android.gms.cast.** { *; }
 -keep class com.makd.afinity.cast.CastOptionsProvider { *; }
-
-# libmpv JNI
--keep class is.xyz.mpv.** { *; }
