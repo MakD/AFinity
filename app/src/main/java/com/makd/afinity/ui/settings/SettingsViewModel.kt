@@ -24,6 +24,7 @@ import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.models.user.User
+import com.makd.afinity.data.network.LastFmApiService
 import com.makd.afinity.data.network.MdbListApiService
 import com.makd.afinity.data.network.OmdbApiService
 import com.makd.afinity.data.network.TmdbApiService
@@ -59,6 +60,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.PluginStatus
 import org.jellyfin.sdk.model.api.TaskState
+import retrofit2.HttpException
 import timber.log.Timber
 
 @HiltViewModel
@@ -81,6 +83,7 @@ constructor(
     private val tmdbApiService: TmdbApiService,
     private val mdbListApiService: MdbListApiService,
     private val omdbApiService: OmdbApiService,
+    private val lastFmApiService: LastFmApiService,
     private val downloadRepository: DownloadRepository,
     private val absDownloadRepository: AbsDownloadRepository,
     private val adminRepository: ServerAdminRepository,
@@ -259,6 +262,9 @@ constructor(
     private val _omdbApiKey = MutableStateFlow("")
     val omdbApiKey: StateFlow<String> = _omdbApiKey.asStateFlow()
 
+    private val _lastFmApiKey = MutableStateFlow("")
+    val lastFmApiKey: StateFlow<String> = _lastFmApiKey.asStateFlow()
+
     val appFont: StateFlow<String> =
         preferencesRepository
             .getAppFontFlow()
@@ -271,6 +277,15 @@ constructor(
     val showRatings: StateFlow<Boolean> =
         preferencesRepository
             .getShowRatingsFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = true,
+            )
+
+    val lastFmPopularSort: StateFlow<Boolean> =
+        preferencesRepository
+            .getLastFmPopularSortFlow()
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
@@ -331,6 +346,14 @@ constructor(
                             ) ?: ""
                         } else ""
 
+                    val lastFmKey =
+                        if (user != null && server != null) {
+                            securePreferencesRepository.getLastFmApiKey(
+                                server.id,
+                                user.id.toString(),
+                            ) ?: ""
+                        } else ""
+
                     _uiState.value =
                         _uiState.value.copy(
                             currentUser = user,
@@ -353,6 +376,7 @@ constructor(
                     _tmdbApiKey.value = tmdbKey
                     _mdbListApiKey.value = mdbListKey
                     _omdbApiKey.value = omdbKey
+                    _lastFmApiKey.value = lastFmKey
 
                     Timber.d(
                         "SettingsViewModel - Updated uiState: user=${user?.name}, server=${server?.name}"
@@ -1169,6 +1193,18 @@ constructor(
         }
     }
 
+    fun toggleLastFmPopularSort(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setLastFmPopularSort(enabled)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle Last.fm popular sort")
+            }
+        }
+    }
+
     fun toggleAbsSwipeToSkip(enabled: Boolean) {
         viewModelScope.launch {
             try {
@@ -1441,6 +1477,72 @@ constructor(
         }
     }
 
+    fun validateAndSaveLastFmKey(apiKey: String, onSuccess: () -> Unit) {
+        if (apiKey.isBlank()) {
+            setLastFmApiKey("")
+            onSuccess()
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value =
+                _uiState.value.copy(isLastFmKeyValidating = true, lastFmKeyValidationError = null)
+            try {
+                val result =
+                    lastFmApiService.getArtistTopTracks(artist = "Cher", apiKey = apiKey, limit = 1)
+                if (result.toptracks != null) {
+                    setLastFmApiKey(apiKey)
+                    onSuccess()
+                } else {
+                    _uiState.value =
+                        _uiState.value.copy(lastFmKeyValidationError = "Invalid Last.fm API Key")
+                }
+            } catch (e: HttpException) {
+                _uiState.value =
+                    _uiState.value.copy(
+                        lastFmKeyValidationError =
+                            if (e.code() == 403) "Invalid Last.fm API Key"
+                            else "Network failure. Please try again."
+                    )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Last.fm validation network failure")
+                _uiState.value =
+                    _uiState.value.copy(
+                        lastFmKeyValidationError = "Network failure. Please try again."
+                    )
+            } finally {
+                _uiState.value = _uiState.value.copy(isLastFmKeyValidating = false)
+            }
+        }
+    }
+
+    fun setLastFmApiKey(apiKey: String) {
+        viewModelScope.launch {
+            try {
+                val user = authRepository.currentUser.value
+                val server = serverRepository.currentServer.value
+
+                if (user != null && server != null) {
+                    securePreferencesRepository.saveLastFmApiKey(
+                        server.id,
+                        user.id.toString(),
+                        apiKey,
+                    )
+                    _lastFmApiKey.value = apiKey
+                    Timber.d("Last.fm API Key updated securely.")
+                } else {
+                    Timber.w("Failed to save Last.fm API Key: User or Server is null")
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Error saving Last.fm API key")
+            }
+        }
+    }
+
     fun setMdbListApiKey(apiKey: String) {
         viewModelScope.launch {
             try {
@@ -1618,6 +1720,8 @@ data class SettingsUiState(
     val mdbListKeyValidationError: String? = null,
     val isOmdbKeyValidating: Boolean = false,
     val omdbKeyValidationError: String? = null,
+    val isLastFmKeyValidating: Boolean = false,
+    val lastFmKeyValidationError: String? = null,
     val isAuthorizingQuickConnect: Boolean = false,
     val quickConnectAuthSuccess: Boolean = false,
     val quickConnectAuthError: String? = null,

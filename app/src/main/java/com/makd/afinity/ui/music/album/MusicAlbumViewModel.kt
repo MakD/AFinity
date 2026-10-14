@@ -5,29 +5,37 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.DownloadPermissions
+import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadQuality
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.player.MusicQuality
+import com.makd.afinity.data.network.HotTracks
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
+import com.makd.afinity.data.repository.lastfm.LastFmRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.store.ItemStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 data class MusicAlbumUiState(
@@ -40,6 +48,7 @@ data class MusicAlbumUiState(
     val trackDownloadInfos: Map<UUID, DownloadInfo> = emptyMap(),
     val moreFromArtist: List<AfinityAlbum> = emptyList(),
     val similarAlbums: List<AfinityAlbum> = emptyList(),
+    val hotTrackIds: Set<UUID> = emptySet(),
 )
 
 @HiltViewModel
@@ -52,6 +61,8 @@ constructor(
     private val appDataRepository: AppDataRepository,
     private val downloadPermissions: DownloadPermissions,
     private val itemStore: ItemStore,
+    private val lastFmRepository: LastFmRepository,
+    private val offlineModeManager: OfflineModeManager,
     preferencesRepository: PreferencesRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -74,9 +85,21 @@ constructor(
     private val _uiState = MutableStateFlow(MusicAlbumUiState())
     val uiState: StateFlow<MusicAlbumUiState> = _uiState.asStateFlow()
 
+    private var hotTracksJob: Job? = null
+
     init {
         load()
         observeDownloads()
+
+        viewModelScope.launch {
+            offlineModeManager.isOffline
+                .drop(1)
+                .filter { !it }
+                .collect {
+                    val state = _uiState.value
+                    loadHotTracks(state.album, state.tracks)
+                }
+        }
 
         viewModelScope.launch {
             itemStore.overlay.collect { overlay ->
@@ -122,12 +145,39 @@ constructor(
                 }
                 updateDownloadState(lastAllDownloads)
                 album?.let { loadRelatedSections(it) }
+                loadHotTracks(album, tracks)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load album $albumId")
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
             }
+        }
+    }
+
+    private fun loadHotTracks(album: AfinityAlbum?, tracks: List<AfinityTrack>) {
+        val artist =
+            album?.artist?.takeUnless {
+                it.isBlank() || it.equals(VARIOUS_ARTISTS, ignoreCase = true)
+            } ?: return
+        if (tracks.size < 2) return
+        hotTracksJob?.cancel()
+        hotTracksJob = viewModelScope.launch {
+            lastFmRepository
+                .popularity(
+                    artist,
+                    allowNetwork = offlineModeManager.isInternetAvailable(),
+                    freshForMs = LastFmRepository.freshnessFor(listOf(album?.productionYear)),
+                )
+                .collect { popularity ->
+                    val hot =
+                        withContext(Dispatchers.Default) {
+                            HotTracks.hot(tracks, { it.name }, popularity.index)
+                                .map { it.id }
+                                .toSet()
+                        }
+                    _uiState.update { it.copy(hotTrackIds = hot) }
+                }
         }
     }
 
@@ -293,4 +343,8 @@ constructor(
     }
 
     fun refresh() = load()
+
+    private companion object {
+        const val VARIOUS_ARTISTS = "Various Artists"
+    }
 }

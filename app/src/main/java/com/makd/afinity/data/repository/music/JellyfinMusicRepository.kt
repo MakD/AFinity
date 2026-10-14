@@ -515,6 +515,41 @@ constructor(
             }
         }
 
+    override suspend fun getArtistTrackCount(artistId: UUID): Int? =
+        apiCall<Int?>(null, "Failed to fetch track count for artist: $artistId") { apiClient, userId
+            ->
+            LibraryApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    artistIds = listOf(artistId),
+                    includeItemTypes = listOf(BaseItemKind.AUDIO),
+                    limit = 0,
+                    recursive = true,
+                    enableUserData = false,
+                    enableImages = false,
+                    enableTotalRecordCount = true,
+                )
+                .content
+                .totalRecordCount
+        }
+
+    override suspend fun getTracksByIds(trackIds: List<UUID>): List<AfinityTrack> =
+        apiCall(emptyList(), "Failed to fetch tracks by ids") { apiClient, userId ->
+            if (trackIds.isEmpty()) return@apiCall emptyList()
+            val baseUrl = getBaseUrlInternal()
+            LibraryApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    ids = trackIds,
+                    fields = FieldSets.MUSIC_TRACK,
+                    enableUserData = true,
+                    enableTotalRecordCount = false,
+                )
+                .content
+                .items
+                .mapNotNull { dto -> runCatching { dto.toAfinityTrack(baseUrl) }.getOrNull() }
+        }
+
     override suspend fun getArtistAppearsOn(artistId: UUID, libraryId: UUID?): List<AfinityAlbum> =
         apiCall(emptyList(), "Failed to fetch 'appears on' albums for artist: $artistId") {
             apiClient,

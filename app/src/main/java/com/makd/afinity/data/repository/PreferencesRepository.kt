@@ -110,6 +110,10 @@ interface PreferencesRepository {
 
     fun getMusicSwipeToSkipFlow(): Flow<Boolean>
 
+    suspend fun setLastFmPopularSort(enabled: Boolean)
+
+    fun getLastFmPopularSortFlow(): Flow<Boolean>
+
     suspend fun setAbsSwipeToSkip(enabled: Boolean)
 
     fun getAbsSwipeToSkipFlow(): Flow<Boolean>

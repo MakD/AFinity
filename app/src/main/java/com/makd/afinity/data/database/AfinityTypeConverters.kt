@@ -2,6 +2,7 @@ package com.makd.afinity.data.database
 
 import android.net.Uri
 import androidx.room.TypeConverter
+import com.makd.afinity.data.models.lastfm.LastFmTrackPopularity
 import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.mdblist.MdbListRatingBadges
 import com.makd.afinity.data.models.media.AfinityChapter
@@ -526,6 +527,21 @@ class AfinityTypeConverters {
             null
         }
     }
+
+    @TypeConverter
+    fun fromLastFmTrackPopularityList(tracks: List<LastFmTrackPopularity>?): String? = tracks?.let {
+        json.encodeToString(it)
+    }
+
+    @TypeConverter
+    fun toLastFmTrackPopularityList(tracksString: String?): List<LastFmTrackPopularity>? =
+        tracksString?.let {
+            try {
+                json.decodeFromString<List<LastFmTrackPopularity>>(it)
+            } catch (e: Exception) {
+                null
+            }
+        }
 }
 
 @Serializable

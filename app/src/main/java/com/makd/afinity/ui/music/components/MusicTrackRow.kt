@@ -34,6 +34,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
@@ -50,6 +51,7 @@ fun MusicTrackRow(
     modifier: Modifier = Modifier,
     isPlaying: Boolean = false,
     trackNumber: Int? = null,
+    isHot: Boolean = false,
     showAlbumArt: Boolean = true,
     onClick: () -> Unit,
     onInstantMix: (() -> Unit)? = null,
@@ -128,27 +130,50 @@ fun MusicTrackRow(
             }
             Spacer(modifier = Modifier.width(12.dp))
         } else if (trackNumber != null) {
-            Text(
-                text = trackNumber.toString(),
-                style = MaterialTheme.typography.bodyMedium,
-                color =
-                    if (isPlaying) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.width(28.dp),
-            )
+            if (isHot) {
+                Box(modifier = Modifier.width(28.dp), contentAlignment = Alignment.Center) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_flame_hot_outline),
+                        contentDescription = stringResource(R.string.cd_music_hot_track),
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            } else {
+                Text(
+                    text = trackNumber.toString(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color =
+                        if (isPlaying) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.width(28.dp),
+                )
+            }
             Spacer(modifier = Modifier.width(12.dp))
         }
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = track.name,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                color =
-                    if (isPlaying) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = track.name,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                    color =
+                        if (isPlaying) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (isHot && (showAlbumArt || trackNumber == null)) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_flame_hot_outline),
+                        contentDescription = stringResource(R.string.cd_music_hot_track),
+                        tint = Color.Unspecified,
+                        modifier = Modifier.padding(start = 4.dp).size(15.dp),
+                    )
+                }
+            }
             val subtitle =
                 listOfNotNull(
                         track.artist ?: track.artists.firstOrNull(),

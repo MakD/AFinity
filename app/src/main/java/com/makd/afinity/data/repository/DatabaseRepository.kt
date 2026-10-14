@@ -3,6 +3,8 @@ package com.makd.afinity.data.repository
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
+import com.makd.afinity.data.database.entities.LastFmArtistCacheEntity
+import com.makd.afinity.data.database.entities.LastFmPopularCacheEntity
 import com.makd.afinity.data.database.entities.WikidataAwardsCacheEntity
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -262,6 +264,20 @@ interface DatabaseRepository {
     suspend fun getWikidataAwards(subjectType: String, tmdbId: String): WikidataAwardsCacheEntity?
 
     suspend fun insertWikidataAwards(awards: WikidataAwardsCacheEntity)
+
+    suspend fun getLastFmArtist(artistKey: String): LastFmArtistCacheEntity?
+
+    suspend fun insertLastFmArtist(artist: LastFmArtistCacheEntity)
+
+    suspend fun deleteLastFmArtistsOlderThan(cutoff: Long)
+
+    suspend fun getLastFmPopular(
+        serverId: String,
+        userId: String,
+        artistId: String,
+    ): LastFmPopularCacheEntity?
+
+    suspend fun insertLastFmPopular(popular: LastFmPopularCacheEntity)
 
     suspend fun insertMusicTrack(track: AfinityTrack, serverId: String, userId: String)
 

@@ -141,6 +141,10 @@ interface SecurePreferencesRepository {
 
     suspend fun getOmdbApiKey(serverId: String, userId: String): String?
 
+    suspend fun saveLastFmApiKey(serverId: String, userId: String, apiKey: String)
+
+    suspend fun getLastFmApiKey(serverId: String, userId: String): String?
+
     var onAbsAuthInvalidated: (() -> Unit)?
 
     var onAbsTokenRefreshed: ((String) -> Unit)?

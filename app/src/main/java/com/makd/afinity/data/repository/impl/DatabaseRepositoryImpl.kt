@@ -2,6 +2,7 @@ package com.makd.afinity.data.repository.impl
 
 import com.makd.afinity.data.database.dao.EpisodeDao
 import com.makd.afinity.data.database.dao.ItemMetadataCacheDao
+import com.makd.afinity.data.database.dao.LastFmArtistDao
 import com.makd.afinity.data.database.dao.MediaStreamDao
 import com.makd.afinity.data.database.dao.MovieDao
 import com.makd.afinity.data.database.dao.MusicAlbumDao
@@ -23,6 +24,8 @@ import com.makd.afinity.data.database.entities.AfinityShowDto
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
+import com.makd.afinity.data.database.entities.LastFmArtistCacheEntity
+import com.makd.afinity.data.database.entities.LastFmPopularCacheEntity
 import com.makd.afinity.data.database.entities.MusicLyricsEntity
 import com.makd.afinity.data.database.entities.WikidataAwardsCacheEntity
 import com.makd.afinity.data.database.entities.toAfinityAlbum
@@ -92,6 +95,7 @@ constructor(
     private val serverDatabaseDao: ServerDatabaseDao,
     private val itemMetadataCacheDao: ItemMetadataCacheDao,
     private val wikidataAwardsDao: WikidataAwardsDao,
+    private val lastFmArtistDao: LastFmArtistDao,
     private val musicTrackDao: MusicTrackDao,
     private val musicAlbumDao: MusicAlbumDao,
     private val musicLyricsDao: MusicLyricsDao,
@@ -857,6 +861,31 @@ constructor(
 
     override suspend fun insertWikidataAwards(awards: WikidataAwardsCacheEntity) {
         wikidataAwardsDao.insertOrUpdateAwards(awards)
+    }
+
+    override suspend fun getLastFmArtist(artistKey: String): LastFmArtistCacheEntity? {
+        return lastFmArtistDao.getArtist(artistKey)
+    }
+
+    override suspend fun insertLastFmArtist(artist: LastFmArtistCacheEntity) {
+        lastFmArtistDao.insertOrUpdateArtist(artist)
+    }
+
+    override suspend fun deleteLastFmArtistsOlderThan(cutoff: Long) {
+        lastFmArtistDao.deleteOlderThan(cutoff)
+        lastFmArtistDao.deletePopularOlderThan(cutoff)
+    }
+
+    override suspend fun getLastFmPopular(
+        serverId: String,
+        userId: String,
+        artistId: String,
+    ): LastFmPopularCacheEntity? {
+        return lastFmArtistDao.getPopular(serverId, userId, artistId)
+    }
+
+    override suspend fun insertLastFmPopular(popular: LastFmPopularCacheEntity) {
+        lastFmArtistDao.insertOrUpdatePopular(popular)
     }
 
     override suspend fun insertMusicTrack(track: AfinityTrack, serverId: String, userId: String) {

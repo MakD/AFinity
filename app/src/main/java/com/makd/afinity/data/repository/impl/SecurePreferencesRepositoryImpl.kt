@@ -686,6 +686,18 @@ constructor(@param:ApplicationContext private val context: Context) : SecurePref
         return getDecryptedString(omdbKey)
     }
 
+    override suspend fun saveLastFmApiKey(serverId: String, userId: String, apiKey: String) {
+        context.dataStore.edit { prefs ->
+            val lastFmKey = stringPreferencesKey("lastfm_api_key_${serverId}_$userId")
+            prefs[lastFmKey] = encrypt(apiKey)
+        }
+    }
+
+    override suspend fun getLastFmApiKey(serverId: String, userId: String): String? {
+        val lastFmKey = stringPreferencesKey("lastfm_api_key_${serverId}_$userId")
+        return getDecryptedString(lastFmKey)
+    }
+
     @Volatile override var onAbsAuthInvalidated: (() -> Unit)? = null
 
     @Volatile override var onAbsTokenRefreshed: ((String) -> Unit)? = null

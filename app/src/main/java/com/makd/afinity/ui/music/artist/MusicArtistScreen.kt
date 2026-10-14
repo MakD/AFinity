@@ -82,6 +82,7 @@ import com.makd.afinity.ui.item.components.shared.OverviewSection
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
+import com.makd.afinity.ui.music.components.LastFmAttribution
 import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.music.components.MusicDetailActionRow
 import com.makd.afinity.ui.music.components.MusicHeroBackground
@@ -355,6 +356,7 @@ fun MusicArtistScreen(
                                         MusicTrackRow(
                                             track = track,
                                             isPlaying = track.id == playbackState.currentTrack?.id,
+                                            isHot = track.id in uiState.hotTrackIds,
                                             showAlbumArt = true,
                                             onClick = {
                                                 startMusicService(context)
@@ -419,6 +421,7 @@ fun MusicArtistScreen(
                                                     track = track,
                                                     isPlaying =
                                                         track.id == playbackState.currentTrack?.id,
+                                                    isHot = track.id in uiState.hotTrackIds,
                                                     showAlbumArt = true,
                                                     onClick = {
                                                         startMusicService(context)
@@ -501,6 +504,10 @@ fun MusicArtistScreen(
                                         }
                                     }
                                 }
+                            }
+
+                            if (uiState.popularFromLastFm || uiState.hotTrackIds.isNotEmpty()) {
+                                LastFmAttribution(artistName = uiState.artist?.name)
                             }
                         }
                     }
@@ -801,10 +808,11 @@ fun MusicArtistScreen(
                                     }
                             } else Modifier
 
-                        Box(modifier = rowModifier) {
+                        Box(modifier = Modifier.animateItem().then(rowModifier)) {
                             MusicTrackRow(
                                 track = track,
                                 isPlaying = track.id == playbackState.currentTrack?.id,
+                                isHot = track.id in uiState.hotTrackIds,
                                 showAlbumArt = true,
                                 onClick = {
                                     startMusicService(context)
@@ -862,6 +870,7 @@ fun MusicArtistScreen(
                                         MusicTrackRow(
                                             track = track,
                                             isPlaying = track.id == playbackState.currentTrack?.id,
+                                            isHot = track.id in uiState.hotTrackIds,
                                             showAlbumArt = true,
                                             onClick = {
                                                 startMusicService(context)
@@ -942,6 +951,12 @@ fun MusicArtistScreen(
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    if (uiState.popularFromLastFm || uiState.hotTrackIds.isNotEmpty()) {
+                        item(key = "lastfm_attribution") {
+                            LastFmAttribution(artistName = uiState.artist?.name)
                         }
                     }
                 }

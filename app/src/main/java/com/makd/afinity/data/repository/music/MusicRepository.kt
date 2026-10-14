@@ -86,6 +86,10 @@ interface MusicRepository {
         limit: Int = 10,
     ): List<AfinityTrack>
 
+    suspend fun getArtistTrackCount(artistId: UUID): Int?
+
+    suspend fun getTracksByIds(trackIds: List<UUID>): List<AfinityTrack>
+
     suspend fun getArtistAppearsOn(artistId: UUID, libraryId: UUID? = null): List<AfinityAlbum>
 
     suspend fun getPlaylists(libraryId: UUID? = null): List<AfinityPlaylist>

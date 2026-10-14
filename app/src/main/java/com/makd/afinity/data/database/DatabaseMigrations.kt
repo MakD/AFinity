@@ -1705,6 +1705,31 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_83_84 =
+        object : Migration(83, 84) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `lastfm_artist_cache` (" +
+                        "`artistKey` TEXT NOT NULL, " +
+                        "`tracks` TEXT NOT NULL, " +
+                        "`confirmed` INTEGER NOT NULL, " +
+                        "`fetchedAt` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`artistKey`))"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `lastfm_popular_cache` (" +
+                        "`serverId` TEXT NOT NULL, " +
+                        "`userId` TEXT NOT NULL, " +
+                        "`artistId` TEXT NOT NULL, " +
+                        "`trackIds` TEXT NOT NULL, " +
+                        "`trackCount` INTEGER NOT NULL, " +
+                        "`lastFmVersion` INTEGER NOT NULL, " +
+                        "`updatedAt` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`serverId`, `userId`, `artistId`))"
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1789,5 +1814,6 @@ object DatabaseMigrations {
             MIGRATION_80_81,
             MIGRATION_81_82,
             MIGRATION_82_83,
+            MIGRATION_83_84,
         )
 }

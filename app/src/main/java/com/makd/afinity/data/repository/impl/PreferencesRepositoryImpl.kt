@@ -65,6 +65,7 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val MUSIC_QUALITY_CELLULAR = intPreferencesKey("music_quality_cellular")
         val MUSIC_NEVER_TRANSCODE = booleanPreferencesKey("music_never_transcode")
         val MUSIC_SWIPE_TO_SKIP = booleanPreferencesKey("music_swipe_to_skip")
+        val LASTFM_POPULAR_SORT = booleanPreferencesKey("lastfm_popular_sort")
         val ABS_SWIPE_TO_SKIP = booleanPreferencesKey("abs_swipe_to_skip")
         val SKIP_INTRO_ENABLED_LEGACY = booleanPreferencesKey("skip_intro_enabled")
         val SKIP_OUTRO_ENABLED_LEGACY = booleanPreferencesKey("skip_outro_enabled")
@@ -373,6 +374,14 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
     override fun getMusicSwipeToSkipFlow(): Flow<Boolean> {
         return dataStore.data.map { it[Keys.MUSIC_SWIPE_TO_SKIP] ?: true }
+    }
+
+    override suspend fun setLastFmPopularSort(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.LASTFM_POPULAR_SORT] = enabled }
+    }
+
+    override fun getLastFmPopularSortFlow(): Flow<Boolean> {
+        return dataStore.data.map { it[Keys.LASTFM_POPULAR_SORT] ?: true }
     }
 
     override suspend fun setAbsSwipeToSkip(enabled: Boolean) {

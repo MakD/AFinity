@@ -10,6 +10,7 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.network.AudiobookshelfApiService
 import com.makd.afinity.data.network.AudnexusApiService
 import com.makd.afinity.data.network.JellyseerrApiService
+import com.makd.afinity.data.network.LastFmApiService
 import com.makd.afinity.data.network.MdbListApiService
 import com.makd.afinity.data.network.OmdbApiService
 import com.makd.afinity.data.network.SeerrCookieJar
@@ -84,6 +85,8 @@ import timber.log.Timber
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class ProberClient
 
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class WikidataClient
+
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class LastFmClient
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -210,6 +213,9 @@ object NetworkModule {
 
     private val wikidataUserAgent =
         "AFinity/${BuildConfig.VERSION_NAME} (https://github.com/MakD/AFinity; award lookups, cached client-side)"
+
+    private val lastFmUserAgent =
+        "AFinity/${BuildConfig.VERSION_NAME} (https://github.com/MakD/AFinity; popular tracks, cached client-side)"
 
     @Provides
     @Singleton
@@ -866,5 +872,41 @@ object NetworkModule {
     @Singleton
     fun provideWikidataApiService(@WikidataClient retrofit: Retrofit): WikidataApiService {
         return retrofit.create(WikidataApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    @LastFmClient
+    fun provideLastFmRetrofit(baseOkHttpClient: OkHttpClient): Retrofit {
+        val contentType = "application/json".toMediaType()
+        val json = Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+        }
+
+        val lastFmClient =
+            baseOkHttpClient
+                .newBuilder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(20, TimeUnit.SECONDS)
+                .callTimeout(30, TimeUnit.SECONDS)
+                .addInterceptor { chain ->
+                    chain.proceed(
+                        chain.request().newBuilder().header("User-Agent", lastFmUserAgent).build()
+                    )
+                }
+                .build()
+
+        return Retrofit.Builder()
+            .baseUrl("https://ws.audioscrobbler.com/")
+            .client(lastFmClient)
+            .addConverterFactory(json.asConverterFactory(contentType))
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideLastFmApiService(@LastFmClient retrofit: Retrofit): LastFmApiService {
+        return retrofit.create(LastFmApiService::class.java)
     }
 }

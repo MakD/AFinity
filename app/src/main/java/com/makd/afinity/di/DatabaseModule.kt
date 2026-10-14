@@ -12,6 +12,7 @@ import com.makd.afinity.data.database.dao.HomeCacheDao
 import com.makd.afinity.data.database.dao.HomeLayoutPreferenceDao
 import com.makd.afinity.data.database.dao.ItemMetadataCacheDao
 import com.makd.afinity.data.database.dao.JellyfinStatsDao
+import com.makd.afinity.data.database.dao.LastFmArtistDao
 import com.makd.afinity.data.database.dao.MediaStreamDao
 import com.makd.afinity.data.database.dao.MovieDao
 import com.makd.afinity.data.database.dao.MusicAlbumDao
@@ -122,6 +123,11 @@ object DatabaseModule {
     @Provides
     fun provideWikidataAwardsDao(database: AfinityDatabase): WikidataAwardsDao {
         return database.wikidataAwardsDao()
+    }
+
+    @Provides
+    fun provideLastFmArtistDao(database: AfinityDatabase): LastFmArtistDao {
+        return database.lastFmArtistDao()
     }
 
     @Provides

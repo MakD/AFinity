@@ -74,6 +74,7 @@ import com.makd.afinity.ui.item.components.shared.OverviewSection
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
+import com.makd.afinity.ui.music.components.LastFmAttribution
 import com.makd.afinity.ui.music.components.MusicDetailActionRow
 import com.makd.afinity.ui.music.components.MusicHeroBackground
 import com.makd.afinity.ui.music.components.MusicHomeTopAppBar
@@ -422,6 +423,7 @@ fun MusicAlbumScreen(
                                 track = track,
                                 isPlaying = track.id == playbackState.currentTrack?.id,
                                 trackNumber = track.indexNumber,
+                                isHot = track.id in uiState.hotTrackIds,
                                 showAlbumArt = false,
                                 onClick = {
                                     val index = uiState.tracks.indexOf(track)
@@ -465,6 +467,11 @@ fun MusicAlbumScreen(
                                 onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
                                 downloadInfo = uiState.trackDownloadInfos[track.id],
                             )
+                        }
+                    }
+                    if (uiState.hotTrackIds.isNotEmpty()) {
+                        item(key = "lastfm_attribution") {
+                            LastFmAttribution(artistName = uiState.album?.artist)
                         }
                     }
                     item { relatedSectionsContent() }
@@ -621,6 +628,7 @@ fun MusicAlbumScreen(
                             track = track,
                             isPlaying = track.id == playbackState.currentTrack?.id,
                             trackNumber = track.indexNumber,
+                            isHot = track.id in uiState.hotTrackIds,
                             showAlbumArt = false,
                             onClick = {
                                 val index = uiState.tracks.indexOf(track)
@@ -664,6 +672,12 @@ fun MusicAlbumScreen(
                             onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
                             downloadInfo = uiState.trackDownloadInfos[track.id],
                         )
+                    }
+                }
+
+                if (uiState.hotTrackIds.isNotEmpty()) {
+                    item(key = "lastfm_attribution") {
+                        LastFmAttribution(artistName = uiState.album?.artist)
                     }
                 }
 

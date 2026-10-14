@@ -77,6 +77,7 @@ import com.makd.afinity.ui.settings.servers.SaveColor
 import com.makd.afinity.ui.settings.servers.ServerManagementViewModel
 import com.makd.afinity.ui.settings.servers.ServerWithUserCount
 import com.makd.afinity.ui.settings.servers.components.UnverifiedAddressDialog
+import com.makd.afinity.ui.settings.servers.lastFmColor
 import com.makd.afinity.ui.settings.servers.mdblistColor
 import com.makd.afinity.ui.settings.servers.tmdbColor
 import com.makd.afinity.util.isLocalAddress
@@ -156,7 +157,8 @@ fun ServicesHubScreen(
     val tmdbKey by settingsViewModel.tmdbApiKey.collectAsStateWithLifecycle()
     val mdbKey by settingsViewModel.mdbListApiKey.collectAsStateWithLifecycle()
     val omdbKey by settingsViewModel.omdbApiKey.collectAsStateWithLifecycle()
-    val ratingsCount = listOf(tmdbKey, mdbKey, omdbKey).count { it.isNotBlank() }
+    val lastFmKey by settingsViewModel.lastFmApiKey.collectAsStateWithLifecycle()
+    val ratingsCount = listOf(tmdbKey, mdbKey, omdbKey, lastFmKey).count { it.isNotBlank() }
 
     val dimDot = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
     val liveTypes = liveConnectionTypes(currentServer)
@@ -186,6 +188,7 @@ fun ServicesHubScreen(
             if (tmdbKey.isNotBlank()) tmdbColor else dimDot,
             if (mdbKey.isNotBlank()) mdblistColor else dimDot,
             if (omdbKey.isNotBlank()) MaterialTheme.colorScheme.onSurfaceVariant else dimDot,
+            if (lastFmKey.isNotBlank()) lastFmColor else dimDot,
         )
 
     var showSeerrSheet by remember { mutableStateOf(false) }
@@ -598,6 +601,7 @@ private fun HubList(
                                     stringResource(
                                         R.string.services_hub_status_ratings_count,
                                         ratingsCount,
+                                        ratingsDots.size,
                                     )
                                 else stringResource(R.string.services_hub_status_not_set_up),
                             isSelected = selected == EditorKind.RATINGS,
@@ -960,6 +964,7 @@ private fun RatingsKeys(viewModel: SettingsViewModel) {
     val tmdb by viewModel.tmdbApiKey.collectAsStateWithLifecycle()
     val mdb by viewModel.mdbListApiKey.collectAsStateWithLifecycle()
     val omdb by viewModel.omdbApiKey.collectAsStateWithLifecycle()
+    val lastFm by viewModel.lastFmApiKey.collectAsStateWithLifecycle()
     var editingLabel by remember { mutableStateOf<String?>(null) }
     Text(
         text = stringResource(R.string.services_hub_ratings_intro),
@@ -1005,6 +1010,17 @@ private fun RatingsKeys(viewModel: SettingsViewModel) {
         editing = editingLabel == "OMDb",
         onEditingChange = { editingLabel = if (it) "OMDb" else null },
         onSave = { viewModel.validateAndSaveOmdbKey(it) { editingLabel = null } },
+    )
+    RatingKeyRow(
+        label = "Last.fm",
+        labelColor = lastFmColor,
+        currentKey = lastFm,
+        validating = uiState.isLastFmKeyValidating,
+        error = uiState.lastFmKeyValidationError,
+        editing = editingLabel == "Last.fm",
+        onEditingChange = { editingLabel = if (it) "Last.fm" else null },
+        onSave = { viewModel.validateAndSaveLastFmKey(it) { editingLabel = null } },
+        meta = stringResource(R.string.lastfm_key_meta),
     )
 }
 

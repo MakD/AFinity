@@ -1182,6 +1182,8 @@
     <string name="pref_group_audio_players">Music and audiobooks</string>
     <string name="pref_music_swipe_skip_title">Swipe to change track</string>
     <string name="pref_music_swipe_skip_summary">Swipe the cover left or right in the music player</string>
+    <string name="pref_lastfm_popular_sort_title">Popular tracks by Last.fm</string>
+    <string name="pref_lastfm_popular_sort_summary">Turn off to sort by your play count</string>
     <string name="pref_abs_swipe_skip_title">Swipe to change chapter</string>
     <string name="pref_abs_swipe_skip_summary">Swipe the cover left or right in the audiobook player; podcasts change episode</string>
 
@@ -3065,6 +3067,8 @@
     <string name="cd_music_lyrics">Lyrics</string>
     <string name="cd_music_now_playing">Now playing</string>
     <string name="cd_music_more_options">More options</string>
+    <string name="cd_music_hot_track">Popular track</string>
+    <string name="lastfm_attribution">Popularity data from Last.fm</string>
     <string name="cd_episode_details">Episode details</string>
     <string name="cd_music_downloaded">Downloaded</string>
     <string name="cd_music_drag_reorder">Drag to reorder</string>
@@ -3095,17 +3099,17 @@
     <string name="services_hub_welcome">You\'re connected.</string>
     <string name="services_hub_welcome_subtitle">Add anything else? Everything here is optional.</string>
     <string name="services_hub_tile_remote">Remote access</string>
-    <string name="services_hub_tile_ratings">Ratings</string>
+    <string name="services_hub_tile_ratings">API keys</string>
     <string name="services_hub_status_connected">Connected</string>
     <string name="services_hub_status_added">Added</string>
     <string name="services_hub_status_not_set_up">Not set up</string>
-    <string name="services_hub_status_ratings_count">%1$d of 3</string>
+    <string name="services_hub_status_ratings_count">%1$d of %2$d</string>
     <string name="services_hub_more_servers">Add more servers or accounts</string>
     <string name="services_hub_editor_empty">Select a service to manage.</string>
     <string name="services_hub_editor_title_seerr">Seerr addresses</string>
     <string name="services_hub_editor_title_abs">Audiobookshelf addresses</string>
     <string name="services_hub_editor_title_jellyfin">Server addresses</string>
-    <string name="services_hub_editor_title_ratings">Ratings</string>
+    <string name="services_hub_editor_title_ratings">API keys</string>
     <string name="services_hub_address_hint">These are different ways to reach the same %1$s - home Wi-Fi, remote, or VPN. Adding one here doesn\'t add a new server.</string>
     <string name="services_hub_address_service_seerr">Seerr</string>
     <string name="services_hub_address_service_abs">Audiobookshelf server</string>
@@ -3114,7 +3118,8 @@
     <string name="services_hub_add_address_placeholder">Add another address…</string>
     <string name="services_hub_action_verify">Verify</string>
     <string name="services_hub_action_edit">Edit</string>
-    <string name="services_hub_ratings_intro">Add API keys to show IMDb, Rotten Tomatoes, and TMDb ratings.</string>
+    <string name="services_hub_ratings_intro">Add API keys to show IMDb, Rotten Tomatoes, and TMDb ratings, and popular tracks from Last.fm in music.</string>
+    <string name="lastfm_key_meta">Popular tracks</string>
     <string name="services_hub_disconnect_title">Disconnect %1$s?</string>
     <string name="services_hub_disconnect_message">You can reconnect anytime from here.</string>
     <string name="services_hub_remote_error_no_server">No active server.</string>

@@ -78,6 +78,7 @@ fun AppearanceOptionsScreen(
     val cardSize by viewModel.cardSize.collectAsStateWithLifecycle()
     val showRatings by viewModel.showRatings.collectAsStateWithLifecycle()
     val showAwards by viewModel.showAwards.collectAsStateWithLifecycle()
+    val lastFmPopularSort by viewModel.lastFmPopularSort.collectAsStateWithLifecycle()
     val appFont by viewModel.appFont.collectAsStateWithLifecycle()
     val playerOffset = LocalPlayerOffset.current
 
@@ -269,6 +270,14 @@ fun AppearanceOptionsScreen(
                         subtitle = stringResource(R.string.pref_show_awards_summary),
                         checked = showAwards,
                         onCheckedChange = viewModel::toggleShowAwards,
+                    )
+                    SettingsDivider()
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_flame_hot_outline),
+                        title = stringResource(R.string.pref_lastfm_popular_sort_title),
+                        subtitle = stringResource(R.string.pref_lastfm_popular_sort_summary),
+                        checked = lastFmPopularSort,
+                        onCheckedChange = viewModel::toggleLastFmPopularSort,
                     )
                 }
             }

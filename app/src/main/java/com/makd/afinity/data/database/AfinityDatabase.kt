@@ -15,6 +15,7 @@ import com.makd.afinity.data.database.dao.HomeLayoutPreferenceDao
 import com.makd.afinity.data.database.dao.ItemMetadataCacheDao
 import com.makd.afinity.data.database.dao.JellyfinStatsDao
 import com.makd.afinity.data.database.dao.JellyseerrDao
+import com.makd.afinity.data.database.dao.LastFmArtistDao
 import com.makd.afinity.data.database.dao.MediaStreamDao
 import com.makd.afinity.data.database.dao.MovieDao
 import com.makd.afinity.data.database.dao.MusicAlbumDao
@@ -65,6 +66,8 @@ import com.makd.afinity.data.database.entities.JellyseerrAddressEntity
 import com.makd.afinity.data.database.entities.JellyseerrConfigEntity
 import com.makd.afinity.data.database.entities.JellyseerrDiscoverFilterEntity
 import com.makd.afinity.data.database.entities.JellyseerrRequestEntity
+import com.makd.afinity.data.database.entities.LastFmArtistCacheEntity
+import com.makd.afinity.data.database.entities.LastFmPopularCacheEntity
 import com.makd.afinity.data.database.entities.MusicAlbumEntity
 import com.makd.afinity.data.database.entities.MusicLyricsEntity
 import com.makd.afinity.data.database.entities.MusicQueueEntity
@@ -80,7 +83,7 @@ import com.makd.afinity.data.models.server.ServerAddressMemory
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.models.user.User
 
-const val AFINITY_DB_VERSION = 83
+const val AFINITY_DB_VERSION = 84
 
 @Database(
     entities =
@@ -130,6 +133,8 @@ const val AFINITY_DB_VERSION = 83
             DeletedItemEntity::class,
             ServerStorageCacheEntity::class,
             WikidataAwardsCacheEntity::class,
+            LastFmArtistCacheEntity::class,
+            LastFmPopularCacheEntity::class,
         ],
     version = AFINITY_DB_VERSION,
     exportSchema = true,
@@ -196,6 +201,8 @@ abstract class AfinityDatabase : RoomDatabase() {
     abstract fun homeLayoutPreferenceDao(): HomeLayoutPreferenceDao
 
     abstract fun wikidataAwardsDao(): WikidataAwardsDao
+
+    abstract fun lastFmArtistDao(): LastFmArtistDao
 
     abstract fun deletedItemDao(): DeletedItemDao
 }
