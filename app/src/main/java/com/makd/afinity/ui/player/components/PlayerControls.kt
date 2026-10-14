@@ -1334,12 +1334,14 @@ private fun BottomControls(
                             showLabel = false,
                             onClick = onTrackPanelToggle,
                         )
-                        LabeledControl(
-                            painter = painterResource(id = R.drawable.ic_speed),
-                            label = stringResource(R.string.cd_speed),
-                            showLabel = false,
-                            onClick = onSpeedToggle,
-                        )
+                        if (!uiState.isLiveChannel) {
+                            LabeledControl(
+                                painter = painterResource(id = R.drawable.ic_speed),
+                                label = stringResource(R.string.cd_speed),
+                                showLabel = false,
+                                onClick = onSpeedToggle,
+                            )
+                        }
                         val sleepTimerArmed = uiState.isSleepTimerArmed
                         LabeledControl(
                             painter =

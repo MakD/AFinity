@@ -2310,6 +2310,7 @@ constructor(
             updateUiState {
                 it.copy(
                     currentItem = fullItem,
+                    isLiveChannel = false,
                     audioStreamIndex = targetAudioStreamIndex,
                     subtitleStreamIndex = targetSubtitleStreamIndex,
                     subtitleUserSelected = false,
@@ -2603,6 +2604,10 @@ constructor(
         lastLoadAttempt = null
         retryResumesCurrentItem = false
         clearPlaybackError()
+        if (_uiState.value.playbackSpeed != 1f) {
+            player.setPlaybackSpeed(1f)
+            updateUiState { it.copy(playbackSpeed = 1f) }
+        }
         mpvLiveAutoHideTriggered = false
         currentLivePlaybackInfo = playbackInfo
         currentSessionId = playbackInfo.playSessionId
@@ -3435,6 +3440,7 @@ constructor(
     }
 
     fun onLongPressStart() {
+        if (_uiState.value.isLiveChannel) return
         val currentSpeed = _uiState.value.playbackSpeed
         if (currentSpeed < 2.0f) {
             speedBeforeLongPress = currentSpeed
@@ -3506,6 +3512,10 @@ constructor(
 
     private fun onLockToggle() {
         updateUiState { it.copy(isControlsLocked = !it.isControlsLocked) }
+    }
+
+    fun onNewPlaybackRequest() {
+        reportCurrentItemStopped()
     }
 
     fun onNextEpisode() {

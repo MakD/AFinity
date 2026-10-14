@@ -34,7 +34,8 @@ import androidx.media3.common.util.Clock
 import androidx.media3.common.util.ListenerSet
 import androidx.media3.common.util.Size
 import androidx.media3.common.util.Util
-import dev.jdtech.mpv.MPVLib
+import `is`.xyz.mpv.MPVLib
+import `is`.xyz.mpv.MPVNode
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -65,7 +66,7 @@ class MPVPlayer(
     private val initialOptions: List<Pair<String, String>> = emptyList(),
 ) : BasePlayer(), MPVLib.EventObserver, AudioManager.OnAudioFocusChangeListener {
 
-    val mpv: MPVLib
+    val mpv: MpvHandle
     private val audioManager: AudioManager by lazy { context.getSystemService()!! }
     private var audioFocusCallback: () -> Unit = {}
     private lateinit var audioFocusRequest: AudioFocusRequestCompat
@@ -196,9 +197,14 @@ class MPVPlayer(
 
         setupDirectories(context, configDir, cacheDir)
 
-        mpv = MPVLib.create(context) ?: throw IllegalStateException("MPVLib.create() returned null")
+        mpv = MpvHandle.create(context)
 
-        Timber.d("MPVPlayer init: vo=$videoOutput, ao=$audioOutput, hwdec=$hwDec")
+        val useVulkan = gpuApi == "vulkan"
+        val effectiveHwDec = if (useVulkan && hwDec == "mediacodec") "mediacodec-copy" else hwDec
+
+        Timber.d(
+            "MPVPlayer init: vo=$videoOutput, ao=$audioOutput, hwdec=$effectiveHwDec, gpu-api=$gpuApi"
+        )
 
         mpv.setOptionString("config", "yes")
         mpv.setOptionString("config-dir", configDir.path)
@@ -210,15 +216,15 @@ class MPVPlayer(
         mpv.setOptionString("vo", videoOutput)
         mpv.setOptionString("ao", audioOutput)
         mpv.setOptionString("gpu-api", gpuApi)
-        mpv.setOptionString("gpu-context", "android")
-        if (gpuApi == "opengl") mpv.setOptionString("opengl-es", "yes")
+        mpv.setOptionString("gpu-context", if (useVulkan) "androidvk" else "android")
+        if (!useVulkan) mpv.setOptionString("opengl-es", "yes")
         mpv.setOptionString("vid", "no")
 
         mpv.setOptionString("target-colorspace-hint", if (hdrPassthrough) "yes" else "no")
         if (toneMapping != "auto") mpv.setOptionString("tone-mapping", toneMapping)
         mpv.setOptionString("hdr-compute-peak", if (hdrPeakDetection) "auto" else "no")
 
-        mpv.setOptionString("hwdec", hwDec)
+        mpv.setOptionString("hwdec", effectiveHwDec)
         mpv.setOptionString("hwdec-codecs", "h264,hevc,mpeg4,mpeg2video,vp8,vp9,av1")
 
         mpv.setOptionString("tls-verify", "no")
@@ -317,7 +323,7 @@ class MPVPlayer(
         val key = "0x%x".format(keycode)
         if (key !in boundInputKeys) return false
 
-        mpv.command(arrayOf("keypress", key))
+        mpv.command("keypress", key)
         return true
     }
 
@@ -572,14 +578,16 @@ class MPVPlayer(
         }
     }
 
-    override fun event(eventId: Int) {
+    override fun eventProperty(property: String, value: MPVNode) {}
+
+    override fun event(eventId: Int, data: MPVNode) {
         handler.post {
             if (isReleased) return@post
             when (eventId) {
                 MPVLib.MpvEvent.MPV_EVENT_START_FILE -> {
                     if (!isPlayerReady) {
                         for (command in initialCommands) {
-                            mpv.command(command)
+                            mpv.command(*command)
                         }
                     }
                 }
@@ -725,8 +733,8 @@ class MPVPlayer(
     }
 
     override fun setMediaItems(mediaItems: MutableList<MediaItem>, resetPosition: Boolean) {
-        mpv.command(arrayOf("playlist-clear"))
-        mpv.command(arrayOf("playlist-remove", "current"))
+        mpv.command("playlist-clear")
+        mpv.command("playlist-remove", "current")
         internalMediaItems = mediaItems
     }
 
@@ -735,8 +743,8 @@ class MPVPlayer(
         startIndex: Int,
         startPositionMs: Long,
     ) {
-        mpv.command(arrayOf("playlist-clear"))
-        mpv.command(arrayOf("playlist-remove", "current"))
+        mpv.command("playlist-clear")
+        mpv.command("playlist-remove", "current")
         internalMediaItems = mediaItems
         initialIndex = startIndex
         initialSeekTo = startPositionMs
@@ -746,12 +754,10 @@ class MPVPlayer(
         internalMediaItems.addAll(index, mediaItems)
         mediaItems.forEach { mediaItem ->
             mpv.command(
-                arrayOf(
-                    "loadfile",
-                    "${mediaItem.localConfiguration?.uri}",
-                    "insert-at",
-                    index.toString(),
-                )
+                "loadfile",
+                "${mediaItem.localConfiguration?.uri}",
+                "insert-at",
+                index.toString(),
             )
         }
     }
@@ -769,11 +775,9 @@ class MPVPlayer(
     override fun prepare() {
         internalMediaItems.forEachIndexed { index, mediaItem ->
             mpv.command(
-                arrayOf(
-                    "loadfile",
-                    "${mediaItem.localConfiguration?.uri}",
-                    if (index == 0) "replace" else "append",
-                )
+                "loadfile",
+                "${mediaItem.localConfiguration?.uri}",
+                if (index == 0) "replace" else "append",
             )
         }
 
@@ -791,7 +795,7 @@ class MPVPlayer(
                 )
             }
             if (initialIndex > 0) {
-                mpv.command(arrayOf("playlist-play-index", "$initialIndex"))
+                mpv.command("playlist-play-index", "$initialIndex")
             }
             setPlayerStateAndNotifyIfChanged(playbackState = STATE_BUFFERING)
         }
@@ -812,7 +816,7 @@ class MPVPlayer(
                 )
             }
             if (currentMediaItemIndex != index) {
-                mpv.command(arrayOf("playlist-play-index", "$index"))
+                mpv.command("playlist-play-index", "$index")
             }
             setPlayerStateAndNotifyIfChanged(playbackState = STATE_BUFFERING)
         }
@@ -877,7 +881,9 @@ class MPVPlayer(
             initialSeekTo =
                 if (isPlayerReady) {
                     mpv.command(
-                        arrayOf("seek", "${seekTo.toDouble().div(C.MILLIS_PER_SECOND)}", "absolute")
+                        "seek",
+                        "${seekTo.toDouble().div(C.MILLIS_PER_SECOND)}",
+                        "absolute",
                     )
 
                     currentPositionMs = targetMs

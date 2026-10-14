@@ -70,9 +70,12 @@ fun PlayerScreenWrapper(
     }
 
     val effectiveStreamUrl = if (isLiveChannel) fetchedStreamUrl else liveStreamUrl
+    val isItemStale = item != null && item?.id != itemId
 
     when {
-        isLoading || (isLiveChannel && effectiveStreamUrl == null && streamError == null) -> {
+        isLoading ||
+            isItemStale ||
+            (isLiveChannel && effectiveStreamUrl == null && streamError == null) -> {
             Box(
                 modifier = modifier.fillMaxSize().background(Color.Black),
                 contentAlignment = Alignment.Center,
