@@ -160,6 +160,7 @@ internal fun ffmpegFailureLine(log: String): String? =
         .lastOrNull()
         ?.replace(FFMPEG_CONTEXT_PREFIX, "")
         ?.take(FAILURE_REASON_MAX_CHARS)
+
 private const val CATALOG_TTL_MS = 10 * 60 * 1000L
 private const val BACKUP_TIMEOUT_MINUTES = 30L
 private const val CONFIG_PATH_SEPARATOR = '.'
