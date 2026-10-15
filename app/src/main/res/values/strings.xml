@@ -1000,6 +1000,9 @@
     <string name="pref_navigation_drawer_summary">Use a side navigation menu instead of the bottom bar</string>
     <string name="pref_libraries_in_drawer_title">Show Libraries in Menu</string>
     <string name="pref_libraries_in_drawer_summary">List your libraries in the navigation menu instead of on the home screen</string>
+    <string name="drawer_libraries_mode_off">Off</string>
+    <string name="drawer_libraries_mode_screen">Libraries screen</string>
+    <string name="drawer_libraries_mode_each">Each library</string>
     <string name="pref_side_sheet_title">Side Sheet in Landscape</string>
     <string name="pref_side_sheet_summary">Show episode details in a side sheet when the screen is wider than it is tall. Turn off to always use a bottom sheet</string>
 

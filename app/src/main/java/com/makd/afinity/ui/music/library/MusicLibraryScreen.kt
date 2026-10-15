@@ -136,6 +136,7 @@ fun MusicLibraryScreen(
     navController: NavController,
     viewModel: MusicLibraryViewModel = hiltViewModel(),
     playerViewModel: MusicPlayerViewModel = hiltViewModel(),
+    onMenuClick: (() -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val userProfileImageUrl by viewModel.userProfileImageUrl.collectAsStateWithLifecycle()
@@ -172,6 +173,7 @@ fun MusicLibraryScreen(
                         imageUrl = userProfileImageUrl,
                     ),
                 onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
+                onMenuClick = onMenuClick,
             )
         }
     ) { innerPadding ->

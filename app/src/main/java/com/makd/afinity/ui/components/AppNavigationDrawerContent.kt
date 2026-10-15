@@ -55,6 +55,7 @@ import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import com.makd.afinity.BuildConfig
 import com.makd.afinity.R
+import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.navigation.Destination
@@ -77,7 +78,10 @@ fun AppNavigationDrawerContent(
     isAudiobookshelfAuthenticated: Boolean,
     hasLiveTvAccess: Boolean,
     librariesInDrawer: Boolean,
+    libraries: List<AfinityCollection>,
+    selectedLibraryId: String?,
     onDestinationClick: (Destination) -> Unit,
+    onLibraryClick: (AfinityCollection) -> Unit,
     onSettingsClick: () -> Unit,
     onAddAccountClick: (Server) -> Unit,
     onCloseDrawer: () -> Unit,
@@ -254,6 +258,32 @@ fun AppNavigationDrawerContent(
                             )
                 ) {
                     Destination.entries.forEach { destination ->
+                        if (destination == Destination.LIBRARIES && !isOffline) {
+                            libraries.forEach { library ->
+                                NavigationDrawerItem(
+                                    label = {
+                                        Text(
+                                            text = library.name,
+                                            style = MaterialTheme.typography.labelLarge,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    },
+                                    selected = library.id.toString() == selectedLibraryId,
+                                    onClick = { onLibraryClick(library) },
+                                    icon = {
+                                        Icon(
+                                            painter = libraryTypeIcon(library.type),
+                                            contentDescription = library.name,
+                                        )
+                                    },
+                                    modifier =
+                                        Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                )
+                            }
+                        }
+
                         val visible =
                             when {
                                 isOffline && destination != Destination.HOME -> false

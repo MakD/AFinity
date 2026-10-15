@@ -2,6 +2,8 @@ package com.makd.afinity.navigation
 
 import androidx.annotation.StringRes
 import com.makd.afinity.R
+import com.makd.afinity.data.models.common.CollectionType
+import com.makd.afinity.data.models.media.AfinityCollection
 import java.net.URLEncoder
 
 enum class Destination(
@@ -277,6 +279,19 @@ enum class Destination(
         fun createLibraryContentRoute(libraryId: String, libraryName: String): String {
             return "library_content/$libraryId/${libraryName.replace("/", "%2F")}"
         }
+
+        fun createLibraryRoute(library: AfinityCollection): String =
+            if (library.type == CollectionType.Music) {
+                createMusicLibraryRoute(
+                    libraryId = library.id.toString(),
+                    libraryName = library.name,
+                )
+            } else {
+                createLibraryContentRoute(
+                    libraryId = library.id.toString(),
+                    libraryName = library.name,
+                )
+            }
 
         fun createStudioContentRoute(studioName: String): String {
             return "studio_content/${studioName.replace("/", "%2F")}"

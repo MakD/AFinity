@@ -42,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.common.DetailLayout
+import com.makd.afinity.data.models.common.DrawerLibrariesMode
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTextField
@@ -71,7 +72,7 @@ fun AppearanceOptionsScreen(
         viewModel.mergeContinueWatchingNextUp.collectAsStateWithLifecycle()
     val nextUpMaxDays by viewModel.nextUpMaxDays.collectAsStateWithLifecycle()
     val navigationDrawerEnabled by viewModel.navigationDrawerEnabled.collectAsStateWithLifecycle()
-    val librariesInDrawer by viewModel.librariesInDrawer.collectAsStateWithLifecycle()
+    val drawerLibrariesMode by viewModel.drawerLibrariesMode.collectAsStateWithLifecycle()
     val sideSheetEnabled by viewModel.sideSheetEnabled.collectAsStateWithLifecycle()
     val episodeLayout by viewModel.episodeLayout.collectAsStateWithLifecycle()
     val detailLayout by viewModel.detailLayout.collectAsStateWithLifecycle()
@@ -159,12 +160,9 @@ fun AppearanceOptionsScreen(
                         onCheckedChange = viewModel::toggleNavigationDrawer,
                     )
                     SettingsDivider()
-                    SettingsSwitchItem(
-                        icon = painterResource(id = R.drawable.ic_video_library),
-                        title = stringResource(R.string.pref_libraries_in_drawer_title),
-                        subtitle = stringResource(R.string.pref_libraries_in_drawer_summary),
-                        checked = librariesInDrawer,
-                        onCheckedChange = viewModel::toggleLibrariesInDrawer,
+                    DrawerLibrariesModeSelectorItem(
+                        selectedMode = drawerLibrariesMode,
+                        onModeSelected = viewModel::setDrawerLibrariesMode,
                         enabled = navigationDrawerEnabled,
                     )
                     SettingsDivider()
@@ -503,6 +501,71 @@ private fun DetailLayoutSelectorItem(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun DrawerLibrariesModeSelectorItem(
+    selectedMode: DrawerLibrariesMode,
+    onModeSelected: (DrawerLibrariesMode) -> Unit,
+    enabled: Boolean,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        SettingsItem(
+            icon = painterResource(id = R.drawable.ic_video_library),
+            title = stringResource(R.string.pref_libraries_in_drawer_title),
+            subtitle = getDrawerLibrariesModeDisplayName(selectedMode),
+            onClick = { expanded = true },
+            enabled = enabled,
+            trailing = {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                    contentDescription = null,
+                    tint =
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                            alpha = if (enabled) 1f else 0.38f
+                        ),
+                    modifier = Modifier.size(24.dp),
+                )
+            },
+        )
+
+        EndAlignedDropdownMenu(
+            expanded = expanded && enabled,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        ) {
+            DrawerLibrariesMode.entries.forEach { mode ->
+                DropdownMenuItem(
+                    text = { Text(getDrawerLibrariesModeDisplayName(mode)) },
+                    onClick = {
+                        onModeSelected(mode)
+                        expanded = false
+                    },
+                    leadingIcon =
+                        if (mode == selectedMode) {
+                            {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_check),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else null,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun getDrawerLibrariesModeDisplayName(mode: DrawerLibrariesMode): String {
+    return when (mode) {
+        DrawerLibrariesMode.OFF -> stringResource(R.string.drawer_libraries_mode_off)
+        DrawerLibrariesMode.SCREEN -> stringResource(R.string.drawer_libraries_mode_screen)
+        DrawerLibrariesMode.EACH -> stringResource(R.string.drawer_libraries_mode_each)
     }
 }
 

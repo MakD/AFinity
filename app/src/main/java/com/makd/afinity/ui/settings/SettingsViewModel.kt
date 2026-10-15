@@ -10,6 +10,7 @@ import com.makd.afinity.data.models.HomeRow
 import com.makd.afinity.data.models.auth.QuickConnectAuthorization
 import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.common.DetailLayout
+import com.makd.afinity.data.models.common.DrawerLibrariesMode
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.mdblist.MdbListUsage
 import com.makd.afinity.data.models.player.AssRenderMode
@@ -187,13 +188,13 @@ constructor(
                 initialValue = true,
             )
 
-    val librariesInDrawer: StateFlow<Boolean> =
+    val drawerLibrariesMode: StateFlow<DrawerLibrariesMode> =
         preferencesRepository
-            .getLibrariesInDrawerFlow()
+            .getDrawerLibrariesModeFlow()
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
-                initialValue = false,
+                initialValue = DrawerLibrariesMode.OFF,
             )
 
     val episodeLayout: StateFlow<EpisodeLayout> =
@@ -703,8 +704,8 @@ constructor(
         viewModelScope.launch { preferencesRepository.setNavigationDrawerEnabled(enabled) }
     }
 
-    fun toggleLibrariesInDrawer(enabled: Boolean) {
-        viewModelScope.launch { preferencesRepository.setLibrariesInDrawer(enabled) }
+    fun setDrawerLibrariesMode(mode: DrawerLibrariesMode) {
+        viewModelScope.launch { preferencesRepository.setDrawerLibrariesMode(mode) }
     }
 
     fun toggleSideSheet(enabled: Boolean) {

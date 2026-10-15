@@ -7,6 +7,7 @@ import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PendingNavigationManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.common.CardSize
+import com.makd.afinity.data.models.common.DrawerLibrariesMode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.AppDataRepository
@@ -122,14 +123,16 @@ constructor(
                 initialValue = false,
             )
 
-    val librariesInDrawer =
+    val drawerLibrariesMode =
         preferencesRepository
-            .getLibrariesInDrawerFlow()
+            .getDrawerLibrariesModeFlow()
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
-                initialValue = false,
+                initialValue = DrawerLibrariesMode.OFF,
             )
+
+    val libraries = appDataRepository.libraries
 
     val serverName =
         sessionManager.currentSession

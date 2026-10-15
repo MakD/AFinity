@@ -52,6 +52,7 @@ internal object PortablePreferences {
             spec("episode_layout", PrefType.STRING, SettingsSection.APPEARANCE),
             spec("navigation_drawer_enabled", PrefType.BOOLEAN, SettingsSection.APPEARANCE),
             spec("libraries_in_drawer", PrefType.BOOLEAN, SettingsSection.APPEARANCE),
+            spec("individual_libraries_in_drawer", PrefType.BOOLEAN, SettingsSection.APPEARANCE),
             spec("show_ratings", PrefType.BOOLEAN, SettingsSection.APPEARANCE),
             spec("combine_library_sections", PrefType.BOOLEAN, SettingsSection.APPEARANCE),
             spec("home_sort_by_date_added", PrefType.BOOLEAN, SettingsSection.APPEARANCE),

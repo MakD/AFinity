@@ -2,6 +2,7 @@ package com.makd.afinity.data.repository
 
 import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.common.DetailLayout
+import com.makd.afinity.data.models.common.DrawerLibrariesMode
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.player.AssRenderMode
@@ -276,11 +277,9 @@ interface PreferencesRepository {
 
     fun getNavigationDrawerEnabledFlow(): Flow<Boolean>
 
-    suspend fun setLibrariesInDrawer(enabled: Boolean)
+    suspend fun setDrawerLibrariesMode(mode: DrawerLibrariesMode)
 
-    suspend fun getLibrariesInDrawer(): Boolean
-
-    fun getLibrariesInDrawerFlow(): Flow<Boolean>
+    fun getDrawerLibrariesModeFlow(): Flow<DrawerLibrariesMode>
 
     suspend fun setSideSheetEnabled(enabled: Boolean)
 

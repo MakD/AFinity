@@ -14,6 +14,23 @@ bin/
 gen/
 out/
 release/
+scripts/
+nightly/
+.release-notes/
+.plans/
+.audit/
+.design/
+.kotlin/
+.claude/skills/
+
+# The patterns above have no leading slash, so they match at any depth --
+# including the Android source sets named after build types. The generated
+# baseline profile lives under app/src/release/ and must stay tracked.
+!app/src/release/
+!app/src/nightly/
+
+# IntelliJ full-project inspection export (multi-GB, regenerate on demand)
+.inspection-report/
 
 # Gradle files
 .gradle/
@@ -83,3 +100,9 @@ lint/tmp/
 *~
 *.swp
 *.bak
+
+# .env file
+.env
+
+# R8 mapping archive (per-versionCode, kept locally so shipped builds stay retraceable)
+mapping-archive/

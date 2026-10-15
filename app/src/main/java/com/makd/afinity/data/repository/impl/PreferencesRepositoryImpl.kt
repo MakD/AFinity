@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.common.DetailLayout
+import com.makd.afinity.data.models.common.DrawerLibrariesMode
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.player.AssRenderMode
@@ -90,6 +91,7 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val NAVIGATION_DRAWER_ENABLED = booleanPreferencesKey("navigation_drawer_enabled")
         val SIDE_SHEET_ENABLED = booleanPreferencesKey("side_sheet_enabled")
         val LIBRARIES_IN_DRAWER = booleanPreferencesKey("libraries_in_drawer")
+        val INDIVIDUAL_LIBRARIES_IN_DRAWER = booleanPreferencesKey("individual_libraries_in_drawer")
         val ONBOARDING_FIRST_RUN_DONE = booleanPreferencesKey("onboarding_first_run_done")
 
         val DOWNLOAD_WIFI_ONLY = booleanPreferencesKey("download_wifi_only")
@@ -486,16 +488,21 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         return dataStore.data.first()[Keys.ONBOARDING_FIRST_RUN_DONE] ?: false
     }
 
-    override suspend fun setLibrariesInDrawer(enabled: Boolean) {
-        dataStore.edit { preferences -> preferences[Keys.LIBRARIES_IN_DRAWER] = enabled }
+    override suspend fun setDrawerLibrariesMode(mode: DrawerLibrariesMode) {
+        dataStore.edit { preferences ->
+            preferences[Keys.LIBRARIES_IN_DRAWER] = mode != DrawerLibrariesMode.OFF
+            preferences[Keys.INDIVIDUAL_LIBRARIES_IN_DRAWER] = mode == DrawerLibrariesMode.EACH
+        }
     }
 
-    override suspend fun getLibrariesInDrawer(): Boolean {
-        return dataStore.data.first()[Keys.LIBRARIES_IN_DRAWER] ?: false
-    }
-
-    override fun getLibrariesInDrawerFlow(): Flow<Boolean> {
-        return dataStore.data.map { preferences -> preferences[Keys.LIBRARIES_IN_DRAWER] ?: false }
+    override fun getDrawerLibrariesModeFlow(): Flow<DrawerLibrariesMode> {
+        return dataStore.data.map { preferences ->
+            when {
+                preferences[Keys.LIBRARIES_IN_DRAWER] != true -> DrawerLibrariesMode.OFF
+                preferences[Keys.INDIVIDUAL_LIBRARIES_IN_DRAWER] == true -> DrawerLibrariesMode.EACH
+                else -> DrawerLibrariesMode.SCREEN
+            }
+        }
     }
 
     override suspend fun setSkipIntroMode(mode: SkipMode) {

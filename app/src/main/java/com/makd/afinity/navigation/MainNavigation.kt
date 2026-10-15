@@ -65,7 +65,7 @@ import androidx.navigation.navArgument
 import com.makd.afinity.AuthenticationState
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
-import com.makd.afinity.data.models.common.CollectionType
+import com.makd.afinity.data.models.common.DrawerLibrariesMode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
@@ -177,7 +177,8 @@ fun MainNavigation(
     val cardSize by viewModel.cardSize.collectAsStateWithLifecycle()
     val sideSheetEnabled by viewModel.sideSheetEnabled.collectAsStateWithLifecycle()
     val navigationDrawerEnabled by viewModel.navigationDrawerEnabled.collectAsStateWithLifecycle()
-    val librariesInDrawer by viewModel.librariesInDrawer.collectAsStateWithLifecycle()
+    val drawerLibrariesMode by viewModel.drawerLibrariesMode.collectAsStateWithLifecycle()
+    val libraries by viewModel.libraries.collectAsStateWithLifecycle()
     val serverName by viewModel.serverName.collectAsStateWithLifecycle()
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
     val railState = rememberWideNavigationRailState()
@@ -248,6 +249,14 @@ fun MainNavigation(
         if (navigationDrawerEnabled) {
             { coroutineScope.launch { railState.expand() } }
         } else null
+    val showIndividualLibraries =
+        navigationDrawerEnabled && drawerLibrariesMode == DrawerLibrariesMode.EACH
+    val libraryMenuClick = if (showIndividualLibraries) onMenuClick else null
+    val isOnLibraryEntry =
+        currentRoute == Destination.LIBRARY_CONTENT_ROUTE ||
+            currentRoute == Destination.MUSIC_LIBRARY_ROUTE
+    val selectedLibraryId =
+        if (isOnLibraryEntry) navBackStackEntry?.arguments?.getString("libraryId") else null
 
     LaunchedEffect(Unit) {
         viewModel.sessionCleared.collect {
@@ -280,10 +289,10 @@ fun MainNavigation(
         }
     }
 
-    LaunchedEffect(navigationDrawerEnabled, librariesInDrawer, currentDestination) {
+    LaunchedEffect(navigationDrawerEnabled, drawerLibrariesMode, currentDestination) {
         if (
             currentDestination?.route == Destination.LIBRARIES.route &&
-                !(navigationDrawerEnabled && librariesInDrawer)
+                !(navigationDrawerEnabled && drawerLibrariesMode == DrawerLibrariesMode.SCREEN)
         ) {
             Timber.d("Libraries menu entry removed, navigating to HOME")
             navController.navigate(Destination.HOME.route) {
@@ -511,7 +520,8 @@ fun MainNavigation(
                                         widthSizeClass = widthSizeClass,
                                         onMenuClick = onMenuClick,
                                         hideLibrariesSection =
-                                            navigationDrawerEnabled && librariesInDrawer,
+                                            navigationDrawerEnabled &&
+                                                drawerLibrariesMode != DrawerLibrariesMode.OFF,
                                     )
                                 }
 
@@ -519,19 +529,9 @@ fun MainNavigation(
                                     LibrariesScreen(
                                         onMenuClick = onMenuClick,
                                         onLibraryClick = { library ->
-                                            val route =
-                                                if (library.type == CollectionType.Music) {
-                                                    Destination.createMusicLibraryRoute(
-                                                        libraryId = library.id.toString(),
-                                                        libraryName = library.name,
-                                                    )
-                                                } else {
-                                                    Destination.createLibraryContentRoute(
-                                                        libraryId = library.id.toString(),
-                                                        libraryName = library.name,
-                                                    )
-                                                }
-                                            navController.navigate(route)
+                                            navController.navigate(
+                                                Destination.createLibraryRoute(library)
+                                            )
                                         },
                                         onProfileClick = {
                                             val route = Destination.createSettingsRoute()
@@ -565,6 +565,7 @@ fun MainNavigation(
                                         navController = navController,
                                         modifier = Modifier.fillMaxSize(),
                                         widthSizeClass = widthSizeClass,
+                                        onMenuClick = libraryMenuClick,
                                     )
                                 }
 
@@ -1366,7 +1367,10 @@ fun MainNavigation(
                                             },
                                         ),
                                 ) {
-                                    MusicLibraryScreen(navController = navController)
+                                    MusicLibraryScreen(
+                                        navController = navController,
+                                        onMenuClick = libraryMenuClick,
+                                    )
                                 }
 
                                 composable(
@@ -1780,13 +1784,29 @@ fun MainNavigation(
                             isJellyseerrAuthenticated = isJellyseerrAuthenticated,
                             isAudiobookshelfAuthenticated = isAudiobookshelfAuthenticated,
                             hasLiveTvAccess = hasLiveTvAccess,
-                            librariesInDrawer = librariesInDrawer,
+                            librariesInDrawer = drawerLibrariesMode == DrawerLibrariesMode.SCREEN,
+                            libraries = if (showIndividualLibraries) libraries else emptyList(),
+                            selectedLibraryId = selectedLibraryId,
                             onDestinationClick = { destination ->
                                 coroutineScope.launch { railState.collapse() }
                                 navController.navigate(destination.route) {
-                                    popUpTo(Destination.HOME.route) { saveState = true }
+                                    popUpTo(Destination.HOME.route) {
+                                        saveState = !isOnLibraryEntry
+                                    }
                                     launchSingleTop = true
                                     restoreState = true
+                                }
+                            },
+                            onLibraryClick = { library ->
+                                coroutineScope.launch { railState.collapse() }
+                                if (library.id.toString() != selectedLibraryId) {
+                                    navController.navigate(
+                                        Destination.createLibraryRoute(library)
+                                    ) {
+                                        popUpTo(Destination.HOME.route) {
+                                            saveState = !isOnLibraryEntry
+                                        }
+                                    }
                                 }
                             },
                             onSettingsClick = {

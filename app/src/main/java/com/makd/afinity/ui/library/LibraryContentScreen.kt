@@ -97,6 +97,7 @@ fun LibraryContentScreen(
     navController: NavController,
     viewModel: LibraryContentViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
+    onMenuClick: (() -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val pagingDataFlow by viewModel.pagingData.collectAsStateWithLifecycle()
@@ -174,6 +175,7 @@ fun LibraryContentScreen(
                     val route = Destination.createSearchRoute()
                     navController.navigate(route)
                 },
+                onMenuClick = onMenuClick,
             )
             Box(
                 modifier =
