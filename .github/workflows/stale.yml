@@ -1,0 +1,51 @@
+name: Close stale issues
+
+on:
+  schedule:
+    - cron: "30 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Waiting on reporter
+        uses: actions/stale@v9
+        with:
+          only-issue-labels: "needs-info"
+          exempt-issue-labels: "backlog,pinned"
+          days-before-issue-stale: 14
+          days-before-issue-close: 7
+          stale-issue-label: "stale"
+          stale-issue-message: >
+            This issue has been waiting on more information for 14 days.
+            It will be closed in 7 days if there's no reply. Comment to keep it open.
+          close-issue-message: >
+            Closing because the requested information wasn't provided.
+            Feel free to reopen with the details and we'll take another look.
+          close-issue-reason: "not_planned"
+          days-before-pr-stale: -1
+          days-before-pr-close: -1
+
+      - name: Backlog
+        uses: actions/stale@v9
+        with:
+          only-issue-labels: "backlog"
+          exempt-issue-labels: "needs-info,pinned"
+          days-before-issue-stale: 90
+          days-before-issue-close: 14
+          stale-issue-label: "stale"
+          stale-issue-message: >
+            This isn't on the roadmap right now and hasn't had activity in 90 days.
+            It will be closed in 14 days to keep the tracker manageable. Closing isn't
+            a final no: comment if it still matters to you, or reopen it later.
+          close-issue-message: >
+            Closing as not planned for now. Thanks for the suggestion. If things
+            change, this can be reopened.
+          close-issue-reason: "not_planned"
+          days-before-pr-stale: -1
+          days-before-pr-close: -1
