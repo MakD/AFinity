@@ -21,8 +21,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -43,6 +41,8 @@ import com.makd.afinity.R
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.admin.components.AdminLoadContent
 import com.makd.afinity.ui.admin.components.AdminScaffold
+import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.settings.logs.LogCountChip
 import com.makd.afinity.ui.settings.logs.LogEmptyReason
 import com.makd.afinity.ui.settings.logs.LogEmptyState
@@ -132,8 +132,8 @@ fun ServerLogViewerScreen(
     }
 
     if (showTags && view != null) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(onDismissRequest = { showTags = false }, sheetState = sheetState) {
+        val sheetState = rememberAfinitySheetState()
+        AfinityModalBottomSheet(onDismissRequest = { showTags = false }, sheetState = sheetState) {
             TagFilterSheetContent(
                 tagCounts = view.document.tagCounts,
                 selected = state.tags,

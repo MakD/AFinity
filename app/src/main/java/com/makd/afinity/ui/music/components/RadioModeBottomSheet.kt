@@ -15,9 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +29,8 @@ import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.RadioMode
 import com.makd.afinity.data.models.music.RadioSeed
+import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.rememberAfinitySheetState
 
 private data class RadioModeOption(
     val mode: RadioMode,
@@ -80,19 +80,11 @@ fun RadioModeBottomSheet(
     onDismiss: () -> Unit,
     onSelectMode: (RadioSeed, RadioMode) -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberAfinitySheetState()
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
-        dragHandle = null,
-    ) {
+    AfinityModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
-            modifier =
-                Modifier.fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(top = 24.dp, bottom = 32.dp)
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 32.dp)
         ) {
             Text(
                 text = stringResource(R.string.music_action_start_radio_header),

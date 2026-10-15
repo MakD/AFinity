@@ -43,14 +43,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -75,6 +73,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.util.logging.LogLevel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -472,8 +472,11 @@ fun LogViewerScreen(
     }
 
     if (showExport) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(onDismissRequest = { showExport = false }, sheetState = sheetState) {
+        val sheetState = rememberAfinitySheetState()
+        AfinityModalBottomSheet(
+            onDismissRequest = { showExport = false },
+            sheetState = sheetState,
+        ) {
             ExportSheetContent(
                 bufferedCount = uiState.totalCount,
                 visibleCount = uiState.matchCount.takeIf { uiState.scope.isFiltered },
@@ -489,8 +492,8 @@ fun LogViewerScreen(
     }
 
     if (showTags) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(onDismissRequest = { showTags = false }, sheetState = sheetState) {
+        val sheetState = rememberAfinitySheetState()
+        AfinityModalBottomSheet(onDismissRequest = { showTags = false }, sheetState = sheetState) {
             TagFilterSheetContent(
                 tagCounts = uiState.tagCounts,
                 selected = uiState.scope.tags,

@@ -29,7 +29,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.WideNavigationRailDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberWideNavigationRailState
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
@@ -89,6 +88,7 @@ import com.makd.afinity.ui.components.AppNavigationDrawerContent
 import com.makd.afinity.ui.components.CardRowContainer
 import com.makd.afinity.ui.components.LocalNetworkPermissionGrantButton
 import com.makd.afinity.ui.components.UnsupportedServerDialog
+import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.downloads.DownloadedCategory
 import com.makd.afinity.ui.downloads.DownloadedCategoryScreen
 import com.makd.afinity.ui.favorites.FavoritesCategory
@@ -1882,7 +1882,7 @@ fun MainNavigation(
 
         if (unsupportedServerVersion != null && !onEscapeRoute) {
             var showSessionSwitcher by rememberSaveable { mutableStateOf(false) }
-            val sessionSwitcherSheetState = rememberModalBottomSheetState()
+            val sessionSwitcherSheetState = rememberAfinitySheetState()
 
             UnsupportedServerDialog(
                 version = unsupportedServerVersion,

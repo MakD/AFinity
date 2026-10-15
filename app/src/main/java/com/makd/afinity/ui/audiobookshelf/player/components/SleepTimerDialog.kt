@@ -24,9 +24,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -43,6 +41,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.player.components.formatSleepCountdown
 import com.makd.afinity.ui.player.components.rememberSleepTimerRemainingMs
 
@@ -62,7 +62,7 @@ fun SleepTimerDialog(
     activeChapterTarget: Int? = null,
     activeTargetRemainingSeconds: Double? = null,
 ) {
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberAfinitySheetState()
 
     val timerOptions = listOf(5, 10, 15, 30, 45, 60, 90, 120)
 
@@ -76,14 +76,14 @@ fun SleepTimerDialog(
 
     var extraChapters by remember { mutableIntStateOf(0) }
 
-    ModalBottomSheet(
+    AfinityModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surface,
-        dragHandle = null,
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(24.dp).padding(bottom = 24.dp)) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 48.dp)
+        ) {
             Text(
                 text = stringResource(R.string.abs_sleep_timer_title),
                 style = MaterialTheme.typography.labelMedium,

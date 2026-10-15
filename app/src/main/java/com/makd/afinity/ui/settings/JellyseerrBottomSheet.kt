@@ -27,7 +27,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -58,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.DiscoveredServicesSection
 import com.makd.afinity.ui.components.LoadingButton
@@ -371,14 +371,10 @@ fun JellyseerrBottomSheet(
     modifier: Modifier = Modifier,
     viewModel: JellyseerrLoginViewModel = hiltViewModel(),
 ) {
-    ModalBottomSheet(
+    AfinityModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        tonalElevation = 0.dp,
     ) {
         JellyseerrLoginContent(onDismiss = onDismiss, viewModel = viewModel)
     }

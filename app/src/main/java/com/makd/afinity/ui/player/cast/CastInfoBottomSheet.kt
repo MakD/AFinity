@@ -14,11 +14,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -32,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.cast.CastManager
 import com.makd.afinity.cast.CastSessionState
+import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.rememberAfinitySheetState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,10 +41,10 @@ fun CastInfoBottomSheet(
     onStopCasting: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberAfinitySheetState()
     var volumeSliderValue by remember { mutableFloatStateOf(castState.volume.toFloat()) }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    AfinityModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)) {
             Text(
                 text = stringResource(R.string.cast_device_info),

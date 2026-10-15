@@ -24,7 +24,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -50,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.ui.components.AFinitySnackbar
+import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.ForgetAccountDialog
 import com.makd.afinity.ui.components.UserAvatar
 import kotlinx.coroutines.launch
@@ -157,13 +157,10 @@ fun SessionSwitcherBottomSheet(
 ) {
     val coroutineScope = rememberCoroutineScope()
 
-    ModalBottomSheet(
+    AfinityModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 0.dp,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
     ) {
         SessionSwitcherContent(
             onDismiss = {

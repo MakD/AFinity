@@ -47,7 +47,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.SnackbarHost
@@ -58,7 +57,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -87,8 +85,10 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.admin.ItemImage
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
+import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.components.MediaCountBadge
+import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.util.formatFileSize
 import java.util.Locale
@@ -1105,7 +1105,7 @@ private fun ImagePreviewSheet(
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberAfinitySheetState()
     val ratio =
         if (image.width > 0 && image.height > 0) {
             (image.width.toFloat() / image.height).coerceIn(0.4f, 6f)
@@ -1141,12 +1141,7 @@ private fun ImagePreviewSheet(
             }
         }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-    ) {
+    AfinityModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             modifier =
                 Modifier.fillMaxWidth()

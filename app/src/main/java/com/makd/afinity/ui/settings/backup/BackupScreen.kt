@@ -17,7 +17,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
@@ -42,6 +41,7 @@ import com.makd.afinity.data.models.SettingsSection
 import com.makd.afinity.data.repository.settings.SettingsImportFailure
 import com.makd.afinity.data.repository.settings.SettingsImportPreview
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
@@ -108,7 +108,11 @@ fun BackupBottomSheet(
     modifier: Modifier = Modifier,
     viewModel: BackupViewModel = hiltViewModel(),
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, modifier = modifier) {
+    AfinityModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        modifier = modifier,
+    ) {
         Text(
             text = stringResource(R.string.backup_title),
             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),

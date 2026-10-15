@@ -20,9 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -38,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
+import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.rememberAfinitySheetState
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,7 +49,7 @@ fun ChapterSelector(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberAfinitySheetState()
     val listState = rememberLazyListState()
 
     LaunchedEffect(currentChapterIndex) {
@@ -58,14 +58,12 @@ fun ChapterSelector(
         }
     }
 
-    ModalBottomSheet(
+    AfinityModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surface,
-        dragHandle = null,
     ) {
-        Column(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f).padding(top = 24.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f)) {
             Text(
                 text = stringResource(R.string.abs_chapters_header),
                 style = MaterialTheme.typography.labelMedium,

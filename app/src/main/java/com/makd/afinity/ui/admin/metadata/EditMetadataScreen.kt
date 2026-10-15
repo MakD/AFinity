@@ -44,7 +44,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.SnackbarHost
@@ -55,7 +54,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -87,9 +85,11 @@ import com.makd.afinity.data.models.admin.EditableItem
 import com.makd.afinity.data.models.admin.EditablePerson
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
+import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinitySwitch
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.FullScreenError
+import com.makd.afinity.ui.components.rememberAfinitySheetState
 
 private const val DEFAULT_PERSON_TYPE = "Actor"
 private const val NEW_PERSON = -1
@@ -766,18 +766,13 @@ private fun PersonSheet(
     onRemove: (() -> Unit)?,
     onDismiss: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberAfinitySheetState()
     var name by remember { mutableStateOf(person?.name.orEmpty()) }
     var type by remember { mutableStateOf(person?.type ?: DEFAULT_PERSON_TYPE) }
     var role by remember { mutableStateOf(person?.role.orEmpty()) }
     val types = remember(person) { (PERSON_TYPES + listOfNotNull(person?.type)).distinct() }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-    ) {
+    AfinityModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             modifier =
                 Modifier.fillMaxWidth()

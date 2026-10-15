@@ -22,9 +22,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +44,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.tmdb.TmdbReview
+import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.theme.CardDimensions
 import org.commonmark.ext.autolink.AutolinkExtension
 import org.commonmark.parser.Parser
@@ -57,7 +57,7 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
     if (reviews.isEmpty()) return
 
     var selectedReview by remember { mutableStateOf<TmdbReview?>(null) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val sheetState = rememberAfinitySheetState()
     val linkStyles =
         TextLinkStyles(
             style =
@@ -86,11 +86,9 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
     }
 
     selectedReview?.let { review ->
-        ModalBottomSheet(
+        AfinityModalBottomSheet(
             onDismissRequest = { selectedReview = null },
             sheetState = sheetState,
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
         ) {
             Column(
                 modifier =

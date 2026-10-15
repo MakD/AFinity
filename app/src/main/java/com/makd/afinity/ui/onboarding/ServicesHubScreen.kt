@@ -38,7 +38,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -46,7 +45,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -64,10 +62,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.server.ConnectionType
+import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.LocalNetworkPermissionCard
 import com.makd.afinity.ui.components.connectionIndicatorColor
 import com.makd.afinity.ui.components.connectionLabel
+import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.item.components.shared.AwardGold
 import com.makd.afinity.ui.settings.SettingsViewModel
 import com.makd.afinity.ui.settings.servers.AudiobookshelfColor
@@ -196,13 +196,13 @@ fun ServicesHubScreen(
     var showSeerrDisconnect by remember { mutableStateOf(false) }
     var showAbsDisconnect by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf<EditorKind?>(null) }
-    val editorSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val seerrSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val absSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val editorSheetState = rememberAfinitySheetState()
+    val seerrSheetState = rememberAfinitySheetState()
+    val absSheetState = rememberAfinitySheetState()
 
     var showWikidataSheet by remember { mutableStateOf(false) }
     var showWikidataDisconnect by remember { mutableStateOf(false) }
-    val wikidataSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val wikidataSheetState = rememberAfinitySheetState()
     val wikidataEnabled by settingsViewModel.wikidataEnabled.collectAsStateWithLifecycle()
     val onWikidataTile = {
         if (wikidataEnabled) showWikidataDisconnect = true else showWikidataSheet = true
@@ -353,12 +353,9 @@ fun ServicesHubScreen(
 
                     val kind = selected
                     if (kind != null && (kind == EditorKind.RATINGS || currentServer != null)) {
-                        ModalBottomSheet(
+                        AfinityModalBottomSheet(
                             onDismissRequest = { selected = null },
                             sheetState = editorSheetState,
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-                            tonalElevation = 0.dp,
                         ) {
                             Column(modifier = Modifier.fillMaxWidth().imePadding()) {
                                 Text(
@@ -1275,12 +1272,7 @@ private fun WikidataConnectSheet(
     onDismiss: () -> Unit,
     onEnable: () -> Unit,
 ) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-    ) {
+    AfinityModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),

@@ -35,14 +35,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -75,9 +73,11 @@ import com.makd.afinity.data.models.admin.IdentifyResult
 import com.makd.afinity.data.models.admin.IdentifyTarget
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
+import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinitySwitch
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.EmptyState
+import com.makd.afinity.ui.components.rememberAfinitySheetState
 
 private val CardShape = RoundedCornerShape(16.dp)
 
@@ -584,18 +584,9 @@ private fun MatchSheet(
     onDismiss: () -> Unit,
 ) {
     val currentApplying by rememberUpdatedState(applying)
-    val sheetState =
-        rememberModalBottomSheetState(
-            skipPartiallyExpanded = true,
-            confirmValueChange = { !currentApplying },
-        )
+    val sheetState = rememberAfinitySheetState(confirmValueChange = { !currentApplying })
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-    ) {
+    AfinityModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             modifier =
                 Modifier.fillMaxWidth()

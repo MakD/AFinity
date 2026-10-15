@@ -16,12 +16,7 @@ out/
 release/
 scripts/
 nightly/
-.release-notes/
-.plans/
-.audit/
-.design/
 .kotlin/
-.claude/skills/
 
 # The patterns above have no leading slash, so they match at any depth --
 # including the Android source sets named after build types. The generated

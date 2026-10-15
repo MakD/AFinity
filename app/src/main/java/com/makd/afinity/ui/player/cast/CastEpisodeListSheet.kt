@@ -26,10 +26,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -60,8 +58,10 @@ import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.navigation.LocalShowRatings
+import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.formatRuntimeTicks
+import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import java.util.Locale
 import java.util.UUID
@@ -75,7 +75,7 @@ fun CastEpisodeListSheet(
     onEpisodeClick: (AfinityItem) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberAfinitySheetState()
     val currentIndex = episodes.indexOfFirst { it.id == currentItemId }.coerceAtLeast(0)
     val listState =
         rememberLazyListState(initialFirstVisibleItemIndex = (currentIndex - 1).coerceAtLeast(0))
@@ -85,7 +85,7 @@ fun CastEpisodeListSheet(
         if (idx >= 0) listState.animateScrollToItem((idx - 1).coerceAtLeast(0))
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    AfinityModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = stringResource(R.string.cd_episodes),

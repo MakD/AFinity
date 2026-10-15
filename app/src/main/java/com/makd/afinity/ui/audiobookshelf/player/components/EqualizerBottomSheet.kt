@@ -22,9 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,8 +44,10 @@ import com.makd.afinity.player.common.EQ_MAX_DB
 import com.makd.afinity.player.common.EQ_MIN_DB
 import com.makd.afinity.player.common.EqualizerPreset
 import com.makd.afinity.player.common.EqualizerState
+import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinitySlider
 import com.makd.afinity.ui.components.AfinitySwitch
+import com.makd.afinity.ui.components.rememberAfinitySheetState
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,19 +63,14 @@ fun EqualizerBottomSheet(
     onSkipSilenceToggle: ((Boolean) -> Unit)? = null,
     presets: List<EqualizerPreset> = EqualizerPreset.SPOKEN_WORD,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberAfinitySheetState()
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        dragHandle = null,
-    ) {
+    AfinityModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             modifier =
                 Modifier.fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 48.dp)
+                    .padding(start = 24.dp, end = 24.dp, bottom = 48.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

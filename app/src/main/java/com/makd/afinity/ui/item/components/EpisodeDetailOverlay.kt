@@ -12,15 +12,11 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.union
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,9 +28,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,7 +36,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -60,12 +53,14 @@ import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.navigation.LocalSideSheetEnabled
+import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.FavoriteToggleButton
 import com.makd.afinity.ui.components.ModalSideSheet
 import com.makd.afinity.ui.components.WatchedToggleButton
 import com.makd.afinity.ui.components.WatchlistToggleButton
 import com.makd.afinity.ui.components.formatRuntimeTicks
 import com.makd.afinity.ui.components.isWideWindow
+import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.ui.item.components.shared.AdminAction
 import com.makd.afinity.ui.item.components.shared.CastRibbon
@@ -110,7 +105,7 @@ fun EpisodeDetailOverlay(
 ) {
     val context = LocalContext.current
     val isWide = LocalSideSheetEnabled.current && isWideWindow()
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val sheetState = rememberAfinitySheetState()
     var showPeopleDialog by remember { mutableStateOf(false) }
     val ratingScale = rememberRatingMetadataScale()
     val storageLocationProvider = rememberStorageLocationProvider()
@@ -520,36 +515,8 @@ fun EpisodeDetailOverlay(
             )
         }
     } else {
-        ModalBottomSheet(
-            onDismissRequest = onDismiss,
-            modifier =
-                Modifier.windowInsetsPadding(
-                    WindowInsets.systemBars
-                        .union(WindowInsets.displayCutout)
-                        .only(WindowInsetsSides.Horizontal)
-                ),
-            sheetState = sheetState,
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
-            dragHandle = {
-                Box(
-                    modifier =
-                        Modifier.windowInsetsPadding(
-                                WindowInsets.systemBars
-                                    .union(WindowInsets.displayCutout)
-                                    .only(WindowInsetsSides.Top)
-                            )
-                            .padding(vertical = 10.dp)
-                            .width(32.dp)
-                            .height(4.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                            )
-                )
-            },
-        ) {
-            sheetBody(Modifier.navigationBarsPadding(), 0.dp)
+        AfinityModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+            sheetBody(Modifier, 0.dp)
         }
     }
 

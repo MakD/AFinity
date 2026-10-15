@@ -55,7 +55,6 @@ import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
 import androidx.compose.material3.adaptive.layout.ThreePaneScaffoldDestinationItem
 import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -98,6 +97,7 @@ import com.makd.afinity.ui.components.connectionIndicatorColor
 import com.makd.afinity.ui.components.connectionLabel
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.components.listDetailPaneDirective
+import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.settings.appearance.AppearanceOptionsScreen
 import com.makd.afinity.ui.settings.backup.BackupBottomSheet
 import com.makd.afinity.ui.settings.backup.BackupScreen
@@ -145,8 +145,8 @@ fun SettingsScreen(
     var showBackupSheet by remember { mutableStateOf(false) }
     var showQuickConnectDialog by remember { mutableStateOf(false) }
     var showSessionSwitcherSheet by remember { mutableStateOf(false) }
-    val sessionSwitcherSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val backupSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sessionSwitcherSheetState = rememberAfinitySheetState()
+    val backupSheetState = rememberAfinitySheetState()
     val playerOffset = LocalPlayerOffset.current
     val isLandscape = isLandscapeWindow()
     val customDirective = listDetailPaneDirective()

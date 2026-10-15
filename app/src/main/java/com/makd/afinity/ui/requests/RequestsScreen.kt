@@ -15,7 +15,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,6 +47,7 @@ import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.ServiceUnreachableBanner
+import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.settings.JellyseerrBottomSheet
 
@@ -70,7 +70,7 @@ fun RequestsScreen(
     val isReachable by viewModel.isReachable.collectAsStateWithLifecycle(initialValue = true)
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     var showJellyseerrBottomSheet by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberAfinitySheetState()
     val playerOffset = LocalPlayerOffset.current
 
     LaunchedEffect(Unit) {

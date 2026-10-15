@@ -40,7 +40,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -86,6 +85,7 @@ import com.makd.afinity.data.repository.CacheSection
 import com.makd.afinity.data.repository.CacheUsage
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
+import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinitySlider
 import com.makd.afinity.ui.components.AfinitySwitch
 import com.makd.afinity.ui.components.AsyncImage
@@ -557,7 +557,7 @@ private fun DownloadGroupSheet(
             else -> null
         }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    AfinityModalBottomSheet(onDismissRequest = onDismiss) {
         Column(modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
