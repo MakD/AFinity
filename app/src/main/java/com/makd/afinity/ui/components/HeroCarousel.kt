@@ -227,26 +227,31 @@ private fun HeroCarouselAutoScrollAndPrefetch(
     }
 
     LaunchedEffect(pagerState.currentPage, skipServerResize) {
-        if (items.isEmpty()) return@LaunchedEffect
-        val nextIndex = (pagerState.currentPage + 1) % items.size
-        val item = items[nextIndex]
-        val rawUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl
-        if (rawUrl != null) {
-            val request =
-                ImageRequest.Builder(context)
-                    .data(optimizedImageUrl(rawUrl, fillWidthPx, skipServerResize))
-                    .size(fillWidthPx, fillHeightPx)
-                    .build()
-            context.imageLoader.enqueue(request)
-        }
-        val logoUrl = heroLogoUrl(item, skipServerResize)
-        if (logoUrl != null) {
-            val logoRequest =
-                ImageRequest.Builder(context)
-                    .data(optimizedImageUrl(logoUrl, logoWidthPx, skipServerResize, logoHeightPx))
-                    .size(logoWidthPx, logoHeightPx)
-                    .build()
-            context.imageLoader.enqueue(logoRequest)
+        if (items.size < 2) return@LaunchedEffect
+        val current = pagerState.currentPage
+        val neighbours = listOf(current + 1, current - 1).map { it.mod(items.size) }.distinct()
+        for (index in neighbours) {
+            val item = items[index]
+            val rawUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl
+            if (rawUrl != null) {
+                val request =
+                    ImageRequest.Builder(context)
+                        .data(optimizedImageUrl(rawUrl, fillWidthPx, skipServerResize))
+                        .size(fillWidthPx, fillHeightPx)
+                        .build()
+                context.imageLoader.enqueue(request)
+            }
+            val logoUrl = heroLogoUrl(item, skipServerResize)
+            if (logoUrl != null) {
+                val logoRequest =
+                    ImageRequest.Builder(context)
+                        .data(
+                            optimizedImageUrl(logoUrl, logoWidthPx, skipServerResize, logoHeightPx)
+                        )
+                        .size(logoWidthPx, logoHeightPx)
+                        .build()
+                context.imageLoader.enqueue(logoRequest)
+            }
         }
     }
 }
