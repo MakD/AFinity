@@ -1336,6 +1336,11 @@
 
     <string name="update_available_title">Update Available</string>
     <string name="update_whats_new">What\'s New</string>
+    <string name="update_alert_note">Note</string>
+    <string name="update_alert_tip">Tip</string>
+    <string name="update_alert_important">Important</string>
+    <string name="update_alert_warning">Warning</string>
+    <string name="update_alert_caution">Caution</string>
     <string name="update_version_fmt">v%1$s</string>
     <string name="btn_download_update">Download Update</string>
     <string name="btn_downloading">Downloading…</string>
