@@ -2,8 +2,12 @@ package com.makd.afinity.ui.admin.logs
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.models.admin.ServerConfigSource
 import com.makd.afinity.data.repository.NoActiveSessionException
 import com.makd.afinity.data.repository.admin.ServerAdminRepository
+import com.makd.afinity.ui.admin.config.ConfigFormEditor
+import com.makd.afinity.ui.admin.config.LoadedConfigForm
+import com.makd.afinity.ui.admin.config.SERVER_LOGS_FORM
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDateTime
 import javax.inject.Inject
@@ -27,6 +31,20 @@ class ServerLogsViewModel @Inject constructor(private val adminRepository: Serve
 
     private val _state = MutableStateFlow(ServerLogsUiState())
     val state: StateFlow<ServerLogsUiState> = _state.asStateFlow()
+
+    val settingsEditor =
+        ConfigFormEditor(
+            scope = viewModelScope,
+            loadForm = {
+                adminRepository.getServerConfig(ServerConfigSource.SYSTEM).map { document ->
+                    LoadedConfigForm(spec = SERVER_LOGS_FORM, document = document)
+                }
+            },
+            saveChanges = { changes ->
+                adminRepository.updateServerConfig(ServerConfigSource.SYSTEM, changes)
+            },
+            initialSpec = SERVER_LOGS_FORM,
+        )
 
     init {
         load()

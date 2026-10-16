@@ -2413,11 +2413,9 @@
     <string name="attention_restart_required">Необходим перезапуск</string>
     <string name="attention_restart_required_summary">Некоторые изменения применяются после перезапуска</string>
     <string name="attention_task_failed">Последний запуск не удался</string>
-    <string name="section_maintenance">Обслуживание</string>
     <string name="title_scheduled_tasks">Запланированные задачи</string>
     <string name="scheduled_tasks_summary">Запус, остановка и проверка задач сервера</string>
     <string name="section_server">Сервер</string>
-    <string name="section_monitor">Мониторинг</string>
     <string name="title_users">Пользователи</string>
     <string name="users_summary">Аккаунты и роли</string>
     <string name="users_count_fmt">Аккаунты: %1$d</string>
@@ -2707,7 +2705,6 @@
     <string name="parental_day_everyday">Каждый день</string>
     <string name="parental_day_weekday">По будням</string>
     <string name="parental_day_weekend">По выходным</string>
-    <string name="section_admin_settings">Настройки</string>
     <string name="config_min_above_max">Минимум должен быть ниже, чем максимум.</string>
     <string name="config_metadata_title">Метаданные</string>
     <string name="config_metadata_summary">Язык, страна и изображения глав</string>
@@ -2791,7 +2788,6 @@
     <string name="config_external_suggestions">Включать внешний контент в предложения</string>
     <string name="config_external_suggestions_summary">Разрешать показ интернет-трейлеров и эфирных передач в предлагаемом контенте.</string>
     <string name="config_playback_title">Воспроизведение</string>
-    <string name="config_playback_summary">Точки возобновления и потоковый битрейт</string>
     <string name="config_section_resume">Возобновление</string>
     <string name="config_min_resume_pct">Минимум для возобновления, в процентах</string>
     <string name="config_min_resume_pct_summary">Произведение считается невоспроизведенным при остановке до этого момента.</string>

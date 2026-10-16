@@ -6,12 +6,14 @@ import com.makd.afinity.data.models.admin.ServerConfigSource
 object ConfigFormIds {
     const val GENERAL = "general"
     const val LIBRARY_DISPLAY = "library-display"
-    const val PLAYBACK = "playback"
+    const val RESUME = "resume"
+    const val STREAMING = "streaming"
     const val TRICKPLAY = "trickplay"
     const val TRANSCODING = "transcoding"
     const val NETWORKING = "networking"
     const val LIBRARY_METADATA = "library-metadata"
     const val NFO = "nfo"
+    const val LOGS = "logs"
 }
 
 private const val BITS_PER_MEGABIT = 1_000_000L
@@ -39,9 +41,27 @@ private val GENERAL_FORM =
                             R.string.config_server_name,
                             R.string.config_server_name_summary,
                             required = true,
-                        ),
-                        SwitchField("QuickConnectAvailable", R.string.config_quick_connect),
+                        )
                     ),
+                ),
+                ConfigSection(
+                    R.string.config_section_paths,
+                    listOf(
+                        TextInputField(
+                            "CachePath",
+                            R.string.config_cache_path,
+                            R.string.config_cache_path_summary,
+                        ),
+                        TextInputField(
+                            "MetadataPath",
+                            R.string.config_metadata_path,
+                            R.string.config_metadata_path_summary,
+                        ),
+                    ),
+                ),
+                ConfigSection(
+                    R.string.config_section_quick_connect,
+                    listOf(SwitchField("QuickConnectAvailable", R.string.config_quick_connect)),
                 ),
                 ConfigSection(
                     R.string.config_section_performance,
@@ -60,9 +80,27 @@ private val GENERAL_FORM =
                         ),
                     ),
                 ),
+            ),
+    )
+
+internal val SERVER_LOGS_FORM =
+    ConfigFormSpec(
+        id = ConfigFormIds.LOGS,
+        title = R.string.title_server_logs,
+        sections =
+            listOf(
                 ConfigSection(
-                    R.string.config_section_logs,
+                    R.string.settings_title,
                     listOf(
+                        SwitchField(
+                            "EnableSlowResponseWarning",
+                            R.string.config_slow_response_warning,
+                        ),
+                        NumberField(
+                            "SlowResponseThresholdMs",
+                            R.string.config_slow_response_threshold,
+                            max = MAX_SLOW_RESPONSE_MS,
+                        ),
                         NumberField(
                             "ActivityLogRetentionDays",
                             R.string.config_activity_retention,
@@ -73,32 +111,8 @@ private val GENERAL_FORM =
                             R.string.config_log_retention,
                             max = MAX_RETENTION_DAYS,
                         ),
-                        SwitchField(
-                            "EnableSlowResponseWarning",
-                            R.string.config_slow_response_warning,
-                        ),
-                        NumberField(
-                            "SlowResponseThresholdMs",
-                            R.string.config_slow_response_threshold,
-                            max = MAX_SLOW_RESPONSE_MS,
-                        ),
                     ),
-                ),
-                ConfigSection(
-                    R.string.config_section_paths,
-                    listOf(
-                        TextInputField(
-                            "CachePath",
-                            R.string.config_cache_path,
-                            R.string.config_cache_path_summary,
-                        ),
-                        TextInputField(
-                            "MetadataPath",
-                            R.string.config_metadata_path,
-                            R.string.config_metadata_path_summary,
-                        ),
-                    ),
-                ),
+                )
             ),
     )
 
@@ -150,10 +164,10 @@ private val LIBRARY_DISPLAY_FORM =
             ),
     )
 
-private val PLAYBACK_FORM =
+private val RESUME_FORM =
     ConfigFormSpec(
-        id = ConfigFormIds.PLAYBACK,
-        title = R.string.config_playback_title,
+        id = ConfigFormIds.RESUME,
+        title = R.string.config_section_resume,
         sections =
             listOf(
                 ConfigSection(
@@ -173,12 +187,6 @@ private val PLAYBACK_FORM =
                             max = 100,
                         ),
                         NumberField(
-                            "MinResumeDurationSeconds",
-                            R.string.config_min_resume_duration,
-                            R.string.config_min_resume_duration_summary,
-                            max = MAX_RESUME_DURATION_SECONDS,
-                        ),
-                        NumberField(
                             "MinAudiobookResume",
                             R.string.config_min_audiobook_resume,
                             R.string.config_min_audiobook_resume_summary,
@@ -191,8 +199,24 @@ private val PLAYBACK_FORM =
                             min = 1,
                             max = MAX_AUDIOBOOK_MINUTES,
                         ),
+                        NumberField(
+                            "MinResumeDurationSeconds",
+                            R.string.config_min_resume_duration,
+                            R.string.config_min_resume_duration_summary,
+                            max = MAX_RESUME_DURATION_SECONDS,
+                        ),
                     ),
-                ),
+                )
+            ),
+        orderedPairs = listOf(FieldOrder("MinResumePct", "MaxResumePct")),
+    )
+
+private val STREAMING_FORM =
+    ConfigFormSpec(
+        id = ConfigFormIds.STREAMING,
+        title = R.string.config_section_streaming,
+        sections =
+            listOf(
                 ConfigSection(
                     R.string.config_section_streaming,
                     listOf(
@@ -205,9 +229,8 @@ private val PLAYBACK_FORM =
                             storedAsWholeNumber = true,
                         )
                     ),
-                ),
+                )
             ),
-        orderedPairs = listOf(FieldOrder("MinResumePct", "MaxResumePct")),
     )
 
 private val TRICKPLAY_FORM =
@@ -411,9 +434,10 @@ private val SERVER_CONFIG_FORMS =
             ),
             ServerConfigForm(ServerConfigSource.SYSTEM, LIBRARY_METADATA_FORM),
             ServerConfigForm(ServerConfigSource.NFO, NFO_FORM),
-            ServerConfigForm(ServerConfigSource.SYSTEM, PLAYBACK_FORM),
-            ServerConfigForm(ServerConfigSource.SYSTEM, TRICKPLAY_FORM),
             ServerConfigForm(ServerConfigSource.ENCODING, TRANSCODING_FORM),
+            ServerConfigForm(ServerConfigSource.SYSTEM, RESUME_FORM),
+            ServerConfigForm(ServerConfigSource.SYSTEM, STREAMING_FORM),
+            ServerConfigForm(ServerConfigSource.SYSTEM, TRICKPLAY_FORM),
             ServerConfigForm(ServerConfigSource.NETWORK, NETWORKING_FORM),
         )
         .associateBy { it.spec.id }

@@ -1579,11 +1579,10 @@
     <string name="attention_restart_required">Restart required</string>
     <string name="attention_restart_required_summary">Some changes take effect after a restart</string>
     <string name="attention_task_failed">Last run failed</string>
-    <string name="section_maintenance">Maintenance</string>
     <string name="title_scheduled_tasks">Scheduled Tasks</string>
     <string name="scheduled_tasks_summary">Run, stop and review server tasks</string>
     <string name="section_server">Server</string>
-    <string name="section_monitor">Monitor</string>
+    <string name="section_advanced">Advanced</string>
     <string name="title_users">Users</string>
     <string name="users_summary">Accounts and roles</string>
     <string name="users_count_fmt">Accounts: %1$d</string>
@@ -1694,7 +1693,7 @@
     <string name="attention_failed_sign_ins">Failed sign-ins</string>
     <string name="attention_failed_sign_ins_summary">In the last 24 hours</string>
     <string name="title_server_logs">Server Logs</string>
-    <string name="server_logs_summary">Server and transcode log files</string>
+    <string name="server_logs_summary">Log files, retention and slow response warning</string>
     <string name="server_logs_empty">No log files</string>
     <string name="server_log_tail_fmt">Showing the last %1$d of %2$d lines</string>
     <string name="libraries_admin_summary">Folders and scan status</string>
@@ -1873,7 +1872,6 @@
     <string name="parental_day_everyday">Every day</string>
     <string name="parental_day_weekday">Weekdays</string>
     <string name="parental_day_weekend">Weekends</string>
-    <string name="section_admin_settings">Settings</string>
     <string name="config_min_above_max">The minimum must be lower than the maximum.</string>
     <string name="config_metadata_title">Metadata</string>
     <string name="config_metadata_summary">Default language, country and chapter images</string>
@@ -1887,7 +1885,7 @@
     <string name="config_chapter_image_resolution">Resolution</string>
     <string name="config_chapter_image_resolution_summary">The resolution of the extracted chapter images. Changing this will have no effect on existing dummy chapters.</string>
     <string name="config_resolution_match_source">Match source</string>
-    <string name="config_nfo_title">NFO</string>
+    <string name="config_nfo_title">NFO Settings</string>
     <string name="config_nfo_summary">What is written to NFO files</string>
     <string name="config_nfo_note">To enable or disable NFO metadata, edit a library and find the \'Metadata savers\' section.</string>
     <string name="config_section_nfo">NFO Settings</string>
@@ -1918,8 +1916,9 @@
     <string name="config_discard_message">Your changes to these settings haven\'t been saved.</string>
     <string name="config_number_range_fmt">%1$d to %2$d</string>
     <string name="config_general_title">General</string>
-    <string name="config_general_summary">Name, Quick Connect and logs</string>
+    <string name="config_general_summary">Name, paths, Quick Connect and performance</string>
     <string name="config_section_server">Server</string>
+    <string name="config_section_quick_connect">Quick Connect</string>
     <string name="config_server_name">Server name</string>
     <string name="config_server_name_summary">This name will be used to identify the server and will default to the server\'s hostname.</string>
     <string name="config_quick_connect">Enable Quick Connect on this server</string>
@@ -1938,7 +1937,7 @@
     <string name="config_cache_path_summary">Specify a custom location for server cache files such as images. Leave blank to use the server default.</string>
     <string name="config_metadata_path">Metadata path</string>
     <string name="config_metadata_path_summary">Specify a custom location for downloaded artwork and metadata.</string>
-    <string name="config_library_display_title">Library display</string>
+    <string name="config_library_display_title">Display</string>
     <string name="config_library_display_summary">Folders, specials and collections</string>
     <string name="config_section_display">Display</string>
     <string name="config_date_added">Date added behavior for new content</string>
@@ -1955,7 +1954,8 @@
     <string name="config_external_suggestions">Enable external content in suggestions</string>
     <string name="config_external_suggestions_summary">Allow internet trailers and live TV programs to be included within suggested content.</string>
     <string name="config_playback_title">Playback</string>
-    <string name="config_playback_summary">Resume points and remote bitrate</string>
+    <string name="config_resume_summary">When titles count as played or resumable</string>
+    <string name="config_streaming_summary">Bitrate limit for internet streaming</string>
     <string name="config_section_resume">Resume</string>
     <string name="config_min_resume_pct">Minimum resume percentage</string>
     <string name="config_min_resume_pct_summary">Titles are assumed unplayed if stopped before this time.</string>
@@ -2228,6 +2228,9 @@
     <string name="config_net_known_proxies_summary">Comma separated list of IP addresses or hostnames of known proxies used when connecting to your Jellyfin instance. This is required to make proper use of \'X-Forwarded-For\' headers. Requires a reboot after saving.</string>
     <string name="config_net_published_uris">Published server addresses</string>
     <string name="config_net_published_by_request">Take the published address from the request</string>
+    <string name="config_section_net_ip_protocols">IP Protocols</string>
+    <string name="config_section_net_discovery">Network Discovery</string>
+    <string name="config_section_net_firewall">Firewall and Proxy Settings</string>
     <string name="config_section_net_interfaces">Network interfaces</string>
     <string name="config_net_ipv4">Enable IPv4</string>
     <string name="config_net_ipv4_summary">Enable IPv4 functionality.</string>

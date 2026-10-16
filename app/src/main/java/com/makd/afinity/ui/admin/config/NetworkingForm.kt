@@ -13,14 +13,14 @@ internal val NETWORKING_FORM =
                     R.string.config_section_net_addresses,
                     listOf(
                         ReadOnlyField(
-                            "BaseUrl",
-                            R.string.config_net_base_url,
-                            R.string.config_net_base_url_summary,
-                        ),
-                        ReadOnlyField(
                             "InternalHttpPort",
                             R.string.config_net_http_port,
                             R.string.config_net_http_port_summary,
+                        ),
+                        ReadOnlyField(
+                            "EnableHttps",
+                            R.string.config_net_enable_https,
+                            R.string.config_net_enable_https_summary,
                         ),
                         ReadOnlyField(
                             "InternalHttpsPort",
@@ -28,14 +28,9 @@ internal val NETWORKING_FORM =
                             R.string.config_net_https_port_summary,
                         ),
                         ReadOnlyField(
-                            "PublicHttpPort",
-                            R.string.config_net_public_http_port,
-                            R.string.config_net_public_http_port_summary,
-                        ),
-                        ReadOnlyField(
-                            "PublicHttpsPort",
-                            R.string.config_net_public_https_port,
-                            R.string.config_net_public_https_port_summary,
+                            "BaseUrl",
+                            R.string.config_net_base_url,
+                            R.string.config_net_base_url_summary,
                         ),
                         ReadOnlyField(
                             "LocalNetworkAddresses",
@@ -47,16 +42,16 @@ internal val NETWORKING_FORM =
                             R.string.config_net_lan_subnets,
                             R.string.config_net_lan_subnets_summary,
                         ),
+                        ReadOnlyField(
+                            "KnownProxies",
+                            R.string.config_net_known_proxies,
+                            R.string.config_net_known_proxies_summary,
+                        ),
                     ),
                 ),
                 ConfigSection(
                     R.string.config_section_net_https,
                     listOf(
-                        ReadOnlyField(
-                            "EnableHttps",
-                            R.string.config_net_enable_https,
-                            R.string.config_net_enable_https_summary,
-                        ),
                         ReadOnlyField(
                             "RequireHttps",
                             R.string.config_net_require_https,
@@ -86,12 +81,47 @@ internal val NETWORKING_FORM =
                             "IsRemoteIPFilterBlacklist",
                             R.string.config_net_ip_filter_blacklist,
                         ),
-                        ReadOnlyField("EnableUPnP", R.string.config_net_upnp),
                         ReadOnlyField(
-                            "KnownProxies",
-                            R.string.config_net_known_proxies,
-                            R.string.config_net_known_proxies_summary,
+                            "PublicHttpPort",
+                            R.string.config_net_public_http_port,
+                            R.string.config_net_public_http_port_summary,
                         ),
+                        ReadOnlyField(
+                            "PublicHttpsPort",
+                            R.string.config_net_public_https_port,
+                            R.string.config_net_public_https_port_summary,
+                        ),
+                        ReadOnlyField("EnableUPnP", R.string.config_net_upnp),
+                    ),
+                ),
+                ConfigSection(
+                    R.string.config_section_net_ip_protocols,
+                    listOf(
+                        ReadOnlyField(
+                            "EnableIPv4",
+                            R.string.config_net_ipv4,
+                            R.string.config_net_ipv4_summary,
+                        ),
+                        ReadOnlyField(
+                            "EnableIPv6",
+                            R.string.config_net_ipv6,
+                            R.string.config_net_ipv6_summary,
+                        ),
+                    ),
+                ),
+                ConfigSection(
+                    R.string.config_section_net_discovery,
+                    listOf(
+                        ReadOnlyField(
+                            "AutoDiscovery",
+                            R.string.config_net_auto_discovery,
+                            R.string.config_net_auto_discovery_summary,
+                        )
+                    ),
+                ),
+                ConfigSection(
+                    R.string.config_section_net_firewall,
+                    listOf(
                         ReadOnlyField(
                             "PublishedServerUriBySubnet",
                             R.string.config_net_published_uris,
@@ -105,21 +135,6 @@ internal val NETWORKING_FORM =
                 ConfigSection(
                     R.string.config_section_net_interfaces,
                     listOf(
-                        ReadOnlyField(
-                            "EnableIPv4",
-                            R.string.config_net_ipv4,
-                            R.string.config_net_ipv4_summary,
-                        ),
-                        ReadOnlyField(
-                            "EnableIPv6",
-                            R.string.config_net_ipv6,
-                            R.string.config_net_ipv6_summary,
-                        ),
-                        ReadOnlyField(
-                            "AutoDiscovery",
-                            R.string.config_net_auto_discovery,
-                            R.string.config_net_auto_discovery_summary,
-                        ),
                         ReadOnlyField(
                             "IgnoreVirtualInterfaces",
                             R.string.config_net_ignore_virtual,

@@ -151,6 +151,13 @@ fun ControlPanelScreen(
                 endPadding = 0.dp,
             ) {
                 SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_settings),
+                    title = stringResource(R.string.config_general_title),
+                    subtitle = stringResource(R.string.config_general_summary),
+                    onClick = { onOpenSettings(ConfigFormIds.GENERAL) },
+                )
+                SettingsDivider()
+                SettingsItem(
                     icon = painterResource(id = R.drawable.ic_users_group),
                     title = stringResource(R.string.title_users),
                     subtitle =
@@ -158,25 +165,18 @@ fun ControlPanelScreen(
                             ?: stringResource(R.string.users_summary),
                     onClick = onOpenUsers,
                 )
-                SettingsDivider()
+            }
+
+            SettingsGroup(
+                title = stringResource(R.string.libraries_title),
+                startPadding = 0.dp,
+                endPadding = 0.dp,
+            ) {
                 SettingsItem(
                     icon = painterResource(id = R.drawable.ic_video_library),
                     title = stringResource(R.string.libraries_title),
                     subtitle = stringResource(R.string.libraries_admin_summary),
                     onClick = onOpenLibraries,
-                )
-            }
-
-            SettingsGroup(
-                title = stringResource(R.string.section_admin_settings),
-                startPadding = 0.dp,
-                endPadding = 0.dp,
-            ) {
-                SettingsItem(
-                    icon = painterResource(id = R.drawable.ic_settings),
-                    title = stringResource(R.string.config_general_title),
-                    subtitle = stringResource(R.string.config_general_summary),
-                    onClick = { onOpenSettings(ConfigFormIds.GENERAL) },
                 )
                 SettingsDivider()
                 SettingsItem(
@@ -199,14 +199,13 @@ fun ControlPanelScreen(
                     subtitle = stringResource(R.string.config_nfo_summary),
                     onClick = { onOpenSettings(ConfigFormIds.NFO) },
                 )
-                SettingsDivider()
-                SettingsItem(
-                    icon = painterResource(id = R.drawable.ic_player_play_filled),
-                    title = stringResource(R.string.config_playback_title),
-                    subtitle = stringResource(R.string.config_playback_summary),
-                    onClick = { onOpenSettings(ConfigFormIds.PLAYBACK) },
-                )
-                SettingsDivider()
+            }
+
+            SettingsGroup(
+                title = stringResource(R.string.config_playback_title),
+                startPadding = 0.dp,
+                endPadding = 0.dp,
+            ) {
                 SettingsItem(
                     icon = painterResource(id = R.drawable.ic_movie),
                     title = stringResource(R.string.config_transcoding_title),
@@ -215,44 +214,32 @@ fun ControlPanelScreen(
                 )
                 SettingsDivider()
                 SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_replay),
+                    title = stringResource(R.string.config_section_resume),
+                    subtitle = stringResource(R.string.config_resume_summary),
+                    onClick = { onOpenSettings(ConfigFormIds.RESUME) },
+                )
+                SettingsDivider()
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_speed),
+                    title = stringResource(R.string.config_section_streaming),
+                    subtitle = stringResource(R.string.config_streaming_summary),
+                    onClick = { onOpenSettings(ConfigFormIds.STREAMING) },
+                )
+                SettingsDivider()
+                SettingsItem(
                     icon = painterResource(id = R.drawable.ic_photo_search),
                     title = stringResource(R.string.config_trickplay_title),
                     subtitle = stringResource(R.string.config_trickplay_summary),
                     onClick = { onOpenSettings(ConfigFormIds.TRICKPLAY) },
                 )
-                SettingsDivider()
-                SettingsItem(
-                    icon = painterResource(id = R.drawable.ic_world),
-                    title = stringResource(R.string.config_networking_title),
-                    subtitle = stringResource(R.string.config_networking_summary),
-                    onClick = { onOpenSettings(ConfigFormIds.NETWORKING) },
-                )
-                SettingsDivider()
-                SettingsItem(
-                    icon = painterResource(id = R.drawable.ic_puzzle),
-                    title = stringResource(R.string.title_plugins),
-                    subtitle =
-                        when {
-                            pluginsPendingRestart -> stringResource(R.string.plugin_status_restart)
-                            pluginProblems.isNotEmpty() -> pluginProblems.first().name
-                            else -> stringResource(R.string.plugins_summary)
-                        },
-                    onClick = onOpenPlugins,
-                )
             }
 
             SettingsGroup(
-                title = stringResource(R.string.section_monitor),
+                title = stringResource(R.string.title_devices),
                 startPadding = 0.dp,
                 endPadding = 0.dp,
             ) {
-                SettingsItem(
-                    icon = painterResource(id = R.drawable.ic_history),
-                    title = stringResource(R.string.title_activity),
-                    subtitle = stringResource(R.string.activity_summary),
-                    onClick = { onOpenActivity(ActivityFilter.ALL) },
-                )
-                SettingsDivider()
                 SettingsItem(
                     icon = painterResource(id = R.drawable.ic_devices),
                     title = stringResource(R.string.title_devices),
@@ -263,26 +250,23 @@ fun ControlPanelScreen(
                 )
                 SettingsDivider()
                 SettingsItem(
-                    icon = painterResource(id = R.drawable.ic_logs),
-                    title = stringResource(R.string.title_server_logs),
-                    subtitle = stringResource(R.string.server_logs_summary),
-                    onClick = onOpenLogs,
+                    icon = painterResource(id = R.drawable.ic_history),
+                    title = stringResource(R.string.title_activity),
+                    subtitle = stringResource(R.string.activity_summary),
+                    onClick = { onOpenActivity(ActivityFilter.ALL) },
                 )
             }
 
             SettingsGroup(
-                title = stringResource(R.string.section_maintenance),
+                title = stringResource(R.string.section_advanced),
                 startPadding = 0.dp,
                 endPadding = 0.dp,
             ) {
                 SettingsItem(
-                    icon = painterResource(id = R.drawable.ic_schedule),
-                    title = stringResource(R.string.title_scheduled_tasks),
-                    subtitle =
-                        runningTasks.firstOrNull()?.name?.let {
-                            stringResource(R.string.tasks_running_fmt, it)
-                        } ?: stringResource(R.string.scheduled_tasks_summary),
-                    onClick = onOpenTasks,
+                    icon = painterResource(id = R.drawable.ic_world),
+                    title = stringResource(R.string.config_networking_title),
+                    subtitle = stringResource(R.string.config_networking_summary),
+                    onClick = { onOpenSettings(ConfigFormIds.NETWORKING) },
                 )
                 SettingsDivider()
                 SettingsItem(
@@ -299,6 +283,41 @@ fun ControlPanelScreen(
                         if (isCreatingBackup) stringResource(R.string.server_backup_creating)
                         else stringResource(R.string.server_backups_summary),
                     onClick = onOpenBackups,
+                )
+                SettingsDivider()
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_logs),
+                    title = stringResource(R.string.title_server_logs),
+                    subtitle = stringResource(R.string.server_logs_summary),
+                    onClick = onOpenLogs,
+                )
+                SettingsDivider()
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_schedule),
+                    title = stringResource(R.string.title_scheduled_tasks),
+                    subtitle =
+                        runningTasks.firstOrNull()?.name?.let {
+                            stringResource(R.string.tasks_running_fmt, it)
+                        } ?: stringResource(R.string.scheduled_tasks_summary),
+                    onClick = onOpenTasks,
+                )
+            }
+
+            SettingsGroup(
+                title = stringResource(R.string.title_plugins),
+                startPadding = 0.dp,
+                endPadding = 0.dp,
+            ) {
+                SettingsItem(
+                    icon = painterResource(id = R.drawable.ic_puzzle),
+                    title = stringResource(R.string.title_plugins),
+                    subtitle =
+                        when {
+                            pluginsPendingRestart -> stringResource(R.string.plugin_status_restart)
+                            pluginProblems.isNotEmpty() -> pluginProblems.first().name
+                            else -> stringResource(R.string.plugins_summary)
+                        },
+                    onClick = onOpenPlugins,
                 )
             }
         }
