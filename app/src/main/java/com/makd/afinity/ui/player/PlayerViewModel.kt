@@ -69,6 +69,7 @@ import com.makd.afinity.data.models.media.AfinitySources
 import com.makd.afinity.data.models.media.AfinityTrickplayInfo
 import com.makd.afinity.data.models.player.AssRenderMode
 import com.makd.afinity.data.models.player.GestureConfig
+import com.makd.afinity.data.models.player.MpvGpuApi
 import com.makd.afinity.data.models.player.MpvHdrOutput
 import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.models.player.PlayerEvent
@@ -97,6 +98,7 @@ import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.player.common.TrackMapping
 import com.makd.afinity.player.common.TrackSelection
 import com.makd.afinity.player.mpv.MPVPlayer
+import com.makd.afinity.player.mpv.MpvDeviceSupport
 import com.makd.afinity.ui.player.utils.VolumeManager
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import com.makd.afinity.util.formatFileSize
@@ -859,7 +861,10 @@ constructor(
         mpvVideoOutputValue = mpvVideoOutput
 
         val bufferSizeMb = preferencesRepository.getBufferSizeMb()
-        val gpuApi = preferencesRepository.getMpvGpuApi()
+        val gpuApi =
+            preferencesRepository.getMpvGpuApi().let {
+                if (it == MpvGpuApi.VULKAN && !isVulkanVerified()) MpvGpuApi.OPENGL else it
+            }
         val hdrOutput = preferencesRepository.getMpvHdrOutput()
         val toneMapping = preferencesRepository.getMpvToneMapping()
         val hdrPeakDetection = preferencesRepository.getMpvHdrPeakDetection()
@@ -1998,6 +2003,22 @@ constructor(
             else -> "$base • $suffix"
         }
     }
+
+    private suspend fun isVulkanVerified(): Boolean =
+        try {
+            val savedSignature = preferencesRepository.getMpvDeviceCheckSignature()
+            withContext(Dispatchers.IO) {
+                MpvDeviceSupport.isVulkanVerified(
+                    MpvDeviceSupport.capabilities(context),
+                    savedSignature,
+                )
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to verify Vulkan support")
+            false
+        }
 
     private fun isDisplayHdr(): Boolean? =
         try {

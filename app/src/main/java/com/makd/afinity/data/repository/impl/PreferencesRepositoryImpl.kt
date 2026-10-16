@@ -147,6 +147,7 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val MPV_HDR_OUTPUT = stringPreferencesKey("mpv_hdr_output")
         val MPV_TONE_MAPPING = stringPreferencesKey("mpv_tone_mapping")
         val MPV_HDR_PEAK_DETECTION = booleanPreferencesKey("mpv_hdr_peak_detection")
+        val MPV_DEVICE_CHECK_SIGNATURE = stringPreferencesKey("mpv_device_check_signature")
         val MPV_VIDEO_OUTPUT = stringPreferencesKey("mpv_video_output")
         val MPV_AUDIO_OUTPUT = stringPreferencesKey("mpv_audio_output")
 
@@ -897,6 +898,18 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         return dataStore.data.map { preferences ->
             preferences[Keys.MPV_HDR_PEAK_DETECTION] ?: true
         }
+    }
+
+    override suspend fun setMpvDeviceCheckSignature(signature: String) {
+        dataStore.edit { preferences -> preferences[Keys.MPV_DEVICE_CHECK_SIGNATURE] = signature }
+    }
+
+    override suspend fun getMpvDeviceCheckSignature(): String? {
+        return dataStore.data.first()[Keys.MPV_DEVICE_CHECK_SIGNATURE]
+    }
+
+    override fun getMpvDeviceCheckSignatureFlow(): Flow<String?> {
+        return dataStore.data.map { preferences -> preferences[Keys.MPV_DEVICE_CHECK_SIGNATURE] }
     }
 
     override suspend fun setPreferredAudioLanguage(language: String) {

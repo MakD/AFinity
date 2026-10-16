@@ -723,6 +723,15 @@
     <string name="pref_mpv_tone_mapping_hint">Applies when HDR is converted to SDR</string>
     <string name="pref_mpv_hdr_peak_title">HDR peak detection</string>
     <string name="pref_mpv_hdr_peak_summary">Measures scene brightness when HDR is tone-mapped to SDR (uses more GPU)</string>
+    <string name="pref_mpv_device_check_title">Vulkan compatibility</string>
+    <string name="pref_mpv_device_check_summary">Tap to verify Vulkan and HDR support</string>
+    <string name="mpv_device_check_vulkan_missing">not available</string>
+    <string name="mpv_device_check_vulkan_needs">(needs %1$s+)</string>
+    <string name="mpv_device_check_hdr_none">not an HDR display</string>
+    <string name="mpv_device_check_status_checking">checking device…</string>
+    <string name="mpv_device_check_status_supported">HDR passthrough available. Select Vulkan as GPU API.</string>
+    <string name="mpv_device_check_status_limited">Vulkan works, but this display can\'t show HDR. HDR is tone-mapped to SDR.</string>
+    <string name="mpv_device_check_status_unsupported">Vulkan %1$s isn\'t supported. HDR is tone-mapped to SDR.</string>
     <string name="cd_speed_decrease">Decrease speed</string>
     <string name="cd_speed_increase">Increase speed</string>
 

@@ -143,8 +143,12 @@ fun PlayerOptionsScreen(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
+    deviceCheckViewModel: MpvDeviceCheckViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val mpvVulkanVerified by deviceCheckViewModel.vulkanVerified.collectAsStateWithLifecycle()
+    val mpvDeviceCheckPending by deviceCheckViewModel.checkPending.collectAsStateWithLifecycle()
+    val mpvDeviceCheck by deviceCheckViewModel.check.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var section by rememberSaveable { mutableStateOf<PlaybackSection?>(null) }
 
@@ -348,25 +352,39 @@ fun PlayerOptionsScreen(
                                             stringResource(R.string.pref_edit_input_conf_summary),
                                         onClick = { editingConfigFile = "input.conf" },
                                     )
-                                    SettingsDivider()
-                                    SubtitleDropdownItem(
-                                        title = stringResource(R.string.pref_mpv_gpu_api_title),
-                                        selectedOption = uiState.mpvGpuApi,
-                                        options = MpvGpuApi.entries.toList(),
-                                        onValueChange = viewModel::setMpvGpuApi,
-                                        labelProvider = { stringResource(it.labelRes) },
-                                        icon = painterResource(id = R.drawable.ic_cpu),
+                                    MpvDeviceCheckEntry(
+                                        visible = mpvDeviceCheckPending,
+                                        check = mpvDeviceCheck,
+                                        onStart = deviceCheckViewModel::startCheck,
+                                        onFinish = deviceCheckViewModel::finishCheck,
                                     )
-                                    SettingsDivider()
-                                    SubtitleDropdownItem(
-                                        title = stringResource(R.string.pref_mpv_hdr_output_title),
-                                        selectedOption = uiState.mpvHdrOutput,
-                                        options = MpvHdrOutput.entries.toList(),
-                                        onValueChange = viewModel::setMpvHdrOutput,
-                                        labelProvider = { stringResource(it.labelRes) },
-                                        icon = painterResource(id = R.drawable.ic_colorize),
-                                        hint = stringResource(R.string.pref_mpv_hdr_output_hint),
-                                    )
+                                    if (mpvVulkanVerified) {
+                                        SettingsDivider()
+                                        SubtitleDropdownItem(
+                                            title = stringResource(R.string.pref_mpv_gpu_api_title),
+                                            selectedOption = uiState.mpvGpuApi,
+                                            options = MpvGpuApi.entries.toList(),
+                                            onValueChange = viewModel::setMpvGpuApi,
+                                            labelProvider = { stringResource(it.labelRes) },
+                                            icon = painterResource(id = R.drawable.ic_cpu),
+                                        )
+                                    }
+                                    if (
+                                        mpvVulkanVerified && uiState.mpvGpuApi == MpvGpuApi.VULKAN
+                                    ) {
+                                        SettingsDivider()
+                                        SubtitleDropdownItem(
+                                            title =
+                                                stringResource(R.string.pref_mpv_hdr_output_title),
+                                            selectedOption = uiState.mpvHdrOutput,
+                                            options = MpvHdrOutput.entries.toList(),
+                                            onValueChange = viewModel::setMpvHdrOutput,
+                                            labelProvider = { stringResource(it.labelRes) },
+                                            icon = painterResource(id = R.drawable.ic_colorize),
+                                            hint =
+                                                stringResource(R.string.pref_mpv_hdr_output_hint),
+                                        )
+                                    }
                                     SettingsDivider()
                                     SubtitleDropdownItem(
                                         title =

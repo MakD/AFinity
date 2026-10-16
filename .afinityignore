@@ -1,3 +1,25 @@
+# AFinity Ignore Rules
+#
+# This file uses standard Git ignore patterns but is not
+# automatically recognized by Git.
+#
+# SETUP
+# Run the following command from the repository root:
+#
+#   git config --local core.excludesFile "$(pwd)/.afinityignore"
+#
+# Windows PowerShell:
+#   git config --local core.excludesFile "$((Get-Location).Path)/.afinityignore"
+#
+# This configures Git to read these rules for this repository.
+# Each contributor must run the setup command after cloning.
+#
+# IMPORTANT
+# - This file supplements any existing .gitignore rules.
+# - Git does not ignore files that are already tracked.
+# - The configuration is local and is not inherited by forks.
+
+
 # Built application files
 *.apk
 *.ap_

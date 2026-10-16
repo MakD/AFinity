@@ -41,6 +41,7 @@ internal object PortablePreferences {
             "mpv_hdr_peak_detection",
             "mpv_video_output",
             "mpv_audio_output",
+            "mpv_device_check_signature",
         )
 
     val specs: List<PrefSpec> =

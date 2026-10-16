@@ -183,6 +183,12 @@ interface PreferencesRepository {
 
     fun getMpvHdrPeakDetectionFlow(): Flow<Boolean>
 
+    suspend fun setMpvDeviceCheckSignature(signature: String)
+
+    suspend fun getMpvDeviceCheckSignature(): String?
+
+    fun getMpvDeviceCheckSignatureFlow(): Flow<String?>
+
     suspend fun setPreferredAudioLanguage(language: String)
 
     suspend fun getPreferredAudioLanguage(): String

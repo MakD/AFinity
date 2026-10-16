@@ -35,13 +35,14 @@ and podcasts, and direct media requests via Jellyseerr.
 ```bash
 git clone https://github.com/MakD/AFinity.git
 cd AFinity
+bash setup-git.sh
 ./gradlew assembleRelease
 ```
 
-> **Note:** Without a `key.properties` file in the project root, release builds are signed with the
-> debug key. They install fine, but can't update an official release — uninstall the official APK
-> first. To sign with your own key, create `key.properties` with `storeFile`, `storePassword`,
-> `keyAlias`, and `keyPassword` entries.
+AFinity uses a custom `.afinityignore` file for Git ignore patterns. `setup-git.sh` configures Git to use these rules for this repository only. This setup is required once per clone.
+
+
+> **Note:** Without a `key.properties` file in the project root, release builds are signed with the debug key. They install fine, but can't update an official release — uninstall the official APK first. To sign with your own key, create `key.properties` with `storeFile`, `storePassword`, `keyAlias`, and `keyPassword` entries.
 
 ## Initial Setup
 
@@ -182,6 +183,8 @@ directly in your browser without needing any technical knowledge.
 3. Start translating! Changes are automatically synced back to this repository.
 
 ### Code Contributions
+
+Before making changes, run `bash setup-git.sh` from the repository root to configure Git to use AFinity's custom `.afinityignore` rules. This setup is required once per clone.
 
 1. **Fork** the repository
 2. **Create** a feature branch (`git checkout -b feature/AmazingFeature`)
