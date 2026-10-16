@@ -1568,22 +1568,4 @@
     <string name="library_filter_audio_language">Hangsáv nyelve</string>
     <string name="playback_section_tracks_summary">Melyik nyelvet és feliratot válassza a rendszer automatikusan</string>
     <string name="library_filter_subtitle_language">Felirat nyelve</string>
-    <string name="library_opt_artists_tag"></string>
-    <string name="library_opt_artists_tag_summary"></string>
-    <string name="library_opt_tag_delimiters"></string>
-    <string name="library_opt_tag_delimiters_summary"></string>
-    <string name="config_not_set"></string>
-    <string name="config_networking_title"></string>
-    <string name="config_networking_summary"></string>
-    <string name="config_networking_note"></string>
-    <string name="config_section_net_addresses"></string>
-    <string name="config_net_base_url"></string>
-    <string name="config_net_base_url_summary"></string>
-    <string name="config_net_http_port"></string>
-    <string name="config_net_http_port_summary"></string>
-    <string name="config_net_https_port"></string>
-    <string name="config_net_https_port_summary"></string>
-    <string name="config_net_public_http_port"></string>
-    <string name="config_net_public_http_port_summary"></string>
-    <string name="config_net_public_https_port"></string>
 </resources>
