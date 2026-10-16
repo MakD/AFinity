@@ -85,6 +85,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
@@ -138,6 +139,11 @@ fun LoginScreen(
     var selectedLoginMethod by remember { mutableStateOf(LoginMethod.PASSWORD) }
 
     LaunchedEffect(Unit) { viewModel.discoverServers() }
+
+    LifecycleResumeEffect(Unit) {
+        viewModel.recheckLocalNetworkPermission()
+        onPauseOrDispose {}
+    }
 
     LaunchedEffect(loginState.uiState.isLoggedIn) {
         if (loginState.uiState.isLoggedIn) {

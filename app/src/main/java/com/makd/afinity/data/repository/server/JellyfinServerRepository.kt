@@ -268,24 +268,29 @@ constructor(
             }
         }
 
-        launch {
-            try {
-                jellyfin.discovery.discoverLocalServers(timeout = 5000, maxServers = 10).collect {
-                    serverInfo ->
-                    addServer(
-                        Server(
-                            id = serverInfo.id,
-                            name = serverInfo.name,
-                            version = null,
-                            address = serverInfo.address,
-                        ),
-                        "broadcast",
-                    )
+        if (localNetworkPermission.isSatisfied()) {
+            launch {
+                try {
+                    withTimeoutOrNull(BROADCAST_DISCOVERY_TIMEOUT_MS.milliseconds) {
+                        jellyfin.discovery
+                            .discoverLocalServers(timeout = 5000, maxServers = 10)
+                            .collect { serverInfo ->
+                                addServer(
+                                    Server(
+                                        id = serverInfo.id,
+                                        name = serverInfo.name,
+                                        version = null,
+                                        address = serverInfo.address,
+                                    ),
+                                    "broadcast",
+                                )
+                            }
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.e(e, "Broadcast server discovery failed")
                 }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Broadcast server discovery failed")
             }
         }
 
@@ -511,5 +516,6 @@ constructor(
         const val RECONNECT_INITIAL_DELAY_MS = 2_000L
         const val RECONNECT_MAX_DELAY_MS = 120_000L
         const val UNREACHABLE_CONFIRM_DELAY_MS = 4_000L
+        const val BROADCAST_DISCOVERY_TIMEOUT_MS = 5_000L
     }
 }

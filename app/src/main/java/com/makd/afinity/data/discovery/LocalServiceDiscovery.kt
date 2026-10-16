@@ -73,6 +73,11 @@ constructor(
         serviceType: String,
         timeoutMs: Long = DEFAULT_TIMEOUT_MS,
     ): Flow<DiscoveryResult> {
+        if (!localNetworkPermission.isSatisfied()) {
+            Timber.d("mDNS: local network permission not granted, skipping $serviceType")
+            return flowOf(DiscoveryResult.PermissionRequired)
+        }
+
         val manager =
             nsdManager
                 ?: run {

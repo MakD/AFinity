@@ -686,8 +686,23 @@ constructor(
         discoverServers()
     }
 
+    fun recheckLocalNetworkPermission() {
+        if (_uiState.value.needsLocalNetworkPermission && localNetworkPermission.isSatisfied()) {
+            onLocalNetworkPermissionGranted()
+        }
+    }
+
     fun discoverServers() {
         discoveryJob?.cancel()
+        if (!localNetworkPermission.isSatisfied()) {
+            _uiState.value =
+                _uiState.value.copy(
+                    isDiscovering = false,
+                    discoveredServers = emptyList(),
+                    needsLocalNetworkPermission = true,
+                )
+            return
+        }
         discoveryJob = viewModelScope.launch {
             _uiState.value =
                 _uiState.value.copy(
