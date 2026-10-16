@@ -107,6 +107,7 @@ import com.makd.afinity.ui.settings.home.CustomSectionsScreen
 import com.makd.afinity.ui.settings.logs.LogViewerScreen
 import com.makd.afinity.ui.settings.player.PlayerOptionsScreen
 import com.makd.afinity.ui.settings.servers.ServerManagementScreen
+import com.makd.afinity.ui.settings.update.CurrentChangelogDialog
 import com.makd.afinity.ui.settings.update.UpdateSection
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.launch
@@ -672,6 +673,28 @@ fun SettingsScreen(
                                             }
                                         },
                                     )
+                                    if (!AppConstants.IS_NIGHTLY) {
+                                        var showChangelog by rememberSaveable {
+                                            mutableStateOf(false)
+                                        }
+                                        SettingsDivider()
+                                        SettingsItem(
+                                            icon = painterResource(id = R.drawable.ic_git_compare),
+                                            title = stringResource(R.string.pref_changelog),
+                                            subtitle =
+                                                stringResource(
+                                                    R.string.pref_changelog_summary,
+                                                    "v" +
+                                                        AppConstants.VERSION_NAME.removePrefix("v"),
+                                                ),
+                                            onClick = { showChangelog = true },
+                                        )
+                                        if (showChangelog) {
+                                            CurrentChangelogDialog(
+                                                onDismiss = { showChangelog = false }
+                                            )
+                                        }
+                                    }
                                 }
                             }
 

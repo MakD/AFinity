@@ -1470,6 +1470,11 @@
     <string name="pref_licenses">Licenses</string>
     <string name="pref_licenses_summary">Open source libraries</string>
     <string name="pref_about_app">About AFinity</string>
+    <string name="pref_changelog">Changelog</string>
+    <string name="pref_changelog_summary">What\'s new in %1$s</string>
+    <string name="changelog_title">Changelog</string>
+    <string name="changelog_not_published">No release notes are published for this version yet.</string>
+    <string name="changelog_load_failed">Couldn\'t load the release notes. Check your connection and try again.</string>
     <string name="about_link_github" translatable="false">GitHub</string>
     <string name="about_link_discord" translatable="false">Discord</string>
     <string name="about_link_kofi" translatable="false">Ko-fi</string>
