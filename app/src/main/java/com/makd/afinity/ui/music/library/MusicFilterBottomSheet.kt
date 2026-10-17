@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -41,6 +40,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.MusicFilterOptions
 import com.makd.afinity.data.models.music.MusicFilters
+import com.makd.afinity.ui.components.AfinityToggleChip
 import com.makd.afinity.ui.components.filter.FilterAccordionSection
 import com.makd.afinity.ui.components.filter.SearchableChipMultiSelect
 
@@ -133,13 +133,12 @@ fun MusicFilterBottomSheet(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                FilterChip(
+                                AfinityToggleChip(
+                                    label = stringResource(R.string.filter_favorites),
                                     selected = working.favoritesOnly,
-                                    onClick = {
-                                        working =
-                                            working.copy(favoritesOnly = !working.favoritesOnly)
+                                    onSelectedChange = {
+                                        working = working.copy(favoritesOnly = it)
                                     },
-                                    label = { Text(stringResource(R.string.filter_favorites)) },
                                 )
                             }
                         }

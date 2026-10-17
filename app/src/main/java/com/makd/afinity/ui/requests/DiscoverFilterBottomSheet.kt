@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -32,12 +31,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -73,7 +70,9 @@ import com.makd.afinity.data.models.jellyseerr.TvStatus
 import com.makd.afinity.data.models.jellyseerr.WatchProviderDetails
 import com.makd.afinity.data.models.jellyseerr.WatchProviderRegion
 import com.makd.afinity.ui.components.AfinityRangeSlider
+import com.makd.afinity.ui.components.AfinityToggleChip
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.RadioOptionRow
 import com.makd.afinity.ui.components.filter.FilterAccordionSection
 import com.makd.afinity.ui.components.filter.FilterSectionHeader
 import com.makd.afinity.ui.components.filter.SearchableChipMultiSelect
@@ -388,15 +387,14 @@ fun DiscoverFilterBottomSheet(
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
                                     TvStatus.entries.forEach { status ->
-                                        FilterChip(
+                                        AfinityToggleChip(
+                                            label = tvStatusLabel(status),
                                             selected = tvStatus.contains(status.value),
-                                            onClick = {
+                                            onSelectedChange = { selected ->
                                                 tvStatus =
-                                                    if (tvStatus.contains(status.value))
-                                                        tvStatus - status.value
-                                                    else tvStatus + status.value
+                                                    if (selected) tvStatus + status.value
+                                                    else tvStatus - status.value
                                             },
-                                            label = { Text(tvStatusLabel(status)) },
                                         )
                                     }
                                 }
@@ -419,15 +417,14 @@ fun DiscoverFilterBottomSheet(
                                 val certificationOptions =
                                     if (isTv) US_TV_CERTIFICATIONS else US_MOVIE_CERTIFICATIONS
                                 certificationOptions.forEach { cert ->
-                                    FilterChip(
+                                    AfinityToggleChip(
+                                        label = cert,
                                         selected = selectedCertifications.contains(cert),
-                                        onClick = {
+                                        onSelectedChange = { selected ->
                                             selectedCertifications =
-                                                if (selectedCertifications.contains(cert))
-                                                    selectedCertifications - cert
-                                                else selectedCertifications + cert
+                                                if (selected) selectedCertifications + cert
+                                                else selectedCertifications - cert
                                         },
-                                        label = { Text(cert) },
                                     )
                                 }
                             }
@@ -870,18 +867,6 @@ private fun DateFieldPickerDialog(
 }
 
 @Composable
-private fun CountryRow(name: String, isSelected: Boolean, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().noRippleClickable(onClick).padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RadioButton(selected = isSelected, onClick = onClick)
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(text = name, style = MaterialTheme.typography.bodyLarge)
-    }
-}
-
-@Composable
 private fun RegionPickerDialog(
     regions: List<WatchProviderRegion>,
     selected: String?,
@@ -894,16 +879,16 @@ private fun RegionPickerDialog(
         text = {
             LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
                 item {
-                    CountryRow(
-                        name = stringResource(R.string.discover_filter_any),
-                        isSelected = selected == null,
+                    RadioOptionRow(
+                        label = stringResource(R.string.discover_filter_any),
+                        selected = selected == null,
                         onClick = { onSelect(null) },
                     )
                 }
                 items(regions, key = { it.isoCode }) { region ->
-                    CountryRow(
-                        name = region.englishName,
-                        isSelected = selected == region.isoCode,
+                    RadioOptionRow(
+                        label = region.englishName,
+                        selected = selected == region.isoCode,
                         onClick = { onSelect(region.isoCode) },
                     )
                 }

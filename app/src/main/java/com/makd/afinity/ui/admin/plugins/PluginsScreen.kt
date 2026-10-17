@@ -47,7 +47,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.ui.admin.components.AdminLoadContent
 import com.makd.afinity.ui.admin.components.AdminScaffold
-import com.makd.afinity.ui.admin.components.AdminToggleChip
+import com.makd.afinity.ui.components.AfinityToggleChip
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.settings.logs.SearchField
 import java.util.UUID
@@ -235,12 +235,12 @@ private fun PluginFilters(
         modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 8.dp, end = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        AdminToggleChip(
+        AfinityToggleChip(
             label = stringResource(R.string.plugins_tab_installed_fmt, state.installedCount),
             selected = state.tab == PluginTab.INSTALLED,
             onSelectedChange = { onSelectTab(PluginTab.INSTALLED) },
         )
-        AdminToggleChip(
+        AfinityToggleChip(
             label =
                 state.availableCount?.let { count ->
                     stringResource(R.string.plugins_tab_available_fmt, count)
@@ -257,13 +257,13 @@ private fun PluginFilters(
                     .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            AdminToggleChip(
+            AfinityToggleChip(
                 label = stringResource(R.string.plugins_category_all),
                 selected = state.category == null,
                 onSelectedChange = { onSelectCategory(null) },
             )
             state.categories.forEach { category ->
-                AdminToggleChip(
+                AfinityToggleChip(
                     label = pluginCategoryLabel(category)?.let { stringResource(it) } ?: category,
                     selected = state.category == category,
                     onSelectedChange = { onSelectCategory(category) },

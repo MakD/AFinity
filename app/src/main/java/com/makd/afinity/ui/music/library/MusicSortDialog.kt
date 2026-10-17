@@ -2,7 +2,6 @@
 
 package com.makd.afinity.ui.music.library
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,7 +19,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -31,7 +29,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
@@ -40,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.RadioOptionRow
 
 @Composable
 fun MusicSortDialog(
@@ -107,23 +105,11 @@ fun MusicSortDialog(
 
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         fields.forEach { field ->
-                            Row(
-                                modifier =
-                                    Modifier.fillMaxWidth()
-                                        .clickable { selectedField = field }
-                                        .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                RadioButton(
-                                    selected = selectedField == field,
-                                    onClick = { selectedField = field },
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = stringResource(field.labelRes),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                )
-                            }
+                            RadioOptionRow(
+                                label = stringResource(field.labelRes),
+                                selected = selectedField == field,
+                                onClick = { selectedField = field },
+                            )
                         }
                     }
                 }

@@ -1,4 +1,4 @@
-package com.makd.afinity.ui.admin.components
+package com.makd.afinity.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -21,7 +21,7 @@ import com.makd.afinity.R
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun AdminToggleChipFlow(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+fun AfinityToggleChipFlow(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     FlowRow(
         modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -31,7 +31,7 @@ fun AdminToggleChipFlow(modifier: Modifier = Modifier, content: @Composable () -
 }
 
 @Composable
-fun AdminToggleChip(
+fun AfinityToggleChip(
     label: String,
     selected: Boolean,
     onSelectedChange: (Boolean) -> Unit,

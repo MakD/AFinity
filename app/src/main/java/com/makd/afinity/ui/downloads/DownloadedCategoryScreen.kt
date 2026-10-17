@@ -12,8 +12,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -27,7 +25,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -52,8 +49,10 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AppBarProfile
+import com.makd.afinity.ui.components.FilterFab
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.ui.components.SortFab
 import com.makd.afinity.ui.home.HomeViewModel
 import com.makd.afinity.ui.home.components.SquareMediaTile
 import com.makd.afinity.ui.main.MainUiState
@@ -437,24 +436,12 @@ fun DownloadedCategoryScreen(
                         horizontalAlignment = Alignment.End,
                     ) {
                         if (category.canFilter) {
-                            FloatingActionButton(onClick = { showFilterSheet = true }) {
-                                Icon(
-                                    painter =
-                                        painterResource(
-                                            id =
-                                                if (filters.isActive) R.drawable.ic_filter_active
-                                                else R.drawable.ic_filter
-                                        ),
-                                    contentDescription = stringResource(R.string.cd_filter_fab),
-                                )
-                            }
-                        }
-                        FloatingActionButton(onClick = { showSortDialog = true }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_arrows_sort),
-                                contentDescription = stringResource(R.string.cd_sort_fab),
+                            FilterFab(
+                                active = filters.isActive,
+                                onClick = { showFilterSheet = true },
                             )
                         }
+                        SortFab(onClick = { showSortDialog = true })
                     }
                 }
             }

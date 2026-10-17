@@ -47,11 +47,11 @@ import com.makd.afinity.R
 import com.makd.afinity.ui.admin.components.AdminDiscardDialog
 import com.makd.afinity.ui.admin.components.AdminLoadContent
 import com.makd.afinity.ui.admin.components.AdminScaffold
-import com.makd.afinity.ui.admin.components.AdminToggleChip
-import com.makd.afinity.ui.admin.components.AdminToggleChipFlow
 import com.makd.afinity.ui.admin.components.ReportUnsavedChanges
 import com.makd.afinity.ui.admin.components.adminContentBottomPadding
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.AfinityToggleChip
+import com.makd.afinity.ui.components.AfinityToggleChipFlow
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
@@ -489,11 +489,11 @@ private fun MultiChoiceChips(
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp),
         )
-        AdminToggleChipFlow {
+        AfinityToggleChipFlow {
             field.options
                 .filter { state.isVisible(it.visibleWhen) }
                 .forEach { option ->
-                    AdminToggleChip(
+                    AfinityToggleChip(
                         label = option.display(),
                         selected = option.value in selected,
                         onSelectedChange = { onSetSelected(field.key, option.value, it) },
@@ -503,7 +503,7 @@ private fun MultiChoiceChips(
             field.flags
                 .filter { state.isVisible(it.visibleWhen) }
                 .forEach { flag ->
-                    AdminToggleChip(
+                    AfinityToggleChip(
                         label = stringResource(flag.label),
                         selected = state.flag(flag.key),
                         onSelectedChange = { onSetFlag(flag.key, it) },

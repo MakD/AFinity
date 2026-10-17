@@ -4,7 +4,6 @@
 package com.makd.afinity.ui.library
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,15 +27,10 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -54,7 +48,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -82,11 +75,14 @@ import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AlphabetScroller
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
+import com.makd.afinity.ui.components.FilterFab
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.MediaItemGridCard
 import com.makd.afinity.ui.components.PaginatedMediaGrid
+import com.makd.afinity.ui.components.RadioOptionRow
+import com.makd.afinity.ui.components.SortFab
 import com.makd.afinity.ui.player.PlayerLauncher
 
 @Composable
@@ -345,35 +341,18 @@ fun LibraryContentScreen(
                             .padding(bottom = 16.dp + playerOffset),
                 ) {
                     if (!uiState.filtersLocked) {
-                        FloatingActionButton(
+                        val activeCount = uiState.currentFilters.activeCount
+                        FilterFab(
+                            active = activeCount > 0,
                             onClick = {
                                 viewModel.ensureFilterOptionsLoaded()
                                 showFilterSheet = true
-                            }
-                        ) {
-                            val activeCount = uiState.currentFilters.activeCount
-                            if (activeCount > 0) {
-                                BadgedBox(badge = { Badge { Text(activeCount.toString()) } }) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.ic_filter_active),
-                                        contentDescription = stringResource(R.string.cd_filter_fab),
-                                    )
-                                }
-                            } else {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_filter),
-                                    contentDescription = stringResource(R.string.cd_filter_fab),
-                                )
-                            }
-                        }
-                    }
-
-                    FloatingActionButton(onClick = { showSortDialog = true }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_arrows_sort),
-                            contentDescription = stringResource(R.string.cd_sort_fab),
+                            },
+                            badgeCount = activeCount,
                         )
                     }
+
+                    SortFab(onClick = { showSortDialog = true })
                 }
             }
         }
@@ -488,48 +467,21 @@ private fun SortDialog(
                     Spacer(Modifier.height(16.dp))
 
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        SortOptionRow(
-                            stringResource(R.string.sort_option_title),
-                            SortBy.NAME,
-                            selectedSort,
-                        ) {
-                            selectedSort = it
-                        }
-                        SortOptionRow(
-                            stringResource(R.string.sort_option_imdb),
-                            SortBy.IMDB_RATING,
-                            selectedSort,
-                        ) {
-                            selectedSort = it
-                        }
-                        SortOptionRow(
-                            stringResource(R.string.sort_option_parental),
-                            SortBy.PARENTAL_RATING,
-                            selectedSort,
-                        ) {
-                            selectedSort = it
-                        }
-                        SortOptionRow(
-                            stringResource(R.string.sort_option_date_added),
-                            SortBy.DATE_ADDED,
-                            selectedSort,
-                        ) {
-                            selectedSort = it
-                        }
-                        SortOptionRow(
-                            stringResource(R.string.sort_option_date_played),
-                            SortBy.DATE_PLAYED,
-                            selectedSort,
-                        ) {
-                            selectedSort = it
-                        }
-                        SortOptionRow(
-                            stringResource(R.string.sort_option_release_date),
-                            SortBy.RELEASE_DATE,
-                            selectedSort,
-                        ) {
-                            selectedSort = it
-                        }
+                        listOf(
+                                SortBy.NAME to R.string.sort_option_title,
+                                SortBy.IMDB_RATING to R.string.sort_option_imdb,
+                                SortBy.PARENTAL_RATING to R.string.sort_option_parental,
+                                SortBy.DATE_ADDED to R.string.sort_option_date_added,
+                                SortBy.DATE_PLAYED to R.string.sort_option_date_played,
+                                SortBy.RELEASE_DATE to R.string.sort_option_release_date,
+                            )
+                            .forEach { (sortBy, labelRes) ->
+                                RadioOptionRow(
+                                    label = stringResource(labelRes),
+                                    selected = selectedSort == sortBy,
+                                    onClick = { selectedSort = sortBy },
+                                )
+                            }
                     }
                 }
 
@@ -555,22 +507,5 @@ private fun SortDialog(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun SortOptionRow(
-    label: String,
-    sortBy: SortBy,
-    selectedSort: SortBy,
-    onSelect: (SortBy) -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().clickable { onSelect(sortBy) }.padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RadioButton(selected = selectedSort == sortBy, onClick = { onSelect(sortBy) })
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(text = label, style = MaterialTheme.typography.bodyLarge)
     }
 }

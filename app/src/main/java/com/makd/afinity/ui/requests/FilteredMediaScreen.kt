@@ -12,8 +12,6 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -26,7 +24,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -41,9 +38,11 @@ import com.makd.afinity.data.models.jellyseerr.hasPermission
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AppBarProfile
+import com.makd.afinity.ui.components.FilterFab
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
+import com.makd.afinity.ui.components.SortFab
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.scaledPortraitWidth
@@ -132,24 +131,15 @@ fun FilteredMediaScreen(
                     horizontalAlignment = Alignment.End,
                     modifier = Modifier.padding(bottom = playerOffset),
                 ) {
-                    FloatingActionButton(
+                    FilterFab(
+                        active = false,
                         onClick = {
                             viewModel.ensureWatchProviderRegionsLoaded()
                             if (showGenrePicker) viewModel.ensureGenresLoaded(isTv)
                             showFilterSheet = true
-                        }
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_filter),
-                            contentDescription = stringResource(R.string.cd_filter_fab),
-                        )
-                    }
-                    FloatingActionButton(onClick = { showSortDialog = true }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_arrows_sort),
-                            contentDescription = stringResource(R.string.cd_sort_fab),
-                        )
-                    }
+                        },
+                    )
+                    SortFab(onClick = { showSortDialog = true })
                 }
             }
         },

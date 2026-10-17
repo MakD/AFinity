@@ -20,7 +20,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -48,6 +47,7 @@ import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.data.models.media.LibraryLanguageOption
 import com.makd.afinity.data.models.media.SeriesStatusFilter
 import com.makd.afinity.data.models.media.VideoTypeFilter
+import com.makd.afinity.ui.components.AfinityToggleChip
 import com.makd.afinity.ui.components.filter.FilterAccordionSection
 import com.makd.afinity.ui.components.filter.SearchableChipMultiSelect
 
@@ -268,33 +268,35 @@ fun LibraryFilterBottomSheet(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                ToggleChip(stringResource(R.string.filter_played), working.played) {
-                                    working = working.copy(played = it, unplayed = false)
-                                }
-                                ToggleChip(
-                                    stringResource(R.string.filter_unplayed),
-                                    working.unplayed,
-                                ) {
-                                    working = working.copy(unplayed = it, played = false)
-                                }
-                                ToggleChip(
-                                    stringResource(R.string.filter_resumable),
-                                    working.resumable,
-                                ) {
-                                    working = working.copy(resumable = it)
-                                }
-                                ToggleChip(
-                                    stringResource(R.string.filter_favorites),
-                                    working.favorites,
-                                ) {
-                                    working = working.copy(favorites = it)
-                                }
-                                ToggleChip(
-                                    stringResource(R.string.filter_watchlist),
-                                    working.watchlist,
-                                ) {
-                                    working = working.copy(watchlist = it)
-                                }
+                                AfinityToggleChip(
+                                    label = stringResource(R.string.filter_played),
+                                    selected = working.played,
+                                    onSelectedChange = {
+                                        working = working.copy(played = it, unplayed = false)
+                                    },
+                                )
+                                AfinityToggleChip(
+                                    label = stringResource(R.string.filter_unplayed),
+                                    selected = working.unplayed,
+                                    onSelectedChange = {
+                                        working = working.copy(unplayed = it, played = false)
+                                    },
+                                )
+                                AfinityToggleChip(
+                                    label = stringResource(R.string.filter_resumable),
+                                    selected = working.resumable,
+                                    onSelectedChange = { working = working.copy(resumable = it) },
+                                )
+                                AfinityToggleChip(
+                                    label = stringResource(R.string.filter_favorites),
+                                    selected = working.favorites,
+                                    onSelectedChange = { working = working.copy(favorites = it) },
+                                )
+                                AfinityToggleChip(
+                                    label = stringResource(R.string.filter_watchlist),
+                                    selected = working.watchlist,
+                                    onSelectedChange = { working = working.copy(watchlist = it) },
+                                )
                             }
                         }
 
@@ -326,18 +328,19 @@ fun LibraryFilterBottomSheet(
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
                                     seriesStatusLabels.forEach { (status, label) ->
-                                        ToggleChip(
-                                            label,
-                                            working.seriesStatuses.contains(status),
-                                        ) { selected ->
-                                            working =
-                                                working.copy(
-                                                    seriesStatuses =
-                                                        if (selected)
-                                                            working.seriesStatuses + status
-                                                        else working.seriesStatuses - status
-                                                )
-                                        }
+                                        AfinityToggleChip(
+                                            label = label,
+                                            selected = working.seriesStatuses.contains(status),
+                                            onSelectedChange = { selected ->
+                                                working =
+                                                    working.copy(
+                                                        seriesStatuses =
+                                                            if (selected)
+                                                                working.seriesStatuses + status
+                                                            else working.seriesStatuses - status
+                                                    )
+                                            },
+                                        )
                                     }
                                 }
                             }
@@ -375,17 +378,18 @@ fun LibraryFilterBottomSheet(
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
                                     featureLabels.forEach { (feature, label) ->
-                                        ToggleChip(
-                                            label,
-                                            working.features.contains(feature),
-                                        ) { selected ->
-                                            working =
-                                                working.copy(
-                                                    features =
-                                                        if (selected) working.features + feature
-                                                        else working.features - feature
-                                                )
-                                        }
+                                        AfinityToggleChip(
+                                            label = label,
+                                            selected = working.features.contains(feature),
+                                            onSelectedChange = { selected ->
+                                                working =
+                                                    working.copy(
+                                                        features =
+                                                            if (selected) working.features + feature
+                                                            else working.features - feature
+                                                    )
+                                            },
+                                        )
                                     }
                                 }
                             }
@@ -582,17 +586,18 @@ fun LibraryFilterBottomSheet(
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
                                     videoTypeLabels.forEach { (type, label) ->
-                                        ToggleChip(
-                                            label,
-                                            working.videoTypes.contains(type),
-                                        ) { selected ->
-                                            working =
-                                                working.copy(
-                                                    videoTypes =
-                                                        if (selected) working.videoTypes + type
-                                                        else working.videoTypes - type
-                                                )
-                                        }
+                                        AfinityToggleChip(
+                                            label = label,
+                                            selected = working.videoTypes.contains(type),
+                                            onSelectedChange = { selected ->
+                                                working =
+                                                    working.copy(
+                                                        videoTypes =
+                                                            if (selected) working.videoTypes + type
+                                                            else working.videoTypes - type
+                                                    )
+                                            },
+                                        )
                                     }
                                 }
                             }
@@ -668,13 +673,4 @@ fun LibraryFilterBottomSheet(
             }
         }
     }
-}
-
-@Composable
-private fun ToggleChip(label: String, selected: Boolean, onToggle: (Boolean) -> Unit) {
-    FilterChip(
-        selected = selected,
-        onClick = { onToggle(!selected) },
-        label = { Text(label) },
-    )
 }

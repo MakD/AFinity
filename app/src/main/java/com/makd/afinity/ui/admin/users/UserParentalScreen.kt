@@ -45,11 +45,11 @@ import com.makd.afinity.ui.admin.components.AdminDiscardDialog
 import com.makd.afinity.ui.admin.components.AdminLoadContent
 import com.makd.afinity.ui.admin.components.AdminRemoveButton
 import com.makd.afinity.ui.admin.components.AdminScaffold
-import com.makd.afinity.ui.admin.components.AdminToggleChip
-import com.makd.afinity.ui.admin.components.AdminToggleChipFlow
 import com.makd.afinity.ui.admin.components.ReportUnsavedChanges
 import com.makd.afinity.ui.admin.components.adminContentBottomPadding
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.AfinityToggleChip
+import com.makd.afinity.ui.components.AfinityToggleChipFlow
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
@@ -198,9 +198,9 @@ private fun UserParentalContent(
 
                 SettingsGroup(title = stringResource(R.string.section_parental_unrated)) {
                     val blockedUnrated = state.blockedUnrated
-                    AdminToggleChipFlow {
+                    AfinityToggleChipFlow {
                         UNRATED_TYPES.forEach { type ->
-                            AdminToggleChip(
+                            AfinityToggleChip(
                                 label = stringResource(type.label),
                                 selected = type.value in blockedUnrated,
                                 onSelectedChange = { onSetUnratedBlocked(type.value, it) },

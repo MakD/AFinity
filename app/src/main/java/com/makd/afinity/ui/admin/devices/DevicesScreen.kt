@@ -47,9 +47,9 @@ import com.makd.afinity.R
 import com.makd.afinity.ui.admin.components.AdminLoadContent
 import com.makd.afinity.ui.admin.components.AdminPill
 import com.makd.afinity.ui.admin.components.AdminScaffold
-import com.makd.afinity.ui.admin.components.AdminToggleChip
 import com.makd.afinity.ui.admin.users.AdminUserAvatar
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.AfinityToggleChip
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
@@ -237,17 +237,17 @@ private fun DeviceFilters(state: DevicesUiState, onSelectFilter: (DeviceFilter) 
         modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 8.dp, end = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        AdminToggleChip(
+        AfinityToggleChip(
             label = stringResource(R.string.devices_filter_all_fmt, state.totalCount),
             selected = state.filter == DeviceFilter.ALL,
             onSelectedChange = { onSelectFilter(DeviceFilter.ALL) },
         )
-        AdminToggleChip(
+        AfinityToggleChip(
             label = stringResource(R.string.devices_filter_week_fmt, state.weekCount),
             selected = state.filter == DeviceFilter.THIS_WEEK,
             onSelectedChange = { onSelectFilter(DeviceFilter.THIS_WEEK) },
         )
-        AdminToggleChip(
+        AfinityToggleChip(
             label = stringResource(R.string.devices_filter_idle_fmt, state.idleCount),
             selected = state.filter == DeviceFilter.IDLE,
             onSelectedChange = { onSelectFilter(DeviceFilter.IDLE) },

@@ -523,7 +523,7 @@ fun BaseItemDto.toAfinityProgram(baseUrl: String): AfinityProgram {
         endDate = endDate,
         images = toAfinityImages(baseUrl),
         isLive = isLive == true,
-        isNew = isSeries == true && indexNumber == 1,
+        isNew = isSeries == true && isRepeat != true,
         isPremiere = isPremiere == true,
         episodeTitle = episodeTitle,
         seasonNumber = parentIndexNumber,

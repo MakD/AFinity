@@ -74,7 +74,7 @@ fun LogListContent(
     onFilterTag: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val compactFormatter = remember { SimpleDateFormat("mm:ss.SSS", Locale.US) }
+    val compactFormatter = remember { SimpleDateFormat("HH:mm:ss.SSS", Locale.US) }
     val fullFormatter = remember { SimpleDateFormat("HH:mm:ss", Locale.US) }
 
     LazyColumn(

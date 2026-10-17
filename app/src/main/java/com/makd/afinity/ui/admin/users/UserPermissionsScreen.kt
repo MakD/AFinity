@@ -42,11 +42,11 @@ import com.makd.afinity.R
 import com.makd.afinity.ui.admin.components.AdminDiscardDialog
 import com.makd.afinity.ui.admin.components.AdminLoadContent
 import com.makd.afinity.ui.admin.components.AdminScaffold
-import com.makd.afinity.ui.admin.components.AdminToggleChip
-import com.makd.afinity.ui.admin.components.AdminToggleChipFlow
 import com.makd.afinity.ui.admin.components.ReportUnsavedChanges
 import com.makd.afinity.ui.admin.components.adminContentBottomPadding
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.AfinityToggleChip
+import com.makd.afinity.ui.components.AfinityToggleChipFlow
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
@@ -233,9 +233,9 @@ private fun UserPermissionsContent(
                     if (!allLibraries && state.libraries.isNotEmpty()) {
                         val enabledFolders = state.enabledFolders
                         SettingsDivider(startPadding = 16.dp)
-                        AdminToggleChipFlow {
+                        AfinityToggleChipFlow {
                             state.libraries.forEach { library ->
-                                AdminToggleChip(
+                                AfinityToggleChip(
                                     label = library.name,
                                     selected = library.id in enabledFolders,
                                     onSelectedChange = { onSetLibraryEnabled(library.id, it) },
@@ -259,9 +259,9 @@ private fun UserPermissionsContent(
                         if (!allChannels) {
                             val enabledChannels = state.enabledChannels
                             SettingsDivider(startPadding = 16.dp)
-                            AdminToggleChipFlow {
+                            AfinityToggleChipFlow {
                                 state.channels.forEach { channel ->
-                                    AdminToggleChip(
+                                    AfinityToggleChip(
                                         label = channel.name,
                                         selected = channel.id in enabledChannels,
                                         onSelectedChange = { onSetChannelEnabled(channel.id, it) },
@@ -301,9 +301,9 @@ private fun UserPermissionsContent(
                     if (!deleteEverywhere && deletionTargets.isNotEmpty()) {
                         val deletionFolders = state.deletionFolders
                         SettingsDivider(startPadding = 16.dp)
-                        AdminToggleChipFlow {
+                        AfinityToggleChipFlow {
                             deletionTargets.forEach { library ->
-                                AdminToggleChip(
+                                AfinityToggleChip(
                                     label = library.name,
                                     selected = library.id in deletionFolders,
                                     onSelectedChange = {

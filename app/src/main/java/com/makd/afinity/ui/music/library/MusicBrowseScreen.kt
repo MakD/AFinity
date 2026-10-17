@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -24,7 +22,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -42,6 +39,8 @@ import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AppBarProfile
+import com.makd.afinity.ui.components.FilterFab
+import com.makd.afinity.ui.components.SortFab
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
@@ -149,12 +148,7 @@ fun MusicBrowseScreen(
                                 active = albumFilters.isActive,
                                 onClick = { showAlbumFilterSheet = true },
                             )
-                            FloatingActionButton(onClick = { showAlbumSortDialog = true }) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_arrows_sort),
-                                    contentDescription = stringResource(R.string.cd_sort_fab),
-                                )
-                            }
+                            SortFab(onClick = { showAlbumSortDialog = true })
                         }
                     LibraryFilter.AlbumArtists ->
                         FilterFab(
@@ -432,19 +426,6 @@ fun MusicBrowseScreen(
                     }
                 scope.launch { snackbarHostState.showSnackbar(message) }
             },
-        )
-    }
-}
-
-@Composable
-private fun FilterFab(active: Boolean, onClick: () -> Unit) {
-    FloatingActionButton(onClick = onClick) {
-        Icon(
-            painter =
-                painterResource(
-                    id = if (active) R.drawable.ic_filter_active else R.drawable.ic_filter
-                ),
-            contentDescription = stringResource(R.string.cd_filter_fab),
         )
     }
 }

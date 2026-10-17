@@ -5,7 +5,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,7 +34,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -84,6 +82,7 @@ import com.makd.afinity.ui.audiobookshelf.item.components.formatListenTime
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.RadioOptionRow
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.shared.DetailSectionGap
 import com.makd.afinity.ui.item.components.shared.LocalDetailLayout
@@ -587,7 +586,7 @@ private fun EpisodeSortDialog(
 
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     EpisodeSortKey.entries.forEach { option ->
-                        EpisodeSortOptionRow(
+                        RadioOptionRow(
                             label = stringResource(option.labelRes),
                             selected = selectedSort == option,
                             onClick = { selectedSort = option },
@@ -605,16 +604,4 @@ private fun EpisodeSortDialog(
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
     )
-}
-
-@Composable
-private fun EpisodeSortOptionRow(label: String, selected: Boolean, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RadioButton(selected = selected, onClick = onClick)
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(text = label, style = MaterialTheme.typography.bodyLarge)
-    }
 }
