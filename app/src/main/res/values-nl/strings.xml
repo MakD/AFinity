@@ -956,7 +956,6 @@
     <string name="pref_navigation_drawer_title">Navigatiemenu</string>
     <string name="pref_navigation_drawer_summary">Gebruik een navigatiemenu aan de zijkant in plaats van de balk onderaan</string>
     <string name="pref_libraries_in_drawer_title">Bibliotheken in menu tonen</string>
-    <string name="pref_libraries_in_drawer_summary">Toon je bibliotheken in het navigatiemenu in plaats van op het startscherm</string>
     <string name="download_location_section">Opslaglocatie</string>
     <string name="pref_max_concurrent_downloads">Maximaal aantal gelijktijdige downloads</string>
     <string name="pref_group_exoplayer">ExoPlayer-opties</string>

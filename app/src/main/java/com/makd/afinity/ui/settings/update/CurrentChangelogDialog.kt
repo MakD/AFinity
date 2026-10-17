@@ -48,6 +48,14 @@ fun CurrentChangelogDialog(
         confirmButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
         },
+        dismissButton =
+            if (state == CurrentChangelogState.Failed) {
+                {
+                    TextButton(onClick = viewModel::load) {
+                        Text(stringResource(R.string.action_retry))
+                    }
+                }
+            } else null,
         shape = MaterialTheme.shapes.extraLarge,
         icon = {
             Icon(

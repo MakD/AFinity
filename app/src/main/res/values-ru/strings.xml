@@ -1197,7 +1197,6 @@
     <string name="font_system_default">Как в системе</string>
     <string name="pref_navigation_drawer_summary">Использовать меню сбоку вместо панели внизу</string>
     <string name="pref_libraries_in_drawer_title">Показывать библиотеки в меню</string>
-    <string name="pref_libraries_in_drawer_summary">Отображать библиотеки в меню навигации, а не на главном экране</string>
     <string name="buffer_desc_minimal">Минимальный</string>
     <string name="buffer_desc_default">По умолчанию / Рекомендованный</string>
     <string name="buffer_desc_slow_networks">Подходит для медленных сетей</string>

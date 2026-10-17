@@ -737,7 +737,6 @@
     <string name="pref_navigation_drawer_title">Navigációs menü</string>
     <string name="pref_navigation_drawer_summary">Használjon oldalsó navigációs menüt az alsó sáv helyett</string>
     <string name="pref_libraries_in_drawer_title">Könyvtárak megjelenítése a menüben</string>
-    <string name="pref_libraries_in_drawer_summary">A könyvtárakat a kezdőképernyő helyett a navigációs menüben jelenítsd meg</string>
     <string name="settings_group_home_screen">Kezdőlap</string>
     <string name="pref_combine_library_title">Könyvtári szakaszok összevonása</string>
     <string name="pref_combine_library_summary">Filmek és Sorozatok egyesítése egyetlen listába</string>

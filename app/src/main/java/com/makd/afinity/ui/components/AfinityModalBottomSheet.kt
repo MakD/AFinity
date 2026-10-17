@@ -34,15 +34,6 @@ fun rememberAfinitySheetState(
         confirmValueChange = confirmValueChange,
     )
 
-/**
- * App-wide [ModalBottomSheet] with a consistent look and stable sizing.
- *
- * Top and horizontal insets are applied outside the sheet instead of inside it. Inside a
- * [ModalBottomSheet] the top inset shrinks to zero until the sheet slides under the status bar, so
- * any top inset in the content makes the sheet's height depend on its own position. For content
- * close to full screen height that feeds back into the sheet's anchors and makes it bounce
- * endlessly after a fling. Don't add top insets to the content of this sheet.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AfinityModalBottomSheet(

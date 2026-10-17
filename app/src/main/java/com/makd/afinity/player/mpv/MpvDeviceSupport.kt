@@ -12,7 +12,6 @@ data class MpvDeviceCapabilities(
 )
 
 object MpvDeviceSupport {
-    // The bundled libplacebo (v7) rejects devices below Vulkan 1.2.
     private const val MIN_VULKAN_VERSION = 0x402000
     const val MIN_VULKAN_VERSION_LABEL = "1.2"
 

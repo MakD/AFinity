@@ -1124,7 +1124,6 @@
     <string name="pref_navigation_drawer_title">Navigeringsmeny</string>
     <string name="pref_navigation_drawer_summary">Använd en sidomeny i stället för den nedre fältet</string>
     <string name="pref_libraries_in_drawer_title">Visa bibliotek i menyn</string>
-    <string name="pref_libraries_in_drawer_summary">Visa dina bibliotek i navigeringsmenyn i stället för på startsidan</string>
     <string name="cd_go_to_home">Gå till startsidan</string>
     <string name="cd_switch_account">Byt konto</string>
     <string name="pref_app_font_title">Appteckensnitt</string>

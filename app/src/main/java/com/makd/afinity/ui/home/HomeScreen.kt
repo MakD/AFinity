@@ -67,7 +67,6 @@ import com.makd.afinity.data.manager.UnreachableReason
 import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.HomeRow
-import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -314,19 +313,9 @@ fun HomeScreen(
                                     LibrariesSection(
                                         libraries = uiState.libraries,
                                         onLibraryClick = { library ->
-                                            val route =
-                                                if (library.type == CollectionType.Music) {
-                                                    Destination.createMusicLibraryRoute(
-                                                        libraryId = library.id.toString(),
-                                                        libraryName = library.name,
-                                                    )
-                                                } else {
-                                                    Destination.createLibraryContentRoute(
-                                                        libraryId = library.id.toString(),
-                                                        libraryName = library.name,
-                                                    )
-                                                }
-                                            navController.navigate(route)
+                                            navController.navigate(
+                                                Destination.createLibraryRoute(library)
+                                            )
                                         },
                                         widthSizeClass = widthSizeClass,
                                     )

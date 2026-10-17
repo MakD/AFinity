@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 
-val LocalSettingsSubtitleMaxLines = staticCompositionLocalOf { 1 }
+val LocalSettingsSubtitleMaxLines = staticCompositionLocalOf { Int.MAX_VALUE }
 
 @Composable
 fun BoxScope.EndAlignedDropdownMenu(

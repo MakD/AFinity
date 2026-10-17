@@ -103,7 +103,6 @@ constructor(@param:GitHubClient private val okHttpClient: OkHttpClient) {
             }
         }
 
-    /** Returns the release published for [tag], or null when no such release exists. */
     suspend fun getReleaseByTag(tag: String): Result<GitHubRelease?> =
         withContext(Dispatchers.IO) {
             try {

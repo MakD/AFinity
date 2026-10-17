@@ -1076,7 +1076,6 @@
     <string name="pref_navigation_drawer_title">Menu navigasi</string>
     <string name="pref_navigation_drawer_summary">Gunakan menu navigasi samping alih-alih bilah bawah</string>
     <string name="pref_libraries_in_drawer_title">Tampilkan pustaka di menu</string>
-    <string name="pref_libraries_in_drawer_summary">Tampilkan daftar pustaka Anda di menu navigasi, bukan di layar beranda</string>
     <string name="btn_validate">Validasi</string>
     <string name="update_console_status_hashing">sedang membuat hash file yang diunduh…</string>
     <string name="update_console_status_match">COCOK: build autentik, aman untuk diinstal</string>
