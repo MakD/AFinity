@@ -115,7 +115,6 @@ fun HeroCarousel(
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
     val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
-    val screenWidthPx = windowInfo.containerSize.width
     val screenHeightDp = with(density) { windowInfo.containerSize.height.toDp() }
 
     val heroHeight =
@@ -136,8 +135,6 @@ fun HeroCarousel(
         pagerState = pagerState,
         items = items,
         isScrolling = isScrolling,
-        fillWidthPx = screenWidthPx,
-        fillHeightPx = with(density) { heroHeight.toPx().toInt() },
         logoWidthPx = with(density) { (screenWidthDp * logoWidthFraction).toPx().toInt() },
         logoHeightPx = with(density) { HeroLogoHeight.toPx().toInt() },
     )
@@ -191,8 +188,6 @@ private fun HeroCarouselAutoScrollAndPrefetch(
     pagerState: PagerState,
     items: List<AfinityItem>,
     isScrolling: Boolean,
-    fillWidthPx: Int,
-    fillHeightPx: Int,
     logoWidthPx: Int,
     logoHeightPx: Int,
 ) {
@@ -232,15 +227,6 @@ private fun HeroCarouselAutoScrollAndPrefetch(
         val neighbours = listOf(current + 1, current - 1).map { it.mod(items.size) }.distinct()
         for (index in neighbours) {
             val item = items[index]
-            val rawUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl
-            if (rawUrl != null) {
-                val request =
-                    ImageRequest.Builder(context)
-                        .data(optimizedImageUrl(rawUrl, fillWidthPx, skipServerResize))
-                        .size(fillWidthPx, fillHeightPx)
-                        .build()
-                context.imageLoader.enqueue(request)
-            }
             val logoUrl = heroLogoUrl(item, skipServerResize)
             if (logoUrl != null) {
                 val logoRequest =
