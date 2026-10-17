@@ -109,4 +109,15 @@ object FieldSets {
         )
 
     val MUSIC_SEARCH = listOf(ItemFields.CHILD_COUNT)
+
+    val LIVE_TV_PROGRAM_CARD =
+        listOf(
+            ItemFields.OVERVIEW,
+            ItemFields.GENRES,
+            ItemFields.CHANNEL_INFO,
+        )
+
+    val LIVE_TV_PROGRAM_SCHEDULE = listOf(ItemFields.OVERVIEW)
+
+    val LIVE_TV_GUIDE = emptyList<ItemFields>()
 }

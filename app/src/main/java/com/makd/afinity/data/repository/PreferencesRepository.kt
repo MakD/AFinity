@@ -5,6 +5,7 @@ import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.common.DrawerLibrariesMode
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.livetv.LiveTvViewOptions
 import com.makd.afinity.data.models.player.AssRenderMode
 import com.makd.afinity.data.models.player.MpvAudioOutput
 import com.makd.afinity.data.models.player.MpvGpuApi
@@ -286,6 +287,10 @@ interface PreferencesRepository {
     suspend fun setDrawerLibrariesMode(mode: DrawerLibrariesMode)
 
     fun getDrawerLibrariesModeFlow(): Flow<DrawerLibrariesMode>
+
+    suspend fun setLiveTvViewOptions(options: LiveTvViewOptions)
+
+    fun getLiveTvViewOptionsFlow(): Flow<LiveTvViewOptions>
 
     suspend fun setSideSheetEnabled(enabled: Boolean)
 

@@ -14,6 +14,10 @@ import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.common.DrawerLibrariesMode
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.livetv.ChannelSortOrder
+import com.makd.afinity.data.models.livetv.GuideIndicator
+import com.makd.afinity.data.models.livetv.LiveTvViewOptions
+import com.makd.afinity.data.models.livetv.ProgramCategory
 import com.makd.afinity.data.models.player.AssRenderMode
 import com.makd.afinity.data.models.player.MpvAudioOutput
 import com.makd.afinity.data.models.player.MpvGpuApi
@@ -93,6 +97,14 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val LIBRARIES_IN_DRAWER = booleanPreferencesKey("libraries_in_drawer")
         val INDIVIDUAL_LIBRARIES_IN_DRAWER = booleanPreferencesKey("individual_libraries_in_drawer")
         val ONBOARDING_FIRST_RUN_DONE = booleanPreferencesKey("onboarding_first_run_done")
+
+        val LIVE_TV_CHANNEL_SORT = stringPreferencesKey("livetv_channel_sort")
+        val LIVE_TV_FAVORITES_FIRST = booleanPreferencesKey("livetv_favorites_first")
+        val LIVE_TV_FAVORITES_ONLY = booleanPreferencesKey("livetv_favorites_only")
+        val LIVE_TV_GUIDE_CATEGORIES = stringPreferencesKey("livetv_guide_categories")
+        val LIVE_TV_COLOR_CODED_BACKGROUNDS =
+            booleanPreferencesKey("livetv_color_coded_backgrounds")
+        val LIVE_TV_GUIDE_INDICATORS = stringPreferencesKey("livetv_guide_indicators")
 
         val DOWNLOAD_WIFI_ONLY = booleanPreferencesKey("download_wifi_only")
         val DOWNLOAD_QUALITY = stringPreferencesKey("download_quality")
@@ -503,6 +515,49 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
                 preferences[Keys.INDIVIDUAL_LIBRARIES_IN_DRAWER] == true -> DrawerLibrariesMode.EACH
                 else -> DrawerLibrariesMode.SCREEN
             }
+        }
+    }
+
+    override suspend fun setLiveTvViewOptions(options: LiveTvViewOptions) {
+        dataStore.edit { preferences ->
+            preferences[Keys.LIVE_TV_CHANNEL_SORT] = options.channelSort.value
+            preferences[Keys.LIVE_TV_FAVORITES_FIRST] = options.favoritesFirst
+            preferences[Keys.LIVE_TV_FAVORITES_ONLY] = options.favoritesOnly
+            preferences[Keys.LIVE_TV_GUIDE_CATEGORIES] =
+                options.guideCategories.joinToString(",") { it.name.lowercase() }
+            preferences[Keys.LIVE_TV_COLOR_CODED_BACKGROUNDS] = options.colorCodedBackgrounds
+            preferences[Keys.LIVE_TV_GUIDE_INDICATORS] =
+                options.indicators.joinToString(",") { it.value }
+        }
+    }
+
+    override fun getLiveTvViewOptionsFlow(): Flow<LiveTvViewOptions> {
+        return dataStore.data.map { preferences ->
+            val defaults = LiveTvViewOptions()
+            LiveTvViewOptions(
+                channelSort =
+                    preferences[Keys.LIVE_TV_CHANNEL_SORT]?.let { ChannelSortOrder.fromValue(it) }
+                        ?: defaults.channelSort,
+                favoritesFirst =
+                    preferences[Keys.LIVE_TV_FAVORITES_FIRST] ?: defaults.favoritesFirst,
+                favoritesOnly = preferences[Keys.LIVE_TV_FAVORITES_ONLY] ?: defaults.favoritesOnly,
+                guideCategories =
+                    preferences[Keys.LIVE_TV_GUIDE_CATEGORIES]
+                        ?.split(",")
+                        ?.mapNotNull { name ->
+                            ProgramCategory.entries.find { it.name.lowercase() == name }
+                        }
+                        ?.toSet()
+                        ?.ifEmpty { null } ?: defaults.guideCategories,
+                colorCodedBackgrounds =
+                    preferences[Keys.LIVE_TV_COLOR_CODED_BACKGROUNDS]
+                        ?: defaults.colorCodedBackgrounds,
+                indicators =
+                    preferences[Keys.LIVE_TV_GUIDE_INDICATORS]
+                        ?.split(",")
+                        ?.mapNotNull { GuideIndicator.fromValue(it) }
+                        ?.toSet() ?: defaults.indicators,
+            )
         }
     }
 

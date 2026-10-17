@@ -4,6 +4,7 @@ import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.AfinityProgram
 import com.makd.afinity.data.models.livetv.ChannelType
 import com.makd.afinity.data.models.livetv.LiveTvPlaybackInfo
+import com.makd.afinity.data.models.livetv.ProgramCategory
 import java.time.LocalDateTime
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
@@ -21,7 +22,33 @@ interface LiveTvRepository {
         limit: Int? = null,
     ): List<AfinityChannel>
 
+    suspend fun getChannelsResult(
+        type: ChannelType? = null,
+        isFavorite: Boolean? = null,
+        isMovie: Boolean? = null,
+        isSeries: Boolean? = null,
+        isNews: Boolean? = null,
+        isKids: Boolean? = null,
+        isSports: Boolean? = null,
+        limit: Int? = null,
+    ): Result<List<AfinityChannel>>
+
     suspend fun getChannel(channelId: UUID): AfinityChannel?
+
+    suspend fun getChannelResult(channelId: UUID): Result<AfinityChannel>
+
+    suspend fun getChannelScheduleResult(channelId: UUID): Result<List<AfinityProgram>>
+
+    suspend fun getProgramResult(programId: UUID): Result<AfinityProgram>
+
+    suspend fun getOnNowResult(limit: Int): Result<List<AfinityProgram>>
+
+    suspend fun getUpcomingResult(
+        category: ProgramCategory,
+        limit: Int,
+    ): Result<List<AfinityProgram>>
+
+    suspend fun getGuideDataEnd(): LocalDateTime?
 
     suspend fun getPrograms(
         channelIds: List<UUID>? = null,
@@ -44,6 +71,12 @@ interface LiveTvRepository {
         windowStart: LocalDateTime,
         windowEnd: LocalDateTime,
     ): List<AfinityProgram>
+
+    suspend fun getGuideProgramsResult(
+        channelIds: List<UUID>,
+        windowStart: LocalDateTime,
+        windowEnd: LocalDateTime,
+    ): Result<List<AfinityProgram>>
 
     suspend fun getCurrentProgram(channelId: UUID): AfinityProgram?
 

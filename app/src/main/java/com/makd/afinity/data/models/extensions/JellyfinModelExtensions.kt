@@ -33,6 +33,7 @@ import org.jellyfin.sdk.model.api.ImageFormat
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.LocationType
 import org.jellyfin.sdk.model.api.PlayAccess
+import org.jellyfin.sdk.model.api.RecordingStatus
 
 fun BaseItemDto.toAfinityExternalUrls(): List<AfinityExternalUrl>? {
     return externalUrls?.map { it.toAfinityExternalUrl() }
@@ -525,12 +526,30 @@ fun BaseItemDto.toAfinityProgram(baseUrl: String): AfinityProgram {
         isLive = isLive == true,
         isNew = isSeries == true && isRepeat != true,
         isPremiere = isPremiere == true,
+        isRepeat = isRepeat == true,
+        isSeries = isSeries == true,
+        isMovie = isMovie == true,
+        isNews = isNews == true,
+        isKids = isKids == true,
+        isSports = isSports == true,
+        isHd = isHd == true,
+        audio = audio,
         episodeTitle = episodeTitle,
+        seriesName = seriesName,
         seasonNumber = parentIndexNumber,
         episodeNumber = indexNumber,
         productionYear = productionYear,
+        originalAirDate = premiereDate,
         genres = genres ?: emptyList(),
+        tags = tags ?: emptyList(),
         officialRating = officialRating,
         communityRating = communityRating,
+        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
+        channelName = channelName,
+        channelNumber = channelNumber,
+        timerId = timerId,
+        seriesTimerId = seriesTimerId,
+        timerStatus =
+            status?.let { value -> RecordingStatus.entries.firstOrNull { it.serialName == value } },
     )
 }
