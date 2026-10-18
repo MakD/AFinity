@@ -16,6 +16,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -83,6 +84,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.C
@@ -2144,18 +2146,26 @@ private fun PauseDetailsOverlay(
     val awardsHighlight =
         if (LocalShowAwards.current) omdbAwardsHeadline(uiState.omdbAwards) else null
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f))) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f))) {
+        val compact = maxHeight < PauseCompactHeight
+        val shownCast = if (compact) cast.take(2) else cast
+        val compactAwards = compact && awardsHighlight != null && ratingChips.isNotEmpty()
         Column(
             modifier =
                 Modifier.fillMaxSize()
                     .windowInsetsPadding(
                         WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
                     )
-                    .padding(start = 32.dp, end = 32.dp, top = 56.dp, bottom = 28.dp),
+                    .padding(
+                        start = 32.dp,
+                        end = 32.dp,
+                        top = 56.dp,
+                        bottom = if (compact) 16.dp else 28.dp,
+                    ),
             verticalArrangement = Arrangement.Bottom,
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
                 horizontalArrangement = Arrangement.spacedBy(28.dp),
             ) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -2163,7 +2173,9 @@ private fun PauseDetailsOverlay(
                         AsyncImage(
                             imageUrl = logoUrl,
                             contentDescription = primaryTitle,
-                            modifier = Modifier.heightIn(max = 52.dp).widthIn(max = 300.dp),
+                            modifier =
+                                Modifier.heightIn(max = if (compact) 40.dp else 52.dp)
+                                    .widthIn(max = 300.dp),
                             contentScale = ContentScale.Fit,
                             blurHash = null,
                             targetWidth = 300.dp,
@@ -2173,9 +2185,9 @@ private fun PauseDetailsOverlay(
                         Text(
                             text = primaryTitle,
                             color = Color.White,
-                            fontSize = 30.sp,
+                            fontSize = if (compact) 24.sp else 30.sp,
                             fontWeight = FontWeight.Bold,
-                            maxLines = 2,
+                            maxLines = if (compact) 1 else 2,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
@@ -2185,9 +2197,9 @@ private fun PauseDetailsOverlay(
                             color = Color.White.copy(alpha = 0.85f),
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold,
-                            maxLines = 2,
+                            maxLines = if (compact) 1 else 2,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(top = 8.dp),
+                            modifier = Modifier.padding(top = if (compact) 4.dp else 8.dp),
                         )
                     }
 
@@ -2208,7 +2220,7 @@ private fun PauseDetailsOverlay(
                     audioLabel?.let { a -> metadataItems.add { PauseMetaText(a, metaColor) } }
                     if (metadataItems.isNotEmpty()) {
                         FlowRow(
-                            modifier = Modifier.padding(top = 12.dp),
+                            modifier = Modifier.padding(top = if (compact) 8.dp else 12.dp),
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
@@ -2222,9 +2234,10 @@ private fun PauseDetailsOverlay(
                     }
                     if (ratingChips.isNotEmpty()) {
                         FlowRow(
-                            modifier = Modifier.padding(top = 10.dp),
+                            modifier = Modifier.padding(top = if (compact) 6.dp else 10.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp),
+                            itemVerticalAlignment = Alignment.CenterVertically,
                         ) {
                             ratingChips.forEach { display ->
                                 Row(
@@ -2247,37 +2260,16 @@ private fun PauseDetailsOverlay(
                                     PauseMetaText(display.score, metaColor)
                                 }
                             }
+                            if (compactAwards && awardsHighlight != null) {
+                                PauseAwardsHighlight(awardsHighlight)
+                            }
                         }
                     }
-                    if (awardsHighlight != null) {
-                        val goldAccent = Color(0xFFD4AF37)
-                        Row(
-                            modifier = Modifier.padding(top = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_laurel),
-                                contentDescription = null,
-                                tint = goldAccent,
-                                modifier = Modifier.size(20.dp),
-                            )
-                            Text(
-                                text = awardsHighlight.uppercase(),
-                                color = goldAccent,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_laurel),
-                                contentDescription = null,
-                                tint = goldAccent,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
+                    if (awardsHighlight != null && !compactAwards) {
+                        PauseAwardsHighlight(
+                            text = awardsHighlight,
+                            modifier = Modifier.padding(top = if (compact) 6.dp else 10.dp),
+                        )
                     }
                     if (directors.isNotEmpty()) {
                         Text(
@@ -2290,7 +2282,7 @@ private fun PauseDetailsOverlay(
                             fontSize = 13.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(top = 12.dp),
+                            modifier = Modifier.padding(top = if (compact) 8.dp else 12.dp),
                         )
                     }
                     overview?.let {
@@ -2299,17 +2291,19 @@ private fun PauseDetailsOverlay(
                             color = Color.White.copy(alpha = 0.72f),
                             fontSize = 14.sp,
                             lineHeight = 20.sp,
-                            maxLines = 3,
+                            maxLines = if (compact) 2 else 3,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(top = 14.dp).widthIn(max = 540.dp),
+                            modifier =
+                                Modifier.padding(top = if (compact) 8.dp else 14.dp)
+                                    .widthIn(max = 540.dp),
                         )
                     }
                 }
 
-                if (cast.isNotEmpty()) {
+                if (shownCast.isNotEmpty()) {
                     Column(
                         modifier = Modifier.widthIn(max = 280.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(if (compact) 10.dp else 16.dp),
                     ) {
                         Text(
                             text = stringResource(R.string.player_cast_heading).uppercase(),
@@ -2318,13 +2312,15 @@ private fun PauseDetailsOverlay(
                             fontWeight = FontWeight.SemiBold,
                             letterSpacing = 1.5.sp,
                         )
-                        cast.forEach { person -> CastRow(person) }
+                        shownCast.forEach { person ->
+                            CastRow(person, avatarSize = if (compact) 44.dp else 54.dp)
+                        }
                     }
                 }
             }
 
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 22.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = if (compact) 12.dp else 22.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Button(
@@ -2387,14 +2383,46 @@ private fun PauseMetaText(
 }
 
 @Composable
-private fun CastRow(person: AfinityPerson) {
+private fun PauseAwardsHighlight(text: String, modifier: Modifier = Modifier) {
+    val goldAccent = Color(0xFFD4AF37)
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.ic_laurel),
+            contentDescription = null,
+            tint = goldAccent,
+            modifier = Modifier.size(20.dp),
+        )
+        Text(
+            text = text.uppercase(),
+            color = goldAccent,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Icon(
+            painter = painterResource(id = R.drawable.ic_laurel),
+            contentDescription = null,
+            tint = goldAccent,
+            modifier = Modifier.size(20.dp),
+        )
+    }
+}
+
+@Composable
+private fun CastRow(person: AfinityPerson, avatarSize: Dp) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Box(
             modifier =
-                Modifier.size(54.dp)
+                Modifier.size(avatarSize)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
                     .border(1.5.dp, Color.White.copy(alpha = 0.12f), CircleShape),
@@ -2408,8 +2436,8 @@ private fun CastRow(person: AfinityPerson) {
                     modifier = Modifier.fillMaxSize().clip(CircleShape),
                     contentScale = ContentScale.Crop,
                     blurHash = person.image.blurHash,
-                    targetWidth = 54.dp,
-                    targetHeight = 54.dp,
+                    targetWidth = avatarSize,
+                    targetHeight = avatarSize,
                 )
             } else {
                 Text(
@@ -2476,6 +2504,8 @@ private fun formatAudioChannels(stream: AfinityMediaStream?): String? {
 }
 
 private val parentheticalRegex = Regex("""\(([^)]+)\)""")
+
+private val PauseCompactHeight = 420.dp
 
 private fun extractRegionalHint(displayTitle: String?): String? = displayTitle?.let {
     parentheticalRegex.find(it)?.groupValues?.get(1)?.trim()
