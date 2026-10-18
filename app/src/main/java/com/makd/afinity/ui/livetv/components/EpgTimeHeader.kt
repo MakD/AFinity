@@ -68,8 +68,8 @@ fun EpgTimeHeader(
             }
         }
 
-        nowLineOffset(startTime, startTime.plusHours(hours.toLong()), now, hourWidth)?.let {
-            offset ->
+        nowLineOffset(startTime, startTime.plusHours(hours.toLong()), now, hourWidth)?.let { offset
+            ->
             Box(
                 modifier =
                     Modifier.align(Alignment.BottomStart)

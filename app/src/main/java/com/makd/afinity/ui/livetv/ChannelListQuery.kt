@@ -24,9 +24,7 @@ fun LiveTvViewOptions.channelListQuery(includeCategories: Boolean): ChannelListQ
             },
     )
 
-suspend fun LiveTvRepository.getChannelsFor(
-    query: ChannelListQuery
-): Result<List<AfinityChannel>> {
+suspend fun LiveTvRepository.getChannelsFor(query: ChannelListQuery): Result<List<AfinityChannel>> {
     fun flag(category: ProgramCategory): Boolean? =
         query.categories?.let { if (category in it) true else null }
 

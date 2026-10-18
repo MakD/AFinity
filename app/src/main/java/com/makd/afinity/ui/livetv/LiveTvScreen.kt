@@ -200,8 +200,7 @@ private fun LiveTvHomeContent(
                     )
                 }
 
-            categoriesWithPrograms.isEmpty() ->
-                item(key = "empty") { LiveTvHomeEmpty() }
+            categoriesWithPrograms.isEmpty() -> item(key = "empty") { LiveTvHomeEmpty() }
 
             else ->
                 items(items = categoriesWithPrograms, key = { it.first.name }) {

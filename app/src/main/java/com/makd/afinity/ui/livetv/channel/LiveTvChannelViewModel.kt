@@ -81,9 +81,7 @@ constructor(
             }
         }
         viewModelScope.launch {
-            liveTvRepository.timerChanges.debounce(TIMER_CHANGE_DEBOUNCE).collect {
-                loadSchedule()
-            }
+            liveTvRepository.timerChanges.debounce(TIMER_CHANGE_DEBOUNCE).collect { loadSchedule() }
         }
     }
 

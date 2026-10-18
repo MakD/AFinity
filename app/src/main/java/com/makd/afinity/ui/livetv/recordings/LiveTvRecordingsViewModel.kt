@@ -99,9 +99,7 @@ constructor(
         viewModelScope.launch {
             merge(
                     liveTvRepository.timerChanges,
-                    mediaRefreshBus.events
-                        .filter { it == RefreshTrigger.LIBRARY_CHANGED }
-                        .map {},
+                    mediaRefreshBus.events.filter { it == RefreshTrigger.LIBRARY_CHANGED }.map {},
                 )
                 .debounce(TIMER_CHANGE_DEBOUNCE)
                 .collect { refresh.invalidate() }

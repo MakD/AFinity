@@ -179,412 +179,375 @@ fun LibraryFilterBottomSheet(
         },
         clearAllEnabled = !working.isEmpty,
     ) {
-                        if (isLoadingOptions) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.primary,
-                                )
-                            }
-                        }
+        if (isLoadingOptions) {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-                        val statusSummary = buildList {
-                            if (working.played) add(stringResource(R.string.filter_played))
-                            if (working.unplayed) add(stringResource(R.string.filter_unplayed))
-                            if (working.resumable) add(stringResource(R.string.filter_resumable))
-                            if (working.favorites) add(stringResource(R.string.filter_favorites))
-                            if (working.watchlist) add(stringResource(R.string.filter_watchlist))
-                        }
-                            .let { if (it.isEmpty()) anyLabel else it.joinToString(", ") }
+        val statusSummary = buildList {
+            if (working.played) add(stringResource(R.string.filter_played))
+            if (working.unplayed) add(stringResource(R.string.filter_unplayed))
+            if (working.resumable) add(stringResource(R.string.filter_resumable))
+            if (working.favorites) add(stringResource(R.string.filter_favorites))
+            if (working.watchlist) add(stringResource(R.string.filter_watchlist))
+        }
+            .let { if (it.isEmpty()) anyLabel else it.joinToString(", ") }
 
-                        FilterAccordionSection(
-                            title = stringResource(R.string.library_filter_status),
-                            summary = statusSummary,
-                            expanded = expandedSections.contains("status"),
-                            onToggle = { toggleSection("status") },
-                        ) {
-                            FlowRow(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                AfinityToggleChip(
-                                    label = stringResource(R.string.filter_played),
-                                    selected = working.played,
-                                    onSelectedChange = {
-                                        working = working.copy(played = it, unplayed = false)
-                                    },
-                                )
-                                AfinityToggleChip(
-                                    label = stringResource(R.string.filter_unplayed),
-                                    selected = working.unplayed,
-                                    onSelectedChange = {
-                                        working = working.copy(unplayed = it, played = false)
-                                    },
-                                )
-                                AfinityToggleChip(
-                                    label = stringResource(R.string.filter_resumable),
-                                    selected = working.resumable,
-                                    onSelectedChange = { working = working.copy(resumable = it) },
-                                )
-                                AfinityToggleChip(
-                                    label = stringResource(R.string.filter_favorites),
-                                    selected = working.favorites,
-                                    onSelectedChange = { working = working.copy(favorites = it) },
-                                )
-                                AfinityToggleChip(
-                                    label = stringResource(R.string.filter_watchlist),
-                                    selected = working.watchlist,
-                                    onSelectedChange = { working = working.copy(watchlist = it) },
-                                )
-                            }
-                        }
+        FilterAccordionSection(
+            title = stringResource(R.string.library_filter_status),
+            summary = statusSummary,
+            expanded = expandedSections.contains("status"),
+            onToggle = { toggleSection("status") },
+        ) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                AfinityToggleChip(
+                    label = stringResource(R.string.filter_played),
+                    selected = working.played,
+                    onSelectedChange = { working = working.copy(played = it, unplayed = false) },
+                )
+                AfinityToggleChip(
+                    label = stringResource(R.string.filter_unplayed),
+                    selected = working.unplayed,
+                    onSelectedChange = { working = working.copy(unplayed = it, played = false) },
+                )
+                AfinityToggleChip(
+                    label = stringResource(R.string.filter_resumable),
+                    selected = working.resumable,
+                    onSelectedChange = { working = working.copy(resumable = it) },
+                )
+                AfinityToggleChip(
+                    label = stringResource(R.string.filter_favorites),
+                    selected = working.favorites,
+                    onSelectedChange = { working = working.copy(favorites = it) },
+                )
+                AfinityToggleChip(
+                    label = stringResource(R.string.filter_watchlist),
+                    selected = working.watchlist,
+                    onSelectedChange = { working = working.copy(watchlist = it) },
+                )
+            }
+        }
 
-                        if (capabilities.seriesStatus) {
-                            val seriesStatusLabels =
-                                listOf(
-                                    SeriesStatusFilter.CONTINUING to
-                                        stringResource(R.string.series_status_continuing),
-                                    SeriesStatusFilter.ENDED to
-                                        stringResource(R.string.series_status_ended),
-                                    SeriesStatusFilter.UNRELEASED to
-                                        stringResource(R.string.series_status_unreleased),
-                                )
-                            val seriesStatusSummary =
-                                seriesStatusLabels
-                                    .filter { working.seriesStatuses.contains(it.first) }
-                                    .joinToString(", ") { it.second }
-                                    .ifEmpty { anyLabel }
+        if (capabilities.seriesStatus) {
+            val seriesStatusLabels =
+                listOf(
+                    SeriesStatusFilter.CONTINUING to
+                        stringResource(R.string.series_status_continuing),
+                    SeriesStatusFilter.ENDED to stringResource(R.string.series_status_ended),
+                    SeriesStatusFilter.UNRELEASED to
+                        stringResource(R.string.series_status_unreleased),
+                )
+            val seriesStatusSummary =
+                seriesStatusLabels
+                    .filter { working.seriesStatuses.contains(it.first) }
+                    .joinToString(", ") { it.second }
+                    .ifEmpty { anyLabel }
 
-                            FilterAccordionSection(
-                                title = stringResource(R.string.library_filter_series_status),
-                                summary = seriesStatusSummary,
-                                expanded = expandedSections.contains("series_status"),
-                                onToggle = { toggleSection("series_status") },
-                            ) {
-                                FlowRow(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    seriesStatusLabels.forEach { (status, label) ->
-                                        AfinityToggleChip(
-                                            label = label,
-                                            selected = working.seriesStatuses.contains(status),
-                                            onSelectedChange = { selected ->
-                                                working =
-                                                    working.copy(
-                                                        seriesStatuses =
-                                                            if (selected)
-                                                                working.seriesStatuses + status
-                                                            else working.seriesStatuses - status
-                                                    )
-                                            },
-                                        )
-                                    }
-                                }
-                            }
-                        }
+            FilterAccordionSection(
+                title = stringResource(R.string.library_filter_series_status),
+                summary = seriesStatusSummary,
+                expanded = expandedSections.contains("series_status"),
+                onToggle = { toggleSection("series_status") },
+            ) {
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    seriesStatusLabels.forEach { (status, label) ->
+                        AfinityToggleChip(
+                            label = label,
+                            selected = working.seriesStatuses.contains(status),
+                            onSelectedChange = { selected ->
+                                working =
+                                    working.copy(
+                                        seriesStatuses =
+                                            if (selected) working.seriesStatuses + status
+                                            else working.seriesStatuses - status
+                                    )
+                            },
+                        )
+                    }
+                }
+            }
+        }
 
-                        if (capabilities.features) {
-                            val featureLabels =
-                                listOf(
-                                    LibraryFeature.SUBTITLES to
-                                        stringResource(R.string.feature_subtitles),
-                                    LibraryFeature.TRAILER to
-                                        stringResource(R.string.feature_trailer),
-                                    LibraryFeature.SPECIAL_FEATURE to
-                                        stringResource(R.string.feature_special),
-                                    LibraryFeature.THEME_SONG to
-                                        stringResource(R.string.feature_theme_song),
-                                    LibraryFeature.THEME_VIDEO to
-                                        stringResource(R.string.feature_theme_video),
-                                )
-                            val featuresSummary =
-                                featureLabels
-                                    .filter { working.features.contains(it.first) }
-                                    .joinToString(", ") { it.second }
-                                    .ifEmpty { anyLabel }
+        if (capabilities.features) {
+            val featureLabels =
+                listOf(
+                    LibraryFeature.SUBTITLES to stringResource(R.string.feature_subtitles),
+                    LibraryFeature.TRAILER to stringResource(R.string.feature_trailer),
+                    LibraryFeature.SPECIAL_FEATURE to stringResource(R.string.feature_special),
+                    LibraryFeature.THEME_SONG to stringResource(R.string.feature_theme_song),
+                    LibraryFeature.THEME_VIDEO to stringResource(R.string.feature_theme_video),
+                )
+            val featuresSummary =
+                featureLabels
+                    .filter { working.features.contains(it.first) }
+                    .joinToString(", ") { it.second }
+                    .ifEmpty { anyLabel }
 
-                            FilterAccordionSection(
-                                title = stringResource(R.string.library_filter_features),
-                                summary = featuresSummary,
-                                expanded = expandedSections.contains("features"),
-                                onToggle = { toggleSection("features") },
-                            ) {
-                                FlowRow(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    featureLabels.forEach { (feature, label) ->
-                                        AfinityToggleChip(
-                                            label = label,
-                                            selected = working.features.contains(feature),
-                                            onSelectedChange = { selected ->
-                                                working =
-                                                    working.copy(
-                                                        features =
-                                                            if (selected) working.features + feature
-                                                            else working.features - feature
-                                                    )
-                                            },
-                                        )
-                                    }
-                                }
-                            }
-                        }
+            FilterAccordionSection(
+                title = stringResource(R.string.library_filter_features),
+                summary = featuresSummary,
+                expanded = expandedSections.contains("features"),
+                onToggle = { toggleSection("features") },
+            ) {
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    featureLabels.forEach { (feature, label) ->
+                        AfinityToggleChip(
+                            label = label,
+                            selected = working.features.contains(feature),
+                            onSelectedChange = { selected ->
+                                working =
+                                    working.copy(
+                                        features =
+                                            if (selected) working.features + feature
+                                            else working.features - feature
+                                    )
+                            },
+                        )
+                    }
+                }
+            }
+        }
 
-                        if (capabilities.genres && options.genres.isNotEmpty()) {
-                            val selectedGenres = working.genres.toList()
-                            val genreSuggestions =
-                                options.genres.filter {
-                                    !working.genres.contains(it) &&
-                                        (genreQuery.isBlank() ||
-                                            it.contains(genreQuery, ignoreCase = true))
-                                }
+        if (capabilities.genres && options.genres.isNotEmpty()) {
+            val selectedGenres = working.genres.toList()
+            val genreSuggestions =
+                options.genres.filter {
+                    !working.genres.contains(it) &&
+                        (genreQuery.isBlank() || it.contains(genreQuery, ignoreCase = true))
+                }
 
-                            FilterAccordionSection(
-                                title = stringResource(R.string.library_filter_genres),
-                                summary =
-                                    if (selectedGenres.isEmpty()) anyLabel
-                                    else selectedGenres.joinToString(", "),
-                                expanded = expandedSections.contains("genres"),
-                                onToggle = { toggleSection("genres") },
-                            ) {
-                                SearchableChipMultiSelect(
-                                    label = null,
-                                    placeholder =
-                                        stringResource(R.string.library_filter_genres_hint),
-                                    query = genreQuery,
-                                    onQueryChange = { genreQuery = it },
-                                    suggestions = genreSuggestions,
-                                    suggestionLabel = { it },
-                                    onSuggestionSelected = { genre ->
-                                        working = working.copy(genres = working.genres + genre)
-                                        genreQuery = ""
-                                    },
-                                    selected = selectedGenres,
-                                    selectedLabel = { it },
-                                    onRemoveSelected = { genre ->
-                                        working = working.copy(genres = working.genres - genre)
-                                    },
-                                    onClearAll = { working = working.copy(genres = emptySet()) },
-                                )
-                            }
-                        }
+            FilterAccordionSection(
+                title = stringResource(R.string.library_filter_genres),
+                summary =
+                    if (selectedGenres.isEmpty()) anyLabel else selectedGenres.joinToString(", "),
+                expanded = expandedSections.contains("genres"),
+                onToggle = { toggleSection("genres") },
+            ) {
+                SearchableChipMultiSelect(
+                    label = null,
+                    placeholder = stringResource(R.string.library_filter_genres_hint),
+                    query = genreQuery,
+                    onQueryChange = { genreQuery = it },
+                    suggestions = genreSuggestions,
+                    suggestionLabel = { it },
+                    onSuggestionSelected = { genre ->
+                        working = working.copy(genres = working.genres + genre)
+                        genreQuery = ""
+                    },
+                    selected = selectedGenres,
+                    selectedLabel = { it },
+                    onRemoveSelected = { genre ->
+                        working = working.copy(genres = working.genres - genre)
+                    },
+                    onClearAll = { working = working.copy(genres = emptySet()) },
+                )
+            }
+        }
 
-                        if (capabilities.ratings && options.officialRatings.isNotEmpty()) {
-                            val selectedRatings = working.officialRatings.toList()
-                            val ratingSuggestions =
-                                options.officialRatings.filter {
-                                    !working.officialRatings.contains(it) &&
-                                        (ratingQuery.isBlank() ||
-                                            it.contains(ratingQuery, ignoreCase = true))
-                                }
+        if (capabilities.ratings && options.officialRatings.isNotEmpty()) {
+            val selectedRatings = working.officialRatings.toList()
+            val ratingSuggestions =
+                options.officialRatings.filter {
+                    !working.officialRatings.contains(it) &&
+                        (ratingQuery.isBlank() || it.contains(ratingQuery, ignoreCase = true))
+                }
 
-                            FilterAccordionSection(
-                                title = stringResource(R.string.library_filter_ratings),
-                                summary =
-                                    if (selectedRatings.isEmpty()) anyLabel
-                                    else selectedRatings.joinToString(", "),
-                                expanded = expandedSections.contains("ratings"),
-                                onToggle = { toggleSection("ratings") },
-                            ) {
-                                SearchableChipMultiSelect(
-                                    label = null,
-                                    placeholder =
-                                        stringResource(R.string.library_filter_ratings_hint),
-                                    query = ratingQuery,
-                                    onQueryChange = { ratingQuery = it },
-                                    suggestions = ratingSuggestions,
-                                    suggestionLabel = { it },
-                                    onSuggestionSelected = { rating ->
-                                        working =
-                                            working.copy(
-                                                officialRatings = working.officialRatings + rating
-                                            )
-                                        ratingQuery = ""
-                                    },
-                                    selected = selectedRatings,
-                                    selectedLabel = { it },
-                                    onRemoveSelected = { rating ->
-                                        working =
-                                            working.copy(
-                                                officialRatings = working.officialRatings - rating
-                                            )
-                                    },
-                                    onClearAll = {
-                                        working = working.copy(officialRatings = emptySet())
-                                    },
-                                )
-                            }
-                        }
+            FilterAccordionSection(
+                title = stringResource(R.string.library_filter_ratings),
+                summary =
+                    if (selectedRatings.isEmpty()) anyLabel else selectedRatings.joinToString(", "),
+                expanded = expandedSections.contains("ratings"),
+                onToggle = { toggleSection("ratings") },
+            ) {
+                SearchableChipMultiSelect(
+                    label = null,
+                    placeholder = stringResource(R.string.library_filter_ratings_hint),
+                    query = ratingQuery,
+                    onQueryChange = { ratingQuery = it },
+                    suggestions = ratingSuggestions,
+                    suggestionLabel = { it },
+                    onSuggestionSelected = { rating ->
+                        working = working.copy(officialRatings = working.officialRatings + rating)
+                        ratingQuery = ""
+                    },
+                    selected = selectedRatings,
+                    selectedLabel = { it },
+                    onRemoveSelected = { rating ->
+                        working = working.copy(officialRatings = working.officialRatings - rating)
+                    },
+                    onClearAll = { working = working.copy(officialRatings = emptySet()) },
+                )
+            }
+        }
 
-                        if (capabilities.tags && options.tags.isNotEmpty()) {
-                            val selectedTags = working.tags.toList()
-                            val tagSuggestions =
-                                options.tags.filter {
-                                    !working.tags.contains(it) &&
-                                        (tagQuery.isBlank() ||
-                                            it.contains(tagQuery, ignoreCase = true))
-                                }
+        if (capabilities.tags && options.tags.isNotEmpty()) {
+            val selectedTags = working.tags.toList()
+            val tagSuggestions =
+                options.tags.filter {
+                    !working.tags.contains(it) &&
+                        (tagQuery.isBlank() || it.contains(tagQuery, ignoreCase = true))
+                }
 
-                            FilterAccordionSection(
-                                title = stringResource(R.string.library_filter_tags),
-                                summary =
-                                    if (selectedTags.isEmpty()) anyLabel
-                                    else selectedTags.joinToString(", "),
-                                expanded = expandedSections.contains("tags"),
-                                onToggle = { toggleSection("tags") },
-                            ) {
-                                SearchableChipMultiSelect(
-                                    label = null,
-                                    placeholder = stringResource(R.string.library_filter_tags_hint),
-                                    query = tagQuery,
-                                    onQueryChange = { tagQuery = it },
-                                    suggestions = tagSuggestions,
-                                    suggestionLabel = { it },
-                                    onSuggestionSelected = { tag ->
-                                        working = working.copy(tags = working.tags + tag)
-                                        tagQuery = ""
-                                    },
-                                    selected = selectedTags,
-                                    selectedLabel = { it },
-                                    onRemoveSelected = { tag ->
-                                        working = working.copy(tags = working.tags - tag)
-                                    },
-                                    onClearAll = { working = working.copy(tags = emptySet()) },
-                                )
-                            }
-                        }
+            FilterAccordionSection(
+                title = stringResource(R.string.library_filter_tags),
+                summary = if (selectedTags.isEmpty()) anyLabel else selectedTags.joinToString(", "),
+                expanded = expandedSections.contains("tags"),
+                onToggle = { toggleSection("tags") },
+            ) {
+                SearchableChipMultiSelect(
+                    label = null,
+                    placeholder = stringResource(R.string.library_filter_tags_hint),
+                    query = tagQuery,
+                    onQueryChange = { tagQuery = it },
+                    suggestions = tagSuggestions,
+                    suggestionLabel = { it },
+                    onSuggestionSelected = { tag ->
+                        working = working.copy(tags = working.tags + tag)
+                        tagQuery = ""
+                    },
+                    selected = selectedTags,
+                    selectedLabel = { it },
+                    onRemoveSelected = { tag -> working = working.copy(tags = working.tags - tag) },
+                    onClearAll = { working = working.copy(tags = emptySet()) },
+                )
+            }
+        }
 
-                        if (capabilities.languages && options.audioLanguages.isNotEmpty()) {
-                            LanguageFilterSection(
-                                sectionKey = "audioLanguages",
-                                title = stringResource(R.string.library_filter_audio_language),
-                                hint = stringResource(R.string.library_filter_language_hint),
-                                anyLabel = anyLabel,
-                                available = options.audioLanguages,
-                                selectedCodes = working.audioLanguages,
-                                query = audioLanguageQuery,
-                                onQueryChange = { audioLanguageQuery = it },
-                                expanded = expandedSections.contains("audioLanguages"),
-                                onToggle = { toggleSection("audioLanguages") },
-                                onSelectionChange = { working = working.copy(audioLanguages = it) },
-                                onQueryConsumed = { audioLanguageQuery = "" },
-                            )
-                        }
+        if (capabilities.languages && options.audioLanguages.isNotEmpty()) {
+            LanguageFilterSection(
+                sectionKey = "audioLanguages",
+                title = stringResource(R.string.library_filter_audio_language),
+                hint = stringResource(R.string.library_filter_language_hint),
+                anyLabel = anyLabel,
+                available = options.audioLanguages,
+                selectedCodes = working.audioLanguages,
+                query = audioLanguageQuery,
+                onQueryChange = { audioLanguageQuery = it },
+                expanded = expandedSections.contains("audioLanguages"),
+                onToggle = { toggleSection("audioLanguages") },
+                onSelectionChange = { working = working.copy(audioLanguages = it) },
+                onQueryConsumed = { audioLanguageQuery = "" },
+            )
+        }
 
-                        if (capabilities.languages && options.subtitleLanguages.isNotEmpty()) {
-                            LanguageFilterSection(
-                                sectionKey = "subtitleLanguages",
-                                title = stringResource(R.string.library_filter_subtitle_language),
-                                hint = stringResource(R.string.library_filter_language_hint),
-                                anyLabel = anyLabel,
-                                available = options.subtitleLanguages,
-                                selectedCodes = working.subtitleLanguages,
-                                query = subtitleLanguageQuery,
-                                onQueryChange = { subtitleLanguageQuery = it },
-                                expanded = expandedSections.contains("subtitleLanguages"),
-                                onToggle = { toggleSection("subtitleLanguages") },
-                                onSelectionChange = {
-                                    working = working.copy(subtitleLanguages = it)
-                                },
-                                onQueryConsumed = { subtitleLanguageQuery = "" },
-                            )
-                        }
+        if (capabilities.languages && options.subtitleLanguages.isNotEmpty()) {
+            LanguageFilterSection(
+                sectionKey = "subtitleLanguages",
+                title = stringResource(R.string.library_filter_subtitle_language),
+                hint = stringResource(R.string.library_filter_language_hint),
+                anyLabel = anyLabel,
+                available = options.subtitleLanguages,
+                selectedCodes = working.subtitleLanguages,
+                query = subtitleLanguageQuery,
+                onQueryChange = { subtitleLanguageQuery = it },
+                expanded = expandedSections.contains("subtitleLanguages"),
+                onToggle = { toggleSection("subtitleLanguages") },
+                onSelectionChange = { working = working.copy(subtitleLanguages = it) },
+                onQueryConsumed = { subtitleLanguageQuery = "" },
+            )
+        }
 
-                        if (capabilities.videoType) {
-                            val videoTypeLabels =
-                                listOf(
-                                    VideoTypeFilter.BLU_RAY to
-                                        stringResource(R.string.video_type_bluray),
-                                    VideoTypeFilter.DVD to stringResource(R.string.video_type_dvd),
-                                    VideoTypeFilter.HD to stringResource(R.string.video_type_hd),
-                                    VideoTypeFilter.UHD_4K to
-                                        stringResource(R.string.video_type_4k),
-                                    VideoTypeFilter.SD to stringResource(R.string.video_type_sd),
-                                    VideoTypeFilter.THREE_D to
-                                        stringResource(R.string.video_type_3d),
-                                )
-                            val videoTypeSummary =
-                                videoTypeLabels
-                                    .filter { working.videoTypes.contains(it.first) }
-                                    .joinToString(", ") { it.second }
-                                    .ifEmpty { anyLabel }
+        if (capabilities.videoType) {
+            val videoTypeLabels =
+                listOf(
+                    VideoTypeFilter.BLU_RAY to stringResource(R.string.video_type_bluray),
+                    VideoTypeFilter.DVD to stringResource(R.string.video_type_dvd),
+                    VideoTypeFilter.HD to stringResource(R.string.video_type_hd),
+                    VideoTypeFilter.UHD_4K to stringResource(R.string.video_type_4k),
+                    VideoTypeFilter.SD to stringResource(R.string.video_type_sd),
+                    VideoTypeFilter.THREE_D to stringResource(R.string.video_type_3d),
+                )
+            val videoTypeSummary =
+                videoTypeLabels
+                    .filter { working.videoTypes.contains(it.first) }
+                    .joinToString(", ") { it.second }
+                    .ifEmpty { anyLabel }
 
-                            FilterAccordionSection(
-                                title = stringResource(R.string.library_filter_video_type),
-                                summary = videoTypeSummary,
-                                expanded = expandedSections.contains("video_type"),
-                                onToggle = { toggleSection("video_type") },
-                            ) {
-                                FlowRow(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    videoTypeLabels.forEach { (type, label) ->
-                                        AfinityToggleChip(
-                                            label = label,
-                                            selected = working.videoTypes.contains(type),
-                                            onSelectedChange = { selected ->
-                                                working =
-                                                    working.copy(
-                                                        videoTypes =
-                                                            if (selected) working.videoTypes + type
-                                                            else working.videoTypes - type
-                                                    )
-                                            },
-                                        )
-                                    }
-                                }
-                            }
-                        }
+            FilterAccordionSection(
+                title = stringResource(R.string.library_filter_video_type),
+                summary = videoTypeSummary,
+                expanded = expandedSections.contains("video_type"),
+                onToggle = { toggleSection("video_type") },
+            ) {
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    videoTypeLabels.forEach { (type, label) ->
+                        AfinityToggleChip(
+                            label = label,
+                            selected = working.videoTypes.contains(type),
+                            onSelectedChange = { selected ->
+                                working =
+                                    working.copy(
+                                        videoTypes =
+                                            if (selected) working.videoTypes + type
+                                            else working.videoTypes - type
+                                    )
+                            },
+                        )
+                    }
+                }
+            }
+        }
 
-                        if (capabilities.years && options.years.isNotEmpty()) {
-                            val selectedYears = working.years.sortedDescending()
-                            val yearSuggestions =
-                                options.years.filter {
-                                    !working.years.contains(it) &&
-                                        (yearQuery.isBlank() || it.toString().contains(yearQuery))
-                                }
+        if (capabilities.years && options.years.isNotEmpty()) {
+            val selectedYears = working.years.sortedDescending()
+            val yearSuggestions =
+                options.years.filter {
+                    !working.years.contains(it) &&
+                        (yearQuery.isBlank() || it.toString().contains(yearQuery))
+                }
 
-                            FilterAccordionSection(
-                                title = stringResource(R.string.library_filter_years),
-                                summary =
-                                    if (selectedYears.isEmpty()) anyLabel
-                                    else selectedYears.joinToString(", "),
-                                expanded = expandedSections.contains("years"),
-                                onToggle = { toggleSection("years") },
-                            ) {
-                                SearchableChipMultiSelect(
-                                    label = null,
-                                    placeholder =
-                                        stringResource(R.string.library_filter_years_hint),
-                                    query = yearQuery,
-                                    onQueryChange = { yearQuery = it },
-                                    suggestions = yearSuggestions,
-                                    suggestionLabel = { it.toString() },
-                                    onSuggestionSelected = { year ->
-                                        working = working.copy(years = working.years + year)
-                                        yearQuery = ""
-                                    },
-                                    selected = selectedYears,
-                                    selectedLabel = { it.toString() },
-                                    onRemoveSelected = { year ->
-                                        working = working.copy(years = working.years - year)
-                                    },
-                                    onClearAll = { working = working.copy(years = emptySet()) },
-                                )
-                            }
-                        }
+            FilterAccordionSection(
+                title = stringResource(R.string.library_filter_years),
+                summary =
+                    if (selectedYears.isEmpty()) anyLabel else selectedYears.joinToString(", "),
+                expanded = expandedSections.contains("years"),
+                onToggle = { toggleSection("years") },
+            ) {
+                SearchableChipMultiSelect(
+                    label = null,
+                    placeholder = stringResource(R.string.library_filter_years_hint),
+                    query = yearQuery,
+                    onQueryChange = { yearQuery = it },
+                    suggestions = yearSuggestions,
+                    suggestionLabel = { it.toString() },
+                    onSuggestionSelected = { year ->
+                        working = working.copy(years = working.years + year)
+                        yearQuery = ""
+                    },
+                    selected = selectedYears,
+                    selectedLabel = { it.toString() },
+                    onRemoveSelected = { year ->
+                        working = working.copy(years = working.years - year)
+                    },
+                    onClearAll = { working = working.copy(years = emptySet()) },
+                )
+            }
+        }
     }
 }

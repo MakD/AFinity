@@ -223,53 +223,51 @@ constructor(
         limit: Int?,
         sortOrder: ChannelSortOrder,
         favoritesFirst: Boolean,
-    ): Result<List<AfinityChannel>> =
-        apiInvoker.apiResult { apiClient, userId ->
-            val baseUrl = getBaseUrl()
+    ): Result<List<AfinityChannel>> = apiInvoker.apiResult { apiClient, userId ->
+        val baseUrl = getBaseUrl()
 
-            val response =
-                LiveTvApi(apiClient)
-                    .getLiveTvChannels(
-                        userId = userId,
-                        type =
-                            type?.let {
-                                when (it) {
-                                    ChannelType.TV -> org.jellyfin.sdk.model.api.ChannelType.TV
-                                    ChannelType.RADIO ->
-                                        org.jellyfin.sdk.model.api.ChannelType.RADIO
-                                }
-                            },
-                        isFavorite = isFavorite,
-                        isMovie = isMovie,
-                        isSeries = isSeries,
-                        isNews = isNews,
-                        isKids = isKids,
-                        isSports = isSports,
-                        limit = limit,
-                        sortBy =
-                            listOf(
-                                when (sortOrder) {
-                                    ChannelSortOrder.NUMBER -> ItemSortBy.SORT_NAME
-                                    ChannelSortOrder.NAME -> ItemSortBy.NAME
-                                    ChannelSortOrder.RECENTLY_WATCHED -> ItemSortBy.DATE_PLAYED
-                                }
-                            ),
-                        sortOrder =
-                            if (sortOrder == ChannelSortOrder.RECENTLY_WATCHED) SortOrder.DESCENDING
-                            else SortOrder.ASCENDING,
-                        enableFavoriteSorting = favoritesFirst,
-                        enableImages = true,
-                        imageTypeLimit = 1,
-                        enableImageTypes = listOf(ImageType.PRIMARY, ImageType.THUMB),
-                        fields = listOf(ItemFields.CHANNEL_INFO),
-                        addCurrentProgram = true,
-                    )
+        val response =
+            LiveTvApi(apiClient)
+                .getLiveTvChannels(
+                    userId = userId,
+                    type =
+                        type?.let {
+                            when (it) {
+                                ChannelType.TV -> org.jellyfin.sdk.model.api.ChannelType.TV
+                                ChannelType.RADIO -> org.jellyfin.sdk.model.api.ChannelType.RADIO
+                            }
+                        },
+                    isFavorite = isFavorite,
+                    isMovie = isMovie,
+                    isSeries = isSeries,
+                    isNews = isNews,
+                    isKids = isKids,
+                    isSports = isSports,
+                    limit = limit,
+                    sortBy =
+                        listOf(
+                            when (sortOrder) {
+                                ChannelSortOrder.NUMBER -> ItemSortBy.SORT_NAME
+                                ChannelSortOrder.NAME -> ItemSortBy.NAME
+                                ChannelSortOrder.RECENTLY_WATCHED -> ItemSortBy.DATE_PLAYED
+                            }
+                        ),
+                    sortOrder =
+                        if (sortOrder == ChannelSortOrder.RECENTLY_WATCHED) SortOrder.DESCENDING
+                        else SortOrder.ASCENDING,
+                    enableFavoriteSorting = favoritesFirst,
+                    enableImages = true,
+                    imageTypeLimit = 1,
+                    enableImageTypes = listOf(ImageType.PRIMARY, ImageType.THUMB),
+                    fields = listOf(ItemFields.CHANNEL_INFO),
+                    addCurrentProgram = true,
+                )
 
-            response.content.items.mapNotNull { channelDto ->
-                val currentProgram = channelDto.currentProgram?.toAfinityProgram(baseUrl)
-                channelDto.toAfinityChannel(baseUrl, currentProgram)
-            }
+        response.content.items.mapNotNull { channelDto ->
+            val currentProgram = channelDto.currentProgram?.toAfinityProgram(baseUrl)
+            channelDto.toAfinityChannel(baseUrl, currentProgram)
         }
+    }
 
     override suspend fun getChannel(channelId: UUID): AfinityChannel? =
         getChannelResult(channelId).getOrElse { e ->
@@ -363,29 +361,27 @@ constructor(
     override suspend fun updateRecordingPaddingResult(
         timerId: String,
         padding: RecordingPadding,
-    ): Result<Unit> =
-        apiInvoker.apiResult { apiClient, _ ->
-            val api = LiveTvApi(apiClient)
-            val timer = api.getTimer(timerId = timerId).content
-            api.updateTimer(
-                timerId = timerId,
-                data =
-                    timer.copy(
-                        prePaddingSeconds = padding.prePaddingMinutes * SECONDS_PER_MINUTE,
-                        postPaddingSeconds = padding.postPaddingMinutes * SECONDS_PER_MINUTE,
-                    ),
-            )
-        }
+    ): Result<Unit> = apiInvoker.apiResult { apiClient, _ ->
+        val api = LiveTvApi(apiClient)
+        val timer = api.getTimer(timerId = timerId).content
+        api.updateTimer(
+            timerId = timerId,
+            data =
+                timer.copy(
+                    prePaddingSeconds = padding.prePaddingMinutes * SECONDS_PER_MINUTE,
+                    postPaddingSeconds = padding.postPaddingMinutes * SECONDS_PER_MINUTE,
+                ),
+        )
+    }
 
     override suspend fun getSeriesRecordingOptionsResult(
         seriesTimerId: String
-    ): Result<SeriesRecordingOptions> =
-        apiInvoker.apiResult { apiClient, _ ->
-            LiveTvApi(apiClient)
-                .getSeriesTimer(timerId = seriesTimerId)
-                .content
-                .toSeriesRecordingOptions()
-        }
+    ): Result<SeriesRecordingOptions> = apiInvoker.apiResult { apiClient, _ ->
+        LiveTvApi(apiClient)
+            .getSeriesTimer(timerId = seriesTimerId)
+            .content
+            .toSeriesRecordingOptions()
+    }
 
     override suspend fun getScheduledRecordingsResult(): Result<List<AfinityProgram>> =
         apiInvoker.apiResult { apiClient, _ ->
@@ -464,7 +460,11 @@ constructor(
                                         sortOrder = listOf(SortOrder.DESCENDING),
                                         fields = FieldSets.LIVE_TV_RECORDINGS,
                                         enableImageTypes =
-                                            listOf(ImageType.PRIMARY, ImageType.THUMB, ImageType.BACKDROP),
+                                            listOf(
+                                                ImageType.PRIMARY,
+                                                ImageType.THUMB,
+                                                ImageType.BACKDROP,
+                                            ),
                                         imageTypeLimit = 1,
                                         enableTotalRecordCount = false,
                                     )
@@ -521,25 +521,23 @@ constructor(
     override suspend fun updateSeriesRecordingOptionsResult(
         seriesTimerId: String,
         options: SeriesRecordingOptions,
-    ): Result<Unit> =
-        apiInvoker.apiResult { apiClient, _ ->
-            val api = LiveTvApi(apiClient)
-            val timer = api.getSeriesTimer(timerId = seriesTimerId).content
-            api.updateSeriesTimer(
-                timerId = seriesTimerId,
-                data =
-                    timer.copy(
-                        recordNewOnly = options.recordNewOnly,
-                        skipEpisodesInLibrary = options.skipEpisodesInLibrary,
-                        recordAnyChannel = options.recordAnyChannel,
-                        recordAnyTime = options.recordAnyTime,
-                        keepUpTo = options.keepUpTo,
-                        prePaddingSeconds = options.padding.prePaddingMinutes * SECONDS_PER_MINUTE,
-                        postPaddingSeconds =
-                            options.padding.postPaddingMinutes * SECONDS_PER_MINUTE,
-                    ),
-            )
-        }
+    ): Result<Unit> = apiInvoker.apiResult { apiClient, _ ->
+        val api = LiveTvApi(apiClient)
+        val timer = api.getSeriesTimer(timerId = seriesTimerId).content
+        api.updateSeriesTimer(
+            timerId = seriesTimerId,
+            data =
+                timer.copy(
+                    recordNewOnly = options.recordNewOnly,
+                    skipEpisodesInLibrary = options.skipEpisodesInLibrary,
+                    recordAnyChannel = options.recordAnyChannel,
+                    recordAnyTime = options.recordAnyTime,
+                    keepUpTo = options.keepUpTo,
+                    prePaddingSeconds = options.padding.prePaddingMinutes * SECONDS_PER_MINUTE,
+                    postPaddingSeconds = options.padding.postPaddingMinutes * SECONDS_PER_MINUTE,
+                ),
+        )
+    }
 
     private fun SeriesTimerInfoDto.toTimerInfo(): TimerInfoDto =
         TimerInfoDto(
@@ -598,53 +596,51 @@ constructor(
     override suspend fun getUpcomingResult(
         category: ProgramCategory,
         limit: Int,
-    ): Result<List<AfinityProgram>> =
-        apiInvoker.apiResult { apiClient, userId ->
-            val baseUrl = getBaseUrl()
-            val isShows = category == ProgramCategory.SHOWS
-            LiveTvApi(apiClient)
-                .getLiveTvPrograms(
-                    userId = userId,
-                    hasAired = false,
-                    isSeries = if (isShows) true else null,
-                    isMovie =
-                        when (category) {
-                            ProgramCategory.MOVIES -> true
-                            ProgramCategory.SHOWS -> false
-                            else -> null
-                        },
-                    isSports =
-                        when (category) {
-                            ProgramCategory.SPORTS -> true
-                            ProgramCategory.SHOWS -> false
-                            else -> null
-                        },
-                    isKids =
-                        when (category) {
-                            ProgramCategory.KIDS -> true
-                            ProgramCategory.SHOWS -> false
-                            else -> null
-                        },
-                    isNews =
-                        when (category) {
-                            ProgramCategory.NEWS -> true
-                            ProgramCategory.SHOWS -> false
-                            else -> null
-                        },
-                    limit = limit,
-                    sortBy = listOf(ItemSortBy.START_DATE),
-                    sortOrder = listOf(SortOrder.ASCENDING),
-                    enableImages = true,
-                    imageTypeLimit = 1,
-                    enableImageTypes =
-                        listOf(ImageType.PRIMARY, ImageType.THUMB, ImageType.BACKDROP),
-                    fields = FieldSets.LIVE_TV_PROGRAM_CARD,
-                    enableTotalRecordCount = false,
-                )
-                .content
-                .items
-                .map { programDto -> programDto.toAfinityProgram(baseUrl) }
-        }
+    ): Result<List<AfinityProgram>> = apiInvoker.apiResult { apiClient, userId ->
+        val baseUrl = getBaseUrl()
+        val isShows = category == ProgramCategory.SHOWS
+        LiveTvApi(apiClient)
+            .getLiveTvPrograms(
+                userId = userId,
+                hasAired = false,
+                isSeries = if (isShows) true else null,
+                isMovie =
+                    when (category) {
+                        ProgramCategory.MOVIES -> true
+                        ProgramCategory.SHOWS -> false
+                        else -> null
+                    },
+                isSports =
+                    when (category) {
+                        ProgramCategory.SPORTS -> true
+                        ProgramCategory.SHOWS -> false
+                        else -> null
+                    },
+                isKids =
+                    when (category) {
+                        ProgramCategory.KIDS -> true
+                        ProgramCategory.SHOWS -> false
+                        else -> null
+                    },
+                isNews =
+                    when (category) {
+                        ProgramCategory.NEWS -> true
+                        ProgramCategory.SHOWS -> false
+                        else -> null
+                    },
+                limit = limit,
+                sortBy = listOf(ItemSortBy.START_DATE),
+                sortOrder = listOf(SortOrder.ASCENDING),
+                enableImages = true,
+                imageTypeLimit = 1,
+                enableImageTypes = listOf(ImageType.PRIMARY, ImageType.THUMB, ImageType.BACKDROP),
+                fields = FieldSets.LIVE_TV_PROGRAM_CARD,
+                enableTotalRecordCount = false,
+            )
+            .content
+            .items
+            .map { programDto -> programDto.toAfinityProgram(baseUrl) }
+    }
 
     override suspend fun getGuideDataEnd(): LocalDateTime? =
         apiCall(null, "Failed to get the end of the guide data") { apiClient, userId ->
@@ -678,27 +674,26 @@ constructor(
         channelIds: List<UUID>,
         windowStart: LocalDateTime,
         windowEnd: LocalDateTime,
-    ): Result<List<AfinityProgram>> =
-        apiInvoker.apiResult { apiClient, _ ->
-            val baseUrl = getBaseUrl()
+    ): Result<List<AfinityProgram>> = apiInvoker.apiResult { apiClient, _ ->
+        val baseUrl = getBaseUrl()
 
-            LiveTvApi(apiClient)
-                .getPrograms(
-                    GetProgramsDto(
-                        channelIds = channelIds,
-                        minEndDate = windowStart,
-                        maxStartDate = windowEnd,
-                        sortBy = listOf(ItemSortBy.START_DATE),
-                        sortOrder = listOf(SortOrder.ASCENDING),
-                        enableImages = false,
-                        enableTotalRecordCount = false,
-                        fields = emptyList(),
-                    )
+        LiveTvApi(apiClient)
+            .getPrograms(
+                GetProgramsDto(
+                    channelIds = channelIds,
+                    minEndDate = windowStart,
+                    maxStartDate = windowEnd,
+                    sortBy = listOf(ItemSortBy.START_DATE),
+                    sortOrder = listOf(SortOrder.ASCENDING),
+                    enableImages = false,
+                    enableTotalRecordCount = false,
+                    fields = emptyList(),
                 )
-                .content
-                .items
-                .map { programDto -> programDto.toAfinityProgram(baseUrl) }
-        }
+            )
+            .content
+            .items
+            .map { programDto -> programDto.toAfinityProgram(baseUrl) }
+    }
 
     override suspend fun getChannelPlaybackInfo(
         channelId: UUID,

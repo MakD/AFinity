@@ -68,25 +68,24 @@ class EpisodeSelection(
         if (alreadyLoading || _selected.value?.id == episode.id) return
         loadJob?.cancel()
         loadTarget = episode
-        loadJob =
-            scope.launch {
-                try {
-                    if (isOffline()) {
-                        _selected.value = episode
-                        _watchlistStatus.value = false
-                        return@launch
-                    }
-                    val fullEpisode = loadFull(episode)
-                    _selected.value = fullEpisode ?: episode
-                    _watchlistStatus.value = (fullEpisode ?: episode).liked
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to load full episode details")
+        loadJob = scope.launch {
+            try {
+                if (isOffline()) {
                     _selected.value = episode
                     _watchlistStatus.value = false
+                    return@launch
                 }
+                val fullEpisode = loadFull(episode)
+                _selected.value = fullEpisode ?: episode
+                _watchlistStatus.value = (fullEpisode ?: episode).liked
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load full episode details")
+                _selected.value = episode
+                _watchlistStatus.value = false
             }
+        }
     }
 
     fun refresh(episode: AfinityEpisode) {

@@ -160,8 +160,7 @@ private fun BoxScope.GuideContentWithFilters(
         onClick = { showFilters = true },
         badgeCount = activeCount,
         modifier =
-            Modifier.align(Alignment.BottomEnd)
-                .padding(end = 24.dp, bottom = 16.dp + playerOffset),
+            Modifier.align(Alignment.BottomEnd).padding(end = 24.dp, bottom = 16.dp + playerOffset),
     )
 
     if (showFilters) {
@@ -422,5 +421,4 @@ private fun leftEdgeTime(
     start: LocalDateTime,
     scrollState: ScrollState,
     hourWidthPx: Float,
-): LocalDateTime =
-    start.plusMinutes((scrollState.value / hourWidthPx * 60f).toLong())
+): LocalDateTime = start.plusMinutes((scrollState.value / hourWidthPx * 60f).toLong())

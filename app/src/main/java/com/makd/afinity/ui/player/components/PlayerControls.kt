@@ -2146,7 +2146,9 @@ private fun PauseDetailsOverlay(
     val awardsHighlight =
         if (LocalShowAwards.current) omdbAwardsHeadline(uiState.omdbAwards) else null
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f))) {
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f))
+    ) {
         val compact = maxHeight < PauseCompactHeight
         val shownCast = if (compact) cast.take(2) else cast
         val compactAwards = compact && awardsHighlight != null && ratingChips.isNotEmpty()

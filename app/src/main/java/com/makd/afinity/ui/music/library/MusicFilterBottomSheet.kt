@@ -60,107 +60,98 @@ fun MusicFilterBottomSheet(
         },
         clearAllEnabled = working.isActive,
     ) {
+        Spacer(modifier = Modifier.height(8.dp))
 
-                        Spacer(modifier = Modifier.height(8.dp))
+        FilterAccordionSection(
+            title = stringResource(R.string.library_filter_status),
+            summary =
+                if (working.favoritesOnly) stringResource(R.string.filter_favorites) else anyLabel,
+            expanded = expandedSections.contains("status"),
+            onToggle = { toggleSection("status") },
+        ) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                AfinityToggleChip(
+                    label = stringResource(R.string.filter_favorites),
+                    selected = working.favoritesOnly,
+                    onSelectedChange = { working = working.copy(favoritesOnly = it) },
+                )
+            }
+        }
 
-                        FilterAccordionSection(
-                            title = stringResource(R.string.library_filter_status),
-                            summary =
-                                if (working.favoritesOnly) stringResource(R.string.filter_favorites)
-                                else anyLabel,
-                            expanded = expandedSections.contains("status"),
-                            onToggle = { toggleSection("status") },
-                        ) {
-                            FlowRow(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                AfinityToggleChip(
-                                    label = stringResource(R.string.filter_favorites),
-                                    selected = working.favoritesOnly,
-                                    onSelectedChange = {
-                                        working = working.copy(favoritesOnly = it)
-                                    },
-                                )
-                            }
-                        }
+        if (options.genres.isNotEmpty()) {
+            val selectedGenres = working.genres.toList()
+            val genreSuggestions =
+                options.genres.filter {
+                    !working.genres.contains(it) &&
+                        (genreQuery.isBlank() || it.contains(genreQuery, ignoreCase = true))
+                }
 
-                        if (options.genres.isNotEmpty()) {
-                            val selectedGenres = working.genres.toList()
-                            val genreSuggestions =
-                                options.genres.filter {
-                                    !working.genres.contains(it) &&
-                                        (genreQuery.isBlank() ||
-                                            it.contains(genreQuery, ignoreCase = true))
-                                }
+            FilterAccordionSection(
+                title = stringResource(R.string.library_filter_genres),
+                summary =
+                    if (selectedGenres.isEmpty()) anyLabel else selectedGenres.joinToString(", "),
+                expanded = expandedSections.contains("genres"),
+                onToggle = { toggleSection("genres") },
+            ) {
+                SearchableChipMultiSelect(
+                    label = null,
+                    placeholder = stringResource(R.string.library_filter_genres_hint),
+                    query = genreQuery,
+                    onQueryChange = { genreQuery = it },
+                    suggestions = genreSuggestions,
+                    suggestionLabel = { it },
+                    onSuggestionSelected = { genre ->
+                        working = working.copy(genres = working.genres + genre)
+                        genreQuery = ""
+                    },
+                    selected = selectedGenres,
+                    selectedLabel = { it },
+                    onRemoveSelected = { genre ->
+                        working = working.copy(genres = working.genres - genre)
+                    },
+                    onClearAll = { working = working.copy(genres = emptySet()) },
+                )
+            }
+        }
 
-                            FilterAccordionSection(
-                                title = stringResource(R.string.library_filter_genres),
-                                summary =
-                                    if (selectedGenres.isEmpty()) anyLabel
-                                    else selectedGenres.joinToString(", "),
-                                expanded = expandedSections.contains("genres"),
-                                onToggle = { toggleSection("genres") },
-                            ) {
-                                SearchableChipMultiSelect(
-                                    label = null,
-                                    placeholder =
-                                        stringResource(R.string.library_filter_genres_hint),
-                                    query = genreQuery,
-                                    onQueryChange = { genreQuery = it },
-                                    suggestions = genreSuggestions,
-                                    suggestionLabel = { it },
-                                    onSuggestionSelected = { genre ->
-                                        working = working.copy(genres = working.genres + genre)
-                                        genreQuery = ""
-                                    },
-                                    selected = selectedGenres,
-                                    selectedLabel = { it },
-                                    onRemoveSelected = { genre ->
-                                        working = working.copy(genres = working.genres - genre)
-                                    },
-                                    onClearAll = { working = working.copy(genres = emptySet()) },
-                                )
-                            }
-                        }
+        if (options.years.isNotEmpty()) {
+            val selectedYears = working.years.sortedDescending()
+            val yearSuggestions =
+                options.years.filter {
+                    !working.years.contains(it) &&
+                        (yearQuery.isBlank() || it.toString().contains(yearQuery))
+                }
 
-                        if (options.years.isNotEmpty()) {
-                            val selectedYears = working.years.sortedDescending()
-                            val yearSuggestions =
-                                options.years.filter {
-                                    !working.years.contains(it) &&
-                                        (yearQuery.isBlank() || it.toString().contains(yearQuery))
-                                }
-
-                            FilterAccordionSection(
-                                title = stringResource(R.string.library_filter_years),
-                                summary =
-                                    if (selectedYears.isEmpty()) anyLabel
-                                    else selectedYears.joinToString(", "),
-                                expanded = expandedSections.contains("years"),
-                                onToggle = { toggleSection("years") },
-                            ) {
-                                SearchableChipMultiSelect(
-                                    label = null,
-                                    placeholder =
-                                        stringResource(R.string.library_filter_years_hint),
-                                    query = yearQuery,
-                                    onQueryChange = { yearQuery = it },
-                                    suggestions = yearSuggestions,
-                                    suggestionLabel = { it.toString() },
-                                    onSuggestionSelected = { year ->
-                                        working = working.copy(years = working.years + year)
-                                        yearQuery = ""
-                                    },
-                                    selected = selectedYears,
-                                    selectedLabel = { it.toString() },
-                                    onRemoveSelected = { year ->
-                                        working = working.copy(years = working.years - year)
-                                    },
-                                    onClearAll = { working = working.copy(years = emptySet()) },
-                                )
-                            }
-                        }
+            FilterAccordionSection(
+                title = stringResource(R.string.library_filter_years),
+                summary =
+                    if (selectedYears.isEmpty()) anyLabel else selectedYears.joinToString(", "),
+                expanded = expandedSections.contains("years"),
+                onToggle = { toggleSection("years") },
+            ) {
+                SearchableChipMultiSelect(
+                    label = null,
+                    placeholder = stringResource(R.string.library_filter_years_hint),
+                    query = yearQuery,
+                    onQueryChange = { yearQuery = it },
+                    suggestions = yearSuggestions,
+                    suggestionLabel = { it.toString() },
+                    onSuggestionSelected = { year ->
+                        working = working.copy(years = working.years + year)
+                        yearQuery = ""
+                    },
+                    selected = selectedYears,
+                    selectedLabel = { it.toString() },
+                    onRemoveSelected = { year ->
+                        working = working.copy(years = working.years - year)
+                    },
+                    onClearAll = { working = working.copy(years = emptySet()) },
+                )
+            }
+        }
     }
 }

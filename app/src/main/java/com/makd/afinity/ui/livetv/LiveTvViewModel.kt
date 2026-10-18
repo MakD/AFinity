@@ -88,8 +88,9 @@ class LiveTvViewModel @Inject constructor(private val liveTvRepository: LiveTvRe
             }
         }
 
-        val loaded =
-            results.mapNotNull { (category, result) -> result.getOrNull()?.let { category to it } }
+        val loaded = results.mapNotNull { (category, result) ->
+            result.getOrNull()?.let { category to it }
+        }
         val allFailed = loaded.isEmpty()
 
         _uiState.update {

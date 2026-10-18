@@ -157,20 +157,20 @@ constructor(
                     .getLiveTvViewOptionsFlow()
                     .first()
                     .channelListQuery(includeCategories = true)
-            val (channelsResult, days) = coroutineScope {
-                val channels = async {
-                    val loaded = _uiState.value.epgChannels
-                    if (loaded.isNotEmpty() && channelsQuery == query) Result.success(loaded)
-                    else liveTvRepository.getChannelsFor(query)
+            val (channelsResult, days) =
+                coroutineScope {
+                    val channels = async {
+                        val loaded = _uiState.value.epgChannels
+                        if (loaded.isNotEmpty() && channelsQuery == query) Result.success(loaded)
+                        else liveTvRepository.getChannelsFor(query)
+                    }
+                    val days = async { _uiState.value.days.ifEmpty { loadDays() } }
+                    channels.await() to days.await()
                 }
-                val days = async { _uiState.value.days.ifEmpty { loadDays() } }
-                channels.await() to days.await()
+            val channels = channelsResult.getOrElse { e ->
+                onLoadFailed(e)
+                return
             }
-            val channels =
-                channelsResult.getOrElse { e ->
-                    onLoadFailed(e)
-                    return
-                }
 
             if (channels.isEmpty()) {
                 Timber.w("EPG: No channels found.")
