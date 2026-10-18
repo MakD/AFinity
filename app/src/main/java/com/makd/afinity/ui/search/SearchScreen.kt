@@ -1106,7 +1106,7 @@ private fun JellyseerrSearchResultsContent(
             )
         }
 
-        items(results, key = { it.id }) { item ->
+        items(results, key = { "${it.mediaType}_${it.id}" }) { item ->
             JellyseerrSearchResultItem(item = item, onRequestClick = { onRequestClick(item) })
         }
     }
@@ -1578,7 +1578,7 @@ private fun CombinedSearchResultsContent(
                     isLoading = isJellyseerrSearching,
                 )
             }
-            items(jellyseerrResults, key = { "jellyseerr_${it.id}" }) { item ->
+            items(jellyseerrResults, key = { "jellyseerr_${it.mediaType}_${it.id}" }) { item ->
                 JellyseerrSearchResultItem(item = item, onRequestClick = { onRequestClick(item) })
             }
         }

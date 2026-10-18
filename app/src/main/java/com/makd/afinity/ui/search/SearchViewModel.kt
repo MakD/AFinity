@@ -1107,7 +1107,10 @@ constructor(
                         onSuccess = { newRequest ->
                             val updatedResults =
                                 _uiState.value.jellyseerrSearchResults.map { item ->
-                                    if (item.id == pending.tmdbId) {
+                                    if (
+                                        item.id == pending.tmdbId &&
+                                            item.getMediaType() == pending.mediaType
+                                    ) {
                                         val updatedMediaInfo =
                                             newRequest.media.copy(
                                                 requests = listOfNotNull(newRequest)
