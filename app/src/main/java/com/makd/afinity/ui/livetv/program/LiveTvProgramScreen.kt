@@ -486,8 +486,19 @@ private fun ProgramBadges(
     val showRepeat = program.isRepeat && GuideIndicator.REPEAT in indicators
     val showHd = program.isHd && GuideIndicator.HD in indicators
     val audio = program.audio?.let(::audioLabel)
+    val tags = program.tags
 
-    if (!showLive && !showPremiere && !showNew && !showRepeat && !showHd && audio == null) return
+    if (
+        !showLive &&
+            !showPremiere &&
+            !showNew &&
+            !showRepeat &&
+            !showHd &&
+            audio == null &&
+            tags.isEmpty()
+    ) {
+        return
+    }
 
     MetadataFlowRow {
         if (showLive) ProgramIndicatorBadge(GuideIndicator.LIVE)
@@ -496,6 +507,7 @@ private fun ProgramBadges(
         if (showRepeat) ProgramIndicatorBadge(GuideIndicator.REPEAT)
         if (showHd) VideoMetadataChip(stringResource(R.string.meta_res_hd))
         audio?.let { VideoMetadataChip(it) }
+        tags.forEach { tag -> VideoMetadataChip(tag) }
     }
 }
 
@@ -657,12 +669,6 @@ private fun LazyListScope.programDetailItems(
 
     detailItem("external_links", horizontalPadding) {
         ExternalLinksSection(externalUrls = program.externalUrls)
-    }
-
-    if (program.tags.isNotEmpty()) {
-        detailItem("tags", horizontalPadding) {
-            MetadataFlowRow { program.tags.forEach { tag -> VideoMetadataChip(tag) } }
-        }
     }
 
     communityRatingOf(program.communityRating)?.let { rating ->
