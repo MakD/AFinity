@@ -198,14 +198,10 @@
         <item quantity="other">%1$d சேனல்கள் கண்டறியப்பட்டன</item>
     </plurals>
     <string name="livetv_guide_date_fmt">EEE, MMM டி</string>
-    <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
     <string name="action_now">இப்போது</string>
-    <string name="cd_guide_previous_time">முந்தைய நேரத் தடை</string>
-    <string name="cd_guide_next_time">அடுத்த முறை தொகுதி</string>
     <string name="livetv_home_empty_title">திட்டங்கள் எதுவும் இல்லை</string>
     <string name="livetv_home_empty_message">நிரல் பட்டியல்களுக்கு பிறகு பார்க்கவும்</string>
     <string name="livetv_title">நேரலை டிவி</string>
-    <string name="livetv_tab_programs">திட்டங்கள்</string>
     <string name="livetv_tab_guide">தொலைக்காட்சி வழிகாட்டி</string>
     <string name="livetv_tab_channels">சேனல்கள்</string>
     <string name="livetv_error_not_available_title">நேரலை டிவி கிடைக்கவில்லை</string>

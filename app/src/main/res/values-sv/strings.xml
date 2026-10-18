@@ -195,14 +195,10 @@
         <item quantity="other">%1$d kanaler hittades</item>
     </plurals>
     <string name="livetv_guide_date_fmt">EEE d MMM</string>
-    <string name="livetv_guide_time_range_fmt">%1$d:00–%2$d:00</string>
     <string name="action_now">Nu</string>
-    <string name="cd_guide_previous_time">Föregående tidsblock</string>
-    <string name="cd_guide_next_time">Nästa tidsblock</string>
     <string name="livetv_home_empty_title">Inga program tillgängliga</string>
     <string name="livetv_home_empty_message">Kom tillbaka senare när programtablån har uppdaterats</string>
     <string name="livetv_title">Live-TV</string>
-    <string name="livetv_tab_programs">Program</string>
     <string name="livetv_tab_guide">TV-guide</string>
     <string name="livetv_tab_channels">Kanaler</string>
     <string name="livetv_error_not_available_title">Live-TV är inte tillgängligt</string>

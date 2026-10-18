@@ -1,19 +1,30 @@
 package com.makd.afinity.data.repository.livetv
 
+import androidx.core.net.toUri
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.extensions.toAfinityChannel
+import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.extensions.toAfinityProgram
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.AfinityProgram
+import com.makd.afinity.data.models.livetv.AfinityRecording
+import com.makd.afinity.data.models.livetv.ChannelFavoriteChange
+import com.makd.afinity.data.models.livetv.ChannelSortOrder
 import com.makd.afinity.data.models.livetv.ChannelType
 import com.makd.afinity.data.models.livetv.LiveTvPlaybackInfo
+import com.makd.afinity.data.models.livetv.LiveTvSimilarItem
 import com.makd.afinity.data.models.livetv.ProgramCategory
+import com.makd.afinity.data.models.livetv.RecordingPadding
+import com.makd.afinity.data.models.livetv.SeriesRecordingOptions
+import com.makd.afinity.data.models.livetv.SeriesRecordingRule
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinApiInvoker
 import com.makd.afinity.data.repository.NoActiveSessionException
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
+import com.makd.afinity.data.websocket.JellyfinWebSocketManager
+import com.makd.afinity.data.websocket.WebSocketState
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.di.NetworkModule
 import com.makd.afinity.util.MediaCapabilities
@@ -28,17 +39,28 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.operations.LibraryApi
 import org.jellyfin.sdk.api.operations.LiveTvApi
 import org.jellyfin.sdk.api.operations.MediaInfoApi
 import org.jellyfin.sdk.api.operations.VideoApi
+import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.DeviceProfile
 import org.jellyfin.sdk.model.api.DirectPlayProfile
 import org.jellyfin.sdk.model.api.DlnaProfileType
@@ -49,12 +71,16 @@ import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.MediaProtocol
 import org.jellyfin.sdk.model.api.MediaStreamProtocol
+import org.jellyfin.sdk.model.api.MediaType
 import org.jellyfin.sdk.model.api.OpenLiveStreamDto
 import org.jellyfin.sdk.model.api.PlayMethod
 import org.jellyfin.sdk.model.api.PlaybackInfoDto
+import org.jellyfin.sdk.model.api.RecordingStatus
+import org.jellyfin.sdk.model.api.SeriesTimerInfoDto
 import org.jellyfin.sdk.model.api.SortOrder
 import org.jellyfin.sdk.model.api.SubtitleDeliveryMethod
 import org.jellyfin.sdk.model.api.SubtitleProfile
+import org.jellyfin.sdk.model.api.TimerInfoDto
 import org.jellyfin.sdk.model.api.TranscodingProfile
 import timber.log.Timber
 
@@ -68,8 +94,18 @@ constructor(
     private val apiInvoker: JellyfinApiInvoker,
     private val jellyfin: Jellyfin,
     private val preferencesRepository: PreferencesRepository,
+    webSocketManager: JellyfinWebSocketManager,
     @ApplicationScope private val scope: CoroutineScope,
 ) : LiveTvRepository {
+
+    override val timerChanges: Flow<Unit> =
+        merge(
+            webSocketManager.liveTvTimerEvents.map {},
+            webSocketManager.connectionState
+                .drop(1)
+                .filter { it == WebSocketState.CONNECTED }
+                .map {},
+        )
 
     private companion object {
         val MPEGTS_VIDEO_CODECS = listOf("h264", "hevc", "mpeg2video", "mpeg4")
@@ -77,6 +113,11 @@ constructor(
         const val DIRECT_PLAY_CONTAINERS = "ts,mpegts,mpeg,mpg,m2ts,mp4,mkv,mov,webm,avi"
         val TUNE_TIMEOUT = 30.seconds
         val TUNE_TRANSPORT_TIMEOUT = 3.minutes
+        const val SECONDS_PER_MINUTE = 60
+        const val SERIES_TIMER_SORT = "SortName"
+        val SCHEDULED_STATUSES = setOf(RecordingStatus.NEW, RecordingStatus.IN_PROGRESS)
+        val PROGRAM_KINDS =
+            setOf(BaseItemKind.PROGRAM, BaseItemKind.LIVE_TV_PROGRAM, BaseItemKind.TV_PROGRAM)
     }
 
     private fun getBaseUrl(): String = sessionManager.getCurrentApiClient()?.baseUrl ?: ""
@@ -156,7 +197,16 @@ constructor(
         isSports: Boolean?,
         limit: Int?,
     ): List<AfinityChannel> =
-        getChannelsResult(type, isFavorite, isMovie, isSeries, isNews, isKids, isSports, limit)
+        getChannelsResult(
+                type = type,
+                isFavorite = isFavorite,
+                isMovie = isMovie,
+                isSeries = isSeries,
+                isNews = isNews,
+                isKids = isKids,
+                isSports = isSports,
+                limit = limit,
+            )
             .getOrElse { e ->
                 if (e !is NoActiveSessionException) Timber.e(e, "Failed to get Live TV channels")
                 emptyList()
@@ -171,13 +221,16 @@ constructor(
         isKids: Boolean?,
         isSports: Boolean?,
         limit: Int?,
+        sortOrder: ChannelSortOrder,
+        favoritesFirst: Boolean,
     ): Result<List<AfinityChannel>> =
-        apiInvoker.apiResult { apiClient, _ ->
+        apiInvoker.apiResult { apiClient, userId ->
             val baseUrl = getBaseUrl()
 
             val response =
                 LiveTvApi(apiClient)
                     .getLiveTvChannels(
+                        userId = userId,
                         type =
                             type?.let {
                                 when (it) {
@@ -193,8 +246,18 @@ constructor(
                         isKids = isKids,
                         isSports = isSports,
                         limit = limit,
-                        sortBy = listOf(ItemSortBy.SORT_NAME),
-                        sortOrder = SortOrder.ASCENDING,
+                        sortBy =
+                            listOf(
+                                when (sortOrder) {
+                                    ChannelSortOrder.NUMBER -> ItemSortBy.SORT_NAME
+                                    ChannelSortOrder.NAME -> ItemSortBy.NAME
+                                    ChannelSortOrder.RECENTLY_WATCHED -> ItemSortBy.DATE_PLAYED
+                                }
+                            ),
+                        sortOrder =
+                            if (sortOrder == ChannelSortOrder.RECENTLY_WATCHED) SortOrder.DESCENDING
+                            else SortOrder.ASCENDING,
+                        enableFavoriteSorting = favoritesFirst,
                         enableImages = true,
                         imageTypeLimit = 1,
                         enableImageTypes = listOf(ImageType.PRIMARY, ImageType.THUMB),
@@ -240,6 +303,269 @@ constructor(
                 .items
                 .map { programDto -> programDto.toAfinityProgram(baseUrl) }
         }
+
+    override suspend fun getSimilarToProgram(programId: UUID, limit: Int): List<LiveTvSimilarItem> =
+        apiCall(emptyList(), "Failed to get items similar to program $programId") {
+            apiClient,
+            userId ->
+            val baseUrl = getBaseUrl()
+            LibraryApi(apiClient)
+                .getSimilarItems(
+                    itemId = programId,
+                    userId = userId,
+                    limit = limit,
+                    fields = FieldSets.LIVE_TV_PROGRAM_CARD + FieldSets.SIMILAR_ITEMS,
+                )
+                .content
+                .items
+                .mapNotNull { dto ->
+                    if (dto.type in PROGRAM_KINDS) {
+                        LiveTvSimilarItem.Program(dto.toAfinityProgram(baseUrl))
+                    } else {
+                        dto.toAfinityItem(baseUrl)?.let { LiveTvSimilarItem.Library(it) }
+                    }
+                }
+        }
+
+    override suspend fun scheduleRecordingResult(programId: UUID): Result<Unit> =
+        apiInvoker.apiResult { apiClient, _ ->
+            val api = LiveTvApi(apiClient)
+            val defaults = api.getDefaultTimer(programId = programId.toString()).content
+            api.createTimer(defaults.toTimerInfo())
+        }
+
+    override suspend fun scheduleSeriesRecordingResult(programId: UUID): Result<Unit> =
+        apiInvoker.apiResult { apiClient, _ ->
+            val api = LiveTvApi(apiClient)
+            val defaults = api.getDefaultTimer(programId = programId.toString()).content
+            api.createSeriesTimer(defaults)
+        }
+
+    override suspend fun cancelSeriesRecordingResult(seriesTimerId: String): Result<Unit> =
+        apiInvoker.apiResult { apiClient, _ ->
+            LiveTvApi(apiClient).cancelSeriesTimer(timerId = seriesTimerId)
+        }
+
+    override suspend fun cancelRecordingResult(timerId: String): Result<Unit> =
+        apiInvoker.apiResult { apiClient, _ ->
+            LiveTvApi(apiClient).cancelTimer(timerId = timerId)
+        }
+
+    override suspend fun getRecordingPaddingResult(timerId: String): Result<RecordingPadding> =
+        apiInvoker.apiResult { apiClient, _ ->
+            val timer = LiveTvApi(apiClient).getTimer(timerId = timerId).content
+            RecordingPadding(
+                prePaddingMinutes = (timer.prePaddingSeconds ?: 0) / SECONDS_PER_MINUTE,
+                postPaddingMinutes = (timer.postPaddingSeconds ?: 0) / SECONDS_PER_MINUTE,
+            )
+        }
+
+    override suspend fun updateRecordingPaddingResult(
+        timerId: String,
+        padding: RecordingPadding,
+    ): Result<Unit> =
+        apiInvoker.apiResult { apiClient, _ ->
+            val api = LiveTvApi(apiClient)
+            val timer = api.getTimer(timerId = timerId).content
+            api.updateTimer(
+                timerId = timerId,
+                data =
+                    timer.copy(
+                        prePaddingSeconds = padding.prePaddingMinutes * SECONDS_PER_MINUTE,
+                        postPaddingSeconds = padding.postPaddingMinutes * SECONDS_PER_MINUTE,
+                    ),
+            )
+        }
+
+    override suspend fun getSeriesRecordingOptionsResult(
+        seriesTimerId: String
+    ): Result<SeriesRecordingOptions> =
+        apiInvoker.apiResult { apiClient, _ ->
+            LiveTvApi(apiClient)
+                .getSeriesTimer(timerId = seriesTimerId)
+                .content
+                .toSeriesRecordingOptions()
+        }
+
+    override suspend fun getScheduledRecordingsResult(): Result<List<AfinityProgram>> =
+        apiInvoker.apiResult { apiClient, _ ->
+            val baseUrl = getBaseUrl()
+            LiveTvApi(apiClient)
+                .getTimers()
+                .content
+                .items
+                .filter { it.status in SCHEDULED_STATUSES }
+                .mapNotNull { timer -> timer.programInfo?.toAfinityProgram(baseUrl) }
+                .sortedBy { it.startDate }
+        }
+
+    override suspend fun getSeriesRecordingRulesResult(): Result<List<SeriesRecordingRule>> =
+        apiInvoker.apiResult { apiClient, _ ->
+            val baseUrl = getBaseUrl()
+            LiveTvApi(apiClient)
+                .getSeriesTimers(sortBy = SERIES_TIMER_SORT, sortOrder = SortOrder.ASCENDING)
+                .content
+                .items
+                .mapNotNull { timer ->
+                    val id = timer.id ?: return@mapNotNull null
+                    SeriesRecordingRule(
+                        id = id,
+                        name = timer.name.orEmpty(),
+                        imageUrl =
+                            imageUrl(
+                                baseUrl = baseUrl,
+                                itemId = timer.parentPrimaryImageItemId?.toString(),
+                                type = ImageType.PRIMARY,
+                                tag = timer.parentPrimaryImageTag,
+                            )
+                                ?: imageUrl(
+                                    baseUrl = baseUrl,
+                                    itemId = timer.parentThumbItemId,
+                                    type = ImageType.THUMB,
+                                    tag = timer.parentThumbImageTag,
+                                ),
+                        options = timer.toSeriesRecordingOptions(),
+                    )
+                }
+        }
+
+    override suspend fun getRecordingsResult(): Result<List<AfinityRecording>> =
+        apiInvoker.apiResult { apiClient, userId ->
+            val baseUrl = getBaseUrl()
+            val liveTvApi = LiveTvApi(apiClient)
+            val libraryApi = LibraryApi(apiClient)
+            coroutineScope {
+                val inProgress = async {
+                    liveTvApi
+                        .getRecordings(
+                            userId = userId,
+                            isInProgress = true,
+                            enableImages = false,
+                            enableUserData = false,
+                            enableTotalRecordCount = false,
+                        )
+                        .content
+                        .items
+                        .map { it.id }
+                        .toSet()
+                }
+                val folders = liveTvApi.getRecordingFolders(userId = userId).content.items
+                val recorded =
+                    folders
+                        .map { folder ->
+                            async {
+                                libraryApi
+                                    .getItems(
+                                        userId = userId,
+                                        parentId = folder.id,
+                                        recursive = true,
+                                        mediaTypes = listOf(MediaType.VIDEO),
+                                        sortBy = listOf(ItemSortBy.DATE_CREATED),
+                                        sortOrder = listOf(SortOrder.DESCENDING),
+                                        fields = FieldSets.LIVE_TV_RECORDINGS,
+                                        enableImageTypes =
+                                            listOf(ImageType.PRIMARY, ImageType.THUMB, ImageType.BACKDROP),
+                                        imageTypeLimit = 1,
+                                        enableTotalRecordCount = false,
+                                    )
+                                    .content
+                                    .items
+                            }
+                        }
+                        .awaitAll()
+                        .flatten()
+                        .distinctBy { it.id }
+                val inProgressIds = inProgress.await()
+                recorded
+                    .filter { it.id !in inProgressIds }
+                    .sortedByDescending { it.dateCreated }
+                    .mapNotNull { dto ->
+                        dto.toAfinityItem(baseUrl)?.let { item ->
+                            AfinityRecording(
+                                item = item,
+                                recordedAt = dto.dateCreated,
+                                canDelete = dto.canDelete == true,
+                            )
+                        }
+                    }
+            }
+        }
+
+    private fun imageUrl(baseUrl: String, itemId: String?, type: ImageType, tag: String?): String? {
+        if (itemId == null || tag == null) return null
+        return baseUrl
+            .toUri()
+            .buildUpon()
+            .appendEncodedPath("Items/$itemId/Images/${type.serialName}")
+            .appendQueryParameter("tag", tag)
+            .build()
+            .toString()
+    }
+
+    private fun SeriesTimerInfoDto.toSeriesRecordingOptions(): SeriesRecordingOptions =
+        SeriesRecordingOptions(
+            recordNewOnly = recordNewOnly == true,
+            skipEpisodesInLibrary = skipEpisodesInLibrary == true,
+            recordAnyChannel = recordAnyChannel == true,
+            recordAnyTime = recordAnyTime == true,
+            keepUpTo = keepUpTo ?: 0,
+            padding =
+                RecordingPadding(
+                    prePaddingMinutes = (prePaddingSeconds ?: 0) / SECONDS_PER_MINUTE,
+                    postPaddingMinutes = (postPaddingSeconds ?: 0) / SECONDS_PER_MINUTE,
+                ),
+            channelName = channelName,
+            startDate = startDate,
+        )
+
+    override suspend fun updateSeriesRecordingOptionsResult(
+        seriesTimerId: String,
+        options: SeriesRecordingOptions,
+    ): Result<Unit> =
+        apiInvoker.apiResult { apiClient, _ ->
+            val api = LiveTvApi(apiClient)
+            val timer = api.getSeriesTimer(timerId = seriesTimerId).content
+            api.updateSeriesTimer(
+                timerId = seriesTimerId,
+                data =
+                    timer.copy(
+                        recordNewOnly = options.recordNewOnly,
+                        skipEpisodesInLibrary = options.skipEpisodesInLibrary,
+                        recordAnyChannel = options.recordAnyChannel,
+                        recordAnyTime = options.recordAnyTime,
+                        keepUpTo = options.keepUpTo,
+                        prePaddingSeconds = options.padding.prePaddingMinutes * SECONDS_PER_MINUTE,
+                        postPaddingSeconds =
+                            options.padding.postPaddingMinutes * SECONDS_PER_MINUTE,
+                    ),
+            )
+        }
+
+    private fun SeriesTimerInfoDto.toTimerInfo(): TimerInfoDto =
+        TimerInfoDto(
+            id = id,
+            serverId = serverId,
+            externalId = externalId,
+            channelId = channelId,
+            externalChannelId = externalChannelId,
+            channelName = channelName,
+            channelPrimaryImageTag = channelPrimaryImageTag,
+            programId = programId,
+            externalProgramId = externalProgramId,
+            name = name,
+            overview = overview,
+            startDate = startDate,
+            endDate = endDate,
+            serviceName = serviceName,
+            priority = priority,
+            prePaddingSeconds = prePaddingSeconds,
+            postPaddingSeconds = postPaddingSeconds,
+            isPrePaddingRequired = isPrePaddingRequired,
+            parentBackdropItemId = parentBackdropItemId,
+            parentBackdropImageTags = parentBackdropImageTags,
+            isPostPaddingRequired = isPostPaddingRequired,
+            keepUntil = keepUntil,
+        )
 
     override suspend fun getProgramResult(programId: UUID): Result<AfinityProgram> =
         apiInvoker.apiResult { apiClient, userId ->
@@ -338,53 +664,6 @@ constructor(
                 ?.endDate
         }
 
-    override suspend fun getPrograms(
-        channelIds: List<UUID>?,
-        minStartDate: LocalDateTime?,
-        maxStartDate: LocalDateTime?,
-        minEndDate: LocalDateTime?,
-        maxEndDate: LocalDateTime?,
-        hasAired: Boolean?,
-        isAiring: Boolean?,
-        isMovie: Boolean?,
-        isSeries: Boolean?,
-        isNews: Boolean?,
-        isKids: Boolean?,
-        isSports: Boolean?,
-        limit: Int?,
-    ): List<AfinityProgram> =
-        apiCall(emptyList(), "Failed to get programs") { apiClient, _ ->
-            val baseUrl = getBaseUrl()
-
-            val response =
-                LiveTvApi(apiClient)
-                    .getLiveTvPrograms(
-                        channelIds = channelIds,
-                        minStartDate = minStartDate,
-                        maxStartDate = maxStartDate,
-                        minEndDate = minEndDate,
-                        maxEndDate = maxEndDate,
-                        hasAired = hasAired,
-                        isAiring = isAiring,
-                        isMovie = isMovie,
-                        isSeries = isSeries,
-                        isNews = isNews,
-                        isKids = isKids,
-                        isSports = isSports,
-                        limit = limit,
-                        sortBy = listOf(ItemSortBy.START_DATE),
-                        sortOrder = listOf(SortOrder.ASCENDING),
-                        enableImages = true,
-                        imageTypeLimit = 1,
-                        enableImageTypes =
-                            listOf(ImageType.PRIMARY, ImageType.THUMB, ImageType.BACKDROP),
-                        fields =
-                            listOf(ItemFields.OVERVIEW, ItemFields.GENRES, ItemFields.CHANNEL_INFO),
-                    )
-
-            response.content.items.map { programDto -> programDto.toAfinityProgram(baseUrl) }
-        }
-
     override suspend fun getGuidePrograms(
         channelIds: List<UUID>,
         windowStart: LocalDateTime,
@@ -415,38 +694,6 @@ constructor(
                         enableTotalRecordCount = false,
                         fields = emptyList(),
                     )
-                )
-                .content
-                .items
-                .map { programDto -> programDto.toAfinityProgram(baseUrl) }
-        }
-
-    override suspend fun getCurrentProgram(channelId: UUID): AfinityProgram? {
-        val now = LocalDateTime.now()
-        return getPrograms(
-                channelIds = listOf(channelId),
-                maxStartDate = now,
-                minEndDate = now,
-                limit = 1,
-            )
-            .firstOrNull()
-    }
-
-    override suspend fun getRecommendedPrograms(
-        isAiring: Boolean,
-        limit: Int,
-    ): List<AfinityProgram> =
-        apiCall(emptyList(), "Failed to get recommended programs") { apiClient, _ ->
-            val baseUrl = getBaseUrl()
-            LiveTvApi(apiClient)
-                .getRecommendedPrograms(
-                    isAiring = isAiring,
-                    limit = limit,
-                    enableImages = true,
-                    imageTypeLimit = 1,
-                    enableImageTypes =
-                        listOf(ImageType.PRIMARY, ImageType.THUMB, ImageType.BACKDROP),
-                    fields = listOf(ItemFields.OVERVIEW, ItemFields.GENRES),
                 )
                 .content
                 .items
@@ -644,18 +891,20 @@ constructor(
             source
         }
 
-    override suspend fun getChannelStreamUrl(channelId: UUID): String? =
-        getChannelPlaybackInfo(channelId)?.streamUrl
+    private val _channelFavoriteChanges =
+        MutableSharedFlow<ChannelFavoriteChange>(extraBufferCapacity = 16)
+    override val channelFavoriteChanges: SharedFlow<ChannelFavoriteChange> =
+        _channelFavoriteChanges.asSharedFlow()
 
     override suspend fun toggleChannelFavorite(channelId: UUID): Boolean =
         apiCall(false, "Failed to toggle favorite for channel: $channelId") { _, _ ->
             val channel = getChannel(channelId) ?: return@apiCall false
-            if (channel.favorite) {
-                userDataRepository.removeFromFavorites(channelId)
-            } else {
-                userDataRepository.addToFavorites(channelId)
-            }
-            true
+            val favorite = !channel.favorite
+            val changed =
+                if (favorite) userDataRepository.addToFavorites(channelId)
+                else userDataRepository.removeFromFavorites(channelId)
+            if (changed) _channelFavoriteChanges.emit(ChannelFavoriteChange(channelId, favorite))
+            changed
         }
 
     override val hasLiveTvAccessFlow: Flow<Boolean> =
@@ -665,12 +914,15 @@ constructor(
             }
             .distinctUntilChanged()
 
-    override suspend fun hasLiveTvAccess(): Boolean {
-        if (sessionManager.currentSession.value?.canAccessLiveTv == false) return false
-        mediaRepository.hasLiveTvLibrary.first()?.let {
-            return it
+    override suspend fun hasLiveTvAccessResult(): Result<Boolean> {
+        if (sessionManager.currentSession.value?.canAccessLiveTv == false) {
+            return Result.success(false)
         }
-        mediaRepository.getLibraries()
-        return mediaRepository.hasLiveTvLibrary.first() ?: false
+        mediaRepository.hasLiveTvLibrary.first()?.let {
+            return Result.success(it)
+        }
+        return mediaRepository.getLibrariesResult().map {
+            mediaRepository.hasLiveTvLibrary.first() ?: false
+        }
     }
 }

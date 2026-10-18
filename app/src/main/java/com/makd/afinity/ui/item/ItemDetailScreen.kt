@@ -5,13 +5,10 @@ package com.makd.afinity.ui.item
 import android.content.Context
 import android.widget.Toast
 import androidx.annotation.OptIn
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,20 +22,14 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -46,19 +37,14 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -69,7 +55,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -86,13 +71,10 @@ import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
-import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.extensions.showBackdropBlurHash
 import com.makd.afinity.data.models.extensions.showBackdropImageUrl
-import com.makd.afinity.data.models.extensions.showLogoImageUrl
-import com.makd.afinity.data.models.extensions.withLogoFormat
 import com.makd.afinity.data.models.external.ExternalTitles
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
@@ -112,10 +94,9 @@ import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.navigation.LocalShowRatings
-import com.makd.afinity.navigation.LocalSkipServerImageResize
 import com.makd.afinity.ui.admin.refresh.RefreshMetadataDialog
 import com.makd.afinity.ui.components.AfinityTopAppBar
-import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.DeleteItemDialog
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.isLandscapeWindow
@@ -129,8 +110,10 @@ import com.makd.afinity.ui.item.components.seasonDetailItems
 import com.makd.afinity.ui.item.components.seriesDetailItems
 import com.makd.afinity.ui.item.components.shared.ActionButtonsRow
 import com.makd.afinity.ui.item.components.shared.AdminAction
+import com.makd.afinity.ui.item.components.shared.DetailBackdrop
 import com.makd.afinity.ui.item.components.shared.HeroSection
 import com.makd.afinity.ui.item.components.shared.LocalDetailLayout
+import com.makd.afinity.ui.item.components.shared.MediaLogoHeader
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.components.shared.MetadataRow
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
@@ -140,6 +123,7 @@ import com.makd.afinity.ui.item.components.shared.SimilarItemsSection
 import com.makd.afinity.ui.item.components.shared.VideoQualitySelection
 import com.makd.afinity.ui.item.components.shared.WhereToWatchStrip
 import com.makd.afinity.ui.item.components.shared.detailItem
+import com.makd.afinity.ui.item.components.shared.rememberLandscapeDetailColorScheme
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.utils.IntentUtils
@@ -663,11 +647,7 @@ private fun LandscapeItemDetailContent(
     val density = LocalDensity.current
     val statusBarHeight = WindowInsets.statusBars.getTop(density)
     val displayCutoutLeft = WindowInsets.displayCutout.getLeft(density, LayoutDirection.Ltr)
-    val baseColorScheme = MaterialTheme.colorScheme
     val playerOffset = LocalPlayerOffset.current
-    val windowInfo = LocalWindowInfo.current
-    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
-    val screenHeightDp = with(density) { windowInfo.containerSize.height.toDp() }
     val mediaSourceOptions = rememberMediaSourceOptions(item)
     val selectedMediaSource by viewModel.selectedMediaSource.collectAsStateWithLifecycle()
     val episodeLayoutFlow =
@@ -685,17 +665,7 @@ private fun LandscapeItemDetailContent(
         }
     }
 
-    val landscapeColorScheme =
-        remember(baseColorScheme) {
-            baseColorScheme.copy(
-                onBackground = Color.White,
-                onSurface = Color.White,
-                onSurfaceVariant = Color.White.copy(alpha = 0.7f),
-                outline = Color.White.copy(alpha = 0.5f),
-            )
-        }
-
-    MaterialTheme(colorScheme = landscapeColorScheme) {
+    MaterialTheme(colorScheme = rememberLandscapeDetailColorScheme()) {
         Box(modifier = Modifier.fillMaxSize()) {
             val backdropChain =
                 remember(item.id) {
@@ -719,36 +689,9 @@ private fun LandscapeItemDetailContent(
                     }
                 }
 
-            var backdropIndex by remember(item.id) { mutableIntStateOf(0) }
-            val backdrop = backdropChain.getOrNull(backdropIndex)
-
-            if (backdrop != null) {
-                AsyncImage(
-                    imageUrl = backdrop.first,
-                    contentDescription = stringResource(R.string.cd_backdrop_fmt, item.name),
-                    blurHash = backdrop.second,
-                    targetWidth = screenWidthDp,
-                    targetHeight = screenHeightDp,
-                    useLowResPlaceholder = true,
-                    onError = {
-                        if (backdropIndex < backdropChain.lastIndex) {
-                            backdropIndex++
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize().blur(0.dp),
-                    contentScale = ContentScale.Crop,
-                    alignment = Alignment.Center,
-                )
-            }
-
-            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
-
-            Image(
-                painter = painterResource(id = R.drawable.mask),
-                contentDescription = stringResource(R.string.cd_mask_overlay),
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                alignment = Alignment.Center,
+            DetailBackdrop(
+                fallbackChain = backdropChain,
+                contentDescription = stringResource(R.string.cd_backdrop_fmt, item.name),
             )
 
             LazyColumn(
@@ -1260,49 +1203,6 @@ private fun ModernSeasonTitle(
     }
 }
 
-@Composable
-private fun ColumnScope.MediaLogoHeader(item: AfinityItem, isLandscape: Boolean) {
-    val density = LocalDensity.current
-    val windowInfo = LocalWindowInfo.current
-    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
-    val logoToDisplay = if (item is AfinitySeason) item.images.showLogo else item.images.logo
-    val webpLogo = !LocalSkipServerImageResize.current
-    val logoUrlToDisplay =
-        if (item is AfinitySeason) {
-            item.images.showLogoImageUrl?.withLogoFormat(webp = webpLogo)
-        } else item.images.logoImageUrlWithTransparency(webp = webpLogo)
-    val logoNameToDisplay = if (item is AfinitySeason) item.seriesName else item.name
-
-    if (logoToDisplay != null) {
-        AsyncImage(
-            imageUrl = logoUrlToDisplay,
-            contentDescription = stringResource(R.string.cd_logo_fmt, logoNameToDisplay),
-            targetWidth = if (isLandscape) 300.dp else screenWidthDp * 0.8f,
-            targetHeight = if (isLandscape) 150.dp else 120.dp,
-            modifier =
-                (if (isLandscape) Modifier.widthIn(max = 300.dp) else Modifier.fillMaxWidth(0.8f))
-                    .height(if (isLandscape) 150.dp else 120.dp)
-                    .align(if (isLandscape) Alignment.Start else Alignment.CenterHorizontally),
-            contentScale = ContentScale.Fit,
-            alignment = if (isLandscape) Alignment.CenterStart else Alignment.Center,
-        )
-    } else {
-        Text(
-            text = logoNameToDisplay,
-            style =
-                MaterialTheme.typography.headlineLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 32.sp,
-                ),
-            color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = if (!isLandscape) TextAlign.Center else TextAlign.Start,
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
-}
-
 private fun LazyListScope.typeSpecificItems(
     item: AfinityItem,
     seasons: List<AfinitySeason>,
@@ -1635,106 +1535,51 @@ private fun DeleteConfirmationDialog(
     var deleting by remember(targetId) { mutableStateOf(false) }
     var errorRes by remember(targetId) { mutableStateOf<Int?>(null) }
 
-    AlertDialog(
-        onDismissRequest = { if (!deleting) onDismiss() },
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        title = {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    stringResource(R.string.admin_delete_dialog_title),
-                    style = MaterialTheme.typography.titleLarge,
-                )
-                Text(
-                    text = targetName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text =
-                        stringResource(
-                            when (scope) {
-                                DeleteScope.ITEM -> R.string.admin_delete_message_item
-                                DeleteScope.WITH_CHILDREN -> R.string.admin_delete_message_children
-                                DeleteScope.CONTAINER_ONLY ->
-                                    R.string.admin_delete_message_container
-                            }
-                        ),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                errorRes?.let { res ->
-                    Text(
-                        text = stringResource(res),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                    )
+    DeleteItemDialog(
+        targetName = targetName,
+        message =
+            stringResource(
+                when (scope) {
+                    DeleteScope.ITEM -> R.string.admin_delete_message_item
+                    DeleteScope.WITH_CHILDREN -> R.string.admin_delete_message_children
+                    DeleteScope.CONTAINER_ONLY -> R.string.admin_delete_message_container
                 }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    deleting = true
-                    errorRes = null
-                    viewModel.deleteItem(targetId) { outcome ->
-                        deleting = false
-                        when (outcome) {
-                            DeleteOutcome.DELETED -> {
-                                Toast.makeText(
-                                        context,
-                                        R.string.admin_delete_success,
-                                        Toast.LENGTH_SHORT,
-                                    )
-                                    .show()
-                                if (!isMainItem) {
-                                    viewModel.clearSelectedEpisode()
-                                } else if (navController.currentBackStackEntry?.id == pageEntryId) {
-                                    navController.popBackStack()
-                                }
-                                currentOnDismiss()
-                            }
-
-                            DeleteOutcome.STILL_RUNNING -> {
-                                Toast.makeText(
-                                        context,
-                                        R.string.admin_delete_still_running,
-                                        Toast.LENGTH_LONG,
-                                    )
-                                    .show()
-                                currentOnDismiss()
-                            }
-
-                            DeleteOutcome.NOT_ALLOWED ->
-                                errorRes = R.string.admin_delete_not_allowed
-
-                            DeleteOutcome.FAILED -> errorRes = R.string.admin_delete_failed
+            ),
+        deleting = deleting,
+        errorRes = errorRes,
+        onConfirm = {
+            deleting = true
+            errorRes = null
+            viewModel.deleteItem(targetId) { outcome ->
+                deleting = false
+                when (outcome) {
+                    DeleteOutcome.DELETED -> {
+                        Toast.makeText(context, R.string.admin_delete_success, Toast.LENGTH_SHORT)
+                            .show()
+                        if (!isMainItem) {
+                            viewModel.clearSelectedEpisode()
+                        } else if (navController.currentBackStackEntry?.id == pageEntryId) {
+                            navController.popBackStack()
                         }
+                        currentOnDismiss()
                     }
-                },
-                enabled = !deleting,
-                colors =
-                    ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-            ) {
-                if (deleting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = LocalContentColor.current,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+
+                    DeleteOutcome.STILL_RUNNING -> {
+                        Toast.makeText(
+                                context,
+                                R.string.admin_delete_still_running,
+                                Toast.LENGTH_LONG,
+                            )
+                            .show()
+                        currentOnDismiss()
+                    }
+
+                    DeleteOutcome.NOT_ALLOWED -> errorRes = R.string.admin_delete_not_allowed
+
+                    DeleteOutcome.FAILED -> errorRes = R.string.admin_delete_failed
                 }
-                Text(stringResource(R.string.admin_action_delete))
             }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !deleting) {
-                Text(stringResource(R.string.action_cancel))
-            }
-        },
+        onDismiss = onDismiss,
     )
 }

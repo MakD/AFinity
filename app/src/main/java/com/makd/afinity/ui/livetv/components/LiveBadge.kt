@@ -16,3 +16,13 @@ fun LiveBadge(modifier: Modifier = Modifier) {
         contentColor = Color.White,
     )
 }
+
+@Composable
+fun RecBadge(modifier: Modifier = Modifier) {
+    AfinityBadge(
+        text = stringResource(R.string.livetv_rec_badge),
+        modifier = modifier,
+        containerColor = RecordingRed,
+        contentColor = Color.White,
+    )
+}

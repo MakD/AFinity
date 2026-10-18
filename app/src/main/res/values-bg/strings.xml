@@ -188,14 +188,10 @@
         <item quantity="other">Намерени %1$d канала</item>
     </plurals>
     <string name="livetv_guide_date_fmt">EEE, d MMM</string>
-    <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
     <string name="action_now">Сега</string>
-    <string name="cd_guide_previous_time">Предишен времеви блок</string>
-    <string name="cd_guide_next_time">Следващ времеви блок</string>
     <string name="livetv_home_empty_title">Няма налични програми</string>
     <string name="livetv_home_empty_message">Проверете по-късно за програмата</string>
     <string name="livetv_title">Телевизия на живо</string>
-    <string name="livetv_tab_programs">Програми</string>
     <string name="livetv_tab_guide">ТВ програма</string>
     <string name="livetv_tab_channels">Канали</string>
     <string name="livetv_error_not_available_title">Телевизията на живо не е налична</string>

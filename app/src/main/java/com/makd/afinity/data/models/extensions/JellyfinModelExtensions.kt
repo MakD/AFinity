@@ -544,9 +544,20 @@ fun BaseItemDto.toAfinityProgram(baseUrl: String): AfinityProgram {
         tags = tags ?: emptyList(),
         officialRating = officialRating,
         communityRating = communityRating,
-        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
+        externalUrls = toAfinityExternalUrls(),
         channelName = channelName,
         channelNumber = channelNumber,
+        channelLogo =
+            channelId?.let { channel ->
+                channelPrimaryImageTag?.let { tag ->
+                    baseUrl
+                        .toUri()
+                        .buildUpon()
+                        .appendEncodedPath("Items/$channel/Images/Primary")
+                        .appendQueryParameter("tag", tag)
+                        .build()
+                }
+            },
         timerId = timerId,
         seriesTimerId = seriesTimerId,
         timerStatus =

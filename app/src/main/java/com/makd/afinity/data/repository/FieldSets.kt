@@ -115,9 +115,17 @@ object FieldSets {
             ItemFields.OVERVIEW,
             ItemFields.GENRES,
             ItemFields.CHANNEL_INFO,
+            ItemFields.CHANNEL_IMAGE,
         )
 
     val LIVE_TV_PROGRAM_SCHEDULE = listOf(ItemFields.OVERVIEW)
 
     val LIVE_TV_GUIDE = emptyList<ItemFields>()
+
+    val LIVE_TV_RECORDINGS =
+        listOf(
+            ItemFields.CAN_DELETE,
+            ItemFields.DATE_CREATED,
+            ItemFields.OVERVIEW,
+        )
 }

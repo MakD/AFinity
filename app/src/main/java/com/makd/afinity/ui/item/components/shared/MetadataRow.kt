@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.FlowRowScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,7 +42,6 @@ import com.makd.afinity.util.localizedDateFormat
 import java.util.Date
 import java.util.Locale
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MetadataRow(
     item: AfinityItem,
@@ -51,7 +51,6 @@ fun MetadataRow(
 ) {
     val context = LocalContext.current
     val isLandscape = isLandscapeWindow()
-    val horizontalAlignment = if (isLandscape) Alignment.Start else Alignment.CenterHorizontally
 
     val lastRuntimeTicks = remember(item.id) { longArrayOf(item.runtimeTicks) }
     if (item.runtimeTicks > 0L) {
@@ -86,11 +85,7 @@ fun MetadataRow(
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
         if (item !is AfinityBoxSet && item.sources.isNotEmpty()) {
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp, horizontalAlignment),
-                verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
+            MetadataFlowRow {
                 val source =
                     item.sources.find { it.id == selectedSourceId } ?: item.sources.firstOrNull()
 
@@ -105,78 +100,26 @@ fun MetadataRow(
 
         Spacer(modifier = Modifier.height(2.dp))
 
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp, horizontalAlignment),
-            verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
+        MetadataFlowRow {
             var needsSeparator = false
             val isSingleMedia =
                 item is AfinityMovie || item is AfinityEpisode || item is AfinityVideo
             if (isSingleMedia && item.playbackPositionTicks > 0 && stableRuntimeTicks > 0) {
-                val progress = item.playbackPositionTicks.toFloat() / stableRuntimeTicks.toFloat()
-                val remainingTicks = stableRuntimeTicks - item.playbackPositionTicks
-                val remainingTotalMinutes = ticksToTotalMinutes(remainingTicks)
-                val remainingHours = remainingTotalMinutes / 60
-                val remainingMinutes = remainingTotalMinutes % 60
-
-                val remainingText =
-                    if (remainingHours > 0) {
-                        stringResource(
-                            R.string.meta_time_remaining_hours_minutes,
-                            remainingHours,
-                            remainingMinutes,
-                        )
-                    } else {
-                        stringResource(R.string.meta_time_remaining_minutes, remainingMinutes)
-                    }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    CircularProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier.size(16.dp),
-                        color = Color(0xFFFFC107),
-                        strokeWidth = 2.dp,
-                        trackColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f),
-                    )
-
-                    Text(
-                        text = remainingText,
-                        style =
-                            MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.SemiBold
-                            ),
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-                    )
-                }
+                MetadataTimeLeft(
+                    progress = item.playbackPositionTicks.toFloat() / stableRuntimeTicks.toFloat(),
+                    remainingTicks = stableRuntimeTicks - item.playbackPositionTicks,
+                )
                 needsSeparator = true
             }
 
             if (item is AfinityBoxSet) {
                 item.itemCount?.let { count ->
-                    Text(
-                        text = pluralStringResource(R.plurals.meta_boxset_count, count, count),
-                        style =
-                            MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.SemiBold
-                            ),
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-                    )
+                    MetadataText(pluralStringResource(R.plurals.meta_boxset_count, count, count))
                     needsSeparator = true
                 }
                 if (actualTotalChildTicks > 0) {
                     if (needsSeparator) MetadataDot()
-                    Text(
-                        text = formatRuntimeTicks(actualTotalChildTicks),
-                        style =
-                            MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.SemiBold
-                            ),
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-                    )
+                    MetadataText(formatRuntimeTicks(actualTotalChildTicks))
                     needsSeparator = true
                 }
             }
@@ -185,13 +128,8 @@ fun MetadataRow(
                 item.episodeCount
                     ?.takeIf { it > 0 }
                     ?.let { count ->
-                        Text(
-                            text = pluralStringResource(R.plurals.meta_episode_count, count, count),
-                            style =
-                                MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.SemiBold
-                                ),
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
+                        MetadataText(
+                            pluralStringResource(R.plurals.meta_episode_count, count, count)
                         )
                         needsSeparator = true
                     }
@@ -205,13 +143,7 @@ fun MetadataRow(
                 else -> null
             }?.let { year ->
                 if (needsSeparator) MetadataDot()
-
-                Text(
-                    text = year,
-                    style =
-                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-                )
+                MetadataText(year)
                 needsSeparator = true
             }
 
@@ -236,31 +168,15 @@ fun MetadataRow(
                     val displayTicks = if (unplayedTicks > 0) unplayedTicks else totalTicks
 
                     if (displayTicks > 0) {
-                        val runtimeText = formatRuntimeTicks(totalTicks)
                         if (needsSeparator) MetadataDot()
-                        Text(
-                            text = runtimeText,
-                            style =
-                                MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.SemiBold
-                                ),
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-                        )
+                        MetadataText(formatRuntimeTicks(totalTicks))
                         needsSeparator = true
                     }
                 }
 
                 isSingleMedia && stableRuntimeTicks > 0 -> {
-                    val runtimeText = formatRuntimeTicks(stableRuntimeTicks)
                     if (needsSeparator) MetadataDot()
-                    Text(
-                        text = runtimeText,
-                        style =
-                            MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.SemiBold
-                            ),
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-                    )
+                    MetadataText(formatRuntimeTicks(stableRuntimeTicks))
                     needsSeparator = true
                 }
             }
@@ -272,13 +188,7 @@ fun MetadataRow(
                 else -> null
             }?.let { rating ->
                 if (needsSeparator) MetadataDot()
-
-                Text(
-                    text = rating,
-                    style =
-                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-                )
+                MetadataText(rating)
                 needsSeparator = true
             }
 
@@ -290,12 +200,7 @@ fun MetadataRow(
                 }
             if ((partCount ?: 0) > 1) {
                 if (needsSeparator) MetadataDot()
-                Text(
-                    text = pluralStringResource(R.plurals.meta_parts_fmt, partCount!!, partCount),
-                    style =
-                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-                )
+                MetadataText(pluralStringResource(R.plurals.meta_parts_fmt, partCount!!, partCount))
                 needsSeparator = true
             }
 
@@ -309,13 +214,7 @@ fun MetadataRow(
 
             if (genres.isNotEmpty()) {
                 if (needsSeparator) MetadataDot()
-
-                Text(
-                    text = genres.take(2).joinToString(", "),
-                    style =
-                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-                )
+                MetadataText(genres.take(2).joinToString(", "))
             }
         }
 
@@ -361,14 +260,70 @@ fun MetadataRow(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun MetadataDot() {
+fun MetadataFlowRow(modifier: Modifier = Modifier, content: @Composable FlowRowScope.() -> Unit) {
+    val horizontalAlignment =
+        if (isLandscapeWindow()) Alignment.Start else Alignment.CenterHorizontally
+
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp, horizontalAlignment),
+        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
+        modifier = modifier.fillMaxWidth(),
+        content = content,
+    )
+}
+
+@Composable
+fun MetadataText(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
+    )
+}
+
+@Composable
+fun MetadataDot() {
     Text(
         text = "•",
         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
         textAlign = TextAlign.Center,
     )
+}
+
+@Composable
+fun MetadataTimeLeft(progress: Float, remainingTicks: Long) {
+    val remainingTotalMinutes = ticksToTotalMinutes(remainingTicks)
+    val remainingHours = remainingTotalMinutes / 60
+    val remainingMinutes = remainingTotalMinutes % 60
+
+    val remainingText =
+        if (remainingHours > 0) {
+            stringResource(
+                R.string.meta_time_remaining_hours_minutes,
+                remainingHours,
+                remainingMinutes,
+            )
+        } else {
+            stringResource(R.string.meta_time_remaining_minutes, remainingMinutes)
+        }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        CircularProgressIndicator(
+            progress = { progress },
+            modifier = Modifier.size(16.dp),
+            color = Color(0xFFFFC107),
+            strokeWidth = 2.dp,
+            trackColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f),
+        )
+
+        MetadataText(remainingText)
+    }
 }
 
 private fun getFormattedEndTime(context: Context, totalMs: Long): String {

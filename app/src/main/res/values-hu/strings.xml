@@ -476,13 +476,10 @@
         <item quantity="other">%1$d csatorna található</item>
     </plurals>
     <string name="action_now">Most</string>
-    <string name="cd_guide_previous_time">Előző időblokk</string>
-    <string name="cd_guide_next_time">Következő időblokk</string>
     <string name="livetv_home_empty_title">Nincs elérhető program</string>
     <string name="livetv_home_empty_message">Nézz vissza később a programlistáért</string>
     <string name="livetv_title">Élő TV</string>
     <string name="channel_default_name">Élő TV</string>
-    <string name="livetv_tab_programs">Programok</string>
     <string name="livetv_tab_guide">TV-műsor</string>
     <string name="livetv_tab_channels">Csatornák</string>
     <string name="livetv_error_not_available_title">Élő TV nem elérhető</string>
@@ -1144,7 +1141,6 @@
     <string name="backup_import_from_fmt">Az AFinity %1$s-től. Válassza ki, mit szeretne alkalmazni.</string>
     <string name="sort_option_popularity">Népszerűség</string>
     <string name="livetv_guide_date_fmt">EEE, MMM d</string>
-    <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
     <string name="abs_no_personalized_content">Nincs elérhető személyre szabott tartalom</string>
     <string name="abs_no_series_found">Nem található sorozat</string>
     <string name="abs_recently_added_series">Legutóbb hozzáadott sorozatok</string>

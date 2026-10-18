@@ -170,12 +170,8 @@
         <item quantity="other">%1$d Sender gefunden</item>
     </plurals>
     <string name="livetv_guide_date_fmt">EEE. d. MMM</string>
-    <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
     <string name="action_now">Jetzt</string>
-    <string name="cd_guide_previous_time">Vorheriger Zeitblock</string>
-    <string name="cd_guide_next_time">Nächster Zeitblock</string>
     <string name="livetv_home_empty_title">Keine Programme verfügbar</string>
-    <string name="livetv_tab_programs">Programme</string>
     <string name="livetv_title">Live-Fernsehen</string>
     <string name="livetv_error_not_available_title">Live-Fernsehen nicht verfügbar</string>
     <string name="person_biography">Biografie</string>

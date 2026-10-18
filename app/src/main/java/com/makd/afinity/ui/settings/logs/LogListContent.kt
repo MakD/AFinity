@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -238,12 +239,12 @@ private fun ComfortableRow(
         ) {
             Box(
                 modifier =
-                    Modifier.size(17.dp)
+                    Modifier.requiredSize(17.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surface)
                         .border(2.dp, tint, CircleShape)
             )
-            Box(modifier = Modifier.size(9.dp).clip(CircleShape).background(tint))
+            Box(modifier = Modifier.requiredSize(9.dp).clip(CircleShape).background(tint))
         }
 
         Column(modifier = Modifier.weight(1f).padding(start = 14.dp, end = 20.dp, bottom = 20.dp)) {

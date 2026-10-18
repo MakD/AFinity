@@ -31,13 +31,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.data.models.livetv.AfinityProgram
 import com.makd.afinity.ui.components.AsyncImage
-import com.makd.afinity.ui.livetv.models.ProgramWithChannel
 import java.time.format.DateTimeFormatter
 
 @Composable
 fun ProgramCard(
-    programWithChannel: ProgramWithChannel,
+    program: AfinityProgram,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     cardWidth: Dp = 200.dp,
@@ -45,8 +45,6 @@ fun ProgramCard(
     val timePattern = stringResource(R.string.livetv_time_pattern)
     val timeFormatter = remember(timePattern) { DateTimeFormatter.ofPattern(timePattern) }
 
-    val program = programWithChannel.program
-    val channel = programWithChannel.channel
     val isLive = program.isCurrentlyAiring(rememberCurrentTime())
 
     Column(modifier = modifier.width(cardWidth)) {
@@ -60,10 +58,10 @@ fun ProgramCard(
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 val programImage = program.images.thumb ?: program.images.primary
-                val channelImage = channel.images.thumb ?: channel.images.primary
-                val imageUrl = programImage ?: channelImage
+                val channelLogo = program.channelLogo
+                val imageUrl = programImage ?: channelLogo
 
-                val showChannelOverlay = programImage != null && channel.images.primary != null
+                val showChannelOverlay = programImage != null && channelLogo != null
 
                 if (imageUrl != null) {
                     AsyncImage(
@@ -101,8 +99,8 @@ fun ProgramCard(
                                 .padding(4.dp)
                     ) {
                         AsyncImage(
-                            imageUrl = channel.images.primary.toString(),
-                            contentDescription = channel.name,
+                            imageUrl = channelLogo.toString(),
+                            contentDescription = program.channelName,
                             modifier = Modifier.size(28.dp),
                             contentScale = ContentScale.Fit,
                             targetWidth = 28.dp,
@@ -133,7 +131,7 @@ fun ProgramCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            channel.channelNumber?.let { number ->
+            program.channelNumber?.let { number ->
                 Text(
                     text = number,
                     style = MaterialTheme.typography.bodySmall,
@@ -148,7 +146,7 @@ fun ProgramCard(
             }
 
             Text(
-                text = channel.name,
+                text = program.channelName.orEmpty(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,

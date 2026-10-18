@@ -185,14 +185,10 @@
         <item quantity="other">%1$d canales encontrados</item>
     </plurals>
     <string name="livetv_guide_date_fmt">EEE, MMM d</string>
-    <string name="livetv_guide_time_range_fmt">%1$d:00 – %2$d:00</string>
     <string name="action_now">Ahora</string>
-    <string name="cd_guide_previous_time">Bloque de tiempo anterior</string>
-    <string name="cd_guide_next_time">Bloque de tiempo posterior</string>
     <string name="livetv_home_empty_title">No hay programas disponibles</string>
     <string name="livetv_home_empty_message">Vuelve más tarde para ver los listados de programas</string>
     <string name="livetv_title">TV en vivo</string>
-    <string name="livetv_tab_programs">Programas</string>
     <string name="livetv_tab_guide">Guía de TV</string>
     <string name="livetv_tab_channels">Canales</string>
     <string name="livetv_error_not_available_title">TV en vivo no disponible</string>

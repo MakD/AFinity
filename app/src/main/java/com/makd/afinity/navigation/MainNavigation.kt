@@ -846,6 +846,58 @@ fun MainNavigation(
                                     )
                                 }
 
+                                composable(Destination.LIVE_TV_GUIDE_ROUTE) {
+                                    com.makd.afinity.ui.livetv.guide.LiveTvGuideScreen(
+                                        navController = navController,
+                                        mainUiState = mainUiState,
+                                        modifier = Modifier.fillMaxSize(),
+                                        widthSizeClass = widthSizeClass,
+                                    )
+                                }
+
+                                composable(Destination.LIVE_TV_CHANNELS_ROUTE) {
+                                    com.makd.afinity.ui.livetv.channels.LiveTvChannelsScreen(
+                                        navController = navController,
+                                        mainUiState = mainUiState,
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                }
+
+                                composable(Destination.LIVE_TV_RECORDINGS_ROUTE) {
+                                    com.makd.afinity.ui.livetv.recordings.LiveTvRecordingsScreen(
+                                        navController = navController,
+                                        mainUiState = mainUiState,
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                }
+
+                                composable(
+                                    route = Destination.LIVE_TV_PROGRAM_ROUTE,
+                                    arguments =
+                                        listOf(
+                                            navArgument("programId") { type = NavType.StringType }
+                                        ),
+                                ) {
+                                    com.makd.afinity.ui.livetv.program.LiveTvProgramScreen(
+                                        navController = navController,
+                                        modifier = Modifier.fillMaxSize(),
+                                        widthSizeClass = widthSizeClass,
+                                    )
+                                }
+
+                                composable(
+                                    route = Destination.LIVE_TV_CHANNEL_ROUTE,
+                                    arguments =
+                                        listOf(
+                                            navArgument("channelId") { type = NavType.StringType }
+                                        ),
+                                ) {
+                                    com.makd.afinity.ui.livetv.channel.LiveTvChannelScreen(
+                                        navController = navController,
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                }
+
                                 composable(
                                     route = Destination.FILTERED_MEDIA_ROUTE,
                                     arguments =

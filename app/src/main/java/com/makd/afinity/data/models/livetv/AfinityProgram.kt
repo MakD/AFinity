@@ -1,5 +1,7 @@
 package com.makd.afinity.data.models.livetv
 
+import android.net.Uri
+import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityImages
 import java.time.LocalDateTime
 import java.util.UUID
@@ -35,13 +37,17 @@ data class AfinityProgram(
     val tags: List<String>,
     val officialRating: String?,
     val communityRating: Float?,
-    val providerIds: Map<String, String>?,
+    val externalUrls: List<AfinityExternalUrl>?,
     val channelName: String?,
     val channelNumber: String?,
+    val channelLogo: Uri?,
     val timerId: String?,
     val seriesTimerId: String?,
     val timerStatus: RecordingStatus?,
 ) {
+    val hasActiveTimer: Boolean
+        get() = timerId != null && timerStatus != RecordingStatus.CANCELLED
+
     val durationMinutes: Long?
         get() {
             if (startDate == null || endDate == null) return null

@@ -1890,14 +1890,8 @@ constructor(
                 }
             val tmdbId =
                 if (isMovie != null) target?.providerIds?.get("Tmdb")?.toIntOrNull() else null
-            val result = adminRepository.deleteItem(targetItemId.toString(), tmdbId, isMovie)
             val outcome =
-                when (result.exceptionOrNull()) {
-                    null -> DeleteOutcome.DELETED
-                    is AdminRequestStillRunningException -> DeleteOutcome.STILL_RUNNING
-                    is AdminPermissionDeniedException -> DeleteOutcome.NOT_ALLOWED
-                    else -> DeleteOutcome.FAILED
-                }
+                adminRepository.deleteItem(targetItemId.toString(), tmdbId, isMovie).toDeleteOutcome()
             if (outcome == DeleteOutcome.DELETED) {
                 _deletableItemIds.update { it - targetItemId }
                 if (target == null) {
@@ -1916,6 +1910,14 @@ enum class DeleteOutcome {
     NOT_ALLOWED,
     FAILED,
 }
+
+fun Result<*>.toDeleteOutcome(): DeleteOutcome =
+    when (exceptionOrNull()) {
+        null -> DeleteOutcome.DELETED
+        is AdminRequestStillRunningException -> DeleteOutcome.STILL_RUNNING
+        is AdminPermissionDeniedException -> DeleteOutcome.NOT_ALLOWED
+        else -> DeleteOutcome.FAILED
+    }
 
 data class RelatedRow(val kind: Kind, val subject: String, val items: List<AfinityItem>) {
     enum class Kind {

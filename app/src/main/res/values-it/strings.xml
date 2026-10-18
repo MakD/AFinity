@@ -150,11 +150,9 @@
     <string name="livetv_cat_news">Notizie</string>
     <string name="livetv_empty_generic">Nessun canale disponibile</string>
     <string name="action_show_all_channels">Vedi tutti i canali</string>
-    <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
     <string name="action_now">Adesso</string>
     <string name="livetv_home_empty_title">Nessun programma disponibile</string>
     <string name="livetv_title">Live TV</string>
-    <string name="livetv_tab_programs">Programmi</string>
     <string name="livetv_tab_guide">Guida TV</string>
     <string name="livetv_tab_channels">Canali</string>
     <string name="livetv_error_not_available_title">Live TV non disponibile</string>
@@ -296,8 +294,6 @@
     <string name="meta_part_of_fmt">Parte %1$d/%2$d</string>
     <string name="abs_server_url_placeholder">https://abs.example.com</string>
     <string name="livetv_header_letter_fmt">Canali (%1$s)</string>
-    <string name="cd_guide_previous_time">Blocco Temporale Precedente</string>
-    <string name="cd_guide_next_time">Prossimo Blocco Temporale</string>
     <string name="livetv_home_empty_message">Controlla dopo per la lista completa dei programmi</string>
     <plurals name="person_born_fmt">
         <item quantity="one">Nato: %1$s (%2$d anni)</item>

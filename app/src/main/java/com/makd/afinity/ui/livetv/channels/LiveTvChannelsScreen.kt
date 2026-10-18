@@ -1,4 +1,6 @@
-package com.makd.afinity.ui.livetv.tabs
+@file:UnstableApi
+
+package com.makd.afinity.ui.livetv.channels
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -20,45 +22,135 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.util.UnstableApi
+import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.data.models.livetv.AfinityChannel
+import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AlphabetScroller
+import com.makd.afinity.ui.components.FilterFab
+import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
-import com.makd.afinity.ui.livetv.LiveTvUiState
 import com.makd.afinity.ui.livetv.components.ChannelCard
+import com.makd.afinity.ui.livetv.components.LiveTvFilterDialog
+import com.makd.afinity.ui.livetv.components.LiveTvTopAppBar
+import com.makd.afinity.ui.main.MainUiState
+import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.theme.CardDimensions
 
 @Composable
-fun LiveTvChannelsTab(
+fun LiveTvChannelsScreen(
+    navController: NavController,
+    mainUiState: MainUiState,
     modifier: Modifier = Modifier,
-    uiState: LiveTvUiState,
+    viewModel: LiveTvChannelsViewModel = hiltViewModel(),
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val viewOptions by viewModel.viewOptions.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    var showFilters by rememberSaveable { mutableStateOf(false) }
+
+    LifecycleResumeEffect(viewModel) {
+        viewModel.setScreenVisible(true)
+        onPauseOrDispose { viewModel.setScreenVisible(false) }
+    }
+
+    Scaffold(
+        topBar = {
+            LiveTvTopAppBar(
+                title = stringResource(R.string.livetv_tab_channels),
+                navController = navController,
+                mainUiState = mainUiState,
+            )
+        },
+        modifier = modifier,
+    ) { paddingValues ->
+        LiveTvChannelsContent(
+            uiState = uiState,
+            onChannelClick = { channel ->
+                navController.navigate(Destination.createLiveTvChannelRoute(channel.id.toString()))
+            },
+            onChannelLongClick = { channel ->
+                PlayerLauncher.launchLiveChannel(
+                    context = context,
+                    channelId = channel.id,
+                    channelName = channel.name,
+                )
+            },
+            onFavoriteClick = { channel -> viewModel.toggleFavorite(channel.id) },
+            onLetterSelected = viewModel::onLetterSelected,
+            onClearFilter = viewModel::clearLetterFilter,
+            onRetry = viewModel::retry,
+            filterCount = viewOptions.activeCount(includeGuideOptions = false),
+            onFilterClick = { showFilters = true },
+            modifier = Modifier.padding(paddingValues),
+        )
+    }
+
+    if (showFilters) {
+        LiveTvFilterDialog(
+            options = viewOptions,
+            showGuideOptions = false,
+            onApply = viewModel::applyViewOptions,
+            onDismiss = { showFilters = false },
+        )
+    }
+}
+
+@Composable
+private fun LiveTvChannelsContent(
+    uiState: LiveTvChannelsUiState,
     onChannelClick: (AfinityChannel) -> Unit,
+    onChannelLongClick: (AfinityChannel) -> Unit,
     onFavoriteClick: (AfinityChannel) -> Unit,
-    selectedLetter: String? = null,
-    onLetterSelected: (String) -> Unit = {},
-    onClearFilter: () -> Unit = {},
+    onLetterSelected: (String) -> Unit,
+    onClearFilter: () -> Unit,
+    onRetry: () -> Unit,
+    filterCount: Int,
+    onFilterClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     if (uiState.isLoading) {
         FullScreenLoading(modifier = modifier)
         return
     }
 
+    if (uiState.loadFailed && uiState.allChannels.isEmpty()) {
+        FullScreenError(
+            message = stringResource(R.string.livetv_channels_load_failed),
+            modifier = modifier,
+            actionText = stringResource(R.string.action_retry),
+            onActionClick = onRetry,
+        )
+        return
+    }
+
+    val selectedLetter = uiState.selectedLetter
     val playerOffset = LocalPlayerOffset.current
     val safeBottom = WindowInsets.safeDrawing.asPaddingValues().calculateBottomPadding()
 
     Box(modifier = modifier.fillMaxSize()) {
         Row(modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.weight(1f)) {
+            Box(modifier = Modifier.weight(1f)) {
                 if (uiState.channels.isEmpty() && selectedLetter != null) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -136,10 +228,20 @@ fun LiveTvChannelsTab(
                                 onClick = { onChannelClick(channel) },
                                 onFavoriteClick = { onFavoriteClick(channel) },
                                 showProgramOverlays = false,
+                                onLongClick = { onChannelLongClick(channel) },
                             )
                         }
                     }
                 }
+
+                FilterFab(
+                    active = filterCount > 0,
+                    onClick = onFilterClick,
+                    badgeCount = filterCount,
+                    modifier =
+                        Modifier.align(Alignment.BottomEnd)
+                            .padding(end = 8.dp, bottom = max(safeBottom, playerOffset) + 16.dp),
+                )
             }
 
             Box(

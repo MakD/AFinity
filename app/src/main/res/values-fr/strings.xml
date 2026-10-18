@@ -149,12 +149,9 @@
         <item quantity="other">%1$d canaux trouvés</item>
     </plurals>
     <string name="action_now">Maintenant</string>
-    <string name="cd_guide_previous_time">Temps précédent</string>
-    <string name="cd_guide_next_time">Prochaine étape</string>
     <string name="livetv_home_empty_title">Aucun programme disponible</string>
     <string name="livetv_home_empty_message">Revenez plus tard pour les annonces de programmes</string>
     <string name="livetv_title">TV en direct</string>
-    <string name="livetv_tab_programs">Programmes</string>
     <string name="livetv_tab_guide">Guide TV</string>
     <string name="livetv_tab_channels">Chaîne</string>
     <string name="livetv_error_not_available_title">TV en direct non disponible</string>
@@ -293,7 +290,6 @@
     <string name="livetv_live_badge">LIVE</string>
     <string name="livetv_cat_shows">Séries</string>
     <string name="livetv_guide_date_fmt">EEE, MMM d</string>
-    <string name="livetv_guide_time_range_fmt">%1$d :00 - %2$d :00</string>
     <string name="person_date_fmt">MMMM d, yyyy</string>
     <string name="player_speed_value_fmt">%.2f</string>
     <string name="player_episode_header_fmt">S%1$s :E%2$s : %3$s</string>

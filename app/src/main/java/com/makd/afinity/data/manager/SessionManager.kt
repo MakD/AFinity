@@ -60,6 +60,7 @@ data class Session(
     val canAccessLiveTv: Boolean? = null,
     val canDownload: Boolean? = null,
     val canDeleteMedia: Boolean? = null,
+    val canManageLiveTv: Boolean? = null,
     val userConfiguration: UserConfiguration? = null,
 )
 
@@ -270,6 +271,7 @@ constructor(
                         val userDto = probed ?: UserApi(apiClient).getCurrentUser().content
                         val isAdmin = userDto.policy?.isAdministrator == true
                         val canAccessLiveTv = userDto.policy?.enableLiveTvAccess
+                        val canManageLiveTv = userDto.policy?.enableLiveTvManagement
                         val canDownload = userDto.policy?.enableContentDownloading
                         val canDeleteMedia =
                             userDto.policy?.let { policy ->
@@ -308,6 +310,7 @@ constructor(
                                     canAccessLiveTv = canAccessLiveTv,
                                     canDownload = canDownload,
                                     canDeleteMedia = canDeleteMedia,
+                                    canManageLiveTv = canManageLiveTv,
                                     user = refreshedUser,
                                     userConfiguration = userDto.configuration,
                                 )

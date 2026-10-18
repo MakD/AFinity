@@ -230,8 +230,21 @@ private fun RatingsAndReviews(
     tmdbReviews: List<TmdbReview>,
     isRatingsFromCache: Boolean,
 ) {
-    val orderedRatings = orderedRatingsFor(item, mdbRatings)
+    RatingsAndReviews(
+        orderedRatings = orderedRatingsFor(item, mdbRatings),
+        mdbRatingBadges = mdbRatingBadges,
+        tmdbReviews = tmdbReviews,
+        isRatingsFromCache = isRatingsFromCache,
+    )
+}
 
+@Composable
+fun RatingsAndReviews(
+    orderedRatings: List<MdbListRating>,
+    mdbRatingBadges: MdbListRatingBadges = MdbListRatingBadges(),
+    tmdbReviews: List<TmdbReview> = emptyList(),
+    isRatingsFromCache: Boolean = false,
+) {
     val hasRatings = mdbRatingBadges.hasAny || orderedRatings.isNotEmpty()
     val hasReviews = tmdbReviews.isNotEmpty()
 

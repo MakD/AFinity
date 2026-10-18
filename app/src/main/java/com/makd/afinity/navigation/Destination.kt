@@ -78,6 +78,21 @@ enum class Destination(
             return LOGS_ROUTE
         }
 
+        const val LIVE_TV_GUIDE_ROUTE = "live_tv/guide"
+        const val LIVE_TV_CHANNELS_ROUTE = "live_tv/channels"
+        const val LIVE_TV_RECORDINGS_ROUTE = "live_tv/recordings"
+        const val LIVE_TV_PROGRAM_ROUTE = "live_tv/program/{programId}"
+
+        fun createLiveTvProgramRoute(programId: String): String {
+            return "live_tv/program/$programId"
+        }
+
+        const val LIVE_TV_CHANNEL_ROUTE = "live_tv/channel/{channelId}"
+
+        fun createLiveTvChannelRoute(channelId: String): String {
+            return "live_tv/channel/$channelId"
+        }
+
         const val FILTERED_MEDIA_ROUTE = "filtered_media/{filterType}/{filterId}/{filterName}"
         const val FAVORITES_CATEGORY_ROUTE = "favorites_category/{category}"
         const val WATCHLIST_CATEGORY_ROUTE = "watchlist_category/{category}"

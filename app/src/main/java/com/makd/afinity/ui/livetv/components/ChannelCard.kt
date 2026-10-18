@@ -1,7 +1,7 @@
 package com.makd.afinity.ui.livetv.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -44,6 +44,7 @@ fun ChannelCard(
     onFavoriteClick: () -> Unit,
     modifier: Modifier = Modifier,
     showProgramOverlays: Boolean = true,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val density = LocalDensity.current
     val screenWidthDp = with(density) { LocalWindowInfo.current.containerSize.width.toDp() }
@@ -59,7 +60,16 @@ fun ChannelCard(
             channel.images.primary ?: channel.images.thumb
         }
 
-    Column(modifier = modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick)) {
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    role = Role.Button,
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                )
+    ) {
         Card(
             modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f),
             colors =

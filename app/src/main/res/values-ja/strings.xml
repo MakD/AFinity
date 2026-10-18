@@ -179,14 +179,10 @@
         <item quantity="other">%1$d チャンネルが見つかりました</item>
     </plurals>
     <string name="livetv_guide_date_fmt">えー、うーん</string>
-    <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
     <string name="action_now">今</string>
-    <string name="cd_guide_previous_time">前の時間ブロック</string>
-    <string name="cd_guide_next_time">次回ブロック</string>
     <string name="livetv_home_empty_title">利用可能なプログラムがありません</string>
     <string name="livetv_home_empty_message">後でプログラムリストを確認してください</string>
     <string name="livetv_title">ライブテレビ</string>
-    <string name="livetv_tab_programs">プログラム</string>
     <string name="livetv_tab_guide">テレビガイド</string>
     <string name="livetv_tab_channels">チャンネル</string>
     <string name="livetv_error_not_available_title">生放送は利用できません</string>

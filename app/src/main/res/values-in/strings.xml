@@ -181,14 +181,10 @@
         <item quantity="other">%1$d saluran ditemukan</item>
     </plurals>
     <string name="livetv_guide_date_fmt">EEE, MMM d</string>
-    <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
     <string name="action_now">Sekarang</string>
-    <string name="cd_guide_previous_time">Blok waktu sebelumnya</string>
-    <string name="cd_guide_next_time">Blok waktu berikutnya</string>
     <string name="livetv_home_empty_title">Tidak ada program yang tersedia</string>
     <string name="livetv_home_empty_message">Periksa kembali nanti untuk daftar program</string>
     <string name="livetv_title">TV Langsung</string>
-    <string name="livetv_tab_programs">Program</string>
     <string name="livetv_tab_guide">Panduan TV</string>
     <string name="livetv_tab_channels">Saluran</string>
     <string name="livetv_error_not_available_title">TV Langsung tidak tersedia</string>

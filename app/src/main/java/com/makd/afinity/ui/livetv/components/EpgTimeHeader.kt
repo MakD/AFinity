@@ -4,8 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,10 +23,12 @@ import com.makd.afinity.R
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+private val NowDotSize = 10.dp
+
 @Composable
 fun EpgTimeHeader(
     startTime: LocalDateTime,
-    visibleHours: Int,
+    hours: Int,
     hourWidth: Dp,
     modifier: Modifier = Modifier,
 ) {
@@ -31,31 +36,47 @@ fun EpgTimeHeader(
     val timeFormatter = remember(timePattern) { DateTimeFormatter.ofPattern(timePattern) }
     val now = rememberCurrentTime()
 
-    Row(modifier = modifier.background(MaterialTheme.colorScheme.surface).height(40.dp)) {
-        repeat(visibleHours + 1) { hourOffset ->
-            val time = startTime.plusHours(hourOffset.toLong())
-            val isNow = now.hour == time.hour && now.toLocalDate() == time.toLocalDate()
+    Box(modifier = modifier.background(MaterialTheme.colorScheme.surface).height(40.dp)) {
+        Row {
+            repeat(hours) { hourOffset ->
+                val time = startTime.plusHours(hourOffset.toLong())
+                val isNow = now.hour == time.hour && now.toLocalDate() == time.toLocalDate()
 
+                Box(
+                    modifier =
+                        Modifier.width(hourWidth)
+                            .height(40.dp)
+                            .background(
+                                if (isNow) {
+                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                                } else {
+                                    MaterialTheme.colorScheme.surface
+                                }
+                            )
+                            .padding(horizontal = 8.dp),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Text(
+                        text = time.format(timeFormatter),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = if (isNow) FontWeight.Bold else FontWeight.Normal,
+                        color =
+                            if (isNow) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
+        nowLineOffset(startTime, startTime.plusHours(hours.toLong()), now, hourWidth)?.let {
+            offset ->
             Box(
                 modifier =
-                    Modifier.width(hourWidth)
-                        .height(40.dp)
-                        .background(
-                            if (isNow) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                            else MaterialTheme.colorScheme.surface
-                        )
-                        .padding(horizontal = 8.dp),
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                Text(
-                    text = time.format(timeFormatter),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = if (isNow) FontWeight.Bold else FontWeight.Normal,
-                    color =
-                        if (isNow) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+                    Modifier.align(Alignment.BottomStart)
+                        .offset(x = offset - NowDotSize / 2)
+                        .size(NowDotSize)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+            )
         }
     }
 }

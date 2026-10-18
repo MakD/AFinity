@@ -2,7 +2,6 @@ package com.makd.afinity.ui.requests
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -15,27 +14,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TooltipAnchorPosition
@@ -52,16 +43,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.DiscoverFilterOptions
 import com.makd.afinity.data.models.jellyseerr.Genre
@@ -74,6 +60,7 @@ import com.makd.afinity.ui.components.AfinityToggleChip
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.RadioOptionRow
 import com.makd.afinity.ui.components.filter.FilterAccordionSection
+import com.makd.afinity.ui.components.filter.FilterDialog
 import com.makd.afinity.ui.components.filter.FilterSectionHeader
 import com.makd.afinity.ui.components.filter.SearchableChipMultiSelect
 import com.makd.afinity.ui.components.filter.noRippleClickable
@@ -192,48 +179,49 @@ fun DiscoverFilterBottomSheet(
 
     LaunchedEffect(Unit) { watchRegion?.let { onRegionSelected(it) } }
 
-    val maxDialogHeight = (LocalConfiguration.current.screenHeightDp * 0.92f).dp
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties =
-            DialogProperties(
-                usePlatformDefaultWidth = false,
-                decorFitsSystemWindows = true,
-            ),
+    FilterDialog(
+        onDismiss = onDismiss,
+        onClearAll = {
+            releaseDateGte = null
+            releaseDateLte = null
+            runtimeRange = 0f..400f
+            ratingRange = 0f..10f
+            voteCountRange = 0f..1000f
+            tvStatus = emptySet()
+            selectedCertifications = emptySet()
+            selectedGenreIds = emptySet()
+            watchRegion = null
+            selectedProviderIds = emptySet()
+            selectedKeywords = emptyList()
+            selectedExcludeKeywords = emptyList()
+        },
+        onApply = {
+            onApply(
+                DiscoverFilterOptions(
+                    genreIds =
+                        if (showGenrePicker) selectedGenreIds.toList() else filterOptions.genreIds,
+                    releaseDateGte = releaseDateGte,
+                    releaseDateLte = releaseDateLte,
+                    runtimeGte = runtimeRange.start.roundToInt().takeIf { it > 0 },
+                    runtimeLte = runtimeRange.endInclusive.roundToInt().takeIf { it < 400 },
+                    voteAverageGte = ratingRange.start.toDouble().takeIf { it > 0.0 },
+                    voteAverageLte = ratingRange.endInclusive.toDouble().takeIf { it < 10.0 },
+                    voteCountGte = voteCountRange.start.roundToInt().takeIf { it > 0 },
+                    voteCountLte = voteCountRange.endInclusive.roundToInt().takeIf { it < 1000 },
+                    tvStatus = tvStatus.toList(),
+                    certification = selectedCertifications.toList(),
+                    watchProviderIds = selectedProviderIds.toList(),
+                    watchRegion = watchRegion,
+                    keywordIds = selectedKeywords.map { it.id },
+                    excludeKeywordIds = selectedExcludeKeywords.map { it.id },
+                ),
+                selectedKeywords,
+                selectedExcludeKeywords,
+            )
+            onDismiss()
+        },
+        bodyBottomPadding = 8.dp,
     ) {
-        Box(
-            modifier =
-                Modifier.fillMaxSize().imePadding().pointerInput(Unit) {
-                    detectTapGestures { onDismiss() }
-                },
-            contentAlignment = Alignment.Center,
-        ) {
-            Surface(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .widthIn(max = 480.dp)
-                        .heightIn(max = maxDialogHeight)
-                        .padding(16.dp)
-                        .pointerInput(Unit) { detectTapGestures {} },
-                shape = MaterialTheme.shapes.extraLarge,
-                color = MaterialTheme.colorScheme.surfaceContainer,
-            ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier =
-                            Modifier.weight(1f, fill = false)
-                                .verticalScroll(rememberScrollState())
-                                .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.discover_filter_title),
-                            style =
-                                MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                        )
-
                         Spacer(modifier = Modifier.height(8.dp))
 
                         val anyLabel = stringResource(R.string.discover_filter_any)
@@ -610,84 +598,6 @@ fun DiscoverFilterBottomSheet(
                                 onClearAll = { selectedExcludeKeywords = emptyList() },
                             )
                         }
-                    }
-
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                    )
-
-                    Row(
-                        modifier =
-                            Modifier.fillMaxWidth()
-                                .navigationBarsPadding()
-                                .padding(horizontal = 24.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        TextButton(
-                            onClick = {
-                                releaseDateGte = null
-                                releaseDateLte = null
-                                runtimeRange = 0f..400f
-                                ratingRange = 0f..10f
-                                voteCountRange = 0f..1000f
-                                tvStatus = emptySet()
-                                selectedCertifications = emptySet()
-                                selectedGenreIds = emptySet()
-                                watchRegion = null
-                                selectedProviderIds = emptySet()
-                                selectedKeywords = emptyList()
-                                selectedExcludeKeywords = emptyList()
-                            }
-                        ) {
-                            Text(stringResource(R.string.discover_filter_clear_all))
-                        }
-                        Button(
-                            onClick = {
-                                onApply(
-                                    DiscoverFilterOptions(
-                                        genreIds =
-                                            if (showGenrePicker) selectedGenreIds.toList()
-                                            else filterOptions.genreIds,
-                                        releaseDateGte = releaseDateGte,
-                                        releaseDateLte = releaseDateLte,
-                                        runtimeGte =
-                                            runtimeRange.start.roundToInt().takeIf { it > 0 },
-                                        runtimeLte =
-                                            runtimeRange.endInclusive.roundToInt().takeIf {
-                                                it < 400
-                                            },
-                                        voteAverageGte =
-                                            ratingRange.start.toDouble().takeIf { it > 0.0 },
-                                        voteAverageLte =
-                                            ratingRange.endInclusive.toDouble().takeIf {
-                                                it < 10.0
-                                            },
-                                        voteCountGte =
-                                            voteCountRange.start.roundToInt().takeIf { it > 0 },
-                                        voteCountLte =
-                                            voteCountRange.endInclusive.roundToInt().takeIf {
-                                                it < 1000
-                                            },
-                                        tvStatus = tvStatus.toList(),
-                                        certification = selectedCertifications.toList(),
-                                        watchProviderIds = selectedProviderIds.toList(),
-                                        watchRegion = watchRegion,
-                                        keywordIds = selectedKeywords.map { it.id },
-                                        excludeKeywordIds = selectedExcludeKeywords.map { it.id },
-                                    ),
-                                    selectedKeywords,
-                                    selectedExcludeKeywords,
-                                )
-                                onDismiss()
-                            }
-                        ) {
-                            Text(stringResource(R.string.action_apply))
-                        }
-                    }
-                }
-            }
-        }
     }
 
     if (showRegionPicker) {

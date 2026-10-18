@@ -185,14 +185,10 @@
         <item quantity="other">%1$d चैनल मिले</item>
     </plurals>
     <string name="livetv_guide_date_fmt">ईईई, एमएमएम डी</string>
-    <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
     <string name="action_now">अब</string>
-    <string name="cd_guide_previous_time">पिछली बार का ब्लॉक</string>
-    <string name="cd_guide_next_time">अगली बार ब्लॉक करें</string>
     <string name="livetv_home_empty_title">कोई कार्यक्रम उपलब्ध नहीं है</string>
     <string name="livetv_home_empty_message">कार्यक्रम सूची के लिए बाद में दोबारा जाँचें</string>
     <string name="livetv_title">लाइव टीवी</string>
-    <string name="livetv_tab_programs">कार्यक्रमों</string>
     <string name="livetv_tab_guide">टीवी गाइड</string>
     <string name="livetv_tab_channels">चैनल</string>
     <string name="livetv_error_not_available_title">लाइव टीवी उपलब्ध नहीं है</string>

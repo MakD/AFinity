@@ -1,20 +1,8 @@
 package com.makd.afinity.ui.item.components.shared
 
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -42,31 +30,19 @@ fun PrimaryPlaybackButton(
 
     if (isUnplayable) {
         if (isLoading && targetItem == null) {
-            Button(
+            DetailPrimaryButton(
+                text = stringResource(R.string.status_loading),
                 onClick = {},
                 enabled = false,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(28.dp),
-            ) {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.status_loading))
-            }
+                isLoading = true,
+            )
         } else {
-            Button(
+            DetailPrimaryButton(
+                text = stringResource(R.string.play_error_missing_source),
                 onClick = {},
+                icon = painterResource(id = R.drawable.ic_alert_triangle),
                 enabled = false,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(28.dp),
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_alert_triangle),
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.play_error_missing_source))
-            }
+            )
         }
         return
     }

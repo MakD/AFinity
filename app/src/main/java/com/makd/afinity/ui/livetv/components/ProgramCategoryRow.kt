@@ -11,16 +11,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.data.models.livetv.AfinityProgram
 import com.makd.afinity.ui.home.components.HomeSectionHeader
 import com.makd.afinity.ui.livetv.models.LiveTvCategory
-import com.makd.afinity.ui.livetv.models.ProgramWithChannel
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 
 @Composable
 fun ProgramCategoryRow(
     category: LiveTvCategory,
-    programs: List<ProgramWithChannel>,
-    onProgramClick: (ProgramWithChannel) -> Unit,
+    programs: List<AfinityProgram>,
+    onProgramClick: (AfinityProgram) -> Unit,
     modifier: Modifier = Modifier,
     widthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact,
 ) {
@@ -35,13 +35,10 @@ fun ProgramCategoryRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            items(
-                items = programs,
-                key = { "${it.program.id}_${it.channel.id}" },
-            ) { programWithChannel ->
+            items(items = programs, key = { it.id }) { program ->
                 ProgramCard(
-                    programWithChannel = programWithChannel,
-                    onClick = { onProgramClick(programWithChannel) },
+                    program = program,
+                    onClick = { onProgramClick(program) },
                     cardWidth = cardWidth,
                 )
             }

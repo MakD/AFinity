@@ -44,6 +44,8 @@ import org.jellyfin.sdk.model.api.PlaystateRequest
 import org.jellyfin.sdk.model.api.RestartRequiredMessage
 import org.jellyfin.sdk.model.api.ScheduledTasksInfoMessage
 import org.jellyfin.sdk.model.api.SendCommand
+import org.jellyfin.sdk.model.api.SeriesTimerCancelledMessage
+import org.jellyfin.sdk.model.api.SeriesTimerCreatedMessage
 import org.jellyfin.sdk.model.api.ServerRestartingMessage
 import org.jellyfin.sdk.model.api.ServerShuttingDownMessage
 import org.jellyfin.sdk.model.api.SessionInfoDto
@@ -52,6 +54,8 @@ import org.jellyfin.sdk.model.api.SyncPlayCommandMessage
 import org.jellyfin.sdk.model.api.SyncPlayGroupUpdateMessage
 import org.jellyfin.sdk.model.api.TaskInfo
 import org.jellyfin.sdk.model.api.TaskState
+import org.jellyfin.sdk.model.api.TimerCancelledMessage
+import org.jellyfin.sdk.model.api.TimerCreatedMessage
 import org.jellyfin.sdk.model.api.UserDataChangedMessage
 import timber.log.Timber
 
@@ -105,6 +109,9 @@ constructor(
         MutableSharedFlow<SyncPlayGroupUpdate>(extraBufferCapacity = 16)
     val syncPlayGroupUpdates: SharedFlow<SyncPlayGroupUpdate> = _syncPlayGroupUpdates.asSharedFlow()
 
+    private val _liveTvTimerEvents = MutableSharedFlow<UUID?>(extraBufferCapacity = 64)
+    val liveTvTimerEvents: SharedFlow<UUID?> = _liveTvTimerEvents.asSharedFlow()
+
     private val restartEpoch = MutableStateFlow(0)
 
     init {
@@ -151,6 +158,7 @@ constructor(
                 launch { subscribeToTaskChanges(currentApiClient) }
                 launch { subscribeToSyncPlayCommands(currentApiClient) }
                 launch { subscribeToSyncPlayGroupUpdates(currentApiClient) }
+                launch { subscribeToLiveTvTimers(currentApiClient) }
             }
         } finally {
             resyncedForThisConnection = false
@@ -454,6 +462,43 @@ constructor(
                     "SyncPlay: command received — type=${message.data!!.command}, ticks=${message.data!!.positionTicks}"
                 )
                 _syncPlayCommands.emit(message.data!!)
+            }
+        }
+    }
+
+    private suspend fun subscribeToLiveTvTimers(apiClient: ApiClient) {
+        coroutineScope {
+            launch {
+                collectWithRetry(
+                    "Timer created",
+                    { apiClient.webSocket.subscribe(TimerCreatedMessage::class) },
+                ) { message ->
+                    _liveTvTimerEvents.emit(message.data?.programId)
+                }
+            }
+            launch {
+                collectWithRetry(
+                    "Timer cancelled",
+                    { apiClient.webSocket.subscribe(TimerCancelledMessage::class) },
+                ) { message ->
+                    _liveTvTimerEvents.emit(message.data?.programId)
+                }
+            }
+            launch {
+                collectWithRetry(
+                    "Series timer created",
+                    { apiClient.webSocket.subscribe(SeriesTimerCreatedMessage::class) },
+                ) { message ->
+                    _liveTvTimerEvents.emit(message.data?.programId)
+                }
+            }
+            launch {
+                collectWithRetry(
+                    "Series timer cancelled",
+                    { apiClient.webSocket.subscribe(SeriesTimerCancelledMessage::class) },
+                ) { message ->
+                    _liveTvTimerEvents.emit(message.data?.programId)
+                }
             }
         }
     }
