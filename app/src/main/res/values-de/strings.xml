@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="splash_status_authenticating">Authentifiziere...</string>
+    <string name="splash_status_authenticating">Authentifiziere…</string>
     <string name="loading_phase_offline">Bereit (Offline-Modus)</string>
     <string name="loading_phase_connecting">Mit Server verbinden …</string>
     <string name="loading_phase_fetching">Inhalt laden …</string>
@@ -909,4 +909,39 @@
     <string name="discovery_density_full">Voll</string>
     <string name="discovery_count_range_fmt">0 bis %1$d</string>
     <string name="discovery_off">Aus</string>
+    <string name="custom_sections_title">Benutzerdefinierte Startseiten-Bereiche</string>
+    <string name="custom_sections_always_caption">Deine Mediatheken und was du zuletzt geschaut hast. Diese können nicht deaktiviert werden.</string>
+    <string name="custom_sections_group_rows">Integrierte Zeilen</string>
+    <string name="custom_sections_rows_caption">Werden ganz oben in dieser Reihenfolge angezeigt. Deaktiviere einfach, was du nicht nutzt.</string>
+    <string name="custom_sections_yours_caption">Eigene Reihen, die über den generierten angezeigt werden. Zum Anordnen ziehen, zum Bearbeiten antippen.</string>
+    <string name="custom_sections_discovery_caption">Aus deiner Mediathek erstellte Reihen. Sie ändern sich bei jedem Öffnen der App.</string>
+    <string name="custom_sections_group_discovery">Entdecken</string>
+    <string name="custom_sections_group_yours">Deine Reihen</string>
+    <string name="custom_sections_advanced_summary">Anzahl der Reihen für jeden Typ festlegen. Setze den Wert auf 0, um ihn zu deaktivieren.</string>
+    <string name="discovery_density_balanced">Ausgewogen</string>
+    <string name="discovery_density_custom">Benutzerdefiniert</string>
+    <string name="discovery_count_label">Reihen</string>
+    <string name="discovery_section_genres">Genres</string>
+    <string name="discovery_section_spotlights">Highlights</string>
+    <string name="discovery_section_starring">Mitwirkende</string>
+    <string name="discovery_section_directed_by">Regie</string>
+    <string name="discovery_section_written_by">Drehbuch</string>
+    <string name="discovery_section_because_watched">Weil du geschaut hast</string>
+    <string name="discovery_section_because_liked">Weil dir das gefällt</string>
+    <string name="discovery_section_actor_from">Mitwirkende aus einem geschauten Film</string>
+    <string name="discovery_section_director_from">Regie aus einem geschauten Film</string>
+    <string name="discovery_section_writer_from">Drehbuch aus einem geschauten Film</string>
+    <string name="home_row_popular_studios">Beliebte Studios</string>
+    <string name="home_row_hero_carousel">Highlight-Karussell</string>
+    <string name="home_row_libraries">Mediatheken</string>
+    <string name="home_row_continue_watching">Weiterschauen</string>
+    <string name="home_row_next_up">Als Nächstes</string>
+    <string name="home_row_critics_choice">Kritikerlieblinge</string>
+    <string name="home_row_watch_again">Erneut anschauen</string>
+    <string name="home_row_upcoming">Demnächst</string>
+    <string name="home_row_latest_movies">Neueste Filme</string>
+    <string name="home_row_latest_tv">Neueste Serien</string>
+    <string name="custom_sections_add">Bereich hinzufügen</string>
+    <string name="custom_sections_new">Neuer Bereich</string>
+    <string name="custom_sections_edit">Bereich bearbeiten</string>
 </resources>
