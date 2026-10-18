@@ -8,6 +8,7 @@ import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
+import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -31,6 +32,9 @@ class EpisodeSelection(
     private val userDataRepository: UserDataRepository,
     private val itemUserDataDelegate: ItemUserDataDelegate,
     downloadRepository: DownloadRepository,
+    private val fallbackLoader: (suspend (UUID) -> AfinityEpisode?)? = null,
+    private val onEpisodeUpdated: (AfinityEpisode) -> Unit = {},
+    private val isOffline: suspend () -> Boolean = { false },
 ) {
     private val _selected = MutableStateFlow<AfinityEpisode?>(null)
     val selected: StateFlow<AfinityEpisode?> = _selected.asStateFlow()
@@ -67,10 +71,12 @@ class EpisodeSelection(
         loadJob =
             scope.launch {
                 try {
-                    val fullEpisode =
-                        mediaRepository
-                            .getItem(episode.id, fields = FieldSets.ITEM_DETAIL)
-                            ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
+                    if (isOffline()) {
+                        _selected.value = episode
+                        _watchlistStatus.value = false
+                        return@launch
+                    }
+                    val fullEpisode = loadFull(episode)
                     _selected.value = fullEpisode ?: episode
                     _watchlistStatus.value = (fullEpisode ?: episode).liked
                 } catch (e: CancellationException) {
@@ -78,8 +84,33 @@ class EpisodeSelection(
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load full episode details")
                     _selected.value = episode
+                    _watchlistStatus.value = false
                 }
             }
+    }
+
+    fun refresh(episode: AfinityEpisode) {
+        if (_selected.value?.id == episode.id) _selected.value = episode
+    }
+
+    private suspend fun loadFull(episode: AfinityEpisode): AfinityEpisode? {
+        val fallback = fallbackLoader
+        return try {
+            mediaRepository
+                .getItem(episode.id, fields = FieldSets.ITEM_DETAIL)
+                ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            if (fallback == null) throw e
+            try {
+                fallback(episode.id)
+            } catch (fallbackError: CancellationException) {
+                throw fallbackError
+            } catch (_: Exception) {
+                null
+            }
+        }
     }
 
     fun clear() {
@@ -90,7 +121,9 @@ class EpisodeSelection(
 
     fun toggleFavorite(episode: AfinityEpisode) {
         itemUserDataDelegate.toggleEpisodeFavorite(scope, episode) {
-            _selected.value = episode.copy(favorite = !episode.favorite)
+            val updated = episode.copy(favorite = !episode.favorite)
+            _selected.value = updated
+            onEpisodeUpdated(updated)
         }
     }
 
@@ -102,24 +135,31 @@ class EpisodeSelection(
             updateOptimisticUI = {
                 _watchlistStatus.value = !isLiked
                 _selected.value = _selected.value?.copy(liked = !isLiked)
+                onEpisodeUpdated(episode.copy(liked = !isLiked))
             },
             revertUI = {
                 _watchlistStatus.value = isLiked
                 _selected.value = _selected.value?.copy(liked = isLiked)
+                onEpisodeUpdated(episode.copy(liked = isLiked))
             },
         )
     }
 
     fun toggleWatched(episode: AfinityEpisode) {
         scope.launch {
-            _selected.value = episode.copy(played = !episode.played, playbackPositionTicks = 0)
+            val updated = episode.copy(played = !episode.played, playbackPositionTicks = 0)
+            _selected.value = updated
+            onEpisodeUpdated(updated)
             val success =
                 if (episode.played) {
                     userDataRepository.markUnwatched(episode.id)
                 } else {
                     userDataRepository.markWatched(episode.id)
                 }
-            if (!success) _selected.value = episode
+            if (!success) {
+                _selected.value = episode
+                onEpisodeUpdated(episode)
+            }
         }
     }
 }

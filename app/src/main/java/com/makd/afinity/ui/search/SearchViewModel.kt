@@ -34,7 +34,6 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
-import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.media.withUserDataFrom
 import com.makd.afinity.data.models.music.MusicSearchResults
 import com.makd.afinity.data.repository.AppDataRepository
@@ -48,6 +47,7 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.store.ItemStore
+import com.makd.afinity.ui.components.EpisodeSelection
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -56,7 +56,6 @@ import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -70,11 +69,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -116,22 +110,26 @@ constructor(
     private val _currentUser = MutableStateFlow<JellyseerrUser?>(null)
     val currentUser: StateFlow<JellyseerrUser?> = _currentUser.asStateFlow()
 
-    private val _selectedEpisode = MutableStateFlow<AfinityEpisode?>(null)
-    val selectedEpisode: StateFlow<AfinityEpisode?> = _selectedEpisode.asStateFlow()
+    private val episodeSelection =
+        EpisodeSelection(
+            scope = viewModelScope,
+            mediaRepository = mediaRepository,
+            userDataRepository = userDataRepository,
+            itemUserDataDelegate = itemUserDataDelegate,
+            downloadRepository = downloadRepository,
+            fallbackLoader = { episodeId ->
+                authRepository.currentUser.value?.id?.let {
+                    databaseRepository.getEpisode(episodeId, it)
+                }
+            },
+            onEpisodeUpdated = { episode -> updateItemInSearchResults(episode) },
+        )
 
-    private var episodeLoadJob: Job? = null
-    private var episodeLoadTarget: AfinityEpisode? = null
+    val selectedEpisode: StateFlow<AfinityEpisode?> = episodeSelection.selected
 
-    private val _isLoadingEpisode = MutableStateFlow(false)
-    val isLoadingEpisode: StateFlow<Boolean> = _isLoadingEpisode.asStateFlow()
+    val selectedEpisodeWatchlistStatus: StateFlow<Boolean> = episodeSelection.watchlistStatus
 
-    private val _selectedEpisodeWatchlistStatus = MutableStateFlow(false)
-    val selectedEpisodeWatchlistStatus: StateFlow<Boolean> =
-        _selectedEpisodeWatchlistStatus.asStateFlow()
-
-    private val _selectedEpisodeDownloadInfo = MutableStateFlow<DownloadInfo?>(null)
-    val selectedEpisodeDownloadInfo: StateFlow<DownloadInfo?> =
-        _selectedEpisodeDownloadInfo.asStateFlow()
+    val selectedEpisodeDownloadInfo: StateFlow<DownloadInfo?> = episodeSelection.downloadInfo
 
     private var searchJob: Job? = null
     private var episodeSearchJob: Job? = null
@@ -145,8 +143,6 @@ constructor(
     private var lastQueryAt = 0L
 
     init {
-        observeSelectedEpisodeDownload()
-
         viewModelScope.launch {
             searchQueryFlow.debounce(300.milliseconds).distinctUntilChanged().collectLatest { query
                 ->
@@ -231,10 +227,10 @@ constructor(
                         },
                     )
 
-                _selectedEpisode.value?.let { ep ->
+                episodeSelection.selected.value?.let { ep ->
                     val freshEpisode = resolved.firstOrNull { it.id == ep.id } as? AfinityEpisode
                     if (freshEpisode != null) {
-                        _selectedEpisode.value = freshEpisode
+                        episodeSelection.refresh(freshEpisode)
                     }
                 }
                 if (resolved.isNotEmpty()) {
@@ -244,114 +240,15 @@ constructor(
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private fun observeSelectedEpisodeDownload() {
-        _selectedEpisode
-            .map { it?.id }
-            .distinctUntilChanged()
-            .flatMapLatest { id ->
-                if (id == null) flowOf(null)
-                else
-                    downloadRepository.getAllDownloadsFlow().map { downloads ->
-                        downloads.find { it.itemId == id }
-                    }
-            }
-            .onEach { _selectedEpisodeDownloadInfo.value = it }
-            .launchIn(viewModelScope)
-    }
+    fun selectEpisode(episode: AfinityEpisode) = episodeSelection.select(episode)
 
-    fun selectEpisode(episode: AfinityEpisode) {
-        val alreadyLoading = episodeLoadJob?.isActive == true && episodeLoadTarget?.id == episode.id
-        if (alreadyLoading || _selectedEpisode.value?.id == episode.id) return
-        episodeLoadJob?.cancel()
-        episodeLoadTarget = episode
-        episodeLoadJob = viewModelScope.launch {
-            try {
-                _isLoadingEpisode.value = true
-                val fullEpisode =
-                    try {
-                        mediaRepository
-                            .getItem(episode.id, fields = FieldSets.ITEM_DETAIL)
-                            ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        try {
-                            authRepository.currentUser.value?.id?.let {
-                                databaseRepository.getEpisode(episode.id, it)
-                            }
-                        } catch (dbError: Exception) {
-                            null
-                        }
-                    }
-                _selectedEpisode.value = fullEpisode ?: episode
-                _selectedEpisodeWatchlistStatus.value = (fullEpisode ?: episode).liked
+    fun clearSelectedEpisode() = episodeSelection.clear()
 
-                _isLoadingEpisode.value = false
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                _selectedEpisode.value = episode
-                _selectedEpisodeWatchlistStatus.value = false
-                _isLoadingEpisode.value = false
-            }
-        }
-    }
+    fun toggleEpisodeFavorite(episode: AfinityEpisode) = episodeSelection.toggleFavorite(episode)
 
-    fun clearSelectedEpisode() {
-        _selectedEpisode.value = null
-        _selectedEpisodeWatchlistStatus.value = false
-        _selectedEpisodeDownloadInfo.value = null
-    }
+    fun toggleEpisodeWatchlist(episode: AfinityEpisode) = episodeSelection.toggleWatchlist(episode)
 
-    fun toggleEpisodeFavorite(episode: AfinityEpisode) {
-        itemUserDataDelegate.toggleEpisodeFavorite(viewModelScope, episode) {
-            _selectedEpisode.value = episode.copy(favorite = !episode.favorite)
-            updateItemInSearchResults(episode.copy(favorite = !episode.favorite))
-        }
-    }
-
-    fun toggleEpisodeWatchlist(episode: AfinityEpisode) {
-        val isLiked = _selectedEpisodeWatchlistStatus.value
-        itemUserDataDelegate.toggleWatchlist(
-            scope = viewModelScope,
-            item = episode,
-            updateOptimisticUI = {
-                _selectedEpisodeWatchlistStatus.value = !isLiked
-                _selectedEpisode.value = _selectedEpisode.value?.copy(liked = !isLiked)
-                updateItemInSearchResults(episode.copy(liked = !isLiked))
-            },
-            revertUI = {
-                _selectedEpisodeWatchlistStatus.value = isLiked
-                _selectedEpisode.value = _selectedEpisode.value?.copy(liked = isLiked)
-                updateItemInSearchResults(episode.copy(liked = isLiked))
-            },
-        )
-    }
-
-    fun toggleEpisodeWatched(episode: AfinityEpisode) {
-        viewModelScope.launch {
-            try {
-                val isNowPlayed = !episode.played
-                val updatedEpisode = episode.copy(played = isNowPlayed, playbackPositionTicks = 0)
-                _selectedEpisode.value = updatedEpisode
-                updateItemInSearchResults(updatedEpisode)
-
-                val success =
-                    if (episode.played) userDataRepository.markUnwatched(episode.id)
-                    else userDataRepository.markWatched(episode.id)
-
-                if (!success) {
-                    _selectedEpisode.value = episode
-                    updateItemInSearchResults(episode)
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                _selectedEpisode.value = episode
-            }
-        }
-    }
+    fun toggleEpisodeWatched(episode: AfinityEpisode) = episodeSelection.toggleWatched(episode)
 
     private fun cancelAllSearchJobs() {
         searchJob?.cancel()

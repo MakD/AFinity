@@ -40,12 +40,10 @@ import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.ContinueWatchingOrder
 import com.makd.afinity.data.models.media.ItemFilterCriteria
-import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.DatabaseRepository
-import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.audiobookshelf.AbsDownloadRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
@@ -53,11 +51,11 @@ import com.makd.afinity.data.repository.home.HomeLayoutPreferencesRepository
 import com.makd.afinity.data.repository.home.HomeSectionsRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
-import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.data.workers.HomeDataReloadWorker
 import com.makd.afinity.navigation.Destination
+import com.makd.afinity.ui.components.EpisodeSelection
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import com.makd.afinity.ui.utils.IntentUtils
 import com.makd.afinity.util.requireServerNetwork
@@ -75,7 +73,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
@@ -85,8 +82,6 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -100,7 +95,6 @@ constructor(
     @param:ApplicationContext private val context: Context,
     private val appDataRepository: AppDataRepository,
     private val userDataRepository: UserDataRepository,
-    private val watchlistRepository: WatchlistRepository,
     private val databaseRepository: DatabaseRepository,
     private val downloadRepository: DownloadRepository,
     private val absDownloadRepository: AbsDownloadRepository,
@@ -724,71 +718,25 @@ constructor(
         }
     }
 
-    private val _selectedEpisode = MutableStateFlow<AfinityEpisode?>(null)
-    val selectedEpisode: StateFlow<AfinityEpisode?> = _selectedEpisode.asStateFlow()
+    private val episodeSelection =
+        EpisodeSelection(
+            scope = viewModelScope,
+            mediaRepository = mediaRepository,
+            userDataRepository = userDataRepository,
+            itemUserDataDelegate = itemUserDataDelegate,
+            downloadRepository = downloadRepository,
+            isOffline = { offlineModeManager.isOffline.first() },
+        )
 
-    private var episodeLoadJob: Job? = null
-    private var episodeLoadTarget: AfinityEpisode? = null
+    val selectedEpisode: StateFlow<AfinityEpisode?> = episodeSelection.selected
 
-    private val _selectedEpisodeWatchlistStatus = MutableStateFlow(false)
-    val selectedEpisodeWatchlistStatus: StateFlow<Boolean> =
-        _selectedEpisodeWatchlistStatus.asStateFlow()
+    val selectedEpisodeWatchlistStatus: StateFlow<Boolean> = episodeSelection.watchlistStatus
 
-    private val _isLoadingEpisode = MutableStateFlow(false)
-    val isLoadingEpisode: StateFlow<Boolean> = _isLoadingEpisode.asStateFlow()
+    val selectedEpisodeDownloadInfo: StateFlow<DownloadInfo?> = episodeSelection.downloadInfo
 
-    val selectedEpisodeDownloadInfo: StateFlow<DownloadInfo?> =
-        _selectedEpisode
-            .flatMapLatest { episode ->
-                if (episode == null) {
-                    flowOf(null)
-                } else {
-                    downloadRepository.getAllDownloadsFlow().map { downloads ->
-                        downloads.find { it.itemId == episode.id }
-                    }
-                }
-            }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    fun selectEpisode(episode: AfinityEpisode) = episodeSelection.select(episode)
 
-    fun selectEpisode(episode: AfinityEpisode) {
-        val alreadyLoading = episodeLoadJob?.isActive == true && episodeLoadTarget?.id == episode.id
-        if (alreadyLoading || _selectedEpisode.value?.id == episode.id) return
-        episodeLoadJob?.cancel()
-        episodeLoadTarget = episode
-        episodeLoadJob = viewModelScope.launch {
-            try {
-                _isLoadingEpisode.value = true
-
-                if (offlineModeManager.isOffline.first()) {
-                    _selectedEpisode.value = episode
-                    _selectedEpisodeWatchlistStatus.value = false
-                    _isLoadingEpisode.value = false
-                    return@launch
-                }
-
-                val fullEpisode =
-                    mediaRepository
-                        .getItem(episode.id, fields = FieldSets.ITEM_DETAIL)
-                        ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
-
-                _selectedEpisode.value = fullEpisode ?: episode
-                _selectedEpisodeWatchlistStatus.value = (fullEpisode ?: episode).liked
-
-                _isLoadingEpisode.value = false
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load full episode details")
-                _selectedEpisode.value = episode
-                _isLoadingEpisode.value = false
-            }
-        }
-    }
-
-    fun clearSelectedEpisode() {
-        _selectedEpisode.value = null
-        _selectedEpisodeWatchlistStatus.value = false
-    }
+    fun clearSelectedEpisode() = episodeSelection.clear()
 
     suspend fun getRandomUnwatchedItem(): AfinityItem? {
         if (!_isFetchingRandomItem.compareAndSet(expect = false, update = true)) return null
@@ -814,73 +762,11 @@ constructor(
         }
     }
 
-    fun toggleEpisodeFavorite(episode: AfinityEpisode) {
-        itemUserDataDelegate.toggleEpisodeFavorite(viewModelScope, episode) {
-            _selectedEpisode.value = episode.copy(favorite = !episode.favorite)
-        }
-    }
+    fun toggleEpisodeFavorite(episode: AfinityEpisode) = episodeSelection.toggleFavorite(episode)
 
-    fun toggleEpisodeWatchlist(episode: AfinityEpisode) {
-        viewModelScope.launch {
-            try {
-                val isInWatchlist = _selectedEpisodeWatchlistStatus.value
+    fun toggleEpisodeWatchlist(episode: AfinityEpisode) = episodeSelection.toggleWatchlist(episode)
 
-                _selectedEpisodeWatchlistStatus.value = !isInWatchlist
-
-                val success =
-                    if (isInWatchlist) {
-                        watchlistRepository.removeFromWatchlist(episode.id)
-                    } else {
-                        watchlistRepository.addToWatchlist(episode.id, "EPISODE")
-                    }
-
-                if (!success) {
-                    _selectedEpisodeWatchlistStatus.value = isInWatchlist
-                    Timber.w("Failed to toggle watchlist status")
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Error toggling episode watchlist")
-                try {
-                    val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
-                    _selectedEpisodeWatchlistStatus.value = isInWatchlist
-                } catch (e2: Exception) {
-                    Timber.e(e2, "Failed to reload watchlist status")
-                }
-            }
-        }
-    }
-
-    fun toggleEpisodeWatched(episode: AfinityEpisode) {
-        viewModelScope.launch {
-            try {
-                val isNowPlayed = !episode.played
-                val updatedEpisode =
-                    episode.copy(
-                        played = isNowPlayed,
-                        playbackPositionTicks = if (!isNowPlayed) episode.runtimeTicks else 0,
-                    )
-                _selectedEpisode.value = updatedEpisode
-
-                val success =
-                    if (episode.played) {
-                        userDataRepository.markUnwatched(episode.id)
-                    } else {
-                        userDataRepository.markWatched(episode.id)
-                    }
-
-                if (!success) {
-                    _selectedEpisode.value = episode
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Error toggling episode watched status")
-                _selectedEpisode.value = episode
-            }
-        }
-    }
+    fun toggleEpisodeWatched(episode: AfinityEpisode) = episodeSelection.toggleWatched(episode)
 
     fun onPlayTrailerClick(context: Context, item: AfinityItem) {
         Timber.d("Play trailer clicked: ${item.name}")
