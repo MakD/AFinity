@@ -11,7 +11,10 @@ import com.makd.afinity.data.manager.MediaRefreshBus
 import com.makd.afinity.data.manager.RefreshTrigger
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.manager.UserImageStore
+import com.makd.afinity.data.models.CustomSectionSourceType
 import com.makd.afinity.data.models.GenreItem
+import com.makd.afinity.data.models.HeroContentMode
+import com.makd.afinity.data.models.HeroContentSource
 import com.makd.afinity.data.models.HomeRow
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
@@ -151,6 +154,9 @@ constructor(
 
     private val _heroLoaded = MutableStateFlow(false)
     val heroLoaded: StateFlow<Boolean> = _heroLoaded.asStateFlow()
+
+    private val _heroSettings = MutableStateFlow(HeroContentSource())
+    val heroSettings: StateFlow<HeroContentSource> = _heroSettings.asStateFlow()
 
     private val _libraries = MutableStateFlow<List<AfinityCollection>>(emptyList())
     val libraries: StateFlow<List<AfinityCollection>> = _libraries.asStateFlow()
@@ -887,28 +893,233 @@ constructor(
         return merged
     }
 
-    private suspend fun loadHeroCarousel(): List<AfinityItem> {
-        return try {
-            val baseUrl = mediaRepository.getBaseUrl()
-            val randomHeroItems =
-                mediaRepository.getItems(
-                    includeItemTypes = listOf("MOVIE", "SERIES"),
-                    sortBy = SortBy.RANDOM,
-                    sortDescending = false,
-                    limit = 15,
-                    fields = FieldSets.HERO_CAROUSEL,
-                    imageTypes = listOf("Logo", "Backdrop"),
-                    criteria = ItemFilterCriteria(isPlayed = false, hasOverview = true),
-                )
+    fun reloadHeroCarousel() {
+        scope.launch {
+            try {
+                _heroCarouselItems.value = loadHeroCarousel()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Hero carousel reload failed")
+            }
+        }
+    }
 
-            randomHeroItems.items.mapNotNull { it.toAfinityItem(baseUrl) }
+    private suspend fun loadHeroCarousel(): List<AfinityItem> {
+        val session = sessionManager.currentSession.value
+        val source =
+            if (session == null) HeroContentSource()
+            else
+                preferencesRepository.getHeroContentSource(
+                    session.serverId,
+                    session.userId.toString(),
+                )
+        _heroSettings.value = source
+        val items =
+            try {
+                when (source.mode) {
+                    HeroContentMode.RANDOM -> loadHeroItems(SortBy.RANDOM, source)
+                    HeroContentMode.RECENTLY_ADDED -> loadHeroItems(SortBy.DATE_ADDED, source)
+                    HeroContentMode.RECOMMENDED -> loadRecommendedHeroItems(source)
+                    HeroContentMode.COLLECTION,
+                    HeroContentMode.CUSTOM_FILTER -> loadCustomHeroItems(source)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load ${source.mode} hero carousel items")
+                emptyList()
+            }
+        if (items.isNotEmpty() || source.mode == HeroContentMode.RANDOM) return items
+        return try {
+            loadHeroItems(SortBy.RANDOM, source)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Timber.e(e, "Failed to load hero carousel items")
+            Timber.e(e, "Failed to load fallback hero carousel items")
             emptyList()
         }
     }
+
+    private suspend fun loadHeroItems(
+        sortBy: SortBy,
+        source: HeroContentSource,
+    ): List<AfinityItem> = coroutineScope {
+        val baseUrl = mediaRepository.getBaseUrl()
+        val limit = source.heroLimit()
+        val criteria =
+            ItemFilterCriteria(
+                isPlayed = if (source.includeWatched) null else false,
+                hasOverview = true,
+                maxOfficialRating = source.maxOfficialRating,
+            )
+        val parents: List<UUID?> = source.libraryUuids.ifEmpty { listOf(null) }
+        val items =
+            parents
+                .map { parentId ->
+                    async {
+                        mediaRepository
+                            .getItems(
+                                parentId = parentId,
+                                includeItemTypes = listOf("MOVIE", "SERIES"),
+                                sortBy = sortBy,
+                                sortDescending = sortBy == SortBy.DATE_ADDED,
+                                limit = limit,
+                                fields = FieldSets.HERO_CAROUSEL,
+                                imageTypes = listOf("Logo", "Backdrop"),
+                                recursive = if (parentId == null) null else true,
+                                criteria = criteria,
+                            )
+                            .items
+                            .mapNotNull { it.toAfinityItem(baseUrl) }
+                    }
+                }
+                .awaitAll()
+                .flatten()
+                .distinctBy { it.id }
+        if (parents.size == 1) items
+        else {
+            when (sortBy) {
+                SortBy.DATE_ADDED -> items.sortedByDescending { it.heroDateAdded() }
+                else -> items.shuffled()
+            }.take(limit)
+        }
+    }
+
+    private suspend fun loadRecommendedHeroItems(source: HeroContentSource): List<AfinityItem> =
+        coroutineScope {
+            val libraries = source.libraryUuids
+            val parents: List<UUID?> = libraries.ifEmpty { listOf(null) }
+            val movieRecommendations = parents.map { parentId ->
+                async {
+                    mediaRepository.getMovieRecommendations(
+                        parentId = parentId,
+                        categoryLimit = HERO_RECOMMENDATION_CATEGORIES,
+                        fields = FieldSets.HERO_CAROUSEL,
+                    )
+                }
+            }
+            val allowedSeries = if (libraries.isEmpty()) null else async { seriesIdsIn(libraries) }
+            val similarToRecent = async {
+                parents
+                    .map { parentId ->
+                        async {
+                            mediaRepository
+                                .getItems(
+                                    parentId = parentId,
+                                    includeItemTypes =
+                                        if (libraries.isEmpty()) listOf("MOVIE", "EPISODE")
+                                        else listOf("EPISODE"),
+                                    sortBy = SortBy.DATE_PLAYED,
+                                    sortDescending = true,
+                                    limit = HERO_RECOMMENDATION_SEEDS,
+                                    recursive = if (parentId == null) null else true,
+                                    criteria = ItemFilterCriteria(isPlayed = true),
+                                )
+                                .items
+                        }
+                    }
+                    .awaitAll()
+                    .flatten()
+                    .sortedByDescending { it.userData?.lastPlayedDate }
+                    .map { it.seriesId ?: it.id }
+                    .distinct()
+                    .take(HERO_RECOMMENDATION_SEEDS)
+                    .map { seedId ->
+                        async {
+                            mediaRepository.getSimilarItems(
+                                itemId = seedId,
+                                limit = 10,
+                                fields = FieldSets.HERO_CAROUSEL,
+                            )
+                        }
+                    }
+                    .awaitAll()
+                    .flatten()
+            }
+            val allowed = allowedSeries?.await()
+            val similar =
+                similarToRecent.await().let { found ->
+                    if (allowed == null) found else found.filter { it.id in allowed }
+                }
+            val candidates =
+                (movieRecommendations.awaitAll().flatten() + similar)
+                    .filter { it is AfinityMovie || it is AfinityShow }
+                    .filter { source.includeWatched || !it.played }
+                    .filter { it.images.logo != null && it.images.backdrop != null }
+                    .distinctBy { it.id }
+            withinRating(candidates, source.maxOfficialRating).shuffled().take(source.heroLimit())
+        }
+
+    private suspend fun loadCustomHeroItems(source: HeroContentSource): List<AfinityItem> {
+        val section = source.toCustomSection() ?: return emptyList()
+        val items =
+            homeSectionsRepository
+                .fetchCustomSectionItems(
+                    section = section,
+                    limit = source.heroLimit(),
+                    fields = FieldSets.HERO_CAROUSEL,
+                    imageTypes = listOf("Logo", "Backdrop"),
+                    maxOfficialRating = source.maxOfficialRating,
+                )
+                .filter { it.images.logo != null && it.images.backdrop != null }
+        return if (section.sourceType == CustomSectionSourceType.PLAYLIST) {
+            withinRating(items, source.maxOfficialRating)
+        } else {
+            items
+        }
+    }
+
+    private suspend fun seriesIdsIn(libraries: List<UUID>): Set<UUID> = coroutineScope {
+        libraries
+            .map { libraryId ->
+                async {
+                    mediaRepository
+                        .getItems(
+                            parentId = libraryId,
+                            includeItemTypes = listOf("SERIES"),
+                            recursive = true,
+                            fields = emptyList(),
+                        )
+                        .items
+                        .map { it.id }
+                }
+            }
+            .awaitAll()
+            .flatten()
+            .toSet()
+    }
+
+    private suspend fun withinRating(
+        items: List<AfinityItem>,
+        maxOfficialRating: String?,
+    ): List<AfinityItem> {
+        if (maxOfficialRating == null || items.isEmpty()) return items
+        val allowed =
+            mediaRepository
+                .getItems(
+                    fields = emptyList(),
+                    criteria =
+                        ItemFilterCriteria(
+                            ids = items.map { it.id },
+                            maxOfficialRating = maxOfficialRating,
+                        ),
+                )
+                .items
+                .map { it.id }
+                .toSet()
+        return items.filter { it.id in allowed }
+    }
+
+    private fun HeroContentSource.heroLimit(): Int =
+        slideCount.coerceIn(HeroContentSource.MIN_SLIDE_COUNT, HeroContentSource.MAX_SLIDE_COUNT)
+
+    private fun AfinityItem.heroDateAdded() =
+        when (this) {
+            is AfinityMovie -> dateCreated
+            is AfinityShow -> dateCreated
+            else -> null
+        }
 
     private suspend fun loadLibraries(reportFailure: Boolean = false): List<AfinityCollection> {
         return mediaRepository.getLibrariesResult().getOrElse { e ->
@@ -1652,6 +1863,7 @@ constructor(
         itemStore.clear()
         _heroCarouselItems.value = emptyList()
         _heroLoaded.value = false
+        _heroSettings.value = HeroContentSource()
         _libraries.value = emptyList()
         _latestMovies.value = emptyList()
         _latestTvSeries.value = emptyList()
@@ -1689,6 +1901,8 @@ constructor(
         const val LATEST_RETAINED = 25
         const val LATEST_DISPLAYED = 15
         const val COMBINED_LATEST_FETCH = 60
+        private const val HERO_RECOMMENDATION_CATEGORIES = 4
+        private const val HERO_RECOMMENDATION_SEEDS = 3
         private const val REINSERT_REFRESH_COOLDOWN_MS = 5_000L
         private const val PLAYBACK_SECTIONS_COALESCE_MS = 5_000L
         private const val FAVORITES_RECOUNT_DEBOUNCE_MS = 2_000L

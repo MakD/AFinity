@@ -1,5 +1,7 @@
 package com.makd.afinity.data.models.media
 
+import java.util.UUID
+
 data class ItemFilterCriteria(
     val genres: List<String> = emptyList(),
     val years: List<Int> = emptyList(),
@@ -23,6 +25,8 @@ data class ItemFilterCriteria(
     val is3d: Boolean? = null,
     val audioLanguages: List<String> = emptyList(),
     val subtitleLanguages: List<String> = emptyList(),
+    val maxOfficialRating: String? = null,
+    val ids: List<UUID> = emptyList(),
 )
 
 fun LibraryFilters.toItemFilterCriteria(studios: List<String> = emptyList()): ItemFilterCriteria =

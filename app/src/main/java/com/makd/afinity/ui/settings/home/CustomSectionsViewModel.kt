@@ -4,18 +4,22 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.CustomHomeSection
 import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.CustomSectionSourceType
 import com.makd.afinity.data.models.DiscoveryConfig
 import com.makd.afinity.data.models.DiscoveryDensity
 import com.makd.afinity.data.models.DiscoverySection
+import com.makd.afinity.data.models.HeroContentSource
 import com.makd.afinity.data.models.HomeRow
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.LibraryFilterOptions
+import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.GenreRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.home.CustomHomeSectionsRepository
 import com.makd.afinity.data.repository.home.HomeLayoutPreferencesRepository
 import com.makd.afinity.data.repository.media.MediaRepository
@@ -24,15 +28,19 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jellyfin.sdk.model.api.MediaType
 import timber.log.Timber
 
 enum class SourceLoadState {
@@ -45,6 +53,7 @@ data class SourceOption(
     val value: String,
     val label: String,
     val libraryType: CollectionType? = null,
+    val isAudio: Boolean = false,
 )
 
 data class CustomSectionsUiState(
@@ -60,6 +69,8 @@ data class CustomSectionsUiState(
     val canAddMore: Boolean = true,
     val hiddenRows: Set<HomeRow> = emptySet(),
     val discovery: DiscoveryConfig = DiscoveryConfig(),
+    val heroSource: HeroContentSource = HeroContentSource(),
+    val parentalRatings: List<String> = emptyList(),
 ) {
     fun stateFor(sourceType: CustomSectionSourceType): SourceLoadState? = sourceStates[sourceType]
 
@@ -84,6 +95,7 @@ data class CustomSectionsUiState(
     }
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CustomSectionsViewModel
 @Inject
@@ -92,6 +104,9 @@ constructor(
     private val homeLayoutPreferencesRepository: HomeLayoutPreferencesRepository,
     private val mediaRepository: MediaRepository,
     private val genreRepository: GenreRepository,
+    private val preferencesRepository: PreferencesRepository,
+    private val sessionManager: SessionManager,
+    private val appDataRepository: AppDataRepository,
 ) : ViewModel() {
 
     private val _pendingTemplate = MutableStateFlow<CustomHomeSection?>(null)
@@ -128,6 +143,48 @@ constructor(
             homeLayoutPreferencesRepository.discoveryConfig.collect { config ->
                 _uiState.update { it.copy(discovery = config) }
             }
+        }
+
+        viewModelScope.launch {
+            sessionManager.currentSession
+                .flatMapLatest { session ->
+                    if (session == null) flowOf(HeroContentSource())
+                    else
+                        preferencesRepository.getHeroContentSourceFlow(
+                            session.serverId,
+                            session.userId.toString(),
+                        )
+                }
+                .collect { source ->
+                    _uiState.update { it.copy(heroSource = source) }
+                    source.sourceType?.takeIf { it.usesItemIds }?.let { ensureSourcesLoaded(it) }
+                }
+        }
+    }
+
+    fun ensureParentalRatingsLoaded() {
+        if (_uiState.value.parentalRatings.isNotEmpty()) return
+        viewModelScope.launch {
+            val ratings =
+                mediaRepository
+                    .getParentalRatings()
+                    .filter { it.value != null }
+                    .sortedBy { it.value }
+                    .map { it.name }
+                    .distinct()
+            _uiState.update { it.copy(parentalRatings = ratings) }
+        }
+    }
+
+    fun saveHeroSource(source: HeroContentSource) {
+        val session = sessionManager.currentSession.value ?: return
+        viewModelScope.launch {
+            preferencesRepository.setHeroContentSource(
+                session.serverId,
+                session.userId.toString(),
+                source,
+            )
+            appDataRepository.reloadHeroCarousel()
         }
     }
 
@@ -370,7 +427,11 @@ constructor(
                 .items
                 .mapNotNull { dto ->
                     val name = dto.name ?: return@mapNotNull null
-                    SourceOption(dto.id.toString(), name)
+                    SourceOption(
+                        value = dto.id.toString(),
+                        label = name,
+                        isAudio = dto.mediaType == MediaType.AUDIO,
+                    )
                 }
                 .distinctBy { it.value }
                 .sortedBy { it.label.lowercase() }

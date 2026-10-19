@@ -27,6 +27,7 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
+import org.jellyfin.sdk.model.api.ParentalRating
 
 interface MediaRepository {
 
@@ -306,6 +307,15 @@ interface MediaRepository {
         limit: Int = 32,
         fields: List<ItemFields>? = null,
     ): List<AfinityMovie>
+
+    suspend fun getMovieRecommendations(
+        parentId: UUID? = null,
+        categoryLimit: Int = 6,
+        itemLimit: Int = 10,
+        fields: List<ItemFields>? = null,
+    ): List<AfinityItem>
+
+    suspend fun getParentalRatings(): List<ParentalRating>
 
     suspend fun getBoxSetsContaining(
         itemId: UUID,

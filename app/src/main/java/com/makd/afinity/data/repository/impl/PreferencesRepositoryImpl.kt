@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.makd.afinity.data.models.HeroContentSource
 import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.common.DrawerLibrariesMode
@@ -44,12 +45,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.Json
+import timber.log.Timber
 
 @Singleton
 class PreferencesRepositoryImpl
 @Inject
 constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>) :
     PreferencesRepository {
+
+    private val heroSourceCodec = Json { ignoreUnknownKeys = true }
 
     private object Keys {
         val CURRENT_SERVER_ID = stringPreferencesKey("current_server_id")
@@ -1351,6 +1356,35 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
     override suspend fun setNavHasLiveTv(serverId: String, userId: String, hasLiveTv: Boolean) {
         dataStore.edit { it[navHasLiveTvKey(serverId, userId)] = hasLiveTv }
+    }
+
+    private fun heroContentSourceKey(serverId: String, userId: String) =
+        stringPreferencesKey("hero_content_source_${serverId}_$userId")
+
+    private fun decodeHeroContentSource(raw: String?): HeroContentSource =
+        raw?.let {
+            runCatching { heroSourceCodec.decodeFromString<HeroContentSource>(it) }
+                .onFailure { e -> Timber.w(e, "Dropping unreadable hero carousel source") }
+                .getOrNull()
+        } ?: HeroContentSource()
+
+    override suspend fun getHeroContentSource(serverId: String, userId: String): HeroContentSource =
+        decodeHeroContentSource(dataStore.data.first()[heroContentSourceKey(serverId, userId)])
+
+    override fun getHeroContentSourceFlow(
+        serverId: String,
+        userId: String,
+    ): Flow<HeroContentSource> =
+        dataStore.data.map { decodeHeroContentSource(it[heroContentSourceKey(serverId, userId)]) }
+
+    override suspend fun setHeroContentSource(
+        serverId: String,
+        userId: String,
+        source: HeroContentSource,
+    ) {
+        dataStore.edit {
+            it[heroContentSourceKey(serverId, userId)] = heroSourceCodec.encodeToString(source)
+        }
     }
 
     override suspend fun setVideoCacheSizeMb(sizeMb: Int) {

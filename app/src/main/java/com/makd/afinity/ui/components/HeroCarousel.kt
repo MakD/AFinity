@@ -36,11 +36,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
@@ -68,6 +70,8 @@ import androidx.compose.ui.unit.sp
 import coil3.imageLoader
 import coil3.request.ImageRequest
 import com.makd.afinity.R
+import com.makd.afinity.data.models.HeroContentSource
+import com.makd.afinity.data.models.HeroIndicator
 import com.makd.afinity.data.models.common.HeroStyle
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
@@ -162,6 +166,8 @@ private val HeroPeekPortraitScrim =
 
 private val HeroPeekLandscapeBottomScrim =
     Brush.verticalGradient(0.5f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.51f))
+
+private val LocalHeroIndicator = staticCompositionLocalOf { HeroIndicator.DOTS }
 
 private data class HeroPeekMetrics(val top: Dp, val cardHeight: Dp, val indicatorHeight: Dp) {
     val total: Dp
@@ -329,6 +335,8 @@ fun HeroCarousel(
     onMoreInformationClick: (AfinityItem) -> Unit,
     modifier: Modifier = Modifier,
     isScrolling: Boolean = false,
+    slideSeconds: Int = HeroContentSource.DEFAULT_SLIDE_SECONDS,
+    indicator: HeroIndicator = HeroIndicator.DOTS,
 ) {
     if (items.isEmpty()) return
 
@@ -366,36 +374,39 @@ fun HeroCarousel(
         pagerState = pagerState,
         items = items,
         isScrolling = isScrolling,
+        slideSeconds = slideSeconds,
         logoWidthPx = with(density) { logoSize.width.toPx().toInt() },
         logoHeightPx = with(density) { logoSize.height.toPx().toInt() },
     )
 
-    if (isCard) {
-        HeroCardCarousel(
-            pagerState = pagerState,
-            items = items,
-            metrics = heroPeekMetrics(screenHeightDp, isLandscape),
-            isLandscape = isLandscape,
-            peek = peek,
-            cardWidth = cardWidth,
-            logoSize = logoSize,
-            onWatchNowClick = onWatchNowClick,
-            onPlayTrailerClick = onPlayTrailerClick,
-            onMoreInformationClick = onMoreInformationClick,
-            modifier = modifier,
-        )
-    } else {
-        HeroFullBleed(
-            pagerState = pagerState,
-            items = items,
-            isLandscape = isLandscape,
-            screenWidthDp = screenWidthDp,
-            screenHeightDp = screenHeightDp,
-            onWatchNowClick = onWatchNowClick,
-            onPlayTrailerClick = onPlayTrailerClick,
-            onMoreInformationClick = onMoreInformationClick,
-            modifier = modifier,
-        )
+    CompositionLocalProvider(LocalHeroIndicator provides indicator) {
+        if (isCard) {
+            HeroCardCarousel(
+                pagerState = pagerState,
+                items = items,
+                metrics = heroPeekMetrics(screenHeightDp, isLandscape),
+                isLandscape = isLandscape,
+                peek = peek,
+                cardWidth = cardWidth,
+                logoSize = logoSize,
+                onWatchNowClick = onWatchNowClick,
+                onPlayTrailerClick = onPlayTrailerClick,
+                onMoreInformationClick = onMoreInformationClick,
+                modifier = modifier,
+            )
+        } else {
+            HeroFullBleed(
+                pagerState = pagerState,
+                items = items,
+                isLandscape = isLandscape,
+                screenWidthDp = screenWidthDp,
+                screenHeightDp = screenHeightDp,
+                onWatchNowClick = onWatchNowClick,
+                onPlayTrailerClick = onPlayTrailerClick,
+                onMoreInformationClick = onMoreInformationClick,
+                modifier = modifier,
+            )
+        }
     }
 }
 
@@ -520,6 +531,7 @@ private fun HeroCarouselAutoScrollAndPrefetch(
     pagerState: PagerState,
     items: List<AfinityItem>,
     isScrolling: Boolean,
+    slideSeconds: Int,
     logoWidthPx: Int,
     logoHeightPx: Int,
 ) {
@@ -527,7 +539,7 @@ private fun HeroCarouselAutoScrollAndPrefetch(
     val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
     val skipServerResize = LocalSkipServerImageResize.current
 
-    LaunchedEffect(pagerState.settledPage, isScrolling, isDragged) {
+    LaunchedEffect(pagerState.settledPage, isScrolling, isDragged, slideSeconds) {
         if (!isDragged && !isScrolling && items.size > 1) {
             if (
                 !pagerState.isScrollInProgress &&
@@ -540,7 +552,9 @@ private fun HeroCarouselAutoScrollAndPrefetch(
                 }
             }
 
-            delay(5.seconds)
+            if (slideSeconds <= 0) return@LaunchedEffect
+
+            delay(slideSeconds.seconds)
 
             try {
                 pagerState.animateScrollToPage(
@@ -989,15 +1003,31 @@ private fun HeroRoundButton(
 
 @Composable
 private fun HeroPagerIndicator(pagerState: PagerState, size: Int, modifier: Modifier = Modifier) {
-    WormPagerIndicator(
-        pageCount = size,
-        pageFractionProvider = {
-            pagerState.currentPage % size + pagerState.currentPageOffsetFraction
-        },
-        activeColor = MaterialTheme.colorScheme.primary,
-        inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-        modifier = modifier,
-    )
+    when (LocalHeroIndicator.current) {
+        HeroIndicator.DOTS ->
+            WormPagerIndicator(
+                pageCount = size,
+                pageFractionProvider = {
+                    pagerState.currentPage % size + pagerState.currentPageOffsetFraction
+                },
+                activeColor = MaterialTheme.colorScheme.primary,
+                inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                modifier = modifier,
+            )
+        HeroIndicator.COUNTER ->
+            Text(
+                text =
+                    stringResource(
+                        R.string.hero_indicator_counter_fmt,
+                        pagerState.currentPage % size + 1,
+                        size,
+                    ),
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = modifier,
+            )
+        HeroIndicator.HIDDEN -> Unit
+    }
 }
 
 @Composable

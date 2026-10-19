@@ -19,6 +19,7 @@ import com.makd.afinity.data.manager.resolveTargetItem
 import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.GenreType
+import com.makd.afinity.data.models.HeroContentSource
 import com.makd.afinity.data.models.HomeRow
 import com.makd.afinity.data.models.HomeSectionContent
 import com.makd.afinity.data.models.HomeSectionDescriptor
@@ -170,6 +171,12 @@ constructor(
         viewModelScope.launch {
             appDataRepository.heroLoaded.collect { loaded ->
                 _uiState.update { it.copy(heroLoaded = loaded) }
+            }
+        }
+
+        viewModelScope.launch {
+            appDataRepository.heroSettings.collect { settings ->
+                _uiState.update { it.copy(heroSettings = settings) }
             }
         }
 
@@ -959,6 +966,7 @@ private fun HomeSectionDescriptor.toHomeSection(content: HomeSectionContent?): H
 data class HomeUiState(
     val heroCarouselItems: List<AfinityItem> = emptyList(),
     val heroLoaded: Boolean = false,
+    val heroSettings: HeroContentSource = HeroContentSource(),
     val continueWatching: List<AfinityItem> = emptyList(),
     val offlineContinueWatching: List<AfinityItem> = emptyList(),
     val nextUp: List<AfinityEpisode> = emptyList(),

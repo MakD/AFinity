@@ -1,5 +1,6 @@
 package com.makd.afinity.data.repository
 
+import com.makd.afinity.data.models.HeroContentSource
 import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.common.DrawerLibrariesMode
@@ -246,6 +247,12 @@ interface PreferencesRepository {
     suspend fun getNavHasLiveTv(serverId: String, userId: String): Boolean?
 
     suspend fun setNavHasLiveTv(serverId: String, userId: String, hasLiveTv: Boolean)
+
+    suspend fun getHeroContentSource(serverId: String, userId: String): HeroContentSource
+
+    fun getHeroContentSourceFlow(serverId: String, userId: String): Flow<HeroContentSource>
+
+    suspend fun setHeroContentSource(serverId: String, userId: String, source: HeroContentSource)
 
     suspend fun setVideoCacheSizeMb(sizeMb: Int)
 

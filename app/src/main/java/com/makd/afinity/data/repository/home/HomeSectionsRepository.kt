@@ -1235,64 +1235,13 @@ constructor(
             }
         }
 
-        val sourceId =
-            when (section.sourceType) {
-                CustomSectionSourceType.COLLECTION,
-                CustomSectionSourceType.PLAYLIST,
-                CustomSectionSourceType.LIBRARY ->
-                    try {
-                        UUID.fromString(section.primarySourceValue.orEmpty())
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        Timber.w(e, "Custom section ${section.id} has an invalid source id")
-                        return HomeSectionContent.Empty
-                    }
-                else -> null
-            }
-
-        val refinement = section.filters.toItemFilterCriteria()
-        val criteria =
-            when (section.sourceType) {
-                CustomSectionSourceType.GENRE ->
-                    refinement.copy(genres = (refinement.genres + section.sourceValues).distinct())
-                CustomSectionSourceType.STUDIO -> refinement.copy(studios = section.sourceValues)
-                CustomSectionSourceType.TAG ->
-                    refinement.copy(tags = (refinement.tags + section.sourceValues).distinct())
-                else -> refinement
-            }
-
-        val fetchLimit = section.itemLimit
-
         val items =
             try {
-                if (section.sourceType == CustomSectionSourceType.PLAYLIST && sourceId != null) {
-                    mediaRepository
-                        .getPlaylistItems(sourceId, fields = FieldSets.MEDIA_ITEM_CARDS)
-                        .filter { it.type.name in section.includeItemTypes }
-                        .let { if (section.randomOrder) it.shuffled() else it }
-                        .take(fetchLimit)
-                        .mapNotNull { it.toAfinityItem(baseUrl) }
-                } else {
-                    mediaRepository
-                        .getItems(
-                            parentId = sourceId,
-                            sortBy = if (section.randomOrder) SortBy.RANDOM else section.sortBy,
-                            sortDescending = section.sortDescending,
-                            limit = fetchLimit,
-                            includeItemTypes = section.includeItemTypes,
-                            fields = FieldSets.MEDIA_ITEM_CARDS,
-                            recursive =
-                                when (section.sourceType) {
-                                    CustomSectionSourceType.LIBRARY -> true
-                                    CustomSectionSourceType.COLLECTION -> false
-                                    else -> null
-                                },
-                            criteria = criteria,
-                        )
-                        .items
-                        .mapNotNull { it.toAfinityItem(baseUrl) }
-                }
+                fetchCustomSectionItems(
+                    section = section,
+                    limit = section.itemLimit,
+                    fields = FieldSets.MEDIA_ITEM_CARDS,
+                )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -1313,6 +1262,72 @@ constructor(
             homeCacheRepository.putItems(cacheKey, items)
         }
         return HomeSectionContent.Items(items.take(section.itemLimit))
+    }
+
+    suspend fun fetchCustomSectionItems(
+        section: CustomHomeSection,
+        limit: Int,
+        fields: List<ItemFields>,
+        imageTypes: List<String> = emptyList(),
+        maxOfficialRating: String? = null,
+    ): List<AfinityItem> {
+        val baseUrl = mediaRepository.getBaseUrl()
+        val sourceId =
+            when (section.sourceType) {
+                CustomSectionSourceType.COLLECTION,
+                CustomSectionSourceType.PLAYLIST,
+                CustomSectionSourceType.LIBRARY ->
+                    try {
+                        UUID.fromString(section.primarySourceValue.orEmpty())
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Timber.w(e, "Custom section ${section.id} has an invalid source id")
+                        return emptyList()
+                    }
+                else -> null
+            }
+
+        val refinement =
+            section.filters.toItemFilterCriteria().copy(maxOfficialRating = maxOfficialRating)
+        val criteria =
+            when (section.sourceType) {
+                CustomSectionSourceType.GENRE ->
+                    refinement.copy(genres = (refinement.genres + section.sourceValues).distinct())
+                CustomSectionSourceType.STUDIO -> refinement.copy(studios = section.sourceValues)
+                CustomSectionSourceType.TAG ->
+                    refinement.copy(tags = (refinement.tags + section.sourceValues).distinct())
+                else -> refinement
+            }
+
+        return if (section.sourceType == CustomSectionSourceType.PLAYLIST && sourceId != null) {
+            mediaRepository
+                .getPlaylistItems(sourceId, fields = fields)
+                .filter { it.type.name in section.includeItemTypes }
+                .let { if (section.randomOrder) it.shuffled() else it }
+                .take(limit)
+                .mapNotNull { it.toAfinityItem(baseUrl) }
+        } else {
+            mediaRepository
+                .getItems(
+                    parentId = sourceId,
+                    sortBy = if (section.randomOrder) SortBy.RANDOM else section.sortBy,
+                    sortDescending = section.sortDescending,
+                    limit = limit,
+                    includeItemTypes = section.includeItemTypes,
+                    fields = fields,
+                    imageTypes = imageTypes,
+                    recursive =
+                        when (section.sourceType) {
+                            CustomSectionSourceType.LIBRARY -> true
+                            CustomSectionSourceType.COLLECTION -> false
+                            else -> null
+                        },
+                    criteria = criteria,
+                )
+                .items
+                .mapNotNull { it.toAfinityItem(baseUrl) }
+        }
     }
 
     private suspend fun hydratePersonFromMovie(

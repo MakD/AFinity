@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +17,7 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -34,7 +34,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -46,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -66,6 +66,7 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -86,15 +87,22 @@ import com.makd.afinity.data.models.CustomSectionTypeGroup
 import com.makd.afinity.data.models.DiscoveryConfig
 import com.makd.afinity.data.models.DiscoveryDensity
 import com.makd.afinity.data.models.DiscoverySection
+import com.makd.afinity.data.models.HeroContentMode
+import com.makd.afinity.data.models.HeroContentSource
+import com.makd.afinity.data.models.HeroIndicator
 import com.makd.afinity.data.models.HomeRow
+import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.media.LibraryFilterOptions
 import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinitySwitch
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.AfinityToggleChip
+import com.makd.afinity.ui.components.AfinityToggleChipFlow
 import com.makd.afinity.ui.components.EndAlignedDropdownMenu
 import com.makd.afinity.ui.components.ListPickerDialog
+import com.makd.afinity.ui.components.RadioOptionRow
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
@@ -127,6 +135,7 @@ fun CustomSectionsScreen(
     var editing by remember { mutableStateOf<CustomHomeSection?>(null) }
     var editingIsNew by remember { mutableStateOf(false) }
     var choosingTemplate by remember { mutableStateOf(false) }
+    var editingHero by remember { mutableStateOf(false) }
 
     val lazyListState = rememberLazyListState()
     val reorderState =
@@ -216,11 +225,28 @@ fun CustomSectionsScreen(
                     SettingsGroup {
                         HomeRow.configurable.forEachIndexed { index, row ->
                             if (index > 0) SettingsDivider()
-                            SettingsSwitchItem(
-                                title = stringResource(row.labelRes),
-                                checked = row !in uiState.hiddenRows,
-                                onCheckedChange = { viewModel.setRowVisible(row, it) },
-                            )
+                            if (row == HomeRow.HERO_CAROUSEL) {
+                                HeroCarouselRowItem(
+                                    title = stringResource(row.labelRes),
+                                    subtitle =
+                                        heroContentSummary(
+                                            source = uiState.heroSource,
+                                            sourceLabels =
+                                                uiState.heroSource.toCustomSection()?.let {
+                                                    uiState.sourceLabelsFor(it)
+                                                },
+                                        ),
+                                    checked = row !in uiState.hiddenRows,
+                                    onCheckedChange = { viewModel.setRowVisible(row, it) },
+                                    onSettingsClick = { editingHero = true },
+                                )
+                            } else {
+                                SettingsSwitchItem(
+                                    title = stringResource(row.labelRes),
+                                    checked = row !in uiState.hiddenRows,
+                                    onCheckedChange = { viewModel.setRowVisible(row, it) },
+                                )
+                            }
                         }
                     }
                 }
@@ -318,11 +344,35 @@ fun CustomSectionsScreen(
         )
     }
 
+    val containerHeight =
+        with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
+    val dialogHeight = min(720.dp, containerHeight * 0.9f)
+
+    if (editingHero) {
+        ListPickerDialog(
+            title = stringResource(R.string.hero_content_title),
+            onDismiss = { editingHero = false },
+            height = dialogHeight,
+        ) {
+            HeroContentEditor(
+                source = uiState.heroSource,
+                optionsFor = uiState::optionsFor,
+                sourceStateFor = uiState::stateFor,
+                onLoadSources = viewModel::ensureSourcesLoaded,
+                filterOptions = uiState.filterOptions,
+                onLoadFilterOptions = viewModel::ensureFilterOptionsLoaded,
+                parentalRatings = uiState.parentalRatings,
+                onLoadParentalRatings = viewModel::ensureParentalRatingsLoaded,
+                onSave = {
+                    viewModel.saveHeroSource(it)
+                    editingHero = false
+                },
+            )
+        }
+    }
+
     val current = editing
     if (current != null) {
-        val containerHeight =
-            with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
-        val dialogHeight = min(720.dp, containerHeight * 0.9f)
         ListPickerDialog(
             title =
                 stringResource(
@@ -481,21 +531,10 @@ private fun ColumnScope.CustomSectionEditor(
     onDelete: (() -> Unit)?,
 ) {
     var draft by remember(section.id) { mutableStateOf(section.withSanitizedItemTypes()) }
-    var sourceQuery by remember(section.id) { mutableStateOf("") }
     val options = optionsFor(draft.sourceType)
-    val allowsMultiple = draft.sourceType.supportsMultipleSources
-    val unresolvedLabel = stringResource(R.string.custom_sections_source_resolving)
-    val selectedOptions =
-        draft.sourceValues.map { value ->
-            options.firstOrNull { it.value == value }
-                ?: SourceOption(
-                    value = value,
-                    label = if (draft.sourceType.usesItemIds) unresolvedLabel else value,
-                )
-        }
     val libraryType =
         if (draft.sourceType == CustomSectionSourceType.LIBRARY) {
-            selectedOptions.firstOrNull()?.libraryType
+            options.firstOrNull { it.value == draft.primarySourceValue }?.libraryType
         } else null
     val allowedItemTypes =
         remember(draft.sourceType, libraryType) {
@@ -503,32 +542,10 @@ private fun ColumnScope.CustomSectionEditor(
         }
 
     val supportsRefinement = draft.sourceType.supportsRefinement
-    var showRefineSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(allowedItemTypes) { draft = draft.withItemTypesLimitedTo(allowedItemTypes) }
 
-    LaunchedEffect(draft.sourceType) { onLoadSources(draft.sourceType, false) }
-
     LaunchedEffect(supportsRefinement) { if (supportsRefinement) onLoadFilterOptions() }
-
-    if (showRefineSheet) {
-        LibraryFilterBottomSheet(
-            filters = draft.filters,
-            options = filterOptions,
-            capabilities =
-                LibraryFilterCapabilities(
-                    genres = draft.sourceType.refinesGenres,
-                    ratings = true,
-                    tags = draft.sourceType.refinesTags,
-                    years = true,
-                    videoType = CustomSectionItemType.MOVIE in draft.itemTypes,
-                    seriesStatus = CustomSectionItemType.SERIES in draft.itemTypes,
-                ),
-            isLoadingOptions = filterOptions == LibraryFilterOptions(),
-            onApply = { draft = draft.copy(filters = it) },
-            onDismiss = { showRefineSheet = false },
-        )
-    }
 
     Column(
         modifier =
@@ -553,65 +570,25 @@ private fun ColumnScope.CustomSectionEditor(
                 selectedLabel = stringResource(draft.sourceType.labelRes),
                 entries = CustomSectionSourceType.entries.map { stringResource(it.labelRes) to it },
                 isSelected = { it == draft.sourceType },
-                onSelect = {
-                    draft = draft.withSourceType(it)
-                    sourceQuery = ""
-                },
+                onSelect = { draft = draft.withSourceType(it) },
             )
             SettingsDivider()
-            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                val suggestions =
-                    remember(options, draft.sourceValues, sourceQuery) {
-                        options.filter {
-                            it.value !in draft.sourceValues &&
-                                (sourceQuery.isBlank() ||
-                                    it.label.contains(sourceQuery, ignoreCase = true))
-                        }
-                    }
-                SearchableChipMultiSelect(
-                    label = stringResource(R.string.custom_sections_field_source),
-                    placeholder = stringResource(sourcePlaceholderRes(draft.sourceType)),
-                    query = sourceQuery,
-                    onQueryChange = { sourceQuery = it },
-                    suggestions = suggestions,
-                    suggestionLabel = { it.label },
-                    onSuggestionSelected = { option ->
-                        draft =
-                            if (allowsMultiple) {
-                                draft.copy(sourceValues = draft.sourceValues + option.value)
-                            } else {
-                                draft.copy(sourceValues = listOf(option.value))
-                            }
-                        sourceQuery = ""
-                    },
-                    selected = selectedOptions,
-                    selectedLabel = { it.label },
-                    onRemoveSelected = { option ->
-                        draft = draft.copy(sourceValues = draft.sourceValues - option.value)
-                    },
-                    onClearAll = { draft = draft.copy(sourceValues = emptyList()) },
-                    collapseOnSelect = !allowsMultiple,
-                )
-                if (options.isEmpty()) {
-                    SourceStatusRow(
-                        state = sourceStateFor(draft.sourceType),
-                        onRetry = { onLoadSources(draft.sourceType, true) },
-                    )
-                }
-            }
+            SourceValuesPicker(
+                sourceType = draft.sourceType,
+                sourceValues = draft.sourceValues,
+                options = options,
+                sourceState = sourceStateFor(draft.sourceType),
+                onLoadSources = onLoadSources,
+                onValuesChange = { draft = draft.copy(sourceValues = it) },
+            )
             if (supportsRefinement) {
                 SettingsDivider()
-                SettingsItem(
-                    title = stringResource(R.string.custom_sections_field_refine),
-                    subtitle = refineSummary(draft.filters),
-                    onClick = { showRefineSheet = true },
-                    trailing = {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_chevron_right),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    },
+                RefineFiltersItem(
+                    filters = draft.filters,
+                    sourceType = draft.sourceType,
+                    itemTypes = draft.itemTypes,
+                    filterOptions = filterOptions,
+                    onApply = { draft = draft.copy(filters = it) },
                 )
             }
             SettingsDivider()
@@ -744,6 +721,357 @@ private fun ColumnScope.CustomSectionEditor(
 }
 
 @Composable
+private fun SourceValuesPicker(
+    sourceType: CustomSectionSourceType,
+    sourceValues: List<String>,
+    options: List<SourceOption>,
+    sourceState: SourceLoadState?,
+    onLoadSources: (CustomSectionSourceType, Boolean) -> Unit,
+    onValuesChange: (List<String>) -> Unit,
+) {
+    var sourceQuery by remember(sourceType) { mutableStateOf("") }
+    val allowsMultiple = sourceType.supportsMultipleSources
+    val unresolvedLabel = stringResource(R.string.custom_sections_source_resolving)
+    val selectedOptions = sourceValues.map { value ->
+        options.firstOrNull { it.value == value }
+            ?: SourceOption(
+                value = value,
+                label = if (sourceType.usesItemIds) unresolvedLabel else value,
+            )
+    }
+
+    LaunchedEffect(sourceType) { onLoadSources(sourceType, false) }
+
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+        val suggestions =
+            remember(options, sourceValues, sourceQuery) {
+                options.filter {
+                    it.value !in sourceValues &&
+                        (sourceQuery.isBlank() || it.label.contains(sourceQuery, ignoreCase = true))
+                }
+            }
+        SearchableChipMultiSelect(
+            label = stringResource(R.string.custom_sections_field_source),
+            placeholder = stringResource(sourcePlaceholderRes(sourceType)),
+            query = sourceQuery,
+            onQueryChange = { sourceQuery = it },
+            suggestions = suggestions,
+            suggestionLabel = { it.label },
+            onSuggestionSelected = { option ->
+                onValuesChange(
+                    if (allowsMultiple) sourceValues + option.value else listOf(option.value)
+                )
+                sourceQuery = ""
+            },
+            selected = selectedOptions,
+            selectedLabel = { it.label },
+            onRemoveSelected = { option -> onValuesChange(sourceValues - option.value) },
+            onClearAll = { onValuesChange(emptyList()) },
+            collapseOnSelect = !allowsMultiple,
+        )
+        if (options.isEmpty()) {
+            SourceStatusRow(state = sourceState, onRetry = { onLoadSources(sourceType, true) })
+        }
+    }
+}
+
+@Composable
+private fun RefineFiltersItem(
+    filters: LibraryFilters,
+    sourceType: CustomSectionSourceType,
+    itemTypes: List<CustomSectionItemType>,
+    filterOptions: LibraryFilterOptions,
+    onApply: (LibraryFilters) -> Unit,
+) {
+    var showRefineSheet by remember { mutableStateOf(false) }
+
+    if (showRefineSheet) {
+        LibraryFilterBottomSheet(
+            filters = filters,
+            options = filterOptions,
+            capabilities =
+                LibraryFilterCapabilities(
+                    genres = sourceType.refinesGenres,
+                    ratings = true,
+                    tags = sourceType.refinesTags,
+                    years = true,
+                    videoType = CustomSectionItemType.MOVIE in itemTypes,
+                    seriesStatus = CustomSectionItemType.SERIES in itemTypes,
+                ),
+            isLoadingOptions = filterOptions == LibraryFilterOptions(),
+            onApply = onApply,
+            onDismiss = { showRefineSheet = false },
+        )
+    }
+
+    SettingsItem(
+        title = stringResource(R.string.custom_sections_field_refine),
+        subtitle = refineSummary(filters),
+        onClick = { showRefineSheet = true },
+        trailing = {
+            Icon(
+                painter = painterResource(R.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+    )
+}
+
+@Composable
+private fun HeroCarouselRowItem(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    onSettingsClick: () -> Unit,
+) {
+    SettingsItem(
+        title = title,
+        subtitle = subtitle,
+        onClick = { onCheckedChange(!checked) },
+        role = Role.Switch,
+        trailing = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                IconButton(onClick = onSettingsClick) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_settings),
+                        contentDescription = stringResource(R.string.hero_content_settings_cd),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                VerticalDivider(
+                    modifier = Modifier.height(24.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                )
+                AfinitySwitch(checked = checked, onCheckedChange = onCheckedChange)
+            }
+        },
+    )
+}
+
+@Composable
+private fun heroContentSummary(
+    source: HeroContentSource,
+    sourceLabels: List<String>?,
+): String {
+    val mode = stringResource(source.mode.labelRes)
+    val labels = sourceLabels?.takeIf { it.isNotEmpty() }?.joinToString(", ")
+    return if (labels == null) mode else "$mode · $labels"
+}
+
+@Composable
+private fun ColumnScope.HeroContentEditor(
+    source: HeroContentSource,
+    optionsFor: (CustomSectionSourceType) -> List<SourceOption>,
+    sourceStateFor: (CustomSectionSourceType) -> SourceLoadState?,
+    onLoadSources: (CustomSectionSourceType, Boolean) -> Unit,
+    filterOptions: LibraryFilterOptions,
+    onLoadFilterOptions: () -> Unit,
+    parentalRatings: List<String>,
+    onLoadParentalRatings: () -> Unit,
+    onSave: (HeroContentSource) -> Unit,
+) {
+    var draft by remember { mutableStateOf(source.normalized()) }
+    val sourceType = draft.sourceType?.takeIf { it in draft.mode.sourceTypes }
+    val noRatingLimit = stringResource(R.string.hero_max_rating_none)
+
+    LaunchedEffect(draft.mode) {
+        if (draft.mode == HeroContentMode.CUSTOM_FILTER) onLoadFilterOptions()
+    }
+
+    LaunchedEffect(Unit) {
+        onLoadParentalRatings()
+        onLoadSources(CustomSectionSourceType.LIBRARY, false)
+    }
+
+    Column(
+        modifier =
+            Modifier.fillMaxWidth()
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        SettingsGroup(title = stringResource(R.string.hero_content_group_mode)) {
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                HeroContentMode.entries.forEach { mode ->
+                    RadioOptionRow(
+                        label = stringResource(mode.labelRes),
+                        selected = draft.mode == mode,
+                        onClick = { draft = draft.withMode(mode) },
+                    )
+                }
+                Text(
+                    text = stringResource(draft.mode.descriptionRes),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                )
+            }
+        }
+
+        if (sourceType != null) {
+            SettingsGroup(title = stringResource(R.string.custom_sections_group_content)) {
+                DropdownSelectorItem(
+                    title = stringResource(R.string.custom_sections_field_source_type),
+                    selectedLabel = stringResource(sourceType.labelRes),
+                    entries = draft.mode.sourceTypes.map { stringResource(it.labelRes) to it },
+                    isSelected = { it == sourceType },
+                    onSelect = { draft = draft.withSourceType(it) },
+                )
+                SettingsDivider()
+                SourceValuesPicker(
+                    sourceType = sourceType,
+                    sourceValues = draft.sourceValues,
+                    options = optionsFor(sourceType).filterNot { it.isAudio },
+                    sourceState = sourceStateFor(sourceType),
+                    onLoadSources = onLoadSources,
+                    onValuesChange = { draft = draft.copy(sourceValues = it) },
+                )
+                if (draft.mode == HeroContentMode.CUSTOM_FILTER) {
+                    SettingsDivider()
+                    RefineFiltersItem(
+                        filters = draft.filters,
+                        sourceType = sourceType,
+                        itemTypes = HERO_ITEM_TYPES,
+                        filterOptions = filterOptions,
+                        onApply = { draft = draft.copy(filters = it) },
+                    )
+                }
+            }
+        }
+
+        SettingsGroup(title = stringResource(R.string.hero_content_group_slides)) {
+            CountSettingItem(
+                label = stringResource(R.string.hero_slide_duration),
+                value = draft.slideSeconds,
+                max = HeroContentSource.MAX_SLIDE_SECONDS,
+                onCount = { draft = draft.copy(slideSeconds = it) },
+                inputLabel = stringResource(R.string.hero_slide_duration_input),
+                inputHint =
+                    stringResource(
+                        R.string.hero_slide_duration_range_fmt,
+                        HeroContentSource.MAX_SLIDE_SECONDS,
+                    ),
+            )
+            SettingsDivider()
+            CountSettingItem(
+                label = stringResource(R.string.hero_slide_count),
+                value = draft.slideCount,
+                max = HeroContentSource.MAX_SLIDE_COUNT,
+                min = HeroContentSource.MIN_SLIDE_COUNT,
+                onCount = { draft = draft.copy(slideCount = it) },
+                inputLabel = stringResource(R.string.hero_slide_count_input),
+                inputHint =
+                    stringResource(
+                        R.string.hero_slide_count_range_fmt,
+                        HeroContentSource.MIN_SLIDE_COUNT,
+                        HeroContentSource.MAX_SLIDE_COUNT,
+                    ),
+            )
+            SettingsDivider()
+            DropdownSelectorItem(
+                title = stringResource(R.string.hero_indicator_title),
+                selectedLabel = stringResource(draft.indicator.labelRes),
+                entries = HeroIndicator.entries.map { stringResource(it.labelRes) to it },
+                isSelected = { it == draft.indicator },
+                onSelect = { draft = draft.copy(indicator = it) },
+            )
+        }
+
+        SettingsGroup(title = stringResource(R.string.hero_content_group_filters)) {
+            if (draft.mode.usesLibraryFilters) {
+                SettingsSwitchItem(
+                    title = stringResource(R.string.hero_include_watched),
+                    checked = draft.includeWatched,
+                    onCheckedChange = { draft = draft.copy(includeWatched = it) },
+                )
+                SettingsDivider()
+            }
+            DropdownSelectorItem(
+                title = stringResource(R.string.hero_max_rating),
+                selectedLabel = draft.maxOfficialRating ?: noRatingLimit,
+                entries =
+                    listOf<Pair<String, String?>>(noRatingLimit to null) +
+                        parentalRatings.map { it to it },
+                isSelected = { it == draft.maxOfficialRating },
+                onSelect = { draft = draft.copy(maxOfficialRating = it) },
+            )
+            if (draft.mode.usesLibraryFilters) {
+                SettingsDivider()
+                HeroLibrarySelector(
+                    libraries =
+                        optionsFor(CustomSectionSourceType.LIBRARY).filter {
+                            it.libraryType in HERO_LIBRARY_TYPES
+                        },
+                    selected = draft.libraryIds,
+                    onToggle = { id ->
+                        draft =
+                            draft.copy(
+                                libraryIds =
+                                    if (id in draft.libraryIds) draft.libraryIds - id
+                                    else draft.libraryIds + id
+                            )
+                    },
+                )
+            }
+        }
+    }
+
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Button(onClick = { onSave(draft) }, enabled = draft.isComplete) {
+            Text(text = stringResource(R.string.custom_sections_save))
+        }
+    }
+}
+
+private val HERO_ITEM_TYPES = listOf(CustomSectionItemType.MOVIE, CustomSectionItemType.SERIES)
+
+private val HERO_LIBRARY_TYPES =
+    setOf(CollectionType.Movies, CollectionType.TvShows, CollectionType.Mixed)
+
+@Composable
+private fun HeroLibrarySelector(
+    libraries: List<SourceOption>,
+    selected: List<String>,
+    onToggle: (String) -> Unit,
+) {
+    Column {
+        Text(
+            text = stringResource(R.string.hero_libraries),
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp),
+        )
+        Text(
+            text = stringResource(R.string.hero_libraries_hint),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 2.dp),
+        )
+        AfinityToggleChipFlow {
+            libraries.forEach { library ->
+                AfinityToggleChip(
+                    label = library.label,
+                    selected = library.value in selected,
+                    onSelectedChange = { onToggle(library.value) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun refineSummary(filters: LibraryFilters): String {
     if (filters.isEmpty) return stringResource(R.string.custom_sections_refine_none)
     val parts = buildList {
@@ -815,11 +1143,12 @@ private fun ItemTypeSelector(
     sourceType: CustomSectionSourceType,
     onToggle: (CustomSectionItemType) -> Unit,
 ) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+    Column {
         Text(
             text = stringResource(R.string.custom_sections_field_item_types),
             style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
             color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp),
         )
         Text(
             text =
@@ -838,17 +1167,14 @@ private fun ItemTypeSelector(
                 },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 2.dp),
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 2.dp),
         )
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(top = 8.dp),
-        ) {
+        AfinityToggleChipFlow {
             available.forEach { type ->
-                FilterChip(
+                AfinityToggleChip(
+                    label = stringResource(type.labelRes),
                     selected = type in selected,
-                    onClick = { onToggle(type) },
-                    label = { Text(text = stringResource(type.labelRes)) },
+                    onSelectedChange = { onToggle(type) },
                 )
             }
         }
@@ -964,8 +1290,25 @@ private fun DiscoveryCountItem(
     config: DiscoveryConfig,
     onCount: (Int) -> Unit,
 ) {
+    CountSettingItem(
+        label = stringResource(section.labelRes),
+        value = config.countFor(section),
+        max = section.ceiling,
+        onCount = onCount,
+    )
+}
+
+@Composable
+private fun CountSettingItem(
+    label: String,
+    value: Int,
+    max: Int,
+    onCount: (Int) -> Unit,
+    min: Int = 0,
+    inputLabel: String = stringResource(R.string.discovery_count_label),
+    inputHint: String = stringResource(R.string.discovery_count_range_fmt, max),
+) {
     var showInput by remember { mutableStateOf(false) }
-    val value = config.countFor(section)
 
     Row(
         modifier =
@@ -975,14 +1318,15 @@ private fun DiscoveryCountItem(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = stringResource(section.labelRes),
+            text = label,
             style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f).padding(end = 8.dp),
         )
         CountStepper(
             value = value,
-            max = section.ceiling,
+            max = max,
+            min = min,
             onValueChange = onCount,
             onValueClick = { showInput = true },
         )
@@ -990,9 +1334,12 @@ private fun DiscoveryCountItem(
 
     if (showInput) {
         CountInputDialog(
-            title = stringResource(section.labelRes),
+            title = label,
             value = value,
-            max = section.ceiling,
+            max = max,
+            min = min,
+            inputLabel = inputLabel,
+            inputHint = inputHint,
             onDismiss = { showInput = false },
             onConfirm = {
                 onCount(it)
@@ -1008,6 +1355,7 @@ private fun CountStepper(
     max: Int,
     onValueChange: (Int) -> Unit,
     onValueClick: () -> Unit,
+    min: Int = 0,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -1016,7 +1364,7 @@ private fun CountStepper(
         StepperButton(
             iconRes = R.drawable.ic_remove,
             contentDescription = stringResource(R.string.cd_decrease_limit),
-            enabled = value > 0,
+            enabled = value > min,
             onClick = { onValueChange(value - 1) },
         )
 
@@ -1081,6 +1429,9 @@ private fun CountInputDialog(
     max: Int,
     onDismiss: () -> Unit,
     onConfirm: (Int) -> Unit,
+    min: Int = 0,
+    inputLabel: String = stringResource(R.string.discovery_count_label),
+    inputHint: String = stringResource(R.string.discovery_count_range_fmt, max),
 ) {
     var text by remember { mutableStateOf(value.toString()) }
     val parsed = text.toIntOrNull()
@@ -1093,12 +1444,12 @@ private fun CountInputDialog(
                 AfinityTextField(
                     value = text,
                     onValueChange = { input -> text = input.filter { it.isDigit() }.take(2) },
-                    label = stringResource(R.string.discovery_count_label),
+                    label = inputLabel,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Text(
-                    text = stringResource(R.string.discovery_count_range_fmt, max),
+                    text = inputHint,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1106,7 +1457,7 @@ private fun CountInputDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { parsed?.let { onConfirm(it.coerceIn(0, max)) } },
+                onClick = { parsed?.let { onConfirm(it.coerceIn(min, max)) } },
                 enabled = parsed != null,
             ) {
                 Text(text = stringResource(R.string.custom_sections_save))

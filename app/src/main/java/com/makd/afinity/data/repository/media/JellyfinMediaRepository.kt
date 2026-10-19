@@ -80,6 +80,8 @@ import org.jellyfin.sdk.api.operations.ArtistApi
 import org.jellyfin.sdk.api.operations.FilterApi
 import org.jellyfin.sdk.api.operations.GenreApi
 import org.jellyfin.sdk.api.operations.LibraryApi
+import org.jellyfin.sdk.api.operations.LocalizationApi
+import org.jellyfin.sdk.api.operations.MovieApi
 import org.jellyfin.sdk.api.operations.PersonApi
 import org.jellyfin.sdk.api.operations.PlaylistApi
 import org.jellyfin.sdk.api.operations.ShowApi
@@ -96,6 +98,7 @@ import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.MediaType
 import org.jellyfin.sdk.model.api.NameValuePair
+import org.jellyfin.sdk.model.api.ParentalRating
 import org.jellyfin.sdk.model.api.SeriesStatus
 import org.jellyfin.sdk.model.api.SortOrder
 import org.jellyfin.sdk.model.api.VideoType
@@ -901,6 +904,8 @@ constructor(
                 nameStartsWith = nameStartsWith,
                 studios = criteria.studios.ifEmpty { null },
                 officialRatings = criteria.officialRatings.ifEmpty { null },
+                maxOfficialRating = criteria.maxOfficialRating,
+                ids = criteria.ids.ifEmpty { null },
                 tags = criteria.tags.ifEmpty { null },
                 audioLanguages = criteria.audioLanguages.ifEmpty { null },
                 subtitleLanguages = criteria.subtitleLanguages.ifEmpty { null },
@@ -1814,6 +1819,32 @@ constructor(
                 .items
                 .filter { it.id != movieId }
                 .map { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
+        }
+
+    override suspend fun getMovieRecommendations(
+        parentId: UUID?,
+        categoryLimit: Int,
+        itemLimit: Int,
+        fields: List<ItemFields>?,
+    ): List<AfinityItem> =
+        apiCall(emptyList(), "Failed to get movie recommendations") { apiClient, userId ->
+            MovieApi(apiClient)
+                .getMovieRecommendations(
+                    userId = userId,
+                    parentId = parentId,
+                    fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                    categoryLimit = categoryLimit,
+                    itemLimit = itemLimit,
+                )
+                .content
+                .flatMap { it.items.orEmpty() }
+                .distinctBy { it.id }
+                .mapNotNull { baseItem -> baseItem.toAfinityItem(getBaseUrl()) }
+        }
+
+    override suspend fun getParentalRatings(): List<ParentalRating> =
+        apiCall(emptyList(), "Failed to get parental ratings") { apiClient, _ ->
+            LocalizationApi(apiClient).getParentalRatings().content
         }
 
     override suspend fun getTrickplayData(itemId: UUID, width: Int, index: Int): ByteArray? =

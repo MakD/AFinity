@@ -290,6 +290,8 @@ fun HomeScreen(
                             if (showCarousel) {
                                 HeroCarousel(
                                     items = uiState.heroCarouselItems,
+                                    slideSeconds = uiState.heroSettings.slideSeconds,
+                                    indicator = uiState.heroSettings.indicator,
                                     isScrolling = isScrolling,
                                     onWatchNowClick = onPlayClick,
                                     onPlayTrailerClick = { item ->
