@@ -84,6 +84,7 @@ import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RadioOptionRow
 import com.makd.afinity.ui.components.isLandscapeWindow
+import com.makd.afinity.ui.components.mediainfo.PodcastEpisodeMediaInfoSheet
 import com.makd.afinity.ui.item.components.shared.DetailSectionGap
 import com.makd.afinity.ui.item.components.shared.LocalDetailLayout
 import com.makd.afinity.ui.item.components.shared.OverviewSection
@@ -147,6 +148,22 @@ fun AudiobookshelfItemScreen(
     var showSortDialog by remember { mutableStateOf(false) }
 
     var expandedEpisodeId by remember { mutableStateOf<String?>(null) }
+    var mediaInfoEpisode by remember { mutableStateOf<PodcastEpisode?>(null) }
+
+    val mediaInfoItem = item
+    val shownEpisode = mediaInfoEpisode
+    if (mediaInfoItem != null && shownEpisode != null) {
+        PodcastEpisodeMediaInfoSheet(
+            item = mediaInfoItem,
+            episode = shownEpisode,
+            imageUrl =
+                config
+                    ?.serverUrl
+                    ?.takeIf { mediaInfoItem.media.coverPath != null }
+                    ?.let { mediaInfoItem.coverUrl(it, 200) },
+            onDismiss = { mediaInfoEpisode = null },
+        )
+    }
 
     val lazyListState = rememberLazyListState()
     val topBarOpacity by rememberTopBarOpacity(lazyListState)
@@ -331,6 +348,7 @@ fun AudiobookshelfItemScreen(
                                 onEpisodeCancelDownload = { viewModel.cancelDownload(it) },
                                 onEpisodeDeleteDownload = { viewModel.deleteDownload(it) },
                                 onEpisodeToggleFinished = { viewModel.toggleEpisodeFinished(it) },
+                                onEpisodeMediaInfo = { mediaInfoEpisode = it },
                                 nowPlayingEpisodeId = nowPlayingEpisodeId,
                                 fadeLastItem =
                                     !showAllEpisodes && sortedEpisodes.size > EPISODE_PREVIEW_COUNT,

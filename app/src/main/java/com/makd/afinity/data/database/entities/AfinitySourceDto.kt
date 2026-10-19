@@ -14,6 +14,8 @@ data class AfinitySourceDto(
     val type: AfinitySourceType,
     val path: String,
     val downloadId: Long? = null,
+    val bitrate: Long? = null,
+    val container: String? = null,
 )
 
 fun AfinitySource.toAfinitySourceDto(itemId: UUID, path: String): AfinitySourceDto {
@@ -23,5 +25,7 @@ fun AfinitySource.toAfinitySourceDto(itemId: UUID, path: String): AfinitySourceD
         name = name,
         type = AfinitySourceType.LOCAL,
         path = path,
+        bitrate = bitrate,
+        container = container,
     )
 }

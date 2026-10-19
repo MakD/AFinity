@@ -89,6 +89,10 @@ interface AudiobookshelfRepository {
 
     suspend fun getDownloadedEpisodeTracks(itemId: String): Map<String, AudioTrack>
 
+    suspend fun getDownloadedTracks(itemId: String, episodeId: String?): List<AudioTrack>
+
+    suspend fun isCurrentUserAdmin(): Boolean
+
     suspend fun searchLibrary(
         libraryId: String,
         query: String,

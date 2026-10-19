@@ -60,6 +60,7 @@ import com.makd.afinity.ui.components.WatchedToggleButton
 import com.makd.afinity.ui.components.WatchlistToggleButton
 import com.makd.afinity.ui.components.formatRuntimeTicks
 import com.makd.afinity.ui.components.isWideWindow
+import com.makd.afinity.ui.components.mediainfo.JellyfinMediaInfoSheet
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.ui.item.components.shared.AdminAction
@@ -107,7 +108,17 @@ fun EpisodeDetailOverlay(
     val isWide = LocalSideSheetEnabled.current && isWideWindow()
     val sheetState = rememberAfinitySheetState()
     var showPeopleDialog by remember { mutableStateOf(false) }
+    var showMediaInfo by remember { mutableStateOf(false) }
     val ratingScale = rememberRatingMetadataScale()
+
+    if (showMediaInfo) {
+        JellyfinMediaInfoSheet(
+            subtitle = listOf(episode.seriesName, episode.name).joinToString(" · "),
+            sources = episode.sources,
+            runtimeTicks = episode.runtimeTicks,
+            onDismiss = { showMediaInfo = false },
+        )
+    }
     val storageLocationProvider = rememberStorageLocationProvider()
     val downloadUnavailable =
         remember(downloadInfo?.itemId, downloadInfo?.status, downloadInfo?.storageVolumeId) {
@@ -373,14 +384,19 @@ fun EpisodeDetailOverlay(
                             )
                         }
 
-                        if (isAdmin || canDelete) {
+                        val hasManageItems = isAdmin || canDelete
+                        val hasMediaInfo = episode.sources.isNotEmpty()
+                        if (hasManageItems || hasMediaInfo) {
                             var menuExpanded by remember { mutableStateOf(false) }
                             Box {
                                 IconButton(onClick = { menuExpanded = true }) {
                                     Icon(
                                         painter = painterResource(id = R.drawable.ic_options),
                                         contentDescription =
-                                            stringResource(R.string.cd_admin_manage),
+                                            stringResource(
+                                                if (hasManageItems) R.string.cd_admin_manage
+                                                else R.string.cd_music_more_options
+                                            ),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(28.dp),
                                     )
@@ -389,6 +405,28 @@ fun EpisodeDetailOverlay(
                                     expanded = menuExpanded,
                                     onDismissRequest = { menuExpanded = false },
                                 ) {
+                                    if (hasMediaInfo) {
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(stringResource(R.string.media_info_title))
+                                            },
+                                            leadingIcon = {
+                                                Icon(
+                                                    painter =
+                                                        painterResource(
+                                                            id = R.drawable.ic_info_outlined
+                                                        ),
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(20.dp),
+                                                )
+                                            },
+                                            onClick = {
+                                                menuExpanded = false
+                                                showMediaInfo = true
+                                            },
+                                        )
+                                        if (hasManageItems) HorizontalDivider()
+                                    }
                                     if (isAdmin) {
                                         DropdownMenuItem(
                                             text = {

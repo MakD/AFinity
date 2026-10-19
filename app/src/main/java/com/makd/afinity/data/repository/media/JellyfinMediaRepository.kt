@@ -1021,18 +1021,26 @@ constructor(
         }
 
     override suspend fun getItem(itemId: UUID, fields: List<ItemFields>?): BaseItemDto? =
-        apiCall(null, "Failed to get item with id: $itemId") { apiClient, userId ->
-            LibraryApi(apiClient)
-                .getItems(
-                    userId = userId,
-                    ids = listOf(itemId),
-                    fields = fields,
-                    enableTotalRecordCount = false,
-                )
-                .content
-                .items
-                .firstOrNull()
+        getItemResult(itemId, fields).getOrElse { e ->
+            if (e !is NoActiveSessionException) Timber.e(e, "Failed to get item with id: $itemId")
+            null
         }
+
+    override suspend fun getItemResult(
+        itemId: UUID,
+        fields: List<ItemFields>?,
+    ): Result<BaseItemDto?> = apiInvoker.apiResult { apiClient, userId ->
+        LibraryApi(apiClient)
+            .getItems(
+                userId = userId,
+                ids = listOf(itemId),
+                fields = fields,
+                enableTotalRecordCount = false,
+            )
+            .content
+            .items
+            .firstOrNull()
+    }
 
     override suspend fun getItemDetail(itemId: UUID): BaseItemDto? =
         apiCall(null, "Failed to get item detail for id: $itemId") { apiClient, userId ->

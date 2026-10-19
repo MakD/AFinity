@@ -786,6 +786,7 @@ private fun LandscapeItemDetailContent(
                                 isAdmin = isAdmin,
                                 canIdentify = identifyItemType(item) != null,
                                 canDelete = item.id in deletableItemIds,
+                                selectedSourceId = selectedMediaSource?.id,
                                 onDownloadLongClick = { viewModel.onDownloadLongClick() },
                                 onAddToPlaylist =
                                     if (
@@ -1046,6 +1047,7 @@ private fun PortraitItemDetailContent(
                     isAdmin = isAdmin,
                     canIdentify = identifyItemType(item) != null,
                     canDelete = item.id in deletableItemIds,
+                    selectedSourceId = selectedMediaSource?.id,
                     onDownloadLongClick = { viewModel.onDownloadLongClick() },
                     onAddToPlaylist =
                         if (

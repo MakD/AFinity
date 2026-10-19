@@ -498,6 +498,11 @@ constructor(
                         mimeType = audioFile.mimeType,
                         codec = audioFile.codec,
                         metadata = audioFile.metadata,
+                        bitRate = audioFile.bitRate,
+                        channels = audioFile.channels,
+                        channelLayout = audioFile.channelLayout,
+                        format = audioFile.format,
+                        timeBase = audioFile.timeBase,
                     )
                 }
 

@@ -42,6 +42,7 @@ import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.mediainfo.TrackMediaInfoSheet
 import com.makd.afinity.ui.item.components.DownloadProgressIndicator
 import java.util.concurrent.TimeUnit
 
@@ -67,20 +68,16 @@ fun MusicTrackRow(
     downloadInfo: DownloadInfo? = null,
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    var showMediaInfo by remember { mutableStateOf(false) }
     val downloadStatus = downloadInfo?.status
     val isDownloadIdle =
         downloadStatus == null ||
             downloadStatus == DownloadStatus.FAILED ||
             downloadStatus == DownloadStatus.CANCELLED
-    val hasMenuItems =
-        onInstantMix != null ||
-            onStartRadio != null ||
-            onAddNext != null ||
-            onAddLast != null ||
-            onFavorite != null ||
-            onAddToPlaylist != null ||
-            onRemoveFromPlaylist != null ||
-            onDownload != null
+
+    if (showMediaInfo) {
+        TrackMediaInfoSheet(track = track, onDismiss = { showMediaInfo = false })
+    }
 
     Row(
         modifier =
@@ -220,191 +217,199 @@ fun MusicTrackRow(
             modifier = Modifier.padding(start = 6.dp),
         )
 
-        if (hasMenuItems) {
-            Box {
-                IconButton(onClick = { showMenu = true }, modifier = Modifier.size(36.dp)) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_dots_vertical),
-                        contentDescription = stringResource(R.string.cd_music_more_options),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp),
+        Box {
+            IconButton(onClick = { showMenu = true }, modifier = Modifier.size(36.dp)) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_dots_vertical),
+                    contentDescription = stringResource(R.string.cd_music_more_options),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                if (onFavorite != null) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                stringResource(
+                                    if (track.favorite) R.string.cd_favorite_remove
+                                    else R.string.cd_favorite_add
+                                )
+                            )
+                        },
+                        onClick = {
+                            showMenu = false
+                            onFavorite()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                painter =
+                                    painterResource(
+                                        if (track.favorite) R.drawable.ic_favorite_filled
+                                        else R.drawable.ic_favorite
+                                    ),
+                                contentDescription = null,
+                                tint = if (track.favorite) Color.Red else LocalContentColor.current,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        },
                     )
                 }
-                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                    if (onFavorite != null) {
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    stringResource(
-                                        if (track.favorite) R.string.cd_favorite_remove
-                                        else R.string.cd_favorite_add
-                                    )
-                                )
-                            },
-                            onClick = {
-                                showMenu = false
-                                onFavorite()
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    painter =
-                                        painterResource(
-                                            if (track.favorite) R.drawable.ic_favorite_filled
-                                            else R.drawable.ic_favorite
-                                        ),
-                                    contentDescription = null,
-                                    tint =
-                                        if (track.favorite) Color.Red
-                                        else LocalContentColor.current,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            },
-                        )
-                    }
-                    if (onInstantMix != null) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.music_action_instant_mix)) },
-                            onClick = {
-                                showMenu = false
-                                onInstantMix()
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_compass),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            },
-                        )
-                    }
-                    if (onStartRadio != null) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.music_action_start_radio)) },
-                            onClick = {
-                                showMenu = false
-                                onStartRadio()
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_radio),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            },
-                        )
-                    }
-                    if (onAddNext != null) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.music_action_play_next)) },
-                            onClick = {
-                                showMenu = false
-                                onAddNext()
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_player_skip_forward),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            },
-                        )
-                    }
-                    if (onAddLast != null) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.music_action_add_to_queue)) },
-                            onClick = {
-                                showMenu = false
-                                onAddLast()
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_playlist_alt),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            },
-                        )
-                    }
-                    if (onAddToPlaylist != null) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.music_action_add_to_playlist)) },
-                            onClick = {
-                                showMenu = false
-                                onAddToPlaylist()
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_playlist_add),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            },
-                        )
-                    }
-                    if (onRemoveFromPlaylist != null) {
-                        DropdownMenuItem(
-                            text = {
-                                Text(stringResource(R.string.music_action_remove_from_playlist))
-                            },
-                            onClick = {
-                                showMenu = false
-                                onRemoveFromPlaylist()
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_delete),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            },
-                        )
-                    }
-                    if (onDownload != null) {
-                        val labelRes =
-                            when (downloadStatus) {
-                                DownloadStatus.QUEUED,
-                                DownloadStatus.DOWNLOADING -> R.string.cd_cancel_download
-                                DownloadStatus.PAUSED -> R.string.cd_resume_download
-                                DownloadStatus.COMPLETED -> R.string.cd_delete_download
-                                else -> R.string.action_download
-                            }
-                        val iconRes =
-                            when (downloadStatus) {
-                                DownloadStatus.QUEUED,
-                                DownloadStatus.DOWNLOADING -> R.drawable.ic_cancel
-                                DownloadStatus.COMPLETED -> R.drawable.ic_delete
-                                else -> R.drawable.ic_download
-                            }
-                        DropdownMenuItem(
-                            text = { Text(stringResource(labelRes)) },
-                            onClick = {
-                                showMenu = false
-                                if (isDownloadIdle || downloadStatus == DownloadStatus.PAUSED) {
-                                    onDownload()
-                                } else {
-                                    onCancelDownload?.invoke()
-                                }
-                            },
-                            enabled = isDownloadEnabled || !isDownloadIdle,
-                            leadingIcon = {
-                                Icon(
-                                    painter = painterResource(iconRes),
-                                    contentDescription = null,
-                                    tint =
-                                        if (
-                                            downloadStatus == DownloadStatus.COMPLETED ||
-                                                downloadStatus == DownloadStatus.QUEUED ||
-                                                downloadStatus == DownloadStatus.DOWNLOADING
-                                        )
-                                            MaterialTheme.colorScheme.error
-                                        else LocalContentColor.current,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            },
-                        )
-                    }
+                if (onInstantMix != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.music_action_instant_mix)) },
+                        onClick = {
+                            showMenu = false
+                            onInstantMix()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_compass),
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        },
+                    )
                 }
+                if (onStartRadio != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.music_action_start_radio)) },
+                        onClick = {
+                            showMenu = false
+                            onStartRadio()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_radio),
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        },
+                    )
+                }
+                if (onAddNext != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.music_action_play_next)) },
+                        onClick = {
+                            showMenu = false
+                            onAddNext()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_player_skip_forward),
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        },
+                    )
+                }
+                if (onAddLast != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.music_action_add_to_queue)) },
+                        onClick = {
+                            showMenu = false
+                            onAddLast()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_playlist_alt),
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        },
+                    )
+                }
+                if (onAddToPlaylist != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.music_action_add_to_playlist)) },
+                        onClick = {
+                            showMenu = false
+                            onAddToPlaylist()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_playlist_add),
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        },
+                    )
+                }
+                if (onRemoveFromPlaylist != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.music_action_remove_from_playlist)) },
+                        onClick = {
+                            showMenu = false
+                            onRemoveFromPlaylist()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_delete),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        },
+                    )
+                }
+                if (onDownload != null) {
+                    val labelRes =
+                        when (downloadStatus) {
+                            DownloadStatus.QUEUED,
+                            DownloadStatus.DOWNLOADING -> R.string.cd_cancel_download
+                            DownloadStatus.PAUSED -> R.string.cd_resume_download
+                            DownloadStatus.COMPLETED -> R.string.cd_delete_download
+                            else -> R.string.action_download
+                        }
+                    val iconRes =
+                        when (downloadStatus) {
+                            DownloadStatus.QUEUED,
+                            DownloadStatus.DOWNLOADING -> R.drawable.ic_cancel
+                            DownloadStatus.COMPLETED -> R.drawable.ic_delete
+                            else -> R.drawable.ic_download
+                        }
+                    DropdownMenuItem(
+                        text = { Text(stringResource(labelRes)) },
+                        onClick = {
+                            showMenu = false
+                            if (isDownloadIdle || downloadStatus == DownloadStatus.PAUSED) {
+                                onDownload()
+                            } else {
+                                onCancelDownload?.invoke()
+                            }
+                        },
+                        enabled = isDownloadEnabled || !isDownloadIdle,
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(iconRes),
+                                contentDescription = null,
+                                tint =
+                                    if (
+                                        downloadStatus == DownloadStatus.COMPLETED ||
+                                            downloadStatus == DownloadStatus.QUEUED ||
+                                            downloadStatus == DownloadStatus.DOWNLOADING
+                                    )
+                                        MaterialTheme.colorScheme.error
+                                    else LocalContentColor.current,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        },
+                    )
+                }
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.media_info_title)) },
+                    onClick = {
+                        showMenu = false
+                        showMediaInfo = true
+                    },
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_info_outlined),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    },
+                )
             }
         }
     }

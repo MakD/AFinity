@@ -20,11 +20,17 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,6 +65,7 @@ fun LazyListScope.episodeListItems(
     onEpisodeCancelDownload: ((String) -> Unit)? = null,
     onEpisodeDeleteDownload: ((String) -> Unit)? = null,
     onEpisodeToggleFinished: ((PodcastEpisode) -> Unit)? = null,
+    onEpisodeMediaInfo: ((PodcastEpisode) -> Unit)? = null,
     nowPlayingEpisodeId: String? = null,
     fadeLastItem: Boolean = false,
 ) {
@@ -83,6 +90,7 @@ fun LazyListScope.episodeListItems(
                 onCancelDownload = onEpisodeCancelDownload?.let { { it(episode.id) } },
                 onDeleteDownload = onEpisodeDeleteDownload?.let { { it(episode.id) } },
                 onToggleFinished = onEpisodeToggleFinished?.let { { it(episode) } },
+                onMediaInfo = onEpisodeMediaInfo?.let { { it(episode) } },
                 toggleFinishedEnabled = nowPlayingEpisodeId != episode.id,
             )
         }
@@ -101,6 +109,7 @@ private fun ExpandableEpisodeItem(
     onCancelDownload: (() -> Unit)? = null,
     onDeleteDownload: (() -> Unit)? = null,
     onToggleFinished: (() -> Unit)? = null,
+    onMediaInfo: (() -> Unit)? = null,
     toggleFinishedEnabled: Boolean = true,
 ) {
     val hasDescription = !episode.description.isNullOrBlank()
@@ -293,6 +302,39 @@ private fun ExpandableEpisodeItem(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp),
                     )
+                }
+            }
+
+            if (onMediaInfo != null) {
+                var menuExpanded by remember { mutableStateOf(false) }
+                Box {
+                    IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_dots_vertical),
+                            contentDescription = stringResource(R.string.cd_music_more_options),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.media_info_title)) },
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_info_outlined),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onMediaInfo()
+                            },
+                        )
+                    }
                 }
             }
         }

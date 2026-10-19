@@ -24,12 +24,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.FavoriteToggleButton
 import com.makd.afinity.ui.components.WatchedToggleButton
 import com.makd.afinity.ui.components.WatchlistToggleButton
+import com.makd.afinity.ui.components.mediainfo.JellyfinMediaInfoSheet
 import com.makd.afinity.ui.item.components.DownloadProgressIndicator
 
 @Composable
@@ -59,7 +61,23 @@ fun ActionButtonsRow(
     onAdminAction: (AdminAction) -> Unit = {},
     onDownloadLongClick: (() -> Unit)? = null,
     onAddToPlaylist: (() -> Unit)? = null,
+    selectedSourceId: String? = null,
 ) {
+    var showMediaInfo by remember { mutableStateOf(false) }
+    val hasMediaInfo = item.sources.isNotEmpty()
+
+    if (showMediaInfo) {
+        JellyfinMediaInfoSheet(
+            subtitle =
+                if (item is AfinityEpisode) listOf(item.seriesName, item.name).joinToString(" · ")
+                else item.name,
+            sources = item.sources,
+            runtimeTicks = item.runtimeTicks,
+            selectedSourceId = selectedSourceId,
+            onDismiss = { showMediaInfo = false },
+        )
+    }
+
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement =
@@ -117,7 +135,8 @@ fun ActionButtonsRow(
             )
         }
 
-        val showMenu = isAdmin || canDelete
+        val hasManageItems = isAdmin || canDelete
+        val showMenu = hasManageItems || hasMediaInfo
 
         if (!showMenu && onAddToPlaylist != null) {
             IconButton(onClick = onAddToPlaylist) {
@@ -136,7 +155,11 @@ fun ActionButtonsRow(
                 IconButton(onClick = { menuExpanded = true }) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_options),
-                        contentDescription = stringResource(R.string.cd_admin_manage),
+                        contentDescription =
+                            stringResource(
+                                if (hasManageItems) R.string.cd_admin_manage
+                                else R.string.cd_music_more_options
+                            ),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(28.dp),
                     )
@@ -145,6 +168,22 @@ fun ActionButtonsRow(
                     expanded = menuExpanded,
                     onDismissRequest = { menuExpanded = false },
                 ) {
+                    if (hasMediaInfo) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.media_info_title)) },
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_info_outlined),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                showMediaInfo = true
+                            },
+                        )
+                    }
                     if (onAddToPlaylist != null) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.cd_music_add_to_playlist)) },
@@ -160,6 +199,8 @@ fun ActionButtonsRow(
                                 onAddToPlaylist()
                             },
                         )
+                    }
+                    if (hasManageItems && (hasMediaInfo || onAddToPlaylist != null)) {
                         HorizontalDivider()
                     }
 

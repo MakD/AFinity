@@ -21,6 +21,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,7 +30,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -56,6 +61,7 @@ import com.makd.afinity.data.models.audiobookshelf.coverUrl
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.CircleFlagIcon
 import com.makd.afinity.ui.components.getAutoFlagUrl
+import com.makd.afinity.ui.components.mediainfo.AudiobookMediaInfoSheet
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
 
 private fun String.withAbsWidth(px: Int): String {
@@ -378,7 +384,17 @@ fun ItemHeaderContent(
             }
         }
 
-        val hasActions = onPlay != null || onToggleFinished != null || onDownload != null
+        val hasMediaInfo = item.mediaType.equals("book", ignoreCase = true)
+        var showMediaInfo by remember { mutableStateOf(false) }
+        if (showMediaInfo) {
+            AudiobookMediaInfoSheet(
+                item = item,
+                imageUrl = coverUrl?.withAbsWidth(200),
+                onDismiss = { showMediaInfo = false },
+            )
+        }
+        val hasActions =
+            onPlay != null || onToggleFinished != null || onDownload != null || hasMediaInfo
 
         if (audibleRating != null) {
             Spacer(modifier = Modifier.height(12.dp))
@@ -473,6 +489,41 @@ fun ItemHeaderContent(
                                         modifier = Modifier.size(26.dp),
                                     )
                                 }
+                            }
+                        }
+                    }
+
+                    if (hasMediaInfo) {
+                        var menuExpanded by remember { mutableStateOf(false) }
+                        Box {
+                            IconButton(onClick = { menuExpanded = true }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_dots_vertical),
+                                    contentDescription =
+                                        stringResource(R.string.cd_music_more_options),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(26.dp),
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = menuExpanded,
+                                onDismissRequest = { menuExpanded = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.media_info_title)) },
+                                    leadingIcon = {
+                                        Icon(
+                                            painter =
+                                                painterResource(id = R.drawable.ic_info_outlined),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                    },
+                                    onClick = {
+                                        menuExpanded = false
+                                        showMediaInfo = true
+                                    },
+                                )
                             }
                         }
                     }

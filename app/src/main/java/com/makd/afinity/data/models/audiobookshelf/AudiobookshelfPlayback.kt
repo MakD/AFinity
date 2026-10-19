@@ -58,6 +58,11 @@ data class AudioTrack(
     @SerialName("mimeType") val mimeType: String? = null,
     @SerialName("codec") val codec: String? = null,
     @SerialName("metadata") val metadata: FileMetadata? = null,
+    @SerialName("bitRate") val bitRate: Int? = null,
+    @SerialName("channels") val channels: Int? = null,
+    @SerialName("channelLayout") val channelLayout: String? = null,
+    @SerialName("format") val format: String? = null,
+    @SerialName("timeBase") val timeBase: String? = null,
 )
 
 @Serializable

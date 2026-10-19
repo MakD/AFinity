@@ -61,6 +61,8 @@ suspend fun AfinitySourceDto.toAfinitySource(serverDatabaseDao: ServerDatabaseDa
         mediaStreams =
             serverDatabaseDao.getMediaStreamsBySourceId(id).map { it.toAfinityMediaStream() },
         downloadId = downloadId,
+        bitrate = bitrate,
+        container = container,
     )
 }
 

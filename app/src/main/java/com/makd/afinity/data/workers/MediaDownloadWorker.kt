@@ -33,6 +33,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
+import com.makd.afinity.data.models.media.toAfinityMediaStream
 import com.makd.afinity.data.models.player.MusicQuality
 import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.repository.DatabaseRepository
@@ -619,19 +620,45 @@ constructor(
                         val sourceName =
                             if (isAudio) audioMediaSource!!.name ?: itemName else source!!.name
                         val completedPlan = transcodePlan
+                        val transcoded = completedPlan != null && transcodedContainer != null
                         val sourceStreams =
                             when {
-                                isAudio -> emptyList()
-                                completedPlan != null && transcodedContainer != null ->
+                                isAudio && transcoded -> emptyList()
+                                isAudio ->
+                                    audioMediaSource!!.mediaStreams.orEmpty().map {
+                                        it.toAfinityMediaStream(baseUrl)
+                                    }
+                                transcoded ->
                                     transcodePlanner.transcodedStreams(
                                         source!!.mediaStreams,
-                                        completedPlan,
+                                        completedPlan!!,
                                         download.transcodeMaxWidth,
                                     )
 
                                 else -> source!!.mediaStreams
                             }
-                        createLocalSource(itemId, sourceId, sourceName, finalFile, sourceStreams)
+                        val localContainer =
+                            when {
+                                transcoded -> transcodedContainer
+                                isAudio -> audioMediaSource!!.container
+                                else -> source!!.container
+                            }
+                        val localBitrate =
+                            when {
+                                transcoded ->
+                                    averageBitrate(finalFile.length(), download.runtimeTicks)
+                                isAudio -> audioMediaSource!!.bitrate?.toLong()
+                                else -> source!!.bitrate
+                            }
+                        createLocalSource(
+                            itemId,
+                            sourceId,
+                            sourceName,
+                            finalFile,
+                            sourceStreams,
+                            localBitrate,
+                            localContainer,
+                        )
 
                         downloadNotificationManager.postCompleted(
                             "done_$downloadId".hashCode(),
@@ -727,6 +754,12 @@ constructor(
 
             else -> null
         }
+
+    private fun averageBitrate(bytes: Long, runtimeTicks: Long?): Long? {
+        val seconds = (runtimeTicks ?: 0L) / 10_000_000L
+        if (bytes <= 0L || seconds <= 0L) return null
+        return bytes * 8L / seconds
+    }
 
     private fun verifyTranscodedVideo(file: File, container: String?, runtimeTicks: Long?) {
         if (container != "mp4") return
@@ -1148,6 +1181,8 @@ constructor(
         sourceName: String,
         file: File,
         originalStreams: List<AfinityMediaStream>,
+        bitrate: Long?,
+        container: String?,
     ) {
         try {
             val localSourceId = "${sourceId}_local"
@@ -1169,6 +1204,8 @@ constructor(
                     size = file.length(),
                     mediaStreams = emptyList(),
                     downloadId = null,
+                    bitrate = bitrate,
+                    container = container,
                 ),
                 itemId,
             )

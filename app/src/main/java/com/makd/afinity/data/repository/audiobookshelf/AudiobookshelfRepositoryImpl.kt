@@ -887,6 +887,50 @@ constructor(
         }
     }
 
+    override suspend fun getDownloadedTracks(
+        itemId: String,
+        episodeId: String?,
+    ): List<AudioTrack> {
+        return withContext(Dispatchers.IO) {
+            val (serverId, userId) = activeContext ?: return@withContext emptyList()
+            val dao = database.absDownloadDao()
+            val download =
+                (if (episodeId == null) {
+                        dao.getDownloadForBook(itemId, serverId, userId.toString())
+                    } else {
+                        dao.getDownloadForEpisode(itemId, episodeId, serverId, userId.toString())
+                    })
+                    ?.takeIf { it.status == AbsDownloadStatus.COMPLETED }
+                    ?: return@withContext emptyList()
+            download.serializedSession
+                ?.let { serialized ->
+                    try {
+                        json.decodeFromString<PlaybackSession>(serialized)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Timber.w(e, "Unreadable local session for item $itemId")
+                        null
+                    }
+                }
+                ?.audioTracks
+                .orEmpty()
+        }
+    }
+
+    @Volatile private var adminCheck: Pair<String, Boolean>? = null
+
+    override suspend fun isCurrentUserAdmin(): Boolean {
+        val absUserId = _currentConfig.value?.absUserId ?: return false
+        adminCheck?.let { (userId, isAdmin) -> if (userId == absUserId) return isAdmin }
+        val isAdmin =
+            absResult("Failed to load Audiobookshelf user") { it.getMe() }
+                .map { it.type == "root" || it.type == "admin" }
+                .getOrNull() ?: return false
+        adminCheck = absUserId to isAdmin
+        return isAdmin
+    }
+
     private suspend fun localDownloadedCoverUrl(
         itemId: String,
         serverId: String,
@@ -976,8 +1020,12 @@ constructor(
                             id = itemResponse.id ?: itemId,
                             ino = itemResponse.ino,
                             libraryId = itemResponse.libraryId ?: "",
+                            path = itemResponse.path,
+                            isFile = itemResponse.isFile,
                             mediaType = itemResponse.mediaType ?: "book",
                             media = itemResponse.media!!,
+                            numFiles = itemResponse.numFiles,
+                            size = itemResponse.size,
                             addedAt = itemResponse.addedAt,
                             updatedAt = itemResponse.updatedAt,
                             userMediaProgress = itemResponse.userMediaProgress,

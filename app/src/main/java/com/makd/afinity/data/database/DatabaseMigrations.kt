@@ -1730,6 +1730,41 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_84_85 =
+        object : Migration(84, 85) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                listOf(
+                        "bitRate" to "INTEGER",
+                        "bitDepth" to "INTEGER",
+                        "sampleRate" to "INTEGER",
+                        "frameRate" to "REAL",
+                        "level" to "REAL",
+                        "aspectRatio" to "TEXT",
+                        "colorSpace" to "TEXT",
+                        "colorTransfer" to "TEXT",
+                        "colorPrimaries" to "TEXT",
+                        "pixelFormat" to "TEXT",
+                        "refFrames" to "INTEGER",
+                        "dvVersionMajor" to "INTEGER",
+                        "dvVersionMinor" to "INTEGER",
+                        "dvProfile" to "INTEGER",
+                        "dvLevel" to "INTEGER",
+                        "rpuPresentFlag" to "INTEGER",
+                        "elPresentFlag" to "INTEGER",
+                        "blPresentFlag" to "INTEGER",
+                        "dvBlSignalCompatibilityId" to "INTEGER",
+                    )
+                    .forEach { (column, type) ->
+                        db.execSQL("ALTER TABLE `mediastreams` ADD COLUMN `$column` $type")
+                    }
+                db.execSQL(
+                    "ALTER TABLE `mediastreams` ADD COLUMN `isInterlaced` INTEGER NOT NULL DEFAULT 0"
+                )
+                db.execSQL("ALTER TABLE `sources` ADD COLUMN `bitrate` INTEGER")
+                db.execSQL("ALTER TABLE `sources` ADD COLUMN `container` TEXT")
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1815,5 +1850,6 @@ object DatabaseMigrations {
             MIGRATION_81_82,
             MIGRATION_82_83,
             MIGRATION_83_84,
+            MIGRATION_84_85,
         )
 }
