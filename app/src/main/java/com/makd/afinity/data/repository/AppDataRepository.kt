@@ -658,6 +658,12 @@ constructor(
             }
 
             launch {
+                liveTvRepository.channelFavoriteChanges.collect { change ->
+                    updateFavoriteStatus(change.channel, change.favorite)
+                }
+            }
+
+            launch {
                 mediaRefreshBus.events
                     .filter { it == RefreshTrigger.USER_DATA_CHANGED }
                     .debounce(1500.milliseconds)
@@ -1644,6 +1650,14 @@ constructor(
                     current.copy(episodes = current.episodes.upserted(item, isFavorite))
                 is AfinityBoxSet ->
                     current.copy(boxSets = current.boxSets.upserted(item, isFavorite))
+                is AfinityChannel ->
+                    current.copy(
+                        channels =
+                            current.channels
+                                .filterNot { it.id == item.id }
+                                .let { if (isFavorite) it + item.copy(favorite = true) else it }
+                                .sortedBy { it.channelNumber ?: it.name }
+                    )
                 else -> current
             }
         }

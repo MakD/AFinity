@@ -1024,7 +1024,9 @@ constructor(
                 else userDataRepository.removeFromFavorites(channelId)
             if (changed) {
                 updateCachedFavorite(channelId, favorite)
-                _channelFavoriteChanges.emit(ChannelFavoriteChange(channelId, favorite))
+                _channelFavoriteChanges.emit(
+                    ChannelFavoriteChange(channelId, favorite, channel.copy(favorite = favorite))
+                )
             }
             changed
         }
