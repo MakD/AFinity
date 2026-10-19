@@ -1438,7 +1438,7 @@ private fun sourceTypeIcon(type: CustomSectionSourceType): Int =
         CustomSectionSourceType.TAG -> R.drawable.ic_bookmark
         CustomSectionSourceType.COLLECTION -> R.drawable.ic_collection
         CustomSectionSourceType.PLAYLIST -> R.drawable.ic_playlist
-        CustomSectionSourceType.LIBRARY -> R.drawable.ic_video_library
+        CustomSectionSourceType.LIBRARY -> R.drawable.ic_folder
     }
 
 private fun formatSeasonRange(start: String, end: String, locale: Locale): String {

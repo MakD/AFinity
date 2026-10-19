@@ -473,7 +473,7 @@ fun PlayerOptionsScreen(
                         )
                         SettingsDivider()
                         SkipModeSelectorItem(
-                            icon = painterResource(id = R.drawable.ic_skip_next),
+                            icon = painterResource(id = R.drawable.ic_player_skip_forward),
                             title = stringResource(R.string.pref_skip_intro_title),
                             selectedMode = uiState.skipIntroMode,
                             onModeSelected = viewModel::setSkipIntroMode,

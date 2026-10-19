@@ -13,6 +13,7 @@ import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.common.DrawerLibrariesMode
 import com.makd.afinity.data.models.common.EpisodeLayout
+import com.makd.afinity.data.models.common.HeroStyle
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.livetv.ChannelSortOrder
 import com.makd.afinity.data.models.livetv.GuideIndicator
@@ -130,6 +131,7 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val EPISODE_LAYOUT = stringPreferencesKey("episode_layout")
         val DETAIL_LAYOUT = stringPreferencesKey("detail_layout")
         val CARD_SIZE = stringPreferencesKey("card_size")
+        val HERO_STYLE = stringPreferencesKey("hero_style")
 
         val SUBTITLE_TEXT_COLOR = intPreferencesKey("subtitle_text_color")
         val SUBTITLE_TEXT_SIZE = stringPreferencesKey("subtitle_text_size")
@@ -1256,6 +1258,16 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
     override fun getCardSizeFlow(): Flow<CardSize> {
         return dataStore.data.map { preferences ->
             preferences[Keys.CARD_SIZE]?.let { CardSize.fromValue(it) } ?: CardSize.DEFAULT
+        }
+    }
+
+    override suspend fun setHeroStyle(style: HeroStyle) {
+        dataStore.edit { preferences -> preferences[Keys.HERO_STYLE] = style.value }
+    }
+
+    override fun getHeroStyleFlow(): Flow<HeroStyle> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.HERO_STYLE]?.let { HeroStyle.fromValue(it) } ?: HeroStyle.FULL_BLEED
         }
     }
 

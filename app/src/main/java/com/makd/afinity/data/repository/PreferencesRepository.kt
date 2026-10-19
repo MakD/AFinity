@@ -4,6 +4,7 @@ import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.common.DrawerLibrariesMode
 import com.makd.afinity.data.models.common.EpisodeLayout
+import com.makd.afinity.data.models.common.HeroStyle
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.livetv.LiveTvViewOptions
 import com.makd.afinity.data.models.player.AssRenderMode
@@ -449,6 +450,10 @@ interface PreferencesRepository {
     suspend fun setCardSize(size: CardSize)
 
     fun getCardSizeFlow(): Flow<CardSize>
+
+    suspend fun setHeroStyle(style: HeroStyle)
+
+    fun getHeroStyleFlow(): Flow<HeroStyle>
 
     suspend fun setShowRatings(enabled: Boolean)
 

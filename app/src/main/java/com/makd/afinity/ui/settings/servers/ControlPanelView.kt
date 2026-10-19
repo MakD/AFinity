@@ -173,7 +173,7 @@ fun ControlPanelScreen(
                 endPadding = 0.dp,
             ) {
                 SettingsItem(
-                    icon = painterResource(id = R.drawable.ic_video_library),
+                    icon = painterResource(id = R.drawable.ic_folder),
                     title = stringResource(R.string.libraries_title),
                     subtitle = stringResource(R.string.libraries_admin_summary),
                     onClick = onOpenLibraries,

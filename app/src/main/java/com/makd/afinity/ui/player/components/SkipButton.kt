@@ -84,7 +84,7 @@ fun SkipButton(
                     trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
                 )
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_skip_next),
+                    painter = painterResource(id = R.drawable.ic_player_skip_forward),
                     contentDescription = stringResource(R.string.cd_skip_button_icon),
                     modifier = Modifier.size(14.dp),
                     tint = MaterialTheme.colorScheme.primary,

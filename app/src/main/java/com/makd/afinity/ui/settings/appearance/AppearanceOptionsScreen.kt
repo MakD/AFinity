@@ -44,6 +44,7 @@ import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.common.DrawerLibrariesMode
 import com.makd.afinity.data.models.common.EpisodeLayout
+import com.makd.afinity.data.models.common.HeroStyle
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.EndAlignedDropdownMenu
@@ -77,6 +78,7 @@ fun AppearanceOptionsScreen(
     val episodeLayout by viewModel.episodeLayout.collectAsStateWithLifecycle()
     val detailLayout by viewModel.detailLayout.collectAsStateWithLifecycle()
     val cardSize by viewModel.cardSize.collectAsStateWithLifecycle()
+    val heroStyle by viewModel.heroStyle.collectAsStateWithLifecycle()
     val showRatings by viewModel.showRatings.collectAsStateWithLifecycle()
     val showAwards by viewModel.showAwards.collectAsStateWithLifecycle()
     val lastFmPopularSort by viewModel.lastFmPopularSort.collectAsStateWithLifecycle()
@@ -183,6 +185,11 @@ fun AppearanceOptionsScreen(
                         title = stringResource(R.string.custom_sections_title),
                         subtitle = stringResource(R.string.custom_sections_settings_summary),
                         onClick = onCustomSectionsClick,
+                    )
+                    SettingsDivider()
+                    HeroStyleSelectorItem(
+                        selectedStyle = heroStyle,
+                        onStyleSelected = viewModel::setHeroStyle,
                     )
                     SettingsDivider()
                     SettingsSwitchItem(
@@ -454,6 +461,66 @@ private fun getCardSizeDisplayName(size: CardSize): String {
 }
 
 @Composable
+private fun HeroStyleSelectorItem(
+    selectedStyle: HeroStyle,
+    onStyleSelected: (HeroStyle) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        SettingsItem(
+            icon = painterResource(id = R.drawable.ic_carousel_horizontal),
+            title = stringResource(R.string.pref_hero_style_title),
+            subtitle = getHeroStyleDisplayName(selectedStyle),
+            onClick = { expanded = true },
+            trailing = {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp),
+                )
+            },
+        )
+
+        EndAlignedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        ) {
+            HeroStyle.entries.forEach { style ->
+                DropdownMenuItem(
+                    text = { Text(getHeroStyleDisplayName(style)) },
+                    onClick = {
+                        onStyleSelected(style)
+                        expanded = false
+                    },
+                    leadingIcon =
+                        if (style == selectedStyle) {
+                            {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_check),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else null,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun getHeroStyleDisplayName(style: HeroStyle): String {
+    return when (style) {
+        HeroStyle.FULL_BLEED -> stringResource(R.string.hero_style_full_bleed)
+        HeroStyle.PEEK -> stringResource(R.string.hero_style_peek)
+        HeroStyle.INSET_CARD -> stringResource(R.string.hero_style_inset_card)
+    }
+}
+
+@Composable
 private fun DetailLayoutSelectorItem(
     selectedLayout: DetailLayout,
     onLayoutSelected: (DetailLayout) -> Unit,
@@ -514,7 +581,7 @@ private fun DrawerLibrariesModeSelectorItem(
 
     Box {
         SettingsItem(
-            icon = painterResource(id = R.drawable.ic_video_library),
+            icon = painterResource(id = R.drawable.ic_folder),
             title = stringResource(R.string.pref_libraries_in_drawer_title),
             subtitle = getDrawerLibrariesModeDisplayName(selectedMode),
             onClick = { expanded = true },
@@ -587,7 +654,7 @@ private fun EpisodeLayoutSelectorItem(
 
     Box {
         SettingsItem(
-            icon = painterResource(id = R.drawable.ic_episode_layout),
+            icon = painterResource(id = R.drawable.ic_list_details),
             title = stringResource(R.string.pref_episode_layout_title),
             subtitle = getEpisodeLayoutDisplayName(selectedLayout),
             onClick = { expanded = true },

@@ -21,8 +21,8 @@ enum class Destination(
     LIBRARIES(
         route = "libraries",
         titleRes = R.string.libraries_title,
-        selectedIconRes = R.drawable.ic_video_library_filled,
-        unselectedIconRes = R.drawable.ic_video_library,
+        selectedIconRes = R.drawable.ic_folder_filled,
+        unselectedIconRes = R.drawable.ic_folder,
     ),
     LIVE_TV(
         route = "live_tv",

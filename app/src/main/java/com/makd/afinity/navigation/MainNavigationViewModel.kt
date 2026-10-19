@@ -8,6 +8,7 @@ import com.makd.afinity.data.manager.PendingNavigationManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.common.DrawerLibrariesMode
+import com.makd.afinity.data.models.common.HeroStyle
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.AppDataRepository
@@ -103,6 +104,15 @@ constructor(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = CardSize.DEFAULT,
+            )
+
+    val heroStyle =
+        preferencesRepository
+            .getHeroStyleFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = HeroStyle.FULL_BLEED,
             )
 
     val sideSheetEnabled =

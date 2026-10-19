@@ -382,7 +382,7 @@ private fun UserAccessTiles(
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             AccessTile(
-                icon = R.drawable.ic_video_library,
+                icon = R.drawable.ic_folder,
                 label = stringResource(R.string.libraries_title),
                 value = libraries,
                 isOff = !access.allLibraries && access.enabledLibraryIds.isEmpty(),

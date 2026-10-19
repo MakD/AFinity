@@ -463,7 +463,7 @@ private fun NoRecordingsCard() {
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp),
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.ic_video_library),
+                painter = painterResource(id = R.drawable.ic_folder),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.outline,
                 modifier = Modifier.size(32.dp),

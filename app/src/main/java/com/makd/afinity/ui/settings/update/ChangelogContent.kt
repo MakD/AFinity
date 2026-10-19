@@ -120,7 +120,7 @@ private fun ChangelogAlertType.style(): ChangelogAlertStyle =
     when (this) {
         ChangelogAlertType.NOTE ->
             ChangelogAlertStyle(
-                R.drawable.ic_info_circle_filled,
+                R.drawable.ic_info_outlined,
                 R.string.update_alert_note,
                 Color(0xFF0969DA),
                 Color(0xFF4493F8),

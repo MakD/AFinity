@@ -224,7 +224,7 @@ private fun TypeRow(
 
     Box {
         SettingsItem(
-            icon = painterResource(id = R.drawable.ic_video_library),
+            icon = painterResource(id = R.drawable.ic_folder),
             title = stringResource(R.string.library_add_type),
             subtitle = stringResource(selected.label),
             onClick = { expanded = true },

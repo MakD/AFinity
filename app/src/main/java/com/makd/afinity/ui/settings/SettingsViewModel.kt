@@ -12,6 +12,7 @@ import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.common.DrawerLibrariesMode
 import com.makd.afinity.data.models.common.EpisodeLayout
+import com.makd.afinity.data.models.common.HeroStyle
 import com.makd.afinity.data.models.mdblist.MdbListUsage
 import com.makd.afinity.data.models.player.AssRenderMode
 import com.makd.afinity.data.models.player.MpvAudioOutput
@@ -222,6 +223,15 @@ constructor(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = CardSize.DEFAULT,
+            )
+
+    val heroStyle: StateFlow<HeroStyle> =
+        preferencesRepository
+            .getHeroStyleFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = HeroStyle.FULL_BLEED,
             )
 
     private val _manualOfflineMode = MutableStateFlow(false)
@@ -1276,6 +1286,18 @@ constructor(
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set card size")
+            }
+        }
+    }
+
+    fun setHeroStyle(style: HeroStyle) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setHeroStyle(style)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set hero style")
             }
         }
     }

@@ -278,7 +278,7 @@ private fun MaxRatingRow(
 
     Box {
         SettingsItem(
-            icon = painterResource(id = R.drawable.ic_family),
+            icon = painterResource(id = R.drawable.ic_users_group),
             title = stringResource(R.string.parental_max_rating),
             subtitle = selected,
             onClick = { expanded = true },

@@ -65,6 +65,7 @@ import com.makd.afinity.AuthenticationState
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.common.DrawerLibrariesMode
+import com.makd.afinity.data.models.common.HeroStyle
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
@@ -147,6 +148,8 @@ val LocalShowRatings = compositionLocalOf { true }
 
 val LocalShowAwards = compositionLocalOf { true }
 
+val LocalHeroStyle = compositionLocalOf { HeroStyle.FULL_BLEED }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainNavigation(
@@ -175,6 +178,7 @@ fun MainNavigation(
     val showRatings by viewModel.showRatings.collectAsStateWithLifecycle()
     val showAwards by viewModel.showAwards.collectAsStateWithLifecycle()
     val cardSize by viewModel.cardSize.collectAsStateWithLifecycle()
+    val heroStyle by viewModel.heroStyle.collectAsStateWithLifecycle()
     val sideSheetEnabled by viewModel.sideSheetEnabled.collectAsStateWithLifecycle()
     val navigationDrawerEnabled by viewModel.navigationDrawerEnabled.collectAsStateWithLifecycle()
     val drawerLibrariesMode by viewModel.drawerLibrariesMode.collectAsStateWithLifecycle()
@@ -436,6 +440,7 @@ fun MainNavigation(
                     LocalShowRatings provides showRatings,
                     LocalShowAwards provides showAwards,
                     LocalCardSize provides cardSize,
+                    LocalHeroStyle provides heroStyle,
                 ) {
                     SharedTransitionLayout {
                         CardRowContainer(

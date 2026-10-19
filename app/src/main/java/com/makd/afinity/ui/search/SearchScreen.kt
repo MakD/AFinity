@@ -1277,7 +1277,7 @@ private fun getGenreIcon(genre: String, isAudiobookshelf: Boolean = false): Pain
         normalizedGenre == "documentary" -> painterResource(id = R.drawable.ic_article)
         normalizedGenre == "animation" -> painterResource(id = R.drawable.ic_animation)
         normalizedGenre == "family" || normalizedGenre.contains("family") ->
-            painterResource(id = R.drawable.ic_family)
+            painterResource(id = R.drawable.ic_users_group)
         normalizedGenre == "adventure" || normalizedGenre.contains("adventure") ->
             painterResource(id = R.drawable.ic_adventure)
         normalizedGenre == "crime" -> painterResource(id = R.drawable.ic_security)
@@ -1297,7 +1297,7 @@ private fun getGenreIcon(genre: String, isAudiobookshelf: Boolean = false): Pain
         normalizedGenre.contains("fiction") || normalizedGenre.contains("literary") ->
             painterResource(id = R.drawable.ic_book_audio)
         normalizedGenre.contains("children") || normalizedGenre.contains("young adult") ->
-            painterResource(id = R.drawable.ic_family)
+            painterResource(id = R.drawable.ic_users_group)
         normalizedGenre.contains("erotica") -> painterResource(id = R.drawable.ic_favorite)
         normalizedGenre.contains("art") -> painterResource(id = R.drawable.ic_auto_awesome)
         normalizedGenre.contains("entertainment") -> painterResource(id = R.drawable.ic_theater)
