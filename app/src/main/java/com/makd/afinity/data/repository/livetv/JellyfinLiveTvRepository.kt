@@ -31,6 +31,7 @@ import com.makd.afinity.util.MediaCapabilities
 import com.makd.afinity.util.redactUrl
 import java.time.LocalDateTime
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration.Companion.minutes
@@ -223,8 +224,22 @@ constructor(
         limit: Int?,
         sortOrder: ChannelSortOrder,
         favoritesFirst: Boolean,
+        withCurrentProgram: Boolean,
     ): Result<List<AfinityChannel>> = apiInvoker.apiResult { apiClient, userId ->
         val baseUrl = getBaseUrl()
+        val cacheKey =
+            channelListKey(
+                type = type,
+                isFavorite = isFavorite,
+                isMovie = isMovie,
+                isSeries = isSeries,
+                isNews = isNews,
+                isKids = isKids,
+                isSports = isSports,
+                limit = limit,
+                sortOrder = sortOrder,
+                favoritesFirst = favoritesFirst,
+            )
 
         val response =
             LiveTvApi(apiClient)
@@ -260,13 +275,122 @@ constructor(
                     imageTypeLimit = 1,
                     enableImageTypes = listOf(ImageType.PRIMARY, ImageType.THUMB),
                     fields = listOf(ItemFields.CHANNEL_INFO),
-                    addCurrentProgram = true,
+                    addCurrentProgram = withCurrentProgram,
                 )
 
-        response.content.items.mapNotNull { channelDto ->
-            val currentProgram = channelDto.currentProgram?.toAfinityProgram(baseUrl)
-            channelDto.toAfinityChannel(baseUrl, currentProgram)
+        response.content.items
+            .mapNotNull { channelDto ->
+                val currentProgram = channelDto.currentProgram?.toAfinityProgram(baseUrl)
+                channelDto.toAfinityChannel(baseUrl, currentProgram)
+            }
+            .also { channels ->
+                if (!withCurrentProgram && cacheKey != null) channelListCache[cacheKey] = channels
+            }
+    }
+
+    override fun getCachedChannels(
+        type: ChannelType?,
+        isFavorite: Boolean?,
+        isMovie: Boolean?,
+        isSeries: Boolean?,
+        isNews: Boolean?,
+        isKids: Boolean?,
+        isSports: Boolean?,
+        limit: Int?,
+        sortOrder: ChannelSortOrder,
+        favoritesFirst: Boolean,
+    ): List<AfinityChannel>? =
+        channelListKey(
+                type = type,
+                isFavorite = isFavorite,
+                isMovie = isMovie,
+                isSeries = isSeries,
+                isNews = isNews,
+                isKids = isKids,
+                isSports = isSports,
+                limit = limit,
+                sortOrder = sortOrder,
+                favoritesFirst = favoritesFirst,
+            )
+            ?.let { channelListCache[it] }
+
+    private data class ChannelListKey(
+        val serverId: String,
+        val userId: UUID,
+        val type: ChannelType?,
+        val isFavorite: Boolean?,
+        val isMovie: Boolean?,
+        val isSeries: Boolean?,
+        val isNews: Boolean?,
+        val isKids: Boolean?,
+        val isSports: Boolean?,
+        val limit: Int?,
+        val sortOrder: ChannelSortOrder,
+        val favoritesFirst: Boolean,
+    )
+
+    private val channelListCache = ConcurrentHashMap<ChannelListKey, List<AfinityChannel>>()
+
+    private fun channelListKey(
+        type: ChannelType?,
+        isFavorite: Boolean?,
+        isMovie: Boolean?,
+        isSeries: Boolean?,
+        isNews: Boolean?,
+        isKids: Boolean?,
+        isSports: Boolean?,
+        limit: Int?,
+        sortOrder: ChannelSortOrder,
+        favoritesFirst: Boolean,
+    ): ChannelListKey? {
+        val session = sessionManager.currentSession.value ?: return null
+        return ChannelListKey(
+            serverId = session.serverId,
+            userId = session.userId,
+            type = type,
+            isFavorite = isFavorite,
+            isMovie = isMovie,
+            isSeries = isSeries,
+            isNews = isNews,
+            isKids = isKids,
+            isSports = isSports,
+            limit = limit,
+            sortOrder = sortOrder,
+            favoritesFirst = favoritesFirst,
+        )
+    }
+
+    private fun updateCachedFavorite(channelId: UUID, favorite: Boolean) {
+        channelListCache.keys.removeAll { it.isFavorite == true }
+        channelListCache.replaceAll { _, channels ->
+            if (channels.none { it.id == channelId }) channels
+            else
+                channels.map { channel ->
+                    if (channel.id == channelId) channel.copy(favorite = favorite) else channel
+                }
         }
+    }
+
+    override suspend fun getCurrentProgramsResult(
+        channelIds: List<UUID>
+    ): Result<Map<UUID, AfinityProgram>> = apiInvoker.apiResult { apiClient, userId ->
+        val baseUrl = getBaseUrl()
+        LiveTvApi(apiClient)
+            .getLiveTvPrograms(
+                channelIds = channelIds,
+                userId = userId,
+                isAiring = true,
+                sortBy = listOf(ItemSortBy.START_DATE),
+                sortOrder = listOf(SortOrder.ASCENDING),
+                enableImages = false,
+                fields = FieldSets.LIVE_TV_GUIDE,
+                enableTotalRecordCount = false,
+            )
+            .content
+            .items
+            .map { programDto -> programDto.toAfinityProgram(baseUrl) }
+            .groupBy { it.channelId }
+            .mapValues { (_, programs) -> programs.first() }
     }
 
     override suspend fun getChannel(channelId: UUID): AfinityChannel? =
@@ -898,7 +1022,10 @@ constructor(
             val changed =
                 if (favorite) userDataRepository.addToFavorites(channelId)
                 else userDataRepository.removeFromFavorites(channelId)
-            if (changed) _channelFavoriteChanges.emit(ChannelFavoriteChange(channelId, favorite))
+            if (changed) {
+                updateCachedFavorite(channelId, favorite)
+                _channelFavoriteChanges.emit(ChannelFavoriteChange(channelId, favorite))
+            }
             changed
         }
 

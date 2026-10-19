@@ -201,6 +201,7 @@ constructor(
             _uiState.update { it.copy(isLoading = false, loadFailed = true) }
             return
         }
+        viewModelScope.launch { loadSimilarItems(id) }
         viewModelScope.launch {
             liveTvRepository
                 .getProgramResult(id)
@@ -209,7 +210,6 @@ constructor(
                         it.copy(isLoading = false, loadFailed = false, program = program)
                     }
                     launch { loadUpNext(program) }
-                    launch { loadSimilarItems(program) }
                 }
                 .onFailure { e ->
                     if (e !is NoActiveSessionException) Timber.e(e, "Failed to load program $id")
@@ -238,8 +238,8 @@ constructor(
             }
     }
 
-    private suspend fun loadSimilarItems(program: AfinityProgram) {
-        val similar = liveTvRepository.getSimilarToProgram(program.id, SIMILAR_LIMIT)
+    private suspend fun loadSimilarItems(programId: UUID) {
+        val similar = liveTvRepository.getSimilarToProgram(programId, SIMILAR_LIMIT)
         _uiState.update { it.copy(similarItems = similar) }
     }
 

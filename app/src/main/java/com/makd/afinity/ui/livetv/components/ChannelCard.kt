@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -44,6 +45,7 @@ fun ChannelCard(
     onFavoriteClick: () -> Unit,
     modifier: Modifier = Modifier,
     showProgramOverlays: Boolean = true,
+    programPending: Boolean = false,
     onLongClick: (() -> Unit)? = null,
 ) {
     val density = LocalDensity.current
@@ -187,6 +189,20 @@ fun ChannelCard(
         }
 
         Spacer(modifier = Modifier.height(2.dp))
+
+        if (programPending) {
+            Box(contentAlignment = Alignment.CenterStart) {
+                Text(text = "", style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                Box(
+                    modifier =
+                        Modifier.fillMaxWidth(0.72f)
+                            .height(10.dp)
+                            .clip(RoundedCornerShape(5.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                )
+            }
+            return@Column
+        }
 
         val timePattern = stringResource(R.string.livetv_time_pattern)
         val programName = currentProgram?.name ?: stringResource(R.string.livetv_unknown_program)

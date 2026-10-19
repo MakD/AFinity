@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -34,11 +35,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -64,6 +68,7 @@ import com.makd.afinity.ui.components.FilterFab
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.livetv.components.EpgChannelCell
+import com.makd.afinity.ui.livetv.components.EpgPendingRow
 import com.makd.afinity.ui.livetv.components.EpgProgramRow
 import com.makd.afinity.ui.livetv.components.EpgTimeHeader
 import com.makd.afinity.ui.livetv.components.LiveTvFilterDialog
@@ -79,6 +84,10 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
+import kotlinx.coroutines.flow.distinctUntilChanged
+
+private const val RENDER_SLOT_MINUTES = 30L
+private const val RENDER_MARGIN_SLOTS = 2
 
 @Composable
 fun LiveTvGuideScreen(
@@ -150,6 +159,7 @@ private fun BoxScope.GuideContentWithFilters(
         onJumpToNow = viewModel::jumpToNow,
         onSelectDay = viewModel::selectDay,
         onScrollConsumed = viewModel::onScrollConsumed,
+        onVisibleChannelsChanged = viewModel::onVisibleChannelsChanged,
         onRetry = viewModel::retry,
         modifier = Modifier.fillMaxSize(),
         widthSizeClass = widthSizeClass,
@@ -184,6 +194,7 @@ private fun LiveTvGuideContent(
     onJumpToNow: () -> Unit,
     onSelectDay: (LocalDate, LocalTime) -> Unit,
     onScrollConsumed: () -> Unit,
+    onVisibleChannelsChanged: (Int, Int) -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
     widthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact,
@@ -231,6 +242,37 @@ private fun LiveTvGuideContent(
     if (uiState.isEpgLoading && uiState.epgChannels.isEmpty()) {
         FullScreenLoading(modifier = modifier)
         return
+    }
+
+    val now = rememberCurrentTime()
+    val renderSlots by
+        remember(horizontalScrollState, hourWidthPx) {
+            derivedStateOf {
+                val slotPx = hourWidthPx * RENDER_SLOT_MINUTES / 60f
+                val left = horizontalScrollState.value
+                val right = left + horizontalScrollState.viewportSize
+                (left / slotPx).toInt()..(right / slotPx).toInt()
+            }
+        }
+    val renderStart =
+        uiState.epgStartTime.plusMinutes(
+            (renderSlots.first - RENDER_MARGIN_SLOTS) * RENDER_SLOT_MINUTES
+        )
+    val renderEnd =
+        uiState.epgStartTime.plusMinutes(
+            (renderSlots.last + 1 + RENDER_MARGIN_SLOTS) * RENDER_SLOT_MINUTES
+        )
+
+    val listState = rememberLazyListState()
+    val currentOnVisibleChannelsChanged by rememberUpdatedState(onVisibleChannelsChanged)
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            val lastItem = listState.layoutInfo.visibleItemsInfo.maxOfOrNull { it.index } ?: 0
+            (listState.firstVisibleItemIndex - 1).coerceAtLeast(0) to
+                (lastItem - 1).coerceAtLeast(0)
+        }
+            .distinctUntilChanged()
+            .collect { (first, last) -> currentOnVisibleChannelsChanged(first, last) }
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -282,6 +324,7 @@ private fun LiveTvGuideContent(
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
+            state = listState,
             contentPadding = PaddingValues(bottom = playerOffset),
         ) {
             stickyHeader {
@@ -329,19 +372,33 @@ private fun LiveTvGuideContent(
                         onLongClick = { onChannelLongClick(channel) },
                     )
 
-                    val channelPrograms = uiState.epgPrograms[channel.id] ?: emptyList()
+                    val channelPrograms = uiState.epgPrograms[channel.id]
                     Box(modifier = Modifier.weight(1f).horizontalScroll(horizontalScrollState)) {
-                        EpgProgramRow(
-                            programs = channelPrograms,
-                            epgStartTime = uiState.epgStartTime,
-                            hours = uiState.epgHours,
-                            hourWidth = hourWidth,
-                            cellHeight = rowHeight,
-                            indicators = viewOptions.indicators,
-                            colorCoded = viewOptions.colorCodedBackgrounds,
-                            categories = viewOptions.guideCategories,
-                            onProgramClick = onProgramClick,
-                        )
+                        if (channelPrograms == null) {
+                            EpgPendingRow(
+                                epgStartTime = uiState.epgStartTime,
+                                hours = uiState.epgHours,
+                                hourWidth = hourWidth,
+                                cellHeight = rowHeight,
+                                now = now,
+                                scrollState = horizontalScrollState,
+                            )
+                        } else {
+                            EpgProgramRow(
+                                programs = channelPrograms,
+                                epgStartTime = uiState.epgStartTime,
+                                hours = uiState.epgHours,
+                                hourWidth = hourWidth,
+                                cellHeight = rowHeight,
+                                now = now,
+                                renderStart = renderStart,
+                                renderEnd = renderEnd,
+                                indicators = viewOptions.indicators,
+                                colorCoded = viewOptions.colorCodedBackgrounds,
+                                categories = viewOptions.guideCategories,
+                                onProgramClick = onProgramClick,
+                            )
+                        }
                     }
                 }
             }

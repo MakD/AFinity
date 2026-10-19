@@ -24,18 +24,37 @@ fun LiveTvViewOptions.channelListQuery(includeCategories: Boolean): ChannelListQ
             },
     )
 
-suspend fun LiveTvRepository.getChannelsFor(query: ChannelListQuery): Result<List<AfinityChannel>> {
-    fun flag(category: ProgramCategory): Boolean? =
-        query.categories?.let { if (category in it) true else null }
+private val ChannelListQuery.favoriteFilter: Boolean?
+    get() = if (favoritesOnly) true else null
 
-    return getChannelsResult(
-        isFavorite = if (query.favoritesOnly) true else null,
-        isMovie = flag(ProgramCategory.MOVIES),
-        isSeries = flag(ProgramCategory.SHOWS),
-        isNews = flag(ProgramCategory.NEWS),
-        isKids = flag(ProgramCategory.KIDS),
-        isSports = flag(ProgramCategory.SPORTS),
+private fun ChannelListQuery.flag(category: ProgramCategory): Boolean? = categories?.let {
+    if (category in it) true else null
+}
+
+suspend fun LiveTvRepository.getChannelsFor(
+    query: ChannelListQuery,
+    withCurrentProgram: Boolean = true,
+): Result<List<AfinityChannel>> =
+    getChannelsResult(
+        isFavorite = query.favoriteFilter,
+        isMovie = query.flag(ProgramCategory.MOVIES),
+        isSeries = query.flag(ProgramCategory.SHOWS),
+        isNews = query.flag(ProgramCategory.NEWS),
+        isKids = query.flag(ProgramCategory.KIDS),
+        isSports = query.flag(ProgramCategory.SPORTS),
+        sortOrder = query.sortOrder,
+        favoritesFirst = query.favoritesFirst,
+        withCurrentProgram = withCurrentProgram,
+    )
+
+fun LiveTvRepository.cachedChannelsFor(query: ChannelListQuery): List<AfinityChannel>? =
+    getCachedChannels(
+        isFavorite = query.favoriteFilter,
+        isMovie = query.flag(ProgramCategory.MOVIES),
+        isSeries = query.flag(ProgramCategory.SHOWS),
+        isNews = query.flag(ProgramCategory.NEWS),
+        isKids = query.flag(ProgramCategory.KIDS),
+        isSports = query.flag(ProgramCategory.SPORTS),
         sortOrder = query.sortOrder,
         favoritesFirst = query.favoritesFirst,
     )
-}

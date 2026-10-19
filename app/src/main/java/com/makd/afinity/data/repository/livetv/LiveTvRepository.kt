@@ -41,7 +41,23 @@ interface LiveTvRepository {
         limit: Int? = null,
         sortOrder: ChannelSortOrder = ChannelSortOrder.NUMBER,
         favoritesFirst: Boolean = false,
+        withCurrentProgram: Boolean = true,
     ): Result<List<AfinityChannel>>
+
+    fun getCachedChannels(
+        type: ChannelType? = null,
+        isFavorite: Boolean? = null,
+        isMovie: Boolean? = null,
+        isSeries: Boolean? = null,
+        isNews: Boolean? = null,
+        isKids: Boolean? = null,
+        isSports: Boolean? = null,
+        limit: Int? = null,
+        sortOrder: ChannelSortOrder = ChannelSortOrder.NUMBER,
+        favoritesFirst: Boolean = false,
+    ): List<AfinityChannel>?
+
+    suspend fun getCurrentProgramsResult(channelIds: List<UUID>): Result<Map<UUID, AfinityProgram>>
 
     suspend fun getChannel(channelId: UUID): AfinityChannel?
 

@@ -10,6 +10,7 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import com.makd.afinity.ui.livetv.ChannelListQuery
 import com.makd.afinity.ui.livetv.VisibleRefresh
+import com.makd.afinity.ui.livetv.cachedChannelsFor
 import com.makd.afinity.ui.livetv.channelListQuery
 import com.makd.afinity.ui.livetv.getChannelsFor
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,8 +22,10 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -78,8 +81,22 @@ constructor(
     private var pendingScrollTo: LocalDateTime? = currentHalfHour()
     private var loadJob: Job? = null
     private var channelsQuery: ChannelListQuery? = null
+    private var windowPending = true
+    private var neededBlocks: IntRange = 0..0
+    private val blockJobs = mutableMapOf<Int, Job>()
+    private val loadedBlocks = mutableSetOf<Int>()
+    private val staleBlocks = mutableSetOf<Int>()
+    private val failedBlocks = mutableSetOf<Int>()
 
-    private val refresh = VisibleRefresh(viewModelScope, REFRESH_INTERVAL) { startLoad().join() }
+    private val refresh =
+        VisibleRefresh(viewModelScope, REFRESH_INTERVAL) {
+            val running = loadJob?.takeIf { it.isActive }
+            when {
+                running != null -> running.join()
+                windowPending -> startLoad().join()
+                else -> refreshBlocks()
+            }
+        }
 
     init {
         viewModelScope.launch {
@@ -105,11 +122,19 @@ constructor(
         _uiState.update {
             it.copy(
                 isEpgLoading = it.epgChannels.isEmpty(),
-                isWindowLoading = it.epgChannels.isNotEmpty(),
+                isWindowLoading = windowPending && it.epgChannels.isNotEmpty(),
                 loadFailed = false,
             )
         }
-        startLoad()
+        if (windowPending) startLoad() else ensureBlocks(neededBlocks)
+    }
+
+    fun onVisibleChannelsChanged(first: Int, last: Int) {
+        val blocks = blockOf(first - PREFETCH_ROWS)..blockOf(last + PREFETCH_ROWS)
+        if (blocks == neededBlocks) return
+        neededBlocks = blocks
+        blockJobs.forEach { (block, job) -> if (block !in blocks) job.cancel() }
+        if (!windowPending) ensureBlocks(blocks)
     }
 
     fun jumpToNow() {
@@ -146,27 +171,27 @@ constructor(
 
     private fun startLoad(): Job {
         loadJob?.cancel()
+        blockJobs.values.forEach { it.cancel() }
+        blockJobs.clear()
+        windowPending = true
         val start = requestedStart
-        return viewModelScope.launch { loadEpgData(start) }.also { loadJob = it }
+        return viewModelScope.launch { loadWindow(this, start) }.also { loadJob = it }
     }
 
-    private suspend fun loadEpgData(start: LocalDateTime) {
+    private suspend fun loadWindow(scope: CoroutineScope, start: LocalDateTime) {
         try {
             val query =
                 preferencesRepository
                     .getLiveTvViewOptionsFlow()
                     .first()
                     .channelListQuery(includeCategories = true)
-            val (channelsResult, days) =
-                coroutineScope {
-                    val channels = async {
-                        val loaded = _uiState.value.epgChannels
-                        if (loaded.isNotEmpty() && channelsQuery == query) Result.success(loaded)
-                        else liveTvRepository.getChannelsFor(query)
-                    }
-                    val days = async { _uiState.value.days.ifEmpty { loadDays() } }
-                    channels.await() to days.await()
-                }
+            val daysDeferred = scope.async { _uiState.value.days.ifEmpty { loadDays() } }
+            val reused =
+                _uiState.value.epgChannels.takeIf { it.isNotEmpty() && channelsQuery == query }
+            val cached = if (reused == null) liveTvRepository.cachedChannelsFor(query) else null
+            val channelsResult =
+                (reused ?: cached)?.let { Result.success(it) }
+                    ?: liveTvRepository.getChannelsFor(query, withCurrentProgram = false)
             val channels = channelsResult.getOrElse { e ->
                 onLoadFailed(e)
                 return
@@ -174,7 +199,12 @@ constructor(
 
             if (channels.isEmpty()) {
                 Timber.w("EPG: No channels found.")
+                val days = daysDeferred.await()
                 channelsQuery = query
+                windowPending = false
+                loadedBlocks.clear()
+                staleBlocks.clear()
+                failedBlocks.clear()
                 _uiState.update {
                     it.copy(
                         epgChannels = emptyList(),
@@ -189,52 +219,156 @@ constructor(
                 return
             }
 
-            val end = start.plusHours(GUIDE_HOURS.toLong())
-
-            val programsByChannel =
-                liveTvRepository
-                    .getGuideProgramsResult(
-                        channelIds = channels.map { it.id },
-                        windowStart = start,
-                        windowEnd = end,
-                    )
-                    .getOrElse { e ->
-                        onLoadFailed(e)
-                        return
-                    }
-                    .groupBy { it.channelId }
+            val lastBlock = (channels.size - 1) / BLOCK_SIZE
+            val firstWanted = neededBlocks.first.coerceAtMost(lastBlock)
+            val wanted = firstWanted..neededBlocks.last.coerceIn(firstWanted, lastBlock)
+            val results = coroutineScope {
+                wanted
+                    .map { block -> async { block to fetchBlock(block, channels, start) } }
+                    .awaitAll()
+            }
+            val loaded =
+                results
+                    .mapNotNull { (block, result) -> result.getOrNull()?.let { block to it } }
+                    .toMap()
+            if (loaded.isEmpty()) {
+                onLoadFailed(results.firstNotNullOf { it.second.exceptionOrNull() })
+                return
+            }
+            results.forEach { (block, result) ->
+                result.exceptionOrNull()?.let { e -> logBlockFailure(block, e) }
+            }
+            val days = daysDeferred.await()
 
             val scrollTo = pendingScrollTo
             pendingScrollTo = null
             channelsQuery = query
+            windowPending = false
+
+            val current = _uiState.value
+            val sameWindow = current.epgStartTime == start && current.epgChannels == channels
+            if (!sameWindow) {
+                loadedBlocks.clear()
+                staleBlocks.clear()
+                failedBlocks.clear()
+            }
+            loadedBlocks += loaded.keys
+            staleBlocks -= loaded.keys
+            failedBlocks -= loaded.keys
+            failedBlocks += wanted.filter { it !in loaded }
+            val programs =
+                loaded.values.fold(emptyMap<UUID, List<AfinityProgram>>()) { all, block ->
+                    all + block
+                }
 
             _uiState.update {
-                if (
-                    it.epgStartTime == start &&
-                        it.epgPrograms == programsByChannel &&
-                        it.epgChannels == channels &&
-                        it.days == days &&
-                        scrollTo == null
-                ) {
-                    it.copy(isEpgLoading = false, isWindowLoading = false, loadFailed = false)
-                } else {
-                    it.copy(
-                        epgChannels = channels,
-                        epgPrograms = programsByChannel,
-                        epgStartTime = start,
-                        days = days,
-                        scrollToTime = scrollTo ?: it.scrollToTime,
-                        isEpgLoading = false,
-                        isWindowLoading = false,
-                        loadFailed = false,
-                    )
-                }
+                val base = if (sameWindow) it.epgPrograms else emptyMap()
+                val changed = programs.filter { (id, list) -> base[id] != list }
+                it.copy(
+                    epgChannels = if (sameWindow) it.epgChannels else channels,
+                    epgPrograms = if (changed.isEmpty()) base else base + changed,
+                    epgStartTime = start,
+                    days = days,
+                    scrollToTime = scrollTo ?: it.scrollToTime,
+                    isEpgLoading = false,
+                    isWindowLoading = false,
+                    loadFailed = failedBlocks.isNotEmpty(),
+                )
+            }
+            ensureBlocks(neededBlocks)
+            if (cached != null) {
+                val shown = _uiState.value.epgChannels
+                viewModelScope.launch { revalidateChannels(query, shown) }
             }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             onLoadFailed(e)
         }
+    }
+
+    private suspend fun revalidateChannels(query: ChannelListQuery, shown: List<AfinityChannel>) {
+        val fresh =
+            liveTvRepository.getChannelsFor(query, withCurrentProgram = false).getOrNull() ?: return
+        if (channelsQuery != query || _uiState.value.epgChannels !== shown || fresh == shown) return
+        channelsQuery = null
+        startLoad()
+    }
+
+    private fun ensureBlocks(blocks: IntRange) {
+        val state = _uiState.value
+        val channels = state.epgChannels
+        if (channels.isEmpty()) return
+        val lastBlock = (channels.size - 1) / BLOCK_SIZE
+        for (block in blocks.first..minOf(blocks.last, lastBlock)) {
+            if (block in loadedBlocks && block !in staleBlocks) continue
+            if (blockJobs[block]?.isActive == true) continue
+            blockJobs[block] = viewModelScope.launch {
+                loadBlock(block, channels, state.epgStartTime)
+            }
+        }
+    }
+
+    private suspend fun refreshBlocks() {
+        staleBlocks += loadedBlocks
+        ensureBlocks(neededBlocks)
+        blockJobs.values.toList().forEach { it.join() }
+    }
+
+    private suspend fun loadBlock(
+        block: Int,
+        channels: List<AfinityChannel>,
+        start: LocalDateTime,
+    ) {
+        val result = fetchBlock(block, channels, start)
+        val state = _uiState.value
+        if (state.epgChannels !== channels || state.epgStartTime != start) return
+        result
+            .onSuccess { programs ->
+                loadedBlocks += block
+                staleBlocks -= block
+                failedBlocks -= block
+                _uiState.update {
+                    val changed = programs.filter { (id, list) -> it.epgPrograms[id] != list }
+                    it.copy(
+                        epgPrograms =
+                            if (changed.isEmpty()) it.epgPrograms else it.epgPrograms + changed,
+                        loadFailed = failedBlocks.isNotEmpty(),
+                    )
+                }
+            }
+            .onFailure { e ->
+                logBlockFailure(block, e)
+                failedBlocks += block
+                _uiState.update { it.copy(loadFailed = true) }
+            }
+    }
+
+    private suspend fun fetchBlock(
+        block: Int,
+        channels: List<AfinityChannel>,
+        start: LocalDateTime,
+    ): Result<Map<UUID, List<AfinityProgram>>> {
+        val ids =
+            channels
+                .subList(block * BLOCK_SIZE, minOf((block + 1) * BLOCK_SIZE, channels.size))
+                .map { it.id }
+        return liveTvRepository
+            .getGuideProgramsResult(
+                channelIds = ids,
+                windowStart = start,
+                windowEnd = start.plusHours(GUIDE_HOURS.toLong()),
+            )
+            .map { programs ->
+                val byChannel = programs.groupBy { it.channelId }
+                ids.associateWith { byChannel[it].orEmpty() }
+            }
+    }
+
+    private fun blockOf(channelIndex: Int): Int = channelIndex.coerceAtLeast(0) / BLOCK_SIZE
+
+    private fun logBlockFailure(block: Int, e: Throwable) {
+        if (e !is NoActiveSessionException) Timber.e(e, "Failed to load guide block $block")
     }
 
     private suspend fun loadDays(): List<LocalDate> {
@@ -268,5 +402,7 @@ constructor(
 
     private companion object {
         val REFRESH_INTERVAL = 60.seconds
+        const val BLOCK_SIZE = 100
+        const val PREFETCH_ROWS = 30
     }
 }

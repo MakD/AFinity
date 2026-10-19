@@ -20,15 +20,19 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -56,6 +60,7 @@ import com.makd.afinity.ui.livetv.components.LiveTvTopAppBar
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.theme.CardDimensions
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
 fun LiveTvChannelsScreen(
@@ -99,6 +104,7 @@ fun LiveTvChannelsScreen(
             onFavoriteClick = { channel -> viewModel.toggleFavorite(channel.id) },
             onLetterSelected = viewModel::onLetterSelected,
             onClearFilter = viewModel::clearLetterFilter,
+            onVisibleChannelsChanged = viewModel::onVisibleChannelsChanged,
             onRetry = viewModel::retry,
             filterCount = viewOptions.activeCount(includeGuideOptions = false),
             onFilterClick = { showFilters = true },
@@ -124,6 +130,7 @@ private fun LiveTvChannelsContent(
     onFavoriteClick: (AfinityChannel) -> Unit,
     onLetterSelected: (String) -> Unit,
     onClearFilter: () -> Unit,
+    onVisibleChannelsChanged: (Int, Int) -> Unit,
     onRetry: () -> Unit,
     filterCount: Int,
     onFilterClick: () -> Unit,
@@ -147,6 +154,18 @@ private fun LiveTvChannelsContent(
     val selectedLetter = uiState.selectedLetter
     val playerOffset = LocalPlayerOffset.current
     val safeBottom = WindowInsets.safeDrawing.asPaddingValues().calculateBottomPadding()
+
+    val gridState = rememberLazyGridState()
+    val currentOnVisibleChannelsChanged by rememberUpdatedState(onVisibleChannelsChanged)
+    LaunchedEffect(gridState) {
+        snapshotFlow {
+            val lastItem = gridState.layoutInfo.visibleItemsInfo.maxOfOrNull { it.index } ?: 0
+            (gridState.firstVisibleItemIndex - 1).coerceAtLeast(0) to
+                (lastItem - 1).coerceAtLeast(0)
+        }
+            .distinctUntilChanged()
+            .collect { (first, last) -> currentOnVisibleChannelsChanged(first, last) }
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         Row(modifier = Modifier.fillMaxSize()) {
@@ -183,6 +202,7 @@ private fun LiveTvChannelsContent(
                     LazyVerticalGrid(
                         columns = CardDimensions.channelGridCells,
                         modifier = Modifier.fillMaxSize(),
+                        state = gridState,
                         contentPadding =
                             PaddingValues(
                                 start = 14.dp,
@@ -228,6 +248,7 @@ private fun LiveTvChannelsContent(
                                 onClick = { onChannelClick(channel) },
                                 onFavoriteClick = { onFavoriteClick(channel) },
                                 showProgramOverlays = false,
+                                programPending = channel.id !in uiState.programsLoaded,
                                 onLongClick = { onChannelLongClick(channel) },
                             )
                         }
