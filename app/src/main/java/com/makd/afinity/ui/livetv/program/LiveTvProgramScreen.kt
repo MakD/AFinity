@@ -500,11 +500,12 @@ private fun ProgramBadges(
         return
     }
 
+    val chipStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
     MetadataFlowRow {
-        if (showLive) ProgramIndicatorBadge(GuideIndicator.LIVE)
-        if (showPremiere) ProgramIndicatorBadge(GuideIndicator.PREMIERE)
-        if (showNew) ProgramIndicatorBadge(GuideIndicator.NEW)
-        if (showRepeat) ProgramIndicatorBadge(GuideIndicator.REPEAT)
+        if (showLive) ProgramIndicatorBadge(GuideIndicator.LIVE, textStyle = chipStyle)
+        if (showPremiere) ProgramIndicatorBadge(GuideIndicator.PREMIERE, textStyle = chipStyle)
+        if (showNew) ProgramIndicatorBadge(GuideIndicator.NEW, textStyle = chipStyle)
+        if (showRepeat) ProgramIndicatorBadge(GuideIndicator.REPEAT, textStyle = chipStyle)
         if (showHd) VideoMetadataChip(stringResource(R.string.meta_res_hd))
         audio?.let { VideoMetadataChip(it) }
         tags.forEach { tag -> VideoMetadataChip(tag) }

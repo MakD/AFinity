@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.livetv.AfinityProgram
@@ -50,15 +51,20 @@ fun AfinityProgram.categoryColor(): Color? =
     }
 
 @Composable
-fun ProgramIndicatorBadge(indicator: GuideIndicator, modifier: Modifier = Modifier) {
+fun ProgramIndicatorBadge(
+    indicator: GuideIndicator,
+    modifier: Modifier = Modifier,
+    textStyle: TextStyle? = null,
+) {
     when (indicator) {
-        GuideIndicator.LIVE -> LiveBadge(modifier = modifier)
+        GuideIndicator.LIVE -> LiveBadge(modifier = modifier, textStyle = textStyle)
         GuideIndicator.NEW ->
             AfinityBadge(
                 text = stringResource(R.string.livetv_badge_new),
                 modifier = modifier,
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                textStyle = textStyle,
             )
         GuideIndicator.PREMIERE ->
             AfinityBadge(
@@ -66,6 +72,7 @@ fun ProgramIndicatorBadge(indicator: GuideIndicator, modifier: Modifier = Modifi
                 modifier = modifier,
                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                textStyle = textStyle,
             )
         GuideIndicator.REPEAT ->
             AfinityBadge(
@@ -73,6 +80,7 @@ fun ProgramIndicatorBadge(indicator: GuideIndicator, modifier: Modifier = Modifi
                 modifier = modifier,
                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                textStyle = textStyle,
             )
         GuideIndicator.HD ->
             AfinityBadge(
@@ -80,6 +88,7 @@ fun ProgramIndicatorBadge(indicator: GuideIndicator, modifier: Modifier = Modifi
                 modifier = modifier,
                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                textStyle = textStyle,
             )
     }
 }

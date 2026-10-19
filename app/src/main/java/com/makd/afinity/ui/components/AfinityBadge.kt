@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -19,6 +20,7 @@ fun AfinityBadge(
     modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.primary,
     contentColor: Color = MaterialTheme.colorScheme.onPrimary,
+    textStyle: TextStyle? = null,
 ) {
     Box(
         modifier =
@@ -30,8 +32,8 @@ fun AfinityBadge(
         Text(
             text = text,
             color = contentColor,
-            fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.labelSmall,
+            fontWeight = if (textStyle == null) FontWeight.Bold else null,
+            style = textStyle ?: MaterialTheme.typography.labelSmall,
         )
     }
 }

@@ -4,16 +4,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.AfinityBadge
 
 @Composable
-fun LiveBadge(modifier: Modifier = Modifier) {
+fun LiveBadge(modifier: Modifier = Modifier, textStyle: TextStyle? = null) {
     AfinityBadge(
         text = stringResource(R.string.livetv_live_badge),
         modifier = modifier,
         containerColor = Color.Red,
         contentColor = Color.White,
+        textStyle = textStyle,
     )
 }
 
