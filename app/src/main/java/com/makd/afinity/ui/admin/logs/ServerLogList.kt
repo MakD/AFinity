@@ -279,7 +279,7 @@ private fun RowActions(
 ) {
     FlowRow(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
         RowAction(
-            icon = R.drawable.ic_copy,
+            icon = R.drawable.ic_clipboard,
             label = stringResource(R.string.logs_copy),
             color = MaterialTheme.colorScheme.primary,
             onClick = onCopy,

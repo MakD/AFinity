@@ -404,7 +404,7 @@ fun MusicTrackRow(
                     },
                     leadingIcon = {
                         Icon(
-                            painter = painterResource(R.drawable.ic_info_outlined),
+                            painter = painterResource(R.drawable.ic_info),
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
                         )

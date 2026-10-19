@@ -73,7 +73,7 @@ constructor(
                 remote
                     ?.mediaSources
                     .orEmpty()
-                    .map { it.toAfinitySource(baseUrl, itemId).copy(path = it.path.orEmpty()) }
+                    .map { it.toAfinitySource(baseUrl, itemId) }
                     .ifEmpty {
                         databaseRepository.getSourcesForItem(itemId).filter {
                             it.type == AfinitySourceType.LOCAL && !it.path.endsWith(".download")

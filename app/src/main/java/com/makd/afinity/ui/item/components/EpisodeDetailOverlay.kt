@@ -346,7 +346,7 @@ fun EpisodeDetailOverlay(
                         onGoToSeries?.let { goToSeries ->
                             IconButton(onClick = goToSeries) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.ic_info),
+                                    painter = painterResource(id = R.drawable.ic_list_details),
                                     contentDescription = stringResource(R.string.cd_go_to_series),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(28.dp),
@@ -386,17 +386,24 @@ fun EpisodeDetailOverlay(
 
                         val hasManageItems = isAdmin || canDelete
                         val hasMediaInfo = episode.sources.isNotEmpty()
-                        if (hasManageItems || hasMediaInfo) {
+                        if (hasMediaInfo && !hasManageItems) {
+                            IconButton(onClick = { showMediaInfo = true }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_info),
+                                    contentDescription = stringResource(R.string.media_info_title),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(28.dp),
+                                )
+                            }
+                        }
+                        if (hasManageItems) {
                             var menuExpanded by remember { mutableStateOf(false) }
                             Box {
                                 IconButton(onClick = { menuExpanded = true }) {
                                     Icon(
                                         painter = painterResource(id = R.drawable.ic_options),
                                         contentDescription =
-                                            stringResource(
-                                                if (hasManageItems) R.string.cd_admin_manage
-                                                else R.string.cd_music_more_options
-                                            ),
+                                            stringResource(R.string.cd_admin_manage),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(28.dp),
                                     )
@@ -413,9 +420,7 @@ fun EpisodeDetailOverlay(
                                             leadingIcon = {
                                                 Icon(
                                                     painter =
-                                                        painterResource(
-                                                            id = R.drawable.ic_info_outlined
-                                                        ),
+                                                        painterResource(id = R.drawable.ic_info),
                                                     contentDescription = null,
                                                     modifier = Modifier.size(20.dp),
                                                 )
@@ -425,7 +430,7 @@ fun EpisodeDetailOverlay(
                                                 showMediaInfo = true
                                             },
                                         )
-                                        if (hasManageItems) HorizontalDivider()
+                                        HorizontalDivider()
                                     }
                                     if (isAdmin) {
                                         DropdownMenuItem(

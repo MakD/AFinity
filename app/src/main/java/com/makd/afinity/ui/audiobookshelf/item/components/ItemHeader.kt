@@ -21,8 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -494,37 +492,13 @@ fun ItemHeaderContent(
                     }
 
                     if (hasMediaInfo) {
-                        var menuExpanded by remember { mutableStateOf(false) }
-                        Box {
-                            IconButton(onClick = { menuExpanded = true }) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_dots_vertical),
-                                    contentDescription =
-                                        stringResource(R.string.cd_music_more_options),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(26.dp),
-                                )
-                            }
-                            DropdownMenu(
-                                expanded = menuExpanded,
-                                onDismissRequest = { menuExpanded = false },
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.media_info_title)) },
-                                    leadingIcon = {
-                                        Icon(
-                                            painter =
-                                                painterResource(id = R.drawable.ic_info_outlined),
-                                            contentDescription = null,
-                                            modifier = Modifier.size(20.dp),
-                                        )
-                                    },
-                                    onClick = {
-                                        menuExpanded = false
-                                        showMediaInfo = true
-                                    },
-                                )
-                            }
+                        IconButton(onClick = { showMediaInfo = true }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_info),
+                                contentDescription = stringResource(R.string.media_info_title),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(26.dp),
+                            )
                         }
                     }
                 }

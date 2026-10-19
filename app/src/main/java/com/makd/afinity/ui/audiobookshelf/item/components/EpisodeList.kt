@@ -20,17 +20,11 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -115,224 +109,211 @@ private fun ExpandableEpisodeItem(
     val hasDescription = !episode.description.isNullOrBlank()
     val isFinished = progress?.isFinished == true
 
-    Row(
+    Column(
         modifier =
             Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
                 .clickable(role = Role.Button, onClick = onPlay)
                 .padding(12.dp)
-                .animateContentSize(),
-        verticalAlignment = Alignment.Top,
+                .animateContentSize()
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = episode.title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color =
-                    if (isFinished) MaterialTheme.colorScheme.onSurfaceVariant
-                    else MaterialTheme.colorScheme.onSurface,
-                maxLines = if (isExpanded) Int.MAX_VALUE else 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+        Row(verticalAlignment = Alignment.Top) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = episode.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color =
+                        if (isFinished) MaterialTheme.colorScheme.onSurfaceVariant
+                        else MaterialTheme.colorScheme.onSurface,
+                    maxLines = if (isExpanded) Int.MAX_VALUE else 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
 
-            Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                episode.publishedAt?.let { timestamp ->
-                    Text(
-                        text = formatDate(timestamp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    episode.publishedAt?.let { timestamp ->
+                        Text(
+                            text = formatDate(timestamp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
 
-                episode.duration?.let { duration ->
-                    if (episode.publishedAt != null) {
+                    episode.duration?.let { duration ->
+                        if (episode.publishedAt != null) {
+                            Text(
+                                text = " • ",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Text(
+                            text = formatDuration(duration),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
+                    if (progress != null && !progress.isFinished && progress.progress > 0) {
                         Text(
                             text = " • ",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+
+                        Spacer(modifier = Modifier.width(2.dp))
+
+                        CircularProgressIndicator(
+                            progress = { progress.progress.toFloat() },
+                            modifier = Modifier.size(12.dp),
+                            color = Color(0xFFFFC107),
+                            strokeWidth = 2.dp,
+                            trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                        )
+
+                        Spacer(modifier = Modifier.width(4.dp))
+
+                        val remainingSeconds = progress.duration - progress.currentTime
+                        Text(
+                            text = "${formatDuration(remainingSeconds)} left",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                            fontWeight = FontWeight.SemiBold,
+                        )
                     }
-                    Text(
-                        text = formatDuration(duration),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-
-                if (progress != null && !progress.isFinished && progress.progress > 0) {
-                    Text(
-                        text = " • ",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-
-                    Spacer(modifier = Modifier.width(2.dp))
-
-                    CircularProgressIndicator(
-                        progress = { progress.progress.toFloat() },
-                        modifier = Modifier.size(12.dp),
-                        color = Color(0xFFFFC107),
-                        strokeWidth = 2.dp,
-                        trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
-                    )
-
-                    Spacer(modifier = Modifier.width(4.dp))
-
-                    val remainingSeconds = progress.duration - progress.currentTime
-                    Text(
-                        text = "${formatDuration(remainingSeconds)} left",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
-                        fontWeight = FontWeight.SemiBold,
-                    )
                 }
             }
 
-            episode.description?.let { description ->
-                Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.width(4.dp))
 
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (onToggleFinished != null) {
+                    IconButton(
+                        onClick = onToggleFinished,
+                        enabled = toggleFinishedEnabled,
+                        modifier = Modifier.size(32.dp),
+                    ) {
+                        Icon(
+                            painter =
+                                if (isFinished) painterResource(id = R.drawable.ic_circle_check)
+                                else painterResource(id = R.drawable.ic_circle_check_outline),
+                            contentDescription =
+                                if (isFinished) stringResource(R.string.cd_watched_unmark)
+                                else stringResource(R.string.cd_watched_mark),
+                            tint =
+                                when {
+                                    !toggleFinishedEnabled ->
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                    isFinished -> Color.Green
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
+
+                if (onDownload != null || downloadInfo != null) {
+                    when {
+                        downloadInfo?.status == AbsDownloadStatus.COMPLETED ->
+                            IconButton(
+                                onClick = { onDeleteDownload?.invoke() },
+                                modifier = Modifier.size(32.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_check),
+                                    contentDescription =
+                                        stringResource(R.string.cd_abs_downloaded_delete),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+
+                        downloadInfo?.status == AbsDownloadStatus.DOWNLOADING ||
+                            downloadInfo?.status == AbsDownloadStatus.QUEUED -> {
+                            Box(
+                                modifier = Modifier.size(32.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                CircularProgressIndicator(
+                                    progress = { downloadInfo.progress },
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp,
+                                )
+                                IconButton(
+                                    onClick = { onCancelDownload?.invoke() },
+                                    modifier = Modifier.size(32.dp),
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_cancel),
+                                        contentDescription =
+                                            stringResource(R.string.cd_cancel_download),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(14.dp),
+                                    )
+                                }
+                            }
+                        }
+
+                        else ->
+                            IconButton(
+                                onClick = { onDownload?.invoke() },
+                                modifier = Modifier.size(32.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_download),
+                                    contentDescription =
+                                        stringResource(R.string.cd_abs_download_episode),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                    }
+                }
+
+                if (onMediaInfo != null) {
+                    IconButton(onClick = onMediaInfo, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_info),
+                            contentDescription = stringResource(R.string.media_info_title),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
+            }
+        }
+
+        episode.description?.let { description ->
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Row(verticalAlignment = Alignment.Bottom) {
                 HtmlText(
                     html = description,
                     maxLines = if (isExpanded) Int.MAX_VALUE else 2,
                     textColor = MaterialTheme.colorScheme.onSurfaceVariant.toArgb(),
                     renderHtml = isExpanded,
                     onClick = onExpandToggle,
+                    modifier = Modifier.weight(1f),
                 )
-            }
-        }
 
-        Spacer(modifier = Modifier.width(4.dp))
+                if (hasDescription) {
+                    Spacer(modifier = Modifier.width(4.dp))
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (onToggleFinished != null) {
-                IconButton(
-                    onClick = onToggleFinished,
-                    enabled = toggleFinishedEnabled,
-                    modifier = Modifier.size(32.dp),
-                ) {
-                    Icon(
-                        painter =
-                            if (isFinished) painterResource(id = R.drawable.ic_circle_check)
-                            else painterResource(id = R.drawable.ic_circle_check_outline),
-                        contentDescription =
-                            if (isFinished) stringResource(R.string.cd_watched_unmark)
-                            else stringResource(R.string.cd_watched_mark),
-                        tint =
-                            when {
-                                !toggleFinishedEnabled ->
-                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                                isFinished -> Color.Green
-                                else -> MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            }
-
-            if (onDownload != null || downloadInfo != null) {
-                when {
-                    downloadInfo?.status == AbsDownloadStatus.COMPLETED ->
-                        IconButton(
-                            onClick = { onDeleteDownload?.invoke() },
-                            modifier = Modifier.size(32.dp),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_check),
-                                contentDescription =
-                                    stringResource(R.string.cd_abs_downloaded_delete),
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp),
-                            )
-                        }
-
-                    downloadInfo?.status == AbsDownloadStatus.DOWNLOADING ||
-                        downloadInfo?.status == AbsDownloadStatus.QUEUED -> {
-                        Box(modifier = Modifier.size(32.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(
-                                progress = { downloadInfo.progress },
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp,
-                            )
-                            IconButton(
-                                onClick = { onCancelDownload?.invoke() },
-                                modifier = Modifier.size(32.dp),
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_cancel),
-                                    contentDescription =
-                                        stringResource(R.string.cd_cancel_download),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(14.dp),
-                                )
-                            }
-                        }
-                    }
-
-                    else ->
-                        IconButton(
-                            onClick = { onDownload?.invoke() },
-                            modifier = Modifier.size(32.dp),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_download),
-                                contentDescription =
-                                    stringResource(R.string.cd_abs_download_episode),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp),
-                            )
-                        }
-                }
-            }
-
-            if (hasDescription) {
-                IconButton(onClick = onExpandToggle, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        painter =
-                            painterResource(
-                                id =
-                                    if (isExpanded) R.drawable.ic_keyboard_arrow_up
-                                    else R.drawable.ic_keyboard_arrow_down
-                            ),
-                        contentDescription =
-                            if (isExpanded) stringResource(R.string.cd_collapse)
-                            else stringResource(R.string.cd_expand),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            }
-
-            if (onMediaInfo != null) {
-                var menuExpanded by remember { mutableStateOf(false) }
-                Box {
-                    IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(32.dp)) {
+                    IconButton(onClick = onExpandToggle, modifier = Modifier.size(32.dp)) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_dots_vertical),
-                            contentDescription = stringResource(R.string.cd_music_more_options),
+                            painter =
+                                painterResource(
+                                    id =
+                                        if (isExpanded) R.drawable.ic_keyboard_arrow_up
+                                        else R.drawable.ic_keyboard_arrow_down
+                                ),
+                            contentDescription =
+                                if (isExpanded) stringResource(R.string.cd_collapse)
+                                else stringResource(R.string.cd_expand),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp),
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false },
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.media_info_title)) },
-                            leadingIcon = {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_info_outlined),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            },
-                            onClick = {
-                                menuExpanded = false
-                                onMediaInfo()
-                            },
                         )
                     }
                 }

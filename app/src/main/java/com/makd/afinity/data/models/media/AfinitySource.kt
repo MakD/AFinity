@@ -4,7 +4,6 @@ import com.makd.afinity.data.database.dao.ServerDatabaseDao
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import java.io.File
 import java.util.UUID
-import org.jellyfin.sdk.model.api.MediaProtocol
 import org.jellyfin.sdk.model.api.MediaSourceInfo
 import org.jellyfin.sdk.model.api.MediaStreamType
 
@@ -28,18 +27,13 @@ fun MediaSourceInfo.toAfinitySource(
     baseUrl: String,
     itemId: UUID,
 ): AfinitySource {
-    val path =
-        when (protocol) {
-            MediaProtocol.HTTP -> this.path.orEmpty()
-            else -> ""
-        }
     val videoStream = mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
     val audioStream = mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }
     return AfinitySource(
         id = id.orEmpty(),
         name = name.orEmpty(),
         type = AfinitySourceType.REMOTE,
-        path = path,
+        path = path.orEmpty(),
         size = size ?: 0,
         mediaStreams = mediaStreams?.map { it.toAfinityMediaStream(baseUrl) } ?: emptyList(),
         bitrate = bitrate?.toLong(),

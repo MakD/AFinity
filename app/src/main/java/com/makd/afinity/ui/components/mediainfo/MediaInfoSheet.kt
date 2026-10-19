@@ -439,7 +439,7 @@ private fun SectionCard(
                     onClick = { copy(context, section.title, section.copyText(), copiedText) }
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_copy),
+                        painter = painterResource(R.drawable.ic_clipboard),
                         contentDescription =
                             stringResource(R.string.media_info_cd_copy_fmt, section.title),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -510,7 +510,12 @@ private fun EntryRow(
         modifier =
             Modifier.fillMaxWidth()
                 .heightIn(min = 56.dp)
-                .clickable(role = Role.Button, onClick = onClick)
+                .clickable(
+                    interactionSource = null,
+                    indication = null,
+                    role = Role.Button,
+                    onClick = onClick,
+                )
                 .padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),

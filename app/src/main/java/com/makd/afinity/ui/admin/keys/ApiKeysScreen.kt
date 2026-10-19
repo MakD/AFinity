@@ -307,7 +307,7 @@ private fun ApiKeyRow(
         }
         IconButton(onClick = onCopy, modifier = Modifier.size(ROW_ACTION_SIZE)) {
             Icon(
-                painter = painterResource(id = R.drawable.ic_copy),
+                painter = painterResource(id = R.drawable.ic_clipboard),
                 contentDescription = stringResource(R.string.api_key_copy),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(ROW_ACTION_ICON_SIZE),

@@ -331,7 +331,7 @@ fun CrashDetailContent(
                 shape = RoundedCornerShape(26.dp),
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_copy),
+                    painter = painterResource(id = R.drawable.ic_clipboard),
                     contentDescription = null,
                     modifier = Modifier.size(17.dp),
                 )

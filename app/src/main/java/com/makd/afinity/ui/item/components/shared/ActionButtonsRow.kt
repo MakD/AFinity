@@ -173,7 +173,7 @@ fun ActionButtonsRow(
                             text = { Text(stringResource(R.string.media_info_title)) },
                             leadingIcon = {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.ic_info_outlined),
+                                    painter = painterResource(id = R.drawable.ic_info),
                                     contentDescription = null,
                                     modifier = Modifier.size(20.dp),
                                 )
