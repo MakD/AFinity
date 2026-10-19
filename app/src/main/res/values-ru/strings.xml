@@ -3169,7 +3169,7 @@
     <string name="livetv_starts_in_fmt">Начало: %1$s</string>
     <string name="livetv_tomorrow">Завтра</string>
     <string name="livetv_date_time_fmt">%1$s%2$s</string>
-    <string name="livetv_up_next_on_fmt">Далее на канале %1$s</string>
+    <string name="livetv_up_next_on_fmt">Далее на канале «%1$s»</string>
     <string name="livetv_up_next">Далее</string>
     <string name="livetv_original_air_date_fmt">Оригинальная дата эфира: %1$s</string>
     <string name="livetv_badge_new">НОВОЕ</string>
@@ -3228,4 +3228,6 @@
     <string name="livetv_channel_name_only">Только канал «%1$s»</string>
     <string name="livetv_all_channels">Все каналы</string>
     <string name="livetv_label_air_time">Время эфира</string>
+    <string name="livetv_around_time">Примерно в %1$s</string>
+    <string name="livetv_anytime">В любое время</string>
 </resources>
