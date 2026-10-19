@@ -631,7 +631,7 @@ constructor(
                                 transcoded ->
                                     transcodePlanner.transcodedStreams(
                                         source!!.mediaStreams,
-                                        completedPlan!!,
+                                        completedPlan,
                                         download.transcodeMaxWidth,
                                     )
 
@@ -718,7 +718,7 @@ constructor(
         }
 
     private suspend fun needsVideoConversion(download: DownloadDto?, itemType: String): Boolean {
-        if (download == null || download.transcodeBitrate == null || itemType == "Audio") {
+        if (download?.transcodeBitrate == null || itemType == "Audio") {
             return false
         }
         return try {
@@ -896,84 +896,6 @@ constructor(
             throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to ensure item is in database")
-        }
-    }
-
-    private suspend fun downloadImages(
-        apiClient: ApiClient,
-        serverId: String,
-        itemId: UUID,
-        itemType: String,
-        userId: UUID,
-    ) {
-        try {
-            val item =
-                when (itemType.uppercase()) {
-                    "MOVIE" -> databaseRepository.getMovie(itemId, userId)
-                    "EPISODE" -> databaseRepository.getEpisode(itemId, userId)
-                    else -> null
-                } ?: return
-
-            val itemDir = downloadRepository.getItemDownloadDirectory(itemId)
-            val imagesDir = File(itemDir, "images")
-            if (!imagesDir.exists() && !imagesDir.mkdirs()) {
-                Timber.w("Failed to create images directory for item $itemId")
-                return
-            }
-            val images = item.images
-            val downloadedImages = mutableMapOf<String, Uri?>()
-
-            suspend fun saveImage(uri: Uri?, key: String) {
-                if (uri == null) return
-                val localPath = downloadImage(apiClient, uri.toString(), imagesDir, key)
-                if (localPath != null) {
-                    downloadedImages[key] = localPath
-                }
-            }
-
-            saveImage(images.primary, "primary")
-            saveImage(images.backdrop, "backdrop")
-            saveImage(images.thumb, "thumb")
-            saveImage(images.logo, "logo")
-
-            if (itemType.uppercase() == "EPISODE") {
-                saveImage(images.showPrimary, "showPrimary")
-                saveImage(images.showBackdrop, "showBackdrop")
-                saveImage(images.showLogo, "showLogo")
-            }
-
-            val updatedImages =
-                AfinityImages(
-                    primary = downloadedImages["primary"] ?: images.primary,
-                    backdrop = downloadedImages["backdrop"] ?: images.backdrop,
-                    thumb = downloadedImages["thumb"] ?: images.thumb,
-                    logo = downloadedImages["logo"] ?: images.logo,
-                    showPrimary = downloadedImages["showPrimary"] ?: images.showPrimary,
-                    showBackdrop = downloadedImages["showBackdrop"] ?: images.showBackdrop,
-                    showLogo = downloadedImages["showLogo"] ?: images.showLogo,
-                    primaryImageBlurHash = images.primaryImageBlurHash,
-                    backdropImageBlurHash = images.backdropImageBlurHash,
-                    thumbImageBlurHash = images.thumbImageBlurHash,
-                    logoImageBlurHash = images.logoImageBlurHash,
-                    showPrimaryImageBlurHash = images.showPrimaryImageBlurHash,
-                    showBackdropImageBlurHash = images.showBackdropImageBlurHash,
-                    showLogoImageBlurHash = images.showLogoImageBlurHash,
-                )
-
-            when (item) {
-                is AfinityMovie -> {
-                    databaseRepository.insertMovie(item.copy(images = updatedImages), serverId)
-                    downloadPersonImages(apiClient, serverId, itemId, userId)
-                }
-
-                is AfinityEpisode -> {
-                    databaseRepository.insertEpisode(item.copy(images = updatedImages), serverId)
-                }
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to download images")
         }
     }
 

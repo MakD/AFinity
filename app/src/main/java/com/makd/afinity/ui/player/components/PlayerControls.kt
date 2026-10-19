@@ -2262,7 +2262,7 @@ private fun PauseDetailsOverlay(
                                     PauseMetaText(display.score, metaColor)
                                 }
                             }
-                            if (compactAwards && awardsHighlight != null) {
+                            if (compactAwards) {
                                 PauseAwardsHighlight(awardsHighlight)
                             }
                         }

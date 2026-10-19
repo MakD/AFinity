@@ -167,7 +167,7 @@ constructor(
                 .popularity(
                     artist,
                     allowNetwork = offlineModeManager.isInternetAvailable(),
-                    freshForMs = LastFmRepository.freshnessFor(listOf(album?.productionYear)),
+                    freshForMs = LastFmRepository.freshnessFor(listOf(album.productionYear)),
                 )
                 .collect { popularity ->
                     val hot =
