@@ -490,4 +490,11 @@
     <string name="discovery_section_writer_from">Scritto da, tratto da un film visto</string>
     <string name="home_row_popular_studios">Studi popolari</string>
     <string name="home_row_hero_carousel">Carosello in evidenza</string>
+    <string name="home_row_continue_watching">Continua a guardare</string>
+    <string name="home_row_next_up">Prossimamente</string>
+    <string name="home_row_critics_choice">Scelta della critica</string>
+    <string name="home_row_watch_again">Guarda di nuovo</string>
+    <string name="home_row_latest_movies">Ultimi film</string>
+    <string name="custom_sections_add">Aggiungi sezione</string>
+    <string name="custom_sections_new">Nuova sezione</string>
 </resources>
