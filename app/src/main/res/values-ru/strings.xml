@@ -3192,7 +3192,7 @@
     <string name="livetv_filter_categories">Категории</string>
     <string name="livetv_filter_all">Все</string>
     <string name="livetv_filter_none">Ничего</string>
-    <string name="livetv_color_coded_backgrounds">Цветной фон</string>
+    <string name="livetv_color_coded_backgrounds">Обозначенные цветом фоны</string>
     <string name="livetv_filter_indicators">Показ индикаторов</string>
     <string name="livetv_indicator_hd">HD-передачи</string>
     <string name="livetv_indicator_live">Прямые эфиры</string>
