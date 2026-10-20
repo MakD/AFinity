@@ -80,7 +80,7 @@ import com.makd.afinity.ui.player.components.PlayerMoreSheet
 import com.makd.afinity.ui.player.components.SwipeCoverItem
 import com.makd.afinity.ui.player.components.SwipeableCover
 
-private fun String.withAbsWidth(px: Int): String {
+internal fun String.withAbsWidth(px: Int): String {
     if (startsWith("file://")) return this
     val sep = if ('?' in this) "&" else "?"
     return "${this}${sep}width=$px"
@@ -152,7 +152,16 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
                         )
                     )
         ) {
-            if (isLandscape) {
+            if (isAbsCasting) {
+                AbsCastRemote(
+                    viewModel = viewModel,
+                    playbackState = playbackState,
+                    accentColor = animatedColor,
+                    hasBookmarks = bookmarks.isNotEmpty(),
+                    onNavigateBack = onNavigateBack,
+                    onOpenMore = { showMoreSheet = true },
+                )
+            } else if (isLandscape) {
                 LandscapePlayerContent(
                     playbackState = playbackState,
                     viewModel = viewModel,

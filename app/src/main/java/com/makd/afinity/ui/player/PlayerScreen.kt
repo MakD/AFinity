@@ -235,7 +235,8 @@ fun PlayerScreen(
             CastRemoteControllerScreen(
                 castState = castState,
                 castManager = viewModel.castManager,
-                onBackClick = {
+                onMinimize = exitPlayer,
+                onStopPlayback = {
                     if (!hasNavigatedBack) {
                         hasNavigatedBack = true
                         viewModel.stopCastPlayback()

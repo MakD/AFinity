@@ -293,6 +293,7 @@ constructor(
     private val SKIP_BUTTON_TIMEOUT_MS = 8000L
 
     init {
+        castManager.videoRemoteAttached = true
         viewModelScope.launch {
             Timber.d("PlayerViewModel: starting async player init")
             initializePlayer()
@@ -4134,8 +4135,9 @@ constructor(
     }
 
     override fun onCleared() {
-
-        clearPlaylist()
+        castManager.videoRemoteAttached = false
+        val castState = castManager.castState.value
+        if (!(castState.isConnected && castState.currentItem != null)) clearPlaylist()
         stopPlayback()
 
         progressReportingJob?.cancel()

@@ -27,6 +27,7 @@ data class CastSessionState(
     val loadedTextTrackIndices: Set<Int> = emptySet(),
     val isMusicCasting: Boolean = false,
     val isAbsCasting: Boolean = false,
+    val musicTrackId: UUID? = null,
 )
 
 sealed class CastEvent {

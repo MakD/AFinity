@@ -18,6 +18,7 @@ import coil3.request.CachePolicy
 import coil3.request.crossfade
 import coil3.svg.SvgDecoder
 import com.makd.afinity.cast.CastManager
+import com.makd.afinity.cast.CastPlaybackBridge
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.repository.CacheMaintenance
 import com.makd.afinity.data.repository.PreferencesRepository
@@ -53,6 +54,8 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
     @Inject lateinit var preferencesRepository: PreferencesRepository
 
     @Inject lateinit var castManager: CastManager
+
+    @Inject lateinit var castPlaybackBridge: CastPlaybackBridge
 
     @Inject @ImageClient lateinit var imageOkHttpClient: OkHttpClient
 
@@ -102,6 +105,7 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
         }
 
         castManager.initialize(this)
+        castPlaybackBridge.start()
 
         applicationScope.launch(Dispatchers.IO) {
             runCatching { pendingJellyfinSync.get().initMonitoring() }

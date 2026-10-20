@@ -17,6 +17,7 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import com.makd.afinity.R
+import com.makd.afinity.cast.CastManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.audiobookshelf.AudioTrack
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
@@ -70,6 +71,7 @@ constructor(
     private val progressSyncer: AudiobookshelfProgressSyncer,
     private val preferencesRepository: PreferencesRepository,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
+    private val castManager: dagger.Lazy<CastManager>,
 ) {
     private var mediaController: MediaController? = null
     private var controllerFuture: ListenableFuture<MediaController>? = null
@@ -563,8 +565,15 @@ constructor(
     }
 
     fun setPlaybackSpeed(speed: Float) {
-        mediaController?.setPlaybackSpeed(speed)
-        playbackManager.updatePlaybackSpeed(speed)
+        val cast = castManager.get()
+        val applied =
+            if (cast.castState.value.isAbsCasting) {
+                cast.setPlaybackSpeed(speed)
+            } else {
+                mediaController?.setPlaybackSpeed(speed)
+                speed
+            }
+        playbackManager.updatePlaybackSpeed(applied)
     }
 
     fun seekToPosition(positionSeconds: Double) {
@@ -630,7 +639,7 @@ constructor(
 
         sleepTimerJob = scope.launch {
             delay(durationMinutes.minutes)
-            pause()
+            pauseForSleepTimer()
             playbackManager.setSleepTimer(null)
             Timber.d("Sleep timer triggered")
         }
@@ -672,10 +681,15 @@ constructor(
                         .milliseconds
                 )
             }
-            pause()
+            pauseForSleepTimer()
             playbackManager.setSleepTimerTarget(null, null)
             Timber.d("Chapter sleep timer triggered at ${targetSeconds}s")
         }
+    }
+
+    private fun pauseForSleepTimer() {
+        val cast = castManager.get()
+        if (cast.castState.value.isAbsCasting) cast.pause() else pause()
     }
 
     fun cancelSleepTimer() {

@@ -40,6 +40,7 @@ fun CastInfoBottomSheet(
     castManager: CastManager,
     onStopCasting: () -> Unit,
     onDismiss: () -> Unit,
+    showBitrate: Boolean = true,
 ) {
     val sheetState = rememberAfinitySheetState()
     var volumeSliderValue by remember { mutableFloatStateOf(castState.volume.toFloat()) }
@@ -69,21 +70,27 @@ fun CastInfoBottomSheet(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            if (showBitrate) {
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = stringResource(R.string.cast_bitrate),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                )
-                Text(
-                    text = "${castState.castBitrate / 1_000_000} Mbps",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = stringResource(R.string.cast_bitrate),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    )
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.cast_quality_mbps_fmt,
+                                castState.castBitrate / 1_000_000,
+                            ),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))

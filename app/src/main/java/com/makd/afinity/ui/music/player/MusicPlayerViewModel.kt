@@ -58,7 +58,7 @@ constructor(
     private val playbackManager: MusicPlaybackManager,
     private val queueManager: MusicQueueManager,
     private val musicRepository: MusicRepository,
-    private val castManager: CastManager,
+    val castManager: CastManager,
     private val sessionManager: SessionManager,
     private val offlineModeManager: OfflineModeManager,
     private val radioManager: RadioManager,
@@ -234,18 +234,6 @@ constructor(
                 }
         }
         viewModelScope.launch {
-            castManager.castState.collect { state ->
-                if (state.isMusicCasting) {
-                    val durationMs =
-                        playbackState.value.currentTrack?.runtimeTicks?.div(10_000)
-                            ?: state.duration
-                    playbackManager.updatePosition(state.currentPosition, 0L, durationMs)
-                    playbackManager.updatePlayingState(state.isPlaying)
-                    playbackManager.updateBufferingState(state.isBuffering)
-                }
-            }
-        }
-        viewModelScope.launch {
             castManager.castEvents.collect { event ->
                 when (event) {
                     is CastEvent.Connected -> {
@@ -273,12 +261,19 @@ constructor(
 
     @OptIn(UnstableApi::class)
     fun castCurrentQueue() {
+        val loaded =
+            loadQueueOnCast(queueManager.currentIndex.value, playbackState.value.positionMs)
+        if (!loaded) return
+        context.startService(
+            Intent(context, AudioService::class.java).setAction(AudioService.ACTION_PAUSE_FOR_CAST)
+        )
+    }
+
+    private fun loadQueueOnCast(index: Int, positionMs: Long): Boolean {
         val tracks = queueManager.queue.value
-        if (tracks.isEmpty()) return
-        val index = queueManager.currentIndex.value
-        val positionMs = playbackState.value.positionMs
-        val serverUrl = sessionManager.currentSession.value?.serverUrl ?: return
-        val token = sessionManager.getCurrentApiClient()?.accessToken ?: return
+        if (tracks.isEmpty()) return false
+        val serverUrl = sessionManager.currentSession.value?.serverUrl ?: return false
+        val token = sessionManager.getCurrentApiClient()?.accessToken ?: return false
 
         castManager.loadMusicQueue(
             tracks = tracks,
@@ -286,10 +281,9 @@ constructor(
             startPositionMs = positionMs,
             serverBaseUrl = serverUrl,
             token = token,
+            repeatMode = playbackState.value.repeatMode,
         )
-        context.startService(
-            Intent(context, AudioService::class.java).setAction(AudioService.ACTION_PAUSE_FOR_CAST)
-        )
+        return true
     }
 
     private suspend fun loadLyrics(trackId: UUID) {
@@ -376,15 +370,23 @@ constructor(
     }
 
     fun skipToIndex(index: Int) {
-        if (!isMusicCasting.value) {
+        if (isMusicCasting.value) {
+            queueManager.setCurrentIndex(index)
+            loadQueueOnCast(index, 0L)
+        } else {
             playbackManager.seekToIndex(index)
             queueManager.setCurrentIndex(index)
         }
     }
 
     fun toggleShuffle() {
-        queueManager.toggleShuffle(playbackState.value.positionMs)
+        val casting = isMusicCasting.value
+        val positionMs =
+            if (casting) castManager.castState.value.currentPosition
+            else playbackState.value.positionMs
+        queueManager.toggleShuffle(positionMs)
         playbackManager.updateShuffled(!playbackState.value.shuffled)
+        if (casting) loadQueueOnCast(queueManager.currentIndex.value, positionMs)
     }
 
     fun cycleRepeatMode() {
@@ -401,6 +403,7 @@ constructor(
                 RepeatMode.ALL -> Player.REPEAT_MODE_ALL
                 RepeatMode.ONE -> Player.REPEAT_MODE_ONE
             }
+        if (isMusicCasting.value) castManager.setMusicRepeatMode(next)
     }
 
     fun toggleLyrics() {

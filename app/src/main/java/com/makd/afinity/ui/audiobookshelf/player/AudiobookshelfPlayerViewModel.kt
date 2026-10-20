@@ -9,6 +9,8 @@ import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.cast.CastEvent
 import com.makd.afinity.cast.CastManager
+import com.makd.afinity.cast.MAX_CAST_SPEED
+import com.makd.afinity.cast.MIN_CAST_SPEED
 import com.makd.afinity.data.models.audiobookshelf.Bookmark
 import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.repository.AudiobookshelfRepository
@@ -45,7 +47,7 @@ constructor(
     val playbackManager: AudiobookshelfPlaybackManager,
     private val equalizerManager: AudiobookshelfEqualizerManager,
     private val skipSilenceManager: AudiobookshelfSkipSilenceManager,
-    private val castManager: CastManager,
+    val castManager: CastManager,
     private val securePreferencesRepository: SecurePreferencesRepository,
     preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
@@ -79,7 +81,6 @@ constructor(
     init {
         startPlayback()
         observePlayerErrors()
-        observeCastState()
         observeCastEvents()
     }
 
@@ -89,19 +90,6 @@ constructor(
                 val error = state.playerError ?: return@collect
                 _uiState.value = _uiState.value.copy(error = error)
                 playbackManager.updatePlayerError(null)
-            }
-        }
-    }
-
-    private fun observeCastState() {
-        viewModelScope.launch {
-            castManager.castState.collect { state ->
-                if (state.isAbsCasting) {
-                    val globalPositionSeconds = state.currentPosition / 1000.0
-                    playbackManager.updatePosition(globalPositionSeconds)
-                    playbackManager.updatePlayingState(state.isPlaying)
-                    playbackManager.updateBufferingState(state.isBuffering)
-                }
             }
         }
     }
@@ -148,6 +136,10 @@ constructor(
             coverUrl = state.coverUrl,
             baseUrl = baseUrl,
             token = token,
+            playbackSpeed = state.playbackSpeed,
+        )
+        playbackManager.updatePlaybackSpeed(
+            state.playbackSpeed.coerceIn(MIN_CAST_SPEED, MAX_CAST_SPEED)
         )
         audiobookshelfPlayer.pause()
     }

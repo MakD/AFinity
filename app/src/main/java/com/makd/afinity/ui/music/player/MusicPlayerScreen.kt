@@ -166,7 +166,21 @@ fun SharedTransitionScope.MusicPlayerScreen(
                         )
                     )
         ) {
-            if (isLandscape) {
+            if (isMusicCasting) {
+                MusicCastRemote(
+                    viewModel = viewModel,
+                    coverUrl = coverUrl,
+                    accentColor = animatedColor,
+                    showLyrics = showLyrics,
+                    lyrics = lyrics,
+                    lyricsLoading = lyricsLoading,
+                    onNavigateBack = onNavigateBack,
+                    onNavigateToAlbum = onNavigateToAlbum,
+                    onNavigateToArtist = onNavigateToArtist,
+                    onOpenQueue = { showQueue = true },
+                    onOpenMore = { showMoreSheet = true },
+                )
+            } else if (isLandscape) {
                 MusicPlayerLandscape(
                     viewModel = viewModel,
                     coverUrl = coverUrl,

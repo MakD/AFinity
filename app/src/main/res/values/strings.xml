@@ -2502,6 +2502,12 @@
     <string name="cast_device_info">Device Info</string>
     <string name="cast_device">Device</string>
     <string name="cast_bitrate">Bitrate</string>
+    <string name="cast_audio_and_subs">Audio &amp; subs</string>
+    <string name="cast_stop_playback">Stop playback</string>
+    <string name="cast_quality_max">Max</string>
+    <string name="cast_quality_mbps_fmt">%1$d Mbps</string>
+    <string name="cast_stream_restart_note">Changing audio or quality restarts the stream on the TV.</string>
+    <string name="cd_cast_device_fmt">%1$s, volume and stop casting</string>
     <string name="pref_group_chromecast">Chromecast</string>
     <string name="pref_cast_hevc_title">Enable HEVC</string>
     <string name="pref_cast_hevc_description">Enable for Chromecast Ultra/Google TV</string>

@@ -23,10 +23,15 @@ import com.makd.afinity.data.models.audiobookshelf.AudioTrack
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.music.AfinityTrack
+import com.makd.afinity.data.models.music.RepeatMode
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
+import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.ui.components.ticksToTotalMinutes
+import com.makd.afinity.ui.player.PlaylistManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -61,6 +66,8 @@ fun Context.hasGooglePlayServices(): Boolean =
         ConnectionResult.SUCCESS
 
 private const val DEFAULT_MAX_BITRATE = 16_000_000
+const val MIN_CAST_SPEED = 0.5f
+const val MAX_CAST_SPEED = 2.0f
 private const val MUSIC_TRACK_ID_KEY = "afinityTrackId"
 private val MUSIC_STREAM_ID_REGEX = Regex("/Audio/([0-9a-fA-F-]{32,36})/stream")
 
@@ -73,6 +80,9 @@ constructor(
     private val playbackStateManager: PlaybackStateManager,
     private val castDeviceProfileFactory: CastDeviceProfileFactory,
     private val securePreferencesRepository: SecurePreferencesRepository,
+    private val preferencesRepository: PreferencesRepository,
+    private val mediaRepository: dagger.Lazy<MediaRepository>,
+    private val playlistManager: dagger.Lazy<PlaylistManager>,
 ) {
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
@@ -84,6 +94,8 @@ constructor(
 
     val isCasting: Boolean
         get() = _castState.value.isConnected
+
+    var videoRemoteAttached: Boolean = false
 
     private var castContext: CastContext? = null
     private var castSession: CastSession? = null
@@ -406,6 +418,7 @@ constructor(
         startPositionMs: Long,
         serverBaseUrl: String,
         token: String,
+        repeatMode: RepeatMode = RepeatMode.OFF,
     ) {
         scope.launch {
             try {
@@ -451,6 +464,7 @@ constructor(
                         .setItems(queueItems)
                         .setStartIndex(startIndex)
                         .setStartTime(startPositionMs)
+                        .setRepeatMode(repeatMode.toCastRepeatMode())
                         .build()
 
                 val loadRequest =
@@ -471,6 +485,23 @@ constructor(
             }
         }
     }
+
+    fun setMusicRepeatMode(mode: RepeatMode) {
+        try {
+            remoteMediaClient?.queueSetRepeatMode(mode.toCastRepeatMode(), null)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to set cast repeat mode")
+        }
+    }
+
+    private fun RepeatMode.toCastRepeatMode(): Int =
+        when (this) {
+            RepeatMode.OFF -> MediaStatus.REPEAT_MODE_REPEAT_OFF
+            RepeatMode.ALL -> MediaStatus.REPEAT_MODE_REPEAT_ALL
+            RepeatMode.ONE -> MediaStatus.REPEAT_MODE_REPEAT_SINGLE
+        }
 
     fun skipMusicTrack(forward: Boolean) {
         scope.launch {
@@ -493,6 +524,7 @@ constructor(
         coverUrl: String?,
         baseUrl: String,
         token: String,
+        playbackSpeed: Float = 1.0f,
     ) {
         scope.launch {
             try {
@@ -543,11 +575,16 @@ constructor(
                         .setStartTime(startPositionInTrackMs)
                         .build()
 
+                val castSpeed = playbackSpeed.coerceIn(MIN_CAST_SPEED, MAX_CAST_SPEED)
                 val loadRequest =
-                    MediaLoadRequestData.Builder().setQueueData(queueData).setAutoplay(true).build()
+                    MediaLoadRequestData.Builder()
+                        .setQueueData(queueData)
+                        .setAutoplay(true)
+                        .setPlaybackRate(castSpeed.toDouble())
+                        .build()
 
                 client.load(loadRequest)
-                _castState.update { it.copy(isAbsCasting = true) }
+                _castState.update { it.copy(isAbsCasting = true, playbackSpeed = castSpeed) }
                 startPositionPolling()
 
                 Timber.d(
@@ -665,9 +702,11 @@ constructor(
         }
     }
 
-    fun setPlaybackSpeed(speed: Float) {
-        remoteMediaClient?.setPlaybackRate(speed.toDouble())
-        _castState.update { it.copy(playbackSpeed = speed) }
+    fun setPlaybackSpeed(speed: Float): Float {
+        val applied = speed.coerceIn(MIN_CAST_SPEED, MAX_CAST_SPEED)
+        remoteMediaClient?.setPlaybackRate(applied.toDouble())
+        _castState.update { it.copy(playbackSpeed = applied) }
+        return applied
     }
 
     fun switchAudioTrack(
@@ -889,6 +928,7 @@ constructor(
         }
         stopMusicCastReport()
         if (trackId != null) startMusicCastReport(trackId)
+        _castState.update { it.copy(musicTrackId = trackId) }
     }
 
     private fun currentMusicCastTrackId(client: RemoteMediaClient): UUID? {
@@ -1002,6 +1042,7 @@ constructor(
                 subtitleStreamIndex = null,
                 isMusicCasting = false,
                 isAbsCasting = false,
+                musicTrackId = null,
             )
         absAudioTracks = emptyList()
         absTrackStartOffsets = emptyMap()
@@ -1040,8 +1081,43 @@ constructor(
                         isEnded = true,
                     )
                     _castEvents.emit(CastEvent.PlaybackFinished(itemId))
+                    if (!videoRemoteAttached) autoAdvanceVideo(state)
                 }
             }
+        }
+    }
+
+    private suspend fun autoAdvanceVideo(finished: CastSessionState) {
+        try {
+            val serverBaseUrl = finished.serverBaseUrl ?: return
+            if (!preferencesRepository.getAutoPlay()) return
+            val queue = playlistManager.get()
+            if (!queue.canAutoAdvance()) return
+            queue.markCurrentItemAsPlayed()
+            val next = queue.next() ?: return
+            val fullItem =
+                if (next.sources.isEmpty()) {
+                    withContext(Dispatchers.IO) { mediaRepository.get().getItemById(next.id) }
+                        ?: return
+                } else {
+                    next
+                }
+            val mediaSourceId =
+                fullItem.sources.firstOrNull { it.type != AfinitySourceType.LOCAL }?.id
+                    ?: fullItem.sources.firstOrNull()?.id
+                    ?: return
+            Timber.d("Cast episode ended with no remote open, advancing to ${fullItem.name}")
+            loadMedia(
+                item = fullItem,
+                serverBaseUrl = serverBaseUrl,
+                mediaSourceId = mediaSourceId,
+                maxBitrate = finished.castBitrate,
+                enableHevc = finished.enableHevc,
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to auto-advance cast episode")
         }
     }
 
