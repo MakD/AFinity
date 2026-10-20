@@ -219,6 +219,7 @@ class PlayerActivity : AppCompatActivity() {
                             isLiveChannel = request.isLiveChannel,
                             channelName = request.channelName,
                             liveStreamUrl = request.liveStreamUrl,
+                            attachToCast = request.attachToCast,
                             onBackPressed = { finish() },
                             modifier =
                                 Modifier.fillMaxSize()
@@ -643,6 +644,7 @@ private data class PlaybackRequest(
     val isLiveChannel: Boolean,
     val channelName: String?,
     val liveStreamUrl: String?,
+    val attachToCast: Boolean,
 )
 
 private fun Intent.toPlaybackRequest(): PlaybackRequest? {
@@ -660,6 +662,7 @@ private fun Intent.toPlaybackRequest(): PlaybackRequest? {
             isLiveChannel = getBooleanExtra("isLiveChannel", false),
             channelName = getStringExtra("channelName"),
             liveStreamUrl = getStringExtra("liveStreamUrl"),
+            attachToCast = getBooleanExtra("attachToCast", false),
         )
     Timber.d(
         "PlayerActivity: Starting playback for item $itemId, seasonId=${request.seasonId}, shuffle=${request.shuffle}, isLive=${request.isLiveChannel}"

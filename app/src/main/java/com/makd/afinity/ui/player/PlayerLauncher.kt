@@ -42,6 +42,31 @@ object PlayerLauncher {
     }
 
     @UnstableApi
+    fun launchCastRemote(
+        context: Context,
+        itemId: UUID,
+        mediaSourceId: String,
+        audioStreamIndex: Int?,
+        subtitleStreamIndex: Int?,
+        positionMs: Long,
+    ) {
+        Timber.d("PlayerLauncher: Opening cast remote for item $itemId")
+
+        val intent =
+            Intent(context, PlayerActivity::class.java).apply {
+                putExtra("itemId", itemId.toString())
+                putExtra("mediaSourceId", mediaSourceId)
+                audioStreamIndex?.let { putExtra("audioStreamIndex", it) }
+                subtitleStreamIndex?.let { putExtra("subtitleStreamIndex", it) }
+                putExtra("startPositionMs", positionMs.coerceAtLeast(1L))
+                putExtra("attachToCast", true)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+
+        context.startActivity(intent)
+    }
+
+    @UnstableApi
     fun launchLiveChannel(context: Context, channelId: UUID, channelName: String) {
         Timber.d("PlayerLauncher: Launching live channel $channelName ($channelId)")
 

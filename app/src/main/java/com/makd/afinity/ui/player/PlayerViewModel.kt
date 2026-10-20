@@ -261,6 +261,7 @@ constructor(
 
     private var progressReportingJob: Job? = null
     private var pendingMainItemOptions: MainItemPlaybackOptions? = null
+    private var attachToCastItemId: UUID? = null
     private var queueInitJob: Job? = null
     private var pendingAudioStreamIndex: Int? = null
     private var pendingSubtitleStreamIndex: Int? = null
@@ -2491,9 +2492,15 @@ constructor(
                     return@coroutineScope
                 }
 
+                val isAttachingToCast =
+                    attachToCastItemId == fullItem.id &&
+                        castManager.isCasting &&
+                        castManager.castState.value.currentItemId == fullItem.id
+                attachToCastItemId = null
+
                 viewModelScope.launch(Dispatchers.IO) { loadSegments(fullItem.id) }
                 viewModelScope.launch(Dispatchers.IO) { loadTrickplayData() }
-                if (!useLocalSource)
+                if (!useLocalSource && !isAttachingToCast)
                     viewModelScope.launch(Dispatchers.IO) { reportPlaybackStart(fullItem) }
 
                 val externalSubtitles =
@@ -2632,7 +2639,9 @@ constructor(
                     startedItemId = fullItem.id
                     player.setMediaItems(listOf(mediaItem), 0, startPositionMs)
                     player.prepare()
-                    if (castManager.isCasting) {
+                    if (isAttachingToCast) {
+                        progressReportingJob?.cancel()
+                    } else if (castManager.isCasting) {
                         startCasting(startPositionOverride = startPositionMs)
                     } else {
                         player.play()
@@ -3333,7 +3342,9 @@ constructor(
         seasonId: UUID? = null,
         shuffle: Boolean = false,
         playlistId: UUID? = null,
+        attachToCast: Boolean = false,
     ) {
+        attachToCastItemId = if (attachToCast) item.id else null
 
         val targetSource =
             item.sources.firstOrNull { it.id == mediaSourceId } ?: item.sources.firstOrNull()

@@ -24,14 +24,12 @@ class CastOptionsProvider : OptionsProvider {
             NotificationOptions.Builder()
                 .setActions(buttonActions, intArrayOf(0, 1, 2, 3))
                 .setSkipStepMs(30 * DateUtils.SECOND_IN_MILLIS)
-                .setTargetActivityClassName(CastExpandedControllerActivity::class.java.name)
+                .setTargetActivityClassName(CastRemoteRouterActivity::class.java.name)
                 .build()
         val mediaOptions =
             CastMediaOptions.Builder()
                 .setNotificationOptions(notificationOptions)
-                .setExpandedControllerActivityClassName(
-                    CastExpandedControllerActivity::class.java.name
-                )
+                .setExpandedControllerActivityClassName(CastRemoteRouterActivity::class.java.name)
                 .build()
         return CastOptions.Builder()
             .setReceiverApplicationId(CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID)

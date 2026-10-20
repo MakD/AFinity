@@ -2,8 +2,6 @@ package com.makd.afinity.cast
 
 import android.content.Context
 import androidx.core.net.toUri
-import androidx.mediarouter.media.MediaRouter
-import androidx.mediarouter.media.MediaRouterParams
 import com.google.android.gms.cast.MediaInfo
 import com.google.android.gms.cast.MediaLoadRequestData
 import com.google.android.gms.cast.MediaMetadata
@@ -19,12 +17,21 @@ import com.google.android.gms.cast.framework.media.RemoteMediaClient
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.images.WebImage
+import com.makd.afinity.R
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.audiobookshelf.AudioTrack
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
+import com.makd.afinity.ui.components.ticksToTotalMinutes
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+import java.util.Calendar
+import java.util.GregorianCalendar
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -61,6 +68,7 @@ private val MUSIC_STREAM_ID_REGEX = Regex("/Audio/([0-9a-fA-F-]{32,36})/stream")
 class CastManager
 @Inject
 constructor(
+    @ApplicationContext private val context: Context,
     private val playbackRepository: PlaybackRepository,
     private val playbackStateManager: PlaybackStateManager,
     private val castDeviceProfileFactory: CastDeviceProfileFactory,
@@ -107,11 +115,6 @@ constructor(
             } else {
                 Timber.w("Google Play services unavailable, Chromecast disabled")
             }
-            MediaRouter.getInstance(context).routerParams =
-                MediaRouterParams.Builder()
-                    .setDialogType(MediaRouterParams.DIALOG_TYPE_DYNAMIC_GROUP)
-                    .setOutputSwitcherEnabled(true)
-                    .build()
             Timber.d("CastManager initialized")
         } catch (e: CancellationException) {
             throw e
@@ -260,10 +263,7 @@ constructor(
                     item.images.primary?.toString()?.takeIf { it.startsWith("http") }
                         ?: "${serverBaseUrl.trimEnd('/')}/Items/${item.id}/Images/Primary"
                 val metadata =
-                    MediaMetadata(MediaMetadata.MEDIA_TYPE_MOVIE).apply {
-                        putString(MediaMetadata.KEY_TITLE, item.name)
-                        addImage(WebImage(artworkUrl.toUri()))
-                    }
+                    buildVideoMetadata(item).apply { addImage(WebImage(artworkUrl.toUri())) }
 
                 val mediaInfo =
                     MediaInfo.Builder(streamUrl)
@@ -277,24 +277,12 @@ constructor(
                     MediaLoadRequestData.Builder()
                         .setMediaInfo(mediaInfo)
                         .setAutoplay(true)
-                        .setCurrentTime(startPositionMs / 1000)
+                        .setCurrentTime(startPositionMs)
                         .setActiveTrackIds(activeTrackIds)
                         .build()
 
-                Timber.d(
-                    "Cast loadMedia: startPositionMs=$startPositionMs, setCurrentTime=${startPositionMs / 1000.0}s"
-                )
-                val loadTask = client.load(loadRequest)
-                if (startPositionMs > 0) {
-                    loadTask.setResultCallback { result ->
-                        if (result.status.isSuccess) {
-                            Timber.d("Cast post-load seek to ${startPositionMs}ms")
-                            client.seek(
-                                MediaSeekOptions.Builder().setPosition(startPositionMs).build()
-                            )
-                        }
-                    }
-                }
+                Timber.d("Cast loadMedia: startPositionMs=$startPositionMs")
+                client.load(loadRequest)
 
                 castItemStarted = false
                 _castState.value =
@@ -343,6 +331,74 @@ constructor(
             }
         }
     }
+
+    private fun buildVideoMetadata(item: AfinityItem): MediaMetadata =
+        when (item) {
+            is AfinityEpisode ->
+                MediaMetadata(MediaMetadata.MEDIA_TYPE_TV_SHOW).apply {
+                    putString(MediaMetadata.KEY_TITLE, item.name)
+                    putString(MediaMetadata.KEY_SERIES_TITLE, item.seriesName)
+                    putInt(MediaMetadata.KEY_SEASON_NUMBER, item.parentIndexNumber)
+                    putInt(MediaMetadata.KEY_EPISODE_NUMBER, item.indexNumber)
+                    item.premiereDate?.let {
+                        putDate(MediaMetadata.KEY_BROADCAST_DATE, it.toCalendar())
+                    }
+                    putString(MediaMetadata.KEY_SUBTITLE, episodeSubtitle(item))
+                }
+            is AfinityMovie ->
+                MediaMetadata(MediaMetadata.MEDIA_TYPE_MOVIE).apply {
+                    putString(MediaMetadata.KEY_TITLE, item.name)
+                    (item.premiereDate
+                            ?: item.productionYear?.let { LocalDateTime.of(it, 1, 1, 0, 0) })
+                        ?.let { putDate(MediaMetadata.KEY_RELEASE_DATE, it.toCalendar()) }
+                    movieSubtitle(item)?.let { putString(MediaMetadata.KEY_SUBTITLE, it) }
+                }
+            else ->
+                MediaMetadata(MediaMetadata.MEDIA_TYPE_MOVIE).apply {
+                    putString(MediaMetadata.KEY_TITLE, item.name)
+                }
+        }
+
+    private fun episodeSubtitle(episode: AfinityEpisode): String {
+        val episodeNumber =
+            if (episode.indexNumberEnd != null && episode.indexNumberEnd != episode.indexNumber) {
+                "${episode.indexNumber}-E${episode.indexNumberEnd}"
+            } else {
+                "${episode.indexNumber}"
+            }
+        return context.getString(
+            R.string.episode_season_episode_fmt,
+            episode.parentIndexNumber,
+            episodeNumber,
+            episode.seriesName,
+        )
+    }
+
+    private fun movieSubtitle(movie: AfinityMovie): String? {
+        movie.tagline
+            ?.takeIf { it.isNotBlank() }
+            ?.let {
+                return it
+            }
+        val totalMinutes = ticksToTotalMinutes(movie.runtimeTicks)
+        val runtime =
+            when {
+                totalMinutes <= 0 -> null
+                totalMinutes >= 60 ->
+                    context.getString(
+                        R.string.meta_runtime_hours_minutes,
+                        totalMinutes / 60,
+                        totalMinutes % 60,
+                    )
+                else -> context.getString(R.string.meta_runtime_minutes, totalMinutes)
+            }
+        return listOfNotNull(movie.officialRating?.takeIf { it.isNotBlank() }, runtime)
+            .joinToString(" • ")
+            .ifEmpty { null }
+    }
+
+    private fun LocalDateTime.toCalendar(): Calendar =
+        GregorianCalendar.from(atZone(ZoneOffset.UTC))
 
     fun loadMusicQueue(
         tracks: List<AfinityTrack>,
@@ -394,7 +450,7 @@ constructor(
                     MediaQueueData.Builder()
                         .setItems(queueItems)
                         .setStartIndex(startIndex)
-                        .setStartTime(startPositionMs / 1000)
+                        .setStartTime(startPositionMs)
                         .build()
 
                 val loadRequest =
@@ -484,7 +540,7 @@ constructor(
                     MediaQueueData.Builder()
                         .setItems(queueItems)
                         .setStartIndex(startTrackIndex)
-                        .setStartTime(startPositionInTrackMs / 1000)
+                        .setStartTime(startPositionInTrackMs)
                         .build()
 
                 val loadRequest =

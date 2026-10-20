@@ -80,6 +80,7 @@ fun PlayerScreen(
     isLiveChannel: Boolean = false,
     liveStreamUrl: String? = null,
     livePlaybackInfo: LiveTvPlaybackInfo? = null,
+    attachToCast: Boolean = false,
     onBackPressed: () -> Unit,
     navController: NavController? = null,
     viewModel: PlayerViewModel = hiltViewModel(),
@@ -144,6 +145,7 @@ fun PlayerScreen(
                 seasonId = seasonId,
                 shuffle = shuffle,
                 playlistId = playlistId,
+                attachToCast = attachToCast,
             )
         }
     }
