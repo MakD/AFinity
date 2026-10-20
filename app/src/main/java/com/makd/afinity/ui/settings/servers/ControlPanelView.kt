@@ -25,7 +25,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -549,7 +548,6 @@ private fun ControlPanelOverview(
                 baseUrl = viewModel.baseUrl,
                 loading = sessions == null,
                 pendingPause = pendingPause,
-                onTogglePause = viewModel::togglePause,
                 onOpenRemote = { viewModel.showRemote(it.id) },
             )
         }
@@ -810,7 +808,6 @@ private fun ActiveSessionsSection(
     baseUrl: String,
     loading: Boolean = false,
     pendingPause: Map<String, Boolean> = emptyMap(),
-    onTogglePause: (SessionInfoDto) -> Unit = {},
     onOpenRemote: (SessionInfoDto) -> Unit = {},
 ) {
     val playingSessions = sessions.filter { it.nowPlayingItem != null }
@@ -878,7 +875,6 @@ private fun ActiveSessionsSection(
                         session = session,
                         baseUrl = baseUrl,
                         pendingPause = session.id?.let { pendingPause[it] },
-                        onTogglePause = { onTogglePause(session) },
                         onOpenRemote = { onOpenRemote(session) },
                     )
                 }
@@ -914,7 +910,6 @@ private fun PlayingSessionCard(
     session: SessionInfoDto,
     baseUrl: String,
     pendingPause: Boolean? = null,
-    onTogglePause: () -> Unit = {},
     onOpenRemote: () -> Unit = {},
 ) {
     val item = session.nowPlayingItem ?: return
@@ -949,7 +944,6 @@ private fun PlayingSessionCard(
     val isPaused = session.playState?.isPaused ?: true
     val displayPaused = pendingPause ?: isPaused
 
-    session.playState?.positionTicks
     val runtimeTicks = item.runTimeTicks
 
     var localPositionTicks by remember(basePositionTicks) { mutableLongStateOf(basePositionTicks) }
@@ -1056,33 +1050,33 @@ private fun PlayingSessionCard(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = title,
-                            style =
-                                MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                            color = Color.White,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = title,
+                        style =
+                            MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        color = Color.White,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
 
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = year ?: "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.7f),
+                        )
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
-                            Text(
-                                text = year ?: "",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.7f),
-                            )
+                            if (displayPaused) {
+                                SessionPausedTag()
+                            }
                             if (timeText != null) {
                                 Text(
                                     text = timeText,
@@ -1091,79 +1085,79 @@ private fun PlayingSessionCard(
                                 )
                             }
                         }
-
-                        if (progress != null) {
-                            LinearProgressIndicator(
-                                progress = { progress },
-                                modifier = Modifier.fillMaxWidth().padding(top = 6.dp).height(3.dp),
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = Color.White.copy(alpha = 0.25f),
-                            )
-                        }
-
-                        Row(
-                            modifier = Modifier.padding(top = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            if (userAvatarUrl != null) {
-                                AsyncImage(
-                                    imageUrl = userAvatarUrl,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(22.dp).clip(CircleShape),
-                                    contentScale = ContentScale.Crop,
-                                )
-                            } else {
-                                Box(
-                                    modifier =
-                                        Modifier.size(22.dp)
-                                            .background(
-                                                MaterialTheme.colorScheme.primary,
-                                                CircleShape,
-                                            ),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Text(
-                                        text = userName.first().uppercaseChar().toString(),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                    )
-                                }
-                            }
-                            Text(
-                                text = userName,
-                                style =
-                                    MaterialTheme.typography.labelMedium.copy(
-                                        fontWeight = FontWeight.SemiBold
-                                    ),
-                                color = Color.White,
-                            )
-                        }
                     }
 
-                    if (session.supportsRemoteControl) {
-                        FilledIconButton(
-                            onClick = onTogglePause,
-                            modifier = Modifier.size(52.dp),
-                        ) {
-                            Icon(
-                                painter =
-                                    painterResource(
-                                        id =
-                                            if (displayPaused) R.drawable.ic_player_play_filled
-                                            else R.drawable.ic_player_pause_filled
-                                    ),
-                                contentDescription =
-                                    stringResource(
-                                        if (displayPaused) R.string.cd_session_play
-                                        else R.string.cd_session_pause
-                                    ),
-                                modifier = Modifier.size(24.dp),
+                    if (progress != null) {
+                        LinearProgressIndicator(
+                            progress = { progress },
+                            modifier = Modifier.fillMaxWidth().padding(top = 6.dp).height(3.dp),
+                            color =
+                                if (displayPaused) Color.White.copy(alpha = 0.7f)
+                                else MaterialTheme.colorScheme.primary,
+                            trackColor = Color.White.copy(alpha = 0.25f),
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.padding(top = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        if (userAvatarUrl != null) {
+                            AsyncImage(
+                                imageUrl = userAvatarUrl,
+                                contentDescription = null,
+                                modifier = Modifier.size(22.dp).clip(CircleShape),
+                                contentScale = ContentScale.Crop,
                             )
+                        } else {
+                            Box(
+                                modifier =
+                                    Modifier.size(22.dp)
+                                        .background(MaterialTheme.colorScheme.primary, CircleShape),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = userName.first().uppercaseChar().toString(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                )
+                            }
                         }
+                        Text(
+                            text = userName,
+                            style =
+                                MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                            color = Color.White,
+                        )
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun SessionPausedTag() {
+    Surface(shape = RoundedCornerShape(8.dp), color = Color.White.copy(alpha = 0.22f)) {
+        Row(
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_player_pause_filled),
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(12.dp),
+            )
+            Text(
+                text = stringResource(R.string.session_paused),
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = Color.White,
+            )
         }
     }
 }

@@ -2431,6 +2431,7 @@
     <string name="action_session_stop">Stop playback</string>
     <string name="cd_session_play">Resume</string>
     <string name="cd_session_pause">Pause</string>
+    <string name="session_paused">Paused</string>
     <string name="cd_session_previous">Previous</string>
     <string name="cd_session_next">Next</string>
     <string name="cd_session_rewind">Back 10 seconds</string>
