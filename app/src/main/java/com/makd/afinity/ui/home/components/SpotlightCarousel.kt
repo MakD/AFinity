@@ -32,6 +32,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -238,7 +239,7 @@ fun SpotlightCarousel(
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_player_play_filled),
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.hero_btn_play_media),
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(20.dp),
                             )

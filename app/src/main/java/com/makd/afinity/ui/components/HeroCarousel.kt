@@ -38,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -85,6 +86,7 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.LocalHeroStyle
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.navigation.LocalSkipServerImageResize
+import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.utils.bottomOverlap
 import com.vanniktech.blurhash.BlurHash
 import java.util.Locale
@@ -137,6 +139,12 @@ private const val HeroPeekLandscapeLogoWidthFraction = 0.8f
 private val HeroPeekLandscapeContentStart = 28.dp
 private val HeroPeekLandscapeContentBottom = 24.dp
 private val HeroPeekLandscapeButtonSize = 44.dp
+private val HeroButtonSize = 48.dp
+private val HeroButtonIconSize = 22.dp
+private val HeroButtonPlayIconSize = 24.dp
+private val HeroRichButtonSize = 36.dp
+private val HeroButtonMinSize = 40.dp
+private val HeroButtonMaxSize = 56.dp
 
 private val HeroFadeStops =
     listOf(
@@ -818,8 +826,8 @@ private fun BoxScope.HeroPeekContentCentered(
                 contentDescription = stringResource(R.string.hero_btn_more_info),
                 onClick = { onMoreInformationClick(item) },
                 enabled = enabled,
-                size = 56.dp,
-                iconSize = 24.dp,
+                size = HeroButtonSize,
+                iconSize = HeroButtonIconSize,
                 containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                 iconTint = MaterialTheme.colorScheme.onSurface,
             )
@@ -829,8 +837,8 @@ private fun BoxScope.HeroPeekContentCentered(
                     contentDescription = stringResource(R.string.hero_btn_play_trailer),
                     onClick = { onPlayTrailerClick(item) },
                     enabled = enabled,
-                    size = 56.dp,
-                    iconSize = 24.dp,
+                    size = HeroButtonSize,
+                    iconSize = HeroButtonIconSize,
                     containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                     iconTint = MaterialTheme.colorScheme.onSurface,
                 )
@@ -839,8 +847,8 @@ private fun BoxScope.HeroPeekContentCentered(
                     contentDescription = stringResource(R.string.hero_btn_play_media),
                     onClick = { onWatchNowClick(item) },
                     enabled = enabled,
-                    size = 56.dp,
-                    iconSize = 28.dp,
+                    size = HeroButtonSize,
+                    iconSize = HeroButtonPlayIconSize,
                     containerColor = MaterialTheme.colorScheme.primary,
                     iconTint = MaterialTheme.colorScheme.onPrimary,
                 )
@@ -987,19 +995,26 @@ private fun HeroRoundButton(
     containerColor: Color,
     iconTint: Color,
 ) {
+    val scale = heroButtonScale(size)
     IconButton(
         onClick = onClick,
         enabled = enabled,
-        modifier = Modifier.size(size).background(containerColor, CircleShape),
+        modifier = Modifier.size(size * scale).background(containerColor, CircleShape),
     ) {
         Icon(
             painter = painterResource(id = iconRes),
             contentDescription = contentDescription,
             tint = iconTint,
-            modifier = Modifier.size(iconSize),
+            modifier = Modifier.size(iconSize * scale),
         )
     }
 }
+
+@Composable
+@ReadOnlyComposable
+private fun heroButtonScale(baseSize: Dp): Float =
+    CardDimensions.fontScaled(baseSize)
+        .coerceIn(minOf(baseSize, HeroButtonMinSize), HeroButtonMaxSize) / baseSize
 
 @Composable
 private fun HeroPagerIndicator(pagerState: PagerState, size: Int, modifier: Modifier = Modifier) {
@@ -1042,6 +1057,7 @@ private fun BoxScope.HeroContentCentered(
     onMoreInformationClick: (AfinityItem) -> Unit,
 ) {
     val skipServerResize = LocalSkipServerImageResize.current
+    val buttonScale = heroButtonScale(HeroButtonSize)
 
     Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
         Column(
@@ -1125,7 +1141,7 @@ private fun BoxScope.HeroContentCentered(
             onClick = { onMoreInformationClick(currentItem) },
             modifier =
                 Modifier.align(Alignment.CenterStart)
-                    .size(56.dp)
+                    .size(HeroButtonSize * buttonScale)
                     .background(
                         MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
                         CircleShape,
@@ -1135,7 +1151,7 @@ private fun BoxScope.HeroContentCentered(
                 painter = painterResource(id = R.drawable.ic_info),
                 contentDescription = stringResource(R.string.hero_btn_more_info),
                 tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(HeroButtonIconSize * buttonScale),
             )
         }
         Row(
@@ -1145,7 +1161,7 @@ private fun BoxScope.HeroContentCentered(
             IconButton(
                 onClick = { onPlayTrailerClick(currentItem) },
                 modifier =
-                    Modifier.size(56.dp)
+                    Modifier.size(HeroButtonSize * buttonScale)
                         .background(
                             MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
                             CircleShape,
@@ -1155,19 +1171,20 @@ private fun BoxScope.HeroContentCentered(
                     painter = painterResource(id = R.drawable.ic_video),
                     contentDescription = stringResource(R.string.hero_btn_play_trailer),
                     tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(HeroButtonIconSize * buttonScale),
                 )
             }
             IconButton(
                 onClick = { onWatchNowClick(currentItem) },
                 modifier =
-                    Modifier.size(56.dp).background(MaterialTheme.colorScheme.primary, CircleShape),
+                    Modifier.size(HeroButtonSize * buttonScale)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape),
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_player_play_filled),
                     contentDescription = stringResource(R.string.hero_btn_play_media),
                     tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier.size(HeroButtonPlayIconSize * buttonScale),
                 )
             }
         }
@@ -1194,6 +1211,7 @@ private fun HeroContentRich(
     onMoreInformationClick: (AfinityItem) -> Unit,
 ) {
     val skipServerResize = LocalSkipServerImageResize.current
+    val buttonScale = heroButtonScale(HeroRichButtonSize)
 
     Box(
         modifier =
@@ -1285,7 +1303,7 @@ private fun HeroContentRich(
                     IconButton(
                         onClick = { onMoreInformationClick(currentItem) },
                         modifier =
-                            Modifier.size(36.dp)
+                            Modifier.size(HeroRichButtonSize * buttonScale)
                                 .background(
                                     MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
                                     CircleShape,
@@ -1295,13 +1313,13 @@ private fun HeroContentRich(
                             painter = painterResource(id = R.drawable.ic_info),
                             contentDescription = stringResource(R.string.hero_btn_more_info),
                             tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(24.dp),
+                            modifier = Modifier.size(HeroButtonPlayIconSize * buttonScale),
                         )
                     }
                     IconButton(
                         onClick = { onPlayTrailerClick(currentItem) },
                         modifier =
-                            Modifier.size(36.dp)
+                            Modifier.size(HeroRichButtonSize * buttonScale)
                                 .background(
                                     MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
                                     CircleShape,
@@ -1311,20 +1329,20 @@ private fun HeroContentRich(
                             painter = painterResource(id = R.drawable.ic_video),
                             contentDescription = stringResource(R.string.hero_btn_play_trailer),
                             tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(24.dp),
+                            modifier = Modifier.size(HeroButtonPlayIconSize * buttonScale),
                         )
                     }
                     IconButton(
                         onClick = { onWatchNowClick(currentItem) },
                         modifier =
-                            Modifier.size(36.dp)
+                            Modifier.size(HeroRichButtonSize * buttonScale)
                                 .background(MaterialTheme.colorScheme.primary, CircleShape),
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_player_play_filled),
                             contentDescription = stringResource(R.string.hero_btn_watch_now),
                             tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(24.dp),
+                            modifier = Modifier.size(HeroButtonPlayIconSize * buttonScale),
                         )
                     }
                 }
