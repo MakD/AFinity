@@ -3230,4 +3230,19 @@
     <string name="livetv_label_air_time">Время эфира</string>
     <string name="livetv_around_time">Примерно в %1$s</string>
     <string name="livetv_anytime">В любое время</string>
+    <string name="livetv_label_keep_up_to">Сколько хранить</string>
+    <string name="livetv_as_many_as_possible">Как можно больше</string>
+    <string name="livetv_rec_badge">ЗАПИСЬ</string>
+    <string name="livetv_scheduled">Запланировано</string>
+    <string name="livetv_series">Серии</string>
+    <string name="livetv_recorded">Записанные</string>
+    <string name="livetv_no_recordings">Записей пока нет</string>
+    <string name="livetv_no_recordings_message">Завершенные записи появятся здесь.</string>
+    <string name="livetv_recordings_load_failed">Не удалось загрузить записи.</string>
+    <plurals name="livetv_episode_count">
+        <item quantity="one">%d эпизод</item>
+        <item quantity="few">%d эпизода</item>
+        <item quantity="many">%d эпизодов</item>
+        <item quantity="other">%d эпизодов</item>
+    </plurals>
 </resources>
