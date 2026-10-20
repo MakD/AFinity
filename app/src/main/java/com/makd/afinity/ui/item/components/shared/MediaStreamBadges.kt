@@ -7,13 +7,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -26,6 +30,8 @@ import com.makd.afinity.data.models.media.hdrLabel
 import com.makd.afinity.data.models.media.isDolbyVision
 import com.makd.afinity.ui.components.mediainfo.MediaInfoFormat
 import org.jellyfin.sdk.model.api.MediaStreamType
+
+private const val ChipBackgroundAlpha = 0.18f
 
 @Composable
 fun MediaStreamBadges(source: AfinitySource?) {
@@ -115,43 +121,47 @@ private fun String.channelLabel(): String? =
         else -> null
     }
 
+private val chipColorScheme: ColorScheme
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalDetailPageColorScheme.current ?: MaterialTheme.colorScheme
+
+private fun chipBackground(scheme: ColorScheme): Color =
+    scheme.onBackground.copy(alpha = ChipBackgroundAlpha).compositeOver(scheme.background)
+
 @Composable
 internal fun VideoMetadataChip(text: String) {
+    val scheme = chipColorScheme
     Text(
         text = text,
         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+        color = scheme.onBackground.copy(alpha = 0.8f),
         modifier =
-            Modifier.background(
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
-                    RoundedCornerShape(4.dp),
-                )
+            Modifier.background(chipBackground(scheme), RoundedCornerShape(4.dp))
                 .padding(horizontal = 6.dp, vertical = 2.dp),
     )
 }
 
 @Composable
 internal fun VideoMetadataChipWithIcon(text: String, @DrawableRes iconRes: Int) {
+    val scheme = chipColorScheme
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         modifier =
-            Modifier.background(
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
-                    RoundedCornerShape(4.dp),
-                )
+            Modifier.background(chipBackground(scheme), RoundedCornerShape(4.dp))
                 .padding(horizontal = 6.dp, vertical = 2.dp),
     ) {
         Icon(
             painter = painterResource(id = iconRes),
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.onBackground,
+            tint = scheme.onBackground,
             modifier = Modifier.size(16.dp),
         )
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+            color = scheme.onBackground.copy(alpha = 0.8f),
         )
     }
 }

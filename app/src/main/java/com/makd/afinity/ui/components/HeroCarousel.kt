@@ -31,6 +31,7 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -68,6 +69,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.get
 import coil3.imageLoader
 import coil3.request.ImageRequest
 import com.makd.afinity.R
@@ -90,7 +92,6 @@ import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.utils.bottomOverlap
 import com.vanniktech.blurhash.BlurHash
 import java.util.Locale
-import java.util.UUID
 import kotlin.math.max
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.Dispatchers
@@ -100,7 +101,7 @@ import timber.log.Timber
 
 private val HeroMaxHeight = 560.dp
 private val HeroBottomOverlap = 40.dp
-private val HeroFadeHeight = 340.dp
+internal val HeroFadeHeight = 135.dp
 private const val HeroDimAlpha = 0.25f
 private const val HeroPortraitFraction = 0.65f
 private const val HeroLandscapeFraction = 0.95f
@@ -110,14 +111,16 @@ private const val HeroLogoLandscapeWidthFraction = 0.4f
 private const val LIGHT_BACKGROUND_LUMINANCE = 0.5f
 
 private val HeroCenteredTextInset = 24.dp
-private val HeroCenteredTextBottom = 16.dp
-private val HeroCenteredTextHeight = 300.dp
+private val HeroCenteredTextBottom = 104.dp
+private val HeroCenteredTextHeight = 212.dp
 private val HeroRichTextStart = 14.dp
 private val HeroRichTextEndInset = 62.dp
 private const val HeroRichTextWidthFraction = 0.75f
-private val HeroRichTextBottom = 48.dp
-private val HeroRichTextHeight = 328.dp
+private val HeroRichTextTop = 48.dp
+private val HeroRichTextBottom = 100.dp
+private val HeroRichTextHeight = 276.dp
 private const val HeroToneSamples = 12
+private const val HeroDarkTextMinLuminance = 0.25f
 
 private val HeroTopBarHeight = 56.dp
 private val HeroPeekTopGap = 8.dp
@@ -146,14 +149,19 @@ private val HeroRichButtonSize = 36.dp
 private val HeroButtonMinSize = 40.dp
 private val HeroButtonMaxSize = 56.dp
 
-private val HeroFadeStops =
+internal val HeroFadeStops =
     listOf(
         Color.Black,
         Color.Black.copy(alpha = 0.98f),
-        Color.Black.copy(alpha = 0.92f),
-        Color.Black.copy(alpha = 0.78f),
-        Color.Black.copy(alpha = 0.55f),
-        Color.Black.copy(alpha = 0.25f),
+        Color.Black.copy(alpha = 0.91f),
+        Color.Black.copy(alpha = 0.82f),
+        Color.Black.copy(alpha = 0.70f),
+        Color.Black.copy(alpha = 0.57f),
+        Color.Black.copy(alpha = 0.43f),
+        Color.Black.copy(alpha = 0.30f),
+        Color.Black.copy(alpha = 0.18f),
+        Color.Black.copy(alpha = 0.09f),
+        Color.Black.copy(alpha = 0.02f),
         Color.Transparent,
     )
 
@@ -176,6 +184,8 @@ private val HeroPeekLandscapeBottomScrim =
     Brush.verticalGradient(0.5f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.51f))
 
 private val LocalHeroIndicator = staticCompositionLocalOf { HeroIndicator.DOTS }
+
+private val LocalHeroPageColorScheme = staticCompositionLocalOf<ColorScheme?> { null }
 
 private data class HeroPeekMetrics(val top: Dp, val cardHeight: Dp, val indicatorHeight: Dp) {
     val total: Dp
@@ -210,7 +220,6 @@ private fun heroPrefersLightText(
     heroHeight: Float,
     isLandscape: Boolean,
     pageColor: Color,
-    darkTextColor: Color,
 ): Boolean? {
     val images = item.images
     val blurHash =
@@ -238,7 +247,7 @@ private fun heroPrefersLightText(
         left = HeroRichTextStart.value
         right = left + (heroWidth - HeroRichTextEndInset.value) * HeroRichTextWidthFraction
         bottom = heroHeight - HeroRichTextBottom.value
-        top = max(HeroRichTextBottom.value, bottom - HeroRichTextHeight.value)
+        top = max(HeroRichTextTop.value, bottom - HeroRichTextHeight.value)
     } else {
         left = HeroCenteredTextInset.value
         right = heroWidth - HeroCenteredTextInset.value
@@ -257,7 +266,7 @@ private fun heroPrefersLightText(
         for (column in 0 until HeroToneSamples) {
             val x = left + (right - left) * (column + 0.5f) / HeroToneSamples
             val pixelX = ((x - offsetX) / scale).toInt().coerceIn(0, decodeWidth - 1)
-            val pixel = Color(bitmap.getPixel(pixelX, pixelY))
+            val pixel = Color(bitmap[pixelX, pixelY])
             red += pixel.red * imageWeight + pageColor.red * (1f - imageAlpha)
             green += pixel.green * imageWeight + pageColor.green * (1f - imageAlpha)
             blue += pixel.blue * imageWeight + pageColor.blue * (1f - imageAlpha)
@@ -273,9 +282,7 @@ private fun heroPrefersLightText(
                 blue = (blue / samples).coerceIn(0f, 1f),
             )
             .luminance()
-    val lightTextContrast = 1.05f / (backgroundLuminance + 0.05f)
-    val darkTextContrast = (backgroundLuminance + 0.05f) / (darkTextColor.luminance() + 0.05f)
-    return lightTextContrast > darkTextContrast
+    return backgroundLuminance < HeroDarkTextMinLuminance
 }
 
 @Composable
@@ -445,17 +452,15 @@ private fun HeroFullBleed(
     val colorScheme = MaterialTheme.colorScheme
     val isLightTheme = colorScheme.background.luminance() > LIGHT_BACKGROUND_LUMINANCE
     val pageColor = colorScheme.surface
-    val darkTextColor = colorScheme.onSurface
     val lightTextItems by
         produceState(
-            emptySet<UUID>(),
+            emptySet(),
             items,
             isLightTheme,
             screenWidthDp,
             heroHeight,
             isLandscape,
             pageColor,
-            darkTextColor,
         ) {
             value =
                 if (!isLightTheme) {
@@ -470,7 +475,6 @@ private fun HeroFullBleed(
                                     heroHeight = heroHeight.value,
                                     isLandscape = isLandscape,
                                     pageColor = pageColor,
-                                    darkTextColor = darkTextColor,
                                 ) == true
                             }
                             .mapTo(mutableSetOf()) { it.id }
@@ -531,7 +535,20 @@ private fun HeroOnDarkColors(enabled: Boolean = true, content: @Composable () ->
                 base
             }
         }
-    MaterialTheme(colorScheme = scheme, content = content)
+    CompositionLocalProvider(LocalHeroPageColorScheme provides base) {
+        MaterialTheme(colorScheme = scheme, content = content)
+    }
+}
+
+@Composable
+@ReadOnlyComposable
+private fun heroButtonColors(): Pair<Color, Color> {
+    val scheme = MaterialTheme.colorScheme
+    return if (scheme.background.luminance() > LIGHT_BACKGROUND_LUMINANCE) {
+        Color.Black to Color.White
+    } else {
+        scheme.surface to scheme.onSurface
+    }
 }
 
 @Composable
@@ -1018,6 +1035,7 @@ private fun heroButtonScale(baseSize: Dp): Float =
 
 @Composable
 private fun HeroPagerIndicator(pagerState: PagerState, size: Int, modifier: Modifier = Modifier) {
+    val colorScheme = LocalHeroPageColorScheme.current ?: MaterialTheme.colorScheme
     when (LocalHeroIndicator.current) {
         HeroIndicator.DOTS ->
             WormPagerIndicator(
@@ -1025,8 +1043,8 @@ private fun HeroPagerIndicator(pagerState: PagerState, size: Int, modifier: Modi
                 pageFractionProvider = {
                     pagerState.currentPage % size + pagerState.currentPageOffsetFraction
                 },
-                activeColor = MaterialTheme.colorScheme.primary,
-                inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                activeColor = colorScheme.primary,
+                inactiveColor = colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                 modifier = modifier,
             )
         HeroIndicator.COUNTER ->
@@ -1038,7 +1056,7 @@ private fun HeroPagerIndicator(pagerState: PagerState, size: Int, modifier: Modi
                         size,
                     ),
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = colorScheme.onSurfaceVariant,
                 modifier = modifier,
             )
         HeroIndicator.HIDDEN -> Unit
@@ -1058,6 +1076,7 @@ private fun BoxScope.HeroContentCentered(
 ) {
     val skipServerResize = LocalSkipServerImageResize.current
     val buttonScale = heroButtonScale(HeroButtonSize)
+    val (buttonContainer, buttonContent) = heroButtonColors()
 
     Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
         Column(
@@ -1142,15 +1161,12 @@ private fun BoxScope.HeroContentCentered(
             modifier =
                 Modifier.align(Alignment.CenterStart)
                     .size(HeroButtonSize * buttonScale)
-                    .background(
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                        CircleShape,
-                    ),
+                    .background(buttonContainer.copy(alpha = 0.8f), CircleShape),
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_info),
                 contentDescription = stringResource(R.string.hero_btn_more_info),
-                tint = MaterialTheme.colorScheme.onSurface,
+                tint = buttonContent,
                 modifier = Modifier.size(HeroButtonIconSize * buttonScale),
             )
         }
@@ -1162,15 +1178,12 @@ private fun BoxScope.HeroContentCentered(
                 onClick = { onPlayTrailerClick(currentItem) },
                 modifier =
                     Modifier.size(HeroButtonSize * buttonScale)
-                        .background(
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                            CircleShape,
-                        ),
+                        .background(buttonContainer.copy(alpha = 0.8f), CircleShape),
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_video),
                     contentDescription = stringResource(R.string.hero_btn_play_trailer),
-                    tint = MaterialTheme.colorScheme.onSurface,
+                    tint = buttonContent,
                     modifier = Modifier.size(HeroButtonIconSize * buttonScale),
                 )
             }
@@ -1212,6 +1225,7 @@ private fun HeroContentRich(
 ) {
     val skipServerResize = LocalSkipServerImageResize.current
     val buttonScale = heroButtonScale(HeroRichButtonSize)
+    val (buttonContainer, buttonContent) = heroButtonColors()
 
     Box(
         modifier =
@@ -1304,15 +1318,12 @@ private fun HeroContentRich(
                         onClick = { onMoreInformationClick(currentItem) },
                         modifier =
                             Modifier.size(HeroRichButtonSize * buttonScale)
-                                .background(
-                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                                    CircleShape,
-                                ),
+                                .background(buttonContainer.copy(alpha = 0.8f), CircleShape),
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_info),
                             contentDescription = stringResource(R.string.hero_btn_more_info),
-                            tint = MaterialTheme.colorScheme.onSurface,
+                            tint = buttonContent,
                             modifier = Modifier.size(HeroButtonPlayIconSize * buttonScale),
                         )
                     }
@@ -1320,15 +1331,12 @@ private fun HeroContentRich(
                         onClick = { onPlayTrailerClick(currentItem) },
                         modifier =
                             Modifier.size(HeroRichButtonSize * buttonScale)
-                                .background(
-                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                                    CircleShape,
-                                ),
+                                .background(buttonContainer.copy(alpha = 0.8f), CircleShape),
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_video),
                             contentDescription = stringResource(R.string.hero_btn_play_trailer),
-                            tint = MaterialTheme.colorScheme.onSurface,
+                            tint = buttonContent,
                             modifier = Modifier.size(HeroButtonPlayIconSize * buttonScale),
                         )
                     }

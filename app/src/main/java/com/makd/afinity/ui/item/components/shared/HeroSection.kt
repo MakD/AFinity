@@ -7,13 +7,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -45,6 +46,8 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.HeroFadeHeight
+import com.makd.afinity.ui.components.HeroFadeStops
 
 private val HeroDetailMaxHeight = 560.dp
 
@@ -83,8 +86,17 @@ fun HeroSection(item: AfinityItem) {
     HeroSection(fallbackChain = fallbackChain)
 }
 
+val LocalDetailPageColorScheme = staticCompositionLocalOf<ColorScheme?> { null }
+
 @Composable
-fun rememberLandscapeDetailColorScheme(): ColorScheme {
+fun LandscapeDetailTheme(content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalDetailPageColorScheme provides MaterialTheme.colorScheme) {
+        MaterialTheme(colorScheme = rememberLandscapeDetailColorScheme(), content = content)
+    }
+}
+
+@Composable
+private fun rememberLandscapeDetailColorScheme(): ColorScheme {
     val baseColorScheme = MaterialTheme.colorScheme
     return remember(baseColorScheme) {
         baseColorScheme.copy(
@@ -136,7 +148,6 @@ fun DetailBackdrop(fallbackChain: List<Pair<String, String?>>, contentDescriptio
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HeroSection(fallbackChain: List<Pair<String, String?>>) {
     val windowInfo = LocalWindowInfo.current
@@ -168,10 +179,12 @@ fun HeroSection(fallbackChain: List<Pair<String, String?>>) {
                 Modifier.fillMaxSize()
                     .graphicsLayer { alpha = 0.99f }
                     .drawWithCache {
+                        val fadeStart =
+                            (size.height - HeroFadeHeight.toPx()).coerceAtLeast(size.height * 0.35f)
                         val gradient =
                             Brush.verticalGradient(
-                                colors = listOf(Color.Black, Color.Transparent),
-                                startY = size.height * 0.75f,
+                                colors = HeroFadeStops,
+                                startY = fadeStart,
                                 endY = size.height,
                             )
                         onDrawWithContent {

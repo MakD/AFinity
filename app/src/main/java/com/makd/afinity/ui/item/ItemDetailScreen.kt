@@ -112,6 +112,7 @@ import com.makd.afinity.ui.item.components.shared.ActionButtonsRow
 import com.makd.afinity.ui.item.components.shared.AdminAction
 import com.makd.afinity.ui.item.components.shared.DetailBackdrop
 import com.makd.afinity.ui.item.components.shared.HeroSection
+import com.makd.afinity.ui.item.components.shared.LandscapeDetailTheme
 import com.makd.afinity.ui.item.components.shared.LocalDetailLayout
 import com.makd.afinity.ui.item.components.shared.MediaLogoHeader
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
@@ -123,7 +124,6 @@ import com.makd.afinity.ui.item.components.shared.SimilarItemsSection
 import com.makd.afinity.ui.item.components.shared.VideoQualitySelection
 import com.makd.afinity.ui.item.components.shared.WhereToWatchStrip
 import com.makd.afinity.ui.item.components.shared.detailItem
-import com.makd.afinity.ui.item.components.shared.rememberLandscapeDetailColorScheme
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.utils.IntentUtils
@@ -665,7 +665,7 @@ private fun LandscapeItemDetailContent(
         }
     }
 
-    MaterialTheme(colorScheme = rememberLandscapeDetailColorScheme()) {
+    LandscapeDetailTheme {
         Box(modifier = Modifier.fillMaxSize()) {
             val backdropChain =
                 remember(item.id) {

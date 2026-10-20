@@ -5,6 +5,12 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.os.Build
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -30,7 +36,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,6 +53,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -449,21 +455,36 @@ private fun SectionCard(
             }
             section.rows.forEach { InfoRow(it) }
 
-            val visible =
-                if (showAll) section.entries else section.entries.take(section.visibleEntries)
-            visible.forEachIndexed { index, entry ->
+            section.entries.take(section.visibleEntries).forEachIndexed { index, entry ->
                 val key = "$keyPrefix$index"
                 EntryRow(
                     entry = entry,
                     expanded = key in expandedKeys,
-                    showDivider = index > 0 || section.rows.isNotEmpty(),
                     onClick = { onToggle(key) },
                 )
             }
-            if (visible.size < section.entries.size) {
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
+            val hasMore = section.entries.size > section.visibleEntries
+            AnimatedVisibility(
+                visible = showAll && hasMore,
+                enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+                exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+            ) {
+                Column {
+                    section.entries.drop(section.visibleEntries).forEachIndexed { offset, entry ->
+                        val key = "$keyPrefix${section.visibleEntries + offset}"
+                        EntryRow(
+                            entry = entry,
+                            expanded = key in expandedKeys,
+                            onClick = { onToggle(key) },
+                        )
+                    }
+                }
+            }
+            AnimatedVisibility(
+                visible = !showAll && hasMore,
+                enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+                exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+            ) {
                 TextButton(onClick = onShowAll, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.media_info_show_all_fmt, section.entries.size))
                 }
@@ -500,12 +521,9 @@ private fun InfoRow(row: MediaInfoRow) {
 private fun EntryRow(
     entry: MediaInfoEntry,
     expanded: Boolean,
-    showDivider: Boolean,
     onClick: () -> Unit,
 ) {
-    if (showDivider) {
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-    }
+    val rotation by animateFloatAsState(if (expanded) 180f else 0f, label = "chevron")
     Row(
         modifier =
             Modifier.fillMaxWidth()
@@ -554,17 +572,17 @@ private fun EntryRow(
             }
         }
         Icon(
-            painter =
-                painterResource(
-                    if (expanded) R.drawable.ic_keyboard_arrow_up
-                    else R.drawable.ic_keyboard_arrow_down
-                ),
+            painter = painterResource(R.drawable.ic_keyboard_arrow_down),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(24.dp).rotate(rotation),
         )
     }
-    if (expanded) {
+    AnimatedVisibility(
+        visible = expanded,
+        enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+        exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+    ) {
         Column(
             modifier =
                 Modifier.fillMaxWidth()

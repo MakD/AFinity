@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -28,7 +27,7 @@ import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.shared.DetailBackdrop
 import com.makd.afinity.ui.item.components.shared.HeroSection
-import com.makd.afinity.ui.item.components.shared.rememberLandscapeDetailColorScheme
+import com.makd.afinity.ui.item.components.shared.LandscapeDetailTheme
 import com.makd.afinity.ui.utils.verticalLayoutOffset
 
 @Composable
@@ -46,7 +45,7 @@ fun LiveTvDetailFrame(
         val statusBarHeight = WindowInsets.statusBars.getTop(density)
         val displayCutoutLeft = WindowInsets.displayCutout.getLeft(density, LayoutDirection.Ltr)
 
-        MaterialTheme(colorScheme = rememberLandscapeDetailColorScheme()) {
+        LandscapeDetailTheme {
             Box(modifier = Modifier.fillMaxSize()) {
                 DetailBackdrop(fallbackChain = heroChain, contentDescription = backdropDescription)
 
