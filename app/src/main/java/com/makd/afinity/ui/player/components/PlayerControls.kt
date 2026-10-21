@@ -838,6 +838,7 @@ fun PlayerControls(
                 PlaybackSpeedPanel(
                     currentSpeed = uiState.playbackSpeed,
                     onSpeedChange = { speed -> onPlayerEvent(PlayerEvent.SetPlaybackSpeed(speed)) },
+                    onDismiss = { showSpeedDialog = false },
                     modifier =
                         Modifier.windowInsetsPadding(
                                 WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)

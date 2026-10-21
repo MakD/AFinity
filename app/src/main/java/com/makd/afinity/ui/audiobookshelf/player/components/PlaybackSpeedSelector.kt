@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +43,7 @@ import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinitySlider
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,6 +54,13 @@ fun PlaybackSpeedSelector(
     modifier: Modifier = Modifier,
 ) {
     val sheetState = rememberAfinitySheetState()
+    val coroutineScope = rememberCoroutineScope()
+    val hideSheet: () -> Unit = {
+        coroutineScope.launch {
+            sheetState.hide()
+            onDismiss()
+        }
+    }
 
     val presets = listOf(0.5f, 0.75f, 1.0f, 1.1f, 1.25f, 1.5f, 1.75f, 2.0f, 2.5f, 3.0f)
     val listState = rememberLazyListState()
@@ -120,6 +129,7 @@ fun PlaybackSpeedSelector(
                         val snapped = (value * 20).roundToInt() / 20f
                         onSpeedSelected(snapped)
                     },
+                    onValueChangeFinished = hideSheet,
                     valueRange = presets.first()..presets.last(),
                     modifier = Modifier.weight(1f),
                 )
@@ -156,7 +166,10 @@ fun PlaybackSpeedSelector(
                     PresetSpeedItem(
                         speed = speed,
                         isSelected = speed == currentSpeed,
-                        onClick = { onSpeedSelected(speed) },
+                        onClick = {
+                            onSpeedSelected(speed)
+                            hideSheet()
+                        },
                     )
                 }
             }

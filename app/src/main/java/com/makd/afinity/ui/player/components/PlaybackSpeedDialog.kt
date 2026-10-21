@@ -69,6 +69,7 @@ fun PlaybackSpeedDialog(
             PlaybackSpeedPanel(
                 currentSpeed = currentSpeed,
                 onSpeedChange = onSpeedChange,
+                onDismiss = onDismiss,
                 modifier = Modifier.fillMaxWidth(cardWidthFraction).playerOverlayInsets(),
             )
         }
@@ -79,9 +80,15 @@ fun PlaybackSpeedDialog(
 fun PlaybackSpeedPanel(
     currentSpeed: Float,
     onSpeedChange: (Float) -> Unit,
+    onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var sliderSpeed by remember(currentSpeed) { mutableFloatStateOf(currentSpeed) }
+    val selectPreset: (Float) -> Unit = { speed ->
+        sliderSpeed = speed
+        onSpeedChange(speed)
+        onDismiss()
+    }
 
     Card(
         modifier =
@@ -130,7 +137,10 @@ fun PlaybackSpeedPanel(
                 AfinitySlider(
                     value = sliderSpeed,
                     onValueChange = { newSpeed -> sliderSpeed = newSpeed },
-                    onValueChangeFinished = { onSpeedChange(sliderSpeed) },
+                    onValueChangeFinished = {
+                        onSpeedChange(sliderSpeed)
+                        onDismiss()
+                    },
                     valueRange = 0.25f..2.0f,
                     steps = 6,
                     modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
@@ -163,42 +173,27 @@ fun PlaybackSpeedPanel(
                 SpeedChip(
                     speed = 0.25f,
                     isSelected = (sliderSpeed - 0.25f).absoluteValue < 0.01f,
-                    onClick = {
-                        sliderSpeed = 0.25f
-                        onSpeedChange(0.25f)
-                    },
+                    onClick = { selectPreset(0.25f) },
                 )
                 SpeedChip(
                     speed = 0.50f,
                     isSelected = (sliderSpeed - 0.50f).absoluteValue < 0.01f,
-                    onClick = {
-                        sliderSpeed = 0.50f
-                        onSpeedChange(0.50f)
-                    },
+                    onClick = { selectPreset(0.50f) },
                 )
                 SpeedChip(
                     speed = 1.00f,
                     isSelected = (sliderSpeed - 1.00f).absoluteValue < 0.01f,
-                    onClick = {
-                        sliderSpeed = 1.00f
-                        onSpeedChange(1.00f)
-                    },
+                    onClick = { selectPreset(1.00f) },
                 )
                 SpeedChip(
                     speed = 1.50f,
                     isSelected = (sliderSpeed - 1.50f).absoluteValue < 0.01f,
-                    onClick = {
-                        sliderSpeed = 1.50f
-                        onSpeedChange(1.50f)
-                    },
+                    onClick = { selectPreset(1.50f) },
                 )
                 SpeedChip(
                     speed = 2.00f,
                     isSelected = (sliderSpeed - 2.00f).absoluteValue < 0.01f,
-                    onClick = {
-                        sliderSpeed = 2.00f
-                        onSpeedChange(2.00f)
-                    },
+                    onClick = { selectPreset(2.00f) },
                 )
             }
         }
