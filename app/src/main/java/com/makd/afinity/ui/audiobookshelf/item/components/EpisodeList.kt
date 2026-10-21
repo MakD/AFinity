@@ -1,12 +1,8 @@
 package com.makd.afinity.ui.audiobookshelf.item.components
 
-import android.text.Spannable
-import android.text.method.LinkMovementMethod
-import android.text.style.ClickableSpan
-import android.view.MotionEvent
-import android.widget.TextView
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,24 +21,25 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.text.HtmlCompat
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
+import com.makd.afinity.ui.utils.htmlToAnnotatedString
 import com.makd.afinity.util.DateSkeleton
 import com.makd.afinity.util.localizedDateFormat
 import java.util.Date
@@ -292,7 +289,7 @@ private fun ExpandableEpisodeItem(
                 HtmlText(
                     html = description,
                     maxLines = if (isExpanded) Int.MAX_VALUE else 2,
-                    textColor = MaterialTheme.colorScheme.onSurfaceVariant.toArgb(),
+                    textColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     renderHtml = isExpanded,
                     onClick = onExpandToggle,
                     modifier = Modifier.weight(1f),
@@ -327,35 +324,34 @@ fun HtmlText(
     html: String,
     modifier: Modifier = Modifier,
     maxLines: Int = 2,
-    textColor: Int,
+    textColor: Color,
     renderHtml: Boolean,
     onClick: () -> Unit,
 ) {
-    AndroidView(
-        modifier = modifier,
-        factory = { context ->
-            TextView(context).apply {
-                textSize = 14f
-                setLinkTextColor(textColor)
-                movementMethod = LinkOrExpandMovementMethod
-            }
-        },
-        update = { textView ->
-            textView.setTextColor(textColor)
-            textView.maxLines = maxLines
-            textView.ellipsize = android.text.TextUtils.TruncateAt.END
-
-            textView.setOnClickListener { onClick() }
-
+    val text =
+        remember(html, renderHtml, textColor) {
             if (renderHtml) {
-                textView.movementMethod = LinkOrExpandMovementMethod
-                textView.text = HtmlCompat.fromHtml(html, HtmlCompat.FROM_HTML_MODE_COMPACT)
+                htmlToAnnotatedString(html, textColor)
             } else {
-                textView.movementMethod = null
-                textView.text =
+                AnnotatedString(
                     HtmlCompat.fromHtml(html, HtmlCompat.FROM_HTML_MODE_COMPACT).toString()
+                )
             }
-        },
+        }
+
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = textColor,
+        maxLines = maxLines,
+        overflow = TextOverflow.Ellipsis,
+        modifier =
+            modifier.clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() },
+                role = Role.Button,
+                onClick = onClick,
+            ),
     )
 }
 
@@ -373,37 +369,5 @@ private fun formatDuration(seconds: Double): String {
         hours > 0 -> "${hours}h ${minutes}m"
         minutes > 0 -> "${minutes}m"
         else -> "< 1m"
-    }
-}
-
-object LinkOrExpandMovementMethod : LinkMovementMethod() {
-    override fun onTouchEvent(widget: TextView, buffer: Spannable, event: MotionEvent): Boolean {
-        val action = event.action
-
-        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_DOWN) {
-            var x = event.x.toInt()
-            var y = event.y.toInt()
-
-            x -= widget.totalPaddingLeft
-            y -= widget.totalPaddingTop
-            x += widget.scrollX
-            y += widget.scrollY
-
-            val layout = widget.layout
-            val line = layout.getLineForVertical(y)
-            val off = layout.getOffsetForHorizontal(line, x.toFloat())
-
-            val links = buffer.getSpans(off, off, ClickableSpan::class.java)
-
-            if (links.isNotEmpty()) {
-                return super.onTouchEvent(widget, buffer, event)
-            } else {
-                if (action == MotionEvent.ACTION_UP) {
-                    widget.performClick()
-                }
-                return true
-            }
-        }
-        return super.onTouchEvent(widget, buffer, event)
     }
 }
