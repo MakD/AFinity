@@ -52,6 +52,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import timber.log.Timber
 
@@ -125,6 +126,7 @@ constructor(
         encodeDefaults = true
     }
     private val filtersKey = "library_filters_${libraryId ?: studioName ?: "content"}"
+    private val sortKey = "library_sort_${libraryId ?: studioName ?: "content"}"
 
     private val _uiState =
         MutableStateFlow(
@@ -400,8 +402,9 @@ constructor(
                 libraryType = type
 
                 if (section == null) {
-                    currentSortBy = preferencesRepository.getDefaultSortBy()
-                    currentSortDescending = preferencesRepository.getSortDescending()
+                    val sort = loadPersistedSort()
+                    currentSortBy = sort.sortBy
+                    currentSortDescending = sort.descending
                     currentFilters =
                         if (isFolderBrowse()) LibraryFilters() else loadPersistedFilters()
                 }
@@ -442,6 +445,15 @@ constructor(
         preferencesRepository.getStringPreference(filtersKey)?.let { stored ->
             runCatching { json.decodeFromString(LibraryFilters.serializer(), stored) }.getOrNull()
         } ?: LibraryFilters()
+
+    private suspend fun loadPersistedSort(): LibrarySort =
+        preferencesRepository.getStringPreference(sortKey)?.let { stored ->
+            runCatching { json.decodeFromString(LibrarySort.serializer(), stored) }.getOrNull()
+        }
+            ?: LibrarySort(
+                sortBy = preferencesRepository.getDefaultSortBy(),
+                descending = preferencesRepository.getSortDescending(),
+            )
 
     fun ensureFilterOptionsLoaded() {
         if (sectionId != null || filterOptionsJob?.isActive == true) return
@@ -491,9 +503,16 @@ constructor(
         if (currentSortBy != sortBy || currentSortDescending != descending) {
             currentSortBy = sortBy
             currentSortDescending = descending
-            viewModelScope.launch {
-                preferencesRepository.setDefaultSortBy(sortBy)
-                preferencesRepository.setSortDescending(descending)
+            if (sectionId == null) {
+                viewModelScope.launch {
+                    preferencesRepository.setStringPreference(
+                        sortKey,
+                        json.encodeToString(
+                            LibrarySort.serializer(),
+                            LibrarySort(sortBy, descending),
+                        ),
+                    )
+                }
             }
             _uiState.value =
                 _uiState.value.copy(
@@ -601,5 +620,7 @@ data class LibraryContentUiState(
     val selectedLetter: String? = null,
     val filtersLocked: Boolean = false,
 )
+
+@Serializable private data class LibrarySort(val sortBy: SortBy, val descending: Boolean)
 
 private val FOLDER_ITEM_TYPES = listOf("FOLDER", "MOVIE", "SERIES", "VIDEO")
