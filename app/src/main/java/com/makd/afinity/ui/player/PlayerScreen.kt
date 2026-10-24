@@ -45,6 +45,7 @@ import com.makd.afinity.player.mpv.MPVPlayer
 import com.makd.afinity.ui.components.rememberCastChooserLauncher
 import com.makd.afinity.ui.player.cast.CastRemoteControllerScreen
 import com.makd.afinity.ui.player.components.BufferingIndicator
+import com.makd.afinity.ui.player.components.DoubleTapSeekOverlay
 import com.makd.afinity.ui.player.components.ErrorIndicator
 import com.makd.afinity.ui.player.components.GestureHandler
 import com.makd.afinity.ui.player.components.MpvSurface
@@ -56,6 +57,7 @@ import com.makd.afinity.ui.player.components.SyncPlayWaitingOverlay
 import com.makd.afinity.ui.player.components.TrickplayPreview
 import com.makd.afinity.ui.player.components.VersionPickerSheet
 import com.makd.afinity.ui.player.components.playerOverlayInsets
+import com.makd.afinity.ui.player.components.rememberDoubleTapSeekFeedbackState
 import com.makd.afinity.ui.player.utils.KeepScreenOn
 import com.makd.afinity.ui.player.utils.PlayerSystemBarsController
 import com.makd.afinity.ui.player.utils.ScreenBrightnessController
@@ -108,6 +110,7 @@ fun PlayerScreen(
         subtitlePrefsFlow.collectAsStateWithLifecycle(initialValue = SubtitlePreferences.DEFAULT)
     var seekOriginTime by remember { mutableLongStateOf(0L) }
     var dragStartVolume by remember { mutableIntStateOf(-1) }
+    val doubleTapSeekFeedback = rememberDoubleTapSeekFeedbackState()
     var dragStartBrightness by remember { mutableFloatStateOf(-1f) }
     var showVersionPicker by remember { mutableStateOf(false) }
     var isControlsPanelOpen by remember { mutableStateOf(false) }
@@ -250,8 +253,12 @@ fun PlayerScreen(
             GestureHandler(
                 isSeekEnabled = !uiState.isPlayingIntro,
                 onSingleTap = { viewModel.onSingleTap() },
-                onDoubleTap = { isForward, xFraction ->
-                    if (!uiState.isControlsLocked) viewModel.onDoubleTapSeek(isForward, xFraction)
+                onDoubleTap = { isForward, xFraction, offset ->
+                    val step =
+                        if (uiState.isControlsLocked) null
+                        else viewModel.onDoubleTapSeek(isForward, xFraction)
+                    if (step != null) doubleTapSeekFeedback.onSeek(isForward, step.seconds, offset)
+                    step != null
                 },
                 onLongPressStart = { xFraction ->
                     if (!uiState.isControlsLocked) viewModel.onLongPress(xFraction)
@@ -389,6 +396,8 @@ fun PlayerScreen(
                 chapters = uiState.chapters,
                 modifier = Modifier.fillMaxSize(),
             )
+
+            DoubleTapSeekOverlay(state = doubleTapSeekFeedback, modifier = Modifier.fillMaxSize())
 
             PlayerIndicators(uiState = uiState, modifier = Modifier.fillMaxSize())
 

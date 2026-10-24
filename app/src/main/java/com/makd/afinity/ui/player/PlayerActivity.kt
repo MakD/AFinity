@@ -104,7 +104,11 @@ class PlayerActivity : AppCompatActivity() {
 
     companion object {
         private const val ACTION_PLAY_PAUSE = "com.makd.afinity.action.PLAY_PAUSE"
+        private const val ACTION_SEEK_BACK = "com.makd.afinity.action.SEEK_BACK"
+        private const val ACTION_SEEK_FORWARD = "com.makd.afinity.action.SEEK_FORWARD"
         private const val REQUEST_PLAY_PAUSE = 1001
+        private const val REQUEST_SEEK_BACK = 1002
+        private const val REQUEST_SEEK_FORWARD = 1003
     }
 
     private val pipReceiver =
@@ -124,6 +128,24 @@ class PlayerActivity : AppCompatActivity() {
                             setPictureInPictureParams(buildPipParams())
                         }
                     }
+
+                    ACTION_SEEK_BACK ->
+                        if (canPipSeek()) {
+                            viewModel.handlePlayerEvent(
+                                PlayerEvent.SeekRelative(
+                                    -viewModel.uiState.value.seekBackStep.millis
+                                )
+                            )
+                        }
+
+                    ACTION_SEEK_FORWARD ->
+                        if (canPipSeek()) {
+                            viewModel.handlePlayerEvent(
+                                PlayerEvent.SeekRelative(
+                                    viewModel.uiState.value.seekForwardStep.millis
+                                )
+                            )
+                        }
 
                     else -> {
                         Timber.w("PIP Receiver - Unknown action: ${intent?.action}")
@@ -148,7 +170,12 @@ class PlayerActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val filter = IntentFilter().apply { addAction(ACTION_PLAY_PAUSE) }
+        val filter =
+            IntentFilter().apply {
+                addAction(ACTION_PLAY_PAUSE)
+                addAction(ACTION_SEEK_BACK)
+                addAction(ACTION_SEEK_FORWARD)
+            }
 
         try {
             registerReceiver(pipReceiver, filter, RECEIVER_EXPORTED)
@@ -189,6 +216,12 @@ class PlayerActivity : AppCompatActivity() {
                     if (isPipSupported) {
                         setPictureInPictureParams(buildPipParams())
                     }
+                }
+            }
+
+            LaunchedEffect(uiState.isPlayerReady, uiState.isPlayingIntro, uiState.isLiveChannel) {
+                if (uiState.isPlayerReady && isPipSupported) {
+                    setPictureInPictureParams(buildPipParams())
                 }
             }
 
@@ -608,14 +641,7 @@ class PlayerActivity : AppCompatActivity() {
     private fun buildPipActions(): List<RemoteAction> {
         val actions = mutableListOf<RemoteAction>()
 
-        val playPauseIntent = Intent(ACTION_PLAY_PAUSE).apply { setPackage(packageName) }
-        val playPausePendingIntent =
-            PendingIntent.getBroadcast(
-                this,
-                REQUEST_PLAY_PAUSE,
-                playPauseIntent,
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-            )
+        val playPausePendingIntent = pipBroadcast(ACTION_PLAY_PAUSE, REQUEST_PLAY_PAUSE)
         val playPauseIcon =
             if (viewModel.player.isPlaying) {
                 Icon.createWithResource(this, R.drawable.ic_player_pause_filled)
@@ -626,9 +652,48 @@ class PlayerActivity : AppCompatActivity() {
             if (viewModel.player.isPlaying) getString(R.string.cd_pause)
             else getString(R.string.cd_play)
         val playPauseAction = RemoteAction(playPauseIcon, title, title, playPausePendingIntent)
+
+        if (!canPipSeek()) {
+            actions.add(playPauseAction)
+            return actions
+        }
+
+        val state = viewModel.uiState.value
+        val seekBackTitle = getString(R.string.cd_rewind_seconds_fmt, state.seekBackStep.seconds)
+        val seekForwardTitle =
+            getString(R.string.cd_forward_seconds_fmt, state.seekForwardStep.seconds)
+        actions.add(
+            RemoteAction(
+                Icon.createWithResource(this, state.seekBackStep.backIcon),
+                seekBackTitle,
+                seekBackTitle,
+                pipBroadcast(ACTION_SEEK_BACK, REQUEST_SEEK_BACK),
+            )
+        )
         actions.add(playPauseAction)
+        actions.add(
+            RemoteAction(
+                Icon.createWithResource(this, state.seekForwardStep.forwardIcon),
+                seekForwardTitle,
+                seekForwardTitle,
+                pipBroadcast(ACTION_SEEK_FORWARD, REQUEST_SEEK_FORWARD),
+            )
+        )
 
         return actions
+    }
+
+    private fun pipBroadcast(action: String, requestCode: Int): PendingIntent =
+        PendingIntent.getBroadcast(
+            this,
+            requestCode,
+            Intent(action).apply { setPackage(packageName) },
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+
+    private fun canPipSeek(): Boolean {
+        val state = viewModel.uiState.value
+        return !state.isLiveChannel && !state.isPlayingIntro
     }
 }
 

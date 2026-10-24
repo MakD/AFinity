@@ -29,6 +29,7 @@ import com.makd.afinity.data.models.player.MpvHwDec
 import com.makd.afinity.data.models.player.MpvToneMapping
 import com.makd.afinity.data.models.player.MpvVideoOutput
 import com.makd.afinity.data.models.player.MusicQuality
+import com.makd.afinity.data.models.player.SeekStep
 import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.SubtitleHorizontalAlignment
 import com.makd.afinity.data.models.player.SubtitleOutlineStyle
@@ -159,6 +160,9 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val PAUSE_SCREEN_ENABLED = booleanPreferencesKey("pause_screen_enabled")
 
         val PAUSE_SCREEN_DELAY_SECONDS = intPreferencesKey("pause_screen_delay_seconds")
+
+        val SEEK_BACK_SECONDS = intPreferencesKey("seek_back_seconds")
+        val SEEK_FORWARD_SECONDS = intPreferencesKey("seek_forward_seconds")
 
         val CHAPTER_SKIP_GESTURE = booleanPreferencesKey("chapter_skip_gesture")
 
@@ -1230,6 +1234,30 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
     override fun getPauseScreenDelaySecondsFlow(): Flow<Int> {
         return dataStore.data.map { preferences ->
             (preferences[Keys.PAUSE_SCREEN_DELAY_SECONDS] ?: 0).coerceIn(0, 5)
+        }
+    }
+
+    override suspend fun setSeekBackStep(step: SeekStep) {
+        dataStore.edit { preferences -> preferences[Keys.SEEK_BACK_SECONDS] = step.seconds }
+    }
+
+    override suspend fun getSeekBackStep(): SeekStep = getSeekBackStepFlow().first()
+
+    override fun getSeekBackStepFlow(): Flow<SeekStep> {
+        return dataStore.data.map { preferences ->
+            SeekStep.fromSeconds(preferences[Keys.SEEK_BACK_SECONDS], SeekStep.defaultBack)
+        }
+    }
+
+    override suspend fun setSeekForwardStep(step: SeekStep) {
+        dataStore.edit { preferences -> preferences[Keys.SEEK_FORWARD_SECONDS] = step.seconds }
+    }
+
+    override suspend fun getSeekForwardStep(): SeekStep = getSeekForwardStepFlow().first()
+
+    override fun getSeekForwardStepFlow(): Flow<SeekStep> {
+        return dataStore.data.map { preferences ->
+            SeekStep.fromSeconds(preferences[Keys.SEEK_FORWARD_SECONDS], SeekStep.defaultForward)
         }
     }
 

@@ -16,6 +16,7 @@ import com.makd.afinity.data.models.player.MpvHdrOutput
 import com.makd.afinity.data.models.player.MpvHwDec
 import com.makd.afinity.data.models.player.MpvToneMapping
 import com.makd.afinity.data.models.player.MpvVideoOutput
+import com.makd.afinity.data.models.player.SeekStep
 import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.SubtitlePreferences
 import com.makd.afinity.data.models.player.VideoZoomMode
@@ -432,6 +433,18 @@ interface PreferencesRepository {
     suspend fun getPauseScreenDelaySeconds(): Int
 
     fun getPauseScreenDelaySecondsFlow(): Flow<Int>
+
+    suspend fun setSeekBackStep(step: SeekStep)
+
+    suspend fun getSeekBackStep(): SeekStep
+
+    fun getSeekBackStepFlow(): Flow<SeekStep>
+
+    suspend fun setSeekForwardStep(step: SeekStep)
+
+    suspend fun getSeekForwardStep(): SeekStep
+
+    fun getSeekForwardStepFlow(): Flow<SeekStep>
 
     suspend fun setChapterSkipGesture(enabled: Boolean)
 

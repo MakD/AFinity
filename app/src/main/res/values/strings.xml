@@ -1342,6 +1342,12 @@
     <string name="pref_pause_screen_delay_title">Show after</string>
     <string name="pause_screen_delay_instant">Instant</string>
     <string name="pause_screen_delay_seconds_fmt">%1$ds</string>
+    <string name="pref_seek_back_title">Seek back</string>
+    <string name="pref_seek_forward_title">Seek forward</string>
+    <string name="pref_seek_step_hint">Used by the on-screen buttons, double-tap and picture-in-picture</string>
+    <string name="seek_step_seconds_fmt">%1$d seconds</string>
+    <string name="cd_rewind_seconds_fmt">Rewind %1$d seconds</string>
+    <string name="cd_forward_seconds_fmt">Forward %1$d seconds</string>
     <string name="pref_chapter_skip_gesture_title">Chapter skip gesture</string>
     <string name="pref_chapter_skip_gesture_summary">Long-press the left or right edge to skip chapters (middle keeps 2× speed)</string>
     <string name="pref_swap_gesture_indicators_title">Swap gesture indicators</string>

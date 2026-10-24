@@ -600,8 +600,12 @@ fun PlayerControls(
                             if (uiState.isPlaying) onPlayerEvent(PlayerEvent.Pause)
                             else onPlayerEvent(PlayerEvent.Play)
                         },
-                        onSeekBackward = { onPlayerEvent(PlayerEvent.SeekRelative(-10000L)) },
-                        onSeekForward = { onPlayerEvent(PlayerEvent.SeekRelative(30000L)) },
+                        onSeekBackward = {
+                            onPlayerEvent(PlayerEvent.SeekRelative(-uiState.seekBackStep.millis))
+                        },
+                        onSeekForward = {
+                            onPlayerEvent(PlayerEvent.SeekRelative(uiState.seekForwardStep.millis))
+                        },
                         onNextClick = onNextClick,
                         onPreviousClick = onPreviousClick,
                         modifier = Modifier.align(Alignment.Center),
@@ -1227,8 +1231,12 @@ private fun CenterPlayButton(
             if (!uiState.isPlayingIntro) {
                 IconButton(onClick = onSeekBackward, modifier = Modifier.size(60.dp)) {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_rewind_backward_10),
-                        contentDescription = stringResource(R.string.cd_rewind_10),
+                        painter = painterResource(id = uiState.seekBackStep.backIcon),
+                        contentDescription =
+                            stringResource(
+                                R.string.cd_rewind_seconds_fmt,
+                                uiState.seekBackStep.seconds,
+                            ),
                         tint = Color.White,
                         modifier = Modifier.size(32.dp),
                     )
@@ -1259,8 +1267,12 @@ private fun CenterPlayButton(
             if (!uiState.isPlayingIntro) {
                 IconButton(onClick = onSeekForward, modifier = Modifier.size(60.dp)) {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_rewind_forward_30),
-                        contentDescription = stringResource(R.string.cd_forward_30),
+                        painter = painterResource(id = uiState.seekForwardStep.forwardIcon),
+                        contentDescription =
+                            stringResource(
+                                R.string.cd_forward_seconds_fmt,
+                                uiState.seekForwardStep.seconds,
+                            ),
                         tint = Color.White,
                         modifier = Modifier.size(32.dp),
                     )

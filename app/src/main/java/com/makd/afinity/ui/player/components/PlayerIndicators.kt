@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,12 +47,6 @@ import kotlin.math.roundToInt
 @Composable
 fun PlayerIndicators(uiState: PlayerViewModel.PlayerUiState, modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxSize()) {
-        SeekIndicator(
-            show = uiState.showSeekIndicator,
-            direction = uiState.seekDirection,
-            modifier = Modifier.align(Alignment.Center),
-        )
-
         val brightnessOnLeft = !uiState.swapGestureIndicators
 
         BrightnessIndicator(
@@ -79,49 +72,6 @@ fun PlayerIndicators(uiState: PlayerViewModel.PlayerUiState, modifier: Modifier 
             message = uiState.remoteMessage,
             modifier = Modifier.align(Alignment.TopCenter).padding(top = 24.dp),
         )
-    }
-}
-
-@Composable
-private fun SeekIndicator(show: Boolean, direction: Int, modifier: Modifier = Modifier) {
-    AnimatedVisibility(
-        visible = show,
-        enter = scaleIn(animationSpec = tween(200)) + fadeIn(),
-        exit = scaleOut(animationSpec = tween(200)) + fadeOut(),
-        modifier = modifier,
-    ) {
-        Card(
-            modifier = Modifier.size(120.dp).clip(RoundedCornerShape(16.dp)),
-            colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.8f)),
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Icon(
-                    painter =
-                        if (direction > 0) painterResource(id = R.drawable.ic_fast_forward)
-                        else painterResource(id = R.drawable.ic_fast_rewind),
-                    contentDescription =
-                        if (direction > 0) stringResource(R.string.cd_fast_forward)
-                        else stringResource(R.string.cd_rewind),
-                    tint = Color.White,
-                    modifier = Modifier.size(40.dp),
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text =
-                        if (direction > 0) stringResource(R.string.seek_forward_text)
-                        else stringResource(R.string.seek_rewind_text),
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                )
-            }
-        }
     }
 }
 

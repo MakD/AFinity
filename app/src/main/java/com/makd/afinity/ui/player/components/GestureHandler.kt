@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.player.components
 
+import android.os.SystemClock
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.systemGestures
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -29,6 +31,8 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+private const val TAP_SEEK_WINDOW_MS = 700L
+
 private enum class GestureType {
     BRIGHTNESS,
     VOLUME,
@@ -40,7 +44,7 @@ fun GestureHandler(
     modifier: Modifier = Modifier,
     isSeekEnabled: Boolean = true,
     onSingleTap: () -> Unit,
-    onDoubleTap: (isForward: Boolean, xFraction: Float) -> Unit,
+    onDoubleTap: (isForward: Boolean, xFraction: Float, offset: Offset) -> Boolean,
     onLongPressStart: (xFraction: Float) -> Unit = {},
     onLongPressEnd: () -> Unit = {},
     onBrightnessGesture: (percent: Float, isActive: Boolean) -> Unit,
@@ -87,7 +91,18 @@ fun GestureHandler(
     var isSeeking by remember { mutableStateOf(false) }
     var isGestureRejected by remember { mutableStateOf(false) }
 
+    var tapSeekUntil by remember { mutableLongStateOf(0L) }
+    var pressConsumedBySeek by remember { mutableStateOf(false) }
+
     val coroutineScope = rememberCoroutineScope()
+
+    fun seekTap(offset: Offset): Boolean {
+        val isForward = offset.x > componentWidth / 2
+        val xFraction = if (componentWidth > 0f) offset.x / componentWidth else 0.5f
+        val handled = currentOnDoubleTap(isForward, xFraction, offset)
+        tapSeekUntil = if (handled) SystemClock.uptimeMillis() + TAP_SEEK_WINDOW_MS else 0L
+        return handled
+    }
 
     Box(
         modifier =
@@ -100,16 +115,16 @@ fun GestureHandler(
                 .pointerInput(currentIsSeekEnabled) {
                     detectTapGestures(
                         onDoubleTap = { offset ->
-                            if (currentIsSeekEnabled) {
-                                val isForward = offset.x > componentWidth / 2
-                                val xFraction =
-                                    if (componentWidth > 0f) offset.x / componentWidth else 0.5f
-                                currentOnDoubleTap(isForward, xFraction)
-                            }
+                            if (currentIsSeekEnabled && !pressConsumedBySeek) seekTap(offset)
                         },
-                        onTap = { if (!wasLongPress) currentOnSingleTap() },
+                        onTap = { if (!wasLongPress && !pressConsumedBySeek) currentOnSingleTap() },
                         onPress = { offset ->
                             wasLongPress = false
+                            pressConsumedBySeek =
+                                currentIsSeekEnabled &&
+                                    SystemClock.uptimeMillis() < tapSeekUntil &&
+                                    seekTap(offset)
+                            if (pressConsumedBySeek) return@detectTapGestures
                             val job = coroutineScope.launch {
                                 delay(500.milliseconds)
                                 if (!isDragging && gestureType == null) {

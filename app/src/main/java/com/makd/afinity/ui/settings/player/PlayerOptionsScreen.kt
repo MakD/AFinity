@@ -87,6 +87,7 @@ import com.makd.afinity.data.models.player.MpvHwDec
 import com.makd.afinity.data.models.player.MpvToneMapping
 import com.makd.afinity.data.models.player.MpvVideoOutput
 import com.makd.afinity.data.models.player.MusicQuality
+import com.makd.afinity.data.models.player.SeekStep
 import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.SubtitleHorizontalAlignment
 import com.makd.afinity.data.models.player.SubtitleOutlineStyle
@@ -542,6 +543,29 @@ fun PlayerOptionsScreen(
                                 )
                             }
                         }
+                        SettingsDivider()
+                        SubtitleDropdownItem(
+                            title = stringResource(R.string.pref_seek_back_title),
+                            selectedOption = uiState.seekBackStep,
+                            options = SeekStep.entries.toList(),
+                            onValueChange = viewModel::setSeekBackStep,
+                            labelProvider = {
+                                stringResource(R.string.seek_step_seconds_fmt, it.seconds)
+                            },
+                            icon = painterResource(id = uiState.seekBackStep.backIcon),
+                        )
+                        SettingsDivider()
+                        SubtitleDropdownItem(
+                            title = stringResource(R.string.pref_seek_forward_title),
+                            selectedOption = uiState.seekForwardStep,
+                            options = SeekStep.entries.toList(),
+                            onValueChange = viewModel::setSeekForwardStep,
+                            labelProvider = {
+                                stringResource(R.string.seek_step_seconds_fmt, it.seconds)
+                            },
+                            icon = painterResource(id = uiState.seekForwardStep.forwardIcon),
+                            hint = stringResource(R.string.pref_seek_step_hint),
+                        )
                         SettingsDivider()
                         SettingsSwitchItem(
                             icon = painterResource(id = R.drawable.ic_fast_forward),

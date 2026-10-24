@@ -75,6 +75,7 @@ import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.models.player.SLEEP_TIMER_EXTEND_MINUTES
 import com.makd.afinity.data.models.player.SLEEP_TIMER_PROMPT_THRESHOLD_MS
+import com.makd.afinity.data.models.player.SeekStep
 import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.SleepTimerMode
 import com.makd.afinity.data.models.player.StreamDecision
@@ -324,6 +325,7 @@ constructor(
             initializeVideoZoomMode()
             initializeLogoAutoHide()
             initializePauseScreen()
+            initializeSeekSteps()
             initializeChapterSkipGesture()
             initializeSwapGestureIndicators()
             initializeBackgroundPlay()
@@ -410,6 +412,16 @@ constructor(
                     pauseScreenEnabled = pauseScreenEnabled,
                     pauseScreenDelaySeconds = pauseScreenDelaySeconds,
                 )
+            }
+        }
+    }
+
+    private fun initializeSeekSteps() {
+        viewModelScope.launch {
+            val seekBackStep = preferencesRepository.getSeekBackStep()
+            val seekForwardStep = preferencesRepository.getSeekForwardStep()
+            updateUiState {
+                it.copy(seekBackStep = seekBackStep, seekForwardStep = seekForwardStep)
             }
         }
     }
@@ -3617,12 +3629,14 @@ constructor(
         }
     }
 
-    fun onDoubleTapSeek(isForward: Boolean, xFraction: Float) {
-        if (sendMpvGestureKeypress(xFraction)) return
-        if (_uiState.value.isLiveChannel) return
+    fun onDoubleTapSeek(isForward: Boolean, xFraction: Float): SeekStep? {
+        if (sendMpvGestureKeypress(xFraction)) return null
+        val state = _uiState.value
+        if (state.isLiveChannel) return null
 
-        val delta = if (isForward) 10000L else -10000L
-        handlePlayerEvent(PlayerEvent.SeekRelative(delta))
+        val step = if (isForward) state.seekForwardStep else state.seekBackStep
+        handlePlayerEvent(PlayerEvent.SeekRelative(if (isForward) step.millis else -step.millis))
+        return step
     }
 
     private fun mpvPlayerOrNull(): MPVPlayer? =
@@ -4245,8 +4259,6 @@ constructor(
         val showSkipButton: Boolean = false,
         val skipButtonText: String = "Skip",
         val skipCountdownMs: Long = 8000L,
-        val showSeekIndicator: Boolean = false,
-        val seekDirection: Int = 0,
         val showBrightnessIndicator: Boolean = false,
         val showVolumeIndicator: Boolean = false,
         val volumeLevel: Int = 50,
@@ -4267,6 +4279,8 @@ constructor(
         val swapGestureIndicators: Boolean = false,
         val pauseScreenEnabled: Boolean = false,
         val pauseScreenDelaySeconds: Int = 0,
+        val seekBackStep: SeekStep = SeekStep.defaultBack,
+        val seekForwardStep: SeekStep = SeekStep.defaultForward,
         val isLiveChannel: Boolean = false,
         val isCasting: Boolean = false,
         val showCastChooser: Boolean = false,

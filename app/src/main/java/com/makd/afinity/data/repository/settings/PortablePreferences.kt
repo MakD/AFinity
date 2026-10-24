@@ -78,6 +78,8 @@ internal object PortablePreferences {
             spec("logo_auto_hide", PrefType.BOOLEAN, SettingsSection.PLAYBACK),
             spec("pause_screen_enabled", PrefType.BOOLEAN, SettingsSection.PLAYBACK),
             spec("pause_screen_delay_seconds", PrefType.INT, SettingsSection.PLAYBACK),
+            spec("seek_back_seconds", PrefType.INT, SettingsSection.PLAYBACK),
+            spec("seek_forward_seconds", PrefType.INT, SettingsSection.PLAYBACK),
             spec("chapter_skip_gesture", PrefType.BOOLEAN, SettingsSection.PLAYBACK),
             spec("swap_gesture_indicators", PrefType.BOOLEAN, SettingsSection.PLAYBACK),
             spec("preferred_audio_language", PrefType.STRING, SettingsSection.PLAYBACK),

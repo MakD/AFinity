@@ -23,6 +23,7 @@ import com.makd.afinity.data.models.player.MpvHwDec
 import com.makd.afinity.data.models.player.MpvToneMapping
 import com.makd.afinity.data.models.player.MpvVideoOutput
 import com.makd.afinity.data.models.player.MusicQuality
+import com.makd.afinity.data.models.player.SeekStep
 import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.models.player.VideoZoomMode
@@ -504,6 +505,18 @@ constructor(
         }
 
         viewModelScope.launch {
+            preferencesRepository.getSeekBackStepFlow().collect {
+                _uiState.value = _uiState.value.copy(seekBackStep = it)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getSeekForwardStepFlow().collect {
+                _uiState.value = _uiState.value.copy(seekForwardStep = it)
+            }
+        }
+
+        viewModelScope.launch {
             preferencesRepository.getChapterSkipGestureFlow().collect {
                 _uiState.value = _uiState.value.copy(chapterSkipGesture = it)
             }
@@ -902,6 +915,30 @@ constructor(
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle pause screen")
+            }
+        }
+    }
+
+    fun setSeekBackStep(step: SeekStep) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setSeekBackStep(step)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set seek back step")
+            }
+        }
+    }
+
+    fun setSeekForwardStep(step: SeekStep) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setSeekForwardStep(step)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set seek forward step")
             }
         }
     }
@@ -1739,6 +1776,8 @@ data class SettingsUiState(
     val logoAutoHide: Boolean = false,
     val pauseScreenEnabled: Boolean = false,
     val pauseScreenDelaySeconds: Int = 0,
+    val seekBackStep: SeekStep = SeekStep.defaultBack,
+    val seekForwardStep: SeekStep = SeekStep.defaultForward,
     val chapterSkipGesture: Boolean = true,
     val swapGestureIndicators: Boolean = false,
     val defaultVideoZoomMode: VideoZoomMode = VideoZoomMode.FIT,
