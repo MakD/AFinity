@@ -108,6 +108,7 @@ private const val HeroLandscapeFraction = 0.95f
 private val HeroLogoHeight = 140.dp
 private const val HeroLogoPortraitWidthFraction = 0.8f
 private const val HeroLogoLandscapeWidthFraction = 0.4f
+private const val HeroLandscapeLogoHeightFraction = 0.25f
 private const val LIGHT_BACKGROUND_LUMINANCE = 0.5f
 
 private val HeroCenteredTextInset = 24.dp
@@ -316,12 +317,19 @@ private fun heroCardSidePadding(isLandscape: Boolean, peek: Boolean): Dp =
         else -> HeroPeekPortraitPadding
     }
 
-private fun heroPeekLogoSize(cardWidth: Dp, isLandscape: Boolean): DpSize =
+private fun heroFullBleedHeight(screenHeightDp: Dp, isLandscape: Boolean): Dp =
+    (screenHeightDp * (if (isLandscape) HeroLandscapeFraction else HeroPortraitFraction))
+        .coerceAtMost(HeroMaxHeight)
+
+private fun heroLandscapeLogoHeight(containerHeight: Dp, maxHeight: Dp): Dp =
+    minOf(maxHeight, containerHeight * HeroLandscapeLogoHeightFraction)
+
+private fun heroPeekLogoSize(cardWidth: Dp, cardHeight: Dp, isLandscape: Boolean): DpSize =
     if (isLandscape) {
         DpSize(
             (cardWidth * HeroPeekLandscapeContentFraction - HeroPeekLandscapeContentStart) *
                 HeroPeekLandscapeLogoWidthFraction,
-            HeroPeekLandscapeLogoHeight,
+            heroLandscapeLogoHeight(cardHeight, HeroPeekLandscapeLogoHeight),
         )
     } else {
         DpSize(cardWidth * HeroPeekLogoWidthFraction, HeroPeekLogoHeight)
@@ -373,15 +381,23 @@ fun HeroCarousel(
         rememberPagerState(initialPage = adjustedStart, pageCount = { infinitePageCount })
 
     val cardWidth = screenWidthDp - heroCardSidePadding(isLandscape, peek) * 2
+    val peekMetrics = if (isCard) heroPeekMetrics(screenHeightDp, isLandscape) else null
     val logoSize =
-        if (isCard) {
-            heroPeekLogoSize(cardWidth, isLandscape)
+        if (peekMetrics != null) {
+            heroPeekLogoSize(cardWidth, peekMetrics.cardHeight, isLandscape)
         } else {
             DpSize(
                 screenWidthDp *
                     (if (isLandscape) HeroLogoLandscapeWidthFraction
                     else HeroLogoPortraitWidthFraction),
-                HeroLogoHeight,
+                if (isLandscape) {
+                    heroLandscapeLogoHeight(
+                        heroFullBleedHeight(screenHeightDp, isLandscape = true),
+                        HeroLogoHeight,
+                    )
+                } else {
+                    HeroLogoHeight
+                },
             )
         }
 
@@ -395,11 +411,11 @@ fun HeroCarousel(
     )
 
     CompositionLocalProvider(LocalHeroIndicator provides indicator) {
-        if (isCard) {
+        if (peekMetrics != null) {
             HeroCardCarousel(
                 pagerState = pagerState,
                 items = items,
-                metrics = heroPeekMetrics(screenHeightDp, isLandscape),
+                metrics = peekMetrics,
                 isLandscape = isLandscape,
                 peek = peek,
                 cardWidth = cardWidth,
@@ -416,6 +432,7 @@ fun HeroCarousel(
                 isLandscape = isLandscape,
                 screenWidthDp = screenWidthDp,
                 screenHeightDp = screenHeightDp,
+                landscapeLogoHeight = logoSize.height,
                 onWatchNowClick = onWatchNowClick,
                 onPlayTrailerClick = onPlayTrailerClick,
                 onMoreInformationClick = onMoreInformationClick,
@@ -432,14 +449,13 @@ private fun HeroFullBleed(
     isLandscape: Boolean,
     screenWidthDp: Dp,
     screenHeightDp: Dp,
+    landscapeLogoHeight: Dp,
     onWatchNowClick: (AfinityItem) -> Unit,
     onPlayTrailerClick: (AfinityItem) -> Unit,
     onMoreInformationClick: (AfinityItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val heroHeight =
-        if (isLandscape) (screenHeightDp * HeroLandscapeFraction).coerceAtMost(HeroMaxHeight)
-        else (screenHeightDp * HeroPortraitFraction).coerceAtMost(HeroMaxHeight)
+    val heroHeight = heroFullBleedHeight(screenHeightDp, isLandscape)
 
     val currentItem by
         remember(items) { derivedStateOf { items[pagerState.currentPage % items.size] } }
@@ -500,6 +516,7 @@ private fun HeroFullBleed(
                     pagerState = pagerState,
                     contentAlpha = contentAlpha,
                     screenWidthDp = screenWidthDp,
+                    logoHeight = landscapeLogoHeight,
                     onWatchNowClick = onWatchNowClick,
                     onPlayTrailerClick = onPlayTrailerClick,
                     onMoreInformationClick = onMoreInformationClick,
@@ -895,33 +912,39 @@ private fun BoxScope.HeroPeekContentRich(
                 ),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        HeroPeekLogo(item = item, logoSize = logoSize, alignStart = true)
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            modifier = Modifier.weight(1f, fill = false),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            HeroMetadata(item)
-        }
+            HeroPeekLogo(item = item, logoSize = logoSize, alignStart = true)
 
-        val genres = heroGenres(item)
-        if (genres.isNotEmpty()) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                HeroMetadata(item)
+            }
+
+            val genres = heroGenres(item)
+            if (genres.isNotEmpty()) {
+                Text(
+                    text = genres.take(3).joinToString(" • "),
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+
             Text(
-                text = genres.take(3).joinToString(" • "),
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                text = item.overview,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
         }
-
-        Text(
-            text = item.overview,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
 
         Row(
             modifier = Modifier.padding(top = 4.dp),
@@ -1219,6 +1242,7 @@ private fun HeroContentRich(
     pagerState: PagerState,
     contentAlpha: Float,
     screenWidthDp: Dp,
+    logoHeight: Dp,
     onWatchNowClick: (AfinityItem) -> Unit,
     onPlayTrailerClick: (AfinityItem) -> Unit,
     onMoreInformationClick: (AfinityItem) -> Unit,
@@ -1238,11 +1262,14 @@ private fun HeroContentRich(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth(0.75f).graphicsLayer { alpha = contentAlpha },
+                modifier =
+                    Modifier.weight(1f, fill = false).fillMaxWidth(0.75f).graphicsLayer {
+                        alpha = contentAlpha
+                    },
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Box(
-                    modifier = Modifier.fillMaxWidth(0.5f).height(HeroLogoHeight),
+                    modifier = Modifier.fillMaxWidth(0.5f).height(logoHeight),
                     contentAlignment = Alignment.CenterStart,
                 ) {
                     Box(
@@ -1255,7 +1282,7 @@ private fun HeroContentRich(
                                 contentDescription = "${currentItem.name} logo",
                                 blurHash = null,
                                 targetWidth = screenWidthDp * HeroLogoLandscapeWidthFraction,
-                                targetHeight = HeroLogoHeight,
+                                targetHeight = logoHeight,
                                 modifier =
                                     Modifier.fillMaxHeight().wrapContentWidth(Alignment.Start),
                                 contentScale = ContentScale.Fit,
