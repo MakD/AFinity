@@ -1765,6 +1765,27 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_85_86 =
+        object : Migration(85, 86) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP TABLE IF EXISTS `segments_new`")
+                db.execSQL(
+                    "CREATE TABLE `segments_new` (" +
+                        "`itemId` TEXT NOT NULL, " +
+                        "`type` TEXT NOT NULL, " +
+                        "`startTicks` INTEGER NOT NULL, " +
+                        "`endTicks` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`itemId`, `type`, `startTicks`))"
+                )
+                db.execSQL(
+                    "INSERT INTO `segments_new` (`itemId`, `type`, `startTicks`, `endTicks`) " +
+                        "SELECT `itemId`, `type`, `startTicks`, `endTicks` FROM `segments`"
+                )
+                db.execSQL("DROP TABLE `segments`")
+                db.execSQL("ALTER TABLE `segments_new` RENAME TO `segments`")
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1851,5 +1872,6 @@ object DatabaseMigrations {
             MIGRATION_82_83,
             MIGRATION_83_84,
             MIGRATION_84_85,
+            MIGRATION_85_86,
         )
 }

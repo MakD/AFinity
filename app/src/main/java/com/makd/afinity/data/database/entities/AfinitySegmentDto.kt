@@ -5,7 +5,7 @@ import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.AfinitySegmentType
 import java.util.UUID
 
-@Entity(tableName = "segments", primaryKeys = ["itemId", "type"])
+@Entity(tableName = "segments", primaryKeys = ["itemId", "type", "startTicks"])
 data class AfinitySegmentDto(
     val itemId: UUID,
     val type: AfinitySegmentType,

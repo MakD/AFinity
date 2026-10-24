@@ -152,6 +152,8 @@ interface DatabaseRepository {
 
     suspend fun getSegmentsForItem(itemId: UUID): List<AfinitySegment>
 
+    suspend fun replaceSegmentsForItem(itemId: UUID, segments: List<AfinitySegment>)
+
     suspend fun insertUserData(userData: AfinityUserDataDto)
 
     suspend fun updateUserData(userData: AfinityUserDataDto)

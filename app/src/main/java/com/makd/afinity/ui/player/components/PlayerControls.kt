@@ -695,6 +695,7 @@ fun PlayerControls(
                     segment = currentSegment,
                     skipButtonText = uiState.skipButtonText,
                     onSkipClick = { onPlayerEvent(PlayerEvent.SkipSegment(currentSegment)) },
+                    countdownMs = uiState.skipCountdownMs,
                 )
             }
         }

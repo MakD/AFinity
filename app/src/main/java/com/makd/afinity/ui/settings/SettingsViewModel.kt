@@ -14,6 +14,7 @@ import com.makd.afinity.data.models.common.DrawerLibrariesMode
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.common.HeroStyle
 import com.makd.afinity.data.models.mdblist.MdbListUsage
+import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.player.AssRenderMode
 import com.makd.afinity.data.models.player.MpvAudioOutput
 import com.makd.afinity.data.models.player.MpvGpuApi
@@ -438,6 +439,24 @@ constructor(
         }
 
         viewModelScope.launch {
+            preferencesRepository.getSegmentSkipModeFlow(AfinitySegmentType.RECAP).collect {
+                _uiState.value = _uiState.value.copy(skipRecapMode = it)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getSegmentSkipModeFlow(AfinitySegmentType.PREVIEW).collect {
+                _uiState.value = _uiState.value.copy(skipPreviewMode = it)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getSegmentSkipModeFlow(AfinitySegmentType.COMMERCIAL).collect {
+                _uiState.value = _uiState.value.copy(skipCommercialMode = it)
+            }
+        }
+
+        viewModelScope.launch {
             preferencesRepository.useExoPlayer.collect {
                 _uiState.value = _uiState.value.copy(useExoPlayer = it)
             }
@@ -832,6 +851,18 @@ constructor(
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set skip outro mode")
+            }
+        }
+    }
+
+    fun setSegmentSkipMode(type: AfinitySegmentType, mode: SkipMode) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setSegmentSkipMode(type, mode)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set skip mode for $type")
             }
         }
     }
@@ -1701,6 +1732,9 @@ data class SettingsUiState(
     val pipBackgroundPlay: Boolean = true,
     val skipIntroMode: SkipMode = SkipMode.BUTTON,
     val skipOutroMode: SkipMode = SkipMode.BUTTON,
+    val skipRecapMode: SkipMode = SkipMode.DISABLED,
+    val skipPreviewMode: SkipMode = SkipMode.DISABLED,
+    val skipCommercialMode: SkipMode = SkipMode.DISABLED,
     val useExoPlayer: Boolean = true,
     val logoAutoHide: Boolean = false,
     val pauseScreenEnabled: Boolean = false,

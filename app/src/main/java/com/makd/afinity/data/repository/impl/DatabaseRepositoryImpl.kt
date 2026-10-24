@@ -414,6 +414,13 @@ constructor(
         return serverDatabaseDao.getSegmentsForItem(itemId).map { it.toAfinitySegment() }
     }
 
+    override suspend fun replaceSegmentsForItem(itemId: UUID, segments: List<AfinitySegment>) {
+        serverDatabaseDao.replaceSegmentsForItem(
+            itemId,
+            segments.map { it.toAfinitySegmentsDto(itemId) },
+        )
+    }
+
     override suspend fun insertUserData(userData: AfinityUserDataDto) {
         userDataDao.insertUserData(userData)
     }

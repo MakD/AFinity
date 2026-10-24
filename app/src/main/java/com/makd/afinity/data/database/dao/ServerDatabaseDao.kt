@@ -109,6 +109,18 @@ abstract class ServerDatabaseDao {
     @Query("SELECT * FROM segments WHERE itemId = :itemId")
     abstract suspend fun getSegmentsForItem(itemId: UUID): List<AfinitySegmentDto>
 
+    @Query("DELETE FROM segments WHERE itemId = :itemId")
+    abstract suspend fun deleteSegmentsForItem(itemId: UUID)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun insertSegments(segments: List<AfinitySegmentDto>)
+
+    @Transaction
+    open suspend fun replaceSegmentsForItem(itemId: UUID, segments: List<AfinitySegmentDto>) {
+        deleteSegmentsForItem(itemId)
+        insertSegments(segments)
+    }
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun insertDownload(download: DownloadDto)
 

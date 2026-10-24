@@ -25,6 +25,26 @@ private fun MediaSegmentType.toAfinitySegmentType(): AfinitySegmentType =
 
 data class AfinitySegment(val type: AfinitySegmentType, val startTicks: Long, val endTicks: Long)
 
+fun List<AfinitySegment>.mergeOverlapping(): List<AfinitySegment> = groupBy {
+    it.type
+}
+    .values
+    .flatMap { sameType ->
+        sameType
+            .sortedBy { it.startTicks }
+            .fold(mutableListOf<AfinitySegment>()) { merged, segment ->
+                val last = merged.lastOrNull()
+                if (last != null && segment.startTicks <= last.endTicks) {
+                    merged[merged.lastIndex] =
+                        last.copy(endTicks = maxOf(last.endTicks, segment.endTicks))
+                } else {
+                    merged.add(segment)
+                }
+                merged
+            }
+    }
+    .sortedBy { it.startTicks }
+
 fun AfinitySegmentDto.toAfinitySegment(): AfinitySegment {
     return AfinitySegment(type = type, startTicks = startTicks, endTicks = endTicks)
 }

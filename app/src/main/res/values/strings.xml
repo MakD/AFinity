@@ -1028,6 +1028,12 @@
     <string name="skip_preview">Skip Preview</string>
     <string name="skip_commercial">Skip Commercial</string>
     <string name="skip_generic">Skip</string>
+    <string name="skipping_intro">Skipping Intro…</string>
+    <string name="skipping_outro">Skipping Outro…</string>
+    <string name="skipping_recap">Skipping Recap…</string>
+    <string name="skipping_preview">Skipping Preview…</string>
+    <string name="skipping_commercial">Skipping Commercial…</string>
+    <string name="skipping_generic">Skipping…</string>
 
     <string name="error_get_stream_url">Failed to get stream URL</string>
     <string name="error_load_channel_fmt">Failed to load channel: %1$s</string>
@@ -1323,6 +1329,9 @@
     <string name="pref_group_interface">Interface</string>
     <string name="pref_skip_intro_title">Skip Intro</string>
     <string name="pref_skip_outro_title">Skip Outro</string>
+    <string name="pref_skip_recap_title">Skip Recap</string>
+    <string name="pref_skip_preview_title">Skip Preview</string>
+    <string name="pref_skip_commercial_title">Skip Commercials</string>
     <string name="skip_mode_button">Show button</string>
     <string name="skip_mode_auto_skip">Auto-skip</string>
     <string name="skip_mode_disabled">Disabled</string>

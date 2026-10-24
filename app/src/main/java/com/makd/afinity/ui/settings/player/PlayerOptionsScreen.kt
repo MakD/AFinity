@@ -78,6 +78,7 @@ import androidx.core.graphics.toColorInt
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.player.AssRenderMode
 import com.makd.afinity.data.models.player.MpvAudioOutput
 import com.makd.afinity.data.models.player.MpvGpuApi
@@ -477,6 +478,33 @@ fun PlayerOptionsScreen(
                             title = stringResource(R.string.pref_skip_intro_title),
                             selectedMode = uiState.skipIntroMode,
                             onModeSelected = viewModel::setSkipIntroMode,
+                        )
+                        SettingsDivider()
+                        SkipModeSelectorItem(
+                            icon = painterResource(id = R.drawable.ic_eye),
+                            title = stringResource(R.string.pref_skip_preview_title),
+                            selectedMode = uiState.skipPreviewMode,
+                            onModeSelected = {
+                                viewModel.setSegmentSkipMode(AfinitySegmentType.PREVIEW, it)
+                            },
+                        )
+                        SettingsDivider()
+                        SkipModeSelectorItem(
+                            icon = painterResource(id = R.drawable.ic_tabler_history),
+                            title = stringResource(R.string.pref_skip_recap_title),
+                            selectedMode = uiState.skipRecapMode,
+                            onModeSelected = {
+                                viewModel.setSegmentSkipMode(AfinitySegmentType.RECAP, it)
+                            },
+                        )
+                        SettingsDivider()
+                        SkipModeSelectorItem(
+                            icon = painterResource(id = R.drawable.ic_ad),
+                            title = stringResource(R.string.pref_skip_commercial_title),
+                            selectedMode = uiState.skipCommercialMode,
+                            onModeSelected = {
+                                viewModel.setSegmentSkipMode(AfinitySegmentType.COMMERCIAL, it)
+                            },
                         )
                         SettingsDivider()
                         SkipModeSelectorItem(

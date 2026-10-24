@@ -251,6 +251,7 @@ constructor(
     private var segmentCheckingJob: Job? = null
     private var skipButtonHideJob: Job? = null
     private var lastShownSegmentKey: String? = null
+    private var lastSegmentPollPositionMs: Long = -1L
 
     private var sleepTimerJob: Job? = null
     private var sleepTimerFadeJob: Job? = null
@@ -291,6 +292,9 @@ constructor(
     }
 
     private val SKIP_BUTTON_TIMEOUT_MS = 8000L
+    private val SKIP_BUTTON_MIN_DURATION_MS = 3000L
+    private val AUTO_SKIP_MIN_DURATION_MS = 1000L
+    private val AUTO_SKIP_END_MARGIN_MS = 1000L
 
     init {
         castManager.videoRemoteAttached = true
@@ -2499,7 +2503,9 @@ constructor(
                         castManager.castState.value.currentItemId == fullItem.id
                 attachToCastItemId = null
 
-                viewModelScope.launch(Dispatchers.IO) { loadSegments(fullItem.id) }
+                viewModelScope.launch(Dispatchers.IO) {
+                    loadSegments(fullItem.id, actualMediaSourceId, useLocalSource)
+                }
                 viewModelScope.launch(Dispatchers.IO) { loadTrickplayData() }
                 if (!useLocalSource && !isAttachingToCast)
                     viewModelScope.launch(Dispatchers.IO) { reportPlaybackStart(fullItem) }
@@ -3222,14 +3228,16 @@ constructor(
         }
     }
 
-    private suspend fun loadSegments(itemId: UUID) {
+    private suspend fun loadSegments(itemId: UUID, mediaSourceId: String, isLocalSource: Boolean) {
         segmentCheckingJob?.cancel()
         currentMediaSegments = emptyList()
+        lastShownSegmentKey = null
+        lastSegmentPollPositionMs = -1L
         updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
 
         currentMediaSegments =
             try {
-                segmentsRepository.getSegments(itemId)
+                segmentsRepository.getSegments(itemId, mediaSourceId, preferCache = isLocalSource)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -3250,7 +3258,7 @@ constructor(
             delay(2.seconds)
             while (true) {
                 updateCurrentSegment()
-                delay(1.seconds)
+                delay(250.milliseconds)
             }
         }
     }
@@ -3259,79 +3267,99 @@ constructor(
         if (currentMediaSegments.isEmpty()) return
 
         val currentPositionMs = _playbackProgress.value.currentPosition
+        val previousPositionMs = lastSegmentPollPositionMs
+        lastSegmentPollPositionMs = currentPositionMs
 
-        val currentSegment = currentMediaSegments.find { segment ->
+        val segment = currentMediaSegments.find { segment ->
             currentPositionMs in segment.startTicks..<(segment.endTicks - 100L)
         }
 
-        currentSegment?.let { segment ->
-            val durationMs = segment.endTicks - segment.startTicks
-            val skipMode =
-                when (segment.type) {
-                    AfinitySegmentType.INTRO -> preferencesRepository.getSkipIntroMode()
-                    AfinitySegmentType.OUTRO -> preferencesRepository.getSkipOutroMode()
-                    else -> SkipMode.DISABLED
-                }
-
-            if (skipMode == SkipMode.DISABLED) {
-                updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
-                return@let
-            }
-
-            if (durationMs >= 3000L) {
-                val segmentKey = "${segment.type}-${segment.startTicks}"
-                val alreadyShown = lastShownSegmentKey == segmentKey
-
-                if (!alreadyShown) {
-                    lastShownSegmentKey = segmentKey
-
-                    val skipButtonText = getSkipButtonText(segment, skipMode)
-
-                    updateUiState {
-                        it.copy(
-                            currentSegment = segment,
-                            skipButtonText = skipButtonText,
-                            showSkipButton = true,
-                        )
-                    }
-
-                    skipButtonHideJob?.cancel()
-                    skipButtonHideJob = viewModelScope.launch {
-                        delay(SKIP_BUTTON_TIMEOUT_MS.milliseconds)
-
-                        if (skipMode == SkipMode.AUTO_SKIP) {
-                            handlePlayerEvent(PlayerEvent.SkipSegment(segment))
-                        } else {
-                            updateUiState { it.copy(showSkipButton = false) }
-                        }
-                    }
-                }
-            }
-        }
-            ?: run {
+        if (segment == null) {
+            if (lastShownSegmentKey != null) {
                 lastShownSegmentKey = null
                 skipButtonHideJob?.cancel()
                 updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
             }
+            return
+        }
+
+        val segmentKey = "${segment.type}-${segment.startTicks}"
+        if (lastShownSegmentKey == segmentKey) return
+        lastShownSegmentKey = segmentKey
+        skipButtonHideJob?.cancel()
+        updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
+
+        val skipMode = preferencesRepository.getSegmentSkipMode(segment.type)
+        val durationMs = segment.endTicks - segment.startTicks
+        val enteredBySeekingBack = previousPositionMs > segment.startTicks
+
+        when {
+            skipMode == SkipMode.DISABLED -> Unit
+            skipMode == SkipMode.AUTO_SKIP &&
+                !enteredBySeekingBack &&
+                durationMs >= AUTO_SKIP_MIN_DURATION_MS ->
+                autoSkipSegment(segment, currentPositionMs, durationMs)
+            durationMs >= SKIP_BUTTON_MIN_DURATION_MS -> showSkipButton(segment)
+        }
+    }
+
+    private fun showSkipButton(segment: AfinitySegment) {
+        updateUiState {
+            it.copy(
+                currentSegment = segment,
+                skipButtonText = getSkipButtonText(segment, SkipMode.BUTTON),
+                skipCountdownMs = SKIP_BUTTON_TIMEOUT_MS,
+                showSkipButton = true,
+            )
+        }
+        skipButtonHideJob = viewModelScope.launch {
+            delay(SKIP_BUTTON_TIMEOUT_MS.milliseconds)
+            updateUiState { it.copy(showSkipButton = false) }
+        }
+    }
+
+    private fun autoSkipSegment(segment: AfinitySegment, positionMs: Long, durationMs: Long) {
+        val speed = _uiState.value.playbackSpeed.takeIf { it > 0f } ?: 1f
+        val remainingMs = segment.endTicks - positionMs - AUTO_SKIP_END_MARGIN_MS
+        val countdownMs = minOf(SKIP_BUTTON_TIMEOUT_MS, (remainingMs / speed).toLong())
+
+        if (durationMs < SKIP_BUTTON_MIN_DURATION_MS || countdownMs <= 0L) {
+            handlePlayerEvent(PlayerEvent.SkipSegment(segment))
+            return
+        }
+
+        updateUiState {
+            it.copy(
+                currentSegment = segment,
+                skipButtonText = getSkipButtonText(segment, SkipMode.AUTO_SKIP),
+                skipCountdownMs = countdownMs,
+                showSkipButton = true,
+            )
+        }
+        skipButtonHideJob = viewModelScope.launch {
+            delay(countdownMs.milliseconds)
+            handlePlayerEvent(PlayerEvent.SkipSegment(segment))
+        }
     }
 
     private fun getSkipButtonText(segment: AfinitySegment, skipMode: SkipMode): String {
-        val baseText =
+        val autoSkip = skipMode == SkipMode.AUTO_SKIP
+        val resId =
             when (segment.type) {
-                AfinitySegmentType.INTRO -> context.getString(R.string.skip_intro)
-                AfinitySegmentType.OUTRO -> context.getString(R.string.skip_outro)
-                AfinitySegmentType.RECAP -> context.getString(R.string.skip_recap)
-                AfinitySegmentType.PREVIEW -> context.getString(R.string.skip_preview)
-                AfinitySegmentType.COMMERCIAL -> context.getString(R.string.skip_commercial)
-                else -> context.getString(R.string.skip_generic)
+                AfinitySegmentType.INTRO ->
+                    if (autoSkip) R.string.skipping_intro else R.string.skip_intro
+                AfinitySegmentType.OUTRO ->
+                    if (autoSkip) R.string.skipping_outro else R.string.skip_outro
+                AfinitySegmentType.RECAP ->
+                    if (autoSkip) R.string.skipping_recap else R.string.skip_recap
+                AfinitySegmentType.PREVIEW ->
+                    if (autoSkip) R.string.skipping_preview else R.string.skip_preview
+                AfinitySegmentType.COMMERCIAL ->
+                    if (autoSkip) R.string.skipping_commercial else R.string.skip_commercial
+                AfinitySegmentType.UNKNOWN ->
+                    if (autoSkip) R.string.skipping_generic else R.string.skip_generic
             }
-
-        return if (skipMode == SkipMode.AUTO_SKIP) {
-            val cleanText = baseText.replace(Regex("(?i)^skip\\s+"), "")
-            "Skipping $cleanText..."
-        } else {
-            baseText
-        }
+        return context.getString(resId)
     }
 
     fun initializePlaylistAndPlay(
@@ -4216,6 +4244,7 @@ constructor(
         val currentItem: AfinityItem? = null,
         val showSkipButton: Boolean = false,
         val skipButtonText: String = "Skip",
+        val skipCountdownMs: Long = 8000L,
         val showSeekIndicator: Boolean = false,
         val seekDirection: Int = 0,
         val showBrightnessIndicator: Boolean = false,

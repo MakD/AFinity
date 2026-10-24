@@ -2,6 +2,7 @@ package com.makd.afinity.data.repository.segments
 
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.media.AfinitySegment
+import com.makd.afinity.data.models.media.mergeOverlapping
 import com.makd.afinity.data.models.media.toAfinitySegment
 import com.makd.afinity.data.repository.DatabaseRepository
 import java.util.UUID
@@ -12,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.operations.MediaSegmentApi
 import org.jellyfin.sdk.model.api.MediaSegmentType
+import org.jellyfin.sdk.model.serializer.toUUIDOrNull
 import timber.log.Timber
 
 @Singleton
@@ -22,77 +24,60 @@ constructor(
     private val databaseRepository: DatabaseRepository,
 ) : SegmentsRepository {
 
-    override suspend fun getSegments(itemId: UUID): List<AfinitySegment> =
+    override suspend fun getSegments(
+        itemId: UUID,
+        mediaSourceId: String?,
+        preferCache: Boolean,
+    ): List<AfinitySegment> =
         withContext(Dispatchers.IO) {
+            val ownerId = mediaSourceId?.removeSuffix(LOCAL_SOURCE_SUFFIX)?.toUUIDOrNull() ?: itemId
             return@withContext try {
-                Timber.d("Checking database for cached segments for item $itemId")
-                val cachedSegments = databaseRepository.getSegmentsForItem(itemId)
-                if (cachedSegments.isNotEmpty()) {
-                    Timber.i(
-                        "Loaded ${cachedSegments.size} segments from database for item $itemId"
-                    )
-                    return@withContext cachedSegments
+                if (preferCache) {
+                    val cached = databaseRepository.getSegmentsForItem(ownerId)
+                    if (cached.isNotEmpty()) return@withContext cached.mergeOverlapping()
                 }
 
-                Timber.d("No cached segments found in database, fetching from API")
-
-                try {
-                    val apiClient =
-                        sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                    val mediaSegmentsApi = MediaSegmentApi(apiClient)
-                    val response =
-                        mediaSegmentsApi.getItemSegments(
-                            itemId = itemId,
-                            includeSegmentTypes =
-                                listOf(MediaSegmentType.INTRO, MediaSegmentType.OUTRO),
-                        )
-
-                    val segments =
-                        response.content.items.map { mediaSegmentDto ->
-                            mediaSegmentDto.toAfinitySegment()
-                        }
-
-                    Timber.d("Fetched ${segments.size} segments from API for item $itemId")
-
-                    if (segments.isNotEmpty()) {
-                        segments.forEach { segment ->
-                            try {
-                                Timber.d(
-                                    "Caching segment ${segment.type} (${segment.startTicks}-${segment.endTicks}) for item $itemId"
-                                )
-                                databaseRepository.insertSegment(segment, itemId)
-                                Timber.d("Successfully cached segment ${segment.type}")
-                            } catch (e: CancellationException) {
-                                throw e
-                            } catch (e: Exception) {
-                                Timber.w(e, "Failed to cache segment ${segment.type} in database")
-                            }
-                        }
+                val fetched = fetchSegments(ownerId)
+                if (fetched == null) {
+                    databaseRepository.getSegmentsForItem(ownerId).mergeOverlapping()
+                } else {
+                    if (fetched.isNotEmpty()) {
+                        databaseRepository.replaceSegmentsForItem(ownerId, fetched)
                     }
-
-                    segments
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    Timber.w(
-                        e,
-                        "API fetch failed, checking database again in case segments were cached",
-                    )
-                    val fallbackSegments = databaseRepository.getSegmentsForItem(itemId)
-                    if (fallbackSegments.isNotEmpty()) {
-                        Timber.i(
-                            "Loaded ${fallbackSegments.size} segments from database after API failure"
-                        )
-                    } else {
-                        Timber.d("No segments available offline for item $itemId")
-                    }
-                    fallbackSegments
+                    fetched.mergeOverlapping()
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Timber.e(e, "Failed to get segments for item $itemId")
+                Timber.e(e, "Failed to get segments for item $ownerId")
                 emptyList()
             }
         }
+
+    private suspend fun fetchSegments(ownerId: UUID): List<AfinitySegment>? =
+        try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return null
+            MediaSegmentApi(apiClient)
+                .getItemSegments(itemId = ownerId, includeSegmentTypes = FETCHED_TYPES)
+                .content
+                .items
+                .map { it.toAfinitySegment() }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Segment fetch failed for item $ownerId, falling back to cache")
+            null
+        }
+
+    private companion object {
+        const val LOCAL_SOURCE_SUFFIX = "_local"
+        val FETCHED_TYPES =
+            listOf(
+                MediaSegmentType.INTRO,
+                MediaSegmentType.RECAP,
+                MediaSegmentType.PREVIEW,
+                MediaSegmentType.COMMERCIAL,
+                MediaSegmentType.OUTRO,
+            )
+    }
 }

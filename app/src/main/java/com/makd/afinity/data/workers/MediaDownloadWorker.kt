@@ -615,7 +615,7 @@ constructor(
                             if (itemType.uppercase() == "MOVIE") {
                                 downloadPersonImages(apiClient, download.serverId, itemId, userId)
                             }
-                            downloadSegments(itemId)
+                            downloadSegments(itemId, sourceId)
                         }
                         val sourceName =
                             if (isAudio) audioMediaSource!!.name ?: itemName else source!!.name
@@ -1087,9 +1087,9 @@ constructor(
         return resultUri
     }
 
-    private suspend fun downloadSegments(itemId: UUID) {
+    private suspend fun downloadSegments(itemId: UUID, sourceId: String) {
         try {
-            segmentsRepository.getSegments(itemId)
+            segmentsRepository.getSegments(itemId, sourceId)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

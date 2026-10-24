@@ -20,6 +20,7 @@ import com.makd.afinity.data.models.livetv.ChannelSortOrder
 import com.makd.afinity.data.models.livetv.GuideIndicator
 import com.makd.afinity.data.models.livetv.LiveTvViewOptions
 import com.makd.afinity.data.models.livetv.ProgramCategory
+import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.player.AssRenderMode
 import com.makd.afinity.data.models.player.MpvAudioOutput
 import com.makd.afinity.data.models.player.MpvGpuApi
@@ -82,6 +83,9 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val SKIP_OUTRO_ENABLED_LEGACY = booleanPreferencesKey("skip_outro_enabled")
         val SKIP_INTRO_MODE = stringPreferencesKey("skip_intro_mode")
         val SKIP_OUTRO_MODE = stringPreferencesKey("skip_outro_mode")
+        val SKIP_RECAP_MODE = stringPreferencesKey("skip_recap_mode")
+        val SKIP_PREVIEW_MODE = stringPreferencesKey("skip_preview_mode")
+        val SKIP_COMMERCIAL_MODE = stringPreferencesKey("skip_commercial_mode")
         val USE_EXO_PLAYER = booleanPreferencesKey("use_exo_player")
         val THEME_MODE = stringPreferencesKey("theme_mode")
 
@@ -625,6 +629,48 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
             prefs[Keys.SKIP_OUTRO_MODE]?.let { SkipMode.fromString(it) }
                 ?: if (prefs[Keys.SKIP_OUTRO_ENABLED_LEGACY] == false) SkipMode.DISABLED
                 else SkipMode.BUTTON
+        }
+
+    private fun segmentSkipModeKey(type: AfinitySegmentType): Preferences.Key<String>? =
+        when (type) {
+            AfinitySegmentType.RECAP -> Keys.SKIP_RECAP_MODE
+            AfinitySegmentType.PREVIEW -> Keys.SKIP_PREVIEW_MODE
+            AfinitySegmentType.COMMERCIAL -> Keys.SKIP_COMMERCIAL_MODE
+            else -> null
+        }
+
+    override suspend fun setSegmentSkipMode(type: AfinitySegmentType, mode: SkipMode) {
+        when (type) {
+            AfinitySegmentType.INTRO -> setSkipIntroMode(mode)
+            AfinitySegmentType.OUTRO -> setSkipOutroMode(mode)
+            else -> {
+                val key = segmentSkipModeKey(type) ?: return
+                dataStore.edit { it[key] = mode.name }
+            }
+        }
+    }
+
+    override suspend fun getSegmentSkipMode(type: AfinitySegmentType): SkipMode =
+        when (type) {
+            AfinitySegmentType.INTRO -> getSkipIntroMode()
+            AfinitySegmentType.OUTRO -> getSkipOutroMode()
+            else -> {
+                val key = segmentSkipModeKey(type)
+                key?.let { dataStore.data.first()[it] }?.let { SkipMode.fromString(it) }
+                    ?: SkipMode.DISABLED
+            }
+        }
+
+    override fun getSegmentSkipModeFlow(type: AfinitySegmentType): Flow<SkipMode> =
+        when (type) {
+            AfinitySegmentType.INTRO -> getSkipIntroModeFlow()
+            AfinitySegmentType.OUTRO -> getSkipOutroModeFlow()
+            else -> {
+                val key = segmentSkipModeKey(type)
+                dataStore.data.map { prefs ->
+                    key?.let { prefs[it] }?.let { SkipMode.fromString(it) } ?: SkipMode.DISABLED
+                }
+            }
         }
 
     override suspend fun setDynamicColors(enabled: Boolean) {

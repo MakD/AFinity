@@ -8,6 +8,7 @@ import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.common.HeroStyle
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.livetv.LiveTvViewOptions
+import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.player.AssRenderMode
 import com.makd.afinity.data.models.player.MpvAudioOutput
 import com.makd.afinity.data.models.player.MpvGpuApi
@@ -133,6 +134,12 @@ interface PreferencesRepository {
     suspend fun getSkipOutroMode(): SkipMode
 
     fun getSkipOutroModeFlow(): Flow<SkipMode>
+
+    suspend fun setSegmentSkipMode(type: AfinitySegmentType, mode: SkipMode)
+
+    suspend fun getSegmentSkipMode(type: AfinitySegmentType): SkipMode
+
+    fun getSegmentSkipModeFlow(type: AfinitySegmentType): Flow<SkipMode>
 
     val useExoPlayer: Flow<Boolean>
 

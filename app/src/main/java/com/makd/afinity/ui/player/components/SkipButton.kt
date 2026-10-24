@@ -38,14 +38,15 @@ fun SkipButton(
     skipButtonText: String,
     onClick: (AfinitySegment) -> Unit,
     modifier: Modifier = Modifier,
+    countdownMs: Long = 8000L,
 ) {
     val timerProgress = remember { Animatable(1f) }
 
-    LaunchedEffect(segment) {
+    LaunchedEffect(segment, countdownMs) {
         timerProgress.snapTo(1f)
         timerProgress.animateTo(
             targetValue = 0f,
-            animationSpec = tween(durationMillis = 8000, easing = LinearEasing),
+            animationSpec = tween(durationMillis = countdownMs.toInt(), easing = LinearEasing),
         )
     }
 
