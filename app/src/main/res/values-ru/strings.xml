@@ -2408,7 +2408,7 @@
     <string name="attention_restart_required">Необходим перезапуск</string>
     <string name="attention_restart_required_summary">Некоторые изменения применяются после перезапуска</string>
     <string name="attention_task_failed">Последний запуск не удался</string>
-    <string name="title_scheduled_tasks">Запланированные задачи</string>
+    <string name="title_scheduled_tasks">Планировщик задач</string>
     <string name="scheduled_tasks_summary">Запуск, остановка и проверка задач сервера</string>
     <string name="section_server">Сервер</string>
     <string name="title_users">Пользователи</string>
