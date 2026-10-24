@@ -511,6 +511,17 @@ constructor(
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to delete files for cancelled download")
                     }
+                    databaseRepository
+                        .getSources(download.itemId)
+                        .filter { it.type == AfinitySourceType.LOCAL }
+                        .forEach { databaseRepository.deleteSource(it.id) }
+                    if (download.itemType == "Audio") {
+                        databaseRepository.clearMusicTrackLocalFilePath(
+                            download.itemId,
+                            download.serverId,
+                            download.userId.toString(),
+                        )
+                    }
                     databaseRepository.deleteDownload(downloadId)
                 }
 

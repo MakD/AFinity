@@ -2,12 +2,14 @@ package com.makd.afinity.ui.item.delegates
 
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadQuality
+import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.data.storage.StorageVolumeInfo
+import com.makd.afinity.data.storage.VolumeUnavailableException
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -129,11 +131,31 @@ constructor(
     fun cancelDownload(scope: CoroutineScope, info: DownloadInfo?) {
         info?.let {
             scope.launch {
+                if (it.status == DownloadStatus.COMPLETED) {
+                    deleteCompletedDownload(it)
+                    return@launch
+                }
                 downloadRepository
                     .cancelDownload(it.id)
                     .onSuccess { Timber.i("Download cancelled successfully") }
                     .onFailure { error -> Timber.e(error, "Failed to cancel download") }
             }
         }
+    }
+
+    private suspend fun deleteCompletedDownload(info: DownloadInfo) {
+        downloadRepository
+            .deleteDownload(info.id)
+            .onSuccess { Timber.i("Download deleted successfully") }
+            .onFailure { error ->
+                if (error is VolumeUnavailableException) {
+                    Timber.w("Volume ${error.volumeId} unavailable, removing download record")
+                    downloadRepository.removeDownloadRecord(info.id).onFailure {
+                        Timber.e(it, "Failed to remove download record")
+                    }
+                } else {
+                    Timber.e(error, "Failed to delete download")
+                }
+            }
     }
 }
