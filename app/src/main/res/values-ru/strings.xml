@@ -259,7 +259,7 @@
     <string name="cd_back">Назад</string>
     <string name="cd_lock">Заблокировать</string>
     <string name="cd_unlock">Разблокировать</string>
-    <string name="cd_enter_pip">Режим \"Картинка в картинке\"</string>
+    <string name="cd_enter_pip">Режим «Картинка в картинке»</string>
     <string name="cd_previous">Предыдущий</string>
     <string name="cd_next">Следующий</string>
     <string name="cd_rewind_10">Назад на 10 секунд</string>
@@ -3369,4 +3369,19 @@
         <item quantity="many">%1$d файлов</item>
         <item quantity="other">%1$d файлов</item>
     </plurals>
+    <string name="skipping_intro">Пропуск вступления…</string>
+    <string name="skipping_outro">Пропуск окончания…</string>
+    <string name="skipping_recap">Пропуск пересказа…</string>
+    <string name="skipping_preview">Пропуск предпросмотра…</string>
+    <string name="skipping_commercial">Пропуск рекламы…</string>
+    <string name="skipping_generic">Пропуск…</string>
+    <string name="pref_skip_recap_title">Пропустить пересказ</string>
+    <string name="pref_skip_preview_title">Пропустить предпросмотр</string>
+    <string name="pref_skip_commercial_title">Пропустить рекламу</string>
+    <string name="pref_seek_back_title">Перемотка назад</string>
+    <string name="pref_seek_forward_title">Перемотка вперед</string>
+    <string name="pref_seek_step_hint">Используется экранными кнопками, при двойном нажатии и в режиме «Картинка в картинке»</string>
+    <string name="seek_step_seconds_fmt">%1$d секунд</string>
+    <string name="cd_rewind_seconds_fmt">Отмотать на %1$d секунд назад</string>
+    <string name="cd_forward_seconds_fmt">Промотать на %1$d секунд вперед</string>
 </resources>
