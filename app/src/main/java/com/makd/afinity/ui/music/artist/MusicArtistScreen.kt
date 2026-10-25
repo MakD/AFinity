@@ -76,6 +76,7 @@ import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.afinityTopAppBarHeight
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
 import com.makd.afinity.ui.item.components.shared.OverviewSection
@@ -148,7 +149,7 @@ fun MusicArtistScreen(
                             .padding(bottom = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Spacer(modifier = Modifier.statusBarsPadding().height(64.dp))
+                    Spacer(modifier = Modifier.statusBarsPadding().height(afinityTopAppBarHeight()))
 
                     AsyncImage(
                         imageUrl = uiState.artist?.images?.primary?.toString(),
@@ -200,7 +201,7 @@ fun MusicArtistScreen(
                             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
                     contentPadding = PaddingValues(bottom = playerOffset + 16.dp),
                 ) {
-                    item { Spacer(Modifier.statusBarsPadding().height(64.dp)) }
+                    item { Spacer(Modifier.statusBarsPadding().height(afinityTopAppBarHeight())) }
 
                     item {
                         MusicDetailActionRow(

@@ -24,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -41,6 +40,7 @@ import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.FilterFab
 import com.makd.afinity.ui.components.SortFab
+import com.makd.afinity.ui.components.afinityTopAppBarTitleStyle
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
@@ -119,10 +119,7 @@ fun MusicBrowseScreen(
                 title = {
                     Text(
                         text = stringResource(tab.displayNameRes),
-                        style =
-                            MaterialTheme.typography.headlineLarge.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
+                        style = afinityTopAppBarTitleStyle(),
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 },

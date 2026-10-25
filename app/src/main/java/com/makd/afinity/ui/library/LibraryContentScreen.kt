@@ -79,6 +79,7 @@ import com.makd.afinity.ui.components.MediaItemGridCard
 import com.makd.afinity.ui.components.PaginatedMediaGrid
 import com.makd.afinity.ui.components.RadioOptionRow
 import com.makd.afinity.ui.components.SortFab
+import com.makd.afinity.ui.components.afinityTopAppBarTitleStyle
 import com.makd.afinity.ui.player.PlayerLauncher
 
 @Composable
@@ -138,10 +139,7 @@ fun LibraryContentScreen(
                 title = {
                     Text(
                         text = uiState.libraryName,
-                        style =
-                            MaterialTheme.typography.headlineLarge.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
+                        style = afinityTopAppBarTitleStyle(),
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 },

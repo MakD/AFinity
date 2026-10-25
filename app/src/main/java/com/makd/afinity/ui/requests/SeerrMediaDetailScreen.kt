@@ -85,10 +85,11 @@ import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.SeparatedFlowRow
+import com.makd.afinity.ui.components.afinityTopAppBarHeight
 import com.makd.afinity.ui.components.getAutoFlagUrl
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.utils.rememberTopBarOpacity
+import com.makd.afinity.ui.utils.rememberDetailTopBarOpacity
 import com.makd.afinity.ui.utils.verticalLayoutOffset
 import com.makd.afinity.util.DateSkeleton
 import com.makd.afinity.util.localizedDateFormatter
@@ -152,7 +153,7 @@ private fun SeerrDetailContent(
 ) {
     val isLandscape = isLandscapeWindow()
     val lazyListState = rememberLazyListState()
-    val topBarOpacity by rememberTopBarOpacity(lazyListState)
+    val topBarOpacity by rememberDetailTopBarOpacity(lazyListState, isLandscape)
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (isLandscape) {
@@ -185,6 +186,7 @@ private fun SeerrDetailContent(
             title = {},
             onHomeClick = onNavigateHome,
             backgroundOpacity = { topBarOpacity },
+            landscapeStatusBarFill = Color.Black,
         )
     }
 }
@@ -694,7 +696,7 @@ private fun SeerrLandscapeContent(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding =
                     PaddingValues(
-                        top = with(density) { statusBarHeight.toDp() } + 64.dp,
+                        top = with(density) { statusBarHeight.toDp() } + afinityTopAppBarHeight(),
                         start = with(density) { displayCutoutLeft.toDp() + 16.dp },
                         end = 16.dp,
                         bottom = 16.dp + playerOffset,

@@ -47,6 +47,7 @@ import com.makd.afinity.ui.components.ConnectedButtonGroup
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.GroupButton
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
 import com.makd.afinity.ui.item.components.shared.MediaLogoHeader
 import com.makd.afinity.ui.item.components.shared.detailItem
@@ -57,7 +58,7 @@ import com.makd.afinity.ui.livetv.components.TimelineRecording
 import com.makd.afinity.ui.livetv.components.programTimelineItems
 import com.makd.afinity.ui.livetv.components.rememberCurrentTime
 import com.makd.afinity.ui.player.PlayerLauncher
-import com.makd.afinity.ui.utils.rememberTopBarOpacity
+import com.makd.afinity.ui.utils.rememberDetailTopBarOpacity
 
 @Composable
 fun LiveTvChannelScreen(
@@ -71,7 +72,7 @@ fun LiveTvChannelScreen(
     val prompt by viewModel.recorder.prompt.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lazyListState = rememberLazyListState()
-    val topBarOpacity by rememberTopBarOpacity(lazyListState)
+    val topBarOpacity by rememberDetailTopBarOpacity(lazyListState, isLandscapeWindow())
     val channel = uiState.channel
     val snackbarHostState = remember { SnackbarHostState() }
     val playerOffset = LocalPlayerOffset.current
@@ -126,6 +127,7 @@ fun LiveTvChannelScreen(
                 }
             },
             backgroundOpacity = { topBarOpacity },
+            landscapeStatusBarFill = Color.Black,
         )
 
         SnackbarHost(

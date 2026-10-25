@@ -6,10 +6,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,12 +29,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -104,6 +112,7 @@ fun AfinityTopAppBar(
     onMenuClick: (() -> Unit)? = null,
     onHomeClick: (() -> Unit)? = null,
     backgroundOpacity: () -> Float = { 0f },
+    landscapeStatusBarFill: Color? = null,
     actions: @Composable (RowScope.() -> Unit) = {},
     viewModel: AfinityTopAppBarViewModel = hiltViewModel(),
     isFetchingRandom: Boolean = false,
@@ -112,7 +121,13 @@ fun AfinityTopAppBar(
     val connectivity by viewModel.connectivity.collectAsStateWithLifecycle()
     val isForcedOffline = connectivity == Connectivity.ForcedOffline
     val isRetrying by viewModel.isRetrying.collectAsStateWithLifecycle()
-    val surfaceColor = MaterialTheme.colorScheme.surface
+    val statusBarOnlyFill = if (isLandscapeWindow()) landscapeStatusBarFill else null
+    val fillColor = statusBarOnlyFill ?: MaterialTheme.colorScheme.surface
+    val statusBarHeight = WindowInsets.statusBars.getTop(LocalDensity.current)
+
+    RequestDarkStatusBar(
+        enabled = statusBarOnlyFill != null && statusBarOnlyFill.luminance() < 0.5f
+    )
 
     TopAppBar(
         title = title,
@@ -266,10 +281,24 @@ fun AfinityTopAppBar(
             }
             actions()
         },
+        expandedHeight = afinityTopAppBarHeight(),
         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
         modifier =
             modifier.drawBehind {
-                drawRect(color = surfaceColor.copy(alpha = backgroundOpacity()))
+                val fillHeight =
+                    if (statusBarOnlyFill != null) statusBarHeight.toFloat() else size.height
+                drawRect(
+                    color = fillColor.copy(alpha = backgroundOpacity()),
+                    size = Size(size.width, fillHeight),
+                )
             },
     )
 }
+
+@Composable fun afinityTopAppBarHeight(): Dp = if (isLandscapeWindow()) 48.dp else 64.dp
+
+@Composable
+fun afinityTopAppBarTitleStyle(): TextStyle =
+    (if (isLandscapeWindow()) MaterialTheme.typography.headlineSmall
+        else MaterialTheme.typography.headlineLarge)
+        .copy(fontWeight = FontWeight.Bold)

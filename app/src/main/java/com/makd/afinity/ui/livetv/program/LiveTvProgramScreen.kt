@@ -32,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -72,6 +73,7 @@ import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.GroupButton
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.components.formatRuntimeTicks
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.components.ratings.communityRatingOf
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
 import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
@@ -104,7 +106,7 @@ import com.makd.afinity.ui.livetv.components.rememberProgramTimeFormatter
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
-import com.makd.afinity.ui.utils.rememberTopBarOpacity
+import com.makd.afinity.ui.utils.rememberDetailTopBarOpacity
 import com.makd.afinity.util.DateSkeleton
 import com.makd.afinity.util.localizedDateFormatter
 import java.time.Duration
@@ -127,7 +129,7 @@ fun LiveTvProgramScreen(
     val canManageLiveTv by viewModel.canManageLiveTv.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lazyListState = rememberLazyListState()
-    val topBarOpacity by rememberTopBarOpacity(lazyListState)
+    val topBarOpacity by rememberDetailTopBarOpacity(lazyListState, isLandscapeWindow())
     val program = uiState.program
     val busyIds by viewModel.recorder.busyIds.collectAsStateWithLifecycle()
     val prompt by viewModel.recorder.prompt.collectAsStateWithLifecycle()
@@ -207,6 +209,7 @@ fun LiveTvProgramScreen(
                 }
             },
             backgroundOpacity = { topBarOpacity },
+            landscapeStatusBarFill = Color.Black,
         )
 
         SnackbarHost(

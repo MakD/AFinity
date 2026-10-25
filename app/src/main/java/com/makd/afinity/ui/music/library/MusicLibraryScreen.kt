@@ -94,6 +94,7 @@ import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.LibraryShortcutCard
 import com.makd.afinity.ui.components.LibraryShortcutsRow
 import com.makd.afinity.ui.components.SectionRowHeader
+import com.makd.afinity.ui.components.afinityTopAppBarTitleStyle
 import com.makd.afinity.ui.components.focalAlpha
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.home.components.ArtistAlbumsCarousel
@@ -153,10 +154,7 @@ fun MusicLibraryScreen(
                 title = {
                     Text(
                         text = viewModel.libraryName,
-                        style =
-                            MaterialTheme.typography.headlineLarge.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
+                        style = afinityTopAppBarTitleStyle(),
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 },

@@ -147,6 +147,7 @@ fun PersonScreen(
                 }
             },
             backgroundOpacity = { topBarOpacity },
+            landscapeStatusBarFill = MaterialTheme.colorScheme.surface,
         )
     }
 }

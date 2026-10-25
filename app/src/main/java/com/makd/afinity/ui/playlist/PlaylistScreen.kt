@@ -75,6 +75,7 @@ import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.afinityTopAppBarHeight
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.DownloadProgressIndicator
 import com.makd.afinity.ui.item.components.MusicDownloadQualityDialog
@@ -237,7 +238,7 @@ fun PlaylistScreen(
                             .padding(bottom = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Spacer(modifier = Modifier.statusBarsPadding().height(64.dp))
+                    Spacer(modifier = Modifier.statusBarsPadding().height(afinityTopAppBarHeight()))
 
                     AsyncImage(
                         imageUrl = coverUrl,
@@ -295,7 +296,11 @@ fun PlaylistScreen(
                             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
                     contentPadding = PaddingValues(bottom = playerOffset + 16.dp),
                 ) {
-                    item { Spacer(modifier = Modifier.statusBarsPadding().height(64.dp)) }
+                    item {
+                        Spacer(
+                            modifier = Modifier.statusBarsPadding().height(afinityTopAppBarHeight())
+                        )
+                    }
 
                     item {
                         MusicDetailActionRow(

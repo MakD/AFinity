@@ -26,7 +26,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -37,6 +36,7 @@ import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.ServiceUnreachableBanner
+import com.makd.afinity.ui.components.afinityTopAppBarTitleStyle
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.settings.AudiobookshelfBottomSheet
@@ -75,10 +75,7 @@ fun AudiobookshelfLibrariesScreen(
                     title = {
                         Text(
                             text = stringResource(R.string.nav_audiobooks),
-                            style =
-                                MaterialTheme.typography.headlineLarge.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
+                            style = afinityTopAppBarTitleStyle(),
                             color = MaterialTheme.colorScheme.onBackground,
                         )
                     },
@@ -118,10 +115,7 @@ fun AudiobookshelfLibrariesScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.nav_audiobooks),
-                        style =
-                            MaterialTheme.typography.headlineLarge.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
+                        style = afinityTopAppBarTitleStyle(),
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 },

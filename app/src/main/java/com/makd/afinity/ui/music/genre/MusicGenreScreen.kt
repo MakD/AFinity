@@ -75,6 +75,7 @@ import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.afinityTopAppBarHeight
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.music.components.MusicArtistCard
@@ -193,7 +194,7 @@ fun MusicGenreScreen(
                             .padding(bottom = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Spacer(modifier = Modifier.statusBarsPadding().height(64.dp))
+                    Spacer(modifier = Modifier.statusBarsPadding().height(afinityTopAppBarHeight()))
 
                     GenreHeroImage(
                         imageUrl = viewModel.genreImageUrl,
@@ -233,7 +234,11 @@ fun MusicGenreScreen(
                             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
                     contentPadding = PaddingValues(bottom = playerOffset + 16.dp),
                 ) {
-                    item { Spacer(modifier = Modifier.statusBarsPadding().height(64.dp)) }
+                    item {
+                        Spacer(
+                            modifier = Modifier.statusBarsPadding().height(afinityTopAppBarHeight())
+                        )
+                    }
 
                     item { actionRow() }
 

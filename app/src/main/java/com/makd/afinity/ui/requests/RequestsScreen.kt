@@ -47,6 +47,7 @@ import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.ServiceUnreachableBanner
+import com.makd.afinity.ui.components.afinityTopAppBarTitleStyle
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.settings.JellyseerrBottomSheet
@@ -85,10 +86,7 @@ fun RequestsScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.requests_title),
-                        style =
-                            MaterialTheme.typography.headlineLarge.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
+                        style = afinityTopAppBarTitleStyle(),
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 },

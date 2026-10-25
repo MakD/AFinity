@@ -43,6 +43,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -99,6 +100,7 @@ import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.DeleteItemDialog
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.afinityTopAppBarHeight
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.item.components.QualitySelectionDialog
@@ -127,7 +129,7 @@ import com.makd.afinity.ui.item.components.shared.detailItem
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.utils.IntentUtils
-import com.makd.afinity.ui.utils.rememberTopBarOpacity
+import com.makd.afinity.ui.utils.rememberDetailTopBarOpacity
 import com.makd.afinity.ui.utils.verticalLayoutOffset
 import com.makd.afinity.util.rememberPreferencesRepository
 import java.util.UUID
@@ -511,7 +513,7 @@ private fun ItemDetailContent(
     val isLandscape = isLandscapeWindow()
 
     val lazyListState = rememberLazyListState()
-    val topBarOpacity by rememberTopBarOpacity(lazyListState)
+    val topBarOpacity by rememberDetailTopBarOpacity(lazyListState, isLandscape)
 
     Box(modifier = Modifier.fillMaxSize()) {
         CompositionLocalProvider(LocalDetailLayout provides detailLayout) {
@@ -593,6 +595,7 @@ private fun ItemDetailContent(
                 }
             },
             backgroundOpacity = { topBarOpacity },
+            landscapeStatusBarFill = Color.Black,
         )
     }
 }
@@ -699,7 +702,7 @@ private fun LandscapeItemDetailContent(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding =
                     PaddingValues(
-                        top = with(density) { statusBarHeight.toDp() } + 64.dp,
+                        top = with(density) { statusBarHeight.toDp() } + afinityTopAppBarHeight(),
                         start = with(density) { displayCutoutLeft.toDp() + 16.dp },
                         end = 16.dp,
                         bottom = 16.dp + playerOffset,

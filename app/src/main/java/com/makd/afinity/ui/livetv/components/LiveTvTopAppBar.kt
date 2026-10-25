@@ -3,11 +3,11 @@ package com.makd.afinity.ui.livetv.components
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavController
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AppBarProfile
+import com.makd.afinity.ui.components.afinityTopAppBarTitleStyle
 import com.makd.afinity.ui.main.MainUiState
 
 @Composable
@@ -21,7 +21,7 @@ fun LiveTvTopAppBar(
         title = {
             Text(
                 text = title,
-                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
+                style = afinityTopAppBarTitleStyle(),
                 color = MaterialTheme.colorScheme.onBackground,
             )
         },

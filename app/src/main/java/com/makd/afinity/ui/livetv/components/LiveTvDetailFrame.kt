@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.afinityTopAppBarHeight
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.shared.DetailBackdrop
 import com.makd.afinity.ui.item.components.shared.HeroSection
@@ -54,7 +55,8 @@ fun LiveTvDetailFrame(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding =
                         PaddingValues(
-                            top = with(density) { statusBarHeight.toDp() } + 64.dp,
+                            top =
+                                with(density) { statusBarHeight.toDp() } + afinityTopAppBarHeight(),
                             start = with(density) { displayCutoutLeft.toDp() + 16.dp },
                             end = 16.dp,
                             bottom = 16.dp + playerOffset,

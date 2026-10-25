@@ -23,6 +23,7 @@ import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSiz
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -47,7 +48,10 @@ import com.makd.afinity.data.updater.notification.UpdateNotificationManager
 import com.makd.afinity.data.websocket.AudiobookshelfSocketManager
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.MainNavigation
+import com.makd.afinity.ui.components.LocalStatusBarIcons
 import com.makd.afinity.ui.components.RemoteMessagePill
+import com.makd.afinity.ui.components.StatusBarIconsEffect
+import com.makd.afinity.ui.components.StatusBarIconsState
 import com.makd.afinity.ui.theme.AFinityTheme
 import com.makd.afinity.ui.theme.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
@@ -113,34 +117,36 @@ class MainActivity : AppCompatActivity() {
                         ThemeMode.AMOLED -> false
                     }
 
-                SideEffect {
-                    windowInsetsController.isAppearanceLightStatusBars = isLightTheme
-                    windowInsetsController.isAppearanceLightNavigationBars = isLightTheme
-                }
+                val statusBarIcons = remember { StatusBarIconsState() }
+                StatusBarIconsEffect(windowInsetsController, isLightTheme, statusBarIcons)
+
+                SideEffect { windowInsetsController.isAppearanceLightNavigationBars = isLightTheme }
 
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        MainContent(
-                            modifier = Modifier.fillMaxSize(),
-                            viewModel = authViewModel,
-                            updateManager = updateManager,
-                            offlineModeManager = offlineModeManager,
-                            widthSizeClass = windowSize.widthSizeClass,
-                        )
+                    CompositionLocalProvider(LocalStatusBarIcons provides statusBarIcons) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            MainContent(
+                                modifier = Modifier.fillMaxSize(),
+                                viewModel = authViewModel,
+                                updateManager = updateManager,
+                                offlineModeManager = offlineModeManager,
+                                widthSizeClass = windowSize.widthSizeClass,
+                            )
 
-                        val remoteMessage by
-                            remoteMessageManager.message.collectAsStateWithLifecycle()
-                        RemoteMessagePill(
-                            message = remoteMessage,
-                            onDismiss = remoteMessageManager::dismiss,
-                            modifier =
-                                Modifier.align(Alignment.TopCenter)
-                                    .statusBarsPadding()
-                                    .padding(top = 8.dp),
-                        )
+                            val remoteMessage by
+                                remoteMessageManager.message.collectAsStateWithLifecycle()
+                            RemoteMessagePill(
+                                message = remoteMessage,
+                                onDismiss = remoteMessageManager::dismiss,
+                                modifier =
+                                    Modifier.align(Alignment.TopCenter)
+                                        .statusBarsPadding()
+                                        .padding(top = 8.dp),
+                            )
+                        }
                     }
                 }
 
