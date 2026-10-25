@@ -28,6 +28,7 @@ import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.ParentalRating
+import org.jellyfin.sdk.model.api.UserItemDataDto
 
 interface MediaRepository {
 
@@ -141,6 +142,8 @@ interface MediaRepository {
     suspend fun getItemById(itemId: UUID): AfinityItem?
 
     suspend fun getItemsByIds(ids: List<UUID>, fields: List<ItemFields>? = null): List<AfinityItem>
+
+    suspend fun getUserDataByIds(ids: List<UUID>): List<UserItemDataDto>
 
     suspend fun getIntros(itemId: UUID): List<AfinityItem>
 

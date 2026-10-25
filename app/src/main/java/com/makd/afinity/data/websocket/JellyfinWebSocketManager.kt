@@ -71,6 +71,7 @@ constructor(
     private var reconnectJob: Job? = null
     private var libraryTaskWasRunning = false
     private var hasConnectedBefore = false
+    private var lastSessionKey: String? = null
     private var resyncedForThisConnection = false
 
     private companion object {
@@ -129,7 +130,11 @@ constructor(
                     .collectLatest { (session, _) ->
                         reconnectJob?.cancel()
                         reconnectJob = null
-                        hasConnectedBefore = false
+                        val sessionKey = session?.let { "${it.serverId}|${it.userId}" }
+                        if (sessionKey != lastSessionKey) {
+                            lastSessionKey = sessionKey
+                            hasConnectedBefore = false
+                        }
                         resyncedForThisConnection = false
                         if (session == null) {
                             _connectionState.value = WebSocketState.DISCONNECTED
@@ -191,11 +196,14 @@ constructor(
                     newState == WebSocketState.CONNECTED &&
                         previousState != WebSocketState.CONNECTED
                 ) {
-                    if (hasConnectedBefore && !resyncedForThisConnection) {
+                    if (!resyncedForThisConnection) {
                         resyncedForThisConnection = true
-                        Timber.d("WebSocket reconnected - resyncing user data and content")
-                        mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
-                        mediaRefreshBus.emit(RefreshTrigger.CONTENT_RESYNC)
+                        scope.launch { mediaChangeManager.resyncUserData() }
+                        if (hasConnectedBefore) {
+                            Timber.d("WebSocket reconnected - resyncing user data and content")
+                            mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
+                            mediaRefreshBus.emit(RefreshTrigger.CONTENT_RESYNC)
+                        }
                     }
                     hasConnectedBefore = true
                 }

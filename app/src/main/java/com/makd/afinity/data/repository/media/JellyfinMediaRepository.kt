@@ -101,6 +101,7 @@ import org.jellyfin.sdk.model.api.NameValuePair
 import org.jellyfin.sdk.model.api.ParentalRating
 import org.jellyfin.sdk.model.api.SeriesStatus
 import org.jellyfin.sdk.model.api.SortOrder
+import org.jellyfin.sdk.model.api.UserItemDataDto
 import org.jellyfin.sdk.model.api.VideoType
 import timber.log.Timber
 
@@ -1073,6 +1074,23 @@ constructor(
                 .content
                 .items
                 .mapNotNull { it.toAfinityItem(getBaseUrl()) }
+        }
+
+    override suspend fun getUserDataByIds(ids: List<UUID>): List<UserItemDataDto> =
+        apiCall(emptyList(), "Failed to batch-fetch user data by ids") { apiClient, userId ->
+            if (ids.isEmpty()) return@apiCall emptyList()
+            LibraryApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    ids = ids,
+                    fields = emptyList(),
+                    enableImages = false,
+                    enableUserData = true,
+                    enableTotalRecordCount = false,
+                )
+                .content
+                .items
+                .mapNotNull { dto -> dto.userData?.copy(itemId = dto.id) }
         }
 
     override suspend fun getIntros(itemId: UUID): List<AfinityItem> =

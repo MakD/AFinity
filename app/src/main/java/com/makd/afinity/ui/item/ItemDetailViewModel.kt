@@ -107,6 +107,7 @@ import kotlinx.coroutines.yield
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.PersonKind
+import org.jellyfin.sdk.model.api.UserItemDataDto
 import timber.log.Timber
 
 private const val POPULATED_METADATA_TTL_MS = 48L * 60L * 60L * 1000L
@@ -819,6 +820,7 @@ constructor(
                 }
 
                 var specialFeatureCount = 0
+                var freshUserData: UserItemDataDto? = null
                 val item =
                     if (isOffline) {
                         loadItemFromDatabase()
@@ -826,6 +828,7 @@ constructor(
                         itemLastServerFetchAt = System.currentTimeMillis()
                         mediaRepository.getItemDetail(itemId)?.let { baseItemDto ->
                             specialFeatureCount = baseItemDto.specialFeatureCount ?: 0
+                            freshUserData = baseItemDto.userData?.copy(itemId = baseItemDto.id)
                             when (baseItemDto.type) {
                                 BaseItemKind.MOVIE ->
                                     baseItemDto.toAfinityMovie(mediaRepository.getBaseUrl(), null)
@@ -879,6 +882,7 @@ constructor(
 
                 _uiState.value = _uiState.value.copy(item = item, isLoading = false)
                 itemLastLoadedAt = System.currentTimeMillis()
+                freshUserData?.let { launch { mediaChangeManager.reconcileUserData(it) } }
 
                 if (!isOffline) {
                     launchParallelFetches(item, specialFeatureCount)

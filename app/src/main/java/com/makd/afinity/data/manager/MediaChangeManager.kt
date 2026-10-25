@@ -4,6 +4,7 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.UserDataPatch
+import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.UserItemDataDto
@@ -136,7 +138,44 @@ constructor(
 
     companion object {
         const val CONTENT_CHANGE_PATCH_LIMIT = 10
+        private const val RESYNC_CHUNK_SIZE = 100
     }
+
+    suspend fun resyncUserData() {
+        val currentSession = sessionManager.currentSession.value ?: return
+        val stored =
+            databaseRepository
+                .getAllUserDataFlow(currentSession.userId)
+                .first()
+                .filterNot { it.toBeSynced }
+                .associateBy { it.itemId }
+        if (stored.isEmpty()) return
+
+        val changed =
+            stored.keys.chunked(RESYNC_CHUNK_SIZE).flatMap { ids ->
+                mediaRepository.getUserDataByIds(ids).filter { fresh ->
+                    stored[fresh.itemId]?.differsFrom(fresh) == true
+                }
+            }
+        Timber.d("User data resync: ${stored.size} stored, ${changed.size} changed on server")
+        changed.chunked(RESYNC_CHUNK_SIZE).forEach { applyUserDataChangesBatch(it) }
+    }
+
+    suspend fun reconcileUserData(fresh: UserItemDataDto) {
+        val currentSession = sessionManager.currentSession.value ?: return
+        val stored = databaseRepository.getUserData(currentSession.userId, fresh.itemId) ?: return
+        if (stored.toBeSynced || !stored.differsFrom(fresh)) return
+        Timber.d("Stored user data for ${fresh.itemId} was stale — reconciling")
+        applyUserDataChangesBatch(listOf(fresh))
+    }
+
+    private fun AfinityUserDataDto.differsFrom(fresh: UserItemDataDto): Boolean =
+        played != fresh.played ||
+            playbackPositionTicks != fresh.playbackPositionTicks ||
+            favorite != fresh.isFavorite ||
+            likes != (fresh.likes ?: false) ||
+            (unplayedItemCount != null && unplayedItemCount != fresh.unplayedItemCount) ||
+            (playCount != null && playCount != fresh.playCount)
 
     suspend fun applyUserDataChangesBatch(userDataList: List<UserItemDataDto>) {
         if (userDataList.isEmpty()) return

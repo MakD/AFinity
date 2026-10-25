@@ -49,6 +49,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -139,8 +140,6 @@ constructor(
             )
         )
     val uiState: StateFlow<LibraryContentUiState> = _uiState.asStateFlow()
-
-    private var lastLoadedAt = 0L
 
     private fun applyUpdatesToPagingFlow(
         baseFlow: Flow<PagingData<AfinityItem>>
@@ -248,6 +247,13 @@ constructor(
                 markRemoved(listOf(event.itemId))
                 val isMovieOrSeries = event.isMovie != null
                 if (!isMovieOrSeries || !removesDeletedItemsLocally()) refreshItems()
+            }
+        }
+
+        viewModelScope.launch {
+            appDataRepository.lastResyncAt.drop(1).collect {
+                Timber.d("Content resync — refreshing $libraryName")
+                refreshItems()
             }
         }
 
@@ -421,7 +427,6 @@ constructor(
                     )
 
                 loadItems()
-                lastLoadedAt = System.currentTimeMillis()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -432,12 +437,6 @@ constructor(
                         error = context.getString(R.string.error_content_unavailable_server),
                     )
             }
-        }
-    }
-
-    fun onScreenResumed() {
-        if (appDataRepository.lastUserDataChangedAt.value > lastLoadedAt) {
-            lastLoadedAt = System.currentTimeMillis()
         }
     }
 
