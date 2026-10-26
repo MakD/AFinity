@@ -12,10 +12,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +42,7 @@ import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.ui.audiobookshelf.withAbsWidth
 import com.makd.afinity.ui.components.CircleFlagIcon
+import com.makd.afinity.ui.components.DetailActionRow
 import com.makd.afinity.ui.components.DetailCoverImage
 import com.makd.afinity.ui.components.DetailCoverTitle
 import com.makd.afinity.ui.components.getAutoFlagUrl
@@ -64,6 +63,7 @@ fun ItemHeaderContent(
     audibleRating: AudibleRating? = null,
     onToggleFinished: (() -> Unit)? = null,
     toggleFinishedEnabled: Boolean = true,
+    showActions: Boolean = true,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -254,143 +254,159 @@ fun ItemHeaderContent(
             }
         }
 
-        val hasMediaInfo = item.mediaType.equals("book", ignoreCase = true)
-        var showMediaInfo by remember { mutableStateOf(false) }
-        if (showMediaInfo) {
-            AudiobookMediaInfoSheet(
-                item = item,
-                imageUrl = coverUrl?.withAbsWidth(200),
-                onDismiss = { showMediaInfo = false },
-            )
-        }
-        val hasActions =
-            onPlay != null || onToggleFinished != null || onDownload != null || hasMediaInfo
+        val hasActions = showActions && hasItemActions(item, onPlay, onToggleFinished, onDownload)
 
         if (audibleRating != null) {
             Spacer(modifier = Modifier.height(12.dp))
             AudibleRatingRow(rating = audibleRating)
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(if (hasActions) 16.dp else 12.dp))
         } else {
-            Spacer(modifier = Modifier.height(if (hasActions) 24.dp else 8.dp))
+            Spacer(modifier = Modifier.height(if (hasActions) 16.dp else 8.dp))
         }
 
-        if (hasActions)
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (onToggleFinished != null) {
-                        val finished = progress?.isFinished == true
-                        IconButton(onClick = onToggleFinished, enabled = toggleFinishedEnabled) {
-                            Icon(
-                                painter =
-                                    if (finished) painterResource(id = R.drawable.ic_circle_check)
-                                    else painterResource(id = R.drawable.ic_circle_check_outline),
-                                contentDescription =
-                                    if (finished) stringResource(R.string.cd_watched_unmark)
-                                    else stringResource(R.string.cd_watched_mark),
-                                tint =
-                                    when {
-                                        !toggleFinishedEnabled ->
-                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                                        finished -> Color.Green
-                                        else -> MaterialTheme.colorScheme.onSurfaceVariant
-                                    },
-                                modifier = Modifier.size(26.dp),
-                            )
-                        }
-                    }
+        if (hasActions) {
+            ItemActionRow(
+                item = item,
+                progress = progress,
+                coverUrl = coverUrl,
+                onPlay = onPlay,
+                downloadInfo = downloadInfo,
+                onDownload = onDownload,
+                onCancelDownload = onCancelDownload,
+                onDeleteDownload = onDeleteDownload,
+                onToggleFinished = onToggleFinished,
+                toggleFinishedEnabled = toggleFinishedEnabled,
+            )
+        }
+    }
+}
 
-                    if (onDownload != null) {
-                        IconButton(
-                            onClick = {
-                                when (downloadInfo?.status) {
-                                    AbsDownloadStatus.QUEUED,
-                                    AbsDownloadStatus.DOWNLOADING -> onCancelDownload?.invoke()
-                                    AbsDownloadStatus.COMPLETED -> onDeleteDownload?.invoke()
-                                    else -> onDownload.invoke()
-                                }
-                            }
-                        ) {
-                            when (downloadInfo?.status) {
-                                AbsDownloadStatus.DOWNLOADING -> {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        CircularProgressIndicator(
-                                            progress = { downloadInfo.progress },
-                                            modifier = Modifier.size(26.dp),
-                                            strokeWidth = 2.dp,
-                                        )
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.ic_cancel),
-                                            contentDescription =
-                                                stringResource(R.string.cd_cancel_download),
-                                            modifier = Modifier.size(14.dp),
-                                            tint = Color.Red,
-                                        )
-                                    }
-                                }
-                                AbsDownloadStatus.QUEUED -> {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(26.dp),
-                                        strokeWidth = 2.dp,
-                                        color = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                                AbsDownloadStatus.COMPLETED -> {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.ic_delete),
-                                        contentDescription =
-                                            stringResource(R.string.cd_delete_download),
-                                        tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(26.dp),
-                                    )
-                                }
-                                else -> {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.ic_download),
-                                        contentDescription =
-                                            stringResource(R.string.cd_abs_download),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(26.dp),
-                                    )
-                                }
-                            }
-                        }
-                    }
+internal fun hasItemActions(
+    item: LibraryItem,
+    onPlay: (() -> Unit)?,
+    onToggleFinished: (() -> Unit)?,
+    onDownload: (() -> Unit)?,
+): Boolean =
+    onPlay != null ||
+        onToggleFinished != null ||
+        onDownload != null ||
+        item.mediaType.equals("book", ignoreCase = true)
 
-                    if (hasMediaInfo) {
-                        IconButton(onClick = { showMediaInfo = true }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_info),
-                                contentDescription = stringResource(R.string.media_info_title),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(26.dp),
-                            )
-                        }
+@Composable
+internal fun ItemActionRow(
+    item: LibraryItem,
+    progress: MediaProgress?,
+    coverUrl: String?,
+    onPlay: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    downloadInfo: AbsDownloadInfo? = null,
+    onDownload: (() -> Unit)? = null,
+    onCancelDownload: (() -> Unit)? = null,
+    onDeleteDownload: (() -> Unit)? = null,
+    onToggleFinished: (() -> Unit)? = null,
+    toggleFinishedEnabled: Boolean = true,
+) {
+    val hasMediaInfo = item.mediaType.equals("book", ignoreCase = true)
+    var showMediaInfo by remember { mutableStateOf(false) }
+    if (showMediaInfo) {
+        AudiobookMediaInfoSheet(
+            item = item,
+            imageUrl = coverUrl?.withAbsWidth(200),
+            onDismiss = { showMediaInfo = false },
+        )
+    }
+
+    DetailActionRow(
+        onPlay = { onPlay?.invoke() },
+        modifier = modifier.fillMaxWidth().padding(vertical = 8.dp),
+        playbackEnabled = onPlay != null,
+    ) {
+        if (onToggleFinished != null) {
+            val finished = progress?.isFinished == true
+            IconButton(onClick = onToggleFinished, enabled = toggleFinishedEnabled) {
+                Icon(
+                    painter =
+                        if (finished) painterResource(id = R.drawable.ic_circle_check)
+                        else painterResource(id = R.drawable.ic_circle_check_outline),
+                    contentDescription =
+                        if (finished) stringResource(R.string.cd_watched_unmark)
+                        else stringResource(R.string.cd_watched_mark),
+                    tint =
+                        when {
+                            !toggleFinishedEnabled ->
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            finished -> Color.Green
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    modifier = Modifier.size(26.dp),
+                )
+            }
+        }
+
+        if (onDownload != null) {
+            IconButton(
+                onClick = {
+                    when (downloadInfo?.status) {
+                        AbsDownloadStatus.QUEUED,
+                        AbsDownloadStatus.DOWNLOADING -> onCancelDownload?.invoke()
+                        AbsDownloadStatus.COMPLETED -> onDeleteDownload?.invoke()
+                        else -> onDownload.invoke()
                     }
                 }
-
-                if (onPlay != null) {
-                    FloatingActionButton(
-                        onClick = onPlay,
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                        shape = CircleShape,
-                        modifier = Modifier.size(56.dp),
-                    ) {
+            ) {
+                when (downloadInfo?.status) {
+                    AbsDownloadStatus.DOWNLOADING -> {
+                        Box(contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(
+                                progress = { downloadInfo.progress },
+                                modifier = Modifier.size(26.dp),
+                                strokeWidth = 2.dp,
+                            )
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_cancel),
+                                contentDescription = stringResource(R.string.cd_cancel_download),
+                                modifier = Modifier.size(14.dp),
+                                tint = Color.Red,
+                            )
+                        }
+                    }
+                    AbsDownloadStatus.QUEUED -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(26.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    AbsDownloadStatus.COMPLETED -> {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_player_play_filled),
-                            contentDescription = stringResource(R.string.action_play),
+                            painter = painterResource(id = R.drawable.ic_delete),
+                            contentDescription = stringResource(R.string.cd_delete_download),
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(26.dp),
+                        )
+                    }
+                    else -> {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_download),
+                            contentDescription = stringResource(R.string.cd_abs_download),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(26.dp),
                         )
                     }
                 }
             }
+        }
+
+        if (hasMediaInfo) {
+            IconButton(onClick = { showMediaInfo = true }) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_info),
+                    contentDescription = stringResource(R.string.media_info_title),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(26.dp),
+                )
+            }
+        }
     }
 }
 

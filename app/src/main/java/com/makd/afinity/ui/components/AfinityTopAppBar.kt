@@ -123,7 +123,7 @@ fun AfinityTopAppBar(
             val leadingOnClick = onMenuClick ?: onHomeClick
             if (leadingOnClick != null) {
                 val isMenu = onMenuClick != null
-                IconButton(onClick = leadingOnClick, modifier = Modifier.size(42.dp)) {
+                IconButton(onClick = leadingOnClick, modifier = Modifier.size(36.dp)) {
                     Box(
                         modifier =
                             Modifier.fillMaxSize()
@@ -142,7 +142,7 @@ fun AfinityTopAppBar(
                                     else R.string.cd_go_to_home
                                 ),
                             tint = Color.White,
-                            modifier = Modifier.size(24.dp),
+                            modifier = Modifier.size(22.dp),
                         )
                     }
                 }
@@ -152,7 +152,7 @@ fun AfinityTopAppBar(
             if (connectionType == ConnectionType.OFFLINE) {
                 Row(
                     modifier =
-                        Modifier.height(42.dp)
+                        Modifier.height(36.dp)
                             .clip(RoundedCornerShape(24.dp))
                             .background(Color.Black.copy(alpha = 0.3f))
                             .clickable(enabled = !isRetrying, role = Role.Button) {
@@ -201,7 +201,7 @@ fun AfinityTopAppBar(
             if (onSearchClick != null || showDice) {
                 Row(
                     modifier =
-                        Modifier.height(42.dp)
+                        Modifier.height(36.dp)
                             .clip(RoundedCornerShape(24.dp))
                             .background(Color.Black.copy(alpha = 0.3f)),
                     verticalAlignment = Alignment.CenterVertically,
@@ -210,13 +210,13 @@ fun AfinityTopAppBar(
                         IconButton(
                             onClick = onRandomClick,
                             enabled = !isFetchingRandom,
-                            modifier = Modifier.size(42.dp),
+                            modifier = Modifier.size(36.dp),
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_dice5),
                                 contentDescription = stringResource(R.string.cd_random_item),
                                 tint = Color.White,
-                                modifier = Modifier.size(24.dp),
+                                modifier = Modifier.size(22.dp),
                             )
                         }
                     }
@@ -229,12 +229,12 @@ fun AfinityTopAppBar(
                         )
                     }
                     if (onSearchClick != null) {
-                        IconButton(onClick = onSearchClick, modifier = Modifier.size(42.dp)) {
+                        IconButton(onClick = onSearchClick, modifier = Modifier.size(36.dp)) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_search),
                                 contentDescription = stringResource(R.string.cd_search_icon),
                                 tint = Color.White,
-                                modifier = Modifier.size(24.dp),
+                                modifier = Modifier.size(22.dp),
                             )
                         }
                     }
@@ -245,15 +245,15 @@ fun AfinityTopAppBar(
             if (profile != null) {
                 Box(
                     modifier =
-                        Modifier.size(42.dp).graphicsLayer {
+                        Modifier.size(40.dp).graphicsLayer {
                             compositingStrategy = CompositingStrategy.Offscreen
                         }
                 ) {
-                    IconButton(onClick = profile.onClick, modifier = Modifier.size(42.dp)) {
+                    IconButton(onClick = profile.onClick, modifier = Modifier.size(40.dp)) {
                         UserAvatar(
                             imageUrl = profile.imageUrl,
                             name = profile.name,
-                            size = 42.dp,
+                            size = 40.dp,
                             containerColor = Color.Black.copy(alpha = 0.3f),
                             contentColor = Color.White,
                             contentDescription = stringResource(R.string.cd_profile_icon),

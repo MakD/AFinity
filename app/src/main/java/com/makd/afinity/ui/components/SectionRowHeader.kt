@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.ui.preview.FontScalePreviews
@@ -41,7 +40,7 @@ fun SectionRowHeader(
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            style = afinitySectionTitleStyle(),
             color = MaterialTheme.colorScheme.onBackground,
         )
 

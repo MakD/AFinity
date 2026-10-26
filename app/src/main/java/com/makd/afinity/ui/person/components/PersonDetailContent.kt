@@ -72,6 +72,7 @@ import com.makd.afinity.ui.components.LandscapeDetailLayout
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.components.PortraitDetailLayout
 import com.makd.afinity.ui.components.PortraitHero
+import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.backdropChainOf
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.shared.AwardsSectionStyle
@@ -309,7 +310,7 @@ private fun PersonSharedContentBlocks(
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
                 text = stringResource(R.string.person_biography),
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                style = afinitySectionTitleStyle(),
                 color = MaterialTheme.colorScheme.onBackground,
             )
             OverviewSection(overview = person.overview)
@@ -360,7 +361,7 @@ private fun PersonFilmographySection(
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            style = afinitySectionTitleStyle(),
             color = MaterialTheme.colorScheme.onBackground,
         )
 

@@ -8,11 +8,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.ui.components.CardRowContainer
+import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.utils.gapIfNotEmpty
 
 val DetailSectionGap = 16.dp
@@ -44,17 +44,9 @@ fun DetailItemBox(horizontalPadding: Dp, gap: Dp, content: @Composable () -> Uni
 
 @Composable
 fun DetailSectionTitle(text: String, modifier: Modifier = Modifier) {
-    val style =
-        when (LocalDetailLayout.current) {
-            DetailLayout.CLASSIC ->
-                MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
-
-            DetailLayout.MODERN ->
-                MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold)
-        }
     Text(
         text = text,
-        style = style,
+        style = afinitySectionTitleStyle(),
         color = MaterialTheme.colorScheme.onBackground,
         modifier = modifier,
     )

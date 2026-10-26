@@ -61,8 +61,10 @@ import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.BackdropStyle
+import com.makd.afinity.ui.components.DetailActionRow
 import com.makd.afinity.ui.components.DetailCoverImage
 import com.makd.afinity.ui.components.DetailCoverTitle
+import com.makd.afinity.ui.components.DetailGutter
 import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
@@ -77,7 +79,6 @@ import com.makd.afinity.ui.item.components.MusicDownloadQualityDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
-import com.makd.afinity.ui.music.components.MusicDetailActionRow
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
 import com.makd.afinity.ui.music.library.startMusicService
@@ -210,29 +211,8 @@ fun PlaylistScreen(
 
     val coverUrl = uiState.playlist?.images?.primary?.toString()
 
-    val playlistHeader: @Composable ColumnScope.() -> Unit = {
-        DetailCoverImage(
-            imageUrl = coverUrl,
-            contentDescription = uiState.playlist?.name,
-            blurHash = uiState.playlist?.images?.primaryImageBlurHash,
-        )
-
-        DetailCoverTitle(
-            title = uiState.playlist?.name ?: stringResource(R.string.music_fallback_playlist)
-        )
-
-        PlaylistCountLabel(
-            count = uiState.playlist?.songCount ?: uiState.entries.size,
-            hiddenItemCount = uiState.hiddenItemCount,
-            audioOnly = uiState.audioOnly,
-        )
-
-        if (uiState.artistEntries.isNotEmpty()) {
-            Spacer(Modifier.height(8.dp))
-            PlaylistArtistsRow(entries = uiState.artistEntries)
-        }
-
-        MusicDetailActionRow(
+    val playlistActionRow: @Composable () -> Unit = {
+        DetailActionRow(
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
             playbackEnabled = uiState.entries.isNotEmpty(),
             onShuffle = { onPlayRequest(true) },
@@ -318,7 +298,38 @@ fun PlaylistScreen(
         }
     }
 
+    val playlistHeader: @Composable ColumnScope.() -> Unit = {
+        DetailCoverImage(
+            imageUrl = coverUrl,
+            contentDescription = uiState.playlist?.name,
+            blurHash = uiState.playlist?.images?.primaryImageBlurHash,
+        )
+
+        DetailCoverTitle(
+            title = uiState.playlist?.name ?: stringResource(R.string.music_fallback_playlist)
+        )
+
+        PlaylistCountLabel(
+            count = uiState.playlist?.songCount ?: uiState.entries.size,
+            hiddenItemCount = uiState.hiddenItemCount,
+            audioOnly = uiState.audioOnly,
+        )
+
+        if (uiState.artistEntries.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            PlaylistArtistsRow(entries = uiState.artistEntries)
+        }
+
+        if (!isLandscape) playlistActionRow()
+    }
+
     val playlistItems: LazyListScope.() -> Unit = {
+        if (isLandscape) {
+            item(key = "actions") {
+                Box(modifier = Modifier.padding(horizontal = DetailGutter)) { playlistActionRow() }
+            }
+        }
+
         if (uiState.entries.isEmpty()) {
             item {
                 PlaylistEmptyState(

@@ -51,6 +51,7 @@ import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.BackdropStyle
+import com.makd.afinity.ui.components.DetailActionRow
 import com.makd.afinity.ui.components.DetailCoverImage
 import com.makd.afinity.ui.components.DetailCoverTitle
 import com.makd.afinity.ui.components.DetailGutter
@@ -69,7 +70,6 @@ import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
 import com.makd.afinity.ui.music.components.LastFmAttribution
-import com.makd.afinity.ui.music.components.MusicDetailActionRow
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
 import com.makd.afinity.ui.music.library.startMusicService
@@ -115,7 +115,7 @@ fun MusicAlbumScreen(
             ?: uiState.tracks.firstOrNull()?.images?.primary?.toString()
 
     val actionButtonsContent: @Composable () -> Unit = {
-        MusicDetailActionRow(
+        DetailActionRow(
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
             playbackEnabled = uiState.tracks.isNotEmpty(),
             onShuffle = {
@@ -296,10 +296,18 @@ fun MusicAlbumScreen(
             }
         }
 
-        actionButtonsContent()
+        if (!isLandscape) actionButtonsContent()
     }
 
     val albumItems: LazyListScope.() -> Unit = {
+        if (isLandscape) {
+            item(key = "actions") {
+                Box(modifier = Modifier.padding(horizontal = DetailGutter)) {
+                    actionButtonsContent()
+                }
+            }
+        }
+
         item { albumInfoContent() }
 
         val discGroups = uiState.tracks.groupBy { it.discNumber ?: 1 }.toSortedMap()

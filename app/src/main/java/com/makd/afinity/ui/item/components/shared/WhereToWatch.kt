@@ -46,6 +46,7 @@ import com.makd.afinity.data.models.tmdb.TmdbRegionProviders
 import com.makd.afinity.data.models.tmdb.TmdbWatchProvider
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import java.util.Locale
 import timber.log.Timber
@@ -329,7 +330,7 @@ private fun WhereToWatchSheet(
             Column {
                 Text(
                     text = stringResource(R.string.where_to_watch_title),
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    style = afinitySectionTitleStyle(),
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(

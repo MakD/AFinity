@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.MusicFilters
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.DetailActionRow
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.music.library.MusicSortField
 
@@ -94,7 +95,7 @@ fun TracksHeaderPanel(
                             verticalAlignment = Alignment.CenterVertically,
                             content = leadingActions,
                         )
-                        MusicDetailActionRow(
+                        DetailActionRow(
                             onShuffle = onShuffleAll,
                             onPlay = onPlayAll,
                             leadingActions = {},
@@ -117,7 +118,7 @@ fun TracksHeaderPanel(
                         centered = true,
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     )
-                    MusicDetailActionRow(
+                    DetailActionRow(
                         onShuffle = onShuffleAll,
                         onPlay = onPlayAll,
                         modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp),

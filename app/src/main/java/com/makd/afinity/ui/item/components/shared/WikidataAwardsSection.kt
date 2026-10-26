@@ -45,6 +45,7 @@ import com.makd.afinity.data.models.wikidata.AwardResult
 import com.makd.afinity.data.models.wikidata.WikidataAward
 import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 
 val AwardGold = Color(0xFFD4AF37)
@@ -220,7 +221,7 @@ private fun AwardsOpenList(
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             text = stringResource(R.string.section_awards),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            style = afinitySectionTitleStyle(),
             color = MaterialTheme.colorScheme.onBackground,
         )
 

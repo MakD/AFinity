@@ -66,6 +66,7 @@ import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.BackdropStyle
+import com.makd.afinity.ui.components.DetailActionRow
 import com.makd.afinity.ui.components.DetailGutter
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.ImageHeroKind
@@ -73,6 +74,7 @@ import com.makd.afinity.ui.components.LandscapeDetailArrangement
 import com.makd.afinity.ui.components.LandscapeDetailLayout
 import com.makd.afinity.ui.components.PortraitDetailLayout
 import com.makd.afinity.ui.components.PortraitHero
+import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.backdropChainOf
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
@@ -82,7 +84,6 @@ import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
 import com.makd.afinity.ui.music.components.LastFmAttribution
 import com.makd.afinity.ui.music.components.MusicAlbumCard
-import com.makd.afinity.ui.music.components.MusicDetailActionRow
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
 import com.makd.afinity.ui.music.library.startMusicService
@@ -127,39 +128,9 @@ fun MusicArtistScreen(
         return
     }
 
-    val artistHeader: @Composable ColumnScope.() -> Unit = {
-        val logoUrl = uiState.artist?.images?.logo?.toString()
-        if (logoUrl != null) {
-            val logoWidth = (LocalConfiguration.current.screenWidthDp * 0.8f).dp
-            AsyncImage(
-                imageUrl = logoUrl,
-                contentDescription = uiState.artist?.name,
-                blurHash = null,
-                modifier =
-                    Modifier.fillMaxWidth(0.8f).height(120.dp).align(Alignment.CenterHorizontally),
-                contentScale = ContentScale.Fit,
-                alignment = Alignment.Center,
-                targetWidth = logoWidth,
-                targetHeight = 120.dp,
-            )
-        } else {
-            Text(
-                text = uiState.artist?.name ?: "",
-                style =
-                    MaterialTheme.typography.headlineLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 32.sp,
-                    ),
-                color = MaterialTheme.colorScheme.onBackground,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-
-        MusicDetailActionRow(
-            modifier = Modifier.fillMaxWidth(),
+    val artistActionRow: @Composable () -> Unit = {
+        DetailActionRow(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
             playbackEnabled = uiState.topTracks.isNotEmpty(),
             onShuffle = {
                 startMusicService(context)
@@ -222,6 +193,40 @@ fun MusicArtistScreen(
                 }
             }
         }
+    }
+
+    val artistHeader: @Composable ColumnScope.() -> Unit = {
+        val logoUrl = uiState.artist?.images?.logo?.toString()
+        if (logoUrl != null) {
+            val logoWidth = (LocalConfiguration.current.screenWidthDp * 0.8f).dp
+            AsyncImage(
+                imageUrl = logoUrl,
+                contentDescription = uiState.artist?.name,
+                blurHash = null,
+                modifier =
+                    Modifier.fillMaxWidth(0.8f).height(120.dp).align(Alignment.CenterHorizontally),
+                contentScale = ContentScale.Fit,
+                alignment = Alignment.Center,
+                targetWidth = logoWidth,
+                targetHeight = 120.dp,
+            )
+        } else {
+            Text(
+                text = uiState.artist?.name ?: "",
+                style =
+                    MaterialTheme.typography.headlineLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 32.sp,
+                    ),
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        if (!isLandscape) artistActionRow()
 
         val overview = uiState.artist?.overview
         if (!overview.isNullOrBlank()) {
@@ -249,6 +254,12 @@ fun MusicArtistScreen(
     }
 
     val artistItems: LazyListScope.() -> Unit = {
+        if (isLandscape) {
+            item(key = "actions") {
+                Box(modifier = Modifier.padding(horizontal = DetailGutter)) { artistActionRow() }
+            }
+        }
+
         if (uiState.topTracks.isNotEmpty()) {
             val fixedTracks = uiState.topTracks.take(5)
             val extraTracks = uiState.topTracks.drop(5)
@@ -257,7 +268,7 @@ fun MusicArtistScreen(
             item(key = "popular_header") {
                 Text(
                     text = stringResource(R.string.music_section_popular),
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    style = afinitySectionTitleStyle(),
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(start = DetailGutter, top = 24.dp, bottom = 12.dp),
                 )
@@ -429,7 +440,7 @@ fun MusicArtistScreen(
             item(key = "albums_section") {
                 Text(
                     text = stringResource(R.string.music_section_albums),
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    style = afinitySectionTitleStyle(),
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(start = DetailGutter, top = 32.dp, bottom = 16.dp),
                 )
@@ -453,7 +464,7 @@ fun MusicArtistScreen(
             item(key = "appears_on_section") {
                 Text(
                     text = stringResource(R.string.music_section_appears_on),
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    style = afinitySectionTitleStyle(),
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(start = DetailGutter, top = 32.dp, bottom = 16.dp),
                 )

@@ -92,6 +92,7 @@ import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.LibraryShortcutCard
 import com.makd.afinity.ui.components.LibraryShortcutsRow
 import com.makd.afinity.ui.components.SectionRowHeader
+import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.focalAlpha
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.home.components.ArtistAlbumsCarousel
@@ -874,7 +875,7 @@ private fun MadeForYouCarousel(
     Column(modifier = modifier) {
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            style = afinitySectionTitleStyle(),
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(start = 14.dp, bottom = 12.dp),
         )
@@ -1113,7 +1114,7 @@ internal fun MusicArtistsRow(
         } else {
             Text(
                 text = title,
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                style = afinitySectionTitleStyle(),
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(start = horizontalPadding, bottom = 12.dp),
             )
@@ -1151,7 +1152,7 @@ fun CompactTrackGridSection(
     Column(modifier = modifier) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            style = afinitySectionTitleStyle(),
             modifier = Modifier.padding(start = 14.dp, bottom = 12.dp),
         )
         LazyHorizontalGrid(

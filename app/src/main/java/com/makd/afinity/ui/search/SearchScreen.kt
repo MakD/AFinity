@@ -109,6 +109,7 @@ import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.MetadataOverflowRow
 import com.makd.afinity.ui.components.RequestConfirmationDialog
+import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.library.startMusicService
@@ -761,7 +762,7 @@ private fun SearchHomeContent(
     ) {
         Text(
             text = stringResource(R.string.explore_genres),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            style = afinitySectionTitleStyle(),
             color = MaterialTheme.colorScheme.onBackground,
         )
 

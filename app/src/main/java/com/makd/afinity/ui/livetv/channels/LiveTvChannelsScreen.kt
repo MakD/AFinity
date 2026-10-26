@@ -37,7 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -55,6 +54,7 @@ import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.FilterFab
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.livetv.components.ChannelCard
 import com.makd.afinity.ui.livetv.components.LiveTvFilterDialog
 import com.makd.afinity.ui.main.MainUiState
@@ -229,10 +229,7 @@ private fun LiveTvChannelsContent(
                                                 selectedLetter,
                                             )
                                         else stringResource(R.string.livetv_header_all),
-                                    style =
-                                        MaterialTheme.typography.headlineSmall.copy(
-                                            fontWeight = FontWeight.Bold
-                                        ),
+                                    style = afinitySectionTitleStyle(),
                                     color = MaterialTheme.colorScheme.onBackground,
                                 )
                                 Text(

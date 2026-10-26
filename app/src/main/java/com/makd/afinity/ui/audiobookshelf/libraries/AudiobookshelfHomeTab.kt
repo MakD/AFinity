@@ -27,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
@@ -40,6 +39,7 @@ import com.makd.afinity.ui.audiobookshelf.libraries.components.SeriesShelfCard
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.LibraryShortcutCard
 import com.makd.afinity.ui.components.LibraryShortcutsRow
+import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
@@ -142,10 +142,7 @@ fun AudiobookshelfHomeTab(
                                     } else {
                                         section.label
                                     },
-                                style =
-                                    MaterialTheme.typography.headlineSmall.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
+                                style = afinitySectionTitleStyle(),
                                 color = MaterialTheme.colorScheme.onBackground,
                                 modifier = Modifier.padding(bottom = 16.dp),
                             )

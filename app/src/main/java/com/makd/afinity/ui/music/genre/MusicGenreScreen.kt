@@ -46,7 +46,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -60,6 +59,7 @@ import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.BackdropStyle
+import com.makd.afinity.ui.components.DetailActionRow
 import com.makd.afinity.ui.components.DetailCoverSize
 import com.makd.afinity.ui.components.DetailCoverTitle
 import com.makd.afinity.ui.components.DetailGutter
@@ -68,11 +68,11 @@ import com.makd.afinity.ui.components.LandscapeDetailArrangement
 import com.makd.afinity.ui.components.LandscapeDetailLayout
 import com.makd.afinity.ui.components.PortraitDetailLayout
 import com.makd.afinity.ui.components.PortraitHero
+import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.backdropChainOf
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.music.components.MusicArtistCard
-import com.makd.afinity.ui.music.components.MusicDetailActionRow
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
 import com.makd.afinity.ui.music.library.startMusicService
@@ -111,7 +111,7 @@ fun MusicGenreScreen(
     }
 
     val actionRow: @Composable () -> Unit = {
-        MusicDetailActionRow(
+        DetailActionRow(
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
             playbackEnabled = uiState.tracks.isNotEmpty(),
             onShuffle = {
@@ -173,15 +173,21 @@ fun MusicGenreScreen(
 
         DetailCoverTitle(title = viewModel.genreName)
 
-        actionRow()
+        if (!isLandscape) actionRow()
     }
 
     val genreItems: LazyListScope.() -> Unit = {
+        if (isLandscape) {
+            item(key = "actions") {
+                Box(modifier = Modifier.padding(horizontal = DetailGutter)) { actionRow() }
+            }
+        }
+
         if (uiState.artists.isNotEmpty()) {
             item {
                 Text(
                     text = stringResource(R.string.music_tab_artists),
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    style = afinitySectionTitleStyle(),
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(start = DetailGutter, top = 24.dp, bottom = 12.dp),
                 )
@@ -206,7 +212,7 @@ fun MusicGenreScreen(
             item {
                 Text(
                     text = stringResource(R.string.music_section_albums),
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    style = afinitySectionTitleStyle(),
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(start = DetailGutter, top = 32.dp, bottom = 16.dp),
                 )
@@ -230,7 +236,7 @@ fun MusicGenreScreen(
             item {
                 Text(
                     text = stringResource(R.string.music_section_recently_added),
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    style = afinitySectionTitleStyle(),
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(start = DetailGutter, top = 32.dp, bottom = 16.dp),
                 )
@@ -362,7 +368,7 @@ private fun GenreTracksSection(
 
     Text(
         text = stringResource(R.string.music_section_popular),
-        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+        style = afinitySectionTitleStyle(),
         color = MaterialTheme.colorScheme.onBackground,
         modifier = Modifier.padding(start = DetailGutter, top = 24.dp, bottom = 12.dp),
     )

@@ -218,7 +218,7 @@ fun HomeScreen(
                     if (onMenuClick == null && widthSizeClass == WindowWidthSizeClass.Compact) {
                         Box(
                             modifier =
-                                Modifier.size(42.dp)
+                                Modifier.size(36.dp)
                                     .background(Color.Black.copy(alpha = 0.3f), CircleShape)
                                     .clip(CircleShape),
                             contentAlignment = Alignment.Center,
@@ -226,7 +226,7 @@ fun HomeScreen(
                             Image(
                                 painter = painterResource(id = ic_launcher_monochrome),
                                 contentDescription = stringResource(R.string.cd_app_logo),
-                                modifier = Modifier.size(60.dp).fillMaxSize(),
+                                modifier = Modifier.size(52.dp).fillMaxSize(),
                                 colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
                                 contentScale = ContentScale.Fit,
                             )

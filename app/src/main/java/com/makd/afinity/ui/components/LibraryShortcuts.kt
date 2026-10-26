@@ -46,7 +46,7 @@ fun LibraryShortcutsRow(
     Column(modifier = modifier) {
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            style = afinitySectionTitleStyle(),
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(start = 14.dp, bottom = 12.dp),
         )

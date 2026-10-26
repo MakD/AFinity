@@ -1,4 +1,4 @@
-package com.makd.afinity.ui.music.components
+package com.makd.afinity.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,10 +24,10 @@ import com.makd.afinity.ui.preview.PreviewHost
 import com.makd.afinity.ui.preview.WidthPreviews
 
 @Composable
-fun MusicDetailActionRow(
-    onShuffle: () -> Unit,
+fun DetailActionRow(
     onPlay: () -> Unit,
     modifier: Modifier = Modifier,
+    onShuffle: (() -> Unit)? = null,
     playbackEnabled: Boolean = true,
     leadingActions: @Composable RowScope.() -> Unit,
 ) {
@@ -47,15 +47,17 @@ fun MusicDetailActionRow(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(end = 8.dp),
         ) {
-            IconButton(onClick = onShuffle, enabled = playbackEnabled) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_arrows_shuffle),
-                    contentDescription = stringResource(R.string.cd_music_shuffle),
-                    tint =
-                        if (playbackEnabled) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
-                    modifier = Modifier.size(28.dp),
-                )
+            if (onShuffle != null) {
+                IconButton(onClick = onShuffle, enabled = playbackEnabled) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_arrows_shuffle),
+                        contentDescription = stringResource(R.string.cd_music_shuffle),
+                        tint =
+                            if (playbackEnabled) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
             }
 
             FloatingActionButton(
@@ -92,11 +94,11 @@ private fun PreviewActionIcon(iconRes: Int) {
 }
 
 @Composable
-private fun MusicDetailActionRowPreviewContent() {
+private fun DetailActionRowPreviewContent() {
     PreviewHost {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf(5, 4, 3).forEach { count ->
-                MusicDetailActionRow(
+                DetailActionRow(
                     onShuffle = {},
                     onPlay = {},
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
@@ -118,12 +120,12 @@ private fun MusicDetailActionRowPreviewContent() {
 
 @WidthPreviews
 @Composable
-private fun MusicDetailActionRowWidthPreview() {
-    MusicDetailActionRowPreviewContent()
+private fun DetailActionRowWidthPreview() {
+    DetailActionRowPreviewContent()
 }
 
 @FontScalePreviews
 @Composable
-private fun MusicDetailActionRowFontScalePreview() {
-    MusicDetailActionRowPreviewContent()
+private fun DetailActionRowFontScalePreview() {
+    DetailActionRowPreviewContent()
 }

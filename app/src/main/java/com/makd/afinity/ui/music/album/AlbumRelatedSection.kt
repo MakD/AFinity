@@ -21,12 +21,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.ui.components.DetailGutter
+import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.theme.CardDimensions
 
@@ -61,7 +61,7 @@ fun AlbumRelatedSection(
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                style = afinitySectionTitleStyle(),
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

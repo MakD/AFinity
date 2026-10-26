@@ -54,6 +54,7 @@ import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.ui.audiobookshelf.item.components.AbsSectionTitle
 import com.makd.afinity.ui.audiobookshelf.item.components.AuthorCard
 import com.makd.afinity.ui.audiobookshelf.item.components.IncludedInSeriesSection
+import com.makd.afinity.ui.audiobookshelf.item.components.ItemActionRow
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemDetailsSection
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeaderContent
 import com.makd.afinity.ui.audiobookshelf.item.components.ListExpandButton
@@ -64,6 +65,7 @@ import com.makd.afinity.ui.audiobookshelf.item.components.RecommendationRowSecti
 import com.makd.afinity.ui.audiobookshelf.item.components.chapterWindowItems
 import com.makd.afinity.ui.audiobookshelf.item.components.episodeListItems
 import com.makd.afinity.ui.audiobookshelf.item.components.formatListenTime
+import com.makd.afinity.ui.audiobookshelf.item.components.hasItemActions
 import com.makd.afinity.ui.audiobookshelf.withAbsWidth
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityScreenMode
@@ -433,9 +435,45 @@ fun AudiobookshelfItemScreen(
                                         if (!isPodcast) ({ viewModel.toggleItemFinished() })
                                         else null,
                                     toggleFinishedEnabled = !isThisItemPlaying,
+                                    showActions = false,
                                 )
                             },
-                            items = { detailBody() },
+                            items = {
+                                val headerOnDownload =
+                                    if (!isPodcast && canDownload) ({ viewModel.startDownload() })
+                                    else null
+                                val headerOnToggleFinished =
+                                    if (!isPodcast) ({ viewModel.toggleItemFinished() }) else null
+                                if (
+                                    hasItemActions(
+                                        currentItem,
+                                        onPlay,
+                                        headerOnToggleFinished,
+                                        headerOnDownload,
+                                    )
+                                ) {
+                                    item(key = "actions") {
+                                        ItemActionRow(
+                                            item = currentItem,
+                                            progress = progress,
+                                            coverUrl = coverUrl,
+                                            onPlay = onPlay,
+                                            modifier = Modifier.padding(horizontal = DetailGutter),
+                                            downloadInfo = if (!isPodcast) downloadInfo else null,
+                                            onDownload = headerOnDownload,
+                                            onCancelDownload =
+                                                if (!isPodcast) ({ viewModel.cancelDownload() })
+                                                else null,
+                                            onDeleteDownload =
+                                                if (!isPodcast) ({ viewModel.deleteDownload() })
+                                                else null,
+                                            onToggleFinished = headerOnToggleFinished,
+                                            toggleFinishedEnabled = !isThisItemPlaying,
+                                        )
+                                    }
+                                }
+                                detailBody()
+                            },
                         )
                     } else {
                         PortraitDetailLayout(

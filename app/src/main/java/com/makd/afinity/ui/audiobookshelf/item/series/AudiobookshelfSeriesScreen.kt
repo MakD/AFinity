@@ -50,6 +50,7 @@ import com.makd.afinity.ui.components.LandscapeDetailArrangement
 import com.makd.afinity.ui.components.LandscapeDetailLayout
 import com.makd.afinity.ui.components.PortraitDetailLayout
 import com.makd.afinity.ui.components.PortraitHero
+import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.backdropChainOf
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
@@ -180,8 +181,7 @@ fun AudiobookshelfSeriesScreen(
 private fun BooksSectionTitle() {
     Text(
         text = stringResource(R.string.abs_books),
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
+        style = afinitySectionTitleStyle(),
         modifier = Modifier.padding(start = DetailGutter, top = 24.dp, bottom = 8.dp),
     )
 }

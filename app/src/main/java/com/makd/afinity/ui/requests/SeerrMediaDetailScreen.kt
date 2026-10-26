@@ -77,6 +77,7 @@ import com.makd.afinity.ui.components.PortraitDetailLayout
 import com.makd.afinity.ui.components.PortraitHero
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.SeparatedFlowRow
+import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.backdropChainOf
 import com.makd.afinity.ui.components.getAutoFlagUrl
 import com.makd.afinity.ui.components.isLandscapeWindow
@@ -426,7 +427,7 @@ private fun SeerrCastSection(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             text = stringResource(R.string.cast_section_title),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            style = afinitySectionTitleStyle(),
             color = MaterialTheme.colorScheme.onBackground,
         )
 
@@ -993,7 +994,7 @@ private fun SeerrRatingsSection(
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
             text = stringResource(R.string.seerr_ratings),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            style = afinitySectionTitleStyle(),
             color = MaterialTheme.colorScheme.onBackground,
         )
 
@@ -1161,7 +1162,7 @@ private fun SeerrDetailsCard(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             text = stringResource(R.string.seerr_details_title),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            style = afinitySectionTitleStyle(),
             color = MaterialTheme.colorScheme.onBackground,
         )
 

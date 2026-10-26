@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -26,7 +26,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.ui.item.components.shared.LandscapeDetailTheme
 
@@ -117,7 +122,10 @@ private fun LandscapeDetailBody(
                     content = items,
                 )
 
-            LandscapeDetailArrangement.Split ->
+            LandscapeDetailArrangement.Split -> {
+                val panelColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                val statusBars = WindowInsets.statusBars
+                val endInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.End)
                 Row(modifier = viewport) {
                     Column(
                         modifier =
@@ -138,12 +146,13 @@ private fun LandscapeDetailBody(
                         modifier =
                             Modifier.weight(1f)
                                 .fillMaxHeight()
-                                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
+                                .panelToEdges(panelColor, statusBars, endInsets),
                         contentPadding = PaddingValues(top = top, bottom = bottom),
                         verticalArrangement = listVerticalArrangement,
                         content = items,
                     )
                 }
+            }
 
             is LandscapeDetailArrangement.Sidebar ->
                 Row(
@@ -169,4 +178,15 @@ private fun LandscapeDetailBody(
                 }
         }
     }
+}
+
+private fun Modifier.panelToEdges(color: Color, top: WindowInsets, end: WindowInsets) = drawBehind {
+    val topPx = top.getTop(this).toFloat()
+    val endPx = (end.getLeft(this, layoutDirection) + end.getRight(this, layoutDirection)).toFloat()
+    val left = if (layoutDirection == LayoutDirection.Ltr) 0f else -endPx
+    drawRect(
+        color = color,
+        topLeft = Offset(left, -topPx),
+        size = Size(size.width + endPx, size.height + topPx),
+    )
 }

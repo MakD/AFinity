@@ -15,11 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.afinitySectionTitleStyle
 
 @Composable
 fun HomeSectionHeader(
@@ -47,7 +47,7 @@ fun HomeSectionHeader(
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            style = afinitySectionTitleStyle(),
             color = MaterialTheme.colorScheme.onBackground,
             maxLines = if (onViewAllClick != null) 1 else Int.MAX_VALUE,
             overflow = if (onViewAllClick != null) TextOverflow.Ellipsis else TextOverflow.Clip,
