@@ -74,8 +74,6 @@ import com.makd.afinity.ui.audiobookshelf.item.ListeningSummary
 import com.makd.afinity.ui.audiobookshelf.item.RecommendationRow
 import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
 import com.makd.afinity.ui.components.AsyncImage
-import com.makd.afinity.ui.components.CardRowContentPadding
-import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
 import com.makd.afinity.ui.item.components.shared.OverviewSection
 import com.makd.afinity.ui.theme.CardDimensions
@@ -158,9 +156,8 @@ fun NarratorsSection(narrators: List<String>, modifier: Modifier = Modifier) {
             trailing = narrators.size.takeIf { it > 1 }?.toString(),
         )
         LazyRow(
-            modifier = Modifier.cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = CardRowContentPadding,
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             itemsIndexed(narrators, key = { index, name -> "${index}_$name" }) { _, name ->
                 Column(
@@ -474,8 +471,8 @@ fun RecommendationRowSection(
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         DetailSectionTitle(text = title)
         LazyRow(
-            modifier = Modifier.height(rowHeight).cardRowBleed(),
-            contentPadding = CardRowContentPadding,
+            modifier = Modifier.height(rowHeight),
+            contentPadding = PaddingValues(horizontal = 0.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(items = row.items, key = { it.collapsedSeries?.id ?: it.id }) { entry ->

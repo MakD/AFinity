@@ -67,7 +67,6 @@ import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.BackdropStyle
-import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.CircleFlagIcon
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
@@ -80,7 +79,6 @@ import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.SeparatedFlowRow
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.backdropChainOf
-import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.components.getAutoFlagUrl
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.theme.CardDimensions
@@ -454,11 +452,7 @@ private fun SeerrCastSection(
             color = MaterialTheme.colorScheme.onBackground,
         )
 
-        LazyRow(
-            modifier = Modifier.cardRowBleed(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = CardRowContentPadding,
-        ) {
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(cast.take(15), key = { it.id }) { member ->
                 Column(
                     modifier =
@@ -1027,8 +1021,7 @@ private fun SeerrRatingsSection(
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxWidth().cardRowBleed(),
-            contentPadding = CardRowContentPadding,
+            modifier = Modifier.fillMaxWidth(),
         ) {
             imdbScore?.let {
                 item {

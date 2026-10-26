@@ -72,15 +72,12 @@ import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.AsyncImage
-import com.makd.afinity.ui.components.CardRowContainer
-import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.MediaRowSection
 import com.makd.afinity.ui.components.SectionRowHeader
-import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.home.components.MusicAlbumRowSection
 import com.makd.afinity.ui.home.components.MusicPlaylistRowSection
 import com.makd.afinity.ui.main.MainUiState
@@ -155,10 +152,7 @@ fun FavoritesScreen(
         },
         modifier = modifier,
     ) { paddingValues ->
-        CardRowContainer(
-            modifier = Modifier.fillMaxSize().padding(paddingValues),
-            gutter = 16.dp,
-        ) {
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             when {
                 uiState.isLoading -> FullScreenLoading()
 
@@ -413,9 +407,8 @@ private fun FavoritePeopleSection(
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SectionRowHeader(title = title, onViewAllClick = onViewAllClick)
         LazyRow(
-            modifier = Modifier.cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = CardRowContentPadding,
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(people, key = { it.id.toString() }) { person ->
                 FavoritePersonCard(
@@ -477,9 +470,8 @@ private fun FavoriteChannelsSection(
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SectionRowHeader(title = title, onViewAllClick = onViewAllClick)
         LazyRow(
-            modifier = Modifier.cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = CardRowContentPadding,
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(channels, key = { it.id.toString() }) { channel ->
                 FavoriteChannelCard(
@@ -563,9 +555,8 @@ private fun FavoriteTracksSection(
             onViewAllClick = onViewAllClick,
         )
         LazyRow(
-            modifier = Modifier.cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = CardRowContentPadding,
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(tracks, key = { it.id }) { track ->
                 FavoriteTrackCard(

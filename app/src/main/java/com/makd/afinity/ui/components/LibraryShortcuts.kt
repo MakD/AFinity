@@ -51,8 +51,8 @@ fun LibraryShortcutsRow(
             modifier = Modifier.padding(start = CardDimensions.RowGutter, bottom = 12.dp),
         )
         LazyRow(
+            modifier = Modifier.padding(horizontal = CardDimensions.RowGutter),
             horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-            contentPadding = CardRowContentPadding,
             content = content,
         )
     }

@@ -7,84 +7,29 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.common.CardSize
+import kotlin.math.roundToInt
 
 val LocalCardSize = compositionLocalOf { CardSize.DEFAULT }
 
-val LocalCardContainerWidthPx = compositionLocalOf { -1 }
-
-val LocalCardRowGutter = compositionLocalOf { CardDimensions.RowGutter }
-
-private const val PEEK_FRACTION = 0.25f
-private const val GRID_CONTAINER_FRACTION = 0.7f
-
-private val PosterLadder = intArrayOf(2, 3, 4, 6, 8, 12)
-private val LandscapeLadder = intArrayOf(1, 2, 3, 4, 6, 8)
-
-private enum class CardTrack(val ladder: IntArray) {
-    POSTER(PosterLadder),
-    LANDSCAPE(LandscapeLadder),
-}
-
-private fun peekedPosterWidthPx(spanPx: Float, marginPx: Float, gapPx: Float, count: Int): Float =
-    (spanPx - marginPx - gapPx * count) / (count + PEEK_FRACTION)
-
-private fun Density.ladderIndex(spanPx: Float, step: Int): Int {
-    val marginPx = CardDimensions.RowGutter.toPx()
-    val gapPx = CardDimensions.RowGap.toPx()
-    val minPosterPx = CardDimensions.MinPosterWidth.toPx()
-    val defaultIndex =
-        PosterLadder.indices.lastOrNull { index ->
-            peekedPosterWidthPx(spanPx, marginPx, gapPx, PosterLadder[index]) >= minPosterPx
-        } ?: 0
-    return (defaultIndex + step).coerceIn(0, PosterLadder.lastIndex)
-}
-
-private fun Density.rowCardWidthPx(spanPx: Float, step: Int, track: CardTrack): Float {
-    val gapPx = CardDimensions.RowGap.toPx()
-    val index = ladderIndex(spanPx, step)
-    val posters = PosterLadder[index]
-    val posterPx = peekedPosterWidthPx(spanPx, CardDimensions.RowGutter.toPx(), gapPx, posters)
-    return when (track) {
-        CardTrack.POSTER -> posterPx
-        CardTrack.LANDSCAPE -> {
-            val areaPx = posterPx * posters + gapPx * (posters - 1)
-            val count = LandscapeLadder[index]
-            (areaPx - gapPx * (count - 1)) / count
-        }
-    }
-}
-
-private fun gridCellSizes(availableSize: Int, spacing: Int, count: Int): List<Int> {
-    val cellsSize = availableSize - spacing * (count - 1)
-    val cellSize = cellsSize / count
-    val remainder = cellsSize % count
-    return List(count) { index -> cellSize + if (index < remainder) 1 else 0 }
-}
-
-private data class LadderGridCells(val track: CardTrack, val step: Int, val containerPx: Int) :
-    GridCells {
+private data class NearestCardCells(val cardWidth: Dp) : GridCells {
     override fun Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): List<Int> {
-        val spansContainer =
-            availableSize <= containerPx && availableSize >= containerPx * GRID_CONTAINER_FRACTION
-        val spanPx =
-            if (spansContainer) containerPx.toFloat()
-            else availableSize + CardDimensions.RowGutter.toPx() * 2
-        val count = track.ladder[ladderIndex(spanPx, step)]
-        return gridCellSizes(availableSize, spacing, count)
-    }
-}
-
-private data class ShiftedAdaptiveCells(val minSize: Dp, val columnDelta: Int) : GridCells {
-    override fun Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): List<Int> {
-        val baseCount = maxOf((availableSize + spacing) / (minSize.roundToPx() + spacing), 1)
-        return gridCellSizes(availableSize, spacing, maxOf(baseCount + columnDelta, 1))
+        val count =
+            ((availableSize + spacing).toFloat() / (cardWidth.roundToPx() + spacing))
+                .roundToInt()
+                .coerceAtLeast(1)
+        val cellsSize = availableSize - spacing * (count - 1)
+        val cellSize = cellsSize / count
+        val remainder = cellsSize % count
+        return List(count) { index -> cellSize + if (index < remainder) 1 else 0 }
     }
 }
 
@@ -98,15 +43,20 @@ object CardDimensions {
 
     private const val LANDSCAPE_HEIGHT_FRACTION = 0.4f
     private const val SQUARE_CAROUSEL_WIDTH_FRACTION = 0.48f
-    private const val SPLIT_PANE_FRACTION = 0.5f
     private const val RANKED_NUMBER_ZONE_FRACTION = 0.5f
     private const val RANKED_DIGIT_HEIGHT_FRACTION = 0.7f
+    private const val LANDSCAPE_POSTER_SPAN = 5
+    private const val LANDSCAPE_CARD_SPAN = 3
 
     val RowGutter = 16.dp
     val RowGap = 12.dp
-    val MinPosterWidth = 90.dp
 
     val CardTextSpacing = 8.dp
+
+    private val PosterWidthMin = 140.dp
+    private val PosterWidthMax = 180.dp
+    private val PosterGrowthStart = 411.dp
+    private val PosterGrowthEnd = 1200.dp
 
     private val MetadataLineSlack = 6.dp
     private val SubtitleLineSlack = 2.dp
@@ -123,94 +73,41 @@ object CardDimensions {
     const val REVIEW_CARD_BODY_LINES = 5
 
     private object Values {
-        val PortraitCompact = 140.dp
-        val PortraitMedium = 150.dp
-        val PortraitExpanded = 180.dp
-
-        val LandscapeCompact = 240.dp
-        val LandscapeMedium = 260.dp
-        val LandscapeExpanded = 320.dp
-
-        val GridCompact = 140.dp
-        val GridMedium = 160.dp
-        val GridExpanded = 180.dp
-
         val SpotlightCompact = 230.dp
         val SpotlightMedium = 270.dp
         val SpotlightExpanded = 330.dp
-
-        val MusicCard = 140.dp
 
         val DownloadGrid = 110.dp
     }
 
     data class CarouselItemSize(val width: Dp, val height: Dp)
 
-    private fun basePortraitWidth(widthSizeClass: WindowWidthSizeClass): Dp =
-        when (widthSizeClass) {
-            WindowWidthSizeClass.Compact -> Values.PortraitCompact
-            WindowWidthSizeClass.Medium -> Values.PortraitMedium
-            WindowWidthSizeClass.Expanded -> Values.PortraitExpanded
-            else -> Values.PortraitCompact
-        }
+    @Composable
+    @ReadOnlyComposable
+    private fun defaultPosterWidth(): Dp {
+        val windowWidth =
+            with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
+        val growth =
+            ((windowWidth - PosterGrowthStart) / (PosterGrowthEnd - PosterGrowthStart)).coerceIn(
+                0f,
+                1f,
+            )
+        return lerp(PosterWidthMin, PosterWidthMax, growth)
+    }
 
-    private fun baseLandscapeWidth(widthSizeClass: WindowWidthSizeClass): Dp =
-        when (widthSizeClass) {
-            WindowWidthSizeClass.Compact -> Values.LandscapeCompact
-            WindowWidthSizeClass.Medium -> Values.LandscapeMedium
-            WindowWidthSizeClass.Expanded -> Values.LandscapeExpanded
-            else -> Values.LandscapeCompact
-        }
-
-    private fun baseGridMinSize(widthSizeClass: WindowWidthSizeClass): Dp =
-        when (widthSizeClass) {
-            WindowWidthSizeClass.Compact -> Values.GridCompact
-            WindowWidthSizeClass.Medium -> Values.GridMedium
-            WindowWidthSizeClass.Expanded -> Values.GridExpanded
-            else -> Values.GridCompact
-        }
+    private fun landscapeWidthFor(posterWidth: Dp): Dp =
+        (posterWidth * LANDSCAPE_POSTER_SPAN +
+            RowGap * (LANDSCAPE_POSTER_SPAN - LANDSCAPE_CARD_SPAN)) / LANDSCAPE_CARD_SPAN
 
     @Composable
     @ReadOnlyComposable
     private fun Dp.cardScaled(): Dp = this * LocalCardSize.current.scale
 
-    @Composable
-    @ReadOnlyComposable
-    private fun cardSizeStep(): Int = LocalCardSize.current.ladderStep
-
-    @Composable
-    @ReadOnlyComposable
-    private fun ladderGridCells(track: CardTrack, step: Int = cardSizeStep()): GridCells =
-        LadderGridCells(track, step, LocalCardContainerWidthPx.current)
-
-    @Composable
-    @ReadOnlyComposable
-    private fun rowCardWidth(
-        track: CardTrack,
-        gutter: Dp? = null,
-        containerFraction: Float = 1f,
-    ): Dp {
-        val containerPx = LocalCardContainerWidthPx.current * containerFraction
-        val fallback =
-            when (track) {
-                CardTrack.POSTER -> Values.PortraitCompact
-                CardTrack.LANDSCAPE -> Values.LandscapeCompact
-            }
-        if (containerPx <= 0f) return fallback.cardScaled()
-        val rowGutter = gutter ?: LocalCardRowGutter.current
-        val step = cardSizeStep()
-        return with(LocalDensity.current) {
-            val spanPx = containerPx + (RowGutter - rowGutter).toPx() * 2
-            val widthPx = rowCardWidthPx(spanPx, step, track)
-            if (widthPx < 1f) fallback.cardScaled() else widthPx.toInt().toDp()
-        }
-    }
-
     val posterCardWidth: Dp
-        @Composable @ReadOnlyComposable get() = rowCardWidth(CardTrack.POSTER)
+        @Composable @ReadOnlyComposable get() = defaultPosterWidth().cardScaled()
 
     val landscapeCardWidth: Dp
-        @Composable @ReadOnlyComposable get() = rowCardWidth(CardTrack.LANDSCAPE)
+        @Composable @ReadOnlyComposable get() = landscapeWidthFor(posterCardWidth)
 
     val WindowWidthSizeClass.portraitWidth: Dp
         @Composable @ReadOnlyComposable get() = posterCardWidth
@@ -219,53 +116,37 @@ object CardDimensions {
         @Composable @ReadOnlyComposable get() = landscapeCardWidth
 
     val WindowWidthSizeClass.gridMinSize: Dp
-        @Composable @ReadOnlyComposable get() = baseGridMinSize(this).cardScaled()
+        @Composable @ReadOnlyComposable get() = posterCardWidth
 
     val WindowWidthSizeClass.scaledPortraitWidth: Dp
-        @Composable @ReadOnlyComposable get() = basePortraitWidth(this).cardScaled()
+        @Composable @ReadOnlyComposable get() = posterCardWidth
 
     val WindowWidthSizeClass.scaledLandscapeWidth: Dp
-        @Composable @ReadOnlyComposable get() = baseLandscapeWidth(this).cardScaled()
+        @Composable @ReadOnlyComposable get() = landscapeCardWidth
 
     val scaledMusicCardWidth: Dp
-        @Composable @ReadOnlyComposable get() = Values.MusicCard.cardScaled()
+        @Composable @ReadOnlyComposable get() = posterCardWidth
 
     val squareCarouselWidthFraction: Float
         @Composable
         @ReadOnlyComposable
         get() = SQUARE_CAROUSEL_WIDTH_FRACTION * LocalCardSize.current.scale
 
-    @Composable
-    @ReadOnlyComposable
-    fun portraitRowWidth(gutter: Dp? = null): Dp = rowCardWidth(CardTrack.POSTER, gutter)
-
-    @Composable
-    @ReadOnlyComposable
-    fun landscapeRowWidth(gutter: Dp? = null): Dp = rowCardWidth(CardTrack.LANDSCAPE, gutter)
-
-    @Composable
-    @ReadOnlyComposable
-    fun musicDetailCardWidth(splitPane: Boolean = false): Dp =
-        rowCardWidth(
-            CardTrack.POSTER,
-            containerFraction = if (splitPane) SPLIT_PANE_FRACTION else 1f,
-        )
-
     fun rankedNumberZone(posterWidth: Dp): Dp = (posterWidth + RowGap) * RANKED_NUMBER_ZONE_FRACTION
 
     fun rankedDigitHeight(cardHeight: Dp): Dp = cardHeight * RANKED_DIGIT_HEIGHT_FRACTION
 
-    @Composable @ReadOnlyComposable fun gridCells(): GridCells = ladderGridCells(CardTrack.POSTER)
+    @Composable @ReadOnlyComposable fun gridCells(): GridCells = NearestCardCells(posterCardWidth)
 
     @Composable
     @ReadOnlyComposable
     fun landscapeGridCells(followCardSize: Boolean = true): GridCells =
-        ladderGridCells(CardTrack.LANDSCAPE, if (followCardSize) cardSizeStep() else 0)
+        NearestCardCells(
+            if (followCardSize) landscapeCardWidth else landscapeWidthFor(defaultPosterWidth())
+        )
 
     val downloadGridCells: GridCells
-        @Composable
-        @ReadOnlyComposable
-        get() = ShiftedAdaptiveCells(Values.DownloadGrid, cardSizeStep())
+        @Composable @ReadOnlyComposable get() = GridCells.Adaptive(Values.DownloadGrid.cardScaled())
 
     fun spotlightAspectRatio(isLandscape: Boolean): Float =
         if (isLandscape) ASPECT_RATIO_SPOTLIGHT else ASPECT_RATIO_SPOTLIGHT_PORTRAIT

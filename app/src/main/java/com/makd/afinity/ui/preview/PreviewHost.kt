@@ -27,7 +27,6 @@ import coil3.compose.AsyncImagePreviewHandler
 import coil3.compose.LocalAsyncImagePreviewHandler
 import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.navigation.LocalPlayerOffset
-import com.makd.afinity.ui.components.CardRowContainer
 import com.makd.afinity.ui.theme.AFinityTheme
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
@@ -71,7 +70,7 @@ fun PreviewHost(
             LocalAsyncImagePreviewHandler provides imageHandler,
         ) {
             Surface(modifier = modifier, color = MaterialTheme.colorScheme.background) {
-                CardRowContainer(modifier = Modifier.fillMaxWidth()) { content() }
+                Box(modifier = Modifier.fillMaxWidth()) { content() }
             }
         }
     }

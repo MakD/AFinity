@@ -87,7 +87,6 @@ import com.makd.afinity.ui.audiobookshelf.player.AudiobookshelfPlayerScreen
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinitySplashScreen
 import com.makd.afinity.ui.components.AppNavigationDrawerContent
-import com.makd.afinity.ui.components.CardRowContainer
 import com.makd.afinity.ui.components.LocalNetworkPermissionGrantButton
 import com.makd.afinity.ui.components.UnsupportedServerDialog
 import com.makd.afinity.ui.components.rememberAfinitySheetState
@@ -444,10 +443,7 @@ fun MainNavigation(
                     LocalHeroStyle provides heroStyle,
                 ) {
                     SharedTransitionLayout {
-                        CardRowContainer(
-                            modifier = Modifier.fillMaxSize(),
-                            excludeDisplayCutout = true,
-                        ) {
+                        Box(modifier = Modifier.fillMaxSize()) {
                             NavHost(
                                 navController = navController,
                                 startDestination = Destination.SPLASH_ROUTE,

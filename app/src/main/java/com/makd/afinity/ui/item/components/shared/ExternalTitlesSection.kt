@@ -5,6 +5,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,8 +27,6 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.external.ExternalTitles
 import com.makd.afinity.data.models.external.ExternalTitlesSource
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
-import com.makd.afinity.ui.components.CardRowContentPadding
-import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.requests.DiscoverMediaCard
 import com.makd.afinity.ui.theme.CardDimensions
 
@@ -71,9 +70,9 @@ fun ExternalTitlesSection(
         }
 
         LazyRow(
-            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = CardRowContentPadding,
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(titles.items, key = { "${it.mediaType}_${it.id}" }) { item ->
                 DiscoverMediaCard(

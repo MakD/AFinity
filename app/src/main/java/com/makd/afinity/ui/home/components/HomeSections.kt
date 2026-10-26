@@ -3,6 +3,7 @@ package com.makd.afinity.ui.home.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -54,11 +55,9 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.ui.components.AsyncImage
-import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.LibraryCard
 import com.makd.afinity.ui.components.MediaItemCard
-import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
@@ -81,9 +80,9 @@ fun OptimizedContinueWatchingSection(
 
         LazyRow(
             state = scrollState,
-            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = CardRowContentPadding,
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(items = uniqueItems, key = { item -> "continue_${item.id}" }) { item ->
                 ContinueWatchingCard(
@@ -127,9 +126,9 @@ fun OptimizedLatestMoviesSection(
 
         LazyRow(
             state = scrollState,
-            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = CardRowContentPadding,
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(items = uniqueItems, key = { item -> "latest_movie_${item.id}" }) { item ->
                 MediaItemCard(
@@ -163,9 +162,9 @@ fun LibrariesSection(
         HomeSectionHeader(title = stringResource(R.string.libraries_title))
 
         LazyRow(
-            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = CardRowContentPadding,
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(items = libraries, key = { library -> "lib_${library.id}" }) { library ->
                 LibraryCard(
@@ -217,9 +216,9 @@ fun OptimizedLatestTvSeriesSection(
 
         LazyRow(
             state = scrollState,
-            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = CardRowContentPadding,
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(items = uniqueItems, key = { item -> "latest_tv_${item.id}" }) { item ->
                 MediaItemCard(
@@ -250,9 +249,9 @@ fun UpcomingEpisodesSection(
         val uniqueItems = items.distinctBy { it.id }
 
         LazyRow(
-            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = CardRowContentPadding,
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(items = uniqueItems, key = { item -> "upcoming_${item.id}" }) { episode ->
                 UpcomingEpisodeCard(
@@ -378,9 +377,8 @@ fun DownloadedAudiobooksSection(
     Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = title, onViewAllClick = onViewAllClick)
         LazyRow(
-            modifier = Modifier.cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = CardRowContentPadding,
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(items = items, key = { "abs_${it.id}" }) { download ->
                 SquareMediaTile(
@@ -404,11 +402,7 @@ fun DownloadedMusicAlbumsSection(
 ) {
     Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = title, onViewAllClick = onViewAllClick)
-        LazyRow(
-            modifier = Modifier.cardRowBleed(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = CardRowContentPadding,
-        ) {
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(items = albums, key = { "album_${it.id}" }) { album ->
                 SquareMediaTile(
                     imageUrl = album.images.primary?.toString(),
@@ -432,11 +426,7 @@ fun DownloadedMusicTracksSection(
 ) {
     Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = title, onViewAllClick = onViewAllClick)
-        LazyRow(
-            modifier = Modifier.cardRowBleed(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = CardRowContentPadding,
-        ) {
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(items = tracks, key = { "track_${it.id}" }) { track ->
                 SquareMediaTile(
                     imageUrl = track.images.primary?.toString(),

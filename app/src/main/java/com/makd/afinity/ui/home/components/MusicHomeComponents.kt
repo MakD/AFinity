@@ -44,11 +44,8 @@ import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.ui.components.AsyncImage
-import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.RankedCardFrame
 import com.makd.afinity.ui.components.SectionRowHeader
-import com.makd.afinity.ui.components.cardRowBleedUnlessPadded
-import com.makd.afinity.ui.components.cardRowContentPadding
 import com.makd.afinity.ui.components.focalAlpha
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.music.components.MusicAlbumCard
@@ -241,9 +238,8 @@ fun MostPlayedAlbumsSection(
             bottomPadding = 12.dp,
         )
         LazyRow(
-            modifier = Modifier.height(rowHeight),
+            modifier = Modifier.height(rowHeight).padding(horizontal = CardDimensions.RowGutter),
             horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-            contentPadding = CardRowContentPadding,
         ) {
             itemsIndexed(albums, key = { _, album -> album.id }) { index, album ->
                 MostPlayedAlbumCard(
@@ -319,7 +315,7 @@ fun MusicAlbumRowSection(
     onViewAllClick: (() -> Unit)? = null,
 ) {
     if (albums.isEmpty()) return
-    val cardWidth = CardDimensions.portraitRowWidth(gutter = horizontalPadding.takeIf { it > 0.dp })
+    val cardWidth = CardDimensions.posterCardWidth
     Column(modifier = modifier) {
         if (onViewAllClick != null) {
             SectionRowHeader(
@@ -340,9 +336,8 @@ fun MusicAlbumRowSection(
             )
         }
         LazyRow(
-            modifier = Modifier.cardRowBleedUnlessPadded(horizontalPadding),
+            modifier = Modifier.padding(horizontal = horizontalPadding),
             horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-            contentPadding = cardRowContentPadding(horizontalPadding),
         ) {
             items(albums, key = { it.id }) { album ->
                 MusicAlbumCard(
@@ -365,7 +360,7 @@ fun MusicPlaylistRowSection(
     onViewAllClick: (() -> Unit)? = null,
 ) {
     if (playlists.isEmpty()) return
-    val cardWidth = CardDimensions.portraitRowWidth(gutter = horizontalPadding.takeIf { it > 0.dp })
+    val cardWidth = CardDimensions.posterCardWidth
     Column(modifier = modifier) {
         if (onViewAllClick != null) {
             SectionRowHeader(
@@ -386,9 +381,8 @@ fun MusicPlaylistRowSection(
             )
         }
         LazyRow(
-            modifier = Modifier.cardRowBleedUnlessPadded(horizontalPadding),
+            modifier = Modifier.padding(horizontal = horizontalPadding),
             horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-            contentPadding = cardRowContentPadding(horizontalPadding),
         ) {
             items(playlists, key = { it.id }) { playlist ->
                 MusicPlaylistCard(

@@ -92,8 +92,6 @@ import com.makd.afinity.ui.components.LibraryShortcutCard
 import com.makd.afinity.ui.components.LibraryShortcutsRow
 import com.makd.afinity.ui.components.SectionRowHeader
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
-import com.makd.afinity.ui.components.cardRowBleedUnlessPadded
-import com.makd.afinity.ui.components.cardRowContentPadding
 import com.makd.afinity.ui.components.focalAlpha
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.home.components.ArtistAlbumsCarousel
@@ -1094,7 +1092,7 @@ internal fun MusicArtistsRow(
     horizontalPadding: Dp = 16.dp,
     onViewAllClick: (() -> Unit)? = null,
 ) {
-    val cardSize = CardDimensions.portraitRowWidth(gutter = horizontalPadding.takeIf { it > 0.dp })
+    val cardSize = CardDimensions.posterCardWidth
     Column(modifier = modifier) {
         if (onViewAllClick != null) {
             SectionRowHeader(
@@ -1116,9 +1114,8 @@ internal fun MusicArtistsRow(
             )
         }
         LazyRow(
-            modifier = Modifier.cardRowBleedUnlessPadded(horizontalPadding),
+            modifier = Modifier.padding(horizontal = horizontalPadding),
             horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-            contentPadding = cardRowContentPadding(horizontalPadding),
         ) {
             items(artists.take(15), key = { it.id }) { artist ->
                 MusicArtistCard(
@@ -1154,8 +1151,7 @@ fun CompactTrackGridSection(
         )
         LazyHorizontalGrid(
             rows = GridCells.Fixed(rowsCount),
-            modifier = Modifier.height(gridHeight),
-            contentPadding = PaddingValues(horizontal = 16.dp),
+            modifier = Modifier.height(gridHeight).padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {

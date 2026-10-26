@@ -6,6 +6,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -45,9 +46,7 @@ import com.makd.afinity.data.models.tmdb.TmdbRegionProviders
 import com.makd.afinity.data.models.tmdb.TmdbWatchProvider
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AsyncImage
-import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
-import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import java.util.Locale
 import timber.log.Timber
@@ -167,9 +166,8 @@ private fun ProviderTileRow(label: String, options: List<WatchOption>, onClick: 
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         LazyRow(
-            modifier = Modifier.cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
-            contentPadding = CardRowContentPadding,
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(options, key = { it.provider.provider_id }) { option ->
                 ProviderTile(option = option, onClick = onClick)

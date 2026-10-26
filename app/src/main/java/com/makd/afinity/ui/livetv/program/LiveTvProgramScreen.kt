@@ -63,13 +63,11 @@ import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
-import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.ConnectedButtonGroup
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.GroupButton
 import com.makd.afinity.ui.components.MediaItemCard
-import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.components.formatRuntimeTicks
 import com.makd.afinity.ui.components.ratings.communityRatingOf
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
@@ -687,11 +685,7 @@ private fun LazyListScope.programDetailItems(
         detailItem("similar", horizontalPadding) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 DetailSectionTitle(text = stringResource(R.string.similar_items_title))
-                LazyRow(
-                    modifier = Modifier.cardRowBleed(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = CardRowContentPadding,
-                ) {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(items = similarItems, key = { it.id.toString() }) { similar ->
                         when (similar) {
                             is LiveTvSimilarItem.Program ->

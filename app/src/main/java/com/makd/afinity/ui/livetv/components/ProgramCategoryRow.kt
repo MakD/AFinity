@@ -2,6 +2,7 @@ package com.makd.afinity.ui.livetv.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -11,8 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.livetv.AfinityProgram
-import com.makd.afinity.ui.components.CardRowContentPadding
-import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.home.components.HomeSectionHeader
 import com.makd.afinity.ui.livetv.models.LiveTvCategory
 import com.makd.afinity.ui.theme.CardDimensions
@@ -33,9 +32,9 @@ fun ProgramCategoryRow(
         HomeSectionHeader(title = stringResource(category.displayNameRes))
 
         LazyRow(
-            modifier = Modifier.cardRowBleed(),
+            modifier = Modifier,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = CardRowContentPadding,
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(items = programs, key = { it.id }) { program ->
                 ProgramCard(

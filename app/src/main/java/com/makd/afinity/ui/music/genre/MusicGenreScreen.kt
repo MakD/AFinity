@@ -59,7 +59,6 @@ import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.BackdropStyle
-import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.DetailActionRow
 import com.makd.afinity.ui.components.DetailCoverSize
 import com.makd.afinity.ui.components.DetailCoverTitle
@@ -98,7 +97,7 @@ fun MusicGenreScreen(
     val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val isLandscape = isLandscapeWindow()
-    val relatedCardWidth = CardDimensions.musicDetailCardWidth(splitPane = isLandscape)
+    val relatedCardWidth = CardDimensions.posterCardWidth
     val listState = rememberLazyListState()
     val topBarOpacity by rememberTopBarOpacity(listState)
     var showAllTracks by remember { mutableStateOf(false) }
@@ -193,9 +192,8 @@ fun MusicGenreScreen(
                     modifier = Modifier.padding(start = DetailGutter, top = 24.dp, bottom = 12.dp),
                 )
                 LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = DetailGutter),
                     horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-                    contentPadding = CardRowContentPadding,
                 ) {
                     items(uiState.artists, key = { it.id }) { artist ->
                         MusicArtistCard(
@@ -219,9 +217,8 @@ fun MusicGenreScreen(
                     modifier = Modifier.padding(start = DetailGutter, top = 32.dp, bottom = 16.dp),
                 )
                 LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = DetailGutter),
                     horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-                    contentPadding = CardRowContentPadding,
                 ) {
                     items(uiState.albums, key = { it.id }) { album ->
                         Box(modifier = Modifier.width(relatedCardWidth)) {
@@ -244,9 +241,8 @@ fun MusicGenreScreen(
                     modifier = Modifier.padding(start = DetailGutter, top = 32.dp, bottom = 16.dp),
                 )
                 LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = DetailGutter),
                     horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-                    contentPadding = CardRowContentPadding,
                 ) {
                     items(uiState.recentlyAdded, key = { it.id }) { album ->
                         Box(modifier = Modifier.width(relatedCardWidth)) {

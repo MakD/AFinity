@@ -2,6 +2,7 @@ package com.makd.afinity.ui.home.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
@@ -19,9 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
-import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.MediaItemCard
-import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
@@ -56,9 +55,9 @@ fun GenreSection(
             MediaRowSkeleton(cardWidth = cardWidth, height = fixedRowHeight)
         } else {
             LazyRow(
-                modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
+                modifier = Modifier.height(fixedRowHeight),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = CardRowContentPadding,
+                contentPadding = PaddingValues(horizontal = 0.dp),
             ) {
                 items(items = movies, key = { movie -> "genre_${genre}_${movie.id}" }) { movie ->
                     MediaItemCard(

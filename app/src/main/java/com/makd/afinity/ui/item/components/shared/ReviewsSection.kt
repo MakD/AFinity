@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -44,8 +45,6 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
-import com.makd.afinity.ui.components.CardRowContentPadding
-import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.theme.CardDimensions
 import org.commonmark.ext.autolink.AutolinkExtension
@@ -73,9 +72,8 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
         DetailSectionTitle(text = stringResource(R.string.reviews_title))
 
         LazyRow(
-            modifier = Modifier.cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = CardRowContentPadding,
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(reviews.take(10), key = { it.id }) { review ->
                 ReviewCard(

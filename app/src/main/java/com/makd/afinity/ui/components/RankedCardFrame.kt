@@ -18,7 +18,10 @@ import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import com.makd.afinity.ui.theme.CardDimensions
 
 private const val DIGIT_CAP_HEIGHT_RATIO = 0.72f
@@ -64,16 +67,20 @@ private fun RankDigits(ranking: Int, digitHeight: Dp, modifier: Modifier = Modif
         style =
             MaterialTheme.typography.displayLarge.copy(
                 fontSize = fontSize,
-                lineHeight = fontSize,
+                lineHeight = TextUnit.Unspecified,
                 fontWeight = FontWeight.Black,
                 drawStyle = Stroke(width = strokeWidth),
             ),
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = DIGIT_ALPHA),
+        overflow = TextOverflow.Visible,
         maxLines = 1,
         softWrap = false,
         modifier =
             modifier.layout { measurable, constraints ->
-                val placeable = measurable.measure(constraints)
+                val placeable =
+                    measurable.measure(
+                        constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity)
+                    )
                 val baseline = placeable[FirstBaseline]
                 layout(placeable.width, baseline) { placeable.place(0, 0) }
             },

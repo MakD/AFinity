@@ -37,12 +37,10 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
-import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.MediaCountBadge
 import com.makd.afinity.ui.components.MetadataOverflowRow
 import com.makd.afinity.ui.components.PlayedBadge
 import com.makd.afinity.ui.components.RankedCardFrame
-import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
@@ -63,9 +61,8 @@ fun HighestRatedSection(
         val uniqueItems = items.distinctBy { it.id }
 
         LazyRow(
-            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-            contentPadding = CardRowContentPadding,
         ) {
             itemsIndexed(items = uniqueItems, key = { _, item -> item.id }) { index, item ->
                 HighestRatedCard(

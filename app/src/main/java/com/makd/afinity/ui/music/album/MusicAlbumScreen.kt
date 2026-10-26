@@ -228,7 +228,6 @@ fun MusicAlbumScreen(
                     title = stringResource(R.string.music_section_more_from_fmt, artist),
                     albums = uiState.moreFromArtist,
                     showArtist = false,
-                    splitPane = isLandscape,
                     onViewAllClick = artistId?.let { { onMusicArtistClick(it.toString()) } },
                     onAlbumClick = { album -> onMusicAlbumClick(album.id.toString()) },
                 )
@@ -237,7 +236,6 @@ fun MusicAlbumScreen(
             AlbumRelatedSection(
                 title = stringResource(R.string.music_section_more_like_this),
                 albums = uiState.similarAlbums,
-                splitPane = isLandscape,
                 onAlbumClick = { album -> onMusicAlbumClick(album.id.toString()) },
             )
         }

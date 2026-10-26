@@ -7,6 +7,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -62,8 +63,6 @@ import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.navigation.LocalShowAwards
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.BackdropStyle
-import com.makd.afinity.ui.components.CardRowContainer
-import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.FavoriteToggleButton
 import com.makd.afinity.ui.components.ImageHeroKind
 import com.makd.afinity.ui.components.LandscapeDetailArrangement
@@ -73,7 +72,6 @@ import com.makd.afinity.ui.components.PortraitDetailLayout
 import com.makd.afinity.ui.components.PortraitHero
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.backdropChainOf
-import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.shared.AwardsSectionStyle
 import com.makd.afinity.ui.item.components.shared.ExternalTitlesSection
@@ -214,20 +212,18 @@ private fun LandscapePersonDetailContent(
             }
 
             item {
-                CardRowContainer(modifier = Modifier.fillMaxWidth(), gutter = 0.dp) {
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        PersonSharedContentBlocks(
-                            person = person,
-                            movies = movies,
-                            shows = shows,
-                            onItemClick = onItemClick,
-                            cardWidth = WindowWidthSizeClass.Compact.portraitWidth,
-                            awards = awards,
-                            missingCredits = missingCredits,
-                            onExternalItemClick = onExternalItemClick,
-                            onViewAllCredits = onViewAllCredits,
-                        )
-                    }
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    PersonSharedContentBlocks(
+                        person = person,
+                        movies = movies,
+                        shows = shows,
+                        onItemClick = onItemClick,
+                        cardWidth = WindowWidthSizeClass.Compact.portraitWidth,
+                        awards = awards,
+                        missingCredits = missingCredits,
+                        onExternalItemClick = onExternalItemClick,
+                        onViewAllCredits = onViewAllCredits,
+                    )
                 }
             }
         },
@@ -365,9 +361,8 @@ private fun PersonFilmographySection(
         )
 
         LazyRow(
-            modifier = Modifier.cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = CardRowContentPadding,
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(items = items, key = { item -> item.id }) { item ->
                 FilmographyItemCard(
