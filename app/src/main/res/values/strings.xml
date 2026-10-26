@@ -2690,6 +2690,7 @@
     <string name="request_select_placeholder">Select…</string>
     <string name="seerr_detail_request">Request</string>
     <string name="seerr_detail_open_library">Open in Library</string>
+    <string name="seerr_detail_open_library_4k">Open 4K in Library</string>
     <string name="seerr_collection_fallback">Collection</string>
     <string name="seerr_ratings">Ratings</string>
     <string name="seerr_seasons_all_first_available">Seasons: All / First available</string>

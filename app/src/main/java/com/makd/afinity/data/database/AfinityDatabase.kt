@@ -83,7 +83,7 @@ import com.makd.afinity.data.models.server.ServerAddressMemory
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.models.user.User
 
-const val AFINITY_DB_VERSION = 86
+const val AFINITY_DB_VERSION = 87
 
 @Database(
     entities =

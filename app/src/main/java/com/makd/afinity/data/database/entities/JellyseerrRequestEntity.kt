@@ -35,4 +35,5 @@ data class JellyseerrRequestEntity(
     val seasonsJson: String? = null,
     val mediaAddedAt: Long? = null,
     val jellyfinMediaId: String? = null,
+    val jellyfinMediaId4k: String? = null,
 )

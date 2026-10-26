@@ -40,6 +40,7 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.RequestStatus
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.FourKBadge
 import com.makd.afinity.ui.components.UserAvatar
 import com.makd.afinity.ui.theme.CardDimensions
 
@@ -227,6 +228,9 @@ fun AvailableRequestCard(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
                 )
+                if (jellyseerrRequest.is4k) {
+                    FourKBadge(modifier = Modifier.align(Alignment.TopStart))
+                }
                 Card(
                     modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
                     shape = RoundedCornerShape(4.dp),

@@ -102,6 +102,19 @@ fun PlayedBadge(
 }
 
 @Composable
+fun FourKBadge(modifier: Modifier = Modifier) {
+    CardBadgeSlot(modifier = modifier) { metrics ->
+        CardIconBadge(
+            painter = painterResource(id = R.drawable.ic_4k),
+            contentDescription = stringResource(R.string.meta_res_4k),
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            metrics = metrics,
+        )
+    }
+}
+
+@Composable
 fun UnavailableBadge(modifier: Modifier = Modifier) {
     CardBadgeSlot(modifier = modifier) { metrics ->
         CardIconBadge(

@@ -203,6 +203,11 @@ private fun SeerrRequestActionButton(
     val status = MediaStatus.fromValue(mediaInfo?.status ?: MediaStatus.UNKNOWN.value)
     val status4k = MediaStatus.fromValue(mediaInfo?.status4k ?: MediaStatus.UNKNOWN.value)
     val jellyfinId = mediaInfo?.getJellyfinItemId()
+    val jellyfinId4k =
+        mediaInfo?.getJellyfinItemId(is4k = true)?.takeIf { id ->
+            status4k == MediaStatus.AVAILABLE &&
+                !(status == MediaStatus.AVAILABLE && id == jellyfinId)
+        }
     val mappedType = if (mediaType == MediaType.TV) "Series" else "Movie"
 
     val mainOpensRequest =
@@ -264,6 +269,24 @@ private fun SeerrRequestActionButton(
             onRequest = { openRequestDialog(false) },
             requestEnabled = canRequest,
         )
+        if (jellyfinId4k != null) {
+            OutlinedButton(
+                onClick = { onItemClick(jellyfinId4k, mappedType) },
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_4k),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Text(stringResource(R.string.seerr_detail_open_library_4k))
+                }
+            }
+        }
         if (showRequest4k) {
             OutlinedButton(
                 onClick = { openRequestDialog(true) },
@@ -360,7 +383,7 @@ private fun SeerrDetailSections(
 
     val handleMediaItemClick: (SearchResultItem) -> Unit = { item ->
         if (item.mediaInfo?.isFullyAvailable() == true) {
-            item.mediaInfo.getJellyfinItemId()?.let { id ->
+            item.mediaInfo.getAvailableJellyfinItemId()?.let { id ->
                 onItemClick(id, if (item.mediaType.lowercase() == "tv") "Series" else "Movie")
             } ?: onNavigateToSeerrMedia(item)
         } else {

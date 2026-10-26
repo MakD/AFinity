@@ -938,6 +938,8 @@ constructor(
                                         mediaAddedAt = base.mediaAddedAt ?: existing.mediaAddedAt,
                                         jellyfinMediaId =
                                             base.jellyfinMediaId ?: existing.jellyfinMediaId,
+                                        jellyfinMediaId4k =
+                                            base.jellyfinMediaId4k ?: existing.jellyfinMediaId4k,
                                     )
                             }
 
@@ -2042,6 +2044,7 @@ constructor(
                     }
                 },
             jellyfinMediaId = media.jellyfinMediaId,
+            jellyfinMediaId4k = media.jellyfinMediaId4k,
             requestedByName = requestedBy.displayName,
             requestedByAvatar = requestedBy.avatar,
             mediaTitle = media.title,
@@ -2088,6 +2091,7 @@ constructor(
                     status4k = mediaStatus4k,
                     mediaAddedAt = mediaAddedAt?.let { dateFormat.format(Date(it)) },
                     jellyfinMediaId = jellyfinMediaId,
+                    jellyfinMediaId4k = jellyfinMediaId4k,
                     title = mediaTitle,
                     name = mediaName,
                     posterPath = posterPath,

@@ -85,8 +85,8 @@ constructor(
     private val _navigateToItem = MutableSharedFlow<Pair<String, String?>>(extraBufferCapacity = 1)
     val navigateToItem: SharedFlow<Pair<String, String?>> = _navigateToItem.asSharedFlow()
 
-    private val jellyfinIdCache = mutableMapOf<Int, String>()
-    private val fetchingIds = mutableSetOf<Int>()
+    private val jellyfinIdCache = mutableMapOf<Pair<Int, Boolean>, String>()
+    private val fetchingIds = mutableSetOf<Pair<Int, Boolean>>()
     private val prefetchSemaphore = kotlinx.coroutines.sync.Semaphore(4)
 
     private var discoverJob: Job? = null
@@ -102,9 +102,10 @@ constructor(
         val tmdbId = request.media.tmdbId ?: return
         val mediaType = request.getMediaType() ?: MediaType.MOVIE
         val mappedType = if (mediaType == MediaType.TV) "Series" else "Movie"
-        val known = request.media.getJellyfinItemId() ?: jellyfinIdCache[tmdbId]
+        val cacheKey = tmdbId to request.is4k
+        val known = request.media.getJellyfinItemId(request.is4k) ?: jellyfinIdCache[cacheKey]
         if (known != null) {
-            jellyfinIdCache[tmdbId] = known
+            jellyfinIdCache[cacheKey] = known
             viewModelScope.launch { _navigateToItem.emit(known to mappedType) }
             return
         }
@@ -113,8 +114,9 @@ constructor(
                 if (mediaType == MediaType.TV) jellyseerrRepository.getTvDetails(tmdbId)
                 else jellyseerrRepository.getMovieDetails(tmdbId)
             result.onSuccess { details ->
-                val jellyfinId = details.mediaInfo?.getJellyfinItemId() ?: return@onSuccess
-                jellyfinIdCache[tmdbId] = jellyfinId
+                val jellyfinId =
+                    details.mediaInfo?.getJellyfinItemId(request.is4k) ?: return@onSuccess
+                jellyfinIdCache[cacheKey] = jellyfinId
                 _navigateToItem.emit(jellyfinId to mappedType)
             }
         }
@@ -126,11 +128,12 @@ constructor(
             val s = MediaStatus.fromValue(statusValue)
             if (s != MediaStatus.AVAILABLE && s != MediaStatus.PARTIALLY_AVAILABLE) return@forEach
             val tmdbId = req.media.tmdbId ?: return@forEach
-            req.media.getJellyfinItemId()?.let { id ->
-                jellyfinIdCache[tmdbId] = id
+            val cacheKey = tmdbId to req.is4k
+            req.media.getJellyfinItemId(req.is4k)?.let { id ->
+                jellyfinIdCache[cacheKey] = id
                 return@forEach
             }
-            if (!fetchingIds.add(tmdbId)) return@forEach
+            if (!fetchingIds.add(cacheKey)) return@forEach
             val mediaType = req.getMediaType() ?: MediaType.MOVIE
             viewModelScope.launch {
                 prefetchSemaphore.withPermit {
@@ -138,7 +141,9 @@ constructor(
                         if (mediaType == MediaType.TV) jellyseerrRepository.getTvDetails(tmdbId)
                         else jellyseerrRepository.getMovieDetails(tmdbId)
                     result.onSuccess { details ->
-                        details.mediaInfo?.getJellyfinItemId()?.let { jellyfinIdCache[tmdbId] = it }
+                        details.mediaInfo?.getJellyfinItemId(req.is4k)?.let {
+                            jellyfinIdCache[cacheKey] = it
+                        }
                     }
                 }
             }

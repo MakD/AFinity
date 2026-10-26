@@ -190,7 +190,7 @@ fun FilteredMediaScreen(
                             item = item,
                             onClick = {
                                 if (item.mediaInfo?.isFullyAvailable() == true) {
-                                    item.mediaInfo.getJellyfinItemId()?.let { jellyfinId ->
+                                    item.mediaInfo.getAvailableJellyfinItemId()?.let { jellyfinId ->
                                         val mappedType =
                                             when (item.mediaType.lowercase()) {
                                                 "tv" -> "Series"

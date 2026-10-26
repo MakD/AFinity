@@ -143,8 +143,15 @@ fun RequestsScreen(
                                                 RequestStatus.COMPLETED
                                         }
                                         .groupBy { req ->
-                                            (req.media.tmdbId?.toString() ?: "req_${req.id}") to
-                                                req.media.mediaType
+                                            val sameItem =
+                                                req.media.getJellyfinItemId(is4k = true)?.let {
+                                                    it == req.media.getJellyfinItemId(is4k = false)
+                                                } == true
+                                            Triple(
+                                                req.media.tmdbId?.toString() ?: "req_${req.id}",
+                                                req.media.mediaType,
+                                                req.is4k && !sameItem,
+                                            )
                                         }
                                         .map { (_, groupedRequests) ->
                                             DisplayRequest(
@@ -216,16 +223,19 @@ fun RequestsScreen(
                                                     if (
                                                         item.mediaInfo?.isFullyAvailable() == true
                                                     ) {
-                                                        item.mediaInfo.getJellyfinItemId()?.let {
-                                                            jellyfinId ->
-                                                            val mappedType =
-                                                                when (item.mediaType.lowercase()) {
-                                                                    "tv" -> "Series"
-                                                                    "movie" -> "Movie"
-                                                                    else -> null
-                                                                }
-                                                            onItemClick(jellyfinId, mappedType)
-                                                        } ?: onNavigateToSeerrMedia(item)
+                                                        item.mediaInfo
+                                                            .getAvailableJellyfinItemId()
+                                                            ?.let { jellyfinId ->
+                                                                val mappedType =
+                                                                    when (
+                                                                        item.mediaType.lowercase()
+                                                                    ) {
+                                                                        "tv" -> "Series"
+                                                                        "movie" -> "Movie"
+                                                                        else -> null
+                                                                    }
+                                                                onItemClick(jellyfinId, mappedType)
+                                                            } ?: onNavigateToSeerrMedia(item)
                                                     } else {
                                                         onNavigateToSeerrMedia(item)
                                                     }

@@ -88,16 +88,24 @@ data class MediaInfo(
         return backdropPath?.let { "$baseUrl$it" }
     }
 
-    fun isFullyAvailable(): Boolean {
-        return status == 5 && jellyfinMediaId != null
-    }
+    fun isLaneAvailable(is4k: Boolean): Boolean =
+        laneStatus(is4k) == MediaStatus.AVAILABLE && getJellyfinItemId(is4k) != null
+
+    fun isFullyAvailable(): Boolean = isLaneAvailable(is4k = false) || isLaneAvailable(is4k = true)
+
+    fun getAvailableJellyfinItemId(): String? =
+        when {
+            isLaneAvailable(is4k = false) -> getJellyfinItemId(is4k = false)
+            isLaneAvailable(is4k = true) -> getJellyfinItemId(is4k = true)
+            else -> null
+        }
 
     fun isPartiallyAvailable(): Boolean {
         return status == 4
     }
 
-    fun getJellyfinItemId(): String? {
-        return jellyfinMediaId?.let { id ->
+    fun getJellyfinItemId(is4k: Boolean = false): String? {
+        return (if (is4k) jellyfinMediaId4k else jellyfinMediaId)?.let { id ->
             if (id.length == 32 && !id.contains("-")) {
                 "${id.take(8)}-${id.substring(8, 12)}-${id.substring(12, 16)}-${id.substring(16, 20)}-${id.substring(20)}"
             } else {
