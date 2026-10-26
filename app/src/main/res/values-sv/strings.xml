@@ -867,7 +867,7 @@
     <string name="admin_field_community_rating">Communitybetyg</string>
     <string name="admin_field_custom_rating">Anpassat betyg</string>
     <string name="admin_field_series_status">Status (pågående/avslutad/ej släppt)</string>
-    <string name="admin_field_display_order">Visningsordning (sändningsdatum/DVD/absolut)</string>
+    <string name="admin_field_display_order">Visningsordning</string>
     <string name="admin_lock_data">Lås data (förhindra att automatisk uppdatering skriver över)</string>
     <string name="admin_section_locked_fields">Låsta fält</string>
     <string name="cd_admin_remove">Ta bort</string>
@@ -2013,20 +2013,20 @@
         <item quantity="other">Visa alla %1$d priser</item>
     </plurals>
     <plurals name="awards_body_oscar_fmt">
-        <item quantity="one">%1$d Oscar</item>
-        <item quantity="other">%1$d Oscar</item>
+        <item quantity="one">%1$d Oscarsstatyett</item>
+        <item quantity="other">%1$d Oscarsstatyetter</item>
     </plurals>
     <plurals name="awards_body_emmy_fmt">
-        <item quantity="one">%1$d Emmy</item>
-        <item quantity="other">%1$d Emmy</item>
+        <item quantity="one">%1$d Emmyutmärkelse</item>
+        <item quantity="other">%1$d Emmyutmärkelser</item>
     </plurals>
     <plurals name="awards_body_golden_globe_fmt">
-        <item quantity="one">%1$d Golden Globe</item>
-        <item quantity="other">%1$d Golden Globe</item>
+        <item quantity="one">%1$d Golden Globe-utmärkelse</item>
+        <item quantity="other">%1$d Golden Globe-utmärkelser</item>
     </plurals>
     <plurals name="awards_body_bafta_fmt">
-        <item quantity="one">%1$d BAFTA</item>
-        <item quantity="other">%1$d BAFTA</item>
+        <item quantity="one">%1$d BAFTA-utmärkelse</item>
+        <item quantity="other">%1$d BAFTA-utmärkelser</item>
     </plurals>
     <plurals name="awards_body_sag_fmt">
         <item quantity="one">%1$d SAG-pris</item>
@@ -3235,4 +3235,19 @@
     <string name="cast_quality_mbps_fmt">%1$d Mbit/s</string>
     <string name="cast_stream_restart_note">Om ljudet eller kvaliteten ändras startas strömmen om på tv:n.</string>
     <string name="cd_cast_device_fmt">%1$s, volym och avsluta överföringen</string>
+    <string name="skipping_intro">Hoppar över introt…</string>
+    <string name="skipping_outro">Hoppar över eftertexterna…</string>
+    <string name="skipping_recap">Hoppar över återblicken…</string>
+    <string name="skipping_preview">Hoppar över förhandsvisningen…</string>
+    <string name="skipping_commercial">Hoppar över reklamen…</string>
+    <string name="skipping_generic">Hoppar över…</string>
+    <string name="pref_skip_recap_title">Hoppa över återblick</string>
+    <string name="pref_skip_preview_title">Hoppa över förhandsvisning</string>
+    <string name="pref_skip_commercial_title">Hoppa över reklam</string>
+    <string name="pref_seek_back_title">Spola bakåt</string>
+    <string name="pref_seek_forward_title">Spola framåt</string>
+    <string name="pref_seek_step_hint">Används av knapparna på skärmen, dubbeltryck och bild-i-bild</string>
+    <string name="seek_step_seconds_fmt">%1$d sekunder</string>
+    <string name="cd_rewind_seconds_fmt">Spola %1$d sekunder bakåt</string>
+    <string name="cd_forward_seconds_fmt">Spola %1$d sekunder framåt</string>
 </resources>
