@@ -48,7 +48,6 @@ import com.makd.afinity.data.models.media.getChapterImageUrl
 import com.makd.afinity.data.models.tmdb.TmdbRegionProviders
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.models.wikidata.WikidataAwards
-import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
@@ -74,7 +73,8 @@ fun LazyListScope.movieDetailItems(
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     onPlayClick: (AfinityMovie, PlaybackSelection) -> Unit,
     onPartClick: (AfinityItem) -> Unit = {},
-    navController: androidx.navigation.NavController,
+    onItemClick: (AfinityItem) -> Unit,
+    onPersonClick: (String) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     horizontalPadding: Dp,
     detailLayout: DetailLayout,
@@ -94,14 +94,8 @@ fun LazyListScope.movieDetailItems(
         wikidataAwards = wikidataAwards,
         isRatingsFromCache = isRatingsFromCache,
         onSpecialFeatureClick = onSpecialFeatureClick,
-        onBoxSetClick = { boxSet ->
-            val route = Destination.createItemDetailRoute(boxSet.id.toString())
-            navController.navigate(route)
-        },
-        onPersonClick = { personId ->
-            val route = Destination.createPersonRoute(personId.toString())
-            navController.navigate(route)
-        },
+        onBoxSetClick = onItemClick,
+        onPersonClick = { personId -> onPersonClick(personId.toString()) },
         widthSizeClass = widthSizeClass,
         horizontalPadding = horizontalPadding,
         detailLayout = detailLayout,

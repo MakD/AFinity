@@ -35,7 +35,6 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
 import androidx.media3.ui.SubtitleView
-import androidx.navigation.NavController
 import com.makd.afinity.data.models.livetv.LiveTvPlaybackInfo
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.player.PlayerEvent
@@ -84,7 +83,6 @@ fun PlayerScreen(
     livePlaybackInfo: LiveTvPlaybackInfo? = null,
     attachToCast: Boolean = false,
     onBackPressed: () -> Unit,
-    navController: NavController? = null,
     viewModel: PlayerViewModel = hiltViewModel(),
     syncPlayViewModel: SyncPlayViewModel = hiltViewModel(),
 ) {

@@ -20,7 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -44,7 +43,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.primaryImageUrl
@@ -54,8 +52,12 @@ import com.makd.afinity.data.models.livetv.AfinityRecording
 import com.makd.afinity.data.models.livetv.SeriesRecordingOptions
 import com.makd.afinity.data.models.livetv.SeriesRecordingRule
 import com.makd.afinity.data.models.media.AfinityEpisode
-import com.makd.afinity.navigation.Destination
+import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityScreen
+import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
+import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.DeleteItemDialog
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
@@ -64,7 +66,6 @@ import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.formatRuntimeTicks
 import com.makd.afinity.ui.item.DeleteOutcome
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
-import com.makd.afinity.ui.livetv.components.LiveTvTopAppBar
 import com.makd.afinity.ui.livetv.components.RecordingEventsSnackbar
 import com.makd.afinity.ui.livetv.components.RecordingPromptDialog
 import com.makd.afinity.ui.livetv.components.SeriesOptionsSheet
@@ -82,8 +83,13 @@ private val ScreenPadding = 16.dp
 
 @Composable
 fun LiveTvRecordingsScreen(
-    navController: NavController,
     mainUiState: MainUiState,
+    onSearchClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onProgramClick: (String) -> Unit,
+    onItemClick: (AfinityItem) -> Unit,
+    onSeriesClick: (String) -> Unit,
+    onPersonClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LiveTvRecordingsViewModel = hiltViewModel(),
 ) {
@@ -108,12 +114,18 @@ fun LiveTvRecordingsScreen(
         onPauseOrDispose { viewModel.setScreenVisible(false) }
     }
 
-    Scaffold(
-        topBar = {
-            LiveTvTopAppBar(
-                title = stringResource(R.string.livetv_tab_recordings),
-                navController = navController,
-                mainUiState = mainUiState,
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
+            AfinityTopAppBar(
+                title = { AfinityTopAppBarTitle(stringResource(R.string.livetv_tab_recordings)) },
+                onSearchClick = onSearchClick,
+                profile =
+                    AppBarProfile(
+                        onClick = onProfileClick,
+                        name = mainUiState.userName,
+                        imageUrl = mainUiState.userProfileImageUrl,
+                    ),
+                backgroundOpacity = backgroundOpacity,
             )
         },
         snackbarHost = {
@@ -140,20 +152,13 @@ fun LiveTvRecordingsScreen(
                     uiState = uiState,
                     canManage = canManage,
                     busyIds = busyIds,
-                    onProgramClick = { program ->
-                        navController.navigate(
-                            Destination.createLiveTvProgramRoute(program.id.toString())
-                        )
-                    },
+                    onProgramClick = { program -> onProgramClick(program.id.toString()) },
                     onCancelClick = viewModel.recorder::confirmCancel,
                     onSeriesRuleClick = viewModel::openSeriesRule,
                     onRecordingClick = { recording ->
                         when (val item = recording.item) {
                             is AfinityEpisode -> viewModel.episodeSelection.select(item)
-                            else ->
-                                navController.navigate(
-                                    Destination.createItemDetailRoute(itemId = item.id.toString())
-                                )
+                            else -> onItemClick(item)
                         }
                     },
                     onDeleteClick = { deleteTarget = it },
@@ -203,14 +208,8 @@ fun LiveTvRecordingsScreen(
         onToggleFavorite = viewModel.episodeSelection::toggleFavorite,
         onToggleWatchlist = viewModel.episodeSelection::toggleWatchlist,
         onToggleWatched = viewModel.episodeSelection::toggleWatched,
-        onNavigateToSeries = { seriesId ->
-            navController.navigate(
-                Destination.createItemDetailRoute(itemId = seriesId, itemType = "Series")
-            )
-        },
-        onNavigateToPerson = { personId ->
-            navController.navigate(Destination.createPersonRoute(personId))
-        },
+        onNavigateToSeries = onSeriesClick,
+        onNavigateToPerson = onPersonClick,
     )
 }
 

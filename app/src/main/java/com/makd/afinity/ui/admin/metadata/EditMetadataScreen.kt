@@ -44,7 +44,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -52,8 +51,6 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -86,8 +83,11 @@ import com.makd.afinity.data.models.admin.EditablePerson
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinitySwitch
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
+import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 
@@ -270,14 +270,11 @@ fun EditMetadataScreen(
         )
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
+            AfinityTopBar(
                 title = {
-                    Text(
-                        stringResource(R.string.admin_edit_metadata_title),
-                        style = MaterialTheme.typography.titleLarge,
-                    )
+                    AfinityTopAppBarTitle(stringResource(R.string.admin_edit_metadata_title))
                 },
                 navigationIcon = {
                     IconButton(onClick = requestClose) {
@@ -287,11 +284,7 @@ fun EditMetadataScreen(
                         )
                     }
                 },
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    ),
+                backgroundOpacity = backgroundOpacity,
             )
         },
         floatingActionButton = {

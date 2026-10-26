@@ -123,7 +123,6 @@ private val HeroRichTextHeight = 276.dp
 private const val HeroToneSamples = 12
 private const val HeroDarkTextMinLuminance = 0.25f
 
-private val HeroTopBarHeight = 56.dp
 private val HeroPeekTopGap = 8.dp
 private const val HeroPeekPortraitFraction = 0.6f
 private val HeroPeekMaxCardHeight = 520.dp
@@ -290,7 +289,7 @@ private fun heroPrefersLightText(
 private fun heroPeekMetrics(screenHeightDp: Dp, isLandscape: Boolean): HeroPeekMetrics {
     val top =
         WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
-            HeroTopBarHeight +
+            afinityTopAppBarHeight() +
             HeroPeekTopGap
     return if (isLandscape) {
         HeroPeekMetrics(

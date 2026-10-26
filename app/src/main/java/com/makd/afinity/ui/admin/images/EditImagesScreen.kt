@@ -47,7 +47,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -55,8 +54,6 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -86,6 +83,9 @@ import com.makd.afinity.data.models.admin.ItemImage
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.AfinityScreen
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
+import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.components.MediaCountBadge
 import com.makd.afinity.ui.components.rememberAfinitySheetState
@@ -246,15 +246,10 @@ fun EditImagesScreen(
         )
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        stringResource(R.string.admin_edit_images_title),
-                        style = MaterialTheme.typography.titleLarge,
-                    )
-                },
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
+            AfinityTopBar(
+                title = { AfinityTopAppBarTitle(stringResource(R.string.admin_edit_images_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
                         Icon(
@@ -263,11 +258,7 @@ fun EditImagesScreen(
                         )
                     }
                 },
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    ),
+                backgroundOpacity = backgroundOpacity,
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState, snackbar = { AFinitySnackbar(it) }) },

@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemContentType
@@ -34,7 +33,6 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.models.wikidata.WikidataAwards
-import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.EpisodeListCard
 import com.makd.afinity.ui.item.components.shared.DetailItemBox
@@ -58,7 +56,8 @@ fun LazyListScope.seasonDetailItems(
     isRatingsFromCache: Boolean = false,
     onEpisodeClick: (AfinityEpisode) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
-    navController: NavController,
+    onItemClick: (AfinityItem) -> Unit,
+    onPersonClick: (String) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     horizontalPadding: Dp,
     detailLayout: DetailLayout,
@@ -73,14 +72,8 @@ fun LazyListScope.seasonDetailItems(
         wikidataAwards = wikidataAwards,
         isRatingsFromCache = isRatingsFromCache,
         onSpecialFeatureClick = onSpecialFeatureClick,
-        onBoxSetClick = { boxSet ->
-            val route = Destination.createItemDetailRoute(boxSet.id.toString())
-            navController.navigate(route)
-        },
-        onPersonClick = { personId ->
-            val route = Destination.createPersonRoute(personId.toString())
-            navController.navigate(route)
-        },
+        onBoxSetClick = onItemClick,
+        onPersonClick = { personId -> onPersonClick(personId.toString()) },
         widthSizeClass = widthSizeClass,
         horizontalPadding = horizontalPadding,
         detailLayout = detailLayout,

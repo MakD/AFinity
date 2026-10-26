@@ -18,12 +18,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.ui.preview.PreviewHost
+import com.makd.afinity.ui.preview.WindowPreviews
 
 @Composable
 fun FullScreenLoading(modifier: Modifier = Modifier) {
@@ -71,6 +74,18 @@ fun FullScreenError(
                 }
             }
         }
+    }
+}
+
+@WindowPreviews
+@Composable
+private fun FullScreenErrorWindowPreview() {
+    PreviewHost(modifier = Modifier.fillMaxSize()) {
+        FullScreenError(
+            message = stringResource(R.string.error_load_content_generic),
+            actionText = stringResource(R.string.action_retry),
+            onActionClick = {},
+        )
     }
 }
 
@@ -126,5 +141,19 @@ fun FullScreenEmpty(
                 }
             }
         }
+    }
+}
+
+@WindowPreviews
+@Composable
+private fun FullScreenEmptyWindowPreview() {
+    PreviewHost(modifier = Modifier.fillMaxSize()) {
+        FullScreenEmpty(
+            title = stringResource(R.string.empty_servers_title),
+            message = stringResource(R.string.empty_servers_message),
+            icon = painterResource(id = R.drawable.ic_server),
+            actionText = stringResource(R.string.action_retry),
+            onActionClick = {},
+        )
     }
 }

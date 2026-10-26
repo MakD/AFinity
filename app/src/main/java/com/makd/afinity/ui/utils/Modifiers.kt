@@ -61,16 +61,6 @@ fun Modifier.shimmerEffect(): Modifier {
     }
 }
 
-fun Modifier.verticalLayoutOffset(yOffset: Dp) =
-    this.layout { measurable, constraints ->
-        val placeable = measurable.measure(constraints)
-        val yOffsetPx = yOffset.roundToPx()
-
-        layout(placeable.width, (placeable.height + yOffsetPx).coerceAtLeast(0)) {
-            placeable.placeRelative(0, yOffsetPx)
-        }
-    }
-
 fun Modifier.gapIfNotEmpty(gap: Dp) =
     this.layout { measurable, constraints ->
         val placeable = measurable.measure(constraints)

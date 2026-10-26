@@ -3,6 +3,7 @@ package com.makd.afinity.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -11,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -27,8 +30,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityBoxSet
@@ -39,6 +44,13 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.AfinityVideoPlaylist
 import com.makd.afinity.navigation.LocalShowRatings
+import com.makd.afinity.ui.preview.CardSizePreviewProvider
+import com.makd.afinity.ui.preview.FontScalePreviews
+import com.makd.afinity.ui.preview.PreviewData
+import com.makd.afinity.ui.preview.PreviewHost
+import com.makd.afinity.ui.preview.StressPreviews
+import com.makd.afinity.ui.preview.WidthPreviews
+import com.makd.afinity.ui.preview.previewWidthSizeClass
 import com.makd.afinity.ui.theme.CardDimensions
 import java.util.Locale
 
@@ -247,4 +259,43 @@ fun MediaItemGridCard(item: AfinityItem, onClick: () -> Unit, modifier: Modifier
 
         MetadataOverflowRow(items = metadataItems, spacing = 6.dp, showSeparators = false)
     }
+}
+
+@Composable
+private fun MediaItemGridCardPreviewContent(cardSize: CardSize) {
+    PreviewHost(cardSize = cardSize) {
+        LazyVerticalGrid(
+            columns = CardDimensions.gridCells(previewWidthSizeClass()),
+            modifier = Modifier.fillMaxWidth().height(640.dp),
+            contentPadding = PaddingValues(horizontal = CardDimensions.RowGutter, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(PreviewData.posterRow) { item -> MediaItemGridCard(item = item, onClick = {}) }
+        }
+    }
+}
+
+@WidthPreviews
+@Composable
+private fun MediaItemGridCardWidthPreview(
+    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize
+) {
+    MediaItemGridCardPreviewContent(cardSize)
+}
+
+@FontScalePreviews
+@Composable
+private fun MediaItemGridCardFontScalePreview(
+    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize
+) {
+    MediaItemGridCardPreviewContent(cardSize)
+}
+
+@StressPreviews
+@Composable
+private fun MediaItemGridCardStressPreview(
+    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize
+) {
+    MediaItemGridCardPreviewContent(cardSize)
 }

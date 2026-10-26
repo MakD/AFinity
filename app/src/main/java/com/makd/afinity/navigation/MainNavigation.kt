@@ -66,6 +66,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.common.DrawerLibrariesMode
 import com.makd.afinity.data.models.common.HeroStyle
+import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
@@ -509,16 +510,54 @@ fun MainNavigation(
                                                 }
                                             }
                                         },
-                                        onProfileClick = {
-                                            val route = Destination.createSettingsRoute()
-                                            navController.navigate(route)
+                                        onProfileClick = { navController.navigateToSettings() },
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onServerManagementClick = {
+                                            navController.navigate(
+                                                Destination.createServerManagementRoute()
+                                            )
+                                        },
+                                        onLibraryClick = { library ->
+                                            navController.navigate(
+                                                Destination.createLibraryRoute(library)
+                                            )
+                                        },
+                                        onDownloadedCategoryClick = { category ->
+                                            navController.navigate(
+                                                Destination.createDownloadedCategoryRoute(
+                                                    category.name
+                                                )
+                                            )
+                                        },
+                                        onMusicAlbumClick = { albumId ->
+                                            navController.navigateToMusicAlbum(albumId)
+                                        },
+                                        onOpenMusicPlayer = {
+                                            navController.navigateToMusicPlayer()
+                                        },
+                                        onStudioClick = { studioName ->
+                                            navController.navigate(
+                                                Destination.createStudioContentRoute(studioName)
+                                            )
+                                        },
+                                        onCustomSectionClick = { sectionId ->
+                                            navController.navigate(
+                                                Destination.createCustomSectionContentRoute(
+                                                    sectionId
+                                                )
+                                            )
+                                        },
+                                        onSeriesClick = { seriesId ->
+                                            navController.navigateToSeries(seriesId)
+                                        },
+                                        onPersonClick = { personId ->
+                                            navController.navigateToPerson(personId)
                                         },
                                         onAbsItemClick = { itemId ->
                                             navController.navigate(
                                                 Destination.createAudiobookshelfItemRoute(itemId)
                                             )
                                         },
-                                        navController = navController,
                                         snackbarHostState = snackbarHostState,
                                         mainUiState = mainUiState,
                                         modifier = Modifier.fillMaxSize(),
@@ -538,11 +577,8 @@ fun MainNavigation(
                                                 Destination.createLibraryRoute(library)
                                             )
                                         },
-                                        onProfileClick = {
-                                            val route = Destination.createSettingsRoute()
-                                            navController.navigate(route)
-                                        },
-                                        navController = navController,
+                                        onProfileClick = { navController.navigateToSettings() },
+                                        onSearchClick = { navController.navigateToSearch() },
                                         mainUiState = mainUiState,
                                         modifier = Modifier.fillMaxSize(),
                                         widthSizeClass = widthSizeClass,
@@ -563,11 +599,22 @@ fun MainNavigation(
                                         onItemClick = { item ->
                                             navController.navigateToItem(item)
                                         },
-                                        onProfileClick = {
-                                            val route = Destination.createSettingsRoute()
-                                            navController.navigate(route)
+                                        onProfileClick = { navController.navigateToSettings() },
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onFolderClick = { folder ->
+                                            navController.navigate(
+                                                Destination.createFolderContentRoute(
+                                                    folder.id.toString(),
+                                                    folder.name,
+                                                )
+                                            )
                                         },
-                                        navController = navController,
+                                        onSeriesClick = { seriesId ->
+                                            navController.navigateToSeries(seriesId)
+                                        },
+                                        onPersonClick = { personId ->
+                                            navController.navigateToPerson(personId)
+                                        },
                                         modifier = Modifier.fillMaxSize(),
                                         widthSizeClass = widthSizeClass,
                                         onMenuClick = libraryMenuClick,
@@ -585,11 +632,22 @@ fun MainNavigation(
                                         onItemClick = { item ->
                                             navController.navigateToItem(item)
                                         },
-                                        onProfileClick = {
-                                            val route = Destination.createSettingsRoute()
-                                            navController.navigate(route)
+                                        onProfileClick = { navController.navigateToSettings() },
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onFolderClick = { folder ->
+                                            navController.navigate(
+                                                Destination.createFolderContentRoute(
+                                                    folder.id.toString(),
+                                                    folder.name,
+                                                )
+                                            )
                                         },
-                                        navController = navController,
+                                        onSeriesClick = { seriesId ->
+                                            navController.navigateToSeries(seriesId)
+                                        },
+                                        onPersonClick = { personId ->
+                                            navController.navigateToPerson(personId)
+                                        },
                                         modifier = Modifier.fillMaxSize(),
                                         widthSizeClass = widthSizeClass,
                                     )
@@ -606,11 +664,22 @@ fun MainNavigation(
                                         onItemClick = { item ->
                                             navController.navigateToItem(item)
                                         },
-                                        onProfileClick = {
-                                            val route = Destination.createSettingsRoute()
-                                            navController.navigate(route)
+                                        onProfileClick = { navController.navigateToSettings() },
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onFolderClick = { folder ->
+                                            navController.navigate(
+                                                Destination.createFolderContentRoute(
+                                                    folder.id.toString(),
+                                                    folder.name,
+                                                )
+                                            )
                                         },
-                                        navController = navController,
+                                        onSeriesClick = { seriesId ->
+                                            navController.navigateToSeries(seriesId)
+                                        },
+                                        onPersonClick = { personId ->
+                                            navController.navigateToPerson(personId)
+                                        },
                                         modifier = Modifier.fillMaxSize(),
                                         widthSizeClass = widthSizeClass,
                                     )
@@ -628,11 +697,22 @@ fun MainNavigation(
                                         onItemClick = { item ->
                                             navController.navigateToItem(item)
                                         },
-                                        onProfileClick = {
-                                            val route = Destination.createSettingsRoute()
-                                            navController.navigate(route)
+                                        onProfileClick = { navController.navigateToSettings() },
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onFolderClick = { folder ->
+                                            navController.navigate(
+                                                Destination.createFolderContentRoute(
+                                                    folder.id.toString(),
+                                                    folder.name,
+                                                )
+                                            )
                                         },
-                                        navController = navController,
+                                        onSeriesClick = { seriesId ->
+                                            navController.navigateToSeries(seriesId)
+                                        },
+                                        onPersonClick = { personId ->
+                                            navController.navigateToPerson(personId)
+                                        },
                                         modifier = Modifier.fillMaxSize(),
                                         widthSizeClass = widthSizeClass,
                                     )
@@ -654,9 +734,45 @@ fun MainNavigation(
                                                 defaultValue = null
                                             },
                                         ),
-                                ) {
+                                ) { backStackEntry ->
                                     ItemDetailScreen(
-                                        navController = navController,
+                                        onItemClick = { item ->
+                                            navController.navigateToItem(item)
+                                        },
+                                        onSeriesClick = { seriesId ->
+                                            navController.navigateToSeries(seriesId)
+                                        },
+                                        onSeasonClick = { season ->
+                                            navController.navigateToSeason(season)
+                                        },
+                                        onPersonClick = { personId ->
+                                            navController.navigateToPerson(personId)
+                                        },
+                                        onNavigateToSeerrMedia = { seerrItem ->
+                                            navController.navigateToSeerrMedia(seerrItem)
+                                        },
+                                        onEditMetadataClick = { itemId ->
+                                            navController.navigate(
+                                                Destination.createEditMetadataRoute(itemId)
+                                            )
+                                        },
+                                        onEditImagesClick = { itemId ->
+                                            navController.navigate(
+                                                Destination.createEditImagesRoute(itemId)
+                                            )
+                                        },
+                                        onIdentifyClick = { itemId, itemType ->
+                                            navController.navigate(
+                                                Destination.createIdentifyItemRoute(
+                                                    itemId,
+                                                    itemType,
+                                                )
+                                            )
+                                        },
+                                        onItemDeleted = {
+                                            navController.popIfCurrent(backStackEntry)
+                                        },
+                                        onHomeClick = { navController.navigateHome() },
                                         onPlayClick = { item, selection ->
                                             PlayerLauncher.launch(
                                                 context = navController.context,
@@ -698,7 +814,43 @@ fun MainNavigation(
                                                 )
                                             }
                                         },
-                                        navController = navController,
+                                        onItemClick = { item ->
+                                            navController.navigateToItem(item)
+                                        },
+                                        onSeriesClick = { seriesId ->
+                                            navController.navigateToSeries(seriesId)
+                                        },
+                                        onSeasonClick = { season ->
+                                            navController.navigateToSeason(season)
+                                        },
+                                        onPersonClick = { personId ->
+                                            navController.navigateToPerson(personId)
+                                        },
+                                        onNavigateToSeerrMedia = { seerrItem ->
+                                            navController.navigateToSeerrMedia(seerrItem)
+                                        },
+                                        onEditMetadataClick = { itemId ->
+                                            navController.navigate(
+                                                Destination.createEditMetadataRoute(itemId)
+                                            )
+                                        },
+                                        onEditImagesClick = { itemId ->
+                                            navController.navigate(
+                                                Destination.createEditImagesRoute(itemId)
+                                            )
+                                        },
+                                        onIdentifyClick = { itemId, itemType ->
+                                            navController.navigate(
+                                                Destination.createIdentifyItemRoute(
+                                                    itemId,
+                                                    itemType,
+                                                )
+                                            )
+                                        },
+                                        onItemDeleted = {
+                                            navController.popIfCurrent(backStackEntry)
+                                        },
+                                        onHomeClick = { navController.navigateHome() },
                                         widthSizeClass = widthSizeClass,
                                     )
                                 }
@@ -711,7 +863,16 @@ fun MainNavigation(
                                         ),
                                 ) {
                                     PersonScreen(
-                                        navController = navController,
+                                        onItemClick = { item ->
+                                            navController.navigateToItem(item)
+                                        },
+                                        onNavigateToSeerrMedia = { seerrItem ->
+                                            navController.navigateToSeerrMedia(seerrItem)
+                                        },
+                                        onNavigateToFilteredMedia = { filterParams ->
+                                            navController.navigateToFilteredMedia(filterParams)
+                                        },
+                                        onHomeClick = { navController.navigateHome() },
                                         modifier = Modifier.fillMaxSize(),
                                         widthSizeClass = widthSizeClass,
                                     )
@@ -757,8 +918,7 @@ fun MainNavigation(
                                             navController.navigateToItem(item)
                                         },
                                         onPersonClick = { personId ->
-                                            val route = Destination.createPersonRoute(personId)
-                                            navController.navigate(route)
+                                            navController.navigateToPerson(personId)
                                         },
                                         onViewAllClick = { category ->
                                             navController.navigate(
@@ -767,9 +927,23 @@ fun MainNavigation(
                                                 )
                                             )
                                         },
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onProfileClick = { navController.navigateToSettings() },
+                                        onBrowseMediaClick = { navController.browseHome() },
+                                        onSeriesClick = { seriesId ->
+                                            navController.navigateToSeries(seriesId)
+                                        },
+                                        onMusicAlbumClick = { albumId ->
+                                            navController.navigateToMusicAlbum(albumId)
+                                        },
+                                        onMusicArtistClick = { artistId ->
+                                            navController.navigateToMusicArtist(artistId)
+                                        },
+                                        onMusicPlaylistClick = { playlistId ->
+                                            navController.navigateToMusicPlaylist(playlistId)
+                                        },
                                         modifier = Modifier.fillMaxSize(),
                                         mainUiState = mainUiState,
-                                        navController = navController,
                                         widthSizeClass = widthSizeClass,
                                     )
                                 }
@@ -787,9 +961,17 @@ fun MainNavigation(
                                                 )
                                             )
                                         },
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onProfileClick = { navController.navigateToSettings() },
+                                        onBrowseMediaClick = { navController.browseHome() },
+                                        onSeriesClick = { seriesId ->
+                                            navController.navigateToSeries(seriesId)
+                                        },
+                                        onPersonClick = { personId ->
+                                            navController.navigateToPerson(personId)
+                                        },
                                         modifier = Modifier.fillMaxSize(),
                                         mainUiState = mainUiState,
-                                        navController = navController,
                                         widthSizeClass = widthSizeClass,
                                     )
                                 }
@@ -797,22 +979,11 @@ fun MainNavigation(
                                 composable(Destination.REQUESTS.route) {
                                     RequestsScreen(
                                         onMenuClick = onMenuClick,
-                                        onSearchClick = {
-                                            navController.navigate(Destination.SEARCH_ROUTE)
-                                        },
-                                        onProfileClick = {
-                                            val route = Destination.createSettingsRoute()
-                                            navController.navigate(route)
-                                        },
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onProfileClick = { navController.navigateToSettings() },
                                         mainUiState = mainUiState,
                                         onNavigateToFilteredMedia = { filterParams ->
-                                            val route =
-                                                Destination.createFilteredMediaRoute(
-                                                    filterType = filterParams.type.name,
-                                                    filterId = filterParams.id,
-                                                    filterName = filterParams.name,
-                                                )
-                                            navController.navigate(route)
+                                            navController.navigateToFilteredMedia(filterParams)
                                         },
                                         onItemClick = { jellyfinItemId, itemType ->
                                             val route =
@@ -823,18 +994,7 @@ fun MainNavigation(
                                             navController.navigate(route)
                                         },
                                         onNavigateToSeerrMedia = { seerrItem ->
-                                            navController.navigate(
-                                                Destination.createSeerrMediaRoute(
-                                                    mediaType = seerrItem.mediaType,
-                                                    tmdbId = seerrItem.id,
-                                                    title = seerrItem.getDisplayTitle(),
-                                                    backdropUrl =
-                                                        seerrItem.backdropPath?.let {
-                                                            "https://image.tmdb.org/t/p/w1280$it"
-                                                        },
-                                                    posterUrl = seerrItem.getPosterUrl(),
-                                                )
-                                            )
+                                            navController.navigateToSeerrMedia(seerrItem)
                                         },
                                         modifier = Modifier.fillMaxSize(),
                                         widthSizeClass = widthSizeClass,
@@ -844,7 +1004,24 @@ fun MainNavigation(
                                 composable(Destination.LIVE_TV.route) {
                                     com.makd.afinity.ui.livetv.LiveTvScreen(
                                         onMenuClick = onMenuClick,
-                                        navController = navController,
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onProfileClick = { navController.navigateToSettings() },
+                                        onGuideClick = {
+                                            navController.navigate(Destination.LIVE_TV_GUIDE_ROUTE)
+                                        },
+                                        onChannelsClick = {
+                                            navController.navigate(
+                                                Destination.LIVE_TV_CHANNELS_ROUTE
+                                            )
+                                        },
+                                        onRecordingsClick = {
+                                            navController.navigate(
+                                                Destination.LIVE_TV_RECORDINGS_ROUTE
+                                            )
+                                        },
+                                        onProgramClick = { programId ->
+                                            navController.navigateToLiveTvProgram(programId)
+                                        },
                                         mainUiState = mainUiState,
                                         modifier = Modifier.fillMaxSize(),
                                         widthSizeClass = widthSizeClass,
@@ -853,8 +1030,15 @@ fun MainNavigation(
 
                                 composable(Destination.LIVE_TV_GUIDE_ROUTE) {
                                     com.makd.afinity.ui.livetv.guide.LiveTvGuideScreen(
-                                        navController = navController,
                                         mainUiState = mainUiState,
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onProfileClick = { navController.navigateToSettings() },
+                                        onChannelClick = { channelId ->
+                                            navController.navigateToLiveTvChannel(channelId)
+                                        },
+                                        onProgramClick = { programId ->
+                                            navController.navigateToLiveTvProgram(programId)
+                                        },
                                         modifier = Modifier.fillMaxSize(),
                                         widthSizeClass = widthSizeClass,
                                     )
@@ -862,16 +1046,33 @@ fun MainNavigation(
 
                                 composable(Destination.LIVE_TV_CHANNELS_ROUTE) {
                                     com.makd.afinity.ui.livetv.channels.LiveTvChannelsScreen(
-                                        navController = navController,
                                         mainUiState = mainUiState,
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onProfileClick = { navController.navigateToSettings() },
+                                        onChannelClick = { channelId ->
+                                            navController.navigateToLiveTvChannel(channelId)
+                                        },
                                         modifier = Modifier.fillMaxSize(),
                                     )
                                 }
 
                                 composable(Destination.LIVE_TV_RECORDINGS_ROUTE) {
                                     com.makd.afinity.ui.livetv.recordings.LiveTvRecordingsScreen(
-                                        navController = navController,
                                         mainUiState = mainUiState,
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onProfileClick = { navController.navigateToSettings() },
+                                        onProgramClick = { programId ->
+                                            navController.navigateToLiveTvProgram(programId)
+                                        },
+                                        onItemClick = { item ->
+                                            navController.navigateToItem(item)
+                                        },
+                                        onSeriesClick = { seriesId ->
+                                            navController.navigateToSeries(seriesId)
+                                        },
+                                        onPersonClick = { personId ->
+                                            navController.navigateToPerson(personId)
+                                        },
                                         modifier = Modifier.fillMaxSize(),
                                     )
                                 }
@@ -884,7 +1085,16 @@ fun MainNavigation(
                                         ),
                                 ) {
                                     com.makd.afinity.ui.livetv.program.LiveTvProgramScreen(
-                                        navController = navController,
+                                        onChannelClick = { channelId ->
+                                            navController.navigateToLiveTvChannel(channelId)
+                                        },
+                                        onProgramClick = { programId ->
+                                            navController.navigateToLiveTvProgram(programId)
+                                        },
+                                        onItemClick = { item ->
+                                            navController.navigateToItem(item)
+                                        },
+                                        onHomeClick = { navController.navigateHome() },
                                         modifier = Modifier.fillMaxSize(),
                                         widthSizeClass = widthSizeClass,
                                     )
@@ -898,7 +1108,10 @@ fun MainNavigation(
                                         ),
                                 ) {
                                     com.makd.afinity.ui.livetv.channel.LiveTvChannelScreen(
-                                        navController = navController,
+                                        onProgramClick = { programId ->
+                                            navController.navigateToLiveTvProgram(programId)
+                                        },
+                                        onHomeClick = { navController.navigateHome() },
                                         modifier = Modifier.fillMaxSize(),
                                     )
                                 }
@@ -928,13 +1141,8 @@ fun MainNavigation(
 
                                     FilteredMediaScreen(
                                         filterParams = filterParams,
-                                        onSearchClick = {
-                                            navController.navigate(Destination.SEARCH_ROUTE)
-                                        },
-                                        onProfileClick = {
-                                            val route = Destination.createSettingsRoute()
-                                            navController.navigate(route)
-                                        },
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onProfileClick = { navController.navigateToSettings() },
                                         mainUiState = mainUiState,
                                         onItemClick = { jellyfinItemId, itemType ->
                                             val route =
@@ -945,18 +1153,7 @@ fun MainNavigation(
                                             navController.navigate(route)
                                         },
                                         onNavigateToSeerrMedia = { seerrItem ->
-                                            navController.navigate(
-                                                Destination.createSeerrMediaRoute(
-                                                    mediaType = seerrItem.mediaType,
-                                                    tmdbId = seerrItem.id,
-                                                    title = seerrItem.getDisplayTitle(),
-                                                    backdropUrl =
-                                                        seerrItem.backdropPath?.let {
-                                                            "https://image.tmdb.org/t/p/w1280$it"
-                                                        },
-                                                    posterUrl = seerrItem.getPosterUrl(),
-                                                )
-                                            )
+                                            navController.navigateToSeerrMedia(seerrItem)
                                         },
                                         modifier = Modifier.fillMaxSize(),
                                         widthSizeClass = widthSizeClass,
@@ -982,10 +1179,22 @@ fun MainNavigation(
                                             navController.navigateToItem(item)
                                         },
                                         onPersonClick = { personId ->
-                                            val route = Destination.createPersonRoute(personId)
-                                            navController.navigate(route)
+                                            navController.navigateToPerson(personId)
                                         },
-                                        navController = navController,
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onProfileClick = { navController.navigateToSettings() },
+                                        onSeriesClick = { seriesId ->
+                                            navController.navigateToSeries(seriesId)
+                                        },
+                                        onMusicAlbumClick = { albumId ->
+                                            navController.navigateToMusicAlbum(albumId)
+                                        },
+                                        onMusicArtistClick = { artistId ->
+                                            navController.navigateToMusicArtist(artistId)
+                                        },
+                                        onMusicPlaylistClick = { playlistId ->
+                                            navController.navigateToMusicPlaylist(playlistId)
+                                        },
                                         widthSizeClass = widthSizeClass,
                                         modifier = Modifier.fillMaxSize(),
                                     )
@@ -1020,7 +1229,13 @@ fun MainNavigation(
                                                 Destination.createAudiobookshelfItemRoute(itemId)
                                             )
                                         },
-                                        navController = navController,
+                                        onProfileClick = { navController.navigateToSettings() },
+                                        onMusicAlbumClick = { albumId ->
+                                            navController.navigateToMusicAlbum(albumId)
+                                        },
+                                        onOpenMusicPlayer = {
+                                            navController.navigateToMusicPlayer()
+                                        },
                                         widthSizeClass = widthSizeClass,
                                         modifier = Modifier.fillMaxSize(),
                                     )
@@ -1044,7 +1259,14 @@ fun MainNavigation(
                                         onItemClick = { item ->
                                             navController.navigateToItem(item)
                                         },
-                                        navController = navController,
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onProfileClick = { navController.navigateToSettings() },
+                                        onSeriesClick = { seriesId ->
+                                            navController.navigateToSeries(seriesId)
+                                        },
+                                        onPersonClick = { personId ->
+                                            navController.navigateToPerson(personId)
+                                        },
                                         widthSizeClass = widthSizeClass,
                                         modifier = Modifier.fillMaxSize(),
                                     )
@@ -1082,36 +1304,12 @@ fun MainNavigation(
                                             navController.navigate(route)
                                         },
                                         onNavigateToFilteredMedia = { filterParams ->
-                                            val route =
-                                                Destination.createFilteredMediaRoute(
-                                                    filterType = filterParams.type.name,
-                                                    filterId = filterParams.id,
-                                                    filterName = filterParams.name,
-                                                )
-                                            navController.navigate(route)
+                                            navController.navigateToFilteredMedia(filterParams)
                                         },
                                         onNavigateToSeerrMedia = { seerrItem ->
-                                            navController.navigate(
-                                                Destination.createSeerrMediaRoute(
-                                                    mediaType = seerrItem.mediaType,
-                                                    tmdbId = seerrItem.id,
-                                                    title = seerrItem.getDisplayTitle(),
-                                                    backdropUrl =
-                                                        seerrItem.backdropPath?.let {
-                                                            "https://image.tmdb.org/t/p/w1280$it"
-                                                        },
-                                                    posterUrl = seerrItem.getPosterUrl(),
-                                                )
-                                            )
+                                            navController.navigateToSeerrMedia(seerrItem)
                                         },
-                                        onNavigateHome = {
-                                            navController.navigate(Destination.HOME.route) {
-                                                popUpTo(Destination.HOME.route) {
-                                                    inclusive = false
-                                                }
-                                                launchSingleTop = true
-                                            }
-                                        },
+                                        onNavigateHome = { navController.navigateHome() },
                                         modifier = Modifier.fillMaxSize(),
                                         widthSizeClass = widthSizeClass,
                                     )
@@ -1125,17 +1323,10 @@ fun MainNavigation(
                                             navController.navigateToItem(item)
                                         },
                                         onSeriesClick = { seriesId ->
-                                            val route =
-                                                Destination.createItemDetailRoute(
-                                                    itemId = seriesId,
-                                                    itemType = "Series",
-                                                )
-                                            navController.navigate(route)
+                                            navController.navigateToSeries(seriesId)
                                         },
                                         onPersonClick = { personId ->
-                                            navController.navigate(
-                                                Destination.createPersonRoute(personId)
-                                            )
+                                            navController.navigateToPerson(personId)
                                         },
                                         onGenreClick = { genre ->
                                             val route = Destination.createGenreResultsRoute(genre)
@@ -1154,28 +1345,13 @@ fun MainNavigation(
                                             )
                                         },
                                         onNavigateToSeerrMedia = { seerrItem ->
-                                            navController.navigate(
-                                                Destination.createSeerrMediaRoute(
-                                                    mediaType = seerrItem.mediaType,
-                                                    tmdbId = seerrItem.id,
-                                                    title = seerrItem.getDisplayTitle(),
-                                                    backdropUrl =
-                                                        seerrItem.backdropPath?.let {
-                                                            "https://image.tmdb.org/t/p/w1280$it"
-                                                        },
-                                                    posterUrl = seerrItem.getPosterUrl(),
-                                                )
-                                            )
+                                            navController.navigateToSeerrMedia(seerrItem)
                                         },
                                         onMusicAlbumClick = { albumId ->
-                                            navController.navigate(
-                                                Destination.createMusicAlbumRoute(albumId)
-                                            )
+                                            navController.navigateToMusicAlbum(albumId)
                                         },
                                         onMusicArtistClick = { artistId ->
-                                            navController.navigate(
-                                                Destination.createMusicArtistRoute(artistId)
-                                            )
+                                            navController.navigateToMusicArtist(artistId)
                                         },
                                         onMusicPlaylistClick = { playlistId ->
                                             navController.navigate(
@@ -1225,9 +1401,71 @@ fun MainNavigation(
 
                                 composable(Destination.SETTINGS_ROUTE) {
                                     SettingsScreen(
-                                        navController = navController,
                                         onBackClick =
                                             dropUnlessResumed { navController.popBackStack() },
+                                        onAddAccountClick = { serverUrl ->
+                                            navController.navigate(
+                                                Destination.createLoginRoute(serverUrl = serverUrl)
+                                            )
+                                        },
+                                        onControlPanelClick = {
+                                            navController.navigate(Destination.ADMIN_SERVER_ROUTE) {
+                                                launchSingleTop = true
+                                            }
+                                        },
+                                        onAppearanceClick = {
+                                            navController.navigate(
+                                                Destination.APPEARANCE_OPTIONS_ROUTE
+                                            )
+                                        },
+                                        onPlayerOptionsClick = {
+                                            navController.navigate(Destination.PLAYER_OPTIONS_ROUTE)
+                                        },
+                                        onStorageClick = {
+                                            navController.navigate(
+                                                Destination.STORAGE_SETTINGS_ROUTE
+                                            )
+                                        },
+                                        onDownloadSettingsClick = {
+                                            navController.navigate(
+                                                Destination.DOWNLOAD_SETTINGS_ROUTE
+                                            )
+                                        },
+                                        onServerManagementClick = {
+                                            navController.navigate(
+                                                Destination.SERVER_MANAGEMENT_ROUTE
+                                            )
+                                        },
+                                        onServicesHubClick = {
+                                            navController.navigate(
+                                                Destination.createServicesHubRoute("manual")
+                                            )
+                                        },
+                                        onLogsClick = {
+                                            navController.navigate(Destination.createLogsRoute())
+                                        },
+                                        onLicensesClick = {
+                                            navController.navigate(Destination.LICENSES_ROUTE)
+                                        },
+                                        onAbsItemClick = { itemId ->
+                                            navController.navigate(
+                                                Destination.createAudiobookshelfItemRoute(itemId)
+                                            )
+                                        },
+                                        onAddServerClick = {
+                                            navController.navigate(
+                                                Destination.createAddEditServerRoute(
+                                                    serverId = null
+                                                )
+                                            )
+                                        },
+                                        onEditServerClick = { serverId ->
+                                            navController.navigate(
+                                                Destination.createAddEditServerRoute(
+                                                    serverId = serverId
+                                                )
+                                            )
+                                        },
                                     )
                                 }
 
@@ -1425,7 +1663,26 @@ fun MainNavigation(
                                         ),
                                 ) {
                                     MusicLibraryScreen(
-                                        navController = navController,
+                                        onProfileClick = { navController.navigateToSettings() },
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onMusicAlbumClick = { albumId ->
+                                            navController.navigateToMusicAlbum(albumId)
+                                        },
+                                        onMusicArtistClick = { artistId ->
+                                            navController.navigateToMusicArtist(artistId)
+                                        },
+                                        onBrowseClick = { libraryId, libraryName, tab ->
+                                            navController.navigate(
+                                                Destination.createMusicBrowseRoute(
+                                                    libraryId = libraryId,
+                                                    libraryName = libraryName,
+                                                    tab = tab,
+                                                )
+                                            )
+                                        },
+                                        onOpenMusicPlayer = {
+                                            navController.navigateToMusicPlayer()
+                                        },
                                         onMenuClick = libraryMenuClick,
                                     )
                                 }
@@ -1448,7 +1705,30 @@ fun MainNavigation(
                                             ?: LibraryFilter.Albums
                                     MusicBrowseScreen(
                                         tab = tab,
-                                        navController = navController,
+                                        onProfileClick = { navController.navigateToSettings() },
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onMusicAlbumClick = { albumId ->
+                                            navController.navigateToMusicAlbum(albumId)
+                                        },
+                                        onMusicArtistClick = { artistId ->
+                                            navController.navigateToMusicArtist(artistId)
+                                        },
+                                        onMusicPlaylistClick = { playlistId ->
+                                            navController.navigateToMusicPlaylist(playlistId)
+                                        },
+                                        onMusicGenreClick = { genre, libraryId ->
+                                            navController.navigate(
+                                                Destination.createMusicGenreRoute(
+                                                    genreName = genre.name,
+                                                    imageUrl = genre.imageUrl,
+                                                    genreId = genre.id,
+                                                    libraryId = libraryId,
+                                                )
+                                            )
+                                        },
+                                        onOpenMusicPlayer = {
+                                            navController.navigateToMusicPlayer()
+                                        },
                                     )
                                 }
 
@@ -1459,7 +1739,15 @@ fun MainNavigation(
                                             navArgument("albumId") { type = NavType.StringType }
                                         ),
                                 ) {
-                                    MusicAlbumScreen(navController = navController)
+                                    MusicAlbumScreen(
+                                        onMusicAlbumClick = { albumId ->
+                                            navController.navigateToMusicAlbum(albumId)
+                                        },
+                                        onMusicArtistClick = { artistId ->
+                                            navController.navigateToMusicArtist(artistId)
+                                        },
+                                        onHomeClick = { navController.navigateHome() },
+                                    )
                                 }
 
                                 composable(
@@ -1469,7 +1757,12 @@ fun MainNavigation(
                                             navArgument("artistId") { type = NavType.StringType }
                                         ),
                                 ) {
-                                    MusicArtistScreen(navController = navController)
+                                    MusicArtistScreen(
+                                        onMusicAlbumClick = { albumId ->
+                                            navController.navigateToMusicAlbum(albumId)
+                                        },
+                                        onHomeClick = { navController.navigateHome() },
+                                    )
                                 }
 
                                 composable(
@@ -1483,7 +1776,10 @@ fun MainNavigation(
                                             },
                                         ),
                                 ) {
-                                    PlaylistScreen(navController = navController)
+                                    PlaylistScreen(
+                                        onPlaylistDeleted = { navController.popBackStack() },
+                                        onHomeClick = { navController.navigateHome() },
+                                    )
                                 }
 
                                 composable(
@@ -1508,7 +1804,15 @@ fun MainNavigation(
                                             },
                                         ),
                                 ) {
-                                    MusicGenreScreen(navController = navController)
+                                    MusicGenreScreen(
+                                        onMusicAlbumClick = { albumId ->
+                                            navController.navigateToMusicAlbum(albumId)
+                                        },
+                                        onMusicArtistClick = { artistId ->
+                                            navController.navigateToMusicArtist(artistId)
+                                        },
+                                        onHomeClick = { navController.navigateHome() },
+                                    )
                                 }
 
                                 composable(Destination.AUDIOBOOKSHELF_LIBRARIES_ROUTE) {
@@ -1519,7 +1823,38 @@ fun MainNavigation(
                                                 Destination.createAudiobookshelfItemRoute(itemId)
                                             )
                                         },
-                                        navController = navController,
+                                        onNavigateToPlayer = { itemId, episodeId ->
+                                            navController.navigate(
+                                                Destination.createAudiobookshelfPlayerRoute(
+                                                    itemId = itemId,
+                                                    episodeId = episodeId,
+                                                )
+                                            )
+                                        },
+                                        onNavigateToSeries = { seriesId, libraryId, seriesName ->
+                                            navController.navigate(
+                                                Destination.createAudiobookshelfSeriesRoute(
+                                                    seriesId,
+                                                    libraryId,
+                                                    seriesName,
+                                                )
+                                            )
+                                        },
+                                        onNavigateToSeriesList = {
+                                            navController.navigate(
+                                                Destination.createAudiobookshelfSeriesListRoute()
+                                            )
+                                        },
+                                        onNavigateToLibrary = { libraryId, libraryName ->
+                                            navController.navigate(
+                                                Destination.createAudiobookshelfLibraryRoute(
+                                                    libraryId,
+                                                    libraryName,
+                                                )
+                                            )
+                                        },
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onProfileClick = { navController.navigateToSettings() },
                                         mainUiState = mainUiState,
                                         widthSizeClass = widthSizeClass,
                                     )
@@ -1532,7 +1867,8 @@ fun MainNavigation(
                                                 Destination.createAudiobookshelfItemRoute(itemId)
                                             )
                                         },
-                                        navController = navController,
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onProfileClick = { navController.navigateToSettings() },
                                         mainUiState = mainUiState,
                                         widthSizeClass = widthSizeClass,
                                     )
@@ -1554,7 +1890,8 @@ fun MainNavigation(
                                                 Destination.createAudiobookshelfItemRoute(itemId)
                                             )
                                         },
-                                        navController = navController,
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onProfileClick = { navController.navigateToSettings() },
                                         mainUiState = mainUiState,
                                     )
                                 }
@@ -1565,14 +1902,7 @@ fun MainNavigation(
                                         listOf(navArgument("itemId") { type = NavType.StringType }),
                                 ) {
                                     AudiobookshelfItemScreen(
-                                        onNavigateHome = {
-                                            navController.navigate(Destination.HOME.route) {
-                                                popUpTo(Destination.HOME.route) {
-                                                    inclusive = false
-                                                }
-                                                launchSingleTop = true
-                                            }
-                                        },
+                                        onNavigateHome = { navController.navigateHome() },
                                         onNavigateToPlayer = {
                                             itemId,
                                             episodeId,
@@ -1617,14 +1947,7 @@ fun MainNavigation(
                                         ),
                                 ) {
                                     AudiobookshelfSeriesScreen(
-                                        onNavigateHome = {
-                                            navController.navigate(Destination.HOME.route) {
-                                                popUpTo(Destination.HOME.route) {
-                                                    inclusive = false
-                                                }
-                                                launchSingleTop = true
-                                            }
-                                        },
+                                        onNavigateHome = { navController.navigateHome() },
                                         onNavigateToPlayer = { itemId, episodeId, startPosition ->
                                             navController.navigate(
                                                 Destination.createAudiobookshelfPlayerRoute(
@@ -2001,6 +2324,90 @@ private fun NavController.leaveMusicPlayerFor(
     } else {
         navigate(route) { popUpTo(Destination.MUSIC_PLAYER_ROUTE) { inclusive = true } }
     }
+}
+
+private fun NavController.navigateToSearch() {
+    navigate(Destination.createSearchRoute())
+}
+
+private fun NavController.navigateToSettings() {
+    navigate(Destination.createSettingsRoute())
+}
+
+private fun NavController.navigateToPerson(personId: String) {
+    navigate(Destination.createPersonRoute(personId))
+}
+
+private fun NavController.navigateToSeries(seriesId: String) {
+    navigate(Destination.createItemDetailRoute(itemId = seriesId, itemType = "Series"))
+}
+
+private fun NavController.browseHome() {
+    navigate(Destination.HOME.route) {
+        popUpTo(Destination.HOME.route) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
+}
+
+private fun NavController.navigateToLiveTvProgram(programId: String) {
+    navigate(Destination.createLiveTvProgramRoute(programId))
+}
+
+private fun NavController.navigateToLiveTvChannel(channelId: String) {
+    navigate(Destination.createLiveTvChannelRoute(channelId))
+}
+
+private fun NavController.navigateToMusicPlayer() {
+    navigate(Destination.MUSIC_PLAYER_ROUTE)
+}
+
+private fun NavController.navigateToMusicAlbum(albumId: String) {
+    navigate(Destination.createMusicAlbumRoute(albumId))
+}
+
+private fun NavController.navigateToMusicArtist(artistId: String) {
+    navigate(Destination.createMusicArtistRoute(artistId))
+}
+
+private fun NavController.navigateToMusicPlaylist(playlistId: String) {
+    navigate(Destination.createPlaylistRoute(playlistId, audioOnly = true))
+}
+
+private fun NavController.navigateToSeason(season: AfinitySeason) {
+    navigate(
+        Destination.createEpisodeListRoute(
+            seasonId = season.id.toString(),
+            seasonName = season.name,
+            seriesId = season.seriesId.toString(),
+        )
+    )
+}
+
+private fun NavController.navigateToSeerrMedia(item: SearchResultItem) {
+    navigate(
+        Destination.createSeerrMediaRoute(
+            mediaType = item.mediaType,
+            tmdbId = item.id,
+            title = item.getDisplayTitle(),
+            backdropUrl = item.getBackdropUrl(),
+            posterUrl = item.getPosterUrl(),
+        )
+    )
+}
+
+private fun NavController.navigateToFilteredMedia(params: FilterParams) {
+    navigate(
+        Destination.createFilteredMediaRoute(
+            filterType = params.type.name,
+            filterId = params.id,
+            filterName = params.name,
+        )
+    )
+}
+
+private fun NavController.popIfCurrent(entry: NavBackStackEntry) {
+    if (currentBackStackEntry?.id == entry.id) popBackStack()
 }
 
 private fun NavController.navigateToItem(item: AfinityItem) {

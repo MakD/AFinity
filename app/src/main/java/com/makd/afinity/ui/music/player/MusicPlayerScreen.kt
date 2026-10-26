@@ -9,55 +9,24 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
@@ -66,9 +35,6 @@ import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.data.models.music.RepeatMode
 import com.makd.afinity.data.models.player.MusicQuality
 import com.makd.afinity.data.models.player.PlaybackStats
-import com.makd.afinity.ui.audiobookshelf.player.components.EqualizerBottomSheet
-import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
-import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.components.rememberCastChooserLauncher
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
@@ -76,9 +42,13 @@ import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
 import com.makd.afinity.ui.music.player.components.MusicPlayerControls
-import com.makd.afinity.ui.player.components.AudioPlayerControlRow
+import com.makd.afinity.ui.player.components.AudioCoverArt
+import com.makd.afinity.ui.player.components.AudioCoverStyle
 import com.makd.afinity.ui.player.components.AudioPlayerControlSlot
 import com.makd.afinity.ui.player.components.AudioPlayerLayout
+import com.makd.afinity.ui.player.components.AudioPlayerScaffold
+import com.makd.afinity.ui.player.components.AudioPlayerTitleBlock
+import com.makd.afinity.ui.player.components.EqualizerBottomSheet
 import com.makd.afinity.ui.player.components.PlaybackStatsOverlay
 import com.makd.afinity.ui.player.components.PlayerMoreDivider
 import com.makd.afinity.ui.player.components.PlayerMoreRow
@@ -87,6 +57,7 @@ import com.makd.afinity.ui.player.components.PlayerMoreSheet
 import com.makd.afinity.ui.player.components.SwipeCoverItem
 import com.makd.afinity.ui.player.components.SwipeableCover
 import com.makd.afinity.ui.player.components.musicQualityShortLabel
+import com.makd.afinity.ui.player.components.rememberDominantColor
 import java.util.UUID
 import kotlinx.coroutines.launch
 
@@ -115,12 +86,12 @@ fun SharedTransitionScope.MusicPlayerScreen(
     val playbackStats by viewModel.playbackStats.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
-    var showQueue by remember { mutableStateOf(false) }
-    var showSleepTimer by remember { mutableStateOf(false) }
-    var showEqualizer by remember { mutableStateOf(false) }
-    var showQualitySheet by remember { mutableStateOf(false) }
-    var showAddToPlaylist by remember { mutableStateOf(false) }
-    var showMoreSheet by remember { mutableStateOf(false) }
+    var showQueue by rememberSaveable { mutableStateOf(false) }
+    var showSleepTimer by rememberSaveable { mutableStateOf(false) }
+    var showEqualizer by rememberSaveable { mutableStateOf(false) }
+    var showQualitySheet by rememberSaveable { mutableStateOf(false) }
+    var showAddToPlaylist by rememberSaveable { mutableStateOf(false) }
+    var showMoreSheet by rememberSaveable { mutableStateOf(false) }
     var radioSeed by remember { mutableStateOf<RadioSeed?>(null) }
     val launchCastChooser = rememberCastChooserLauncher()
 
@@ -146,81 +117,146 @@ fun SharedTransitionScope.MusicPlayerScreen(
 
     val isLandscape = isLandscapeWindow()
 
-    Scaffold(
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) })
+    AudioPlayerScaffold(
+        isLandscape = isLandscape,
+        isCasting = isMusicCasting,
+        accentColor = animatedColor,
+        snackbarHostState = snackbarHostState,
+        onMinimize = onNavigateBack,
+        onCastClick = launchCastChooser,
+        onMoreClick = { showMoreSheet = true },
+        castRemote = {
+            MusicCastRemote(
+                viewModel = viewModel,
+                coverUrl = coverUrl,
+                accentColor = animatedColor,
+                showLyrics = showLyrics,
+                lyrics = lyrics,
+                lyricsLoading = lyricsLoading,
+                onNavigateBack = onNavigateBack,
+                onNavigateToAlbum = onNavigateToAlbum,
+                onNavigateToArtist = onNavigateToArtist,
+                onOpenQueue = { showQueue = true },
+                onOpenMore = { showMoreSheet = true },
+            )
         },
-        containerColor = Color.Transparent,
-    ) { paddingValues ->
-        Box(
-            modifier =
-                Modifier.fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors =
-                                listOf(
-                                    animatedColor.copy(alpha = 0.8f),
-                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
-                                    Color.Black.copy(alpha = 0.9f),
-                                )
-                        )
+        cover = { style ->
+            AnimatedContent(
+                targetState = showLyrics,
+                transitionSpec = { fadeIn(tween(400)) togetherWith fadeOut(tween(400)) },
+                label = "lyricsToggle",
+                modifier = Modifier.fillMaxSize(),
+            ) { lyricsVisible ->
+                if (lyricsVisible) {
+                    MusicLyricsView(
+                        lyrics = lyrics,
+                        positionMs = playbackState.positionMs,
+                        isPlaying = playbackState.isPlaying,
+                        isLoading = lyricsLoading,
+                        onSeek = viewModel::seekTo,
+                        accentColor = animatedColor,
                     )
-        ) {
-            if (isMusicCasting) {
-                MusicCastRemote(
-                    viewModel = viewModel,
-                    coverUrl = coverUrl,
-                    accentColor = animatedColor,
-                    showLyrics = showLyrics,
-                    lyrics = lyrics,
-                    lyricsLoading = lyricsLoading,
-                    onNavigateBack = onNavigateBack,
-                    onNavigateToAlbum = onNavigateToAlbum,
-                    onNavigateToArtist = onNavigateToArtist,
-                    onOpenQueue = { showQueue = true },
-                    onOpenMore = { showMoreSheet = true },
-                )
-            } else if (isLandscape) {
-                MusicPlayerLandscape(
-                    viewModel = viewModel,
-                    coverUrl = coverUrl,
-                    coverBlurHash = coverBlurHash,
-                    animatedColor = animatedColor,
-                    showLyrics = showLyrics,
-                    lyrics = lyrics,
-                    lyricsLoading = lyricsLoading,
-                    onNavigateBack = onNavigateBack,
-                    onNavigateToAlbum = onNavigateToAlbum,
-                    onNavigateToArtist = onNavigateToArtist,
-                    onOpenQueue = { showQueue = true },
-                    onOpenMore = { showMoreSheet = true },
-                    onCastClick = launchCastChooser,
-                    isMusicCasting = isMusicCasting,
-                    paddingValues = paddingValues,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                )
-            } else {
-                MusicPlayerPortrait(
-                    viewModel = viewModel,
-                    coverUrl = coverUrl,
-                    coverBlurHash = coverBlurHash,
-                    animatedColor = animatedColor,
-                    showLyrics = showLyrics,
-                    lyrics = lyrics,
-                    lyricsLoading = lyricsLoading,
-                    onNavigateBack = onNavigateBack,
-                    onNavigateToAlbum = onNavigateToAlbum,
-                    onNavigateToArtist = onNavigateToArtist,
-                    onOpenQueue = { showQueue = true },
-                    onOpenMore = { showMoreSheet = true },
-                    onCastClick = launchCastChooser,
-                    isMusicCasting = isMusicCasting,
-                    paddingValues = paddingValues,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                )
+                } else {
+                    MusicSwipeableCover(
+                        viewModel = viewModel,
+                        coverUrl = coverUrl,
+                        coverBlurHash = coverBlurHash,
+                        currentTrackId = playbackState.currentTrack?.id,
+                        repeatMode = playbackState.repeatMode,
+                        isMusicCasting = isMusicCasting,
+                        style = style,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                    )
+                }
             }
-        }
-
+        },
+        info = {
+            val track = playbackState.currentTrack
+            val album = track?.album
+            AudioPlayerTitleBlock(
+                title = track?.name ?: stringResource(R.string.music_player_nothing_playing),
+                subtitle = track?.let { it.artist ?: it.artists.firstOrNull() ?: "" } ?: "",
+                accentLine = album,
+                accentColor = animatedColor,
+                isLandscape = isLandscape,
+                onSubtitleClick =
+                    track?.artistId?.let { id -> { onNavigateToArtist(id.toString()) } },
+                onAccentLineClick =
+                    track
+                        ?.albumId
+                        ?.takeIf { album != null }
+                        ?.let { id -> { onNavigateToAlbum(id.toString()) } },
+                trailing = {
+                    IconButton(onClick = viewModel::toggleCurrentTrackFavorite) {
+                        Icon(
+                            painter =
+                                painterResource(
+                                    if (track?.favorite == true) R.drawable.ic_favorite_filled
+                                    else R.drawable.ic_favorite
+                                ),
+                            contentDescription = stringResource(R.string.cd_favorite),
+                            tint =
+                                if (track?.favorite == true) Color.Red
+                                else Color.White.copy(alpha = 0.8f),
+                        )
+                    }
+                },
+            )
+        },
+        controls = {
+            MusicPlayerControls(
+                positionMs = playbackState.positionMs,
+                durationMs = playbackState.durationMs,
+                bufferedPositionMs = playbackState.bufferedPositionMs,
+                isPlaying = playbackState.isPlaying,
+                isBuffering = playbackState.isBuffering,
+                onPlayPauseClick = viewModel::togglePlayPause,
+                onPrevious = viewModel::skipPrevious,
+                onNext = viewModel::skipNext,
+                onSeek = viewModel::seekTo,
+                onSeekBackward = viewModel::seekBackward,
+                onSeekForward = viewModel::seekForward,
+                accentColor = animatedColor,
+                audioCodec = playbackState.audioCodec?.let { PlaybackStats.friendlyCodecName(it) },
+                isServerTranscode = playbackState.isServerTranscode,
+            )
+        },
+        actions = {
+            AudioPlayerControlSlot(
+                painter = painterResource(R.drawable.ic_arrows_shuffle),
+                contentDescription = stringResource(R.string.cd_music_shuffle),
+                onClick = viewModel::toggleShuffle,
+                active = playbackState.shuffled,
+                activeColor = animatedColor,
+            )
+            AudioPlayerControlSlot(
+                painter =
+                    painterResource(
+                        when (playbackState.repeatMode) {
+                            RepeatMode.OFF -> R.drawable.ic_repeat_off
+                            RepeatMode.ALL -> R.drawable.ic_repeat
+                            RepeatMode.ONE -> R.drawable.ic_repeat_once
+                        }
+                    ),
+                contentDescription = stringResource(R.string.cd_music_repeat),
+                onClick = viewModel::cycleRepeatMode,
+                active = playbackState.repeatMode != RepeatMode.OFF,
+                activeColor = animatedColor,
+            )
+            AudioPlayerControlSlot(
+                painter = painterResource(R.drawable.ic_article),
+                contentDescription = stringResource(R.string.cd_music_lyrics),
+                onClick = viewModel::toggleLyrics,
+                active = showLyrics,
+                activeColor = animatedColor,
+            )
+            AudioPlayerControlSlot(
+                painter = painterResource(R.drawable.ic_playlist_alt),
+                contentDescription = stringResource(R.string.cd_music_queue),
+                onClick = { showQueue = true },
+            )
+        },
+    ) {
         if (showQueue) {
             MusicQueueSheet(onDismiss = { showQueue = false }, viewModel = viewModel)
         }
@@ -369,6 +405,10 @@ fun SharedTransitionScope.MusicPlayerScreen(
         if (showAddToPlaylist) {
             val currentTrackId = playbackState.currentTrack?.id
             if (currentTrackId != null) {
+                val addedToPlaylistFmt =
+                    stringResource(R.string.music_snackbar_added_to_playlist_fmt)
+                val createdPlaylistFmt =
+                    stringResource(R.string.music_snackbar_created_playlist_fmt)
                 AddToPlaylistDialog(
                     trackIds = listOf(currentTrackId),
                     viewModel = addToPlaylistViewModel,
@@ -378,9 +418,9 @@ fun SharedTransitionScope.MusicPlayerScreen(
                         val message =
                             when (result) {
                                 is AddToPlaylistResult.Added ->
-                                    "Added to \"${result.playlistName}\""
+                                    addedToPlaylistFmt.format(result.playlistName)
                                 is AddToPlaylistResult.Created ->
-                                    "Created \"${result.playlistName}\""
+                                    createdPlaylistFmt.format(result.playlistName)
                                 is AddToPlaylistResult.Error -> result.message
                             }
                         scope.launch { snackbarHostState.showSnackbar(message) }
@@ -390,502 +430,6 @@ fun SharedTransitionScope.MusicPlayerScreen(
         }
     }
 }
-
-@OptIn(ExperimentalSharedTransitionApi::class)
-@Composable
-private fun SharedTransitionScope.MusicPlayerPortrait(
-    viewModel: MusicPlayerViewModel,
-    coverUrl: String?,
-    coverBlurHash: String? = null,
-    animatedColor: Color,
-    showLyrics: Boolean,
-    lyrics: List<com.makd.afinity.data.models.music.AfinityLyricLine>,
-    lyricsLoading: Boolean,
-    onNavigateBack: () -> Unit,
-    onNavigateToAlbum: (String) -> Unit,
-    onNavigateToArtist: (String) -> Unit,
-    onOpenQueue: () -> Unit,
-    onOpenMore: () -> Unit = {},
-    onCastClick: () -> Unit = {},
-    isMusicCasting: Boolean = false,
-    paddingValues: PaddingValues,
-    animatedVisibilityScope: AnimatedVisibilityScope,
-) {
-    val playbackState by viewModel.playbackState.collectAsStateWithLifecycle()
-
-    Column(
-        modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
-            IconButton(
-                onClick = onNavigateBack,
-                modifier = Modifier.align(Alignment.CenterStart),
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_keyboard_arrow_down),
-                    contentDescription = stringResource(R.string.cd_music_minimize),
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp),
-                )
-            }
-            Text(
-                stringResource(R.string.music_player_now_playing),
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.7f),
-                letterSpacing = 2.sp,
-                modifier = Modifier.align(Alignment.Center),
-            )
-            Row(
-                modifier = Modifier.align(Alignment.CenterEnd),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onCastClick) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_cast_devices),
-                            contentDescription = stringResource(R.string.cd_cast),
-                            tint = if (isMusicCasting) animatedColor else Color.White,
-                        )
-                        Box(
-                            modifier =
-                                Modifier.size(4.dp)
-                                    .align(Alignment.BottomCenter)
-                                    .alpha(if (isMusicCasting) 1f else 0f)
-                                    .background(animatedColor, CircleShape)
-                        )
-                    }
-                }
-                IconButton(onClick = onOpenMore) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_dots_vertical),
-                        contentDescription = stringResource(R.string.cd_music_more_options),
-                        tint = Color.White,
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-        Box(
-            modifier = Modifier.weight(1f).fillMaxWidth(),
-            contentAlignment = Alignment.Center,
-        ) {
-            AnimatedContent(
-                targetState = showLyrics,
-                transitionSpec = { fadeIn(tween(400)) togetherWith fadeOut(tween(400)) },
-                label = "lyricsToggle",
-                modifier = Modifier.fillMaxSize(),
-            ) { lyricsVisible ->
-                if (lyricsVisible) {
-                    MusicLyricsView(
-                        lyrics = lyrics,
-                        positionMs = playbackState.positionMs,
-                        isPlaying = playbackState.isPlaying,
-                        isLoading = lyricsLoading,
-                        onSeek = viewModel::seekTo,
-                        accentColor = animatedColor,
-                    )
-                } else {
-                    MusicSwipeableCover(
-                        viewModel = viewModel,
-                        coverUrl = coverUrl,
-                        coverBlurHash = coverBlurHash,
-                        currentTrackId = playbackState.currentTrack?.id,
-                        repeatMode = playbackState.repeatMode,
-                        isMusicCasting = isMusicCasting,
-                        cornerRadius = 32.dp,
-                        elevation = 24.dp,
-                        placeholderIconSize = 64.dp,
-                        horizontalOverflow = 24.dp,
-                        animatedVisibilityScope = animatedVisibilityScope,
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text =
-                        playbackState.currentTrack?.name
-                            ?: stringResource(R.string.music_player_nothing_playing),
-                    style =
-                        MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.ExtraBold
-                        ),
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                val openArtist: (() -> Unit)? =
-                    playbackState.currentTrack?.artistId?.let { id ->
-                        { onNavigateToArtist(id.toString()) }
-                    }
-                Text(
-                    text =
-                        playbackState.currentTrack?.let {
-                            it.artist ?: it.artists.firstOrNull() ?: ""
-                        } ?: "",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White.copy(alpha = 0.7f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.plainClickable(openArtist),
-                )
-                val album = playbackState.currentTrack?.album
-                val openAlbum: (() -> Unit)? =
-                    playbackState.currentTrack
-                        ?.albumId
-                        ?.takeIf { album != null }
-                        ?.let { id -> { onNavigateToAlbum(id.toString()) } }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = album ?: " ",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = animatedColor,
-                    maxLines = 1,
-                    modifier =
-                        Modifier.plainClickable(openAlbum)
-                            .alpha(if (album != null) 1f else 0f)
-                            .basicMarquee(iterations = Int.MAX_VALUE, velocity = 30.dp),
-                )
-            }
-            IconButton(onClick = viewModel::toggleCurrentTrackFavorite) {
-                Icon(
-                    painter =
-                        painterResource(
-                            if (playbackState.currentTrack?.favorite == true)
-                                R.drawable.ic_favorite_filled
-                            else R.drawable.ic_favorite
-                        ),
-                    contentDescription = stringResource(R.string.cd_favorite),
-                    tint =
-                        if (playbackState.currentTrack?.favorite == true) Color.Red
-                        else Color.White.copy(alpha = 0.8f),
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        MusicPlayerControls(
-            positionMs = playbackState.positionMs,
-            durationMs = playbackState.durationMs,
-            bufferedPositionMs = playbackState.bufferedPositionMs,
-            isPlaying = playbackState.isPlaying,
-            isBuffering = playbackState.isBuffering,
-            onPlayPauseClick = viewModel::togglePlayPause,
-            onPrevious = viewModel::skipPrevious,
-            onNext = viewModel::skipNext,
-            onSeek = viewModel::seekTo,
-            onSeekBackward = viewModel::seekBackward,
-            onSeekForward = viewModel::seekForward,
-            accentColor = animatedColor,
-            audioCodec = playbackState.audioCodec?.let { PlaybackStats.friendlyCodecName(it) },
-            isServerTranscode = playbackState.isServerTranscode,
-        )
-
-        Spacer(modifier = Modifier.height(28.dp))
-
-        AudioPlayerControlRow(modifier = Modifier.padding(bottom = 16.dp)) {
-            AudioPlayerControlSlot(
-                painter = painterResource(R.drawable.ic_arrows_shuffle),
-                contentDescription = stringResource(R.string.cd_music_shuffle),
-                onClick = viewModel::toggleShuffle,
-                active = playbackState.shuffled,
-                activeColor = animatedColor,
-            )
-            AudioPlayerControlSlot(
-                painter =
-                    painterResource(
-                        when (playbackState.repeatMode) {
-                            RepeatMode.OFF -> R.drawable.ic_repeat_off
-                            RepeatMode.ALL -> R.drawable.ic_repeat
-                            RepeatMode.ONE -> R.drawable.ic_repeat_once
-                        }
-                    ),
-                contentDescription = stringResource(R.string.cd_music_repeat),
-                onClick = viewModel::cycleRepeatMode,
-                active = playbackState.repeatMode != RepeatMode.OFF,
-                activeColor = animatedColor,
-            )
-            AudioPlayerControlSlot(
-                painter = painterResource(R.drawable.ic_article),
-                contentDescription = stringResource(R.string.cd_music_lyrics),
-                onClick = viewModel::toggleLyrics,
-                active = showLyrics,
-                activeColor = animatedColor,
-            )
-            AudioPlayerControlSlot(
-                painter = painterResource(R.drawable.ic_playlist_alt),
-                contentDescription = stringResource(R.string.cd_music_queue),
-                onClick = onOpenQueue,
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalSharedTransitionApi::class)
-@Composable
-private fun SharedTransitionScope.MusicPlayerLandscape(
-    viewModel: MusicPlayerViewModel,
-    coverUrl: String?,
-    coverBlurHash: String? = null,
-    animatedColor: Color,
-    showLyrics: Boolean,
-    lyrics: List<com.makd.afinity.data.models.music.AfinityLyricLine>,
-    lyricsLoading: Boolean,
-    onNavigateBack: () -> Unit,
-    onNavigateToAlbum: (String) -> Unit,
-    onNavigateToArtist: (String) -> Unit,
-    onOpenQueue: () -> Unit,
-    onOpenMore: () -> Unit = {},
-    onCastClick: () -> Unit = {},
-    isMusicCasting: Boolean = false,
-    paddingValues: PaddingValues,
-    animatedVisibilityScope: AnimatedVisibilityScope,
-) {
-    val playbackState by viewModel.playbackState.collectAsStateWithLifecycle()
-
-    Row(
-        modifier =
-            Modifier.fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 32.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(32.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier.weight(0.45f).fillMaxHeight(),
-            contentAlignment = Alignment.Center,
-        ) {
-            AnimatedContent(
-                targetState = showLyrics,
-                transitionSpec = { fadeIn(tween(400)) togetherWith fadeOut(tween(400)) },
-                label = "lyricsToggleLandscape",
-                modifier = Modifier.fillMaxSize(),
-            ) { lyricsVisible ->
-                if (lyricsVisible) {
-                    MusicLyricsView(
-                        lyrics = lyrics,
-                        positionMs = playbackState.positionMs,
-                        isPlaying = playbackState.isPlaying,
-                        isLoading = lyricsLoading,
-                        onSeek = viewModel::seekTo,
-                        accentColor = animatedColor,
-                    )
-                } else {
-                    MusicSwipeableCover(
-                        viewModel = viewModel,
-                        coverUrl = coverUrl,
-                        coverBlurHash = coverBlurHash,
-                        currentTrackId = playbackState.currentTrack?.id,
-                        repeatMode = playbackState.repeatMode,
-                        isMusicCasting = isMusicCasting,
-                        cornerRadius = 24.dp,
-                        elevation = 16.dp,
-                        placeholderIconSize = 48.dp,
-                        horizontalOverflow = 32.dp,
-                        animatedVisibilityScope = animatedVisibilityScope,
-                    )
-                }
-            }
-        }
-
-        Column(
-            modifier = Modifier.weight(0.55f).fillMaxHeight().verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Box(modifier = Modifier.fillMaxWidth()) {
-                IconButton(
-                    onClick = onNavigateBack,
-                    modifier = Modifier.align(Alignment.CenterStart),
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_keyboard_arrow_down),
-                        contentDescription = stringResource(R.string.cd_music_minimize),
-                        tint = Color.White,
-                    )
-                }
-                Text(
-                    stringResource(R.string.music_player_now_playing),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.7f),
-                    letterSpacing = 2.sp,
-                    modifier = Modifier.align(Alignment.Center),
-                )
-                Row(
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    IconButton(onClick = onCastClick) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxSize(),
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_cast_devices),
-                                contentDescription = stringResource(R.string.cd_cast),
-                                tint = if (isMusicCasting) animatedColor else Color.White,
-                            )
-                            Box(
-                                modifier =
-                                    Modifier.size(4.dp)
-                                        .align(Alignment.BottomCenter)
-                                        .alpha(if (isMusicCasting) 1f else 0f)
-                                        .background(animatedColor, CircleShape)
-                            )
-                        }
-                    }
-                    IconButton(onClick = onOpenMore) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_dots_vertical),
-                            contentDescription = stringResource(R.string.cd_music_more_options),
-                            tint = Color.White,
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text =
-                            playbackState.currentTrack?.name
-                                ?: stringResource(R.string.music_player_nothing_playing),
-                        style =
-                            MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        color = Color.White,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    val openArtistLandscape: (() -> Unit)? =
-                        playbackState.currentTrack?.artistId?.let { id ->
-                            { onNavigateToArtist(id.toString()) }
-                        }
-                    Text(
-                        text =
-                            playbackState.currentTrack?.let {
-                                it.artist ?: it.artists.firstOrNull() ?: ""
-                            } ?: "",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.7f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.plainClickable(openArtistLandscape),
-                    )
-                    val albumLandscape = playbackState.currentTrack?.album
-                    val openAlbumLandscape: (() -> Unit)? =
-                        playbackState.currentTrack
-                            ?.albumId
-                            ?.takeIf { albumLandscape != null }
-                            ?.let { id -> { onNavigateToAlbum(id.toString()) } }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = albumLandscape ?: " ",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = animatedColor,
-                        maxLines = 1,
-                        modifier =
-                            Modifier.plainClickable(openAlbumLandscape)
-                                .alpha(if (albumLandscape != null) 1f else 0f)
-                                .basicMarquee(iterations = Int.MAX_VALUE, velocity = 30.dp),
-                    )
-                }
-                IconButton(onClick = viewModel::toggleCurrentTrackFavorite) {
-                    Icon(
-                        painter =
-                            painterResource(
-                                if (playbackState.currentTrack?.favorite == true)
-                                    R.drawable.ic_favorite_filled
-                                else R.drawable.ic_favorite
-                            ),
-                        contentDescription = stringResource(R.string.cd_favorite),
-                        tint =
-                            if (playbackState.currentTrack?.favorite == true) Color.Red
-                            else Color.White.copy(alpha = 0.8f),
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            MusicPlayerControls(
-                positionMs = playbackState.positionMs,
-                durationMs = playbackState.durationMs,
-                bufferedPositionMs = playbackState.bufferedPositionMs,
-                isPlaying = playbackState.isPlaying,
-                isBuffering = playbackState.isBuffering,
-                onPlayPauseClick = viewModel::togglePlayPause,
-                onPrevious = viewModel::skipPrevious,
-                onNext = viewModel::skipNext,
-                onSeek = viewModel::seekTo,
-                onSeekBackward = viewModel::seekBackward,
-                onSeekForward = viewModel::seekForward,
-                accentColor = animatedColor,
-                audioCodec = playbackState.audioCodec?.let { PlaybackStats.friendlyCodecName(it) },
-                isServerTranscode = playbackState.isServerTranscode,
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            AudioPlayerControlRow {
-                AudioPlayerControlSlot(
-                    painter = painterResource(R.drawable.ic_arrows_shuffle),
-                    contentDescription = stringResource(R.string.cd_music_shuffle),
-                    onClick = viewModel::toggleShuffle,
-                    active = playbackState.shuffled,
-                    activeColor = animatedColor,
-                )
-                AudioPlayerControlSlot(
-                    painter =
-                        painterResource(
-                            when (playbackState.repeatMode) {
-                                RepeatMode.OFF -> R.drawable.ic_repeat_off
-                                RepeatMode.ALL -> R.drawable.ic_repeat
-                                RepeatMode.ONE -> R.drawable.ic_repeat_once
-                            }
-                        ),
-                    contentDescription = stringResource(R.string.cd_music_repeat),
-                    onClick = viewModel::cycleRepeatMode,
-                    active = playbackState.repeatMode != RepeatMode.OFF,
-                    activeColor = animatedColor,
-                )
-                AudioPlayerControlSlot(
-                    painter = painterResource(R.drawable.ic_article),
-                    contentDescription = stringResource(R.string.cd_music_lyrics),
-                    onClick = viewModel::toggleLyrics,
-                    active = showLyrics,
-                    activeColor = animatedColor,
-                )
-                AudioPlayerControlSlot(
-                    painter = painterResource(R.drawable.ic_playlist_alt),
-                    contentDescription = stringResource(R.string.cd_music_queue),
-                    onClick = onOpenQueue,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-    }
-}
-
-private fun Modifier.plainClickable(onClick: (() -> Unit)?): Modifier =
-    if (onClick == null) this
-    else clickable(interactionSource = null, indication = null, onClick = onClick)
 
 private data class MusicCoverImage(val url: String?, val blurHash: String?)
 
@@ -911,10 +455,7 @@ private fun SharedTransitionScope.MusicSwipeableCover(
     currentTrackId: UUID?,
     repeatMode: RepeatMode,
     isMusicCasting: Boolean,
-    cornerRadius: Dp,
-    elevation: Dp,
-    placeholderIconSize: Dp,
-    horizontalOverflow: Dp,
+    style: AudioCoverStyle,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
     val swipeEnabled by viewModel.swipeToSkipEnabled.collectAsStateWithLifecycle()
@@ -937,16 +478,16 @@ private fun SharedTransitionScope.MusicSwipeableCover(
         hasNext = isMusicCasting || nextIndex != null,
         onPrevious = viewModel::skipToPreviousTrack,
         onNext = viewModel::skipNext,
-        horizontalOverflow = horizontalOverflow,
+        horizontalOverflow = style.horizontalOverflow,
         modifier = Modifier.fillMaxSize(),
         previous = previousIndex?.let { SwipeCoverItem(it, queue[it].toCoverImage()) },
         next = nextIndex?.let { SwipeCoverItem(it, queue[it].toCoverImage()) },
     ) { image, isCurrent ->
-        MusicCoverArt(
-            image = image,
-            cornerRadius = cornerRadius,
-            elevation = elevation,
-            placeholderIconSize = placeholderIconSize,
+        AudioCoverArt(
+            imageUrl = image.url,
+            blurHash = image.blurHash,
+            placeholderIcon = painterResource(R.drawable.ic_music),
+            style = style,
             modifier =
                 if (isCurrent) {
                     coverModifier.sharedElement(
@@ -960,47 +501,5 @@ private fun SharedTransitionScope.MusicSwipeableCover(
                     coverModifier
                 },
         )
-    }
-}
-
-@Composable
-private fun MusicCoverArt(
-    image: MusicCoverImage,
-    cornerRadius: Dp,
-    elevation: Dp,
-    placeholderIconSize: Dp,
-    modifier: Modifier = Modifier,
-) {
-    val shape = RoundedCornerShape(cornerRadius)
-    Surface(
-        modifier = modifier.shadow(elevation = elevation, shape = shape, spotColor = Color.Black),
-        shape = shape,
-        color = Color.Transparent,
-    ) {
-        if (image.url != null || image.blurHash != null) {
-            val coverSizeDp = AudioPlayerLayout.CoverMaxSize
-            com.makd.afinity.ui.components.AsyncImage(
-                imageUrl = image.url,
-                contentDescription = null,
-                blurHash = image.blurHash,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-                targetWidth = coverSizeDp,
-                targetHeight = coverSizeDp,
-            )
-        } else {
-            Box(
-                modifier =
-                    Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_music),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(placeholderIconSize),
-                )
-            }
-        }
     }
 }

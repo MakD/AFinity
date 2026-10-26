@@ -2,7 +2,6 @@ package com.makd.afinity.ui.person.components
 
 import android.content.Intent
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -10,27 +9,19 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,16 +34,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -76,12 +60,19 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.wikidata.WikidataAwards
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.navigation.LocalShowAwards
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.BackdropStyle
 import com.makd.afinity.ui.components.CardRowContainer
+import com.makd.afinity.ui.components.DetailGutter
 import com.makd.afinity.ui.components.FavoriteToggleButton
+import com.makd.afinity.ui.components.ImageHeroKind
+import com.makd.afinity.ui.components.LandscapeDetailArrangement
+import com.makd.afinity.ui.components.LandscapeDetailLayout
 import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.ui.components.PortraitDetailLayout
+import com.makd.afinity.ui.components.PortraitHero
+import com.makd.afinity.ui.components.backdropChainOf
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.shared.AwardsSectionStyle
 import com.makd.afinity.ui.item.components.shared.ExternalTitlesSection
@@ -90,7 +81,6 @@ import com.makd.afinity.ui.item.components.shared.WikidataAwardsSection
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import com.makd.afinity.ui.utils.IntentUtils
-import com.makd.afinity.ui.utils.verticalLayoutOffset
 
 private const val MISSING_CREDITS_LIMIT = 20
 
@@ -182,93 +172,66 @@ private fun LandscapePersonDetailContent(
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
 ) {
-    val paddingValues = WindowInsets.safeDrawing.asPaddingValues()
-    val playerOffset = LocalPlayerOffset.current
-
-    Box(modifier = modifier.fillMaxSize()) {
-        val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
-        AsyncImage(
-            imageUrl = person.images.primaryImageUrl,
-            contentDescription = null,
-            blurHash = person.images.primaryBlurHash,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize().blur(radius = 20.dp).alpha(0.6f),
-            targetWidth = screenWidthDp,
-            targetHeight = screenWidthDp,
-        )
-
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)))
-
-        Row(
-            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(24.dp),
-        ) {
-            Column(
-                modifier = Modifier.width(280.dp).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+    LandscapeDetailLayout(
+        backdropStyle = BackdropStyle.BlurredPhoto,
+        backdrop = backdropChainOf(person.images.primaryImageUrl, person.images.primaryBlurHash),
+        listState = lazyListState,
+        arrangement = LandscapeDetailArrangement.Sidebar(280.dp),
+        modifier = modifier,
+        listVerticalArrangement = Arrangement.spacedBy(16.dp),
+        pane = {
+            Card(
+                shape = RoundedCornerShape(12.dp),
+                elevation = CardDefaults.cardElevation(4.dp),
+                modifier = Modifier.aspectRatio(2f / 3f),
             ) {
-                Card(
-                    shape = RoundedCornerShape(12.dp),
-                    elevation = CardDefaults.cardElevation(4.dp),
-                    modifier = Modifier.aspectRatio(2f / 3f),
-                ) {
-                    AsyncImage(
-                        imageUrl = person.images.primaryImageUrl,
-                        contentDescription = person.name,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                        targetWidth = 280.dp,
-                        targetHeight = 420.dp,
-                    )
-                }
+                AsyncImage(
+                    imageUrl = person.images.primaryImageUrl,
+                    contentDescription = person.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                    targetWidth = 280.dp,
+                    targetHeight = 420.dp,
+                )
+            }
+        },
+        items = {
+            item {
+                Text(
+                    text = person.name,
+                    style =
+                        MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold),
+                    color = Color.White,
+                )
             }
 
-            LazyColumn(
-                state = lazyListState,
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(bottom = 16.dp + playerOffset),
-            ) {
-                item {
-                    Text(
-                        text = person.name,
-                        style =
-                            MaterialTheme.typography.displaySmall.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
-                        color = Color.White,
-                    )
-                }
+            item {
+                PersonMetadataSection(
+                    person = person,
+                    onToggleFavorite = onToggleFavorite,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
 
-                item {
-                    PersonMetadataSection(
-                        person = person,
-                        onToggleFavorite = onToggleFavorite,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-
-                item {
-                    CardRowContainer(modifier = Modifier.fillMaxWidth(), gutter = 0.dp) {
-                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            PersonSharedContentBlocks(
-                                person = person,
-                                movies = movies,
-                                shows = shows,
-                                onItemClick = onItemClick,
-                                cardWidth = WindowWidthSizeClass.Compact.portraitWidth,
-                                awards = awards,
-                                missingCredits = missingCredits,
-                                onExternalItemClick = onExternalItemClick,
-                                onViewAllCredits = onViewAllCredits,
-                            )
-                        }
+            item {
+                CardRowContainer(modifier = Modifier.fillMaxWidth(), gutter = 0.dp) {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        PersonSharedContentBlocks(
+                            person = person,
+                            movies = movies,
+                            shows = shows,
+                            onItemClick = onItemClick,
+                            cardWidth = WindowWidthSizeClass.Compact.portraitWidth,
+                            awards = awards,
+                            missingCredits = missingCredits,
+                            onExternalItemClick = onExternalItemClick,
+                            onViewAllCredits = onViewAllCredits,
+                        )
                     }
                 }
             }
-        }
-    }
+        },
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -287,52 +250,47 @@ private fun PortraitPersonDetailContent(
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
 ) {
-    val cardWidth = CardDimensions.portraitRowWidth(widthSizeClass, gutter = 16.dp)
-    val playerOffset = LocalPlayerOffset.current
+    val cardWidth = CardDimensions.portraitRowWidth(widthSizeClass, gutter = DetailGutter)
 
-    LazyColumn(
-        state = lazyListState,
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = playerOffset),
-    ) {
-        item { PersonHeroSection(person = person, modifier = Modifier.fillParentMaxHeight(0.6f)) }
+    PortraitDetailLayout(
+        hero =
+            PortraitHero.Image(
+                kind = ImageHeroKind.Photo,
+                backdrop =
+                    backdropChainOf(person.images.primaryImageUrl, person.images.primaryBlurHash),
+                contentDescription = stringResource(R.string.cd_person_image_fmt, person.name),
+            ),
+        listState = lazyListState,
+        modifier = modifier,
+        header = {
+            Text(
+                text = person.name,
+                style =
+                    MaterialTheme.typography.headlineLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 32.sp,
+                    ),
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
 
-        item {
-            Column(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .verticalLayoutOffset((-110).dp)
-                        .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    text = person.name,
-                    style =
-                        MaterialTheme.typography.headlineLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 32.sp,
-                        ),
-                    color = MaterialTheme.colorScheme.onBackground,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+            PersonMetadataSection(person = person, onToggleFavorite = onToggleFavorite)
 
-                PersonMetadataSection(person = person, onToggleFavorite = onToggleFavorite)
-
-                PersonSharedContentBlocks(
-                    person = person,
-                    movies = movies,
-                    shows = shows,
-                    onItemClick = onItemClick,
-                    cardWidth = cardWidth,
-                    awards = awards,
-                    missingCredits = missingCredits,
-                    onExternalItemClick = onExternalItemClick,
-                    onViewAllCredits = onViewAllCredits,
-                )
-            }
-        }
-    }
+            PersonSharedContentBlocks(
+                person = person,
+                movies = movies,
+                shows = shows,
+                onItemClick = onItemClick,
+                cardWidth = cardWidth,
+                awards = awards,
+                missingCredits = missingCredits,
+                onExternalItemClick = onExternalItemClick,
+                onViewAllCredits = onViewAllCredits,
+            )
+        },
+        items = {},
+    )
 }
 
 @Composable
@@ -387,37 +345,6 @@ private fun PersonSharedContentBlocks(
             onSeerrItemClick = onExternalItemClick,
             cardWidth = cardWidth,
             onViewAllClick = onViewAllCredits,
-        )
-    }
-}
-
-@Composable
-private fun PersonHeroSection(person: AfinityPersonDetail, modifier: Modifier = Modifier) {
-    Box(modifier = modifier.fillMaxWidth()) {
-        val heroWidthDp = LocalConfiguration.current.screenWidthDp.dp
-        AsyncImage(
-            imageUrl = person.images.primaryImageUrl,
-            contentDescription = stringResource(R.string.cd_person_image_fmt, person.name),
-            blurHash = person.images.primaryBlurHash,
-            modifier =
-                Modifier.fillMaxSize()
-                    .graphicsLayer { alpha = 0.99f }
-                    .drawWithCache {
-                        val gradient =
-                            Brush.verticalGradient(
-                                colors = listOf(Color.Black, Color.Transparent),
-                                startY = size.height * 0.75f,
-                                endY = size.height,
-                            )
-                        onDrawWithContent {
-                            drawContent()
-                            drawRect(gradient, blendMode = BlendMode.DstIn)
-                        }
-                    },
-            contentScale = ContentScale.Crop,
-            alignment = Alignment.Center,
-            targetWidth = heroWidthDp,
-            targetHeight = heroWidthDp,
         )
     }
 }

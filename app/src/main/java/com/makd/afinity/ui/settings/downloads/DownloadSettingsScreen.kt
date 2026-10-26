@@ -41,14 +41,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -85,9 +82,13 @@ import com.makd.afinity.data.repository.CacheSection
 import com.makd.afinity.data.repository.CacheUsage
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
+import com.makd.afinity.ui.components.AfinityBackButton
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinitySlider
 import com.makd.afinity.ui.components.AfinitySwitch
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
+import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.DownloadListItemRow
 import com.makd.afinity.ui.components.EmptyState
@@ -238,23 +239,16 @@ fun DownloadSettingsScreen(
         )
     }
 
-    Scaffold(
-        topBar = {
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
             if (selectionMode) {
-                TopAppBar(
+                AfinityTopBar(
                     title = {
-                        Text(
-                            text =
-                                stringResource(
-                                    R.string.downloads_selected_fmt,
-                                    selectedEntries.size,
-                                ),
-                            style =
-                                MaterialTheme.typography.headlineSmall.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
+                        AfinityTopAppBarTitle(
+                            stringResource(R.string.downloads_selected_fmt, selectedEntries.size)
                         )
                     },
+                    modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
                     navigationIcon = {
                         IconButton(onClick = { exitSelection() }) {
                             Icon(
@@ -272,34 +266,13 @@ fun DownloadSettingsScreen(
                             Text(stringResource(R.string.downloads_select_all))
                         }
                     },
-                    colors =
-                        TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                        ),
+                    backgroundOpacity = backgroundOpacity,
                 )
             } else {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = stringResource(R.string.pref_offline_media),
-                            style =
-                                MaterialTheme.typography.headlineMedium.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBackClick) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_chevron_left),
-                                contentDescription = stringResource(R.string.cd_back),
-                            )
-                        }
-                    },
-                    colors =
-                        TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.surface
-                        ),
+                AfinityTopBar(
+                    title = { AfinityTopAppBarTitle(stringResource(R.string.pref_offline_media)) },
+                    navigationIcon = { AfinityBackButton(onClick = onBackClick) },
+                    backgroundOpacity = backgroundOpacity,
                 )
             }
         },

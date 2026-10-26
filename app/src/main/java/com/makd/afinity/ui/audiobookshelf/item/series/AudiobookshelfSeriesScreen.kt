@@ -4,28 +4,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.displayCutout
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -35,26 +23,34 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
-import com.makd.afinity.navigation.LocalPlayerOffset
-import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeroBackground
 import com.makd.afinity.ui.audiobookshelf.item.components.SeriesCoverGrid
+import com.makd.afinity.ui.audiobookshelf.withAbsWidth
+import com.makd.afinity.ui.components.AfinityScreen
+import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.BackdropStyle
+import com.makd.afinity.ui.components.DetailCoverSize
+import com.makd.afinity.ui.components.DetailCoverTitle
+import com.makd.afinity.ui.components.DetailGutter
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.LandscapeDetailArrangement
+import com.makd.afinity.ui.components.LandscapeDetailLayout
+import com.makd.afinity.ui.components.PortraitDetailLayout
+import com.makd.afinity.ui.components.PortraitHero
+import com.makd.afinity.ui.components.backdropChainOf
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 
@@ -69,13 +65,21 @@ fun AudiobookshelfSeriesScreen(
     val serverUrl = config?.serverUrl
 
     val isLandscape = isLandscapeWindow()
-    val playerOffset = LocalPlayerOffset.current
-    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
     val lazyListState = rememberLazyListState()
     val topBarOpacity by rememberTopBarOpacity(lazyListState)
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
+            AfinityTopAppBar(
+                title = {},
+                onHomeClick = onNavigateHome,
+                backgroundOpacity = backgroundOpacity,
+            )
+        },
+        mode = AfinityScreenMode.Hero,
+        scrollOpacity = { topBarOpacity },
+    ) {
         when {
             uiState.isLoading -> {
                 FullScreenLoading()
@@ -92,75 +96,29 @@ fun AudiobookshelfSeriesScreen(
                 if (isLandscape) {
                     val firstCoverUrl = coverUrls.firstOrNull()
 
-                    ItemHeroBackground(coverUrl = firstCoverUrl)
-
-                    Row(
-                        modifier =
-                            Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.displayCutout)
-                    ) {
-                        Column(
-                            modifier =
-                                Modifier.weight(1f)
-                                    .fillMaxHeight()
-                                    .verticalScroll(rememberScrollState())
-                                    .padding(horizontal = 16.dp)
-                                    .padding(bottom = 24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            Spacer(modifier = Modifier.statusBarsPadding())
-                            Spacer(modifier = Modifier.height(60.dp))
-
+                    LandscapeDetailLayout(
+                        backdropStyle = BackdropStyle.BlurredCover,
+                        backdrop = backdropChainOf(firstCoverUrl?.withAbsWidth(600)),
+                        listState = lazyListState,
+                        arrangement = LandscapeDetailArrangement.Split,
+                        listVerticalArrangement = Arrangement.spacedBy(12.dp),
+                        pane = {
                             SeriesCoverGrid(
                                 coverUrls = coverUrls,
-                                modifier = Modifier.width(200.dp),
+                                modifier = Modifier.width(DetailCoverSize),
                             )
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Text(
-                                text = viewModel.seriesName,
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            Text(
-                                text = "${uiState.totalBooks} books",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-
-                        LazyColumn(
-                            state = lazyListState,
-                            modifier =
-                                Modifier.weight(1f)
-                                    .fillMaxHeight()
-                                    .background(
-                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                            DetailCoverTitle(
+                                title = viewModel.seriesName,
+                                subtitle =
+                                    pluralStringResource(
+                                        R.plurals.abs_series_books_fmt,
+                                        uiState.totalBooks,
+                                        uiState.totalBooks,
                                     ),
-                            contentPadding =
-                                PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            item {
-                                Spacer(modifier = Modifier.statusBarsPadding())
-                                Text(
-                                    text = stringResource(R.string.abs_books),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier =
-                                        Modifier.padding(
-                                            start = 16.dp,
-                                            top = 16.dp,
-                                            bottom = 16.dp,
-                                        ),
-                                )
-                            }
+                            )
+                        },
+                        items = {
+                            item { BooksSectionTitle() }
 
                             itemsIndexed(uiState.books, key = { _, book -> book.id }) { index, book
                                 ->
@@ -171,34 +129,33 @@ fun AudiobookshelfSeriesScreen(
                                     onPlay = { onNavigateToPlayer(book.id, null, null) },
                                 )
                             }
-                        }
-                    }
+                        },
+                    )
                 } else {
-                    LazyColumn(
-                        state = lazyListState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding =
-                            PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        item {
-                            SeriesHeader(
-                                seriesName = viewModel.seriesName,
-                                totalBooks = uiState.totalBooks,
+                    PortraitDetailLayout(
+                        hero =
+                            PortraitHero.Cover(
+                                backdropChainOf(coverUrls.firstOrNull()?.withAbsWidth(600))
+                            ),
+                        listState = lazyListState,
+                        listVerticalArrangement = Arrangement.spacedBy(12.dp),
+                        header = {
+                            SeriesCoverGrid(
                                 coverUrls = coverUrls,
-                                firstCoverUrl = coverUrls.firstOrNull(),
+                                modifier = Modifier.width(DetailCoverSize),
                             )
-                        }
-
-                        item {
-                            Text(
-                                text = stringResource(R.string.abs_books),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                modifier =
-                                    Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp),
+                            DetailCoverTitle(
+                                title = viewModel.seriesName,
+                                subtitle =
+                                    pluralStringResource(
+                                        R.plurals.abs_series_books_fmt,
+                                        uiState.totalBooks,
+                                        uiState.totalBooks,
+                                    ),
                             )
-                        }
+                        },
+                    ) {
+                        item { BooksSectionTitle() }
 
                         itemsIndexed(uiState.books, key = { _, book -> book.id }) { index, book ->
                             SeriesBookItem(
@@ -216,57 +173,17 @@ fun AudiobookshelfSeriesScreen(
                 FullScreenError(message = stringResource(R.string.abs_error_load_series))
             }
         }
-
-        AfinityTopAppBar(
-            title = {},
-            onHomeClick = onNavigateHome,
-            backgroundOpacity = { topBarOpacity },
-            landscapeStatusBarFill = Color.Black,
-        )
     }
 }
 
 @Composable
-private fun SeriesHeader(
-    seriesName: String,
-    totalBooks: Int,
-    coverUrls: List<String>,
-    firstCoverUrl: String?,
-) {
-    Box(modifier = Modifier.fillMaxWidth()) {
-        Box(modifier = Modifier.fillMaxWidth().height(400.dp)) {
-            ItemHeroBackground(coverUrl = firstCoverUrl)
-        }
-
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Spacer(modifier = Modifier.statusBarsPadding())
-            Spacer(modifier = Modifier.height(60.dp))
-
-            SeriesCoverGrid(coverUrls = coverUrls, modifier = Modifier.width(200.dp))
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = seriesName,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "$totalBooks books",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
+private fun BooksSectionTitle() {
+    Text(
+        text = stringResource(R.string.abs_books),
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(start = DetailGutter, top = 24.dp, bottom = 8.dp),
+    )
 }
 
 @Composable

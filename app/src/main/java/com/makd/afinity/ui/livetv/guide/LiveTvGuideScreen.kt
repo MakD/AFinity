@@ -29,7 +29,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
@@ -57,13 +56,15 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.AfinityProgram
 import com.makd.afinity.data.models.livetv.LiveTvViewOptions
-import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityScreen
+import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
+import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.FilterFab
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
@@ -72,7 +73,6 @@ import com.makd.afinity.ui.livetv.components.EpgPendingRow
 import com.makd.afinity.ui.livetv.components.EpgProgramRow
 import com.makd.afinity.ui.livetv.components.EpgTimeHeader
 import com.makd.afinity.ui.livetv.components.LiveTvFilterDialog
-import com.makd.afinity.ui.livetv.components.LiveTvTopAppBar
 import com.makd.afinity.ui.livetv.components.programDayLabel
 import com.makd.afinity.ui.livetv.components.rememberCurrentTime
 import com.makd.afinity.ui.main.MainUiState
@@ -91,8 +91,11 @@ private const val RENDER_MARGIN_SLOTS = 2
 
 @Composable
 fun LiveTvGuideScreen(
-    navController: NavController,
     mainUiState: MainUiState,
+    onSearchClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onChannelClick: (String) -> Unit,
+    onProgramClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     widthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact,
     viewModel: LiveTvGuideViewModel = hiltViewModel(),
@@ -105,12 +108,18 @@ fun LiveTvGuideScreen(
         onPauseOrDispose { viewModel.setScreenVisible(false) }
     }
 
-    Scaffold(
-        topBar = {
-            LiveTvTopAppBar(
-                title = stringResource(R.string.livetv_tab_guide),
-                navController = navController,
-                mainUiState = mainUiState,
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
+            AfinityTopAppBar(
+                title = { AfinityTopAppBarTitle(stringResource(R.string.livetv_tab_guide)) },
+                onSearchClick = onSearchClick,
+                profile =
+                    AppBarProfile(
+                        onClick = onProfileClick,
+                        name = mainUiState.userName,
+                        imageUrl = mainUiState.userProfileImageUrl,
+                    ),
+                backgroundOpacity = backgroundOpacity,
             )
         },
         modifier = modifier,
@@ -119,7 +128,8 @@ fun LiveTvGuideScreen(
             GuideContentWithFilters(
                 uiState = uiState,
                 viewOptions = viewOptions,
-                navController = navController,
+                onChannelClick = onChannelClick,
+                onProgramClick = onProgramClick,
                 viewModel = viewModel,
                 widthSizeClass = widthSizeClass,
             )
@@ -131,7 +141,8 @@ fun LiveTvGuideScreen(
 private fun BoxScope.GuideContentWithFilters(
     uiState: LiveTvGuideUiState,
     viewOptions: LiveTvViewOptions,
-    navController: NavController,
+    onChannelClick: (String) -> Unit,
+    onProgramClick: (String) -> Unit,
     viewModel: LiveTvGuideViewModel,
     widthSizeClass: WindowWidthSizeClass,
 ) {
@@ -143,9 +154,7 @@ private fun BoxScope.GuideContentWithFilters(
     LiveTvGuideContent(
         uiState = uiState,
         viewOptions = viewOptions,
-        onChannelClick = { channel ->
-            navController.navigate(Destination.createLiveTvChannelRoute(channel.id.toString()))
-        },
+        onChannelClick = { channel -> onChannelClick(channel.id.toString()) },
         onChannelLongClick = { channel ->
             PlayerLauncher.launchLiveChannel(
                 context = context,
@@ -153,9 +162,7 @@ private fun BoxScope.GuideContentWithFilters(
                 channelName = channel.name,
             )
         },
-        onProgramClick = { program ->
-            navController.navigate(Destination.createLiveTvProgramRoute(program.id.toString()))
-        },
+        onProgramClick = { program -> onProgramClick(program.id.toString()) },
         onJumpToNow = viewModel::jumpToNow,
         onSelectDay = viewModel::selectDay,
         onScrollConsumed = viewModel::onScrollConsumed,

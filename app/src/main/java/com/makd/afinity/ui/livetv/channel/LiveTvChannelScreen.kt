@@ -4,7 +4,6 @@ package com.makd.afinity.ui.livetv.channel
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -30,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
@@ -40,14 +38,14 @@ import com.makd.afinity.data.models.extensions.thumbBlurHash
 import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.AfinityProgram
-import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityScreen
+import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.ConnectedButtonGroup
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.GroupButton
-import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
 import com.makd.afinity.ui.item.components.shared.MediaLogoHeader
 import com.makd.afinity.ui.item.components.shared.detailItem
@@ -58,11 +56,12 @@ import com.makd.afinity.ui.livetv.components.TimelineRecording
 import com.makd.afinity.ui.livetv.components.programTimelineItems
 import com.makd.afinity.ui.livetv.components.rememberCurrentTime
 import com.makd.afinity.ui.player.PlayerLauncher
-import com.makd.afinity.ui.utils.rememberDetailTopBarOpacity
+import com.makd.afinity.ui.utils.rememberTopBarOpacity
 
 @Composable
 fun LiveTvChannelScreen(
-    navController: NavController,
+    onProgramClick: (String) -> Unit,
+    onHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LiveTvChannelViewModel = hiltViewModel(),
 ) {
@@ -72,14 +71,25 @@ fun LiveTvChannelScreen(
     val prompt by viewModel.recorder.prompt.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lazyListState = rememberLazyListState()
-    val topBarOpacity by rememberDetailTopBarOpacity(lazyListState, isLandscapeWindow())
+    val topBarOpacity by rememberTopBarOpacity(lazyListState)
     val channel = uiState.channel
     val snackbarHostState = remember { SnackbarHostState() }
     val playerOffset = LocalPlayerOffset.current
 
     RecordingEventsSnackbar(viewModel.recorder.events, snackbarHostState)
 
-    Box(modifier = modifier.fillMaxSize()) {
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
+            AfinityTopAppBar(
+                title = {},
+                onHomeClick = onHomeClick,
+                backgroundOpacity = backgroundOpacity,
+            )
+        },
+        modifier = modifier,
+        mode = AfinityScreenMode.Hero,
+        scrollOpacity = { topBarOpacity },
+    ) {
         when {
             uiState.isLoading -> FullScreenLoading()
 
@@ -103,11 +113,7 @@ fun LiveTvChannelScreen(
                         )
                     },
                     onFavoriteClick = viewModel::toggleFavorite,
-                    onProgramClick = { program ->
-                        navController.navigate(
-                            Destination.createLiveTvProgramRoute(program.id.toString())
-                        )
-                    },
+                    onProgramClick = { program -> onProgramClick(program.id.toString()) },
                     onRetry = viewModel::retry,
                     recording =
                         if (canManageLiveTv) {
@@ -117,18 +123,6 @@ fun LiveTvChannelScreen(
                         },
                 )
         }
-
-        AfinityTopAppBar(
-            title = {},
-            onHomeClick = {
-                navController.navigate(Destination.HOME.route) {
-                    popUpTo(Destination.HOME.route) { inclusive = false }
-                    launchSingleTop = true
-                }
-            },
-            backgroundOpacity = { topBarOpacity },
-            landscapeStatusBarFill = Color.Black,
-        )
 
         SnackbarHost(
             hostState = snackbarHostState,

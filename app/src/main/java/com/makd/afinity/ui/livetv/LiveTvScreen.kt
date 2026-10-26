@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
@@ -32,17 +31,18 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.data.models.livetv.AfinityProgram
-import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityScreen
+import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
+import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.LibraryShortcutCard
 import com.makd.afinity.ui.components.LibraryShortcutsRow
-import com.makd.afinity.ui.livetv.components.LiveTvTopAppBar
 import com.makd.afinity.ui.livetv.components.ProgramCategoryRow
 import com.makd.afinity.ui.livetv.models.LiveTvCategory
 import com.makd.afinity.ui.main.MainUiState
@@ -50,8 +50,13 @@ import com.makd.afinity.ui.theme.CardDimensions
 
 @Composable
 fun LiveTvScreen(
-    navController: NavController,
     mainUiState: MainUiState,
+    onSearchClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onGuideClick: () -> Unit,
+    onChannelsClick: () -> Unit,
+    onRecordingsClick: () -> Unit,
+    onProgramClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     widthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact,
     viewModel: LiveTvViewModel = hiltViewModel(),
@@ -64,13 +69,19 @@ fun LiveTvScreen(
         onPauseOrDispose { viewModel.setScreenVisible(false) }
     }
 
-    Scaffold(
-        topBar = {
-            LiveTvTopAppBar(
-                title = stringResource(R.string.livetv_title),
-                navController = navController,
-                mainUiState = mainUiState,
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
+            AfinityTopAppBar(
+                title = { AfinityTopAppBarTitle(stringResource(R.string.livetv_title)) },
                 onMenuClick = onMenuClick,
+                onSearchClick = onSearchClick,
+                profile =
+                    AppBarProfile(
+                        onClick = onProfileClick,
+                        name = mainUiState.userName,
+                        imageUrl = mainUiState.userProfileImageUrl,
+                    ),
+                backgroundOpacity = backgroundOpacity,
             )
         },
         modifier = modifier,
@@ -97,18 +108,10 @@ fun LiveTvScreen(
             else ->
                 LiveTvHomeContent(
                     uiState = uiState,
-                    onGuideClick = { navController.navigate(Destination.LIVE_TV_GUIDE_ROUTE) },
-                    onChannelsClick = {
-                        navController.navigate(Destination.LIVE_TV_CHANNELS_ROUTE)
-                    },
-                    onRecordingsClick = {
-                        navController.navigate(Destination.LIVE_TV_RECORDINGS_ROUTE)
-                    },
-                    onProgramClick = { program ->
-                        navController.navigate(
-                            Destination.createLiveTvProgramRoute(program.id.toString())
-                        )
-                    },
+                    onGuideClick = onGuideClick,
+                    onChannelsClick = onChannelsClick,
+                    onRecordingsClick = onRecordingsClick,
+                    onProgramClick = { program -> onProgramClick(program.id.toString()) },
                     onRetry = viewModel::retry,
                     widthSizeClass = widthSizeClass,
                     modifier = Modifier.padding(paddingValues),

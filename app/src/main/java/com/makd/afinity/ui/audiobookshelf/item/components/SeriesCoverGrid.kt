@@ -18,12 +18,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-
-private fun String.withAbsWidth(px: Int): String {
-    if (startsWith("file://")) return this
-    val sep = if ('?' in this) "&" else "?"
-    return "${this}${sep}width=$px"
-}
+import com.makd.afinity.ui.audiobookshelf.withAbsWidth
 
 @Composable
 fun SeriesCoverGrid(coverUrls: List<String>, modifier: Modifier = Modifier) {

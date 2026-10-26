@@ -6,8 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalDensity
-import com.makd.afinity.ui.components.afinityTopAppBarHeight
 
 private const val LIST_SCROLL_THRESHOLD = 1500f
 
@@ -23,12 +21,6 @@ fun rememberTopBarOpacity(
             if (firstIndex > 0 || offset > scrollThreshold) 1f else 0f
         }
     }
-
-@Composable
-fun rememberDetailTopBarOpacity(state: LazyListState, isLandscape: Boolean): State<Float> {
-    val barHeight = with(LocalDensity.current) { afinityTopAppBarHeight().toPx() }
-    return rememberTopBarOpacity(state, if (isLandscape) barHeight else LIST_SCROLL_THRESHOLD)
-}
 
 @Composable
 fun rememberTopBarOpacity(state: LazyGridState, scrollThreshold: Float = 200f): State<Float> =

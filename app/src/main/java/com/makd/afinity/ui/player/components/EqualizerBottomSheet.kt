@@ -1,4 +1,4 @@
-package com.makd.afinity.ui.audiobookshelf.player.components
+package com.makd.afinity.ui.player.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background

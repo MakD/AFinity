@@ -38,15 +38,11 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.layout.AnimatedPane
@@ -79,14 +75,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
 import com.makd.afinity.R
 import com.makd.afinity.core.AppConstants
 import com.makd.afinity.data.manager.Connectivity
 import com.makd.afinity.data.manager.UnreachableReason
 import com.makd.afinity.data.models.server.ConnectionType
-import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityBackButton
+import com.makd.afinity.ui.components.AfinityScreen
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
+import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.ConnectionIndicatorBadge
 import com.makd.afinity.ui.components.SettingsDivider
@@ -116,8 +114,20 @@ import timber.log.Timber
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 fun SettingsScreen(
-    navController: NavHostController,
     onBackClick: () -> Unit,
+    onAddAccountClick: (serverUrl: String) -> Unit,
+    onControlPanelClick: () -> Unit,
+    onAppearanceClick: () -> Unit,
+    onPlayerOptionsClick: () -> Unit,
+    onStorageClick: () -> Unit,
+    onDownloadSettingsClick: () -> Unit,
+    onServerManagementClick: () -> Unit,
+    onServicesHubClick: () -> Unit,
+    onLogsClick: () -> Unit,
+    onLicensesClick: () -> Unit,
+    onAbsItemClick: (String) -> Unit,
+    onAddServerClick: () -> Unit,
+    onEditServerClick: (serverId: String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -226,7 +236,7 @@ fun SettingsScreen(
             onDismiss = { showSessionSwitcherSheet = false },
             onAddAccountClick = { server ->
                 showSessionSwitcherSheet = false
-                navController.navigate(Destination.createLoginRoute(serverUrl = server.address))
+                onAddAccountClick(server.address)
             },
             sheetState = sessionSwitcherSheetState,
         )
@@ -251,31 +261,14 @@ fun SettingsScreen(
         modifier = modifier,
         listPane = {
             AnimatedPane(modifier = Modifier.preferredWidth(420.dp)) {
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    topBar = {
-                        TopAppBar(
+                AfinityScreen(
+                    topBar = { backgroundOpacity ->
+                        AfinityTopBar(
                             title = {
-                                Text(
-                                    text = stringResource(R.string.settings_title),
-                                    style =
-                                        MaterialTheme.typography.headlineMedium.copy(
-                                            fontWeight = FontWeight.Bold
-                                        ),
-                                )
+                                AfinityTopAppBarTitle(stringResource(R.string.settings_title))
                             },
-                            navigationIcon = {
-                                IconButton(onClick = onBackClick) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.ic_chevron_left),
-                                        contentDescription = stringResource(R.string.cd_back),
-                                    )
-                                }
-                            },
-                            colors =
-                                TopAppBarDefaults.topAppBarColors(
-                                    containerColor = MaterialTheme.colorScheme.surface
-                                ),
+                            navigationIcon = { AfinityBackButton(onClick = onBackClick) },
+                            backgroundOpacity = backgroundOpacity,
                         )
                     },
                     containerColor = MaterialTheme.colorScheme.surface,
@@ -355,13 +348,7 @@ fun SettingsScreen(
                                                             R.string.control_panel_summary
                                                         )
                                                 },
-                                            onClick = {
-                                                navController.navigate(
-                                                    Destination.ADMIN_SERVER_ROUTE
-                                                ) {
-                                                    launchSingleTop = true
-                                                }
-                                            },
+                                            onClick = onControlPanelClick,
                                         )
                                     }
                                 }
@@ -408,9 +395,7 @@ fun SettingsScreen(
                                                     )
                                                 }
                                             } else {
-                                                navController.navigate(
-                                                    Destination.APPEARANCE_OPTIONS_ROUTE
-                                                )
+                                                onAppearanceClick()
                                             }
                                         },
                                     )
@@ -472,9 +457,7 @@ fun SettingsScreen(
                                                     )
                                                 }
                                             } else {
-                                                navController.navigate(
-                                                    Destination.PLAYER_OPTIONS_ROUTE
-                                                )
+                                                onPlayerOptionsClick()
                                             }
                                         },
                                     )
@@ -495,9 +478,7 @@ fun SettingsScreen(
                                                     )
                                                 }
                                             } else {
-                                                navController.navigate(
-                                                    Destination.STORAGE_SETTINGS_ROUTE
-                                                )
+                                                onStorageClick()
                                             }
                                         },
                                     )
@@ -517,9 +498,7 @@ fun SettingsScreen(
                                                         )
                                                     }
                                                 } else {
-                                                    navController.navigate(
-                                                        Destination.DOWNLOAD_SETTINGS_ROUTE
-                                                    )
+                                                    onDownloadSettingsClick()
                                                 }
                                             },
                                         )
@@ -569,9 +548,7 @@ fun SettingsScreen(
                                                     )
                                                 }
                                             } else {
-                                                navController.navigate(
-                                                    Destination.SERVER_MANAGEMENT_ROUTE
-                                                )
+                                                onServerManagementClick()
                                             }
                                         },
                                     )
@@ -581,11 +558,7 @@ fun SettingsScreen(
                                         title = stringResource(R.string.pref_connect_services),
                                         subtitle =
                                             stringResource(R.string.pref_connect_services_summary),
-                                        onClick = {
-                                            navController.navigate(
-                                                Destination.createServicesHubRoute("manual")
-                                            )
-                                        },
+                                        onClick = onServicesHubClick,
                                     )
                                     SettingsDivider()
                                     SettingsItem(
@@ -644,9 +617,7 @@ fun SettingsScreen(
                                                     )
                                                 }
                                             } else {
-                                                navController.navigate(
-                                                    Destination.createLogsRoute()
-                                                )
+                                                onLogsClick()
                                             }
                                         },
                                     )
@@ -669,7 +640,7 @@ fun SettingsScreen(
                                                     )
                                                 }
                                             } else {
-                                                navController.navigate(Destination.LICENSES_ROUTE)
+                                                onLicensesClick()
                                             }
                                         },
                                     )
@@ -783,11 +754,7 @@ fun SettingsScreen(
                     is SettingsPaneDestination.Downloads ->
                         DownloadSettingsScreen(
                             onBackClick = { scope.launch { navigator.navigateBack() } },
-                            onNavigateToAbsItem = { itemId ->
-                                navController.navigate(
-                                    Destination.createAudiobookshelfItemRoute(itemId)
-                                )
-                            },
+                            onNavigateToAbsItem = onAbsItemClick,
                         )
                     is SettingsPaneDestination.StorageSettings ->
                         StorageSettingsScreen(
@@ -796,21 +763,9 @@ fun SettingsScreen(
                     is SettingsPaneDestination.ServerManagement ->
                         ServerManagementScreen(
                             onBackClick = { scope.launch { navigator.navigateBack() } },
-                            onAddServerClick = {
-                                navController.navigate(
-                                    Destination.createAddEditServerRoute(serverId = null)
-                                )
-                            },
-                            onEditServerClick = { serverId ->
-                                navController.navigate(
-                                    Destination.createAddEditServerRoute(serverId = serverId)
-                                )
-                            },
-                            onOpenControlPanel = {
-                                navController.navigate(Destination.ADMIN_SERVER_ROUTE) {
-                                    launchSingleTop = true
-                                }
-                            },
+                            onAddServerClick = onAddServerClick,
+                            onEditServerClick = onEditServerClick,
+                            onOpenControlPanel = onControlPanelClick,
                             isDualPane = isDualPane,
                         )
                     is SettingsPaneDestination.Licenses ->
@@ -822,9 +777,7 @@ fun SettingsScreen(
                             onDismiss = { scope.launch { navigator.navigateBack() } },
                             onAddAccountClick = { server ->
                                 scope.launch { navigator.navigateBack() }
-                                navController.navigate(
-                                    Destination.createLoginRoute(serverUrl = server.address)
-                                )
+                                onAddAccountClick(server.address)
                             },
                         )
                     is SettingsPaneDestination.Language ->
@@ -1065,22 +1018,12 @@ private fun LanguagePickerPane(onBackClick: () -> Unit) {
         mutableStateOf(localeManager.applicationLocales.let { if (it.isEmpty) null else it.get(0) })
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.pref_app_language)) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_chevron_left),
-                            contentDescription = stringResource(R.string.cd_back),
-                        )
-                    }
-                },
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
+            AfinityTopBar(
+                title = { AfinityTopAppBarTitle(stringResource(R.string.pref_app_language)) },
+                navigationIcon = { AfinityBackButton(onClick = onBackClick) },
+                backgroundOpacity = backgroundOpacity,
             )
         },
         containerColor = MaterialTheme.colorScheme.surface,
@@ -1139,22 +1082,14 @@ private fun QuickConnectPane(
         if (isSuccess) onBackClick()
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.pref_authorize_quickconnect)) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_chevron_left),
-                            contentDescription = stringResource(R.string.cd_back),
-                        )
-                    }
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
+            AfinityTopBar(
+                title = {
+                    AfinityTopAppBarTitle(stringResource(R.string.pref_authorize_quickconnect))
                 },
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
+                navigationIcon = { AfinityBackButton(onClick = onBackClick) },
+                backgroundOpacity = backgroundOpacity,
             )
         },
         containerColor = MaterialTheme.colorScheme.surface,

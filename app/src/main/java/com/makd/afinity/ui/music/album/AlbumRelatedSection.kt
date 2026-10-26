@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityAlbum
+import com.makd.afinity.ui.components.DetailGutter
 import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.theme.CardDimensions
 
@@ -43,7 +44,7 @@ fun AlbumRelatedSection(
 
     val cardWidth = CardDimensions.musicDetailCardWidth(splitPane = splitPane)
 
-    Column(modifier = modifier.padding(horizontal = 20.dp)) {
+    Column(modifier = modifier.padding(horizontal = DetailGutter)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier =

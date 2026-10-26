@@ -1,8 +1,10 @@
 package com.makd.afinity.ui.music.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -17,6 +19,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.ui.preview.FontScalePreviews
+import com.makd.afinity.ui.preview.PreviewHost
+import com.makd.afinity.ui.preview.WidthPreviews
 
 @Composable
 fun MusicDetailActionRow(
@@ -72,4 +77,53 @@ fun MusicDetailActionRow(
             }
         }
     }
+}
+
+@Composable
+private fun PreviewActionIcon(iconRes: Int) {
+    IconButton(onClick = {}) {
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(26.dp),
+        )
+    }
+}
+
+@Composable
+private fun MusicDetailActionRowPreviewContent() {
+    PreviewHost {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(5, 4, 3).forEach { count ->
+                MusicDetailActionRow(
+                    onShuffle = {},
+                    onPlay = {},
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                ) {
+                    listOf(
+                            R.drawable.ic_favorite,
+                            R.drawable.ic_compass,
+                            R.drawable.ic_download,
+                            R.drawable.ic_delete,
+                            R.drawable.ic_edit,
+                        )
+                        .take(count)
+                        .forEach { PreviewActionIcon(it) }
+                }
+            }
+        }
+    }
+}
+
+@WidthPreviews
+@Composable
+private fun MusicDetailActionRowWidthPreview() {
+    MusicDetailActionRowPreviewContent()
+}
+
+@FontScalePreviews
+@Composable
+private fun MusicDetailActionRowFontScalePreview() {
+    MusicDetailActionRowPreviewContent()
 }

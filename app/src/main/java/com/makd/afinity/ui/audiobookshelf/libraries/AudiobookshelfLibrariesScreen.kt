@@ -15,7 +15,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
@@ -29,14 +28,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.makd.afinity.R
-import com.makd.afinity.navigation.Destination
+import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.ServiceUnreachableBanner
-import com.makd.afinity.ui.components.afinityTopAppBarTitleStyle
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.settings.AudiobookshelfBottomSheet
@@ -45,7 +43,12 @@ import com.makd.afinity.ui.settings.AudiobookshelfBottomSheet
 @Composable
 fun AudiobookshelfLibrariesScreen(
     onNavigateToItem: (String) -> Unit,
-    navController: NavController,
+    onNavigateToPlayer: (itemId: String, episodeId: String) -> Unit,
+    onNavigateToSeries: (seriesId: String, libraryId: String, seriesName: String) -> Unit,
+    onNavigateToSeriesList: () -> Unit,
+    onNavigateToLibrary: (libraryId: String, libraryName: String) -> Unit,
+    onSearchClick: () -> Unit,
+    onProfileClick: () -> Unit,
     mainUiState: MainUiState,
     widthSizeClass: WindowWidthSizeClass,
     viewModel: AudiobookshelfLibrariesViewModel = hiltViewModel(),
@@ -69,21 +72,16 @@ fun AudiobookshelfLibrariesScreen(
             )
         }
 
-        Scaffold(
-            topBar = {
+        AfinityScreen(
+            topBar = { backgroundOpacity ->
                 AfinityTopAppBar(
-                    title = {
-                        Text(
-                            text = stringResource(R.string.nav_audiobooks),
-                            style = afinityTopAppBarTitleStyle(),
-                            color = MaterialTheme.colorScheme.onBackground,
-                        )
-                    },
+                    title = { AfinityTopAppBarTitle(stringResource(R.string.nav_audiobooks)) },
+                    backgroundOpacity = backgroundOpacity,
                     onMenuClick = onMenuClick,
-                    onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
+                    onSearchClick = onSearchClick,
                     profile =
                         AppBarProfile(
-                            onClick = { navController.navigate(Destination.createSettingsRoute()) },
+                            onClick = onProfileClick,
                             name = mainUiState.userName,
                             imageUrl = mainUiState.userProfileImageUrl,
                         ),
@@ -109,21 +107,16 @@ fun AudiobookshelfLibrariesScreen(
         return
     }
 
-    Scaffold(
-        topBar = {
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
             AfinityTopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.nav_audiobooks),
-                        style = afinityTopAppBarTitleStyle(),
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                },
+                title = { AfinityTopAppBarTitle(stringResource(R.string.nav_audiobooks)) },
+                backgroundOpacity = backgroundOpacity,
                 onMenuClick = onMenuClick,
-                onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
+                onSearchClick = onSearchClick,
                 profile =
                     AppBarProfile(
-                        onClick = { navController.navigate(Destination.createSettingsRoute()) },
+                        onClick = onProfileClick,
                         name = mainUiState.userName,
                         imageUrl = mainUiState.userProfileImageUrl,
                     ),
@@ -160,12 +153,7 @@ fun AudiobookshelfLibrariesScreen(
                             onItemClick = { item ->
                                 val episodeId = item.recentEpisode?.id
                                 if (episodeId != null) {
-                                    navController.navigate(
-                                        Destination.createAudiobookshelfPlayerRoute(
-                                            itemId = item.id,
-                                            episodeId = episodeId,
-                                        )
-                                    )
+                                    onNavigateToPlayer(item.id, episodeId)
                                 } else {
                                     onNavigateToItem(item.id)
                                 }
@@ -174,27 +162,12 @@ fun AudiobookshelfLibrariesScreen(
                                 val libraryId =
                                     series.libraryId ?: series.books.firstOrNull()?.libraryId
                                 if (libraryId != null) {
-                                    navController.navigate(
-                                        Destination.createAudiobookshelfSeriesRoute(
-                                            series.id,
-                                            libraryId,
-                                            series.name,
-                                        )
-                                    )
+                                    onNavigateToSeries(series.id, libraryId, series.name)
                                 }
                             },
-                            onBrowseSeries = {
-                                navController.navigate(
-                                    Destination.createAudiobookshelfSeriesListRoute()
-                                )
-                            },
+                            onBrowseSeries = onNavigateToSeriesList,
                             onBrowseLibrary = { library ->
-                                navController.navigate(
-                                    Destination.createAudiobookshelfLibraryRoute(
-                                        library.id,
-                                        library.name,
-                                    )
-                                )
+                                onNavigateToLibrary(library.id, library.name)
                             },
                             isLoading = uiState.isRefreshing && personalizedSections.isEmpty(),
                             widthSizeClass = widthSizeClass,

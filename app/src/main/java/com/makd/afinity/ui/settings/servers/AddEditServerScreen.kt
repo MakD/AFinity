@@ -31,16 +31,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -62,7 +58,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
+import com.makd.afinity.ui.components.AfinityBackButton
+import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.LoadingButton
 import com.makd.afinity.ui.components.LocalNetworkPermissionCard
 import com.makd.afinity.util.isInsecurePublicUrl
@@ -106,22 +105,12 @@ fun AddEditServerScreen(
         )
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
+            AfinityTopBar(
                 title = {},
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_chevron_left),
-                            contentDescription = stringResource(R.string.cd_back),
-                        )
-                    }
-                },
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
+                navigationIcon = { AfinityBackButton(onClick = onBackClick) },
+                backgroundOpacity = backgroundOpacity,
             )
         },
         snackbarHost = {

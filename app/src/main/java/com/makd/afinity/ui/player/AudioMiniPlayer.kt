@@ -44,9 +44,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
-import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.player.components.BufferingIndicator
+import com.makd.afinity.ui.player.components.rememberDominantColor
 import timber.log.Timber
 
 sealed class AudioMiniPlayerState {

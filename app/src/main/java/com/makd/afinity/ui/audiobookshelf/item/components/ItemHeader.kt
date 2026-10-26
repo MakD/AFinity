@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.audiobookshelf.item.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,18 +7,13 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -34,19 +28,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
@@ -55,94 +42,13 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.audiobookshelf.AudibleRating
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
-import com.makd.afinity.data.models.audiobookshelf.coverUrl
-import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.audiobookshelf.withAbsWidth
 import com.makd.afinity.ui.components.CircleFlagIcon
+import com.makd.afinity.ui.components.DetailCoverImage
+import com.makd.afinity.ui.components.DetailCoverTitle
 import com.makd.afinity.ui.components.getAutoFlagUrl
 import com.makd.afinity.ui.components.mediainfo.AudiobookMediaInfoSheet
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
-
-private fun String.withAbsWidth(px: Int): String {
-    if (startsWith("file://")) return this
-    val sep = if ('?' in this) "&" else "?"
-    return "${this}${sep}width=$px"
-}
-
-@Composable
-fun ItemHeader(
-    modifier: Modifier = Modifier,
-    item: LibraryItem,
-    progress: MediaProgress?,
-    serverUrl: String?,
-    onPlay: (() -> Unit)?,
-    downloadInfo: AbsDownloadInfo? = null,
-    onDownload: (() -> Unit)? = null,
-    onCancelDownload: (() -> Unit)? = null,
-    onDeleteDownload: (() -> Unit)? = null,
-    audibleRating: AudibleRating? = null,
-    onToggleFinished: (() -> Unit)? = null,
-    toggleFinishedEnabled: Boolean = true,
-) {
-    val coverUrl =
-        if (
-            downloadInfo?.status == AbsDownloadStatus.COMPLETED && downloadInfo.localDirPath != null
-        ) {
-            "file://${downloadInfo.localDirPath}/cover.jpg"
-        } else if (serverUrl != null && item.media.coverPath != null) {
-            item.coverUrl(serverUrl)
-        } else null
-
-    Box(modifier = modifier.fillMaxWidth()) {
-        Box(modifier = Modifier.matchParentSize()) { ItemHeroBackground(coverUrl = coverUrl) }
-
-        ItemHeaderContent(
-            item = item,
-            progress = progress,
-            coverUrl = coverUrl,
-            onPlay = onPlay,
-            downloadInfo = downloadInfo,
-            onDownload = onDownload,
-            onCancelDownload = onCancelDownload,
-            onDeleteDownload = onDeleteDownload,
-            audibleRating = audibleRating,
-            onToggleFinished = onToggleFinished,
-            toggleFinishedEnabled = toggleFinishedEnabled,
-        )
-    }
-}
-
-@Composable
-fun ItemHeroBackground(coverUrl: String?, modifier: Modifier = Modifier) {
-    if (coverUrl != null) {
-        Box(modifier = modifier.fillMaxSize()) {
-            AsyncImage(
-                imageUrl = coverUrl.withAbsWidth(600),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize().blur(radius = 30.dp).background(Color.Black),
-                alpha = 0.6f,
-                contentScale = ContentScale.Crop,
-            )
-
-            Box(
-                modifier =
-                    Modifier.fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors =
-                                    listOf(
-                                        Color.Transparent,
-                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                                        MaterialTheme.colorScheme.surface,
-                                    ),
-                                startY = 100f,
-                            )
-                        )
-            )
-        }
-    } else {
-        Box(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface))
-    }
-}
 
 @Composable
 fun ItemHeaderContent(
@@ -160,55 +66,21 @@ fun ItemHeaderContent(
     toggleFinishedEnabled: Boolean = true,
 ) {
     Column(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(modifier = Modifier.statusBarsPadding())
-        Spacer(modifier = Modifier.height(60.dp))
-
-        if (coverUrl != null) {
-            AsyncImage(
-                imageUrl = coverUrl.withAbsWidth(600),
-                contentDescription = stringResource(R.string.cd_abs_cover),
-                modifier =
-                    Modifier.width(200.dp)
-                        .aspectRatio(1f)
-                        .shadow(12.dp, RoundedCornerShape(12.dp))
-                        .clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Crop,
-            )
-        } else {
-            Card(
-                modifier = Modifier.width(200.dp).aspectRatio(1f),
-                shape = RoundedCornerShape(12.dp),
-                colors =
-                    CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                    ),
-            ) {}
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = item.media.metadata.title ?: stringResource(R.string.unknown_title),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
+        DetailCoverImage(
+            imageUrl = coverUrl?.withAbsWidth(600),
+            contentDescription = stringResource(R.string.cd_abs_cover),
         )
 
-        item.media.metadata.authorName?.let { author ->
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = stringResource(R.string.abs_by_author_fmt, author),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Medium,
-                textAlign = TextAlign.Center,
-            )
-        }
+        DetailCoverTitle(
+            title = item.media.metadata.title ?: stringResource(R.string.unknown_title),
+            subtitle =
+                item.media.metadata.authorName?.let {
+                    stringResource(R.string.abs_by_author_fmt, it)
+                },
+        )
 
         Spacer(modifier = Modifier.height(8.dp))
 

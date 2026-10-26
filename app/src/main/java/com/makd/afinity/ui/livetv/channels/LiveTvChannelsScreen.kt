@@ -23,7 +23,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,18 +44,19 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.data.models.livetv.AfinityChannel
-import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityScreen
+import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AlphabetScroller
+import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.FilterFab
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.livetv.components.ChannelCard
 import com.makd.afinity.ui.livetv.components.LiveTvFilterDialog
-import com.makd.afinity.ui.livetv.components.LiveTvTopAppBar
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.theme.CardDimensions
@@ -64,8 +64,10 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
 fun LiveTvChannelsScreen(
-    navController: NavController,
     mainUiState: MainUiState,
+    onSearchClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onChannelClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LiveTvChannelsViewModel = hiltViewModel(),
 ) {
@@ -79,21 +81,25 @@ fun LiveTvChannelsScreen(
         onPauseOrDispose { viewModel.setScreenVisible(false) }
     }
 
-    Scaffold(
-        topBar = {
-            LiveTvTopAppBar(
-                title = stringResource(R.string.livetv_tab_channels),
-                navController = navController,
-                mainUiState = mainUiState,
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
+            AfinityTopAppBar(
+                title = { AfinityTopAppBarTitle(stringResource(R.string.livetv_tab_channels)) },
+                onSearchClick = onSearchClick,
+                profile =
+                    AppBarProfile(
+                        onClick = onProfileClick,
+                        name = mainUiState.userName,
+                        imageUrl = mainUiState.userProfileImageUrl,
+                    ),
+                backgroundOpacity = backgroundOpacity,
             )
         },
         modifier = modifier,
     ) { paddingValues ->
         LiveTvChannelsContent(
             uiState = uiState,
-            onChannelClick = { channel ->
-                navController.navigate(Destination.createLiveTvChannelRoute(channel.id.toString()))
-            },
+            onChannelClick = { channel -> onChannelClick(channel.id.toString()) },
             onChannelLongClick = { channel ->
                 PlayerLauncher.launchLiveChannel(
                     context = context,

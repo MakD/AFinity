@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -18,12 +20,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import androidx.compose.ui.window.Dialog
 import com.makd.afinity.R
+import com.makd.afinity.ui.preview.PreviewData
+import com.makd.afinity.ui.preview.PreviewHost
+import com.makd.afinity.ui.preview.WindowPreviews
 
 @Composable
 fun ListPickerDialog(
@@ -65,6 +73,33 @@ fun ListPickerDialog(
                     }
                 }
                 content()
+            }
+        }
+    }
+}
+
+@WindowPreviews
+@Composable
+private fun ListPickerDialogWindowPreview() {
+    PreviewHost(modifier = Modifier.fillMaxSize()) {
+        val containerHeight =
+            with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
+        ListPickerDialog(
+            title = stringResource(R.string.custom_sections_new),
+            onDismiss = {},
+            height = min(720.dp, containerHeight * 0.9f),
+        ) {
+            Column(
+                modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                PreviewData.posterRow.forEach { item ->
+                    Text(
+                        text = item.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                    )
+                }
             }
         }
     }

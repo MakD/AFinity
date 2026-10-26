@@ -55,7 +55,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.makd.afinity.R
@@ -65,9 +64,10 @@ import com.makd.afinity.data.models.media.AfinityFolder
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.LibraryFilters
-import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AlphabetScroller
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
@@ -79,15 +79,17 @@ import com.makd.afinity.ui.components.MediaItemGridCard
 import com.makd.afinity.ui.components.PaginatedMediaGrid
 import com.makd.afinity.ui.components.RadioOptionRow
 import com.makd.afinity.ui.components.SortFab
-import com.makd.afinity.ui.components.afinityTopAppBarTitleStyle
 import com.makd.afinity.ui.player.PlayerLauncher
 
 @Composable
 fun LibraryContentScreen(
     onItemClick: (AfinityItem) -> Unit,
     onProfileClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onFolderClick: (AfinityFolder) -> Unit,
+    onSeriesClick: (String) -> Unit,
+    onPersonClick: (String) -> Unit,
     modifier: Modifier = Modifier,
-    navController: NavController,
     viewModel: LibraryContentViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
     onMenuClick: (() -> Unit)? = null,
@@ -127,174 +129,80 @@ fun LibraryContentScreen(
         }
     }
 
-    Box(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))
-                .background(MaterialTheme.colorScheme.surface)
-    ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
             AfinityTopAppBar(
-                title = {
-                    Text(
-                        text = uiState.libraryName,
-                        style = afinityTopAppBarTitleStyle(),
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                },
-                backgroundOpacity = { 1f },
+                title = { AfinityTopAppBarTitle(uiState.libraryName) },
+                backgroundOpacity = backgroundOpacity,
                 profile =
                     AppBarProfile(
                         onClick = onProfileClick,
                         name = uiState.userName,
                         imageUrl = uiState.userProfileImageUrl,
                     ),
-                onSearchClick = {
-                    val route = Destination.createSearchRoute()
-                    navController.navigate(route)
-                },
+                onSearchClick = onSearchClick,
                 onMenuClick = onMenuClick,
             )
-            Box(
-                modifier =
-                    Modifier.weight(1f)
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.background)
-            ) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    when {
-                        uiState.isLoading -> {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                FullScreenLoading()
-                            }
+        },
+        modifier =
+            modifier.windowInsetsPadding(
+                WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+            ),
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                when {
+                    uiState.isLoading -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            FullScreenLoading()
                         }
+                    }
 
-                        uiState.error != null -> {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                FullScreenError(message = uiState.error)
-                            }
+                    uiState.error != null -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            FullScreenError(message = uiState.error)
                         }
+                    }
 
-                        lazyPagingItems.itemCount == 0 &&
-                            lazyPagingItems.loadState.refresh is LoadState.Error -> {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                FullScreenError(
-                                    message = stringResource(R.string.library_load_failed),
-                                    actionText = stringResource(R.string.action_retry),
-                                    onActionClick = { lazyPagingItems.retry() },
-                                )
-                            }
+                    lazyPagingItems.itemCount == 0 &&
+                        lazyPagingItems.loadState.refresh is LoadState.Error -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            FullScreenError(
+                                message = stringResource(R.string.library_load_failed),
+                                actionText = stringResource(R.string.action_retry),
+                                onActionClick = { lazyPagingItems.retry() },
+                            )
                         }
+                    }
 
-                        lazyPagingItems.itemCount == 0 &&
-                            lazyPagingItems.loadState.refresh !is LoadState.Loading -> {
-                            val selectedLetter = uiState.selectedLetter
-                            if (selectedLetter != null) {
-                                Row(modifier = Modifier.fillMaxSize()) {
-                                    Box(
-                                        modifier =
-                                            Modifier.weight(1f).fillMaxSize().padding(top = 16.dp),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        FullScreenEmpty(
-                                            title = stringResource(R.string.library_empty_title),
-                                            message =
-                                                stringResource(
-                                                    R.string.library_empty_letter_fmt,
-                                                    selectedLetter,
-                                                ),
-                                            actionText = stringResource(R.string.action_show_all),
-                                            onActionClick = { viewModel.clearLetterFilter() },
-                                        )
-                                    }
-                                    Box(
-                                        modifier = Modifier.fillMaxHeight(),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        AlphabetScroller(
-                                            onLetterSelected = { viewModel.scrollToLetter(it) },
-                                            selectedLetter = uiState.selectedLetter,
-                                            modifier =
-                                                Modifier.background(
-                                                    MaterialTheme.colorScheme.surface.copy(
-                                                        alpha = 0.8f
-                                                    )
-                                                ),
-                                        )
-                                    }
-                                }
-                            } else if (!uiState.currentFilters.isEmpty) {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    FullScreenEmpty(
-                                        title = stringResource(R.string.library_empty_title),
-                                        message = stringResource(R.string.filter_empty_filtered),
-                                        actionText = stringResource(R.string.action_clear_filter),
-                                        onActionClick = {
-                                            viewModel.updateFilters(LibraryFilters())
-                                        },
-                                    )
-                                }
-                            } else {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    FullScreenEmpty(
-                                        title = stringResource(R.string.library_empty_title),
-                                        message = stringResource(R.string.library_empty_message),
-                                    )
-                                }
-                            }
-                        }
-
-                        else -> {
+                    lazyPagingItems.itemCount == 0 &&
+                        lazyPagingItems.loadState.refresh !is LoadState.Loading -> {
+                        val selectedLetter = uiState.selectedLetter
+                        if (selectedLetter != null) {
                             Row(modifier = Modifier.fillMaxSize()) {
-                                PaginatedMediaGrid(
-                                    items = lazyPagingItems,
-                                    widthSizeClass = widthSizeClass,
-                                    state = gridState,
-                                    modifier = Modifier.weight(1f),
-                                    contentPadding =
-                                        PaddingValues(
-                                            start = 16.dp,
-                                            end = 16.dp,
-                                            top = 16.dp,
-                                            bottom = 80.dp + playerOffset,
-                                        ),
-                                ) { item ->
-                                    MediaItemGridCard(
-                                        item = item,
-                                        onClick = {
-                                            when (item) {
-                                                is AfinityEpisode -> viewModel.selectEpisode(item)
-                                                is AfinityVideo -> playVideo(item)
-                                                is AfinityFolder ->
-                                                    navController.navigate(
-                                                        Destination.createFolderContentRoute(
-                                                            item.id.toString(),
-                                                            item.name,
-                                                        )
-                                                    )
-
-                                                else -> {
-                                                    viewModel.onItemClick(item)
-                                                    onItemClick(item)
-                                                }
-                                            }
-                                        },
+                                Box(
+                                    modifier =
+                                        Modifier.weight(1f).fillMaxSize().padding(top = 16.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    FullScreenEmpty(
+                                        title = stringResource(R.string.library_empty_title),
+                                        message =
+                                            stringResource(
+                                                R.string.library_empty_letter_fmt,
+                                                selectedLetter,
+                                            ),
+                                        actionText = stringResource(R.string.action_show_all),
+                                        onActionClick = { viewModel.clearLetterFilter() },
                                     )
                                 }
                                 Box(
@@ -311,32 +219,101 @@ fun LibraryContentScreen(
                                     )
                                 }
                             }
+                        } else if (!uiState.currentFilters.isEmpty) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                FullScreenEmpty(
+                                    title = stringResource(R.string.library_empty_title),
+                                    message = stringResource(R.string.filter_empty_filtered),
+                                    actionText = stringResource(R.string.action_clear_filter),
+                                    onActionClick = { viewModel.updateFilters(LibraryFilters()) },
+                                )
+                            }
+                        } else {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                FullScreenEmpty(
+                                    title = stringResource(R.string.library_empty_title),
+                                    message = stringResource(R.string.library_empty_message),
+                                )
+                            }
+                        }
+                    }
+
+                    else -> {
+                        Row(modifier = Modifier.fillMaxSize()) {
+                            PaginatedMediaGrid(
+                                items = lazyPagingItems,
+                                widthSizeClass = widthSizeClass,
+                                state = gridState,
+                                modifier = Modifier.weight(1f),
+                                contentPadding =
+                                    PaddingValues(
+                                        start = 16.dp,
+                                        end = 16.dp,
+                                        top = 16.dp,
+                                        bottom = 80.dp + playerOffset,
+                                    ),
+                            ) { item ->
+                                MediaItemGridCard(
+                                    item = item,
+                                    onClick = {
+                                        when (item) {
+                                            is AfinityEpisode -> viewModel.selectEpisode(item)
+                                            is AfinityVideo -> playVideo(item)
+                                            is AfinityFolder -> onFolderClick(item)
+
+                                            else -> {
+                                                viewModel.onItemClick(item)
+                                                onItemClick(item)
+                                            }
+                                        }
+                                    },
+                                )
+                            }
+                            Box(
+                                modifier = Modifier.fillMaxHeight(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                AlphabetScroller(
+                                    onLetterSelected = { viewModel.scrollToLetter(it) },
+                                    selectedLetter = uiState.selectedLetter,
+                                    modifier =
+                                        Modifier.background(
+                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                                        ),
+                                )
+                            }
                         }
                     }
                 }
+            }
 
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    horizontalAlignment = Alignment.End,
-                    modifier =
-                        Modifier.align(Alignment.BottomEnd)
-                            .padding(end = 24.dp)
-                            .padding(bottom = 16.dp + playerOffset),
-                ) {
-                    if (!uiState.filtersLocked) {
-                        val activeCount = uiState.currentFilters.activeCount
-                        FilterFab(
-                            active = activeCount > 0,
-                            onClick = {
-                                viewModel.ensureFilterOptionsLoaded()
-                                showFilterSheet = true
-                            },
-                            badgeCount = activeCount,
-                        )
-                    }
-
-                    SortFab(onClick = { showSortDialog = true })
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.End,
+                modifier =
+                    Modifier.align(Alignment.BottomEnd)
+                        .padding(end = 24.dp)
+                        .padding(bottom = 16.dp + playerOffset),
+            ) {
+                if (!uiState.filtersLocked) {
+                    val activeCount = uiState.currentFilters.activeCount
+                    FilterFab(
+                        active = activeCount > 0,
+                        onClick = {
+                            viewModel.ensureFilterOptionsLoaded()
+                            showFilterSheet = true
+                        },
+                        badgeCount = activeCount,
+                    )
                 }
+
+                SortFab(onClick = { showSortDialog = true })
             }
         }
     }
@@ -374,14 +351,8 @@ fun LibraryContentScreen(
         onToggleFavorite = { viewModel.toggleEpisodeFavorite(it) },
         onToggleWatchlist = { viewModel.toggleEpisodeWatchlist(it) },
         onToggleWatched = { viewModel.toggleEpisodeWatched(it) },
-        onNavigateToSeries = { seriesId ->
-            navController.navigate(
-                Destination.createItemDetailRoute(itemId = seriesId, itemType = "Series")
-            )
-        },
-        onNavigateToPerson = { personId ->
-            navController.navigate(Destination.createPersonRoute(personId))
-        },
+        onNavigateToSeries = onSeriesClick,
+        onNavigateToPerson = onPersonClick,
     )
 }
 

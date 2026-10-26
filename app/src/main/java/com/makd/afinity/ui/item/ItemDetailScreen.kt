@@ -9,21 +9,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -43,9 +34,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -53,16 +42,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
 import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -70,12 +56,6 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.download.DownloadInfo
-import com.makd.afinity.data.models.extensions.backdropBlurHash
-import com.makd.afinity.data.models.extensions.backdropImageUrl
-import com.makd.afinity.data.models.extensions.primaryBlurHash
-import com.makd.afinity.data.models.extensions.primaryImageUrl
-import com.makd.afinity.data.models.extensions.showBackdropBlurHash
-import com.makd.afinity.data.models.extensions.showBackdropImageUrl
 import com.makd.afinity.data.models.external.ExternalTitles
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
@@ -92,15 +72,21 @@ import com.makd.afinity.data.models.media.AfinityVideoPlaylist
 import com.makd.afinity.data.models.tmdb.TmdbRegionProviders
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.models.wikidata.WikidataAwards
-import com.makd.afinity.navigation.Destination
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.admin.refresh.RefreshMetadataDialog
+import com.makd.afinity.ui.components.AfinityScreen
+import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.BackdropStyle
 import com.makd.afinity.ui.components.DeleteItemDialog
+import com.makd.afinity.ui.components.DetailGutter
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
-import com.makd.afinity.ui.components.afinityTopAppBarHeight
+import com.makd.afinity.ui.components.ImageHeroKind
+import com.makd.afinity.ui.components.LandscapeDetailArrangement
+import com.makd.afinity.ui.components.LandscapeDetailLayout
+import com.makd.afinity.ui.components.PortraitDetailLayout
+import com.makd.afinity.ui.components.PortraitHero
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.item.components.QualitySelectionDialog
@@ -112,9 +98,6 @@ import com.makd.afinity.ui.item.components.seasonDetailItems
 import com.makd.afinity.ui.item.components.seriesDetailItems
 import com.makd.afinity.ui.item.components.shared.ActionButtonsRow
 import com.makd.afinity.ui.item.components.shared.AdminAction
-import com.makd.afinity.ui.item.components.shared.DetailBackdrop
-import com.makd.afinity.ui.item.components.shared.HeroSection
-import com.makd.afinity.ui.item.components.shared.LandscapeDetailTheme
 import com.makd.afinity.ui.item.components.shared.LocalDetailLayout
 import com.makd.afinity.ui.item.components.shared.MediaLogoHeader
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
@@ -126,11 +109,11 @@ import com.makd.afinity.ui.item.components.shared.SimilarItemsSection
 import com.makd.afinity.ui.item.components.shared.VideoQualitySelection
 import com.makd.afinity.ui.item.components.shared.WhereToWatchStrip
 import com.makd.afinity.ui.item.components.shared.detailItem
+import com.makd.afinity.ui.item.components.shared.rememberItemBackdropChain
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.utils.IntentUtils
-import com.makd.afinity.ui.utils.rememberDetailTopBarOpacity
-import com.makd.afinity.ui.utils.verticalLayoutOffset
+import com.makd.afinity.ui.utils.rememberTopBarOpacity
 import com.makd.afinity.util.rememberPreferencesRepository
 import java.util.UUID
 import kotlin.time.Duration.Companion.milliseconds
@@ -142,7 +125,16 @@ import timber.log.Timber
 @Composable
 fun ItemDetailScreen(
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
-    navController: NavController,
+    onItemClick: (AfinityItem) -> Unit,
+    onSeriesClick: (String) -> Unit,
+    onSeasonClick: (AfinitySeason) -> Unit,
+    onPersonClick: (String) -> Unit,
+    onNavigateToSeerrMedia: (SearchResultItem) -> Unit,
+    onEditMetadataClick: (String) -> Unit,
+    onEditImagesClick: (String) -> Unit,
+    onIdentifyClick: (itemId: String, itemType: String) -> Unit,
+    onItemDeleted: () -> Unit,
+    onHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ItemDetailViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
@@ -271,18 +263,7 @@ fun ItemDetailScreen(
                         if (item is AfinityEpisode) {
                             viewModel.selectEpisode(item)
                         } else {
-                            val route =
-                                Destination.createItemDetailRoute(
-                                    itemId = item.id.toString(),
-                                    itemType =
-                                        when (item) {
-                                            is AfinityShow -> "Series"
-                                            is AfinitySeason -> "Season"
-                                            else -> null
-                                        },
-                                    seriesId = (item as? AfinitySeason)?.seriesId?.toString(),
-                                )
-                            navController.navigate(route)
+                            onItemClick(item)
                         }
                     },
                     onSpecialFeatureClick = { specialFeature ->
@@ -306,7 +287,16 @@ fun ItemDetailScreen(
                             )
                         }
                     },
-                    navController = navController,
+                    onItemClick = onItemClick,
+                    onSeriesClick = onSeriesClick,
+                    onSeasonClick = onSeasonClick,
+                    onPersonClick = onPersonClick,
+                    onNavigateToSeerrMedia = onNavigateToSeerrMedia,
+                    onEditMetadataClick = onEditMetadataClick,
+                    onEditImagesClick = onEditImagesClick,
+                    onIdentifyClick = onIdentifyClick,
+                    onItemDeleted = onItemDeleted,
+                    onHomeClick = onHomeClick,
                     viewModel = viewModel,
                     widthSizeClass = widthSizeClass,
                 )
@@ -348,14 +338,8 @@ fun ItemDetailScreen(
                 canDelete = episode.id in deletableItemIds,
                 onAdminAction = { action ->
                     when (action) {
-                        AdminAction.EditMetadata ->
-                            navController.navigate(
-                                Destination.createEditMetadataRoute(episode.id.toString())
-                            )
-                        AdminAction.EditImages ->
-                            navController.navigate(
-                                Destination.createEditImagesRoute(episode.id.toString())
-                            )
+                        AdminAction.EditMetadata -> onEditMetadataClick(episode.id.toString())
+                        AdminAction.EditImages -> onEditImagesClick(episode.id.toString())
                         AdminAction.Refresh -> showEpisodeRefreshDialog = true
                         AdminAction.Identify -> Unit
                         AdminAction.Delete -> showEpisodeDeleteDialog = true
@@ -382,7 +366,7 @@ fun ItemDetailScreen(
                     isMainItem = false,
                     scope = DeleteScope.ITEM,
                     viewModel = viewModel,
-                    navController = navController,
+                    onItemDeleted = onItemDeleted,
                     onDismiss = { showEpisodeDeleteDialog = false },
                 )
             }
@@ -391,12 +375,7 @@ fun ItemDetailScreen(
         LaunchedEffect(selectedEpisode, pendingNavigationSeriesId) {
             if (selectedEpisode == null && pendingNavigationSeriesId != null) {
                 kotlinx.coroutines.delay(300.milliseconds)
-                val route =
-                    Destination.createItemDetailRoute(
-                        itemId = pendingNavigationSeriesId!!,
-                        itemType = "Series",
-                    )
-                navController.navigate(route)
+                onSeriesClick(pendingNavigationSeriesId!!)
                 pendingNavigationSeriesId = null
             }
         }
@@ -404,7 +383,7 @@ fun ItemDetailScreen(
         LaunchedEffect(selectedEpisode, pendingNavigationPersonId) {
             if (selectedEpisode == null && pendingNavigationPersonId != null) {
                 kotlinx.coroutines.delay(300.milliseconds)
-                navController.navigate(Destination.createPersonRoute(pendingNavigationPersonId!!))
+                onPersonClick(pendingNavigationPersonId!!)
                 pendingNavigationPersonId = null
             }
         }
@@ -505,7 +484,16 @@ private fun ItemDetailContent(
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
-    navController: NavController,
+    onItemClick: (AfinityItem) -> Unit,
+    onSeriesClick: (String) -> Unit,
+    onSeasonClick: (AfinitySeason) -> Unit,
+    onPersonClick: (String) -> Unit,
+    onNavigateToSeerrMedia: (SearchResultItem) -> Unit,
+    onEditMetadataClick: (String) -> Unit,
+    onEditImagesClick: (String) -> Unit,
+    onIdentifyClick: (itemId: String, itemType: String) -> Unit,
+    onItemDeleted: () -> Unit,
+    onHomeClick: () -> Unit,
     viewModel: ItemDetailViewModel,
     widthSizeClass: WindowWidthSizeClass,
 ) {
@@ -513,9 +501,19 @@ private fun ItemDetailContent(
     val isLandscape = isLandscapeWindow()
 
     val lazyListState = rememberLazyListState()
-    val topBarOpacity by rememberDetailTopBarOpacity(lazyListState, isLandscape)
+    val topBarOpacity by rememberTopBarOpacity(lazyListState)
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
+            AfinityTopAppBar(
+                title = {},
+                onHomeClick = onHomeClick,
+                backgroundOpacity = backgroundOpacity,
+            )
+        },
+        mode = AfinityScreenMode.Hero,
+        scrollOpacity = { topBarOpacity },
+    ) {
         CompositionLocalProvider(LocalDetailLayout provides detailLayout) {
             if (isLandscape) {
                 LandscapeItemDetailContent(
@@ -543,7 +541,15 @@ private fun ItemDetailContent(
                     onPlayClick = onPlayClick,
                     onBoxSetItemClick = onBoxSetItemClick,
                     onSpecialFeatureClick = onSpecialFeatureClick,
-                    navController = navController,
+                    onItemClick = onItemClick,
+                    onSeriesClick = onSeriesClick,
+                    onSeasonClick = onSeasonClick,
+                    onPersonClick = onPersonClick,
+                    onNavigateToSeerrMedia = onNavigateToSeerrMedia,
+                    onEditMetadataClick = onEditMetadataClick,
+                    onEditImagesClick = onEditImagesClick,
+                    onIdentifyClick = onIdentifyClick,
+                    onItemDeleted = onItemDeleted,
                     viewModel = viewModel,
                     context = context,
                     widthSizeClass = widthSizeClass,
@@ -576,7 +582,15 @@ private fun ItemDetailContent(
                     onPlayClick = onPlayClick,
                     onBoxSetItemClick = onBoxSetItemClick,
                     onSpecialFeatureClick = onSpecialFeatureClick,
-                    navController = navController,
+                    onItemClick = onItemClick,
+                    onSeriesClick = onSeriesClick,
+                    onSeasonClick = onSeasonClick,
+                    onPersonClick = onPersonClick,
+                    onNavigateToSeerrMedia = onNavigateToSeerrMedia,
+                    onEditMetadataClick = onEditMetadataClick,
+                    onEditImagesClick = onEditImagesClick,
+                    onIdentifyClick = onIdentifyClick,
+                    onItemDeleted = onItemDeleted,
                     viewModel = viewModel,
                     context = context,
                     widthSizeClass = widthSizeClass,
@@ -585,18 +599,6 @@ private fun ItemDetailContent(
                 )
             }
         }
-
-        AfinityTopAppBar(
-            title = {},
-            onHomeClick = {
-                navController.navigate(Destination.HOME.route) {
-                    popUpTo(Destination.HOME.route) { inclusive = false }
-                    launchSingleTop = true
-                }
-            },
-            backgroundOpacity = { topBarOpacity },
-            landscapeStatusBarFill = Color.Black,
-        )
     }
 }
 
@@ -626,7 +628,15 @@ private fun LandscapeItemDetailContent(
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
-    navController: NavController,
+    onItemClick: (AfinityItem) -> Unit,
+    onSeriesClick: (String) -> Unit,
+    onSeasonClick: (AfinitySeason) -> Unit,
+    onPersonClick: (String) -> Unit,
+    onNavigateToSeerrMedia: (SearchResultItem) -> Unit,
+    onEditMetadataClick: (String) -> Unit,
+    onEditImagesClick: (String) -> Unit,
+    onIdentifyClick: (itemId: String, itemType: String) -> Unit,
+    onItemDeleted: () -> Unit,
     viewModel: ItemDetailViewModel,
     context: Context,
     widthSizeClass: WindowWidthSizeClass,
@@ -647,10 +657,6 @@ private fun LandscapeItemDetailContent(
     var showRefreshDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showAddToPlaylist by remember { mutableStateOf(false) }
-    val density = LocalDensity.current
-    val statusBarHeight = WindowInsets.statusBars.getTop(density)
-    val displayCutoutLeft = WindowInsets.displayCutout.getLeft(density, LayoutDirection.Ltr)
-    val playerOffset = LocalPlayerOffset.current
     val mediaSourceOptions = rememberMediaSourceOptions(item)
     val selectedMediaSource by viewModel.selectedMediaSource.collectAsStateWithLifecycle()
     val episodeLayoutFlow =
@@ -668,247 +674,201 @@ private fun LandscapeItemDetailContent(
         }
     }
 
-    LandscapeDetailTheme {
-        Box(modifier = Modifier.fillMaxSize()) {
-            val backdropChain =
-                remember(item.id) {
-                    if (item is AfinitySeason) {
-                        listOfNotNull(
-                            item.images.backdropImageUrl?.let {
-                                it to item.images.backdropBlurHash
-                            },
-                            item.images.showBackdropImageUrl?.let {
-                                it to item.images.showBackdropBlurHash
-                            },
-                            item.images.primaryImageUrl?.let { it to item.images.primaryBlurHash },
-                        )
-                    } else {
-                        listOfNotNull(
-                            item.images.backdropImageUrl?.let {
-                                it to item.images.backdropBlurHash
-                            },
-                            item.images.primaryImageUrl?.let { it to item.images.primaryBlurHash },
+    LandscapeDetailLayout(
+        backdropStyle = BackdropStyle.Cinematic,
+        backdrop = rememberItemBackdropChain(item),
+        listState = lazyListState,
+        arrangement = LandscapeDetailArrangement.Single,
+        backdropDescription = stringResource(R.string.cd_backdrop_fmt, item.name),
+        items = {
+            item(key = "header") {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    MediaLogoHeader(item = item, isLandscape = true)
+
+                    if (isModernSeason) {
+                        ModernSeasonTitle(
+                            season = item,
+                            isLandscape = true,
+                            onSeriesClick = { onSeriesClick(item.seriesId.toString()) },
                         )
                     }
-                }
 
-            DetailBackdrop(
-                fallbackChain = backdropChain,
-                contentDescription = stringResource(R.string.cd_backdrop_fmt, item.name),
-            )
+                    MetadataRow(
+                        item = item,
+                        boxSetItems = boxSetItems,
+                        selectedSourceId = selectedMediaSource?.id,
+                    )
 
-            LazyColumn(
-                state = lazyListState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding =
-                    PaddingValues(
-                        top = with(density) { statusBarHeight.toDp() } + afinityTopAppBarHeight(),
-                        start = with(density) { displayCutoutLeft.toDp() + 16.dp },
-                        end = 16.dp,
-                        bottom = 16.dp + playerOffset,
-                    ),
-            ) {
-                item(key = "header") {
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        MediaLogoHeader(item = item, isLandscape = true)
-
-                        if (isModernSeason) {
-                            ModernSeasonTitle(
-                                season = item,
-                                isLandscape = true,
-                                onSeriesClick = { navigateToSeries(navController, item) },
-                            )
-                        }
-
-                        MetadataRow(
+                    if (detailLayout == DetailLayout.MODERN && LocalShowRatings.current) {
+                        RatingChipsRow(
                             item = item,
-                            boxSetItems = boxSetItems,
-                            selectedSourceId = selectedMediaSource?.id,
-                        )
-
-                        if (detailLayout == DetailLayout.MODERN && LocalShowRatings.current) {
-                            RatingChipsRow(
-                                item = item,
-                                mdbRatings = mdbRatings,
-                                mdbRatingBadges = mdbRatingBadges,
-                            )
-                        }
-
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            if (
-                                item !is AfinityBoxSet &&
-                                    item !is AfinityVideoPlaylist &&
-                                    item.canPlay
-                            ) {
-                                Box(modifier = Modifier.widthIn(max = 200.dp)) {
-                                    PrimaryPlaybackButton(
-                                        item = item,
-                                        nextEpisode = nextEpisode,
-                                        selectedMediaSource = selectedMediaSource,
-                                        isLoading =
-                                            viewModel.uiState
-                                                .collectAsStateWithLifecycle()
-                                                .value
-                                                .isLoading,
-                                        onPlayRequested = { targetPlayItem, selection ->
-                                            handlePlayRequest(
-                                                item,
-                                                targetPlayItem,
-                                                selection,
-                                                context,
-                                                onPlayClick,
-                                            )
-                                        },
-                                    )
-                                }
-                            }
-
-                            ActionButtonsRow(
-                                item = item,
-                                isInWatchlist = isInWatchlist,
-                                hasTrailer = hasTrailer(item),
-                                downloadInfo = downloadInfo,
-                                hasPlayableItems = hasPlayableItems,
-                                onPlayTrailer = { playTrailer(item, context, viewModel) },
-                                onToggleWatchlist = { viewModel.toggleWatchlist() },
-                                onShufflePlay = { shufflePlay(item, nextEpisode, context) },
-                                onToggleFavorite = { viewModel.toggleFavorite() },
-                                onToggleWatched = { viewModel.toggleWatched() },
-                                onDownloadClick = { viewModel.onDownloadClick() },
-                                onPauseDownload = { viewModel.pauseDownload() },
-                                onResumeDownload = { viewModel.resumeDownload() },
-                                onCancelDownload = { viewModel.cancelDownload() },
-                                isDownloadAllowedByServer = isDownloadAllowedByServer,
-                                canDownloadOnNetwork = canDownloadOnNetwork,
-                                isLandscape = true,
-                                downloadUnavailable = uiState.downloadUnavailable,
-                                isAdmin = isAdmin,
-                                canIdentify = identifyItemType(item) != null,
-                                canDelete = item.id in deletableItemIds,
-                                selectedSourceId = selectedMediaSource?.id,
-                                onDownloadLongClick = { viewModel.onDownloadLongClick() },
-                                onAddToPlaylist =
-                                    if (
-                                        item is AfinityMovie ||
-                                            item is AfinityEpisode ||
-                                            item is AfinityShow ||
-                                            item is AfinitySeason
-                                    )
-                                        ({ showAddToPlaylist = true })
-                                    else null,
-                                onAdminAction = { action ->
-                                    when (action) {
-                                        AdminAction.EditMetadata ->
-                                            navController.navigate(
-                                                Destination.createEditMetadataRoute(
-                                                    item.id.toString()
-                                                )
-                                            )
-                                        AdminAction.Identify ->
-                                            identifyItemType(item)?.let { itemType ->
-                                                navController.navigate(
-                                                    Destination.createIdentifyItemRoute(
-                                                        item.id.toString(),
-                                                        itemType,
-                                                    )
-                                                )
-                                            }
-                                        AdminAction.EditImages ->
-                                            navController.navigate(
-                                                Destination.createEditImagesRoute(
-                                                    item.id.toString()
-                                                )
-                                            )
-                                        AdminAction.Refresh -> showRefreshDialog = true
-                                        AdminAction.Delete -> showDeleteDialog = true
-                                    }
-                                },
-                                modifier = Modifier.weight(2f),
-                            )
-
-                            if (showRefreshDialog) {
-                                RefreshMetadataDialog(
-                                    itemId = item.id.toString(),
-                                    itemName = item.name,
-                                    includesChildren = refreshIncludesChildren(item),
-                                    onDismiss = { showRefreshDialog = false },
-                                )
-                            }
-
-                            if (showAddToPlaylist) {
-                                AddToPlaylistDialog(
-                                    trackIds = listOf(item.id),
-                                    viewModel = hiltViewModel(),
-                                    mediaType = MediaType.VIDEO,
-                                    onDismiss = { showAddToPlaylist = false },
-                                    onResult = {},
-                                )
-                            }
-
-                            if (showDeleteDialog) {
-                                DeleteConfirmationDialog(
-                                    targetId = item.id,
-                                    targetName = item.name,
-                                    isMainItem = true,
-                                    scope = deleteScope(item),
-                                    viewModel = viewModel,
-                                    navController = navController,
-                                    onDismiss = { showDeleteDialog = false },
-                                )
-                            }
-                        }
-
-                        val providers = uiState.watchProviders
-                        if (detailLayout == DetailLayout.MODERN && providers != null) {
-                            WhereToWatchStrip(providers = providers)
-                        }
-
-                        VideoQualitySelection(
-                            mediaSourceOptions = mediaSourceOptions,
-                            selectedSource = selectedMediaSource,
-                            onSourceSelected = viewModel::selectMediaSource,
+                            mdbRatings = mdbRatings,
+                            mdbRatingBadges = mdbRatingBadges,
                         )
                     }
-                }
 
-                typeSpecificItems(
-                    item = item,
-                    seasons = seasons,
-                    boxSetItems = boxSetItems,
-                    containingBoxSets = containingBoxSets,
-                    similarItems = similarItems,
-                    relatedRows = relatedRows,
-                    missingCollectionParts = missingCollectionParts,
-                    nextEpisode = nextEpisode,
-                    baseUrl = baseUrl,
-                    specialFeatures = specialFeatures,
-                    lazyEpisodeItems = lazyEpisodeItems,
-                    episodeLayout = episodeLayout,
-                    tmdbReviews = tmdbReviews,
-                    mdbRatings = mdbRatings,
-                    mdbRatingBadges = mdbRatingBadges,
-                    omdbAwards = omdbAwards,
-                    wikidataAwards = wikidataAwards,
-                    isRatingsFromCache = isRatingsFromCache,
-                    movieParts = movieParts,
-                    selectedSourceId = selectedMediaSource?.id,
-                    onPlayClick = onPlayClick,
-                    onBoxSetItemClick = onBoxSetItemClick,
-                    onSpecialFeatureClick = onSpecialFeatureClick,
-                    navController = navController,
-                    viewModel = viewModel,
-                    widthSizeClass = widthSizeClass,
-                    horizontalPadding = 0.dp,
-                    detailLayout = detailLayout,
-                    watchProviders = uiState.watchProviders,
-                )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        if (
+                            item !is AfinityBoxSet && item !is AfinityVideoPlaylist && item.canPlay
+                        ) {
+                            Box(modifier = Modifier.widthIn(max = 200.dp)) {
+                                PrimaryPlaybackButton(
+                                    item = item,
+                                    nextEpisode = nextEpisode,
+                                    selectedMediaSource = selectedMediaSource,
+                                    isLoading =
+                                        viewModel.uiState
+                                            .collectAsStateWithLifecycle()
+                                            .value
+                                            .isLoading,
+                                    onPlayRequested = { targetPlayItem, selection ->
+                                        handlePlayRequest(
+                                            item,
+                                            targetPlayItem,
+                                            selection,
+                                            context,
+                                            onPlayClick,
+                                        )
+                                    },
+                                )
+                            }
+                        }
+
+                        ActionButtonsRow(
+                            item = item,
+                            isInWatchlist = isInWatchlist,
+                            hasTrailer = hasTrailer(item),
+                            downloadInfo = downloadInfo,
+                            hasPlayableItems = hasPlayableItems,
+                            onPlayTrailer = { playTrailer(item, context, viewModel) },
+                            onToggleWatchlist = { viewModel.toggleWatchlist() },
+                            onShufflePlay = { shufflePlay(item, nextEpisode, context) },
+                            onToggleFavorite = { viewModel.toggleFavorite() },
+                            onToggleWatched = { viewModel.toggleWatched() },
+                            onDownloadClick = { viewModel.onDownloadClick() },
+                            onPauseDownload = { viewModel.pauseDownload() },
+                            onResumeDownload = { viewModel.resumeDownload() },
+                            onCancelDownload = { viewModel.cancelDownload() },
+                            isDownloadAllowedByServer = isDownloadAllowedByServer,
+                            canDownloadOnNetwork = canDownloadOnNetwork,
+                            isLandscape = true,
+                            downloadUnavailable = uiState.downloadUnavailable,
+                            isAdmin = isAdmin,
+                            canIdentify = identifyItemType(item) != null,
+                            canDelete = item.id in deletableItemIds,
+                            selectedSourceId = selectedMediaSource?.id,
+                            onDownloadLongClick = { viewModel.onDownloadLongClick() },
+                            onAddToPlaylist =
+                                if (
+                                    item is AfinityMovie ||
+                                        item is AfinityEpisode ||
+                                        item is AfinityShow ||
+                                        item is AfinitySeason
+                                )
+                                    ({ showAddToPlaylist = true })
+                                else null,
+                            onAdminAction = { action ->
+                                when (action) {
+                                    AdminAction.EditMetadata ->
+                                        onEditMetadataClick(item.id.toString())
+                                    AdminAction.Identify ->
+                                        identifyItemType(item)?.let { itemType ->
+                                            onIdentifyClick(item.id.toString(), itemType)
+                                        }
+                                    AdminAction.EditImages -> onEditImagesClick(item.id.toString())
+                                    AdminAction.Refresh -> showRefreshDialog = true
+                                    AdminAction.Delete -> showDeleteDialog = true
+                                }
+                            },
+                            modifier = Modifier.weight(2f),
+                        )
+
+                        if (showRefreshDialog) {
+                            RefreshMetadataDialog(
+                                itemId = item.id.toString(),
+                                itemName = item.name,
+                                includesChildren = refreshIncludesChildren(item),
+                                onDismiss = { showRefreshDialog = false },
+                            )
+                        }
+
+                        if (showAddToPlaylist) {
+                            AddToPlaylistDialog(
+                                trackIds = listOf(item.id),
+                                viewModel = hiltViewModel(),
+                                mediaType = MediaType.VIDEO,
+                                onDismiss = { showAddToPlaylist = false },
+                                onResult = {},
+                            )
+                        }
+
+                        if (showDeleteDialog) {
+                            DeleteConfirmationDialog(
+                                targetId = item.id,
+                                targetName = item.name,
+                                isMainItem = true,
+                                scope = deleteScope(item),
+                                viewModel = viewModel,
+                                onItemDeleted = onItemDeleted,
+                                onDismiss = { showDeleteDialog = false },
+                            )
+                        }
+                    }
+
+                    val providers = uiState.watchProviders
+                    if (detailLayout == DetailLayout.MODERN && providers != null) {
+                        WhereToWatchStrip(providers = providers)
+                    }
+
+                    VideoQualitySelection(
+                        mediaSourceOptions = mediaSourceOptions,
+                        selectedSource = selectedMediaSource,
+                        onSourceSelected = viewModel::selectMediaSource,
+                    )
+                }
             }
-        }
-    }
+
+            typeSpecificItems(
+                item = item,
+                seasons = seasons,
+                boxSetItems = boxSetItems,
+                containingBoxSets = containingBoxSets,
+                similarItems = similarItems,
+                relatedRows = relatedRows,
+                missingCollectionParts = missingCollectionParts,
+                nextEpisode = nextEpisode,
+                baseUrl = baseUrl,
+                specialFeatures = specialFeatures,
+                lazyEpisodeItems = lazyEpisodeItems,
+                episodeLayout = episodeLayout,
+                tmdbReviews = tmdbReviews,
+                mdbRatings = mdbRatings,
+                mdbRatingBadges = mdbRatingBadges,
+                omdbAwards = omdbAwards,
+                wikidataAwards = wikidataAwards,
+                isRatingsFromCache = isRatingsFromCache,
+                movieParts = movieParts,
+                selectedSourceId = selectedMediaSource?.id,
+                onPlayClick = onPlayClick,
+                onBoxSetItemClick = onBoxSetItemClick,
+                onSpecialFeatureClick = onSpecialFeatureClick,
+                onItemClick = onItemClick,
+                onSeasonClick = onSeasonClick,
+                onPersonClick = onPersonClick,
+                onNavigateToSeerrMedia = onNavigateToSeerrMedia,
+                viewModel = viewModel,
+                context = context,
+                widthSizeClass = widthSizeClass,
+                horizontalPadding = 0.dp,
+                detailLayout = detailLayout,
+                watchProviders = uiState.watchProviders,
+            )
+        },
+    )
 }
 
 @Composable
@@ -937,7 +897,15 @@ private fun PortraitItemDetailContent(
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
-    navController: NavController,
+    onItemClick: (AfinityItem) -> Unit,
+    onSeriesClick: (String) -> Unit,
+    onSeasonClick: (AfinitySeason) -> Unit,
+    onPersonClick: (String) -> Unit,
+    onNavigateToSeerrMedia: (SearchResultItem) -> Unit,
+    onEditMetadataClick: (String) -> Unit,
+    onEditImagesClick: (String) -> Unit,
+    onIdentifyClick: (itemId: String, itemType: String) -> Unit,
+    onItemDeleted: () -> Unit,
     viewModel: ItemDetailViewModel,
     context: Context,
     widthSizeClass: WindowWidthSizeClass,
@@ -945,7 +913,6 @@ private fun PortraitItemDetailContent(
     lazyListState: LazyListState = rememberLazyListState(),
 ) {
     val preferencesRepository = rememberPreferencesRepository()
-    val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isDownloadAllowedByServer by
         viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
@@ -959,7 +926,6 @@ private fun PortraitItemDetailContent(
     var showRefreshDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showAddToPlaylist by remember { mutableStateOf(false) }
-    val playerOffset = LocalPlayerOffset.current
     val mediaSourceOptions = rememberMediaSourceOptions(item)
     val selectedMediaSource by viewModel.selectedMediaSource.collectAsStateWithLifecycle()
     val episodeLayoutFlow =
@@ -977,193 +943,177 @@ private fun PortraitItemDetailContent(
         }
     }
 
-    LazyColumn(
-        state = lazyListState,
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = max(bottomPadding, playerOffset) + 16.dp),
-    ) {
-        item(key = "hero") { HeroSection(item = item) }
+    PortraitDetailLayout(
+        hero =
+            PortraitHero.Image(
+                kind = ImageHeroKind.Backdrop,
+                backdrop = rememberItemBackdropChain(item),
+            ),
+        listState = lazyListState,
+        header = {
+            MediaLogoHeader(item = item, isLandscape = false)
 
-        item(key = "header") {
-            Column(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .verticalLayoutOffset((-110).dp)
-                        .padding(start = 16.dp, end = 16.dp, top = 0.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                MediaLogoHeader(item = item, isLandscape = false)
-
-                if (isModernSeason) {
-                    ModernSeasonTitle(
-                        season = item,
-                        isLandscape = false,
-                        onSeriesClick = { navigateToSeries(navController, item) },
-                    )
-                }
-
-                MetadataRow(
-                    item = item,
-                    boxSetItems = boxSetItems,
-                    selectedSourceId = selectedMediaSource?.id,
-                )
-
-                if (detailLayout == DetailLayout.MODERN && LocalShowRatings.current) {
-                    RatingChipsRow(
-                        item = item,
-                        mdbRatings = mdbRatings,
-                        mdbRatingBadges = mdbRatingBadges,
-                    )
-                }
-
-                if (item !is AfinityBoxSet && item !is AfinityVideoPlaylist && item.canPlay) {
-                    PrimaryPlaybackButton(
-                        item = item,
-                        nextEpisode = nextEpisode,
-                        selectedMediaSource = selectedMediaSource,
-                        isLoading = viewModel.uiState.collectAsStateWithLifecycle().value.isLoading,
-                        onPlayRequested = { targetPlayItem, selection ->
-                            handlePlayRequest(item, targetPlayItem, selection, context, onPlayClick)
-                        },
-                    )
-                }
-
-                ActionButtonsRow(
-                    item = item,
-                    isInWatchlist = isInWatchlist,
-                    hasTrailer = hasTrailer(item),
-                    downloadInfo = downloadInfo,
-                    hasPlayableItems = hasPlayableItems,
-                    onPlayTrailer = { playTrailer(item, context, viewModel) },
-                    onToggleWatchlist = { viewModel.toggleWatchlist() },
-                    onShufflePlay = { shufflePlay(item, nextEpisode, context) },
-                    onToggleFavorite = { viewModel.toggleFavorite() },
-                    onToggleWatched = { viewModel.toggleWatched() },
-                    onDownloadClick = { viewModel.onDownloadClick() },
-                    onPauseDownload = { viewModel.pauseDownload() },
-                    onResumeDownload = { viewModel.resumeDownload() },
-                    onCancelDownload = { viewModel.cancelDownload() },
-                    isDownloadAllowedByServer = isDownloadAllowedByServer,
-                    canDownloadOnNetwork = canDownloadOnNetwork,
+            if (isModernSeason) {
+                ModernSeasonTitle(
+                    season = item,
                     isLandscape = false,
-                    downloadUnavailable = uiState.downloadUnavailable,
-                    isAdmin = isAdmin,
-                    canIdentify = identifyItemType(item) != null,
-                    canDelete = item.id in deletableItemIds,
-                    selectedSourceId = selectedMediaSource?.id,
-                    onDownloadLongClick = { viewModel.onDownloadLongClick() },
-                    onAddToPlaylist =
-                        if (
-                            item is AfinityMovie ||
-                                item is AfinityEpisode ||
-                                item is AfinityShow ||
-                                item is AfinitySeason
-                        )
-                            ({ showAddToPlaylist = true })
-                        else null,
-                    onAdminAction = { action ->
-                        when (action) {
-                            AdminAction.EditMetadata ->
-                                navController.navigate(
-                                    Destination.createEditMetadataRoute(item.id.toString())
-                                )
-                            AdminAction.Identify ->
-                                identifyItemType(item)?.let { itemType ->
-                                    navController.navigate(
-                                        Destination.createIdentifyItemRoute(
-                                            item.id.toString(),
-                                            itemType,
-                                        )
-                                    )
-                                }
-                            AdminAction.EditImages ->
-                                navController.navigate(
-                                    Destination.createEditImagesRoute(item.id.toString())
-                                )
-                            AdminAction.Refresh -> showRefreshDialog = true
-                            AdminAction.Delete -> showDeleteDialog = true
-                        }
-                    },
-                )
-
-                if (showRefreshDialog) {
-                    RefreshMetadataDialog(
-                        itemId = item.id.toString(),
-                        itemName = item.name,
-                        includesChildren = refreshIncludesChildren(item),
-                        onDismiss = { showRefreshDialog = false },
-                    )
-                }
-
-                if (showAddToPlaylist) {
-                    AddToPlaylistDialog(
-                        trackIds = listOf(item.id),
-                        viewModel = hiltViewModel(),
-                        mediaType = MediaType.VIDEO,
-                        onDismiss = { showAddToPlaylist = false },
-                        onResult = {},
-                    )
-                }
-
-                if (showDeleteDialog) {
-                    DeleteConfirmationDialog(
-                        targetId = item.id,
-                        targetName = item.name,
-                        isMainItem = true,
-                        scope = deleteScope(item),
-                        viewModel = viewModel,
-                        navController = navController,
-                        onDismiss = { showDeleteDialog = false },
-                    )
-                }
-
-                val providers = uiState.watchProviders
-                if (detailLayout == DetailLayout.MODERN && providers != null) {
-                    WhereToWatchStrip(providers = providers)
-                }
-
-                VideoQualitySelection(
-                    mediaSourceOptions = mediaSourceOptions,
-                    selectedSource = selectedMediaSource,
-                    onSourceSelected = viewModel::selectMediaSource,
+                    onSeriesClick = { onSeriesClick(item.seriesId.toString()) },
                 )
             }
-        }
 
-        typeSpecificItems(
-            item = item,
-            seasons = seasons,
-            boxSetItems = boxSetItems,
-            containingBoxSets = containingBoxSets,
-            similarItems = similarItems,
-            relatedRows = relatedRows,
-            missingCollectionParts = missingCollectionParts,
-            nextEpisode = nextEpisode,
-            baseUrl = baseUrl,
-            specialFeatures = specialFeatures,
-            lazyEpisodeItems = lazyEpisodeItems,
-            episodeLayout = episodeLayout,
-            tmdbReviews = tmdbReviews,
-            mdbRatings = mdbRatings,
-            mdbRatingBadges = mdbRatingBadges,
-            omdbAwards = omdbAwards,
-            wikidataAwards = wikidataAwards,
-            isRatingsFromCache = isRatingsFromCache,
-            movieParts = movieParts,
-            selectedSourceId = selectedMediaSource?.id,
-            onPlayClick = onPlayClick,
-            onBoxSetItemClick = onBoxSetItemClick,
-            onSpecialFeatureClick = onSpecialFeatureClick,
-            navController = navController,
-            viewModel = viewModel,
-            widthSizeClass = widthSizeClass,
-            horizontalPadding = 16.dp,
-            detailLayout = detailLayout,
-            watchProviders = uiState.watchProviders,
-        )
+            MetadataRow(
+                item = item,
+                boxSetItems = boxSetItems,
+                selectedSourceId = selectedMediaSource?.id,
+            )
 
-        item(key = "bottom_spacer") { Spacer(modifier = Modifier.height(16.dp)) }
-    }
+            if (detailLayout == DetailLayout.MODERN && LocalShowRatings.current) {
+                RatingChipsRow(
+                    item = item,
+                    mdbRatings = mdbRatings,
+                    mdbRatingBadges = mdbRatingBadges,
+                )
+            }
+
+            if (item !is AfinityBoxSet && item !is AfinityVideoPlaylist && item.canPlay) {
+                PrimaryPlaybackButton(
+                    item = item,
+                    nextEpisode = nextEpisode,
+                    selectedMediaSource = selectedMediaSource,
+                    isLoading = viewModel.uiState.collectAsStateWithLifecycle().value.isLoading,
+                    onPlayRequested = { targetPlayItem, selection ->
+                        handlePlayRequest(item, targetPlayItem, selection, context, onPlayClick)
+                    },
+                )
+            }
+
+            ActionButtonsRow(
+                item = item,
+                isInWatchlist = isInWatchlist,
+                hasTrailer = hasTrailer(item),
+                downloadInfo = downloadInfo,
+                hasPlayableItems = hasPlayableItems,
+                onPlayTrailer = { playTrailer(item, context, viewModel) },
+                onToggleWatchlist = { viewModel.toggleWatchlist() },
+                onShufflePlay = { shufflePlay(item, nextEpisode, context) },
+                onToggleFavorite = { viewModel.toggleFavorite() },
+                onToggleWatched = { viewModel.toggleWatched() },
+                onDownloadClick = { viewModel.onDownloadClick() },
+                onPauseDownload = { viewModel.pauseDownload() },
+                onResumeDownload = { viewModel.resumeDownload() },
+                onCancelDownload = { viewModel.cancelDownload() },
+                isDownloadAllowedByServer = isDownloadAllowedByServer,
+                canDownloadOnNetwork = canDownloadOnNetwork,
+                isLandscape = false,
+                downloadUnavailable = uiState.downloadUnavailable,
+                isAdmin = isAdmin,
+                canIdentify = identifyItemType(item) != null,
+                canDelete = item.id in deletableItemIds,
+                selectedSourceId = selectedMediaSource?.id,
+                onDownloadLongClick = { viewModel.onDownloadLongClick() },
+                onAddToPlaylist =
+                    if (
+                        item is AfinityMovie ||
+                            item is AfinityEpisode ||
+                            item is AfinityShow ||
+                            item is AfinitySeason
+                    )
+                        ({ showAddToPlaylist = true })
+                    else null,
+                onAdminAction = { action ->
+                    when (action) {
+                        AdminAction.EditMetadata -> onEditMetadataClick(item.id.toString())
+                        AdminAction.Identify ->
+                            identifyItemType(item)?.let { itemType ->
+                                onIdentifyClick(item.id.toString(), itemType)
+                            }
+                        AdminAction.EditImages -> onEditImagesClick(item.id.toString())
+                        AdminAction.Refresh -> showRefreshDialog = true
+                        AdminAction.Delete -> showDeleteDialog = true
+                    }
+                },
+            )
+
+            if (showRefreshDialog) {
+                RefreshMetadataDialog(
+                    itemId = item.id.toString(),
+                    itemName = item.name,
+                    includesChildren = refreshIncludesChildren(item),
+                    onDismiss = { showRefreshDialog = false },
+                )
+            }
+
+            if (showAddToPlaylist) {
+                AddToPlaylistDialog(
+                    trackIds = listOf(item.id),
+                    viewModel = hiltViewModel(),
+                    mediaType = MediaType.VIDEO,
+                    onDismiss = { showAddToPlaylist = false },
+                    onResult = {},
+                )
+            }
+
+            if (showDeleteDialog) {
+                DeleteConfirmationDialog(
+                    targetId = item.id,
+                    targetName = item.name,
+                    isMainItem = true,
+                    scope = deleteScope(item),
+                    viewModel = viewModel,
+                    onItemDeleted = onItemDeleted,
+                    onDismiss = { showDeleteDialog = false },
+                )
+            }
+
+            val providers = uiState.watchProviders
+            if (detailLayout == DetailLayout.MODERN && providers != null) {
+                WhereToWatchStrip(providers = providers)
+            }
+
+            VideoQualitySelection(
+                mediaSourceOptions = mediaSourceOptions,
+                selectedSource = selectedMediaSource,
+                onSourceSelected = viewModel::selectMediaSource,
+            )
+        },
+        items = {
+            typeSpecificItems(
+                item = item,
+                seasons = seasons,
+                boxSetItems = boxSetItems,
+                containingBoxSets = containingBoxSets,
+                similarItems = similarItems,
+                relatedRows = relatedRows,
+                missingCollectionParts = missingCollectionParts,
+                nextEpisode = nextEpisode,
+                baseUrl = baseUrl,
+                specialFeatures = specialFeatures,
+                lazyEpisodeItems = lazyEpisodeItems,
+                episodeLayout = episodeLayout,
+                tmdbReviews = tmdbReviews,
+                mdbRatings = mdbRatings,
+                mdbRatingBadges = mdbRatingBadges,
+                omdbAwards = omdbAwards,
+                wikidataAwards = wikidataAwards,
+                isRatingsFromCache = isRatingsFromCache,
+                movieParts = movieParts,
+                selectedSourceId = selectedMediaSource?.id,
+                onPlayClick = onPlayClick,
+                onBoxSetItemClick = onBoxSetItemClick,
+                onSpecialFeatureClick = onSpecialFeatureClick,
+                onItemClick = onItemClick,
+                onSeasonClick = onSeasonClick,
+                onPersonClick = onPersonClick,
+                onNavigateToSeerrMedia = onNavigateToSeerrMedia,
+                viewModel = viewModel,
+                context = context,
+                widthSizeClass = widthSizeClass,
+                horizontalPadding = DetailGutter,
+                detailLayout = detailLayout,
+                watchProviders = uiState.watchProviders,
+            )
+        },
+    )
 }
 
 @Composable
@@ -1232,8 +1182,12 @@ private fun LazyListScope.typeSpecificItems(
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
-    navController: NavController,
+    onItemClick: (AfinityItem) -> Unit,
+    onSeasonClick: (AfinitySeason) -> Unit,
+    onPersonClick: (String) -> Unit,
+    onNavigateToSeerrMedia: (SearchResultItem) -> Unit,
     viewModel: ItemDetailViewModel,
+    context: Context,
     widthSizeClass: WindowWidthSizeClass,
     horizontalPadding: Dp,
     detailLayout: DetailLayout,
@@ -1259,7 +1213,7 @@ private fun LazyListScope.typeSpecificItems(
                     val startPos =
                         if (ep.playbackPositionTicks > 0) ep.playbackPositionTicks / 10000 else 0L
                     PlayerLauncher.launch(
-                        navController.context,
+                        context,
                         ep.id,
                         mediaSourceId,
                         null,
@@ -1275,7 +1229,7 @@ private fun LazyListScope.typeSpecificItems(
                             if (sf.playbackPositionTicks > 0) sf.playbackPositionTicks / 10000
                             else 0L
                         PlayerLauncher.launch(
-                            context = navController.context,
+                            context = context,
                             itemId = sf.id,
                             mediaSourceId = mediaSourceId,
                             audioStreamIndex = null,
@@ -1288,7 +1242,9 @@ private fun LazyListScope.typeSpecificItems(
                         )
                     }
                 },
-                navController = navController,
+                onItemClick = onItemClick,
+                onSeasonClick = onSeasonClick,
+                onPersonClick = onPersonClick,
                 widthSizeClass = widthSizeClass,
                 horizontalPadding = horizontalPadding,
                 detailLayout = detailLayout,
@@ -1307,7 +1263,8 @@ private fun LazyListScope.typeSpecificItems(
                 isRatingsFromCache = isRatingsFromCache,
                 onEpisodeClick = { ep -> viewModel.selectEpisode(ep) },
                 onSpecialFeatureClick = onSpecialFeatureClick,
-                navController = navController,
+                onItemClick = onItemClick,
+                onPersonClick = onPersonClick,
                 widthSizeClass = widthSizeClass,
                 horizontalPadding = horizontalPadding,
                 detailLayout = detailLayout,
@@ -1329,7 +1286,8 @@ private fun LazyListScope.typeSpecificItems(
                 onSpecialFeatureClick = onSpecialFeatureClick,
                 onPlayClick = { movie, sel -> onPlayClick(movie, sel) },
                 onPartClick = { part -> onPlayClick(part, null) },
-                navController = navController,
+                onItemClick = onItemClick,
+                onPersonClick = onPersonClick,
                 widthSizeClass = widthSizeClass,
                 horizontalPadding = horizontalPadding,
                 detailLayout = detailLayout,
@@ -1341,17 +1299,7 @@ private fun LazyListScope.typeSpecificItems(
                 boxSetItems = boxSetItems,
                 onItemClick = onBoxSetItemClick,
                 missingParts = missingCollectionParts,
-                onMissingPartClick = { part ->
-                    navController.navigate(
-                        Destination.createSeerrMediaRoute(
-                            mediaType = part.mediaType,
-                            tmdbId = part.id,
-                            title = part.getDisplayTitle(),
-                            backdropUrl = part.getBackdropUrl(),
-                            posterUrl = part.getPosterUrl(),
-                        )
-                    )
-                },
+                onMissingPartClick = onNavigateToSeerrMedia,
                 widthSizeClass = widthSizeClass,
                 horizontalPadding = horizontalPadding,
                 detailLayout = detailLayout,
@@ -1360,26 +1308,11 @@ private fun LazyListScope.typeSpecificItems(
         else -> Unit
     }
 
-    val openRelatedItem: (AfinityItem) -> Unit = { related ->
-        val route =
-            Destination.createItemDetailRoute(
-                itemId = related.id.toString(),
-                itemType =
-                    when (related) {
-                        is AfinityShow -> "Series"
-                        is AfinitySeason -> "Season"
-                        else -> null
-                    },
-                seriesId = (related as? AfinitySeason)?.seriesId?.toString(),
-            )
-        navController.navigate(route)
-    }
-
     if (item !is AfinityBoxSet && item !is AfinityVideoPlaylist && similarItems.isNotEmpty()) {
         detailItem("similar", horizontalPadding) {
             SimilarItemsSection(
                 items = similarItems,
-                onItemClick = openRelatedItem,
+                onItemClick = onItemClick,
                 widthSizeClass = widthSizeClass,
             )
         }
@@ -1389,7 +1322,7 @@ private fun LazyListScope.typeSpecificItems(
         detailItem("related_${row.kind.name}", horizontalPadding) {
             SimilarItemsSection(
                 items = row.items,
-                onItemClick = openRelatedItem,
+                onItemClick = onItemClick,
                 widthSizeClass = widthSizeClass,
                 title =
                     when (row.kind) {
@@ -1435,12 +1368,6 @@ private fun rememberMediaSourceOptions(item: AfinityItem): List<MediaSourceOptio
             )
         }
     }
-}
-
-private fun navigateToSeries(navController: NavController, season: AfinitySeason) {
-    navController.navigate(
-        Destination.createItemDetailRoute(itemId = season.seriesId.toString(), itemType = "Series")
-    )
 }
 
 private fun identifyItemType(item: AfinityItem): String? =
@@ -1531,12 +1458,12 @@ private fun DeleteConfirmationDialog(
     isMainItem: Boolean,
     scope: DeleteScope,
     viewModel: ItemDetailViewModel,
-    navController: NavController,
+    onItemDeleted: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
     val currentOnDismiss by rememberUpdatedState(onDismiss)
-    val pageEntryId = remember { navController.currentBackStackEntry?.id }
+    val currentOnItemDeleted by rememberUpdatedState(onItemDeleted)
     var deleting by remember(targetId) { mutableStateOf(false) }
     var errorRes by remember(targetId) { mutableStateOf<Int?>(null) }
 
@@ -1563,8 +1490,8 @@ private fun DeleteConfirmationDialog(
                             .show()
                         if (!isMainItem) {
                             viewModel.clearSelectedEpisode()
-                        } else if (navController.currentBackStackEntry?.id == pageEntryId) {
-                            navController.popBackStack()
+                        } else {
+                            currentOnItemDeleted()
                         }
                         currentOnDismiss()
                     }

@@ -4,87 +4,49 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil3.compose.AsyncImage
 import com.makd.afinity.R
-import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackState
 import com.makd.afinity.ui.audiobookshelf.player.components.BookmarksSheet
 import com.makd.afinity.ui.audiobookshelf.player.components.ChapterSelector
-import com.makd.afinity.ui.audiobookshelf.player.components.EqualizerBottomSheet
 import com.makd.afinity.ui.audiobookshelf.player.components.PlaybackSpeedSelector
 import com.makd.afinity.ui.audiobookshelf.player.components.PlayerControls
 import com.makd.afinity.ui.audiobookshelf.player.components.SleepTimerDialog
 import com.makd.afinity.ui.audiobookshelf.player.components.formatSpeed
-import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
-import com.makd.afinity.ui.components.AFinitySnackbar
+import com.makd.afinity.ui.audiobookshelf.withAbsWidth
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.components.rememberCastChooserLauncher
-import com.makd.afinity.ui.player.components.AudioPlayerControlRow
+import com.makd.afinity.ui.player.components.AudioCoverArt
+import com.makd.afinity.ui.player.components.AudioCoverStyle
 import com.makd.afinity.ui.player.components.AudioPlayerControlSlot
 import com.makd.afinity.ui.player.components.AudioPlayerLayout
+import com.makd.afinity.ui.player.components.AudioPlayerScaffold
+import com.makd.afinity.ui.player.components.AudioPlayerTitleBlock
 import com.makd.afinity.ui.player.components.AudioPlayerValueSlot
+import com.makd.afinity.ui.player.components.EqualizerBottomSheet
 import com.makd.afinity.ui.player.components.PlaybackStatsOverlay
 import com.makd.afinity.ui.player.components.PlayerMoreRow
 import com.makd.afinity.ui.player.components.PlayerMoreSectionHeader
 import com.makd.afinity.ui.player.components.PlayerMoreSheet
 import com.makd.afinity.ui.player.components.SwipeCoverItem
 import com.makd.afinity.ui.player.components.SwipeableCover
-
-internal fun String.withAbsWidth(px: Int): String {
-    if (startsWith("file://")) return this
-    val sep = if ('?' in this) "&" else "?"
-    return "${this}${sep}width=$px"
-}
+import com.makd.afinity.ui.player.components.rememberDominantColor
 
 private const val ABS_PLAY_METHOD_TRANSCODE = 2
 
@@ -103,7 +65,16 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
     val bookmarks by viewModel.bookmarks.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val launchCastChooser = rememberCastChooserLauncher()
-    var showMoreSheet by remember { mutableStateOf(false) }
+    var showMoreSheet by rememberSaveable { mutableStateOf(false) }
+    var showChapters by rememberSaveable { mutableStateOf(false) }
+    var showSpeed by rememberSaveable { mutableStateOf(false) }
+    var showSleepTimer by rememberSaveable { mutableStateOf(false) }
+    var showEqualizer by rememberSaveable { mutableStateOf(false) }
+    var showBookmarks by rememberSaveable { mutableStateOf(false) }
+    val openBookmarks = {
+        showBookmarks = true
+        viewModel.refreshBookmarks()
+    }
 
     val defaultColor = MaterialTheme.colorScheme.surface
     val dominantColor = rememberDominantColor(playbackState.coverUrl, defaultColor)
@@ -131,64 +102,116 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
     }
 
     val isLandscape = isLandscapeWindow()
+    val hasBookmarks = bookmarks.isNotEmpty()
+    val chapters = playbackState.chapters
+    val chapterIndex = playbackState.currentChapterIndex
 
-    Scaffold(
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) })
+    AudioPlayerScaffold(
+        isLandscape = isLandscape,
+        isCasting = isAbsCasting,
+        accentColor = animatedColor,
+        snackbarHostState = snackbarHostState,
+        onMinimize = onNavigateBack,
+        onCastClick = launchCastChooser,
+        onMoreClick = { showMoreSheet = true },
+        castRemote = {
+            AbsCastRemote(
+                viewModel = viewModel,
+                playbackState = playbackState,
+                accentColor = animatedColor,
+                hasBookmarks = hasBookmarks,
+                onNavigateBack = onNavigateBack,
+                onOpenMore = { showMoreSheet = true },
+                onOpenChapters = { showChapters = true },
+                onOpenBookmarks = openBookmarks,
+                onOpenSleepTimer = { showSleepTimer = true },
+                onOpenSpeed = { showSpeed = true },
+            )
         },
-        containerColor = Color.Transparent,
-    ) { paddingValues ->
-        Box(
-            modifier =
-                Modifier.fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors =
-                                listOf(
-                                    animatedColor.copy(alpha = 0.8f),
-                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
-                                    Color.Black.copy(alpha = 0.9f),
-                                )
-                        )
-                    )
-        ) {
-            if (isAbsCasting) {
-                AbsCastRemote(
-                    viewModel = viewModel,
-                    playbackState = playbackState,
-                    accentColor = animatedColor,
-                    hasBookmarks = bookmarks.isNotEmpty(),
-                    onNavigateBack = onNavigateBack,
-                    onOpenMore = { showMoreSheet = true },
-                )
-            } else if (isLandscape) {
-                LandscapePlayerContent(
-                    playbackState = playbackState,
-                    viewModel = viewModel,
-                    animatedColor = animatedColor,
-                    onNavigateBack = onNavigateBack,
-                    onCastClick = launchCastChooser,
-                    onOpenMore = { showMoreSheet = true },
-                    isAbsCasting = isAbsCasting,
-                    hasBookmarks = bookmarks.isNotEmpty(),
-                    paddingValues = paddingValues,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                )
-            } else {
-                PortraitPlayerContent(
-                    playbackState = playbackState,
-                    viewModel = viewModel,
-                    animatedColor = animatedColor,
-                    onNavigateBack = onNavigateBack,
-                    onCastClick = launchCastChooser,
-                    onOpenMore = { showMoreSheet = true },
-                    isAbsCasting = isAbsCasting,
-                    hasBookmarks = bookmarks.isNotEmpty(),
-                    paddingValues = paddingValues,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                )
-            }
-        }
+        cover = { style ->
+            AbsSwipeableCover(
+                viewModel = viewModel,
+                coverUrl = playbackState.coverUrl,
+                chapterIndex = chapterIndex,
+                chapterCount = chapters.size,
+                style = style,
+                animatedVisibilityScope = animatedVisibilityScope,
+                modifier = Modifier.fillMaxSize(),
+            )
+        },
+        info = {
+            AudioPlayerTitleBlock(
+                title =
+                    playbackState.displayTitle.ifEmpty { stringResource(R.string.unknown_title) },
+                subtitle = playbackState.displayAuthor ?: stringResource(R.string.unknown_author),
+                accentLine = playbackState.currentChapter?.title,
+                accentColor = animatedColor,
+                isLandscape = isLandscape,
+            )
+        },
+        controls = {
+            PlayerControls(
+                currentTime = playbackState.currentTime,
+                duration = playbackState.duration,
+                bufferedPosition = playbackState.bufferedPosition,
+                isPlaying = playbackState.isPlaying,
+                isBuffering = playbackState.isBuffering,
+                audioCodec = playbackState.audioTracks.firstOrNull()?.codec?.uppercase(),
+                isServerTranscode = playbackState.playMethod == ABS_PLAY_METHOD_TRANSCODE,
+                onPlayPauseClick = viewModel::togglePlayPause,
+                onSkipForward = viewModel::skipForward,
+                onSkipBackward = viewModel::skipBackward,
+                onSeek = viewModel::seekTo,
+                onPreviousChapter =
+                    if (chapters.isNotEmpty() && chapterIndex > 0) {
+                        { viewModel.seekToChapter(chapterIndex - 1) }
+                    } else null,
+                onNextChapter =
+                    if (chapters.isNotEmpty() && chapterIndex < chapters.lastIndex) {
+                        { viewModel.seekToChapter(chapterIndex + 1) }
+                    } else null,
+                accentColor = animatedColor,
+                currentChapter = playbackState.currentChapter,
+            )
+        },
+        actions = {
+            AudioPlayerValueSlot(
+                value = "${formatSpeed(playbackState.playbackSpeed)}x",
+                contentDescription = stringResource(R.string.abs_playback_speed_label),
+                onClick = { showSpeed = true },
+                active = playbackState.playbackSpeed != 1.0f,
+                activeColor = animatedColor,
+            )
+            AudioPlayerControlSlot(
+                painter = painterResource(id = R.drawable.ic_playlist_alt),
+                contentDescription = stringResource(R.string.cd_abs_chapters),
+                onClick = { showChapters = true },
+            )
+            AudioPlayerControlSlot(
+                painter =
+                    painterResource(
+                        if (playbackState.hasSleepTimer) R.drawable.ic_moon_filled
+                        else R.drawable.ic_moon
+                    ),
+                contentDescription = stringResource(R.string.cd_music_sleep_timer),
+                onClick = { showSleepTimer = true },
+                active = playbackState.hasSleepTimer,
+                activeColor = animatedColor,
+            )
+            AudioPlayerControlSlot(
+                painter =
+                    painterResource(
+                        id =
+                            if (hasBookmarks) R.drawable.ic_bookmark_filled
+                            else R.drawable.ic_bookmark
+                    ),
+                contentDescription = stringResource(R.string.cd_abs_bookmarks),
+                onClick = openBookmarks,
+                active = hasBookmarks,
+                activeColor = animatedColor,
+            )
+        },
+    ) {
         if (uiState.showPlaybackStats) {
             PlaybackStatsOverlay(
                 stats = uiState.playbackStats,
@@ -209,7 +232,7 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
                         ),
                     onClick = {
                         showMoreSheet = false
-                        viewModel.showEqualizer()
+                        showEqualizer = true
                     },
                 )
                 PlayerMoreRow(
@@ -233,69 +256,80 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
             }
         }
 
-        if (uiState.showBookmarks) {
+        if (showBookmarks) {
             BookmarksSheet(
                 bookmarks = bookmarks,
                 isLoading = uiState.bookmarksLoading,
                 currentTimeSeconds = playbackState.currentTime,
-                onSeekToBookmark = viewModel::seekToBookmark,
+                onSeekToBookmark = { bookmark ->
+                    viewModel.seekToBookmark(bookmark)
+                    showBookmarks = false
+                },
                 onDeleteBookmark = viewModel::deleteBookmark,
                 onCreateBookmark = viewModel::createBookmarkAtCurrentPosition,
-                onDismiss = viewModel::dismissBookmarks,
+                onDismiss = { showBookmarks = false },
             )
         }
 
-        if (uiState.showChapterSelector) {
+        if (showChapters) {
             ChapterSelector(
-                chapters = playbackState.chapters,
-                currentChapterIndex = playbackState.currentChapterIndex,
-                onChapterSelected = viewModel::seekToChapter,
-                onDismiss = viewModel::dismissChapterSelector,
+                chapters = chapters,
+                currentChapterIndex = chapterIndex,
+                onChapterSelected = { index ->
+                    viewModel.seekToChapter(index)
+                    showChapters = false
+                },
+                onDismiss = { showChapters = false },
             )
         }
 
-        if (uiState.showSpeedSelector) {
+        if (showSpeed) {
             PlaybackSpeedSelector(
                 currentSpeed = playbackState.playbackSpeed,
                 onSpeedSelected = viewModel::setPlaybackSpeed,
-                onDismiss = viewModel::dismissSpeedSelector,
+                onDismiss = { showSpeed = false },
             )
         }
 
-        if (uiState.showSleepTimerDialog) {
+        if (showSleepTimer) {
             SleepTimerDialog(
                 currentTimerEndTime = playbackState.sleepTimerEndTime,
-                onTimerSelected = viewModel::setSleepTimer,
+                onTimerSelected = { minutes ->
+                    viewModel.setSleepTimer(minutes)
+                    showSleepTimer = false
+                },
                 onCancelTimer = viewModel::cancelSleepTimer,
-                onDismiss = viewModel::dismissSleepTimerDialog,
-                chapterCount = playbackState.chapters.size,
-                currentChapterIndex = playbackState.currentChapterIndex,
+                onDismiss = { showSleepTimer = false },
+                chapterCount = chapters.size,
+                currentChapterIndex = chapterIndex,
                 isPodcast = playbackState.isPodcastPlaylist,
                 chapterTargetRemainingSeconds = { extraChapters ->
-                    val chapters = playbackState.chapters
                     val target =
                         if (chapters.isEmpty()) {
                             playbackState.duration.takeIf { it > 0.0 }
                         } else {
-                            val index = playbackState.currentChapterIndex.coerceAtLeast(0)
+                            val index = chapterIndex.coerceAtLeast(0)
                             chapters.getOrNull(index + extraChapters)?.end
                         }
                     target?.minus(playbackState.currentTime)?.takeIf { it > 0.0 }
                 },
-                onChapterTimerSelected = viewModel::setChapterSleepTimer,
+                onChapterTimerSelected = { extraChapters ->
+                    viewModel.setChapterSleepTimer(extraChapters)
+                    showSleepTimer = false
+                },
                 activeChapterTarget = playbackState.sleepTimerChapterTarget,
                 activeTargetRemainingSeconds = playbackState.sleepTimerRemainingSeconds,
             )
         }
 
-        if (uiState.showEqualizer) {
+        if (showEqualizer) {
             EqualizerBottomSheet(
                 state = equalizerState,
                 onEnabled = viewModel::setEqEnabled,
                 onPresetSelected = viewModel::applyEqPreset,
                 onBandChanged = viewModel::setEqBandGain,
                 onVolumeBoostChanged = viewModel::setVolumeBoost,
-                onDismiss = viewModel::dismissEqualizer,
+                onDismiss = { showEqualizer = false },
                 skipSilenceEnabled = skipSilenceEnabled,
                 onSkipSilenceToggle = viewModel::setSkipSilence,
             )
@@ -309,14 +343,12 @@ private fun SharedTransitionScope.AbsSwipeableCover(
     coverUrl: String?,
     chapterIndex: Int,
     chapterCount: Int,
-    cornerRadius: Dp,
-    elevation: Dp,
+    style: AudioCoverStyle,
     animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier,
 ) {
     val swipeEnabled by viewModel.swipeToSkipEnabled.collectAsStateWithLifecycle()
     val coverWidthPx = with(LocalDensity.current) { AudioPlayerLayout.CoverMaxSize.roundToPx() }
-    val shape = RoundedCornerShape(cornerRadius)
     val item = remember { SwipeCoverItem(key = Unit, value = Unit) }
 
     SwipeableCover(
@@ -326,397 +358,21 @@ private fun SharedTransitionScope.AbsSwipeableCover(
         hasNext = chapterCount > 0 && chapterIndex < chapterCount - 1,
         onPrevious = { viewModel.seekToChapter(chapterIndex - 1) },
         onNext = { viewModel.seekToChapter(chapterIndex + 1) },
-        horizontalOverflow = 0.dp,
+        horizontalOverflow = style.horizontalOverflow,
         modifier = modifier,
     ) { _, _ ->
-        Surface(
+        AudioCoverArt(
+            imageUrl = coverUrl?.withAbsWidth(coverWidthPx),
+            blurHash = null,
+            placeholderIcon = painterResource(R.drawable.ic_book),
+            style = style,
             modifier =
                 AudioPlayerLayout.CoverSizeCap.aspectRatio(1f)
                     .sharedElement(
                         sharedContentState =
                             rememberSharedContentState(key = "cover-${coverUrl ?: "default"}"),
                         animatedVisibilityScope = animatedVisibilityScope,
-                    )
-                    .shadow(elevation = elevation, shape = shape, spotColor = Color.Black),
-            shape = shape,
-            color = Color.Transparent,
-        ) {
-            if (coverUrl != null) {
-                AsyncImage(
-                    model = coverUrl.withAbsWidth(coverWidthPx),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun SharedTransitionScope.PortraitPlayerContent(
-    playbackState: AudiobookshelfPlaybackState,
-    viewModel: AudiobookshelfPlayerViewModel,
-    animatedColor: Color,
-    onNavigateBack: () -> Unit,
-    onCastClick: () -> Unit = {},
-    onOpenMore: () -> Unit = {},
-    isAbsCasting: Boolean = false,
-    hasBookmarks: Boolean = false,
-    paddingValues: PaddingValues,
-    animatedVisibilityScope: AnimatedVisibilityScope,
-) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
-            IconButton(
-                onClick = onNavigateBack,
-                modifier = Modifier.align(Alignment.CenterStart),
-            ) {
-                Icon(
-                    painterResource(id = R.drawable.ic_keyboard_arrow_down),
-                    contentDescription = stringResource(R.string.cd_abs_minimize),
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp),
-                )
-            }
-
-            Text(
-                stringResource(R.string.abs_now_playing),
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.7f),
-                letterSpacing = 2.sp,
-                modifier = Modifier.align(Alignment.Center),
-            )
-
-            Row(
-                modifier = Modifier.align(Alignment.CenterEnd),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onCastClick) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_cast_devices),
-                            contentDescription = stringResource(R.string.cd_cast),
-                            tint = if (isAbsCasting) animatedColor else Color.White,
-                        )
-                        Box(
-                            modifier =
-                                Modifier.size(4.dp)
-                                    .align(Alignment.BottomCenter)
-                                    .alpha(if (isAbsCasting) 1f else 0f)
-                                    .background(animatedColor, CircleShape)
-                        )
-                    }
-                }
-                IconButton(onClick = onOpenMore) {
-                    Icon(
-                        painterResource(id = R.drawable.ic_dots_vertical),
-                        contentDescription = stringResource(R.string.cd_music_more_options),
-                        tint = Color.White,
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        AbsSwipeableCover(
-            viewModel = viewModel,
-            coverUrl = playbackState.coverUrl,
-            chapterIndex = playbackState.currentChapterIndex,
-            chapterCount = playbackState.chapters.size,
-            cornerRadius = 32.dp,
-            elevation = 24.dp,
-            animatedVisibilityScope = animatedVisibilityScope,
-            modifier = Modifier.weight(1f).fillMaxWidth(),
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text =
-                    playbackState.displayTitle.ifEmpty { stringResource(R.string.unknown_title) },
-                style =
-                    MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
-                color = Color.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = playbackState.displayAuthor ?: stringResource(R.string.unknown_author),
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White.copy(alpha = 0.7f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-
-            val chapterText = playbackState.currentChapter?.title ?: " "
-            val isChapterVisible = playbackState.currentChapter != null
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = chapterText,
-                style = MaterialTheme.typography.labelLarge,
-                color = animatedColor,
-                maxLines = 1,
-                modifier =
-                    Modifier.alpha(if (isChapterVisible) 1f else 0f)
-                        .basicMarquee(iterations = Int.MAX_VALUE, velocity = 30.dp),
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        PlayerControls(
-            currentTime = playbackState.currentTime,
-            duration = playbackState.duration,
-            bufferedPosition = playbackState.bufferedPosition,
-            isPlaying = playbackState.isPlaying,
-            isBuffering = playbackState.isBuffering,
-            audioCodec = playbackState.audioTracks.firstOrNull()?.codec?.uppercase(),
-            isServerTranscode = playbackState.playMethod == ABS_PLAY_METHOD_TRANSCODE,
-            onPlayPauseClick = viewModel::togglePlayPause,
-            onSkipForward = viewModel::skipForward,
-            onSkipBackward = viewModel::skipBackward,
-            onSeek = viewModel::seekTo,
-            onPreviousChapter =
-                if (playbackState.chapters.isNotEmpty() && playbackState.currentChapterIndex > 0) {
-                    { viewModel.seekToChapter(playbackState.currentChapterIndex - 1) }
-                } else null,
-            onNextChapter =
-                if (
-                    playbackState.chapters.isNotEmpty() &&
-                        playbackState.currentChapterIndex < playbackState.chapters.lastIndex
-                ) {
-                    { viewModel.seekToChapter(playbackState.currentChapterIndex + 1) }
-                } else null,
-            accentColor = animatedColor,
-            currentChapter = playbackState.currentChapter,
-        )
-
-        Spacer(modifier = Modifier.height(28.dp))
-
-        AudioPlayerControlRow(modifier = Modifier.padding(bottom = 16.dp)) {
-            AudioPlayerValueSlot(
-                value = "${formatSpeed(playbackState.playbackSpeed)}x",
-                contentDescription = stringResource(R.string.abs_playback_speed_label),
-                onClick = viewModel::showSpeedSelector,
-                active = playbackState.playbackSpeed != 1.0f,
-                activeColor = animatedColor,
-            )
-            AudioPlayerControlSlot(
-                painter = painterResource(id = R.drawable.ic_playlist_alt),
-                contentDescription = stringResource(R.string.cd_abs_chapters),
-                onClick = viewModel::showChapterSelector,
-            )
-            AudioPlayerControlSlot(
-                painter =
-                    painterResource(
-                        if (playbackState.hasSleepTimer) R.drawable.ic_moon_filled
-                        else R.drawable.ic_moon
                     ),
-                contentDescription = stringResource(R.string.cd_music_sleep_timer),
-                onClick = viewModel::showSleepTimerDialog,
-                active = playbackState.hasSleepTimer,
-                activeColor = animatedColor,
-            )
-            AudioPlayerControlSlot(
-                painter =
-                    painterResource(
-                        id =
-                            if (hasBookmarks) R.drawable.ic_bookmark_filled
-                            else R.drawable.ic_bookmark
-                    ),
-                contentDescription = stringResource(R.string.cd_abs_bookmarks),
-                onClick = viewModel::showBookmarks,
-                active = hasBookmarks,
-                activeColor = animatedColor,
-            )
-        }
-    }
-}
-
-@Composable
-fun SharedTransitionScope.LandscapePlayerContent(
-    playbackState: AudiobookshelfPlaybackState,
-    viewModel: AudiobookshelfPlayerViewModel,
-    animatedColor: Color,
-    onNavigateBack: () -> Unit,
-    onCastClick: () -> Unit = {},
-    onOpenMore: () -> Unit = {},
-    isAbsCasting: Boolean = false,
-    hasBookmarks: Boolean = false,
-    paddingValues: PaddingValues,
-    animatedVisibilityScope: AnimatedVisibilityScope,
-) {
-    Row(
-        modifier =
-            Modifier.fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 32.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(32.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        AbsSwipeableCover(
-            viewModel = viewModel,
-            coverUrl = playbackState.coverUrl,
-            chapterIndex = playbackState.currentChapterIndex,
-            chapterCount = playbackState.chapters.size,
-            cornerRadius = 24.dp,
-            elevation = 16.dp,
-            animatedVisibilityScope = animatedVisibilityScope,
-            modifier = Modifier.weight(0.45f).fillMaxHeight(),
         )
-
-        Column(
-            modifier = Modifier.weight(0.55f).fillMaxHeight().verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Box(modifier = Modifier.fillMaxWidth()) {
-                IconButton(
-                    onClick = onNavigateBack,
-                    modifier = Modifier.align(Alignment.CenterStart),
-                ) {
-                    Icon(
-                        painterResource(id = R.drawable.ic_keyboard_arrow_down),
-                        stringResource(R.string.cd_abs_minimize),
-                        tint = Color.White,
-                    )
-                }
-                Text(
-                    stringResource(R.string.abs_now_playing),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.7f),
-                    letterSpacing = 2.sp,
-                    modifier = Modifier.align(Alignment.Center),
-                )
-
-                IconButton(
-                    onClick = viewModel::togglePlaybackStats,
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                ) {
-                    Icon(
-                        painterResource(id = R.drawable.ic_info),
-                        stringResource(R.string.cd_playback_info),
-                        tint = Color.White,
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text =
-                    playbackState.displayTitle.ifEmpty { stringResource(R.string.unknown_title) },
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = Color.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = playbackState.displayAuthor ?: stringResource(R.string.unknown_author),
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.7f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-
-            val chapterText = playbackState.currentChapter?.title ?: " "
-            val isChapterVisible = playbackState.currentChapter != null
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = chapterText,
-                style = MaterialTheme.typography.labelLarge,
-                color = animatedColor,
-                maxLines = 1,
-                modifier =
-                    Modifier.alpha(if (isChapterVisible) 1f else 0f)
-                        .basicMarquee(iterations = Int.MAX_VALUE, velocity = 30.dp),
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            PlayerControls(
-                currentTime = playbackState.currentTime,
-                duration = playbackState.duration,
-                bufferedPosition = playbackState.bufferedPosition,
-                isPlaying = playbackState.isPlaying,
-                isBuffering = playbackState.isBuffering,
-                audioCodec = playbackState.audioTracks.firstOrNull()?.codec?.uppercase(),
-                isServerTranscode = playbackState.playMethod == ABS_PLAY_METHOD_TRANSCODE,
-                onPlayPauseClick = viewModel::togglePlayPause,
-                onSkipForward = viewModel::skipForward,
-                onSkipBackward = viewModel::skipBackward,
-                onSeek = viewModel::seekTo,
-                onPreviousChapter =
-                    if (
-                        playbackState.chapters.isNotEmpty() && playbackState.currentChapterIndex > 0
-                    ) {
-                        { viewModel.seekToChapter(playbackState.currentChapterIndex - 1) }
-                    } else null,
-                onNextChapter =
-                    if (
-                        playbackState.chapters.isNotEmpty() &&
-                            playbackState.currentChapterIndex < playbackState.chapters.lastIndex
-                    ) {
-                        { viewModel.seekToChapter(playbackState.currentChapterIndex + 1) }
-                    } else null,
-                accentColor = animatedColor,
-                currentChapter = playbackState.currentChapter,
-            )
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            AudioPlayerControlRow {
-                AudioPlayerValueSlot(
-                    value = "${formatSpeed(playbackState.playbackSpeed)}x",
-                    contentDescription = stringResource(R.string.abs_playback_speed_label),
-                    onClick = viewModel::showSpeedSelector,
-                    active = playbackState.playbackSpeed != 1.0f,
-                    activeColor = animatedColor,
-                )
-                AudioPlayerControlSlot(
-                    painter = painterResource(id = R.drawable.ic_playlist_alt),
-                    contentDescription = stringResource(R.string.cd_abs_chapters),
-                    onClick = viewModel::showChapterSelector,
-                )
-                AudioPlayerControlSlot(
-                    painter =
-                        painterResource(
-                            if (playbackState.hasSleepTimer) R.drawable.ic_moon_filled
-                            else R.drawable.ic_moon
-                        ),
-                    contentDescription = stringResource(R.string.cd_music_sleep_timer),
-                    onClick = viewModel::showSleepTimerDialog,
-                    active = playbackState.hasSleepTimer,
-                    activeColor = animatedColor,
-                )
-                AudioPlayerControlSlot(
-                    painter =
-                        painterResource(
-                            id =
-                                if (hasBookmarks) R.drawable.ic_bookmark_filled
-                                else R.drawable.ic_bookmark
-                        ),
-                    contentDescription = stringResource(R.string.cd_abs_bookmarks),
-                    onClick = viewModel::showBookmarks,
-                    active = hasBookmarks,
-                    activeColor = animatedColor,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-        }
     }
 }

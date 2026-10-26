@@ -1,29 +1,20 @@
 package com.makd.afinity.ui.requests
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -45,11 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -64,9 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.max
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -77,20 +62,26 @@ import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.Permissions
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.hasPermission
-import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityScreen
+import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.BackdropStyle
 import com.makd.afinity.ui.components.CircleFlagIcon
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.ImageHeroKind
+import com.makd.afinity.ui.components.LandscapeDetailArrangement
+import com.makd.afinity.ui.components.LandscapeDetailLayout
+import com.makd.afinity.ui.components.PortraitDetailLayout
+import com.makd.afinity.ui.components.PortraitHero
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.SeparatedFlowRow
-import com.makd.afinity.ui.components.afinityTopAppBarHeight
+import com.makd.afinity.ui.components.backdropChainOf
 import com.makd.afinity.ui.components.getAutoFlagUrl
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.utils.rememberDetailTopBarOpacity
-import com.makd.afinity.ui.utils.verticalLayoutOffset
+import com.makd.afinity.ui.utils.rememberTopBarOpacity
 import com.makd.afinity.util.DateSkeleton
 import com.makd.afinity.util.localizedDateFormatter
 import java.util.Locale
@@ -153,9 +144,19 @@ private fun SeerrDetailContent(
 ) {
     val isLandscape = isLandscapeWindow()
     val lazyListState = rememberLazyListState()
-    val topBarOpacity by rememberDetailTopBarOpacity(lazyListState, isLandscape)
+    val topBarOpacity by rememberTopBarOpacity(lazyListState)
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
+            AfinityTopAppBar(
+                title = {},
+                onHomeClick = onNavigateHome,
+                backgroundOpacity = backgroundOpacity,
+            )
+        },
+        mode = AfinityScreenMode.Hero,
+        scrollOpacity = { topBarOpacity },
+    ) {
         if (isLandscape) {
             SeerrLandscapeContent(
                 uiState = uiState,
@@ -181,13 +182,6 @@ private fun SeerrDetailContent(
                 lazyListState = lazyListState,
             )
         }
-
-        AfinityTopAppBar(
-            title = {},
-            onHomeClick = onNavigateHome,
-            backgroundOpacity = { topBarOpacity },
-            landscapeStatusBarFill = Color.Black,
-        )
     }
 }
 
@@ -585,52 +579,43 @@ private fun SeerrPortraitContent(
     lazyListState: LazyListState,
 ) {
     val details = uiState.details ?: return
-    val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val playerOffset = LocalPlayerOffset.current
 
-    LazyColumn(
-        state = lazyListState,
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = max(bottomPadding, playerOffset) + 16.dp),
-    ) {
-        item { SeerrHeroSection(imageUrl = details.getBackdropUrl() ?: details.getPosterUrl()) }
+    PortraitDetailLayout(
+        hero =
+            PortraitHero.Image(
+                kind = ImageHeroKind.Backdrop,
+                backdrop = backdropChainOf(details.getBackdropUrl() ?: details.getPosterUrl()),
+            ),
+        listState = lazyListState,
+        header = {
+            SeerrTitleHeader(
+                title = details.title ?: details.name ?: "",
+                logoUrl = uiState.logoUrl,
+                isLandscape = false,
+            )
 
-        item {
-            Column(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .verticalLayoutOffset((-110).dp)
-                        .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                SeerrTitleHeader(
-                    title = details.title ?: details.name ?: "",
-                    logoUrl = uiState.logoUrl,
-                    isLandscape = false,
-                )
+            SeerrMetadataRow(details = details, mediaType = mediaType)
 
-                SeerrMetadataRow(details = details, mediaType = mediaType)
+            SeerrRequestActionButton(
+                details = details,
+                mediaType = mediaType,
+                tmdbId = tmdbId,
+                onItemClick = onItemClick,
+                requestsViewModel = requestsViewModel,
+            )
 
-                SeerrRequestActionButton(
-                    details = details,
-                    mediaType = mediaType,
-                    tmdbId = tmdbId,
-                    onItemClick = onItemClick,
-                    requestsViewModel = requestsViewModel,
-                )
+            SeerrOverviewBlock(details = details, mediaType = mediaType)
 
-                SeerrOverviewBlock(details = details, mediaType = mediaType)
-
-                SeerrDetailSections(
-                    uiState = uiState,
-                    onItemClick = onItemClick,
-                    onNavigateToFilteredMedia = onNavigateToFilteredMedia,
-                    onNavigateToSeerrMedia = onNavigateToSeerrMedia,
-                    widthSizeClass = widthSizeClass,
-                )
-            }
-        }
-    }
+            SeerrDetailSections(
+                uiState = uiState,
+                onItemClick = onItemClick,
+                onNavigateToFilteredMedia = onNavigateToFilteredMedia,
+                onNavigateToSeerrMedia = onNavigateToSeerrMedia,
+                widthSizeClass = widthSizeClass,
+            )
+        },
+        items = {},
+    )
 }
 
 @Composable
@@ -646,100 +631,46 @@ private fun SeerrLandscapeContent(
     lazyListState: LazyListState,
 ) {
     val details = uiState.details ?: return
-    val density = LocalDensity.current
-    val statusBarHeight = WindowInsets.statusBars.getTop(density)
-    val displayCutoutLeft = WindowInsets.displayCutout.getLeft(density, LayoutDirection.Ltr)
-    val baseColorScheme = MaterialTheme.colorScheme
-    val playerOffset = LocalPlayerOffset.current
-    val windowInfo = LocalWindowInfo.current
-    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
-    val screenHeightDp = with(density) { windowInfo.containerSize.height.toDp() }
 
-    val landscapeColorScheme =
-        remember(baseColorScheme) {
-            baseColorScheme.copy(
-                onBackground = Color.White,
-                onSurface = Color.White,
-                onSurfaceVariant = Color.White.copy(alpha = 0.7f),
-                outline = Color.White.copy(alpha = 0.5f),
-            )
-        }
+    LandscapeDetailLayout(
+        backdropStyle = BackdropStyle.Cinematic,
+        backdrop = backdropChainOf(details.getBackdropUrl() ?: details.getPosterUrl()),
+        listState = lazyListState,
+        arrangement = LandscapeDetailArrangement.Single,
+        items = {
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    SeerrTitleHeader(
+                        title = details.title ?: details.name ?: "",
+                        logoUrl = uiState.logoUrl,
+                        isLandscape = true,
+                    )
 
-    MaterialTheme(colorScheme = landscapeColorScheme) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            val backdropUrl = details.getBackdropUrl() ?: details.getPosterUrl()
-            if (backdropUrl != null) {
-                AsyncImage(
-                    imageUrl = backdropUrl,
-                    contentDescription = null,
-                    blurHash = null,
-                    targetWidth = screenWidthDp,
-                    targetHeight = screenHeightDp,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                    alignment = Alignment.Center,
-                )
-            }
+                    SeerrMetadataRow(details = details, mediaType = mediaType, centered = false)
 
-            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
-
-            Image(
-                painter = painterResource(id = R.drawable.mask),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                alignment = Alignment.Center,
-            )
-
-            LazyColumn(
-                state = lazyListState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding =
-                    PaddingValues(
-                        top = with(density) { statusBarHeight.toDp() } + afinityTopAppBarHeight(),
-                        start = with(density) { displayCutoutLeft.toDp() + 16.dp },
-                        end = 16.dp,
-                        bottom = 16.dp + playerOffset,
-                    ),
-            ) {
-                item {
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        SeerrTitleHeader(
-                            title = details.title ?: details.name ?: "",
-                            logoUrl = uiState.logoUrl,
-                            isLandscape = true,
-                        )
-
-                        SeerrMetadataRow(
+                    Box(modifier = Modifier.widthIn(max = 240.dp)) {
+                        SeerrRequestActionButton(
                             details = details,
                             mediaType = mediaType,
-                            centered = false,
-                        )
-
-                        Box(modifier = Modifier.widthIn(max = 240.dp)) {
-                            SeerrRequestActionButton(
-                                details = details,
-                                mediaType = mediaType,
-                                tmdbId = tmdbId,
-                                onItemClick = onItemClick,
-                                requestsViewModel = requestsViewModel,
-                            )
-                        }
-
-                        SeerrOverviewBlock(details = details, mediaType = mediaType)
-
-                        SeerrDetailSections(
-                            uiState = uiState,
+                            tmdbId = tmdbId,
                             onItemClick = onItemClick,
-                            onNavigateToFilteredMedia = onNavigateToFilteredMedia,
-                            onNavigateToSeerrMedia = onNavigateToSeerrMedia,
-                            widthSizeClass = widthSizeClass,
+                            requestsViewModel = requestsViewModel,
                         )
                     }
+
+                    SeerrOverviewBlock(details = details, mediaType = mediaType)
+
+                    SeerrDetailSections(
+                        uiState = uiState,
+                        onItemClick = onItemClick,
+                        onNavigateToFilteredMedia = onNavigateToFilteredMedia,
+                        onNavigateToSeerrMedia = onNavigateToSeerrMedia,
+                        widthSizeClass = widthSizeClass,
+                    )
                 }
             }
-        }
-    }
+        },
+    )
 }
 
 @Composable
@@ -774,42 +705,6 @@ private fun ColumnScope.SeerrTitleHeader(title: String, logoUrl: String?, isLand
             overflow = TextOverflow.Ellipsis,
             textAlign = if (!isLandscape) TextAlign.Center else TextAlign.Start,
             modifier = Modifier.fillMaxWidth(),
-        )
-    }
-}
-
-@Composable
-private fun SeerrHeroSection(imageUrl: String?) {
-    val windowInfo = LocalWindowInfo.current
-    val density = LocalDensity.current
-    val containerSize = windowInfo.containerSize
-    val screenWidth = with(density) { containerSize.width.toDp() }
-    val screenHeight = with(density) { containerSize.height.toDp() }
-
-    Box(modifier = Modifier.fillMaxWidth().height(screenHeight * 0.5f)) {
-        AsyncImage(
-            imageUrl = imageUrl,
-            contentDescription = null,
-            blurHash = null,
-            targetWidth = screenWidth,
-            targetHeight = screenHeight * 0.5f,
-            modifier =
-                Modifier.fillMaxSize()
-                    .graphicsLayer { alpha = 0.99f }
-                    .drawWithCache {
-                        val gradient =
-                            Brush.verticalGradient(
-                                colors = listOf(Color.Black, Color.Transparent),
-                                startY = size.height * 0.75f,
-                                endY = size.height,
-                            )
-                        onDrawWithContent {
-                            drawContent()
-                            drawRect(gradient, blendMode = BlendMode.DstIn)
-                        }
-                    },
-            contentScale = ContentScale.Crop,
-            alignment = Alignment.TopCenter,
         )
     }
 }
@@ -1216,51 +1111,41 @@ private fun SeerrScorecard(sourceName: String, iconRes: Int?, score: String, sub
 
 @Composable
 private fun SeerrLoadingPreview(title: String?, imageUrl: String?) {
-    val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val playerOffset = LocalPlayerOffset.current
+    val isLandscape = isLandscapeWindow()
+    val listState = rememberLazyListState()
+    val backdrop = backdropChainOf(imageUrl)
+    val header: @Composable ColumnScope.() -> Unit = {
+        title?.let { SeerrTitleHeader(title = it, logoUrl = null, isLandscape = isLandscape) }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = max(bottomPadding, playerOffset) + 16.dp),
-    ) {
-        item { SeerrHeroSection(imageUrl = imageUrl) }
-
-        item {
-            Column(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .verticalLayoutOffset((-110).dp)
-                        .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                title?.let {
-                    Text(
-                        text = it,
-                        style =
-                            MaterialTheme.typography.headlineLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 32.sp,
-                            ),
-                        color = MaterialTheme.colorScheme.onBackground,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-
-                Box(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(28.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
+        Box(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+            contentAlignment = if (isLandscape) Alignment.CenterStart else Alignment.Center,
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(28.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.primary,
+            )
         }
+    }
+
+    if (isLandscape) {
+        LandscapeDetailLayout(
+            backdropStyle = BackdropStyle.Cinematic,
+            backdrop = backdrop,
+            listState = listState,
+            arrangement = LandscapeDetailArrangement.Single,
+            items = {
+                item { Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { header() } }
+            },
+        )
+    } else {
+        PortraitDetailLayout(
+            hero = PortraitHero.Image(kind = ImageHeroKind.Backdrop, backdrop = backdrop),
+            listState = listState,
+            header = header,
+            items = {},
+        )
     }
 }
 

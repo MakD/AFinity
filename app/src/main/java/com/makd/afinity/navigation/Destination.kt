@@ -1,6 +1,7 @@
 package com.makd.afinity.navigation
 
 import androidx.annotation.StringRes
+import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.media.AfinityCollection
@@ -441,5 +442,12 @@ enum class Destination(
         fun createServicesHubRoute(entry: String = "firstRun"): String {
             return "services_hub?entry=$entry"
         }
+    }
+}
+
+fun NavController.navigateHome() {
+    navigate(Destination.HOME.route) {
+        popUpTo(Destination.HOME.route) { inclusive = false }
+        launchSingleTop = true
     }
 }

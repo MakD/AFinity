@@ -34,10 +34,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
+import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.primaryBlurHash
@@ -53,6 +55,13 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.LocalShowRatings
+import com.makd.afinity.ui.preview.CardSizePreviewProvider
+import com.makd.afinity.ui.preview.FontScalePreviews
+import com.makd.afinity.ui.preview.PreviewCardRow
+import com.makd.afinity.ui.preview.PreviewData
+import com.makd.afinity.ui.preview.PreviewHost
+import com.makd.afinity.ui.preview.StressPreviews
+import com.makd.afinity.ui.preview.WidthPreviews
 import com.makd.afinity.ui.theme.CardDimensions
 import java.util.Locale
 
@@ -395,4 +404,44 @@ fun ContinueWatchingCard(
             }
         }
     }
+}
+
+@Composable
+private fun ContinueWatchingCardRowPreviewContent(cardSize: CardSize) {
+    PreviewHost(cardSize = cardSize) {
+        PreviewCardRow(landscape = true) { cardWidth ->
+            PreviewData.landscapeRow.forEach { item ->
+                ContinueWatchingCard(
+                    item = item,
+                    onClick = {},
+                    cardWidth = cardWidth,
+                    onMoreClick = {},
+                )
+            }
+        }
+    }
+}
+
+@WidthPreviews
+@Composable
+private fun ContinueWatchingCardWidthPreview(
+    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize
+) {
+    ContinueWatchingCardRowPreviewContent(cardSize)
+}
+
+@FontScalePreviews
+@Composable
+private fun ContinueWatchingCardFontScalePreview(
+    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize
+) {
+    ContinueWatchingCardRowPreviewContent(cardSize)
+}
+
+@StressPreviews
+@Composable
+private fun ContinueWatchingCardStressPreview(
+    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize
+) {
+    ContinueWatchingCardRowPreviewContent(cardSize)
 }

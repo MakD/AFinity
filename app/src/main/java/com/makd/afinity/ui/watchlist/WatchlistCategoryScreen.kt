@@ -4,9 +4,6 @@ package com.makd.afinity.ui.watchlist
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -20,18 +17,17 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.MediaCategoryGrid
-import com.makd.afinity.ui.components.afinityTopAppBarTitleStyle
 import com.makd.afinity.ui.main.MainUiState
 
 enum class WatchlistCategory {
@@ -47,7 +43,10 @@ fun WatchlistCategoryScreen(
     category: WatchlistCategory,
     mainUiState: MainUiState,
     onItemClick: (AfinityItem) -> Unit,
-    navController: NavController,
+    onSearchClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onSeriesClick: (String) -> Unit,
+    onPersonClick: (String) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
     viewModel: WatchlistViewModel = hiltViewModel(),
@@ -86,20 +85,15 @@ fun WatchlistCategoryScreen(
         }
     val isEpisodes = category == WatchlistCategory.EPISODES
 
-    Scaffold(
-        topBar = {
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
             AfinityTopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(category.titleRes()),
-                        style = afinityTopAppBarTitleStyle(),
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                },
-                onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
+                title = { AfinityTopAppBarTitle(stringResource(category.titleRes())) },
+                backgroundOpacity = backgroundOpacity,
+                onSearchClick = onSearchClick,
                 profile =
                     AppBarProfile(
-                        onClick = { navController.navigate(Destination.createSettingsRoute()) },
+                        onClick = onProfileClick,
                         name = mainUiState.userName,
                         imageUrl = mainUiState.userProfileImageUrl,
                     ),
@@ -141,14 +135,8 @@ fun WatchlistCategoryScreen(
         onToggleFavorite = { episode -> viewModel.toggleEpisodeFavorite(episode) },
         onToggleWatchlist = { episode -> viewModel.toggleEpisodeWatchlist(episode) },
         onToggleWatched = { episode -> viewModel.toggleEpisodeWatched(episode) },
-        onNavigateToSeries = { seriesId ->
-            navController.navigate(
-                Destination.createItemDetailRoute(itemId = seriesId, itemType = "Series")
-            )
-        },
-        onNavigateToPerson = { personId ->
-            navController.navigate(Destination.createPersonRoute(personId))
-        },
+        onNavigateToSeries = onSeriesClick,
+        onNavigateToPerson = onPersonClick,
     )
 }
 

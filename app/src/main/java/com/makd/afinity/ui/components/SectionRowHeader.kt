@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -21,6 +22,11 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.ui.preview.FontScalePreviews
+import com.makd.afinity.ui.preview.PreviewData
+import com.makd.afinity.ui.preview.PreviewHost
+import com.makd.afinity.ui.preview.StressPreviews
+import com.makd.afinity.ui.preview.WidthPreviews
 
 @Composable
 fun SectionRowHeader(
@@ -60,4 +66,43 @@ fun SectionRowHeader(
             }
         }
     }
+}
+
+@Composable
+private fun SectionRowHeaderPreviewContent() {
+    PreviewHost {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            SectionRowHeader(
+                title = stringResource(R.string.home_continue_watching),
+                onViewAllClick = {},
+            )
+            SectionRowHeader(title = stringResource(R.string.watchlist_title), onViewAllClick = {})
+            SectionRowHeader(title = stringResource(R.string.favorites_title))
+            SectionRowHeader(
+                title = "Because you watched ${PreviewData.LONG_TITLE}",
+                onViewAllClick = {},
+            )
+        }
+    }
+}
+
+@WidthPreviews
+@Composable
+private fun SectionRowHeaderWidthPreview() {
+    SectionRowHeaderPreviewContent()
+}
+
+@FontScalePreviews
+@Composable
+private fun SectionRowHeaderFontScalePreview() {
+    SectionRowHeaderPreviewContent()
+}
+
+@StressPreviews
+@Composable
+private fun SectionRowHeaderStressPreview() {
+    SectionRowHeaderPreviewContent()
 }

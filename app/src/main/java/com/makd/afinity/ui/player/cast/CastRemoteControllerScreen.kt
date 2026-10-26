@@ -23,9 +23,9 @@ import com.makd.afinity.cast.CastManager
 import com.makd.afinity.cast.CastSessionState
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 import com.makd.afinity.ui.player.PlayerViewModel
 import com.makd.afinity.ui.player.components.PlaybackSpeedDialog
+import com.makd.afinity.ui.player.components.rememberDominantColor
 import org.jellyfin.sdk.model.api.MediaStreamType
 
 @UnstableApi

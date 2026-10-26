@@ -31,7 +31,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
@@ -60,7 +59,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
@@ -68,9 +66,10 @@ import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityPersonDetail
-import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.CardRowContainer
@@ -80,7 +79,6 @@ import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.MediaRowSection
 import com.makd.afinity.ui.components.SectionRowHeader
-import com.makd.afinity.ui.components.afinityTopAppBarTitleStyle
 import com.makd.afinity.ui.home.components.MusicAlbumRowSection
 import com.makd.afinity.ui.home.components.MusicPlaylistRowSection
 import com.makd.afinity.ui.main.MainUiState
@@ -100,7 +98,13 @@ fun FavoritesScreen(
     onItemClick: (AfinityItem) -> Unit = {},
     onPersonClick: (String) -> Unit = {},
     onViewAllClick: (FavoritesCategory) -> Unit = {},
-    navController: NavController,
+    onSearchClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onBrowseMediaClick: () -> Unit,
+    onSeriesClick: (String) -> Unit,
+    onMusicAlbumClick: (String) -> Unit,
+    onMusicArtistClick: (String) -> Unit,
+    onMusicPlaylistClick: (String) -> Unit,
     viewModel: FavoritesViewModel = hiltViewModel(),
     playerViewModel: MusicPlayerViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
@@ -132,21 +136,16 @@ fun FavoritesScreen(
 
     LaunchedEffect(Unit) { viewModel.loadFavorites() }
 
-    Scaffold(
-        topBar = {
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
             AfinityTopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.favorites_title),
-                        style = afinityTopAppBarTitleStyle(),
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                },
+                title = { AfinityTopAppBarTitle(stringResource(R.string.favorites_title)) },
+                backgroundOpacity = backgroundOpacity,
                 onMenuClick = onMenuClick,
-                onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
+                onSearchClick = onSearchClick,
                 profile =
                     AppBarProfile(
-                        onClick = { navController.navigate(Destination.createSettingsRoute()) },
+                        onClick = onProfileClick,
                         name = mainUiState.userName,
                         imageUrl = mainUiState.userProfileImageUrl,
                     ),
@@ -189,13 +188,7 @@ fun FavoritesScreen(
                             title = stringResource(R.string.favorites_empty_title),
                             message = stringResource(R.string.favorites_empty_message),
                             actionText = "Browse Media",
-                            onActionClick = {
-                                navController.navigate(Destination.HOME.route) {
-                                    popUpTo(Destination.HOME.route) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
+                            onActionClick = onBrowseMediaClick,
                         )
                     } else {
                         LazyColumn(
@@ -316,11 +309,7 @@ fun FavoritesScreen(
                                         albums = uiState.favoriteAlbums,
                                         horizontalPadding = 0.dp,
                                         onAlbumClick = { album ->
-                                            navController.navigate(
-                                                Destination.createMusicAlbumRoute(
-                                                    album.id.toString()
-                                                )
-                                            )
+                                            onMusicAlbumClick(album.id.toString())
                                         },
                                         onViewAllClick = {
                                             onViewAllClick(FavoritesCategory.ALBUMS)
@@ -335,11 +324,7 @@ fun FavoritesScreen(
                                         artists = uiState.favoriteArtists,
                                         horizontalPadding = 0.dp,
                                         onArtistClick = { artist ->
-                                            navController.navigate(
-                                                Destination.createMusicArtistRoute(
-                                                    artist.id.toString()
-                                                )
-                                            )
+                                            onMusicArtistClick(artist.id.toString())
                                         },
                                         onViewAllClick = {
                                             onViewAllClick(FavoritesCategory.ARTISTS)
@@ -385,12 +370,7 @@ fun FavoritesScreen(
                                         playlists = uiState.favoritePlaylists,
                                         horizontalPadding = 0.dp,
                                         onPlaylistClick = { playlist ->
-                                            navController.navigate(
-                                                Destination.createPlaylistRoute(
-                                                    playlist.id.toString(),
-                                                    audioOnly = true,
-                                                )
-                                            )
+                                            onMusicPlaylistClick(playlist.id.toString())
                                         },
                                         onViewAllClick = {
                                             onViewAllClick(FavoritesCategory.PLAYLISTS)
@@ -415,14 +395,8 @@ fun FavoritesScreen(
         onToggleFavorite = { episode -> viewModel.toggleEpisodeFavorite(episode) },
         onToggleWatchlist = { episode -> viewModel.toggleEpisodeWatchlist(episode) },
         onToggleWatched = { episode -> viewModel.toggleEpisodeWatched(episode) },
-        onNavigateToSeries = { seriesId ->
-            navController.navigate(
-                Destination.createItemDetailRoute(itemId = seriesId, itemType = "Series")
-            )
-        },
-        onNavigateToPerson = { personId ->
-            navController.navigate(Destination.createPersonRoute(personId))
-        },
+        onNavigateToSeries = onSeriesClick,
+        onNavigateToPerson = onPersonClick,
     )
 }
 

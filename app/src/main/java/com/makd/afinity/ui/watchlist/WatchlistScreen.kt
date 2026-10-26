@@ -9,9 +9,6 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -28,19 +25,18 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.MediaRowSection
-import com.makd.afinity.ui.components.afinityTopAppBarTitleStyle
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions
 
@@ -50,7 +46,11 @@ fun WatchlistScreen(
     mainUiState: MainUiState,
     onItemClick: (AfinityItem) -> Unit = {},
     onViewAllClick: (WatchlistCategory) -> Unit = {},
-    navController: NavController,
+    onSearchClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onBrowseMediaClick: () -> Unit,
+    onSeriesClick: (String) -> Unit,
+    onPersonClick: (String) -> Unit,
     viewModel: WatchlistViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
     onMenuClick: (() -> Unit)? = null,
@@ -82,21 +82,16 @@ fun WatchlistScreen(
     val portraitWidth = CardDimensions.portraitRowWidth(widthSizeClass, gutter = 16.dp)
     val landscapeWidth = CardDimensions.landscapeRowWidth(widthSizeClass, gutter = 16.dp)
 
-    Scaffold(
-        topBar = {
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
             AfinityTopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.watchlist_title),
-                        style = afinityTopAppBarTitleStyle(),
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                },
+                title = { AfinityTopAppBarTitle(stringResource(R.string.watchlist_title)) },
+                backgroundOpacity = backgroundOpacity,
                 onMenuClick = onMenuClick,
-                onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
+                onSearchClick = onSearchClick,
                 profile =
                     AppBarProfile(
-                        onClick = { navController.navigate(Destination.createSettingsRoute()) },
+                        onClick = onProfileClick,
                         name = mainUiState.userName,
                         imageUrl = mainUiState.userProfileImageUrl,
                     ),
@@ -132,13 +127,7 @@ fun WatchlistScreen(
                     title = stringResource(R.string.watchlist_empty_title),
                     message = stringResource(R.string.watchlists_empty_message),
                     actionText = "Browse Media",
-                    onActionClick = {
-                        navController.navigate(Destination.HOME.route) {
-                            popUpTo(Destination.HOME.route) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
+                    onActionClick = onBrowseMediaClick,
                 )
             }
 
@@ -226,13 +215,7 @@ fun WatchlistScreen(
         onToggleFavorite = { episode -> viewModel.toggleEpisodeFavorite(episode) },
         onToggleWatchlist = { episode -> viewModel.toggleEpisodeWatchlist(episode) },
         onToggleWatched = { episode -> viewModel.toggleEpisodeWatched(episode) },
-        onNavigateToSeries = { seriesId ->
-            navController.navigate(
-                Destination.createItemDetailRoute(itemId = seriesId, itemType = "Series")
-            )
-        },
-        onNavigateToPerson = { personId ->
-            navController.navigate(Destination.createPersonRoute(personId))
-        },
+        onNavigateToSeries = onSeriesClick,
+        onNavigateToPerson = onPersonClick,
     )
 }

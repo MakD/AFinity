@@ -1,4 +1,4 @@
-package com.makd.afinity.ui.audiobookshelf.player.util
+package com.makd.afinity.ui.player.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

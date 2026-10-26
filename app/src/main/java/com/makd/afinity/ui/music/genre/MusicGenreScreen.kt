@@ -2,8 +2,6 @@ package com.makd.afinity.ui.music.genre
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,28 +10,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.displayCutout
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -58,29 +47,32 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicPlaybackState
 import com.makd.afinity.data.models.music.RadioSeed
-import com.makd.afinity.navigation.Destination
-import com.makd.afinity.navigation.LocalPlayerOffset
-import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
+import com.makd.afinity.ui.components.AfinityScreen
+import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.BackdropStyle
+import com.makd.afinity.ui.components.DetailCoverSize
+import com.makd.afinity.ui.components.DetailCoverTitle
+import com.makd.afinity.ui.components.DetailGutter
 import com.makd.afinity.ui.components.FullScreenLoading
-import com.makd.afinity.ui.components.afinityTopAppBarHeight
+import com.makd.afinity.ui.components.LandscapeDetailArrangement
+import com.makd.afinity.ui.components.LandscapeDetailLayout
+import com.makd.afinity.ui.components.PortraitDetailLayout
+import com.makd.afinity.ui.components.PortraitHero
+import com.makd.afinity.ui.components.backdropChainOf
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.music.components.MusicArtistCard
 import com.makd.afinity.ui.music.components.MusicDetailActionRow
-import com.makd.afinity.ui.music.components.MusicHeroBackground
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
 import com.makd.afinity.ui.music.library.startMusicService
@@ -91,7 +83,9 @@ import java.util.UUID
 
 @Composable
 fun MusicGenreScreen(
-    navController: NavController,
+    onMusicAlbumClick: (String) -> Unit,
+    onMusicArtistClick: (String) -> Unit,
+    onHomeClick: () -> Unit,
     viewModel: MusicGenreViewModel = hiltViewModel(),
     playerViewModel: MusicPlayerViewModel = hiltViewModel(),
 ) {
@@ -101,7 +95,6 @@ fun MusicGenreScreen(
     val isDownloadAllowedByServer by
         viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
     val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
-    val playerOffset = LocalPlayerOffset.current
     val context = LocalContext.current
     val isLandscape = isLandscapeWindow()
     val relatedCardWidth = CardDimensions.musicDetailCardWidth(splitPane = isLandscape)
@@ -117,19 +110,9 @@ fun MusicGenreScreen(
         return
     }
 
-    val defaultColor = MaterialTheme.colorScheme.surfaceVariant
-    val dominantColor =
-        rememberDominantColor(url = viewModel.genreImageUrl, defaultColor = defaultColor)
-    val animatedDominantColor by
-        animateColorAsState(
-            targetValue = dominantColor,
-            animationSpec = tween(600),
-            label = "genreGradient",
-        )
-
     val actionRow: @Composable () -> Unit = {
         MusicDetailActionRow(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
             playbackEnabled = uiState.tracks.isNotEmpty(),
             onShuffle = {
                 startMusicService(context)
@@ -181,403 +164,150 @@ fun MusicGenreScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        if (isLandscape) {
-            MusicHeroBackground(viewModel.genreImageUrl)
+    val genreHeader: @Composable ColumnScope.() -> Unit = {
+        GenreHeroImage(
+            imageUrl = viewModel.genreImageUrl,
+            contentDescription = viewModel.genreName,
+            size = DetailCoverSize,
+        )
 
-            Row(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.displayCutout)) {
-                Column(
-                    modifier =
-                        Modifier.weight(1f)
-                            .fillMaxHeight()
-                            .verticalScroll(rememberScrollState())
-                            .padding(bottom = 24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+        DetailCoverTitle(title = viewModel.genreName)
+
+        actionRow()
+    }
+
+    val genreItems: LazyListScope.() -> Unit = {
+        if (uiState.artists.isNotEmpty()) {
+            item {
+                Text(
+                    text = stringResource(R.string.music_tab_artists),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(start = DetailGutter, top = 24.dp, bottom = 12.dp),
+                )
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = DetailGutter),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    Spacer(modifier = Modifier.statusBarsPadding().height(afinityTopAppBarHeight()))
-
-                    GenreHeroImage(
-                        imageUrl = viewModel.genreImageUrl,
-                        contentDescription = viewModel.genreName,
-                        size = 200.dp,
-                    )
-
-                    Column(
-                        modifier =
-                            Modifier.padding(
-                                start = 20.dp,
-                                end = 20.dp,
-                                top = 20.dp,
-                                bottom = 8.dp,
-                            ),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            text = viewModel.genreName,
-                            style =
-                                MaterialTheme.typography.headlineSmall.copy(
-                                    fontWeight = FontWeight.ExtraBold
-                                ),
-                            color = MaterialTheme.colorScheme.onBackground,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            textAlign = TextAlign.Center,
+                    items(uiState.artists, key = { it.id }) { artist ->
+                        MusicArtistCard(
+                            name = artist.name,
+                            imageUrl = artist.images.primary?.toString(),
+                            blurHash = artist.images.primaryImageBlurHash,
+                            size = relatedCardWidth,
+                            onClick = { onMusicArtistClick(artist.id.toString()) },
                         )
                     }
                 }
-
-                LazyColumn(
-                    state = listState,
-                    modifier =
-                        Modifier.weight(1f)
-                            .fillMaxHeight()
-                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
-                    contentPadding = PaddingValues(bottom = playerOffset + 16.dp),
-                ) {
-                    item {
-                        Spacer(
-                            modifier = Modifier.statusBarsPadding().height(afinityTopAppBarHeight())
-                        )
-                    }
-
-                    item { actionRow() }
-
-                    if (uiState.artists.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = stringResource(R.string.music_tab_artists),
-                                style =
-                                    MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                color = MaterialTheme.colorScheme.onBackground,
-                                modifier =
-                                    Modifier.padding(start = 20.dp, top = 24.dp, bottom = 12.dp),
-                            )
-                            LazyRow(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            ) {
-                                items(uiState.artists, key = { it.id }) { artist ->
-                                    MusicArtistCard(
-                                        name = artist.name,
-                                        imageUrl = artist.images.primary?.toString(),
-                                        blurHash = artist.images.primaryImageBlurHash,
-                                        size = relatedCardWidth,
-                                        onClick = {
-                                            navController.navigate(
-                                                Destination.createMusicArtistRoute(
-                                                    artist.id.toString()
-                                                )
-                                            )
-                                        },
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    if (uiState.albums.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = stringResource(R.string.music_section_albums),
-                                style =
-                                    MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                color = MaterialTheme.colorScheme.onBackground,
-                                modifier =
-                                    Modifier.padding(start = 20.dp, top = 32.dp, bottom = 16.dp),
-                            )
-                            LazyRow(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            ) {
-                                items(uiState.albums, key = { it.id }) { album ->
-                                    Box(modifier = Modifier.width(relatedCardWidth)) {
-                                        MusicAlbumCard(
-                                            album = album,
-                                            onClick = {
-                                                navController.navigate(
-                                                    Destination.createMusicAlbumRoute(
-                                                        album.id.toString()
-                                                    )
-                                                )
-                                            },
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if (uiState.recentlyAdded.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = stringResource(R.string.music_section_recently_added),
-                                style =
-                                    MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                color = MaterialTheme.colorScheme.onBackground,
-                                modifier =
-                                    Modifier.padding(start = 20.dp, top = 32.dp, bottom = 16.dp),
-                            )
-                            LazyRow(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            ) {
-                                items(uiState.recentlyAdded, key = { it.id }) { album ->
-                                    Box(modifier = Modifier.width(relatedCardWidth)) {
-                                        MusicAlbumCard(
-                                            album = album,
-                                            onClick = {
-                                                navController.navigate(
-                                                    Destination.createMusicAlbumRoute(
-                                                        album.id.toString()
-                                                    )
-                                                )
-                                            },
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if (uiState.tracks.isNotEmpty()) {
-                        item {
-                            GenreTracksSection(
-                                uiState = uiState,
-                                playbackState = playbackState,
-                                isOffline = isOffline,
-                                showAllTracks = showAllTracks,
-                                onShowAllChange = { showAllTracks = it },
-                                onPlay = { index ->
-                                    startMusicService(context)
-                                    playerViewModel.playQueue(uiState.tracks, index)
-                                },
-                                onInstantMix = { id ->
-                                    startMusicService(context)
-                                    playerViewModel.playInstantMix(id)
-                                },
-                                onRadio = { seed -> radioSeed = seed },
-                                onAddNext = { track -> playerViewModel.addNext(listOf(track)) },
-                                onAddLast = { track -> playerViewModel.addLast(listOf(track)) },
-                                onDownload =
-                                    if (isDownloadAllowedByServer)
-                                        ({ track -> viewModel.downloadTrack(track.id) })
-                                    else null,
-                                onCancelDownload = { track ->
-                                    viewModel.cancelTrackDownload(track.id)
-                                },
-                                isDownloadEnabled = canDownloadOnNetwork,
-                            )
-                        }
-                    }
-
-                    item { Spacer(Modifier.height(32.dp)) }
-                }
-            }
-        } else {
-            Box(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .height(450.dp)
-                        .background(
-                            Brush.verticalGradient(
-                                colors =
-                                    listOf(
-                                        animatedDominantColor.copy(alpha = 0.65f),
-                                        MaterialTheme.colorScheme.background,
-                                    )
-                            )
-                        )
-            )
-
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = playerOffset + 16.dp),
-            ) {
-                item { Spacer(modifier = Modifier.statusBarsPadding().height(80.dp)) }
-
-                item {
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        GenreHeroImage(
-                            imageUrl = viewModel.genreImageUrl,
-                            contentDescription = viewModel.genreName,
-                            size = 260.dp,
-                        )
-                    }
-                }
-
-                item {
-                    Column(
-                        modifier =
-                            Modifier.padding(
-                                start = 20.dp,
-                                end = 20.dp,
-                                top = 28.dp,
-                                bottom = 12.dp,
-                            )
-                    ) {
-                        Text(
-                            text = viewModel.genreName,
-                            style =
-                                MaterialTheme.typography.headlineLarge.copy(
-                                    fontWeight = FontWeight.ExtraBold
-                                ),
-                            color = MaterialTheme.colorScheme.onBackground,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-
-                item { actionRow() }
-
-                if (uiState.artists.isNotEmpty()) {
-                    item {
-                        Text(
-                            text = stringResource(R.string.music_tab_artists),
-                            style =
-                                MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                            color = MaterialTheme.colorScheme.onBackground,
-                            modifier = Modifier.padding(start = 20.dp, top = 24.dp, bottom = 12.dp),
-                        )
-                        LazyRow(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        ) {
-                            items(uiState.artists, key = { it.id }) { artist ->
-                                MusicArtistCard(
-                                    name = artist.name,
-                                    imageUrl = artist.images.primary?.toString(),
-                                    blurHash = artist.images.primaryImageBlurHash,
-                                    size = relatedCardWidth,
-                                    onClick = {
-                                        navController.navigate(
-                                            Destination.createMusicArtistRoute(artist.id.toString())
-                                        )
-                                    },
-                                )
-                            }
-                        }
-                    }
-                }
-
-                if (uiState.albums.isNotEmpty()) {
-                    item {
-                        Text(
-                            text = stringResource(R.string.music_section_albums),
-                            style =
-                                MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                            color = MaterialTheme.colorScheme.onBackground,
-                            modifier = Modifier.padding(start = 20.dp, top = 32.dp, bottom = 16.dp),
-                        )
-                        LazyRow(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        ) {
-                            items(uiState.albums, key = { it.id }) { album ->
-                                Box(modifier = Modifier.width(relatedCardWidth)) {
-                                    MusicAlbumCard(
-                                        album = album,
-                                        onClick = {
-                                            navController.navigate(
-                                                Destination.createMusicAlbumRoute(
-                                                    album.id.toString()
-                                                )
-                                            )
-                                        },
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (uiState.recentlyAdded.isNotEmpty()) {
-                    item {
-                        Text(
-                            text = stringResource(R.string.music_section_recently_added),
-                            style =
-                                MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                            color = MaterialTheme.colorScheme.onBackground,
-                            modifier = Modifier.padding(start = 20.dp, top = 32.dp, bottom = 16.dp),
-                        )
-                        LazyRow(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        ) {
-                            items(uiState.recentlyAdded, key = { it.id }) { album ->
-                                Box(modifier = Modifier.width(relatedCardWidth)) {
-                                    MusicAlbumCard(
-                                        album = album,
-                                        onClick = {
-                                            navController.navigate(
-                                                Destination.createMusicAlbumRoute(
-                                                    album.id.toString()
-                                                )
-                                            )
-                                        },
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (uiState.tracks.isNotEmpty()) {
-                    item {
-                        GenreTracksSection(
-                            uiState = uiState,
-                            playbackState = playbackState,
-                            isOffline = isOffline,
-                            showAllTracks = showAllTracks,
-                            onShowAllChange = { showAllTracks = it },
-                            onPlay = { index ->
-                                startMusicService(context)
-                                playerViewModel.playQueue(uiState.tracks, index)
-                            },
-                            onInstantMix = { id ->
-                                startMusicService(context)
-                                playerViewModel.playInstantMix(id)
-                            },
-                            onRadio = { seed -> radioSeed = seed },
-                            onAddNext = { track -> playerViewModel.addNext(listOf(track)) },
-                            onAddLast = { track -> playerViewModel.addLast(listOf(track)) },
-                            onDownload =
-                                if (isDownloadAllowedByServer)
-                                    ({ track -> viewModel.downloadTrack(track.id) })
-                                else null,
-                            onCancelDownload = { track -> viewModel.cancelTrackDownload(track.id) },
-                            isDownloadEnabled = canDownloadOnNetwork,
-                        )
-                    }
-                }
-
-                item { Spacer(Modifier.height(32.dp)) }
             }
         }
 
-        AfinityTopAppBar(
-            title = {},
-            onHomeClick = {
-                navController.navigate(Destination.HOME.route) {
-                    popUpTo(Destination.HOME.route) { inclusive = false }
-                    launchSingleTop = true
+        if (uiState.albums.isNotEmpty()) {
+            item {
+                Text(
+                    text = stringResource(R.string.music_section_albums),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(start = DetailGutter, top = 32.dp, bottom = 16.dp),
+                )
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = DetailGutter),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    items(uiState.albums, key = { it.id }) { album ->
+                        Box(modifier = Modifier.width(relatedCardWidth)) {
+                            MusicAlbumCard(
+                                album = album,
+                                onClick = { onMusicAlbumClick(album.id.toString()) },
+                            )
+                        }
+                    }
                 }
-            },
-            backgroundOpacity = { if (isLandscape) 0f else topBarOpacity },
-        )
+            }
+        }
+
+        if (uiState.recentlyAdded.isNotEmpty()) {
+            item {
+                Text(
+                    text = stringResource(R.string.music_section_recently_added),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(start = DetailGutter, top = 32.dp, bottom = 16.dp),
+                )
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = DetailGutter),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    items(uiState.recentlyAdded, key = { it.id }) { album ->
+                        Box(modifier = Modifier.width(relatedCardWidth)) {
+                            MusicAlbumCard(
+                                album = album,
+                                onClick = { onMusicAlbumClick(album.id.toString()) },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        if (uiState.tracks.isNotEmpty()) {
+            item {
+                GenreTracksSection(
+                    uiState = uiState,
+                    playbackState = playbackState,
+                    isOffline = isOffline,
+                    showAllTracks = showAllTracks,
+                    onShowAllChange = { showAllTracks = it },
+                    onPlay = { index ->
+                        startMusicService(context)
+                        playerViewModel.playQueue(uiState.tracks, index)
+                    },
+                    onInstantMix = { id ->
+                        startMusicService(context)
+                        playerViewModel.playInstantMix(id)
+                    },
+                    onRadio = { seed -> radioSeed = seed },
+                    onAddNext = { track -> playerViewModel.addNext(listOf(track)) },
+                    onAddLast = { track -> playerViewModel.addLast(listOf(track)) },
+                    onDownload =
+                        if (isDownloadAllowedByServer)
+                            ({ track -> viewModel.downloadTrack(track.id) })
+                        else null,
+                    onCancelDownload = { track -> viewModel.cancelTrackDownload(track.id) },
+                    isDownloadEnabled = canDownloadOnNetwork,
+                )
+            }
+        }
+    }
+
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
+            AfinityTopAppBar(
+                title = {},
+                onHomeClick = onHomeClick,
+                backgroundOpacity = backgroundOpacity,
+            )
+        },
+        mode = AfinityScreenMode.Hero,
+        scrollOpacity = { topBarOpacity },
+    ) {
+        if (isLandscape) {
+            LandscapeDetailLayout(
+                backdropStyle = BackdropStyle.BlurredCover,
+                backdrop = backdropChainOf(viewModel.genreImageUrl),
+                listState = listState,
+                arrangement = LandscapeDetailArrangement.Split,
+                pane = genreHeader,
+                items = genreItems,
+            )
+        } else {
+            PortraitDetailLayout(
+                hero = PortraitHero.Cover(backdropChainOf(viewModel.genreImageUrl)),
+                listState = listState,
+                header = genreHeader,
+                items = genreItems,
+            )
+        }
     }
 
     radioSeed?.let { seed ->
@@ -634,7 +364,7 @@ private fun GenreTracksSection(
         text = stringResource(R.string.music_section_popular),
         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
         color = MaterialTheme.colorScheme.onBackground,
-        modifier = Modifier.padding(start = 20.dp, top = 24.dp, bottom = 12.dp),
+        modifier = Modifier.padding(start = DetailGutter, top = 24.dp, bottom = 12.dp),
     )
 
     Box(modifier = Modifier.fillMaxWidth()) {

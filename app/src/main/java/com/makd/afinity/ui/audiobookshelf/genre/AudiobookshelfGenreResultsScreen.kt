@@ -8,17 +8,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,7 +25,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,6 +34,10 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
+import com.makd.afinity.ui.components.AfinityBackButton
+import com.makd.afinity.ui.components.AfinityScreen
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
+import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.theme.CardDimensions
@@ -57,45 +56,38 @@ fun AudiobookshelfGenreResultsScreen(
 
     LaunchedEffect(genre) { viewModel.loadGenreResults(genre) }
 
-    Column(modifier = modifier.fillMaxSize().safeDrawingPadding()) {
-        TopAppBar(
-            title = {
-                Text(
-                    text = genre,
-                    style =
-                        MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
-                )
-            },
-            navigationIcon = {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_chevron_left),
-                        contentDescription = stringResource(R.string.cd_back),
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
+            AfinityTopBar(
+                title = { AfinityTopAppBarTitle(genre) },
+                navigationIcon = { AfinityBackButton(onClick = onBackClick) },
+                backgroundOpacity = backgroundOpacity,
+            )
+        },
+        modifier = modifier,
+    ) { innerPadding ->
+        Box(modifier = Modifier.padding(innerPadding)) {
+            when {
+                uiState.isLoading -> {
+                    FullScreenLoading()
+                }
+
+                uiState.error != null -> {
+                    FullScreenError(
+                        title = stringResource(R.string.error_something_went_wrong),
+                        message = uiState.error ?: stringResource(R.string.error_unknown),
                     )
                 }
-            },
-        )
 
-        when {
-            uiState.isLoading -> {
-                FullScreenLoading()
-            }
-
-            uiState.error != null -> {
-                FullScreenError(
-                    title = stringResource(R.string.error_something_went_wrong),
-                    message = uiState.error ?: stringResource(R.string.error_unknown),
-                )
-            }
-
-            else -> {
-                AudiobookshelfGenreResultsContent(
-                    audiobooks = uiState.audiobooks,
-                    podcasts = uiState.podcasts,
-                    serverUrl = uiState.serverUrl,
-                    onItemClick = onItemClick,
-                    widthSizeClass = widthSizeClass,
-                )
+                else -> {
+                    AudiobookshelfGenreResultsContent(
+                        audiobooks = uiState.audiobooks,
+                        podcasts = uiState.podcasts,
+                        serverUrl = uiState.serverUrl,
+                        onItemClick = onItemClick,
+                        widthSizeClass = widthSizeClass,
+                    )
+                }
             }
         }
     }

@@ -246,7 +246,6 @@ constructor(
         } else {
             audiobookshelfPlayer.seekToChapter(chapterIndex)
         }
-        dismissChapterSelector()
     }
 
     fun setPlaybackSpeed(speed: Float) {
@@ -255,48 +254,14 @@ constructor(
 
     fun setSleepTimer(minutes: Int) {
         audiobookshelfPlayer.setSleepTimer(minutes)
-        dismissSleepTimerDialog()
     }
 
     fun setChapterSleepTimer(extraChapters: Int) {
         audiobookshelfPlayer.setChapterSleepTimer(extraChapters)
-        dismissSleepTimerDialog()
     }
 
     fun cancelSleepTimer() {
         audiobookshelfPlayer.cancelSleepTimer()
-    }
-
-    fun showChapterSelector() {
-        _uiState.value = _uiState.value.copy(showChapterSelector = true)
-    }
-
-    fun dismissChapterSelector() {
-        _uiState.value = _uiState.value.copy(showChapterSelector = false)
-    }
-
-    fun showSpeedSelector() {
-        _uiState.value = _uiState.value.copy(showSpeedSelector = true)
-    }
-
-    fun dismissSpeedSelector() {
-        _uiState.value = _uiState.value.copy(showSpeedSelector = false)
-    }
-
-    fun showSleepTimerDialog() {
-        _uiState.value = _uiState.value.copy(showSleepTimerDialog = true)
-    }
-
-    fun dismissSleepTimerDialog() {
-        _uiState.value = _uiState.value.copy(showSleepTimerDialog = false)
-    }
-
-    fun showEqualizer() {
-        _uiState.value = _uiState.value.copy(showEqualizer = true)
-    }
-
-    fun dismissEqualizer() {
-        _uiState.value = _uiState.value.copy(showEqualizer = false)
     }
 
     val bookmarks: StateFlow<List<Bookmark>> =
@@ -308,16 +273,7 @@ constructor(
         if (itemId.isNotEmpty()) refreshBookmarks(showLoading = false)
     }
 
-    fun showBookmarks() {
-        _uiState.value = _uiState.value.copy(showBookmarks = true)
-        refreshBookmarks()
-    }
-
-    fun dismissBookmarks() {
-        _uiState.value = _uiState.value.copy(showBookmarks = false)
-    }
-
-    private fun refreshBookmarks(showLoading: Boolean = true) {
+    fun refreshBookmarks(showLoading: Boolean = true) {
         viewModelScope.launch {
             if (showLoading) _uiState.value = _uiState.value.copy(bookmarksLoading = true)
             audiobookshelfRepository.syncPendingBookmarks()
@@ -350,7 +306,6 @@ constructor(
 
     fun seekToBookmark(bookmark: Bookmark) {
         seekTo(bookmark.time)
-        dismissBookmarks()
     }
 
     fun setEqEnabled(enabled: Boolean) = equalizerManager.setEnabled(enabled)
@@ -405,13 +360,8 @@ constructor(
 
 data class AudiobookshelfPlayerUiState(
     val isLoading: Boolean = false,
-    val showChapterSelector: Boolean = false,
-    val showSpeedSelector: Boolean = false,
-    val showSleepTimerDialog: Boolean = false,
-    val showEqualizer: Boolean = false,
     val error: String? = null,
     val showPlaybackStats: Boolean = false,
     val playbackStats: PlaybackStats = PlaybackStats(),
-    val showBookmarks: Boolean = false,
     val bookmarksLoading: Boolean = false,
 )

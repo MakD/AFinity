@@ -44,11 +44,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -73,7 +70,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityBackButton
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.AfinityScreen
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
+import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.util.logging.LogLevel
 import kotlinx.coroutines.flow.first
@@ -137,10 +138,10 @@ fun LogViewerScreen(
 
     BackHandler(enabled = closeOverlay != null) { closeOverlay?.invoke() }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
+    AfinityScreen(
+        modifier = modifier,
+        topBar = { backgroundOpacity ->
+            AfinityTopBar(
                 title = {
                     if (uiState.searchActive) {
                         SearchField(
@@ -148,21 +149,13 @@ fun LogViewerScreen(
                             onQueryChange = viewModel::setQuery,
                         )
                     } else {
-                        Text(
-                            text = stringResource(R.string.logs_title),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                        )
+                        AfinityTopAppBarTitle(stringResource(R.string.logs_title))
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { closeOverlay?.invoke() ?: onBackClick() }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_chevron_left),
-                            contentDescription = stringResource(R.string.cd_back),
-                        )
-                    }
+                    AfinityBackButton(onClick = { closeOverlay?.invoke() ?: onBackClick() })
                 },
+                backgroundOpacity = backgroundOpacity,
                 actions = {
                     when {
                         uiState.openCrash != null -> {
@@ -239,12 +232,6 @@ fun LogViewerScreen(
                         }
                     }
                 },
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                windowInsets =
-                    screenInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top),
             )
         },
         bottomBar = {
@@ -284,7 +271,7 @@ fun LogViewerScreen(
                     Modifier.fillMaxSize()
                         .windowInsetsPadding(screenInsets.only(WindowInsetsSides.Horizontal)),
             )
-            return@Scaffold
+            return@AfinityScreen
         }
 
         Column(

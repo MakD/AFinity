@@ -29,7 +29,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.extensions.primaryBlurHash
@@ -45,7 +44,6 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.tmdb.TmdbRegionProviders
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.models.wikidata.WikidataAwards
-import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.MediaCountBadge
 import com.makd.afinity.ui.components.PlayedBadge
@@ -71,7 +69,9 @@ fun LazyListScope.seriesDetailItems(
     onEpisodeClick: (AfinityEpisode) -> Unit,
     onEpisodeMoreClick: (AfinityEpisode) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
-    navController: NavController,
+    onItemClick: (AfinityItem) -> Unit,
+    onSeasonClick: (AfinitySeason) -> Unit,
+    onPersonClick: (String) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     horizontalPadding: Dp,
     detailLayout: DetailLayout,
@@ -89,14 +89,8 @@ fun LazyListScope.seriesDetailItems(
         wikidataAwards = wikidataAwards,
         isRatingsFromCache = isRatingsFromCache,
         onSpecialFeatureClick = onSpecialFeatureClick,
-        onBoxSetClick = { boxSet ->
-            val route = Destination.createItemDetailRoute(boxSet.id.toString())
-            navController.navigate(route)
-        },
-        onPersonClick = { personId ->
-            val route = Destination.createPersonRoute(personId.toString())
-            navController.navigate(route)
-        },
+        onBoxSetClick = onItemClick,
+        onPersonClick = { personId -> onPersonClick(personId.toString()) },
         widthSizeClass = widthSizeClass,
         horizontalPadding = horizontalPadding,
         detailLayout = detailLayout,
@@ -116,7 +110,7 @@ fun LazyListScope.seriesDetailItems(
             detailItem("seasons", horizontalPadding) {
                 SeasonsSection(
                     seasons = seasons,
-                    navController = navController,
+                    onSeasonClick = onSeasonClick,
                     widthSizeClass = widthSizeClass,
                 )
             }
@@ -127,7 +121,7 @@ fun LazyListScope.seriesDetailItems(
 @Composable
 internal fun SeasonsSection(
     seasons: List<AfinitySeason>,
-    navController: NavController,
+    onSeasonClick: (AfinitySeason) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -142,15 +136,7 @@ internal fun SeasonsSection(
             items(seasons, key = { it.id.toString() }) { season ->
                 SeasonCard(
                     season = season,
-                    onClick = {
-                        val route =
-                            Destination.createEpisodeListRoute(
-                                seasonId = season.id.toString(),
-                                seasonName = season.name,
-                                seriesId = season.seriesId.toString(),
-                            )
-                        navController.navigate(route)
-                    },
+                    onClick = { onSeasonClick(season) },
                     cardWidth = cardWidth,
                 )
             }

@@ -160,7 +160,8 @@ private fun RibbonFace(entry: RibbonEntry, onPersonClick: ((UUID) -> Unit)?) {
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
-            modifier = Modifier.height(CardDimensions.fontScaled(14.dp)),
+            modifier =
+                Modifier.height(CardDimensions.textHeight(MaterialTheme.typography.labelSmall)),
         )
     }
 }

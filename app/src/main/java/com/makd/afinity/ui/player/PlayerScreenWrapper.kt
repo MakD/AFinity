@@ -39,7 +39,6 @@ fun PlayerScreenWrapper(
     channelName: String? = null,
     liveStreamUrl: String? = null,
     attachToCast: Boolean = false,
-    navController: androidx.navigation.NavController? = null,
     onBackPressed: () -> Unit,
     viewModel: PlayerWrapperViewModel = hiltViewModel(),
 ) {
@@ -129,7 +128,6 @@ fun PlayerScreenWrapper(
                 liveStreamUrl = effectiveStreamUrl,
                 livePlaybackInfo = livePlaybackInfo,
                 attachToCast = attachToCast,
-                navController = navController,
                 onBackPressed = onBackPressed,
                 modifier = modifier,
             )

@@ -1,35 +1,21 @@
 package com.makd.afinity.ui.livetv.components
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.displayCutout
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.max
-import com.makd.afinity.navigation.LocalPlayerOffset
-import com.makd.afinity.ui.components.afinityTopAppBarHeight
+import com.makd.afinity.ui.components.BackdropStyle
+import com.makd.afinity.ui.components.DetailGutter
+import com.makd.afinity.ui.components.ImageHeroKind
+import com.makd.afinity.ui.components.LandscapeDetailArrangement
+import com.makd.afinity.ui.components.LandscapeDetailLayout
+import com.makd.afinity.ui.components.PortraitDetailLayout
+import com.makd.afinity.ui.components.PortraitHero
 import com.makd.afinity.ui.components.isLandscapeWindow
-import com.makd.afinity.ui.item.components.shared.DetailBackdrop
-import com.makd.afinity.ui.item.components.shared.HeroSection
-import com.makd.afinity.ui.item.components.shared.LandscapeDetailTheme
-import com.makd.afinity.ui.utils.verticalLayoutOffset
 
 @Composable
 fun LiveTvDetailFrame(
@@ -39,59 +25,26 @@ fun LiveTvDetailFrame(
     header: @Composable ColumnScope.(isLandscape: Boolean) -> Unit,
     items: LazyListScope.(horizontalPadding: Dp) -> Unit,
 ) {
-    val playerOffset = LocalPlayerOffset.current
-
     if (isLandscapeWindow()) {
-        val density = LocalDensity.current
-        val statusBarHeight = WindowInsets.statusBars.getTop(density)
-        val displayCutoutLeft = WindowInsets.displayCutout.getLeft(density, LayoutDirection.Ltr)
-
-        LandscapeDetailTheme {
-            Box(modifier = Modifier.fillMaxSize()) {
-                DetailBackdrop(fallbackChain = heroChain, contentDescription = backdropDescription)
-
-                LazyColumn(
-                    state = lazyListState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding =
-                        PaddingValues(
-                            top =
-                                with(density) { statusBarHeight.toDp() } + afinityTopAppBarHeight(),
-                            start = with(density) { displayCutoutLeft.toDp() + 16.dp },
-                            end = 16.dp,
-                            bottom = 16.dp + playerOffset,
-                        ),
-                ) {
-                    item(key = "header") {
-                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { header(true) }
-                    }
-                    items(0.dp)
+        LandscapeDetailLayout(
+            backdropStyle = BackdropStyle.Cinematic,
+            backdrop = heroChain,
+            listState = lazyListState,
+            arrangement = LandscapeDetailArrangement.Single,
+            backdropDescription = backdropDescription,
+            items = {
+                item(key = "header") {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { header(true) }
                 }
-            }
-        }
+                items(0.dp)
+            },
+        )
     } else {
-        val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-
-        LazyColumn(
-            state = lazyListState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = max(bottomPadding, playerOffset) + 16.dp),
-        ) {
-            item(key = "hero") { HeroSection(fallbackChain = heroChain) }
-
-            item(key = "header") {
-                Column(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .verticalLayoutOffset((-110).dp)
-                            .padding(start = 16.dp, end = 16.dp, top = 0.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    header(false)
-                }
-            }
-
-            items(16.dp)
-        }
+        PortraitDetailLayout(
+            hero = PortraitHero.Image(kind = ImageHeroKind.Backdrop, backdrop = heroChain),
+            listState = lazyListState,
+            header = { header(false) },
+            items = { items(DetailGutter) },
+        )
     }
 }

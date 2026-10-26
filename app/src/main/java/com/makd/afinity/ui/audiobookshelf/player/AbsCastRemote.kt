@@ -16,6 +16,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackState
 import com.makd.afinity.ui.audiobookshelf.player.components.formatSpeed
+import com.makd.afinity.ui.audiobookshelf.withAbsWidth
 import com.makd.afinity.ui.player.cast.CastInfoBottomSheet
 import com.makd.afinity.ui.player.cast.CastRemoteAction
 import com.makd.afinity.ui.player.cast.CastRemoteArtwork
@@ -36,6 +37,10 @@ fun AbsCastRemote(
     hasBookmarks: Boolean,
     onNavigateBack: () -> Unit,
     onOpenMore: () -> Unit,
+    onOpenChapters: () -> Unit,
+    onOpenBookmarks: () -> Unit,
+    onOpenSleepTimer: () -> Unit,
+    onOpenSpeed: () -> Unit,
 ) {
     val castState by viewModel.castManager.castState.collectAsStateWithLifecycle()
     val swipeEnabled by viewModel.swipeToSkipEnabled.collectAsStateWithLifecycle()
@@ -115,7 +120,7 @@ fun AbsCastRemote(
             CastRemoteAction(
                 painter = painterResource(R.drawable.ic_playlist_alt),
                 label = stringResource(R.string.cd_abs_chapters),
-                onClick = viewModel::showChapterSelector,
+                onClick = onOpenChapters,
                 accentColor = accentColor,
             )
             CastRemoteAction(
@@ -124,7 +129,7 @@ fun AbsCastRemote(
                         if (hasBookmarks) R.drawable.ic_bookmark_filled else R.drawable.ic_bookmark
                     ),
                 label = stringResource(R.string.cd_abs_bookmarks),
-                onClick = viewModel::showBookmarks,
+                onClick = onOpenBookmarks,
                 accentColor = accentColor,
                 active = hasBookmarks,
             )
@@ -135,14 +140,14 @@ fun AbsCastRemote(
                         else R.drawable.ic_moon
                     ),
                 label = stringResource(R.string.cd_music_sleep_timer),
-                onClick = viewModel::showSleepTimerDialog,
+                onClick = onOpenSleepTimer,
                 accentColor = accentColor,
                 active = playbackState.hasSleepTimer,
             )
             CastRemoteValueAction(
                 value = "${formatSpeed(playbackState.playbackSpeed)}x",
                 label = stringResource(R.string.cd_playback_speed),
-                onClick = viewModel::showSpeedSelector,
+                onClick = onOpenSpeed,
                 accentColor = accentColor,
                 active = playbackState.playbackSpeed != 1.0f,
             )

@@ -1,9 +1,7 @@
 package com.makd.afinity.ui.person
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
@@ -22,21 +20,25 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.makd.afinity.R
-import com.makd.afinity.data.models.media.AfinitySeason
-import com.makd.afinity.data.models.media.AfinityShow
-import com.makd.afinity.navigation.Destination
+import com.makd.afinity.data.models.jellyseerr.SearchResultItem
+import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityScreen
+import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.person.components.PersonDetailContent
+import com.makd.afinity.ui.requests.FilterParams
 import com.makd.afinity.ui.requests.FilterType
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 
 @Composable
 fun PersonScreen(
-    navController: NavController,
+    onItemClick: (AfinityItem) -> Unit,
+    onNavigateToSeerrMedia: (SearchResultItem) -> Unit,
+    onNavigateToFilteredMedia: (FilterParams) -> Unit,
+    onHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PersonViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
@@ -58,7 +60,18 @@ fun PersonScreen(
     val lazyListState = rememberLazyListState()
     val topBarOpacity by rememberTopBarOpacity(lazyListState)
 
-    Box(modifier = modifier.fillMaxSize()) {
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
+            AfinityTopAppBar(
+                title = {},
+                onHomeClick = onHomeClick,
+                backgroundOpacity = backgroundOpacity,
+            )
+        },
+        modifier = modifier,
+        mode = AfinityScreenMode.Hero,
+        scrollOpacity = { topBarOpacity },
+    ) {
         when {
             uiState.person != null -> {
                 PersonDetailContent(
@@ -67,44 +80,21 @@ fun PersonScreen(
                     shows = uiState.shows,
                     awards = uiState.awards,
                     externalCredits = uiState.externalCredits,
-                    onExternalItemClick = { credit ->
-                        navController.navigate(
-                            Destination.createSeerrMediaRoute(
-                                mediaType = credit.mediaType,
-                                tmdbId = credit.id,
-                                title = credit.getDisplayTitle(),
-                                backdropUrl = credit.getBackdropUrl(),
-                                posterUrl = credit.getPosterUrl(),
-                            )
-                        )
-                    },
+                    onExternalItemClick = onNavigateToSeerrMedia,
                     onViewAllCredits = {
                         val person = uiState.person
                         val tmdbId = person?.providerIds?.get("Tmdb")?.toIntOrNull()
                         if (person != null && tmdbId != null) {
-                            navController.navigate(
-                                Destination.createFilteredMediaRoute(
-                                    filterType = FilterType.PERSON.name,
-                                    filterId = tmdbId,
-                                    filterName = person.name,
+                            onNavigateToFilteredMedia(
+                                FilterParams(
+                                    type = FilterType.PERSON,
+                                    id = tmdbId,
+                                    name = person.name,
                                 )
                             )
                         }
                     },
-                    onItemClick = { item ->
-                        val route =
-                            Destination.createItemDetailRoute(
-                                itemId = item.id.toString(),
-                                itemType =
-                                    when (item) {
-                                        is AfinityShow -> "Series"
-                                        is AfinitySeason -> "Season"
-                                        else -> null
-                                    },
-                                seriesId = (item as? AfinitySeason)?.seriesId?.toString(),
-                            )
-                        navController.navigate(route)
-                    },
+                    onItemClick = onItemClick,
                     onToggleFavorite = { viewModel.toggleFavorite() },
                     widthSizeClass = widthSizeClass,
                     lazyListState = lazyListState,
@@ -137,17 +127,5 @@ fun PersonScreen(
                 FullScreenLoading()
             }
         }
-
-        AfinityTopAppBar(
-            title = {},
-            onHomeClick = {
-                navController.navigate(Destination.HOME.route) {
-                    popUpTo(Destination.HOME.route) { inclusive = false }
-                    launchSingleTop = true
-                }
-            },
-            backgroundOpacity = { topBarOpacity },
-            landscapeStatusBarFill = MaterialTheme.colorScheme.surface,
-        )
     }
 }

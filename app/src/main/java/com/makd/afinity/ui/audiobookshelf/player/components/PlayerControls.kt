@@ -4,10 +4,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
 import com.makd.afinity.ui.components.TransportControls
+import com.makd.afinity.ui.player.cast.formatCastClock
 import com.makd.afinity.ui.player.components.AudioFormatBadge
-import java.util.Locale
 
 @Composable
 fun PlayerControls(
@@ -43,8 +45,8 @@ fun PlayerControls(
         bufferedPosition = bufferedPosition.toFloat(),
         isPlaying = isPlaying,
         isBuffering = isBuffering,
-        elapsedLabel = formatTime(displayElapsed),
-        totalLabel = formatTime(displayTotal),
+        elapsedLabel = formatCastClock((displayElapsed * 1000).toLong()),
+        totalLabel = formatCastClock((displayTotal * 1000).toLong()),
         onSeek = { onSeek(it.toDouble()) },
         onPlayPauseClick = onPlayPauseClick,
         onSkipBackward = onSkipBackward,
@@ -54,6 +56,12 @@ fun PlayerControls(
         onNext = { onNextChapter?.invoke() },
         nextEnabled = onNextChapter != null,
         accentColor = accentColor,
+        previousContentDescription = stringResource(R.string.cd_previous),
+        nextContentDescription = stringResource(R.string.cd_next),
+        seekBackwardContentDescription = stringResource(R.string.cd_rewind_30),
+        seekForwardContentDescription = stringResource(R.string.cd_forward_30),
+        playContentDescription = stringResource(R.string.cd_play),
+        pauseContentDescription = stringResource(R.string.cd_pause),
         timeRowCenter = {
             AudioFormatBadge(
                 codec = audioCodec,
@@ -62,16 +70,4 @@ fun PlayerControls(
             )
         },
     )
-}
-
-private fun formatTime(seconds: Double): String {
-    val totalSeconds = seconds.toLong().coerceAtLeast(0)
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    val secs = totalSeconds % 60
-    return if (hours > 0) {
-        String.format(Locale.US, "%d:%02d:%02d", hours, minutes, secs)
-    } else {
-        String.format(Locale.US, "%d:%02d", minutes, secs)
-    }
 }

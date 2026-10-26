@@ -1,8 +1,6 @@
 package com.makd.afinity.ui.libraries
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -14,8 +12,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,29 +20,27 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityCollection
-import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.LibraryCard
-import com.makd.afinity.ui.components.afinityTopAppBarTitleStyle
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.utils.rememberTopBarOpacity
 
 @Composable
 fun LibrariesScreen(
     mainUiState: MainUiState,
     onLibraryClick: (AfinityCollection) -> Unit,
     onProfileClick: () -> Unit,
+    onSearchClick: () -> Unit,
     modifier: Modifier = Modifier,
-    navController: NavController,
     viewModel: LibrariesViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
     onMenuClick: (() -> Unit)? = null,
@@ -55,9 +49,23 @@ fun LibrariesScreen(
     val lazyGridState = rememberLazyGridState()
     val playerOffset = LocalPlayerOffset.current
 
-    val topBarOpacity by rememberTopBarOpacity(lazyGridState)
-
-    Box(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
+            AfinityTopAppBar(
+                title = { AfinityTopAppBarTitle(stringResource(R.string.libraries_title)) },
+                backgroundOpacity = backgroundOpacity,
+                onMenuClick = onMenuClick,
+                onSearchClick = onSearchClick,
+                profile =
+                    AppBarProfile(
+                        onClick = onProfileClick,
+                        name = mainUiState.userName,
+                        imageUrl = mainUiState.userProfileImageUrl,
+                    ),
+            )
+        },
+        modifier = modifier,
+    ) {
         when {
             uiState.isLoading && uiState.libraries.isEmpty() -> {
                 FullScreenLoading()
@@ -82,7 +90,7 @@ fun LibrariesScreen(
                         PaddingValues(
                             start = 14.dp,
                             end = 14.dp,
-                            top = 180.dp,
+                            top = 16.dp,
                             bottom = 16.dp + playerOffset,
                         ),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -111,27 +119,5 @@ fun LibrariesScreen(
                 }
             }
         }
-
-        AfinityTopAppBar(
-            title = {
-                Text(
-                    text = stringResource(R.string.libraries_title),
-                    style = afinityTopAppBarTitleStyle(),
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-            },
-            backgroundOpacity = { topBarOpacity },
-            onMenuClick = onMenuClick,
-            onSearchClick = {
-                val route = Destination.createSearchRoute()
-                navController.navigate(route)
-            },
-            profile =
-                AppBarProfile(
-                    onClick = onProfileClick,
-                    name = mainUiState.userName,
-                    imageUrl = mainUiState.userProfileImageUrl,
-                ),
-        )
     }
 }

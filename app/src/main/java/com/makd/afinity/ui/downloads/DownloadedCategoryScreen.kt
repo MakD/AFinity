@@ -12,9 +12,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -30,7 +27,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import androidx.paging.LoadState
 import androidx.paging.LoadStates
 import androidx.paging.PagingData
@@ -44,15 +40,15 @@ import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicFilterOptions
 import com.makd.afinity.data.models.music.MusicFilters
-import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.FilterFab
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.components.SortFab
-import com.makd.afinity.ui.components.afinityTopAppBarTitleStyle
 import com.makd.afinity.ui.home.HomeViewModel
 import com.makd.afinity.ui.home.components.SquareMediaTile
 import com.makd.afinity.ui.main.MainUiState
@@ -282,7 +278,9 @@ fun DownloadedCategoryScreen(
     homeViewModel: HomeViewModel,
     onItemClick: (AfinityItem) -> Unit,
     onAbsItemClick: (String) -> Unit,
-    navController: NavController,
+    onProfileClick: () -> Unit,
+    onMusicAlbumClick: (String) -> Unit,
+    onOpenMusicPlayer: () -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
     playerViewModel: MusicPlayerViewModel = hiltViewModel(),
@@ -406,20 +404,14 @@ fun DownloadedCategoryScreen(
     val gridPadding =
         PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 80.dp + playerOffset)
 
-    Scaffold(
-        topBar = {
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
             AfinityTopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(category.titleRes),
-                        style = afinityTopAppBarTitleStyle(),
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                },
-                backgroundOpacity = { 1f },
+                title = { AfinityTopAppBarTitle(stringResource(category.titleRes)) },
+                backgroundOpacity = backgroundOpacity,
                 profile =
                     AppBarProfile(
-                        onClick = { navController.navigate(Destination.createSettingsRoute()) },
+                        onClick = onProfileClick,
                         name = mainUiState.userName,
                         imageUrl = mainUiState.userProfileImageUrl,
                     ),
@@ -514,11 +506,7 @@ fun DownloadedCategoryScreen(
                 ) { album ->
                     MusicAlbumCard(
                         album = album,
-                        onClick = {
-                            navController.navigate(
-                                Destination.createMusicAlbumRoute(album.id.toString())
-                            )
-                        },
+                        onClick = { onMusicAlbumClick(album.id.toString()) },
                     )
                 }
 
@@ -578,7 +566,7 @@ fun DownloadedCategoryScreen(
                     onTrackClick = { _, queue, index ->
                         startMusicService(context)
                         playerViewModel.playQueue(queue, index)
-                        navController.navigate(Destination.MUSIC_PLAYER_ROUTE)
+                        onOpenMusicPlayer()
                     },
                     onInstantMix = null,
                     onStartRadio = null,

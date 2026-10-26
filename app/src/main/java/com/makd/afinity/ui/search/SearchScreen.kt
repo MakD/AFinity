@@ -107,6 +107,7 @@ import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.MetadataOverflowRow
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.ui.music.components.MusicTrackRow
@@ -958,116 +959,100 @@ private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    val elements = mutableListOf<@Composable () -> Unit>()
-                    if (item is AfinityEpisode) {
-                        val season = item.parentIndexNumber.toString().padStart(2, '0')
-                        val episode = item.indexNumber.toString().padStart(2, '0')
-                        elements.add {
-                            Text(
-                                text = "S$season:E$episode",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                val elements = mutableListOf<@Composable () -> Unit>()
+                if (item is AfinityEpisode) {
+                    val season = item.parentIndexNumber.toString().padStart(2, '0')
+                    val episode = item.indexNumber.toString().padStart(2, '0')
+                    elements.add {
+                        Text(
+                            text = "S$season:E$episode",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
+                }
 
-                    val yearOrDate =
+                val yearOrDate =
+                    when (item) {
+                        is AfinityMovie -> item.productionYear?.toString()
+                        is AfinityShow -> item.productionYear?.toString()
+                        is AfinityEpisode ->
+                            item.premiereDate?.format(
+                                DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+                            )
+                        is AfinityBoxSet -> item.productionYear?.toString()
+                        else -> null
+                    }
+                yearOrDate?.let { date ->
+                    elements.add {
+                        Text(
+                            text = date,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                if (LocalShowRatings.current) {
+                    val rating =
                         when (item) {
-                            is AfinityMovie -> item.productionYear?.toString()
-                            is AfinityShow -> item.productionYear?.toString()
-                            is AfinityEpisode ->
-                                item.premiereDate?.format(
-                                    DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
-                                )
-                            is AfinityBoxSet -> item.productionYear?.toString()
+                            is AfinityMovie -> item.communityRating
+                            is AfinityShow -> item.communityRating
+                            is AfinityEpisode -> item.communityRating
                             else -> null
                         }
-                    yearOrDate?.let { date ->
+                    rating?.let { r ->
                         elements.add {
-                            Text(
-                                text = date,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-
-                    if (LocalShowRatings.current) {
-                        val rating =
-                            when (item) {
-                                is AfinityMovie -> item.communityRating
-                                is AfinityShow -> item.communityRating
-                                is AfinityEpisode -> item.communityRating
-                                else -> null
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_community_rating),
+                                    contentDescription = stringResource(R.string.cd_imdb),
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(ratingScale.rtIconSize),
+                                )
+                                Text(
+                                    text = String.format(Locale.US, "%.1f", r),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             }
-                        rating?.let { r ->
-                            elements.add {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                ) {
-                                    Icon(
-                                        painter =
-                                            painterResource(id = R.drawable.ic_community_rating),
-                                        contentDescription = stringResource(R.string.cd_imdb),
-                                        tint = Color.Unspecified,
-                                        modifier = Modifier.size(ratingScale.rtIconSize),
-                                    )
-                                    Text(
-                                        text = String.format(Locale.US, "%.1f", r),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    if (LocalShowRatings.current && item is AfinityMovie) {
-                        item.criticRating?.let { rtRating ->
-                            elements.add {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                ) {
-                                    Icon(
-                                        painter =
-                                            painterResource(
-                                                id =
-                                                    if (rtRating > 60)
-                                                        R.drawable.ic_rotten_tomato_fresh
-                                                    else R.drawable.ic_rotten_tomato_rotten
-                                            ),
-                                        contentDescription =
-                                            stringResource(R.string.cd_rotten_tomatoes),
-                                        tint = Color.Unspecified,
-                                        modifier = Modifier.size(ratingScale.rtIconSize),
-                                    )
-                                    Text(
-                                        text = "${rtRating.toInt()}%",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    elements.forEachIndexed { index, element ->
-                        element()
-                        if (index < elements.size - 1) {
-                            Text(
-                                text = "•",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
                         }
                     }
                 }
+
+                if (LocalShowRatings.current && item is AfinityMovie) {
+                    item.criticRating?.let { rtRating ->
+                        elements.add {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
+                                Icon(
+                                    painter =
+                                        painterResource(
+                                            id =
+                                                if (rtRating > 60) R.drawable.ic_rotten_tomato_fresh
+                                                else R.drawable.ic_rotten_tomato_rotten
+                                        ),
+                                    contentDescription =
+                                        stringResource(R.string.cd_rotten_tomatoes),
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(ratingScale.rtIconSize),
+                                )
+                                Text(
+                                    text = "${rtRating.toInt()}%",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+
+                MetadataOverflowRow(items = elements, spacing = 6.dp)
 
                 Text(
                     text = item.overview,
@@ -1458,9 +1443,11 @@ private fun AudiobookshelfSearchResultsContent(
     serverUrl: String?,
     onItemClick: (String) -> Unit,
 ) {
+    val playerOffset = LocalPlayerOffset.current
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding =
+            PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp + playerOffset),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {

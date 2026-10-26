@@ -6,12 +6,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,17 +27,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -112,7 +108,6 @@ fun AfinityTopAppBar(
     onMenuClick: (() -> Unit)? = null,
     onHomeClick: (() -> Unit)? = null,
     backgroundOpacity: () -> Float = { 0f },
-    landscapeStatusBarFill: Color? = null,
     actions: @Composable (RowScope.() -> Unit) = {},
     viewModel: AfinityTopAppBarViewModel = hiltViewModel(),
     isFetchingRandom: Boolean = false,
@@ -121,15 +116,8 @@ fun AfinityTopAppBar(
     val connectivity by viewModel.connectivity.collectAsStateWithLifecycle()
     val isForcedOffline = connectivity == Connectivity.ForcedOffline
     val isRetrying by viewModel.isRetrying.collectAsStateWithLifecycle()
-    val statusBarOnlyFill = if (isLandscapeWindow()) landscapeStatusBarFill else null
-    val fillColor = statusBarOnlyFill ?: MaterialTheme.colorScheme.surface
-    val statusBarHeight = WindowInsets.statusBars.getTop(LocalDensity.current)
 
-    RequestDarkStatusBar(
-        enabled = statusBarOnlyFill != null && statusBarOnlyFill.luminance() < 0.5f
-    )
-
-    TopAppBar(
+    AfinityTopBar(
         title = title,
         navigationIcon = {
             val leadingOnClick = onMenuClick ?: onHomeClick
@@ -281,24 +269,59 @@ fun AfinityTopAppBar(
             }
             actions()
         },
-        expandedHeight = afinityTopAppBarHeight(),
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-        modifier =
-            modifier.drawBehind {
-                val fillHeight =
-                    if (statusBarOnlyFill != null) statusBarHeight.toFloat() else size.height
-                drawRect(
-                    color = fillColor.copy(alpha = backgroundOpacity()),
-                    size = Size(size.width, fillHeight),
-                )
-            },
+        modifier = modifier,
+        backgroundOpacity = backgroundOpacity,
     )
 }
 
-@Composable fun afinityTopAppBarHeight(): Dp = if (isLandscapeWindow()) 48.dp else 64.dp
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AfinityTopBar(
+    title: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    navigationIcon: @Composable () -> Unit = {},
+    actions: @Composable (RowScope.() -> Unit) = {},
+    backgroundOpacity: () -> Float = { 0f },
+) {
+    val fillColor = MaterialTheme.colorScheme.surface
+    TopAppBar(
+        title = title,
+        navigationIcon = navigationIcon,
+        actions = actions,
+        expandedHeight = afinityTopAppBarHeight(),
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+        modifier = modifier.drawBehind { drawRect(fillColor.copy(alpha = backgroundOpacity())) },
+    )
+}
 
 @Composable
-fun afinityTopAppBarTitleStyle(): TextStyle =
-    (if (isLandscapeWindow()) MaterialTheme.typography.headlineSmall
-        else MaterialTheme.typography.headlineLarge)
-        .copy(fontWeight = FontWeight.Bold)
+fun AfinityBackButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    IconButton(onClick = onClick, modifier = modifier) {
+        Icon(
+            painter = painterResource(id = R.drawable.ic_chevron_left),
+            contentDescription = stringResource(R.string.cd_back),
+        )
+    }
+}
+
+@Composable
+fun AfinityTopAppBarTitle(
+    text: String,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.onBackground,
+) {
+    Text(
+        text = text,
+        modifier = modifier,
+        style = afinityTopAppBarTitleStyle(),
+        color = color,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
+}
+
+fun afinityTopAppBarHeight(): Dp = 48.dp
+
+@Composable
+private fun afinityTopAppBarTitleStyle(): TextStyle =
+    MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)

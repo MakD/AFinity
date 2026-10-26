@@ -42,8 +42,6 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -62,8 +60,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.server.ConnectionType
+import com.makd.afinity.ui.components.AfinityBackButton
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
+import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.LocalNetworkPermissionCard
 import com.makd.afinity.ui.components.connectionIndicatorColor
 import com.makd.afinity.ui.components.connectionLabel
@@ -229,28 +230,9 @@ fun ServicesHubScreen(
 
         Column(modifier = Modifier.fillMaxSize()) {
             if (showAppBar) {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = stringResource(R.string.services_hub_title),
-                            style =
-                                MaterialTheme.typography.headlineMedium.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onFinish) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_chevron_left),
-                                contentDescription = stringResource(R.string.cd_back),
-                            )
-                        }
-                    },
-                    colors =
-                        TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.surface
-                        ),
+                AfinityTopBar(
+                    title = { AfinityTopAppBarTitle(stringResource(R.string.services_hub_title)) },
+                    navigationIcon = { AfinityBackButton(onClick = onFinish) },
                 )
             }
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {

@@ -8,11 +8,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,20 +24,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.makd.afinity.R
+import com.makd.afinity.data.models.music.AfinityMusicGenre
 import com.makd.afinity.data.models.music.RadioSeed
-import com.makd.afinity.navigation.Destination
-import com.makd.afinity.navigation.Destination.Companion.createSearchRoute
-import com.makd.afinity.navigation.Destination.Companion.createSettingsRoute
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
+import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.FilterFab
 import com.makd.afinity.ui.components.SortFab
-import com.makd.afinity.ui.components.afinityTopAppBarTitleStyle
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
@@ -57,7 +52,13 @@ import kotlinx.coroutines.launch
 @Composable
 fun MusicBrowseScreen(
     tab: LibraryFilter,
-    navController: NavController,
+    onProfileClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onMusicAlbumClick: (String) -> Unit,
+    onMusicArtistClick: (String) -> Unit,
+    onMusicPlaylistClick: (String) -> Unit,
+    onMusicGenreClick: (genre: AfinityMusicGenre, libraryId: UUID) -> Unit,
+    onOpenMusicPlayer: () -> Unit,
     viewModel: MusicLibraryViewModel = hiltViewModel(),
     playerViewModel: MusicPlayerViewModel = hiltViewModel(),
     addToPlaylistViewModel: AddToPlaylistViewModel = hiltViewModel(),
@@ -110,27 +111,21 @@ fun MusicBrowseScreen(
     val playlistsGridState = rememberLazyGridState()
     val genresGridState = rememberLazyGridState()
 
-    Scaffold(
+    AfinityScreen(
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) })
         },
-        topBar = {
+        topBar = { backgroundOpacity ->
             AfinityTopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(tab.displayNameRes),
-                        style = afinityTopAppBarTitleStyle(),
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                },
-                backgroundOpacity = { 1f },
+                title = { AfinityTopAppBarTitle(stringResource(tab.displayNameRes)) },
+                backgroundOpacity = backgroundOpacity,
                 profile =
                     AppBarProfile(
-                        onClick = { navController.navigate(createSettingsRoute()) },
+                        onClick = onProfileClick,
                         name = userName,
                         imageUrl = userProfileImageUrl,
                     ),
-                onSearchClick = { navController.navigate(createSearchRoute()) },
+                onSearchClick = onSearchClick,
             )
         },
         floatingActionButton = {
@@ -192,14 +187,7 @@ fun MusicBrowseScreen(
                 PlaylistsGrid(
                     gridState = playlistsGridState,
                     playlists = uiState.playlists,
-                    onPlaylistClick = { playlist ->
-                        navController.navigate(
-                            Destination.createPlaylistRoute(
-                                playlist.id.toString(),
-                                audioOnly = true,
-                            )
-                        )
-                    },
+                    onPlaylistClick = { playlist -> onMusicPlaylistClick(playlist.id.toString()) },
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
                 )
             LibraryFilter.Albums ->
@@ -208,11 +196,7 @@ fun MusicBrowseScreen(
                     albums = lazyAlbums,
                     letterFilter = albumLetterFilter,
                     onLetterSelected = viewModel::filterAlbumsByLetter,
-                    onAlbumClick = { album ->
-                        navController.navigate(
-                            Destination.createMusicAlbumRoute(album.id.toString())
-                        )
-                    },
+                    onAlbumClick = { album -> onMusicAlbumClick(album.id.toString()) },
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
                 )
             LibraryFilter.AlbumArtists ->
@@ -221,11 +205,7 @@ fun MusicBrowseScreen(
                     artists = lazyArtists,
                     letterFilter = artistLetterFilter,
                     onLetterSelected = viewModel::filterArtistsByLetter,
-                    onArtistClick = { artist ->
-                        navController.navigate(
-                            Destination.createMusicArtistRoute(artist.id.toString())
-                        )
-                    },
+                    onArtistClick = { artist -> onMusicArtistClick(artist.id.toString()) },
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
                 )
             LibraryFilter.Artists ->
@@ -234,11 +214,7 @@ fun MusicBrowseScreen(
                     artists = lazyAllArtists,
                     letterFilter = allArtistLetterFilter,
                     onLetterSelected = viewModel::filterAllArtistsByLetter,
-                    onArtistClick = { artist ->
-                        navController.navigate(
-                            Destination.createMusicArtistRoute(artist.id.toString())
-                        )
-                    },
+                    onArtistClick = { artist -> onMusicArtistClick(artist.id.toString()) },
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
                 )
             LibraryFilter.Tracks ->
@@ -277,7 +253,7 @@ fun MusicBrowseScreen(
                     onTrackClick = { track, queue, index ->
                         startMusicService(context)
                         playerViewModel.playQueue(queue, index)
-                        navController.navigate(Destination.MUSIC_PLAYER_ROUTE)
+                        onOpenMusicPlayer()
                     },
                     onInstantMix =
                         if (isOffline) null
@@ -285,7 +261,7 @@ fun MusicBrowseScreen(
                             ({ track ->
                                 startMusicService(context)
                                 playerViewModel.playInstantMix(track.id)
-                                navController.navigate(Destination.MUSIC_PLAYER_ROUTE)
+                                onOpenMusicPlayer()
                             }),
                     onStartRadio = { track ->
                         if (!isOffline) {
@@ -324,16 +300,7 @@ fun MusicBrowseScreen(
                 GenresGrid(
                     gridState = genresGridState,
                     genres = lazyGenres,
-                    onGenreClick = { genre ->
-                        navController.navigate(
-                            Destination.createMusicGenreRoute(
-                                genreName = genre.name,
-                                imageUrl = genre.imageUrl,
-                                genreId = genre.id,
-                                libraryId = viewModel.libraryId,
-                            )
-                        )
-                    },
+                    onGenreClick = { genre -> onMusicGenreClick(genre, viewModel.libraryId) },
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
                 )
             LibraryFilter.Home -> Unit
@@ -409,6 +376,8 @@ fun MusicBrowseScreen(
     }
 
     if (showAddToPlaylist) {
+        val addedToPlaylistFmt = stringResource(R.string.music_snackbar_added_to_playlist_fmt)
+        val createdPlaylistFmt = stringResource(R.string.music_snackbar_created_playlist_fmt)
         AddToPlaylistDialog(
             trackIds = addToPlaylistTrackIds,
             viewModel = addToPlaylistViewModel,
@@ -417,8 +386,10 @@ fun MusicBrowseScreen(
                 showAddToPlaylist = false
                 val message =
                     when (result) {
-                        is AddToPlaylistResult.Added -> "Added to \"${result.playlistName}\""
-                        is AddToPlaylistResult.Created -> "Created \"${result.playlistName}\""
+                        is AddToPlaylistResult.Added ->
+                            addedToPlaylistFmt.format(result.playlistName)
+                        is AddToPlaylistResult.Created ->
+                            createdPlaylistFmt.format(result.playlistName)
                         is AddToPlaylistResult.Error -> result.message
                     }
                 scope.launch { snackbarHostState.showSnackbar(message) }

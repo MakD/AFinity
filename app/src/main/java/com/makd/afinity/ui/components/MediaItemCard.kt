@@ -29,9 +29,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.primaryBlurHash
@@ -43,6 +45,13 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideoPlaylist
 import com.makd.afinity.navigation.LocalShowRatings
+import com.makd.afinity.ui.preview.CardSizePreviewProvider
+import com.makd.afinity.ui.preview.FontScalePreviews
+import com.makd.afinity.ui.preview.PreviewCardRow
+import com.makd.afinity.ui.preview.PreviewData
+import com.makd.afinity.ui.preview.PreviewHost
+import com.makd.afinity.ui.preview.StressPreviews
+import com.makd.afinity.ui.preview.WidthPreviews
 import com.makd.afinity.ui.theme.CardDimensions
 import java.util.Locale
 
@@ -272,4 +281,39 @@ fun MediaItemCard(
 
         MetadataOverflowRow(items = metadataItems)
     }
+}
+
+@Composable
+private fun MediaItemCardRowPreviewContent(cardSize: CardSize) {
+    PreviewHost(cardSize = cardSize) {
+        PreviewCardRow { cardWidth ->
+            PreviewData.posterRow.forEach { item ->
+                MediaItemCard(item = item, onClick = {}, cardWidth = cardWidth)
+            }
+        }
+    }
+}
+
+@WidthPreviews
+@Composable
+private fun MediaItemCardWidthPreview(
+    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize
+) {
+    MediaItemCardRowPreviewContent(cardSize)
+}
+
+@FontScalePreviews
+@Composable
+private fun MediaItemCardFontScalePreview(
+    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize
+) {
+    MediaItemCardRowPreviewContent(cardSize)
+}
+
+@StressPreviews
+@Composable
+private fun MediaItemCardStressPreview(
+    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize
+) {
+    MediaItemCardRowPreviewContent(cardSize)
 }

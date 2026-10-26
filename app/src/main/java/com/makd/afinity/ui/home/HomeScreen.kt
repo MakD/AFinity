@@ -60,7 +60,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.R.drawable.ic_launcher_monochrome
 import com.makd.afinity.data.manager.UnreachableReason
@@ -72,8 +71,9 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
-import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityScreen
+import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
@@ -81,6 +81,7 @@ import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.HeroCarousel
+import com.makd.afinity.ui.components.afinityTopAppBarHeight
 import com.makd.afinity.ui.components.heroCarouselLayoutHeight
 import com.makd.afinity.ui.downloads.DownloadedCategory
 import com.makd.afinity.ui.home.components.DownloadedAudiobooksSection
@@ -115,8 +116,17 @@ fun HomeScreen(
     onItemClick: (AfinityItem) -> Unit,
     onPlayClick: (AfinityItem) -> Unit,
     onProfileClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onServerManagementClick: () -> Unit,
+    onLibraryClick: (AfinityCollection) -> Unit,
+    onDownloadedCategoryClick: (DownloadedCategory) -> Unit,
+    onMusicAlbumClick: (String) -> Unit,
+    onOpenMusicPlayer: () -> Unit,
+    onStudioClick: (String) -> Unit,
+    onCustomSectionClick: (String) -> Unit,
+    onSeriesClick: (String) -> Unit,
+    onPersonClick: (String) -> Unit,
     modifier: Modifier = Modifier,
-    navController: NavController,
     snackbarHostState: SnackbarHostState,
     viewModel: HomeViewModel = hiltViewModel(),
     playerViewModel: MusicPlayerViewModel = hiltViewModel(),
@@ -201,7 +211,54 @@ fun HomeScreen(
             )
         }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
+            AfinityTopAppBar(
+                title = {
+                    if (onMenuClick == null && widthSizeClass == WindowWidthSizeClass.Compact) {
+                        Box(
+                            modifier =
+                                Modifier.size(42.dp)
+                                    .background(Color.Black.copy(alpha = 0.3f), CircleShape)
+                                    .clip(CircleShape),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Image(
+                                painter = painterResource(id = ic_launcher_monochrome),
+                                contentDescription = stringResource(R.string.cd_app_logo),
+                                modifier = Modifier.size(60.dp).fillMaxSize(),
+                                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
+                                contentScale = ContentScale.Fit,
+                            )
+                        }
+                    }
+                },
+                onMenuClick = onMenuClick,
+                onSearchClick = onSearchClick,
+                onRandomClick = {
+                    scrollToTopScope.launch {
+                        val item = viewModel.getRandomUnwatchedItem()
+                        if (item != null) {
+                            onItemClick(item)
+                        } else {
+                            snackbarHostState.showSnackbar(randomNoneMessage)
+                        }
+                    }
+                },
+                profile =
+                    AppBarProfile(
+                        onClick = onProfileClick,
+                        name = mainUiState.userName,
+                        imageUrl = mainUiState.userProfileImageUrl,
+                    ),
+                backgroundOpacity = backgroundOpacity,
+                isFetchingRandom = isFetchingRandom,
+            )
+        },
+        modifier = modifier,
+        mode = AfinityScreenMode.Immersive,
+        scrollOpacity = { topBarOpacity },
+    ) {
         val offlineAndEmpty =
             uiState.isOffline &&
                 uiState.offlineContentLoaded &&
@@ -245,16 +302,7 @@ fun HomeScreen(
                             ),
                         actionText =
                             if (noRoute) stringResource(R.string.offline_no_route_action) else null,
-                        onActionClick =
-                            if (noRoute) {
-                                {
-                                    navController.navigate(
-                                        Destination.createServerManagementRoute()
-                                    )
-                                }
-                            } else {
-                                null
-                            },
+                        onActionClick = if (noRoute) onServerManagementClick else null,
                         modifier = Modifier.background(MaterialTheme.colorScheme.background),
                     )
                     return@run
@@ -282,7 +330,9 @@ fun HomeScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding =
                             PaddingValues(
-                                top = if (!heroEnabled) statusBarHeight + 56.dp else 0.dp,
+                                top =
+                                    if (!heroEnabled) statusBarHeight + afinityTopAppBarHeight()
+                                    else 0.dp,
                                 bottom = max(bottomPadding, playerOffset) + 16.dp,
                             ),
                     ) {
@@ -314,11 +364,7 @@ fun HomeScreen(
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     LibrariesSection(
                                         libraries = uiState.libraries,
-                                        onLibraryClick = { library ->
-                                            navController.navigate(
-                                                Destination.createLibraryRoute(library)
-                                            )
-                                        },
+                                        onLibraryClick = onLibraryClick,
                                         widthSizeClass = widthSizeClass,
                                     )
                                 }
@@ -371,11 +417,7 @@ fun HomeScreen(
                                         widthSizeClass = widthSizeClass,
                                         unavailableItemIds = uiState.unavailableDownloadIds,
                                         onViewAllClick = {
-                                            navController.navigate(
-                                                Destination.createDownloadedCategoryRoute(
-                                                    DownloadedCategory.MOVIES.name
-                                                )
-                                            )
+                                            onDownloadedCategoryClick(DownloadedCategory.MOVIES)
                                         },
                                     )
                                 }
@@ -392,11 +434,7 @@ fun HomeScreen(
                                         widthSizeClass = widthSizeClass,
                                         unavailableItemIds = uiState.unavailableDownloadIds,
                                         onViewAllClick = {
-                                            navController.navigate(
-                                                Destination.createDownloadedCategoryRoute(
-                                                    DownloadedCategory.SHOWS.name
-                                                )
-                                            )
+                                            onDownloadedCategoryClick(DownloadedCategory.SHOWS)
                                         },
                                     )
                                 }
@@ -411,11 +449,7 @@ fun HomeScreen(
                                         items = uiState.downloadedAudiobooks,
                                         onItemClick = { onAbsItemClick(it.libraryItemId) },
                                         onViewAllClick = {
-                                            navController.navigate(
-                                                Destination.createDownloadedCategoryRoute(
-                                                    DownloadedCategory.AUDIOBOOKS.name
-                                                )
-                                            )
+                                            onDownloadedCategoryClick(DownloadedCategory.AUDIOBOOKS)
                                         },
                                     )
                                 }
@@ -430,11 +464,7 @@ fun HomeScreen(
                                         items = uiState.downloadedPodcastEpisodes,
                                         onItemClick = { onAbsItemClick(it.libraryItemId) },
                                         onViewAllClick = {
-                                            navController.navigate(
-                                                Destination.createDownloadedCategoryRoute(
-                                                    DownloadedCategory.PODCASTS.name
-                                                )
-                                            )
+                                            onDownloadedCategoryClick(DownloadedCategory.PODCASTS)
                                         },
                                     )
                                 }
@@ -448,18 +478,10 @@ fun HomeScreen(
                                         title = stringResource(R.string.home_downloaded_albums),
                                         albums = uiState.downloadedMusicAlbums,
                                         onViewAllClick = {
-                                            navController.navigate(
-                                                Destination.createDownloadedCategoryRoute(
-                                                    DownloadedCategory.ALBUMS.name
-                                                )
-                                            )
+                                            onDownloadedCategoryClick(DownloadedCategory.ALBUMS)
                                         },
                                         onAlbumClick = { album ->
-                                            navController.navigate(
-                                                Destination.createMusicAlbumRoute(
-                                                    album.id.toString()
-                                                )
-                                            )
+                                            onMusicAlbumClick(album.id.toString())
                                         },
                                     )
                                 }
@@ -473,18 +495,14 @@ fun HomeScreen(
                                         title = stringResource(R.string.home_downloaded_tracks),
                                         tracks = uiState.downloadedMusicTracks,
                                         onViewAllClick = {
-                                            navController.navigate(
-                                                Destination.createDownloadedCategoryRoute(
-                                                    DownloadedCategory.TRACKS.name
-                                                )
-                                            )
+                                            onDownloadedCategoryClick(DownloadedCategory.TRACKS)
                                         },
                                         onTrackClick = { track ->
                                             val tracks = uiState.downloadedMusicTracks
                                             val index = tracks.indexOf(track).coerceAtLeast(0)
                                             startMusicService(context)
                                             playerViewModel.playQueue(tracks, index)
-                                            navController.navigate(Destination.MUSIC_PLAYER_ROUTE)
+                                            onOpenMusicPlayer()
                                         },
                                     )
                                 }
@@ -648,9 +666,7 @@ fun HomeScreen(
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     PopularStudiosSection(
                                         studios = uiState.popularStudios,
-                                        onStudioClick = { studio ->
-                                            viewModel.onStudioClick(studio, navController)
-                                        },
+                                        onStudioClick = { studio -> onStudioClick(studio.name) },
                                         widthSizeClass = widthSizeClass,
                                     )
                                 }
@@ -710,12 +726,7 @@ fun HomeScreen(
                                                     cardStyle = section.cardStyle,
                                                     onViewAllClick =
                                                         section.customSectionId?.let { id ->
-                                                            {
-                                                                viewModel.onCustomSectionClick(
-                                                                    id,
-                                                                    navController,
-                                                                )
-                                                            }
+                                                            { onCustomSectionClick(id) }
                                                         },
                                                 )
                                             }
@@ -917,51 +928,6 @@ fun HomeScreen(
                 }
             }
 
-        AfinityTopAppBar(
-            title = {
-                if (onMenuClick == null && widthSizeClass == WindowWidthSizeClass.Compact) {
-                    Box(
-                        modifier =
-                            Modifier.size(42.dp)
-                                .background(Color.Black.copy(alpha = 0.3f), CircleShape)
-                                .clip(CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Image(
-                            painter = painterResource(id = ic_launcher_monochrome),
-                            contentDescription = stringResource(R.string.cd_app_logo),
-                            modifier = Modifier.size(60.dp).fillMaxSize(),
-                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
-                            contentScale = ContentScale.Fit,
-                        )
-                    }
-                }
-            },
-            onMenuClick = onMenuClick,
-            onSearchClick = {
-                val route = Destination.createSearchRoute()
-                navController.navigate(route)
-            },
-            onRandomClick = {
-                scrollToTopScope.launch {
-                    val item = viewModel.getRandomUnwatchedItem()
-                    if (item != null) {
-                        onItemClick(item)
-                    } else {
-                        snackbarHostState.showSnackbar(randomNoneMessage)
-                    }
-                }
-            },
-            profile =
-                AppBarProfile(
-                    onClick = onProfileClick,
-                    name = mainUiState.userName,
-                    imageUrl = mainUiState.userProfileImageUrl,
-                ),
-            backgroundOpacity = { topBarOpacity },
-            isFetchingRandom = isFetchingRandom,
-        )
-
         val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
         val selectedEpisodeWatchlistStatus by
             viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
@@ -981,14 +947,8 @@ fun HomeScreen(
             onToggleFavorite = { episode -> viewModel.toggleEpisodeFavorite(episode) },
             onToggleWatchlist = { episode -> viewModel.toggleEpisodeWatchlist(episode) },
             onToggleWatched = { episode -> viewModel.toggleEpisodeWatched(episode) },
-            onNavigateToSeries = { seriesId ->
-                navController.navigate(
-                    Destination.createItemDetailRoute(itemId = seriesId, itemType = "Series")
-                )
-            },
-            onNavigateToPerson = { personId ->
-                navController.navigate(Destination.createPersonRoute(personId))
-            },
+            onNavigateToSeries = onSeriesClick,
+            onNavigateToPerson = onPersonClick,
         )
     }
 }

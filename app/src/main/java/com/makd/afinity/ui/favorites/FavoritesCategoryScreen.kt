@@ -9,9 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -27,18 +24,17 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.MediaCategoryGrid
-import com.makd.afinity.ui.components.afinityTopAppBarTitleStyle
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.music.components.MusicArtistCard
@@ -70,7 +66,12 @@ fun FavoritesCategoryScreen(
     mainUiState: MainUiState,
     onItemClick: (AfinityItem) -> Unit,
     onPersonClick: (String) -> Unit,
-    navController: NavController,
+    onSearchClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onSeriesClick: (String) -> Unit,
+    onMusicAlbumClick: (String) -> Unit,
+    onMusicArtistClick: (String) -> Unit,
+    onMusicPlaylistClick: (String) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
     viewModel: FavoritesViewModel = hiltViewModel(),
@@ -121,20 +122,15 @@ fun FavoritesCategoryScreen(
             FavoritesCategory.PLAYLISTS -> uiState.favoritePlaylists.isEmpty()
         }
 
-    Scaffold(
-        topBar = {
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
             AfinityTopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(category.titleRes()),
-                        style = afinityTopAppBarTitleStyle(),
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                },
-                onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
+                title = { AfinityTopAppBarTitle(stringResource(category.titleRes())) },
+                backgroundOpacity = backgroundOpacity,
+                onSearchClick = onSearchClick,
                 profile =
                     AppBarProfile(
-                        onClick = { navController.navigate(Destination.createSettingsRoute()) },
+                        onClick = onProfileClick,
                         name = mainUiState.userName,
                         imageUrl = mainUiState.userProfileImageUrl,
                     ),
@@ -228,11 +224,7 @@ fun FavoritesCategoryScreen(
                     ) { album ->
                         MusicAlbumCard(
                             album = album,
-                            onClick = {
-                                navController.navigate(
-                                    Destination.createMusicAlbumRoute(album.id.toString())
-                                )
-                            },
+                            onClick = { onMusicAlbumClick(album.id.toString()) },
                         )
                     }
 
@@ -248,11 +240,7 @@ fun FavoritesCategoryScreen(
                             name = artist.name,
                             imageUrl = artist.images.primary?.toString(),
                             blurHash = artist.images.primaryImageBlurHash,
-                            onClick = {
-                                navController.navigate(
-                                    Destination.createMusicArtistRoute(artist.id.toString())
-                                )
-                            },
+                            onClick = { onMusicArtistClick(artist.id.toString()) },
                             size = widthSizeClass.scaledPortraitWidth,
                         )
                     }
@@ -295,14 +283,7 @@ fun FavoritesCategoryScreen(
                     ) { playlist ->
                         MusicPlaylistCard(
                             playlist = playlist,
-                            onClick = {
-                                navController.navigate(
-                                    Destination.createPlaylistRoute(
-                                        playlist.id.toString(),
-                                        audioOnly = true,
-                                    )
-                                )
-                            },
+                            onClick = { onMusicPlaylistClick(playlist.id.toString()) },
                         )
                     }
             }
@@ -319,14 +300,8 @@ fun FavoritesCategoryScreen(
         onToggleFavorite = { episode -> viewModel.toggleEpisodeFavorite(episode) },
         onToggleWatchlist = { episode -> viewModel.toggleEpisodeWatchlist(episode) },
         onToggleWatched = { episode -> viewModel.toggleEpisodeWatched(episode) },
-        onNavigateToSeries = { seriesId ->
-            navController.navigate(
-                Destination.createItemDetailRoute(itemId = seriesId, itemType = "Series")
-            )
-        },
-        onNavigateToPerson = { personId ->
-            navController.navigate(Destination.createPersonRoute(personId))
-        },
+        onNavigateToSeries = onSeriesClick,
+        onNavigateToPerson = onPersonClick,
     )
 }
 

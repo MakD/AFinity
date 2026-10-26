@@ -7,8 +7,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.TransportControls
+import com.makd.afinity.ui.player.cast.formatCastClock
 import com.makd.afinity.ui.player.components.AudioFormatBadge
-import java.util.Locale
 
 @Composable
 fun MusicPlayerControls(
@@ -42,8 +42,8 @@ fun MusicPlayerControls(
         bufferedPosition = bufferedPositionMs.toFloat(),
         isPlaying = isPlaying,
         isBuffering = isBuffering,
-        elapsedLabel = formatMs(positionMs),
-        totalLabel = formatMs(durationMs),
+        elapsedLabel = formatCastClock(positionMs),
+        totalLabel = formatCastClock(durationMs),
         onSeek = { onSeek(it.toLong()) },
         onPlayPauseClick = onPlayPauseClick,
         onSkipBackward = onSeekBackward,
@@ -58,16 +58,4 @@ fun MusicPlayerControls(
         playContentDescription = stringResource(R.string.cd_play),
         pauseContentDescription = stringResource(R.string.cd_pause),
     )
-}
-
-private fun formatMs(ms: Long): String {
-    val totalSeconds = (ms / 1000L).coerceAtLeast(0L)
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    val secs = totalSeconds % 60
-    return if (hours > 0) {
-        String.format(Locale.US, "%d:%02d:%02d", hours, minutes, secs)
-    } else {
-        String.format(Locale.US, "%d:%02d", minutes, secs)
-    }
 }

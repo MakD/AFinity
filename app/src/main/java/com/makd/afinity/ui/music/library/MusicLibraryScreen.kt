@@ -35,14 +35,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.carousel.CarouselDefaults
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,7 +67,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemKey
@@ -82,11 +79,12 @@ import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MadeForYouMixKind
 import com.makd.afinity.data.models.music.MadeForYouSlot
-import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.player.AudioService
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
+import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AlphabetScroller
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.AsyncImage
@@ -94,7 +92,6 @@ import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.LibraryShortcutCard
 import com.makd.afinity.ui.components.LibraryShortcutsRow
 import com.makd.afinity.ui.components.SectionRowHeader
-import com.makd.afinity.ui.components.afinityTopAppBarTitleStyle
 import com.makd.afinity.ui.components.focalAlpha
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.home.components.ArtistAlbumsCarousel
@@ -129,7 +126,12 @@ enum class LibraryFilter(@StringRes val displayNameRes: Int) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicLibraryScreen(
-    navController: NavController,
+    onProfileClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onMusicAlbumClick: (String) -> Unit,
+    onMusicArtistClick: (String) -> Unit,
+    onBrowseClick: (libraryId: String, libraryName: String, tab: String) -> Unit,
+    onOpenMusicPlayer: () -> Unit,
     viewModel: MusicLibraryViewModel = hiltViewModel(),
     playerViewModel: MusicPlayerViewModel = hiltViewModel(),
     onMenuClick: (() -> Unit)? = null,
@@ -141,31 +143,18 @@ fun MusicLibraryScreen(
 
     val homeListState = rememberLazyListState()
 
-    val topBarOpacity by remember {
-        derivedStateOf {
-            if (homeListState.firstVisibleItemIndex > 1) 1f
-            else (homeListState.firstVisibleItemScrollOffset / 300f).coerceIn(0f, 1f)
-        }
-    }
-
-    Scaffold(
-        topBar = {
+    AfinityScreen(
+        topBar = { backgroundOpacity ->
             AfinityTopAppBar(
-                title = {
-                    Text(
-                        text = viewModel.libraryName,
-                        style = afinityTopAppBarTitleStyle(),
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                },
-                backgroundOpacity = { topBarOpacity },
+                title = { AfinityTopAppBarTitle(viewModel.libraryName) },
+                backgroundOpacity = backgroundOpacity,
                 profile =
                     AppBarProfile(
-                        onClick = { navController.navigate(Destination.createSettingsRoute()) },
+                        onClick = onProfileClick,
                         name = userName,
                         imageUrl = userProfileImageUrl,
                     ),
-                onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
+                onSearchClick = onSearchClick,
                 onMenuClick = onMenuClick,
             )
         }
@@ -181,7 +170,7 @@ fun MusicLibraryScreen(
                         .indexOfFirst { it.id == track.id }
                         .coerceAtLeast(0),
                 )
-                navController.navigate(Destination.MUSIC_PLAYER_ROUTE)
+                onOpenMusicPlayer()
             },
             onTrackClickWithQueue = { track, queue ->
                 startMusicService(context)
@@ -189,7 +178,7 @@ fun MusicLibraryScreen(
                     queue,
                     queue.indexOfFirst { it.id == track.id }.coerceAtLeast(0),
                 )
-                navController.navigate(Destination.MUSIC_PLAYER_ROUTE)
+                onOpenMusicPlayer()
             },
             onQueuePlay = { tracks ->
                 startMusicService(context)
@@ -198,22 +187,12 @@ fun MusicLibraryScreen(
             onInstantMixByTrack = { track ->
                 startMusicService(context)
                 playerViewModel.playInstantMix(track.id)
-                navController.navigate(Destination.MUSIC_PLAYER_ROUTE)
+                onOpenMusicPlayer()
             },
-            onAlbumClick = { album ->
-                navController.navigate(Destination.createMusicAlbumRoute(album.id.toString()))
-            },
-            onArtistClick = { artist ->
-                navController.navigate(Destination.createMusicArtistRoute(artist.id.toString()))
-            },
+            onAlbumClick = { album -> onMusicAlbumClick(album.id.toString()) },
+            onArtistClick = { artist -> onMusicArtistClick(artist.id.toString()) },
             onBrowse = { filter ->
-                navController.navigate(
-                    Destination.createMusicBrowseRoute(
-                        libraryId = viewModel.libraryId.toString(),
-                        libraryName = viewModel.libraryName,
-                        tab = filter.name,
-                    )
-                )
+                onBrowseClick(viewModel.libraryId.toString(), viewModel.libraryName, filter.name)
             },
             modifier = Modifier.fillMaxSize().padding(innerPadding),
         )

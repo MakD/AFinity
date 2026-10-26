@@ -3,7 +3,6 @@ package com.makd.afinity.ui.home
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.NavController
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
@@ -55,7 +54,6 @@ import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.data.workers.HomeDataReloadWorker
-import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.EpisodeSelection
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import com.makd.afinity.ui.utils.IntentUtils
@@ -840,17 +838,6 @@ constructor(
             _uiState.update { it.copy(upcomingLoaded = true) }
             Timber.e(e, "Failed to load upcoming episodes")
         }
-    }
-
-    fun onStudioClick(studio: AfinityStudio, navController: NavController) {
-        Timber.d("Studio clicked: ${studio.name}")
-        val route = Destination.createStudioContentRoute(studio.name)
-        navController.navigate(route)
-    }
-
-    fun onCustomSectionClick(sectionId: String, navController: NavController) {
-        val route = Destination.createCustomSectionContentRoute(sectionId)
-        navController.navigate(route)
     }
 
     fun onScreenResumed() {

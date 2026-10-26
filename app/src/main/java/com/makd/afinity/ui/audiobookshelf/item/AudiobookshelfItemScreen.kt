@@ -4,29 +4,18 @@ import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.displayCutout
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -50,11 +39,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
@@ -64,14 +51,11 @@ import com.makd.afinity.data.models.audiobookshelf.EpisodeSortKey
 import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
 import com.makd.afinity.data.models.audiobookshelf.coverUrl
 import com.makd.afinity.data.models.common.DetailLayout
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.item.components.AbsSectionTitle
 import com.makd.afinity.ui.audiobookshelf.item.components.AuthorCard
 import com.makd.afinity.ui.audiobookshelf.item.components.IncludedInSeriesSection
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemDetailsSection
-import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeader
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeaderContent
-import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeroBackground
 import com.makd.afinity.ui.audiobookshelf.item.components.ListExpandButton
 import com.makd.afinity.ui.audiobookshelf.item.components.ListeningSection
 import com.makd.afinity.ui.audiobookshelf.item.components.NarratorsSection
@@ -80,10 +64,20 @@ import com.makd.afinity.ui.audiobookshelf.item.components.RecommendationRowSecti
 import com.makd.afinity.ui.audiobookshelf.item.components.chapterWindowItems
 import com.makd.afinity.ui.audiobookshelf.item.components.episodeListItems
 import com.makd.afinity.ui.audiobookshelf.item.components.formatListenTime
+import com.makd.afinity.ui.audiobookshelf.withAbsWidth
+import com.makd.afinity.ui.components.AfinityScreen
+import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.BackdropStyle
+import com.makd.afinity.ui.components.DetailGutter
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.LandscapeDetailArrangement
+import com.makd.afinity.ui.components.LandscapeDetailLayout
+import com.makd.afinity.ui.components.PortraitDetailLayout
+import com.makd.afinity.ui.components.PortraitHero
 import com.makd.afinity.ui.components.RadioOptionRow
+import com.makd.afinity.ui.components.backdropChainOf
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.components.mediainfo.PodcastEpisodeMediaInfoSheet
 import com.makd.afinity.ui.item.components.shared.DetailSectionGap
@@ -94,7 +88,6 @@ import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 
 private const val EPISODE_PREVIEW_COUNT = 5
-private val DetailHorizontalPadding = 16.dp
 
 @get:StringRes
 private val EpisodeSortKey.labelRes: Int
@@ -140,8 +133,6 @@ fun AudiobookshelfItemScreen(
 
     val isPodcast = item?.mediaType?.lowercase() == "podcast"
     val isLandscape = isLandscapeWindow()
-    val playerOffset = LocalPlayerOffset.current
-    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
     var showAllChapters by rememberSaveable { mutableStateOf(false) }
     var showListenedChapters by rememberSaveable { mutableStateOf(false) }
@@ -204,7 +195,17 @@ fun AudiobookshelfItemScreen(
     }
 
     CompositionLocalProvider(LocalDetailLayout provides (detailLayout ?: DetailLayout.CLASSIC)) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        AfinityScreen(
+            topBar = { backgroundOpacity ->
+                AfinityTopAppBar(
+                    title = {},
+                    onHomeClick = onNavigateHome,
+                    backgroundOpacity = backgroundOpacity,
+                )
+            },
+            mode = AfinityScreenMode.Hero,
+            scrollOpacity = { topBarOpacity },
+        ) {
             when {
                 uiState.isLoading || detailLayout == null -> {
                     FullScreenLoading()
@@ -240,7 +241,7 @@ fun AudiobookshelfItemScreen(
 
                     val detailBody: LazyListScope.() -> Unit = {
                         if (isPodcast && upNext.latest != null) {
-                            detailItem("up_next", DetailHorizontalPadding) {
+                            detailItem("up_next", DetailGutter) {
                                 PodcastUpNextCard(
                                     upNext = upNext,
                                     resumeProgress =
@@ -255,13 +256,13 @@ fun AudiobookshelfItemScreen(
                         }
 
                         metadata.description?.let { description ->
-                            detailItem("synopsis", DetailHorizontalPadding) {
+                            detailItem("synopsis", DetailGutter) {
                                 OverviewSection(overview = description)
                             }
                         }
 
                         if (uiState.seriesDetails.isNotEmpty()) {
-                            detailItem("series", DetailHorizontalPadding) {
+                            detailItem("series", DetailGutter) {
                                 IncludedInSeriesSection(
                                     seriesList = uiState.seriesDetails,
                                     serverUrl = config?.serverUrl,
@@ -277,13 +278,13 @@ fun AudiobookshelfItemScreen(
                         }
 
                         if (narrators.isNotEmpty()) {
-                            detailItem("narrators", DetailHorizontalPadding) {
+                            detailItem("narrators", DetailGutter) {
                                 NarratorsSection(narrators = narrators)
                             }
                         }
 
                         if (showNetworkSections && authorName != null) {
-                            detailItem("author", DetailHorizontalPadding) {
+                            detailItem("author", DetailGutter) {
                                 LaunchedEffect(Unit) { viewModel.ensureAuthor() }
                                 AuthorCard(
                                     authorName = authorName,
@@ -293,7 +294,7 @@ fun AudiobookshelfItemScreen(
                             }
                         }
 
-                        detailItem("details", DetailHorizontalPadding) {
+                        detailItem("details", DetailGutter) {
                             ItemDetailsSection(item = currentItem)
                         }
 
@@ -365,11 +366,11 @@ fun AudiobookshelfItemScreen(
                         }
 
                         if (showNetworkSections) {
-                            detailItem("listening", DetailHorizontalPadding) {
+                            detailItem("listening", DetailGutter) {
                                 LaunchedEffect(Unit) { viewModel.ensureListening() }
                                 listening?.let { summary -> ListeningSection(summary = summary) }
                             }
-                            detailItem("recommendations", DetailHorizontalPadding) {
+                            detailItem("recommendations", DetailGutter) {
                                 LaunchedEffect(Unit) { viewModel.ensureRecommendations() }
                                 Column(
                                     verticalArrangement = Arrangement.spacedBy(DetailSectionGap)
@@ -394,33 +395,25 @@ fun AudiobookshelfItemScreen(
                         }
                     }
 
-                    if (isLandscape) {
-                        val coverUrl =
-                            if (
-                                downloadInfo?.status == AbsDownloadStatus.COMPLETED &&
-                                    downloadInfo?.localDirPath != null
-                            ) {
-                                "file://${downloadInfo?.localDirPath}/cover.jpg"
-                            } else if (
-                                config?.serverUrl != null && currentItem.media.coverPath != null
-                            ) {
-                                currentItem.coverUrl(config?.serverUrl ?: "")
-                            } else null
-
-                        ItemHeroBackground(coverUrl = coverUrl)
-
-                        Row(
-                            modifier =
-                                Modifier.fillMaxSize()
-                                    .windowInsetsPadding(WindowInsets.displayCutout)
+                    val coverUrl =
+                        if (
+                            downloadInfo?.status == AbsDownloadStatus.COMPLETED &&
+                                downloadInfo?.localDirPath != null
                         ) {
-                            Column(
-                                modifier =
-                                    Modifier.weight(1f)
-                                        .fillMaxHeight()
-                                        .verticalScroll(rememberScrollState())
-                                        .padding(bottom = 24.dp)
-                            ) {
+                            "file://${downloadInfo?.localDirPath}/cover.jpg"
+                        } else if (
+                            config?.serverUrl != null && currentItem.media.coverPath != null
+                        ) {
+                            currentItem.coverUrl(config?.serverUrl ?: "")
+                        } else null
+
+                    if (isLandscape) {
+                        LandscapeDetailLayout(
+                            backdropStyle = BackdropStyle.BlurredCover,
+                            backdrop = backdropChainOf(coverUrl?.withAbsWidth(600)),
+                            listState = lazyListState,
+                            arrangement = LandscapeDetailArrangement.Split,
+                            pane = {
                                 ItemHeaderContent(
                                     item = currentItem,
                                     progress = progress,
@@ -441,37 +434,18 @@ fun AudiobookshelfItemScreen(
                                         else null,
                                     toggleFinishedEnabled = !isThisItemPlaying,
                                 )
-                            }
-
-                            LazyColumn(
-                                state = lazyListState,
-                                modifier =
-                                    Modifier.weight(1f)
-                                        .fillMaxHeight()
-                                        .background(
-                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
-                                        ),
-                                contentPadding =
-                                    PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
-                            ) {
-                                item(key = "status_bar") {
-                                    Spacer(modifier = Modifier.statusBarsPadding())
-                                }
-                                detailBody()
-                            }
-                        }
+                            },
+                            items = { detailBody() },
+                        )
                     } else {
-                        LazyColumn(
-                            state = lazyListState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding =
-                                PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
-                        ) {
-                            item(key = "header") {
-                                ItemHeader(
+                        PortraitDetailLayout(
+                            hero = PortraitHero.Cover(backdropChainOf(coverUrl?.withAbsWidth(600))),
+                            listState = lazyListState,
+                            header = {
+                                ItemHeaderContent(
                                     item = currentItem,
                                     progress = progress,
-                                    serverUrl = config?.serverUrl,
+                                    coverUrl = coverUrl,
                                     onPlay = onPlay,
                                     downloadInfo = if (!isPodcast) downloadInfo else null,
                                     onDownload =
@@ -488,7 +462,8 @@ fun AudiobookshelfItemScreen(
                                         else null,
                                     toggleFinishedEnabled = !isThisItemPlaying,
                                 )
-                            }
+                            },
+                        ) {
                             detailBody()
                         }
                     }
@@ -502,13 +477,6 @@ fun AudiobookshelfItemScreen(
                     )
                 }
             }
-
-            AfinityTopAppBar(
-                title = {},
-                onHomeClick = onNavigateHome,
-                backgroundOpacity = { topBarOpacity },
-                landscapeStatusBarFill = Color.Black,
-            )
 
             AnimatedVisibility(
                 visible = uiState.error != null,

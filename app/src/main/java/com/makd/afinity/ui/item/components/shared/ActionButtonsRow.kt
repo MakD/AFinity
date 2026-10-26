@@ -2,8 +2,10 @@ package com.makd.afinity.ui.item.components.shared
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -33,6 +35,10 @@ import com.makd.afinity.ui.components.WatchedToggleButton
 import com.makd.afinity.ui.components.WatchlistToggleButton
 import com.makd.afinity.ui.components.mediainfo.JellyfinMediaInfoSheet
 import com.makd.afinity.ui.item.components.DownloadProgressIndicator
+import com.makd.afinity.ui.preview.FontScalePreviews
+import com.makd.afinity.ui.preview.PreviewData
+import com.makd.afinity.ui.preview.PreviewHost
+import com.makd.afinity.ui.preview.WidthPreviews
 
 @Composable
 fun ActionButtonsRow(
@@ -290,4 +296,43 @@ fun ActionButtonsRow(
             }
         }
     }
+}
+
+@Composable
+private fun ActionButtonsRowPreviewContent() {
+    PreviewHost {
+        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            listOf<AfinityItem>(PreviewData.show(), PreviewData.movie()).forEach { item ->
+                ActionButtonsRow(
+                    item = item,
+                    isInWatchlist = false,
+                    hasTrailer = true,
+                    downloadInfo = null,
+                    onPlayTrailer = {},
+                    onToggleWatchlist = {},
+                    onShufflePlay = {},
+                    onToggleFavorite = {},
+                    onToggleWatched = {},
+                    onDownloadClick = {},
+                    onPauseDownload = {},
+                    onResumeDownload = {},
+                    onCancelDownload = {},
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    isAdmin = true,
+                )
+            }
+        }
+    }
+}
+
+@WidthPreviews
+@Composable
+private fun ActionButtonsRowWidthPreview() {
+    ActionButtonsRowPreviewContent()
+}
+
+@FontScalePreviews
+@Composable
+private fun ActionButtonsRowFontScalePreview() {
+    ActionButtonsRowPreviewContent()
 }
