@@ -459,7 +459,7 @@ fun DownloadedCategoryScreen(
                 val items: List<AfinityItem> =
                     if (category == DownloadedCategory.MOVIES) movies else shows
                 DownloadedGrid(
-                    columns = CardDimensions.gridCells(widthSizeClass),
+                    columns = CardDimensions.gridCells(),
                     contentPadding = gridPadding,
                     items = items,
                     key = { it.id },
@@ -480,7 +480,7 @@ fun DownloadedCategoryScreen(
                 val items =
                     if (category == DownloadedCategory.AUDIOBOOKS) audiobooks else podcastEpisodes
                 DownloadedGrid(
-                    columns = CardDimensions.audiobookGridCells,
+                    columns = CardDimensions.gridCells(),
                     contentPadding = gridPadding,
                     items = items,
                     key = { it.id },
@@ -498,7 +498,7 @@ fun DownloadedCategoryScreen(
 
             category == DownloadedCategory.ALBUMS ->
                 DownloadedGrid(
-                    columns = CardDimensions.musicGridCells,
+                    columns = CardDimensions.gridCells(),
                     contentPadding = gridPadding,
                     items = albums,
                     key = { it.id },

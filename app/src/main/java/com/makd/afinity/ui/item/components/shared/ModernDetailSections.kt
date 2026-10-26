@@ -4,7 +4,6 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -31,6 +30,8 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.mdblist.MdbListRatingBadges
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.ui.components.CardRowContentPadding
+import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.components.ratings.toDisplay
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.PersonKind
@@ -65,9 +66,9 @@ fun RatingChipsRow(
     val verifiedHot = stringResource(R.string.rt_verified_hot)
 
     LazyRow(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().cardRowBleed(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp),
+        contentPadding = CardRowContentPadding,
     ) {
         if (mdbRatingBadges.certifiedFresh) {
             item(key = "badge_certified_fresh") {

@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.CardRowContentPadding
+import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 
@@ -48,13 +49,13 @@ fun PopularStudiosSection(
             metadataHeight = 0.dp,
         )
 
-    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
+    Column(modifier = Modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = stringResource(R.string.home_popular_studios))
 
         LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
+            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
+            contentPadding = CardRowContentPadding,
         ) {
             itemsIndexed(items = studios, key = { _, studio -> studio.id }) { _, studio ->
                 StudioCard(

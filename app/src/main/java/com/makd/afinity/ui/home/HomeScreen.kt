@@ -651,7 +651,6 @@ fun HomeScreen(
                                         items = uiState.watchAgain,
                                         sectionKey = "watch_again",
                                         onItemClick = onItemClick,
-                                        widthSizeClass = widthSizeClass,
                                     )
                                 }
                             }
@@ -695,7 +694,6 @@ fun HomeScreen(
                                                 onVisible = {
                                                     viewModel.hydrateSection(section.key)
                                                 },
-                                                widthSizeClass = widthSizeClass,
                                             )
                                         }
 
@@ -722,7 +720,6 @@ fun HomeScreen(
                                                             onItemClick(item)
                                                         }
                                                     },
-                                                    widthSizeClass = widthSizeClass,
                                                     cardStyle = section.cardStyle,
                                                     onViewAllClick =
                                                         section.customSectionId?.let { id ->
@@ -774,7 +771,6 @@ fun HomeScreen(
                                                 onVisible = {
                                                     viewModel.hydrateSection(section.key)
                                                 },
-                                                widthSizeClass = widthSizeClass,
                                             )
                                         }
 
@@ -817,7 +813,6 @@ fun HomeScreen(
                                                 items = section.items,
                                                 sectionKey = section.key,
                                                 onItemClick = onItemClick,
-                                                widthSizeClass = widthSizeClass,
                                                 cardStyle = section.cardStyle,
                                             )
                                         }

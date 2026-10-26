@@ -2,7 +2,6 @@ package com.makd.afinity.ui.home.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
@@ -20,7 +19,9 @@ import com.makd.afinity.data.models.PersonSection
 import com.makd.afinity.data.models.PersonSectionType
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
@@ -34,7 +35,7 @@ fun PersonSection(
     val cardWidth = widthSizeClass.portraitWidth
     val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
-    Column(modifier = modifier.padding(horizontal = 14.dp)) {
+    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         val title =
             when (section.sectionType) {
                 PersonSectionType.STARRING ->
@@ -47,9 +48,9 @@ fun PersonSection(
         HomeSectionHeader(title = title)
 
         LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
+            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
+            contentPadding = CardRowContentPadding,
         ) {
             items(
                 items = section.items,
@@ -73,7 +74,7 @@ fun MovieRecommendationSection(
     val cardWidth = widthSizeClass.portraitWidth
     val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
-    Column(modifier = modifier.padding(horizontal = 14.dp)) {
+    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         val title =
             when (section.sectionType) {
                 MovieSectionType.BECAUSE_YOU_WATCHED ->
@@ -90,9 +91,9 @@ fun MovieRecommendationSection(
         HomeSectionHeader(title = title)
 
         LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
+            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
+            contentPadding = CardRowContentPadding,
         ) {
             items(
                 items = section.recommendedItems,
@@ -116,7 +117,7 @@ fun PersonFromMovieSection(
     val cardWidth = widthSizeClass.portraitWidth
     val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
-    Column(modifier = modifier.padding(horizontal = 14.dp)) {
+    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         val titleRes =
             when (section.sectionType) {
                 PersonSectionType.STARRING -> R.string.home_starring_from_watched
@@ -128,9 +129,9 @@ fun PersonFromMovieSection(
         )
 
         LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
+            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
+            contentPadding = CardRowContentPadding,
         ) {
             items(
                 items = section.items,

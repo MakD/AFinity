@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -71,7 +70,6 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.CollectionTypeOptions
 
-private val LIBRARY_CARD_MIN_WIDTH = 156.dp
 private val SCAN_POLL_INTERVAL = 3.seconds
 private const val PERCENT = 100
 
@@ -212,7 +210,7 @@ private fun LibrariesContent(
             contentPadding = contentPadding,
         ) { libraries ->
             LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = LIBRARY_CARD_MIN_WIDTH),
+                columns = CardDimensions.landscapeGridCells(followCardSize = false),
                 modifier = Modifier.fillMaxSize().padding(contentPadding),
                 contentPadding =
                     PaddingValues(

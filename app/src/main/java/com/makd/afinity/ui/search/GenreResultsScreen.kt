@@ -186,7 +186,6 @@ private fun GenreResultsContent(
         } else {
             PaginatedMediaGrid(
                 items = activeList,
-                widthSizeClass = widthSizeClass,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding =
                     PaddingValues(

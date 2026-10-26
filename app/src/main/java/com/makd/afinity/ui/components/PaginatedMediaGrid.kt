@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,14 +29,13 @@ import com.makd.afinity.ui.theme.CardDimensions
 @Composable
 fun PaginatedMediaGrid(
     items: LazyPagingItems<AfinityItem>,
-    widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
     state: LazyGridState = rememberLazyGridState(),
     contentPadding: PaddingValues = PaddingValues(0.dp),
     itemContent: @Composable (AfinityItem) -> Unit,
 ) {
     LazyVerticalGrid(
-        columns = CardDimensions.gridCells(widthSizeClass),
+        columns = CardDimensions.gridCells(),
         state = state,
         contentPadding = contentPadding,
         horizontalArrangement = Arrangement.spacedBy(12.dp),

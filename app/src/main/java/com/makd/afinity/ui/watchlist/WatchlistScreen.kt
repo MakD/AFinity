@@ -38,7 +38,8 @@ import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.MediaRowSection
 import com.makd.afinity.ui.main.MainUiState
-import com.makd.afinity.ui.theme.CardDimensions
+import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
+import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
 @Composable
 fun WatchlistScreen(
@@ -79,8 +80,8 @@ fun WatchlistScreen(
 
     LaunchedEffect(Unit) { viewModel.loadWatchlist() }
 
-    val portraitWidth = CardDimensions.portraitRowWidth(widthSizeClass, gutter = 16.dp)
-    val landscapeWidth = CardDimensions.landscapeRowWidth(widthSizeClass, gutter = 16.dp)
+    val portraitWidth = widthSizeClass.portraitWidth
+    val landscapeWidth = widthSizeClass.landscapeWidth
 
     AfinityScreen(
         topBar = { backgroundOpacity ->

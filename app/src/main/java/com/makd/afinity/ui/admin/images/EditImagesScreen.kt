@@ -963,7 +963,7 @@ private fun CandidateTile(
             if (showLanguage && language != null) {
                 MediaCountBadge(
                     text = language,
-                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                    modifier = Modifier.align(Alignment.TopEnd),
                 )
             }
         }

@@ -160,13 +160,13 @@ fun FilteredMediaScreen(
 
             else -> {
                 LazyVerticalGrid(
-                    columns = CardDimensions.gridCells(widthSizeClass),
+                    columns = CardDimensions.gridCells(),
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
                     contentPadding =
                         PaddingValues(
-                            start = 14.dp,
+                            start = 16.dp,
                             top = 16.dp,
-                            end = 14.dp,
+                            end = 16.dp,
                             bottom = 16.dp + playerOffset,
                         ),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),

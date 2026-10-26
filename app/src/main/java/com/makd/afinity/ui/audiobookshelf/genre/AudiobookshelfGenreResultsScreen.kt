@@ -15,7 +15,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,7 +49,6 @@ fun AudiobookshelfGenreResultsScreen(
     onItemClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AudiobookshelfGenreResultsViewModel = hiltViewModel(),
-    widthSizeClass: WindowWidthSizeClass,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -85,7 +83,6 @@ fun AudiobookshelfGenreResultsScreen(
                         podcasts = uiState.podcasts,
                         serverUrl = uiState.serverUrl,
                         onItemClick = onItemClick,
-                        widthSizeClass = widthSizeClass,
                     )
                 }
             }
@@ -99,7 +96,6 @@ private fun AudiobookshelfGenreResultsContent(
     podcasts: List<LibraryItem>,
     serverUrl: String?,
     onItemClick: (String) -> Unit,
-    widthSizeClass: WindowWidthSizeClass,
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs =
@@ -198,7 +194,6 @@ private fun AudiobookshelfGenreResultsContent(
                         items = audiobooks,
                         serverUrl = serverUrl,
                         onItemClick = onItemClick,
-                        widthSizeClass = widthSizeClass,
                     )
                 }
             }
@@ -211,7 +206,6 @@ private fun AudiobookshelfGenreResultsContent(
                         items = podcasts,
                         serverUrl = serverUrl,
                         onItemClick = onItemClick,
-                        widthSizeClass = widthSizeClass,
                     )
                 }
             }
@@ -224,11 +218,10 @@ private fun AudiobookshelfItemGrid(
     items: List<LibraryItem>,
     serverUrl: String?,
     onItemClick: (String) -> Unit,
-    widthSizeClass: WindowWidthSizeClass,
 ) {
     val playerOffset = LocalPlayerOffset.current
     LazyVerticalGrid(
-        columns = CardDimensions.gridCells(widthSizeClass),
+        columns = CardDimensions.gridCells(),
         modifier = Modifier.fillMaxSize(),
         contentPadding =
             PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + playerOffset),

@@ -67,6 +67,7 @@ import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.BackdropStyle
+import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.CircleFlagIcon
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
@@ -79,9 +80,11 @@ import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.SeparatedFlowRow
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.backdropChainOf
+import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.components.getAutoFlagUrl
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.theme.CardDimensions
+import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 import com.makd.afinity.util.DateSkeleton
 import com.makd.afinity.util.localizedDateFormatter
@@ -389,7 +392,6 @@ private fun SeerrDetailSections(
             onItemClick = handleMediaItemClick,
             widthSizeClass = widthSizeClass,
             horizontalPadding = 0.dp,
-            rowGutter = 16.dp,
         )
     }
 
@@ -400,7 +402,6 @@ private fun SeerrDetailSections(
             onItemClick = handleMediaItemClick,
             widthSizeClass = widthSizeClass,
             horizontalPadding = 0.dp,
-            rowGutter = 16.dp,
         )
     }
 
@@ -411,7 +412,6 @@ private fun SeerrDetailSections(
             onItemClick = handleMediaItemClick,
             widthSizeClass = widthSizeClass,
             horizontalPadding = 0.dp,
-            rowGutter = 16.dp,
         )
     }
 }
@@ -422,7 +422,7 @@ private fun SeerrCastSection(
     onPersonClick: (CastMember) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
 ) {
-    val cardWidth = CardDimensions.portraitRowWidth(widthSizeClass, gutter = 16.dp)
+    val cardWidth = widthSizeClass.portraitWidth
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
@@ -431,7 +431,11 @@ private fun SeerrCastSection(
             color = MaterialTheme.colorScheme.onBackground,
         )
 
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyRow(
+            modifier = Modifier.cardRowBleed(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = CardRowContentPadding,
+        ) {
             items(cast.take(15), key = { it.id }) { member ->
                 Column(
                     modifier =
@@ -1000,7 +1004,8 @@ private fun SeerrRatingsSection(
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().cardRowBleed(),
+            contentPadding = CardRowContentPadding,
         ) {
             imdbScore?.let {
                 item {

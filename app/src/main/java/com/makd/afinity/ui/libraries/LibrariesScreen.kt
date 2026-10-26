@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -42,7 +41,6 @@ fun LibrariesScreen(
     onSearchClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LibrariesViewModel = hiltViewModel(),
-    widthSizeClass: WindowWidthSizeClass,
     onMenuClick: (() -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -84,16 +82,16 @@ fun LibrariesScreen(
 
             else -> {
                 LazyVerticalGrid(
-                    columns = CardDimensions.tileGridCells(widthSizeClass),
+                    columns = CardDimensions.landscapeGridCells(),
                     state = lazyGridState,
                     contentPadding =
                         PaddingValues(
-                            start = 14.dp,
-                            end = 14.dp,
+                            start = 16.dp,
+                            end = 16.dp,
                             top = 16.dp,
                             bottom = 16.dp + playerOffset,
                         ),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     modifier =
                         Modifier.fillMaxSize()

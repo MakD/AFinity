@@ -48,11 +48,11 @@ fun LibraryShortcutsRow(
             text = title,
             style = afinitySectionTitleStyle(),
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(start = 14.dp, bottom = 12.dp),
+            modifier = Modifier.padding(start = CardDimensions.RowGutter, bottom = 12.dp),
         )
         LazyRow(
-            modifier = Modifier.padding(horizontal = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+            contentPadding = CardRowContentPadding,
             content = content,
         )
     }

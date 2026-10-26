@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -49,6 +48,8 @@ import com.makd.afinity.data.models.tmdb.TmdbRegionProviders
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.CardRowContentPadding
+import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.item.components.shared.baseMediaDetailItems
@@ -162,9 +163,9 @@ private fun PartsSection(
         DetailSectionTitle(text = stringResource(R.string.parts_title))
 
         LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
+            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
+            contentPadding = CardRowContentPadding,
         ) {
             itemsIndexed(parts, key = { _, part -> part.id }) { index, part ->
                 PartCard(
@@ -292,9 +293,9 @@ internal fun ChaptersSection(
         DetailSectionTitle(text = stringResource(R.string.chapters_title))
 
         LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
+            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
+            contentPadding = CardRowContentPadding,
         ) {
             itemsIndexed(chapters, key = { index, chapter -> "${chapter.startPosition}_$index" }) {
                 index,

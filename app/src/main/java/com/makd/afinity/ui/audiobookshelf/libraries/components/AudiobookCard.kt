@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
@@ -76,15 +75,18 @@ fun AudiobookCard(
                 when {
                     isFinished -> {
                         PlayedBadge(
-                            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                            modifier = Modifier.align(Alignment.TopEnd),
                             contentDescription = stringResource(R.string.cd_finished),
                         )
                     }
 
                     unheardCount > 0 -> {
                         MediaCountBadge(
-                            text = if (unheardCount > 99) "99+ EP" else "$unheardCount EP",
-                            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                            text =
+                                if (unheardCount > 99)
+                                    stringResource(R.string.home_episode_count_plus)
+                                else stringResource(R.string.home_episode_count_fmt, unheardCount),
+                            modifier = Modifier.align(Alignment.TopEnd),
                         )
                     }
                 }

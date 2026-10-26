@@ -38,7 +38,7 @@ import kotlin.math.absoluteValue
 
 class CardSizePreviewProvider : PreviewParameterProvider<CardSize> {
     override val values: Sequence<CardSize> =
-        sequenceOf(CardSize.DEFAULT, CardSize.SMALL, CardSize.EXTRA_SMALL)
+        sequenceOf(CardSize.LARGE, CardSize.DEFAULT, CardSize.SMALL, CardSize.EXTRA_SMALL)
 
     override fun getDisplayName(index: Int): String =
         values.elementAt(index).name.lowercase().replace('_', ' ')

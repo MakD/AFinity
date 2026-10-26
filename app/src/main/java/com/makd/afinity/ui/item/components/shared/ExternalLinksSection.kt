@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
@@ -26,6 +25,8 @@ import androidx.core.net.toUri
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.ui.components.CardRowContentPadding
+import com.makd.afinity.ui.components.cardRowBleed
 import kotlin.math.pow
 
 private const val LOGO_BASE_HEIGHT_DP = 16f
@@ -46,9 +47,10 @@ fun ExternalLinksSection(externalUrls: List<AfinityExternalUrl>?) {
 
     if (externalLinks.isNotEmpty()) {
         LazyRow(
+            modifier = Modifier.cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            contentPadding = PaddingValues(horizontal = 0.dp),
+            contentPadding = CardRowContentPadding,
         ) {
             items(externalLinks, key = { it.url }) { link ->
                 val painter = painterResource(id = link.iconRes)

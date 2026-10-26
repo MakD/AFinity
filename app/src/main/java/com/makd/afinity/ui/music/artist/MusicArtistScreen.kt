@@ -66,6 +66,7 @@ import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.BackdropStyle
+import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.DetailActionRow
 import com.makd.afinity.ui.components.DetailGutter
 import com.makd.afinity.ui.components.FullScreenLoading
@@ -445,8 +446,9 @@ fun MusicArtistScreen(
                     modifier = Modifier.padding(start = DetailGutter, top = 32.dp, bottom = 16.dp),
                 )
                 LazyRow(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = DetailGutter),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+                    contentPadding = CardRowContentPadding,
                 ) {
                     items(uiState.albums, key = { it.id }) { album ->
                         Box(modifier = Modifier.width(relatedCardWidth)) {
@@ -469,8 +471,9 @@ fun MusicArtistScreen(
                     modifier = Modifier.padding(start = DetailGutter, top = 32.dp, bottom = 16.dp),
                 )
                 LazyRow(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = DetailGutter),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+                    contentPadding = CardRowContentPadding,
                 ) {
                     items(uiState.appearsOn, key = { it.id }) { album ->
                         Box(modifier = Modifier.width(relatedCardWidth)) {

@@ -25,8 +25,10 @@ import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
+import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
+import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
@@ -71,7 +73,7 @@ fun AudiobookshelfSeriesTab(
                 items(items = seriesList, key = { it.id }) { series ->
                     Column {
                         Spacer(modifier = Modifier.height(24.dp))
-                        Column(modifier = Modifier.padding(horizontal = 14.dp)) {
+                        Column(modifier = Modifier.padding(horizontal = CardDimensions.RowGutter)) {
                             Text(
                                 text = series.name,
                                 style = afinitySectionTitleStyle(),
@@ -80,9 +82,9 @@ fun AudiobookshelfSeriesTab(
                             )
 
                             LazyRow(
-                                modifier = Modifier.height(fixedRowHeight),
+                                modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                contentPadding = PaddingValues(horizontal = 0.dp),
+                                contentPadding = CardRowContentPadding,
                             ) {
                                 items(
                                     items = series.books,

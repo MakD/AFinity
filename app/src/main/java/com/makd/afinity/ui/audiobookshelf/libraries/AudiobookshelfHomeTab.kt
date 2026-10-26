@@ -25,7 +25,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
@@ -36,10 +35,12 @@ import com.makd.afinity.data.models.audiobookshelf.PersonalizedSection
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
 import com.makd.afinity.ui.audiobookshelf.libraries.components.SeriesShelfCard
+import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.LibraryShortcutCard
 import com.makd.afinity.ui.components.LibraryShortcutsRow
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
+import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
@@ -134,7 +135,7 @@ fun AudiobookshelfHomeTab(
 
                     Column {
                         Spacer(modifier = Modifier.height(24.dp))
-                        Column(modifier = Modifier.padding(horizontal = 14.dp)) {
+                        Column(modifier = Modifier.padding(horizontal = CardDimensions.RowGutter)) {
                             Text(
                                 text =
                                     if (section.id == "recent-series") {
@@ -149,9 +150,9 @@ fun AudiobookshelfHomeTab(
 
                             LazyRow(
                                 state = rowListState,
-                                modifier = Modifier.height(fixedRowHeight),
+                                modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                contentPadding = PaddingValues(horizontal = 0.dp),
+                                contentPadding = CardRowContentPadding,
                             ) {
                                 if (section.series.isNotEmpty()) {
                                     items(
@@ -225,7 +226,7 @@ private fun LibraryShortcutsRow(
     onBrowseLibrary: (Library) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val cardWidth = CardDimensions.shortcutCardWidth(LocalConfiguration.current.screenWidthDp)
+    val cardWidth = CardDimensions.landscapeCardWidth
 
     val seriesLabel = stringResource(R.string.abs_tab_series)
     val shortcuts =

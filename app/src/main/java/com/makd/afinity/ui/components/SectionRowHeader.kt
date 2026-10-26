@@ -71,7 +71,7 @@ fun SectionRowHeader(
 private fun SectionRowHeaderPreviewContent() {
     PreviewHost {
         Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             SectionRowHeader(

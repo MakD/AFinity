@@ -206,12 +206,12 @@ private fun LiveTvChannelsContent(
                     }
                 } else {
                     LazyVerticalGrid(
-                        columns = CardDimensions.channelGridCells,
+                        columns = CardDimensions.landscapeGridCells(),
                         modifier = Modifier.fillMaxSize(),
                         state = gridState,
                         contentPadding =
                             PaddingValues(
-                                start = 14.dp,
+                                start = 16.dp,
                                 end = 16.dp,
                                 top = 16.dp,
                                 bottom = max(safeBottom, playerOffset) + 16.dp,

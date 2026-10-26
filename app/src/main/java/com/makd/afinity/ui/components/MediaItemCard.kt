@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,10 +9,8 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -107,32 +104,14 @@ fun MediaItemCard(
                 )
 
                 if (isUnavailable) {
-                    Box(
-                        modifier =
-                            Modifier.align(Alignment.TopStart)
-                                .padding(8.dp)
-                                .size(24.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.errorContainer,
-                                    CircleShape,
-                                ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_cloud_off),
-                            contentDescription =
-                                stringResource(R.string.download_unavailable_indicator),
-                            tint = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier = Modifier.size(16.dp),
-                        )
-                    }
+                    UnavailableBadge(modifier = Modifier.align(Alignment.TopStart))
                 }
 
                 val visuallyPlayed = item.played
 
                 when {
                     visuallyPlayed -> {
-                        PlayedBadge(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp))
+                        PlayedBadge(modifier = Modifier.align(Alignment.TopEnd))
                     }
 
                     item is AfinityShow || item is AfinitySeason -> {
@@ -146,8 +125,11 @@ fun MediaItemCard(
                         displayCount?.let { count ->
                             if (count > 0) {
                                 MediaCountBadge(
-                                    text = if (count > 99) "99+ EP" else "$count EP",
-                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                                    text =
+                                        if (count > 99)
+                                            stringResource(R.string.home_episode_count_plus)
+                                        else stringResource(R.string.home_episode_count_fmt, count),
+                                    modifier = Modifier.align(Alignment.TopEnd),
                                 )
                             }
                         }
@@ -159,7 +141,7 @@ fun MediaItemCard(
                             if (count > 0) {
                                 MediaCountBadge(
                                     text = "$count",
-                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                                    modifier = Modifier.align(Alignment.TopEnd),
                                 )
                             }
                         }
@@ -171,7 +153,7 @@ fun MediaItemCard(
                             if (count > 0) {
                                 MediaCountBadge(
                                     text = "$count",
-                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                                    modifier = Modifier.align(Alignment.TopEnd),
                                 )
                             }
                         }

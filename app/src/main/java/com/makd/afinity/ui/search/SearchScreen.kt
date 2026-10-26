@@ -47,7 +47,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -136,7 +135,6 @@ fun SearchScreen(
     onNavigateToSeerrMedia: (item: SearchResultItem) -> Unit = {},
     viewModel: SearchViewModel = hiltViewModel(),
     musicPlayerViewModel: MusicPlayerViewModel = hiltViewModel(),
-    widthSizeClass: WindowWidthSizeClass,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -246,7 +244,6 @@ fun SearchScreen(
                             SearchHomeContent(
                                 genres = uiState.audiobookshelfGenres,
                                 onGenreClick = onAudiobookshelfGenreClick,
-                                widthSizeClass = widthSizeClass,
                                 isAudiobookshelf = true,
                             )
                         }
@@ -254,7 +251,6 @@ fun SearchScreen(
                             SearchHomeContent(
                                 genres = uiState.genres,
                                 onGenreClick = onGenreClick,
-                                widthSizeClass = widthSizeClass,
                             )
                         }
                     }
@@ -752,7 +748,6 @@ private fun ScopeChip(
 private fun SearchHomeContent(
     genres: List<String>,
     onGenreClick: (String) -> Unit,
-    widthSizeClass: WindowWidthSizeClass,
     isAudiobookshelf: Boolean = false,
 ) {
     val playerOffset = LocalPlayerOffset.current
@@ -767,7 +762,7 @@ private fun SearchHomeContent(
         )
 
         LazyVerticalGrid(
-            columns = CardDimensions.tileGridCells(widthSizeClass),
+            columns = CardDimensions.landscapeGridCells(),
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),

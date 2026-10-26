@@ -1159,6 +1159,7 @@
     <string name="card_size_extra_small">Extra Small</string>
     <string name="card_size_small">Small</string>
     <string name="card_size_default">Default</string>
+    <string name="card_size_large">Large</string>
     <string name="pref_hero_style_title">Hero Carousel Style</string>
     <string name="hero_style_full_bleed">Full-bleed</string>
     <string name="hero_style_peek">Peek cards</string>

@@ -105,7 +105,7 @@ fun FavoritesCategoryScreen(
     LaunchedEffect(Unit) { viewModel.loadFavorites() }
 
     val contentPadding =
-        PaddingValues(start = 14.dp, top = 16.dp, end = 14.dp, bottom = 16.dp + playerOffset)
+        PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp + playerOffset)
 
     val isEmpty =
         when (category) {
@@ -180,7 +180,7 @@ fun FavoritesCategoryScreen(
 
                 FavoritesCategory.CHANNELS ->
                     FavoritesGrid(
-                        columns = CardDimensions.landscapeGridCells(widthSizeClass),
+                        columns = CardDimensions.landscapeGridCells(),
                         contentPadding = contentPadding,
                         modifier = gridModifier,
                         items = uiState.channels,
@@ -201,7 +201,7 @@ fun FavoritesCategoryScreen(
 
                 FavoritesCategory.PEOPLE ->
                     FavoritesGrid(
-                        columns = CardDimensions.portraitGridCells(widthSizeClass),
+                        columns = CardDimensions.gridCells(),
                         contentPadding = contentPadding,
                         modifier = gridModifier,
                         items = uiState.people,
@@ -216,7 +216,7 @@ fun FavoritesCategoryScreen(
 
                 FavoritesCategory.ALBUMS ->
                     FavoritesGrid(
-                        columns = CardDimensions.portraitGridCells(widthSizeClass),
+                        columns = CardDimensions.gridCells(),
                         contentPadding = contentPadding,
                         modifier = gridModifier,
                         items = uiState.favoriteAlbums,
@@ -230,7 +230,7 @@ fun FavoritesCategoryScreen(
 
                 FavoritesCategory.ARTISTS ->
                     FavoritesGrid(
-                        columns = CardDimensions.portraitGridCells(widthSizeClass),
+                        columns = CardDimensions.gridCells(),
                         contentPadding = contentPadding,
                         modifier = gridModifier,
                         items = uiState.favoriteArtists,
@@ -247,7 +247,7 @@ fun FavoritesCategoryScreen(
 
                 FavoritesCategory.TRACKS ->
                     FavoritesGrid(
-                        columns = CardDimensions.musicGridCells,
+                        columns = CardDimensions.gridCells(),
                         contentPadding = contentPadding,
                         modifier = gridModifier,
                         items = uiState.favoriteTracks,
@@ -275,7 +275,7 @@ fun FavoritesCategoryScreen(
 
                 FavoritesCategory.PLAYLISTS ->
                     FavoritesGrid(
-                        columns = CardDimensions.portraitGridCells(widthSizeClass),
+                        columns = CardDimensions.gridCells(),
                         contentPadding = contentPadding,
                         modifier = gridModifier,
                         items = uiState.favoritePlaylists,

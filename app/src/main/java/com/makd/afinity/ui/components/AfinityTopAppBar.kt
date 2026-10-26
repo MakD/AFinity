@@ -48,6 +48,7 @@ import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.server.ServerRepository
+import com.makd.afinity.ui.theme.CardDimensions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -97,6 +98,8 @@ constructor(
 
 data class AppBarProfile(val onClick: () -> Unit, val name: String?, val imageUrl: String?)
 
+private val TopBarEdgeInset = CardDimensions.RowGutter - 4.dp
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AfinityTopAppBar(
@@ -123,7 +126,10 @@ fun AfinityTopAppBar(
             val leadingOnClick = onMenuClick ?: onHomeClick
             if (leadingOnClick != null) {
                 val isMenu = onMenuClick != null
-                IconButton(onClick = leadingOnClick, modifier = Modifier.size(36.dp)) {
+                IconButton(
+                    onClick = leadingOnClick,
+                    modifier = Modifier.padding(start = TopBarEdgeInset).size(36.dp),
+                ) {
                     Box(
                         modifier =
                             Modifier.fillMaxSize()
@@ -265,7 +271,7 @@ fun AfinityTopAppBar(
                         modifier = Modifier.align(Alignment.BottomEnd),
                     )
                 }
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(TopBarEdgeInset))
             }
             actions()
         },

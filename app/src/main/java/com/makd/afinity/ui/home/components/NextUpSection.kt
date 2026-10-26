@@ -2,7 +2,6 @@ package com.makd.afinity.ui.home.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
@@ -16,7 +15,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.ContinueWatchingCard
+import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 
@@ -40,14 +41,14 @@ fun NextUpSection(
         }
     }
 
-    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
+    Column(modifier = Modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = stringResource(R.string.home_next_up))
 
         LazyRow(
             state = scrollState,
-            modifier = Modifier.height(fixedRowHeight),
+            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
+            contentPadding = CardRowContentPadding,
         ) {
             items(items = episodes, key = { episode -> "nextup_${episode.id}" }) { episode ->
                 ContinueWatchingCard(

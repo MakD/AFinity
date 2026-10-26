@@ -33,7 +33,7 @@ fun SquareMediaTile(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
 ) {
-    val tileWidth = CardDimensions.squareTileWidth
+    val tileWidth = CardDimensions.posterCardWidth
 
     Column(modifier = modifier.width(tileWidth).clickable(role = Role.Button, onClick = onClick)) {
         Card(

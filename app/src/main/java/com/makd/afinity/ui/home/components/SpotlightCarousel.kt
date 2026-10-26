@@ -77,8 +77,10 @@ fun SpotlightCarousel(
     val skipServerResize = LocalSkipServerImageResize.current
 
     Column(modifier = modifier) {
-        HomeSectionHeader(title = title, startPadding = 14.dp)
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
+        HomeSectionHeader(title = title, startPadding = CardDimensions.RowGutter)
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = CardDimensions.RowGutter)
+        ) {
             val itemSize =
                 CardDimensions.carouselItemSize(
                     availableWidth = maxWidth,

@@ -3,13 +3,11 @@ package com.makd.afinity.ui.item.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
@@ -45,8 +43,10 @@ import com.makd.afinity.data.models.tmdb.TmdbRegionProviders
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.MediaCountBadge
 import com.makd.afinity.ui.components.PlayedBadge
+import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
 import com.makd.afinity.ui.item.components.shared.NextUpSection
 import com.makd.afinity.ui.item.components.shared.baseMediaDetailItems
@@ -130,8 +130,9 @@ internal fun SeasonsSection(
         val cardWidth = widthSizeClass.portraitWidth
 
         LazyRow(
+            modifier = Modifier.cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
+            contentPadding = CardRowContentPadding,
         ) {
             items(seasons, key = { it.id.toString() }) { season ->
                 SeasonCard(
@@ -170,7 +171,7 @@ internal fun SeasonCard(season: AfinitySeason, onClick: () -> Unit, cardWidth: D
                 val visuallyPlayed = season.played
 
                 if (visuallyPlayed) {
-                    PlayedBadge(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp))
+                    PlayedBadge(modifier = Modifier.align(Alignment.TopEnd))
                 } else {
                     season.unplayedItemCount?.let { unwatchedCount ->
                         if (unwatchedCount > 0) {
@@ -183,7 +184,7 @@ internal fun SeasonCard(season: AfinitySeason, onClick: () -> Unit, cardWidth: D
                                             R.string.home_episode_count_fmt,
                                             unwatchedCount,
                                         ),
-                                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                                modifier = Modifier.align(Alignment.TopEnd),
                             )
                         }
                     }

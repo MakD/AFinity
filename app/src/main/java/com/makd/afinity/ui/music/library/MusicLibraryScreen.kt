@@ -54,7 +54,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -93,6 +92,8 @@ import com.makd.afinity.ui.components.LibraryShortcutCard
 import com.makd.afinity.ui.components.LibraryShortcutsRow
 import com.makd.afinity.ui.components.SectionRowHeader
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
+import com.makd.afinity.ui.components.cardRowBleedUnlessPadded
+import com.makd.afinity.ui.components.cardRowContentPadding
 import com.makd.afinity.ui.components.focalAlpha
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.home.components.ArtistAlbumsCarousel
@@ -313,7 +314,7 @@ internal fun AlbumsGrid(
     val playerOffset = LocalPlayerOffset.current
     Row(modifier = modifier.fillMaxSize()) {
         LazyVerticalGrid(
-            columns = CardDimensions.musicGridCells,
+            columns = CardDimensions.gridCells(),
             state = gridState,
             contentPadding =
                 PaddingValues(
@@ -366,7 +367,7 @@ internal fun ArtistsGrid(
     val playerOffset = LocalPlayerOffset.current
     Row(modifier = modifier.fillMaxSize()) {
         LazyVerticalGrid(
-            columns = CardDimensions.musicGridCells,
+            columns = CardDimensions.gridCells(),
             state = gridState,
             contentPadding =
                 PaddingValues(
@@ -407,7 +408,7 @@ internal fun PlaylistsGrid(
 ) {
     val playerOffset = LocalPlayerOffset.current
     LazyVerticalGrid(
-        columns = CardDimensions.musicGridCells,
+        columns = CardDimensions.gridCells(),
         state = gridState,
         contentPadding =
             PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + playerOffset),
@@ -456,7 +457,7 @@ internal fun GenresGrid(
     }
     val playerOffset = LocalPlayerOffset.current
     LazyVerticalGrid(
-        columns = CardDimensions.musicGenreGridCells,
+        columns = CardDimensions.gridCells(),
         state = gridState,
         contentPadding =
             PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + playerOffset),
@@ -779,7 +780,7 @@ private fun LibraryShortcutsRow(
     onBrowse: (LibraryFilter) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val cardWidth = CardDimensions.shortcutCardWidth(LocalConfiguration.current.screenWidthDp)
+    val cardWidth = CardDimensions.landscapeCardWidth
 
     val shortcuts = remember {
         listOf(
@@ -877,7 +878,7 @@ private fun MadeForYouCarousel(
             text = title,
             style = afinitySectionTitleStyle(),
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(start = 14.dp, bottom = 12.dp),
+            modifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
         )
 
         val isLandscape = isLandscapeWindow()
@@ -1093,12 +1094,7 @@ internal fun MusicArtistsRow(
     horizontalPadding: Dp = 16.dp,
     onViewAllClick: (() -> Unit)? = null,
 ) {
-    val isLandscape = isLandscapeWindow()
-    val cardSize =
-        CardDimensions.musicRowCardWidth(
-            isLandscape,
-            gutter = horizontalPadding.takeIf { it > 0.dp },
-        )
+    val cardSize = CardDimensions.portraitRowWidth(gutter = horizontalPadding.takeIf { it > 0.dp })
     Column(modifier = modifier) {
         if (onViewAllClick != null) {
             SectionRowHeader(
@@ -1120,8 +1116,9 @@ internal fun MusicArtistsRow(
             )
         }
         LazyRow(
-            modifier = Modifier.padding(horizontal = horizontalPadding),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.cardRowBleedUnlessPadded(horizontalPadding),
+            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+            contentPadding = cardRowContentPadding(horizontalPadding),
         ) {
             items(artists.take(15), key = { it.id }) { artist ->
                 MusicArtistCard(
@@ -1153,11 +1150,12 @@ fun CompactTrackGridSection(
         Text(
             text = title,
             style = afinitySectionTitleStyle(),
-            modifier = Modifier.padding(start = 14.dp, bottom = 12.dp),
+            modifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
         )
         LazyHorizontalGrid(
             rows = GridCells.Fixed(rowsCount),
-            modifier = Modifier.height(gridHeight).padding(horizontal = 14.dp),
+            modifier = Modifier.height(gridHeight),
+            contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {

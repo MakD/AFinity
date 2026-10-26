@@ -5,13 +5,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -43,13 +39,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.CardRowContentPadding
+import com.makd.afinity.ui.components.RankedCardFrame
 import com.makd.afinity.ui.components.SectionRowHeader
+import com.makd.afinity.ui.components.cardRowBleedUnlessPadded
+import com.makd.afinity.ui.components.cardRowContentPadding
 import com.makd.afinity.ui.components.focalAlpha
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.music.components.MusicAlbumCard
@@ -77,8 +76,14 @@ private fun MusicCarouselSection(
     val state = rememberCarouselState { count }
 
     Column(modifier = modifier) {
-        HomeSectionHeader(title = title, startPadding = 14.dp, bottomPadding = 12.dp)
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
+        HomeSectionHeader(
+            title = title,
+            startPadding = CardDimensions.RowGutter,
+            bottomPadding = 12.dp,
+        )
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = CardDimensions.RowGutter)
+        ) {
             val itemSize =
                 CardDimensions.carouselItemSize(
                     availableWidth = maxWidth,
@@ -221,25 +226,24 @@ fun MostPlayedAlbumsSection(
 ) {
     if (albums.isEmpty()) return
 
-    val isLandscape = isLandscapeWindow()
-    val cardWidth = CardDimensions.musicRowCardWidth(isLandscape, gap = 22.dp, reserved = 20.dp)
+    val cardWidth = CardDimensions.posterCardWidth
     val rowHeight =
         CardDimensions.rowHeight(
             cardWidth,
             CardDimensions.ASPECT_RATIO_SQUARE,
             metadataHeight = CardDimensions.subtitleLine,
-        ) + 12.dp
+        )
 
     Column(modifier = modifier) {
         HomeSectionHeader(
             title = stringResource(R.string.music_section_most_played),
-            startPadding = 14.dp,
+            startPadding = CardDimensions.RowGutter,
             bottomPadding = 12.dp,
         )
         LazyRow(
-            modifier = Modifier.height(rowHeight).padding(horizontal = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(22.dp),
-            contentPadding = PaddingValues(start = 4.dp, end = 10.dp),
+            modifier = Modifier.height(rowHeight),
+            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+            contentPadding = CardRowContentPadding,
         ) {
             itemsIndexed(albums, key = { _, album -> album.id }) { index, album ->
                 MostPlayedAlbumCard(
@@ -260,53 +264,47 @@ private fun MostPlayedAlbumCard(
     cardWidth: Dp,
     onClick: () -> Unit,
 ) {
-    Column(modifier = Modifier.width(cardWidth)) {
-        Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
-            Card(
-                onClick = onClick,
-                modifier = Modifier.fillMaxSize().offset(x = 16.dp),
-                shape = RoundedCornerShape(8.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-            ) {
-                AsyncImage(
-                    imageUrl = album.images.primary?.toString(),
-                    contentDescription = album.name,
-                    blurHash = album.images.primaryImageBlurHash,
-                    targetWidth = cardWidth,
-                    targetHeight = cardWidth,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-            Text(
-                text = ranking.toString(),
-                style =
-                    MaterialTheme.typography.displayLarge.copy(
-                        fontSize = 72.sp,
-                        fontWeight = FontWeight.Black,
-                    ),
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.align(Alignment.BottomStart).offset(y = 12.dp),
-            )
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Column(modifier = Modifier.offset(x = 16.dp)) {
-            Text(
-                text = album.name,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.onBackground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            album.artist?.let { artist ->
+    RankedCardFrame(
+        ranking = ranking,
+        cardWidth = cardWidth,
+        aspectRatio = CardDimensions.ASPECT_RATIO_SQUARE,
+        details = {
+            Column {
                 Text(
-                    text = artist,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = album.name,
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onBackground,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                album.artist?.let { artist ->
+                    Text(
+                        text = artist,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
+        },
+    ) {
+        Card(
+            onClick = onClick,
+            modifier = Modifier.fillMaxSize(),
+            shape = RoundedCornerShape(8.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        ) {
+            AsyncImage(
+                imageUrl = album.images.primary?.toString(),
+                contentDescription = album.name,
+                blurHash = album.images.primaryImageBlurHash,
+                targetWidth = cardWidth,
+                targetHeight = cardWidth,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
     }
 }
@@ -317,16 +315,11 @@ fun MusicAlbumRowSection(
     albums: List<AfinityAlbum>,
     onAlbumClick: (AfinityAlbum) -> Unit,
     modifier: Modifier = Modifier,
-    horizontalPadding: Dp = 14.dp,
+    horizontalPadding: Dp = CardDimensions.RowGutter,
     onViewAllClick: (() -> Unit)? = null,
 ) {
     if (albums.isEmpty()) return
-    val isLandscape = isLandscapeWindow()
-    val cardWidth =
-        CardDimensions.musicRowCardWidth(
-            isLandscape,
-            gutter = horizontalPadding.takeIf { it > 0.dp },
-        )
+    val cardWidth = CardDimensions.portraitRowWidth(gutter = horizontalPadding.takeIf { it > 0.dp })
     Column(modifier = modifier) {
         if (onViewAllClick != null) {
             SectionRowHeader(
@@ -347,8 +340,9 @@ fun MusicAlbumRowSection(
             )
         }
         LazyRow(
-            modifier = Modifier.padding(horizontal = horizontalPadding),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.cardRowBleedUnlessPadded(horizontalPadding),
+            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+            contentPadding = cardRowContentPadding(horizontalPadding),
         ) {
             items(albums, key = { it.id }) { album ->
                 MusicAlbumCard(
@@ -367,16 +361,11 @@ fun MusicPlaylistRowSection(
     playlists: List<AfinityPlaylist>,
     onPlaylistClick: (AfinityPlaylist) -> Unit,
     modifier: Modifier = Modifier,
-    horizontalPadding: Dp = 14.dp,
+    horizontalPadding: Dp = CardDimensions.RowGutter,
     onViewAllClick: (() -> Unit)? = null,
 ) {
     if (playlists.isEmpty()) return
-    val isLandscape = isLandscapeWindow()
-    val cardWidth =
-        CardDimensions.musicRowCardWidth(
-            isLandscape,
-            gutter = horizontalPadding.takeIf { it > 0.dp },
-        )
+    val cardWidth = CardDimensions.portraitRowWidth(gutter = horizontalPadding.takeIf { it > 0.dp })
     Column(modifier = modifier) {
         if (onViewAllClick != null) {
             SectionRowHeader(
@@ -397,8 +386,9 @@ fun MusicPlaylistRowSection(
             )
         }
         LazyRow(
-            modifier = Modifier.padding(horizontal = horizontalPadding),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.cardRowBleedUnlessPadded(horizontalPadding),
+            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+            contentPadding = cardRowContentPadding(horizontalPadding),
         ) {
             items(playlists, key = { it.id }) { playlist ->
                 MusicPlaylistCard(
@@ -431,10 +421,12 @@ fun ArtistAlbumsCarousel(
     Column(modifier = modifier) {
         HomeSectionHeader(
             title = stringResource(R.string.home_more_from_artist_fmt, artist.name),
-            startPadding = 14.dp,
+            startPadding = CardDimensions.RowGutter,
             bottomPadding = 12.dp,
         )
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = CardDimensions.RowGutter)
+        ) {
             val itemSize =
                 CardDimensions.carouselItemSize(
                     availableWidth = maxWidth,

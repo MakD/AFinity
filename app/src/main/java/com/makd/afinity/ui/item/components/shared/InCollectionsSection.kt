@@ -2,16 +2,18 @@ package com.makd.afinity.ui.item.components.shared
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityBoxSet
+import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
 @Composable
@@ -28,8 +30,9 @@ fun InCollectionsSection(
         DetailSectionTitle(text = stringResource(R.string.collections_included_in))
 
         LazyRow(
+            modifier = Modifier.cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
+            contentPadding = CardRowContentPadding,
         ) {
             items(boxSets, key = { it.id.toString() }) { boxSet ->
                 MediaItemCard(

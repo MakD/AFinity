@@ -113,7 +113,7 @@ fun AudiobookshelfLibraryScreen(
                 else -> {
                     Row(modifier = Modifier.fillMaxSize()) {
                         LazyVerticalGrid(
-                            columns = CardDimensions.audiobookGridCells,
+                            columns = CardDimensions.gridCells(),
                             modifier = Modifier.weight(1f).fillMaxHeight(),
                             contentPadding =
                                 PaddingValues(

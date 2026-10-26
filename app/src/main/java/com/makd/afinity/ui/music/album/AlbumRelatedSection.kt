@@ -5,7 +5,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -25,8 +24,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityAlbum
+import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.DetailGutter
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
+import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.theme.CardDimensions
 
@@ -80,8 +81,9 @@ fun AlbumRelatedSection(
         }
 
         LazyRow(
-            contentPadding = PaddingValues(horizontal = 0.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.cardRowBleed(),
+            contentPadding = CardRowContentPadding,
+            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
         ) {
             items(albums, key = { it.id }) { album ->
                 Box(modifier = Modifier.width(cardWidth)) {

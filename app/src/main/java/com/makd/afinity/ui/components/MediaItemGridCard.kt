@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -50,7 +49,6 @@ import com.makd.afinity.ui.preview.PreviewData
 import com.makd.afinity.ui.preview.PreviewHost
 import com.makd.afinity.ui.preview.StressPreviews
 import com.makd.afinity.ui.preview.WidthPreviews
-import com.makd.afinity.ui.preview.previewWidthSizeClass
 import com.makd.afinity.ui.theme.CardDimensions
 import java.util.Locale
 
@@ -90,7 +88,7 @@ fun MediaItemGridCard(item: AfinityItem, onClick: () -> Unit, modifier: Modifier
 
                 when {
                     item.played -> {
-                        PlayedBadge(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp))
+                        PlayedBadge(modifier = Modifier.align(Alignment.TopEnd))
                     }
 
                     item is AfinityShow -> {
@@ -115,7 +113,7 @@ fun MediaItemGridCard(item: AfinityItem, onClick: () -> Unit, modifier: Modifier
                                             R.string.home_episode_count_fmt,
                                             text.toIntOrNull() ?: 0,
                                         ),
-                                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                                modifier = Modifier.align(Alignment.TopEnd),
                             )
                         }
                     }
@@ -126,7 +124,7 @@ fun MediaItemGridCard(item: AfinityItem, onClick: () -> Unit, modifier: Modifier
                             if (count > 0) {
                                 MediaCountBadge(
                                     text = "$count",
-                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                                    modifier = Modifier.align(Alignment.TopEnd),
                                 )
                             }
                         }
@@ -137,7 +135,7 @@ fun MediaItemGridCard(item: AfinityItem, onClick: () -> Unit, modifier: Modifier
                         if (unplayedCount != null && unplayedCount > 0) {
                             MediaCountBadge(
                                 text = "$unplayedCount",
-                                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                                modifier = Modifier.align(Alignment.TopEnd),
                             )
                         }
                     }
@@ -148,7 +146,7 @@ fun MediaItemGridCard(item: AfinityItem, onClick: () -> Unit, modifier: Modifier
                             if (count > 0) {
                                 MediaCountBadge(
                                     text = "$count",
-                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                                    modifier = Modifier.align(Alignment.TopEnd),
                                 )
                             }
                         }
@@ -265,7 +263,7 @@ fun MediaItemGridCard(item: AfinityItem, onClick: () -> Unit, modifier: Modifier
 private fun MediaItemGridCardPreviewContent(cardSize: CardSize) {
     PreviewHost(cardSize = cardSize) {
         LazyVerticalGrid(
-            columns = CardDimensions.gridCells(previewWidthSizeClass()),
+            columns = CardDimensions.gridCells(),
             modifier = Modifier.fillMaxWidth().height(640.dp),
             contentPadding = PaddingValues(horizontal = CardDimensions.RowGutter, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),

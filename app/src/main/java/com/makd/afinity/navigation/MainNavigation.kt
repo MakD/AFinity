@@ -581,7 +581,6 @@ fun MainNavigation(
                                         onSearchClick = { navController.navigateToSearch() },
                                         mainUiState = mainUiState,
                                         modifier = Modifier.fillMaxSize(),
-                                        widthSizeClass = widthSizeClass,
                                     )
                                 }
 
@@ -616,7 +615,6 @@ fun MainNavigation(
                                             navController.navigateToPerson(personId)
                                         },
                                         modifier = Modifier.fillMaxSize(),
-                                        widthSizeClass = widthSizeClass,
                                         onMenuClick = libraryMenuClick,
                                     )
                                 }
@@ -649,7 +647,6 @@ fun MainNavigation(
                                             navController.navigateToPerson(personId)
                                         },
                                         modifier = Modifier.fillMaxSize(),
-                                        widthSizeClass = widthSizeClass,
                                     )
                                 }
 
@@ -681,7 +678,6 @@ fun MainNavigation(
                                             navController.navigateToPerson(personId)
                                         },
                                         modifier = Modifier.fillMaxSize(),
-                                        widthSizeClass = widthSizeClass,
                                     )
                                 }
 
@@ -714,7 +710,6 @@ fun MainNavigation(
                                             navController.navigateToPerson(personId)
                                         },
                                         modifier = Modifier.fillMaxSize(),
-                                        widthSizeClass = widthSizeClass,
                                     )
                                 }
 
@@ -1359,7 +1354,6 @@ fun MainNavigation(
                                             )
                                         },
                                         modifier = Modifier.fillMaxSize(),
-                                        widthSizeClass = widthSizeClass,
                                     )
                                 }
 
@@ -1395,7 +1389,6 @@ fun MainNavigation(
                                             )
                                         },
                                         modifier = Modifier.fillMaxSize(),
-                                        widthSizeClass = widthSizeClass,
                                     )
                                 }
 

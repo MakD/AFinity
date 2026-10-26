@@ -4,7 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -37,6 +36,8 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.CardRowContentPadding
+import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import java.util.UUID
@@ -99,8 +100,9 @@ private fun PeopleRow(
         DetailSectionTitle(text = title)
 
         LazyRow(
+            modifier = Modifier.cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
+            contentPadding = CardRowContentPadding,
         ) {
             items(people, key = { "${it.id}|${it.role}" }) { person ->
                 CastMemberCard(

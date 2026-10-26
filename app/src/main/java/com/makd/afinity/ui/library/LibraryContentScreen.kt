@@ -36,7 +36,6 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -91,7 +90,6 @@ fun LibraryContentScreen(
     onPersonClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LibraryContentViewModel = hiltViewModel(),
-    widthSizeClass: WindowWidthSizeClass,
     onMenuClick: (() -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -248,7 +246,6 @@ fun LibraryContentScreen(
                         Row(modifier = Modifier.fillMaxSize()) {
                             PaginatedMediaGrid(
                                 items = lazyPagingItems,
-                                widthSizeClass = widthSizeClass,
                                 state = gridState,
                                 modifier = Modifier.weight(1f),
                                 contentPadding =

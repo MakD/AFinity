@@ -5,7 +5,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -32,7 +31,9 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
 import com.makd.afinity.data.models.jellyseerr.Network
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.Studio
+import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
+import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.home.components.HomeSectionHeader
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
@@ -53,13 +54,13 @@ fun MyRequestsSection(
     val cardWidth = widthSizeClass.landscapeWidth
     val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
 
-    Column(modifier = modifier.padding(horizontal = 14.dp)) {
+    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = stringResource(R.string.section_recent_requests))
 
         LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
+            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
+            contentPadding = CardRowContentPadding,
         ) {
             items(items = requests, key = { request -> "request_${request.id}" }) { request ->
                 LaunchedEffect(request.id) { onRequestVisible(request) }
@@ -88,13 +89,13 @@ fun AvailableRequestsSection(
     val cardWidth = widthSizeClass.portraitWidth
     val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
-    Column(modifier = modifier.padding(horizontal = 14.dp)) {
+    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = stringResource(R.string.section_available_requests))
 
         LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
+            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
+            contentPadding = CardRowContentPadding,
         ) {
             items(
                 items = requests,
@@ -120,10 +121,9 @@ fun DiscoverSection(
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
     onViewAllClick: (() -> Unit)? = null,
-    horizontalPadding: androidx.compose.ui.unit.Dp = 14.dp,
-    rowGutter: androidx.compose.ui.unit.Dp = horizontalPadding,
+    horizontalPadding: androidx.compose.ui.unit.Dp = CardDimensions.RowGutter,
 ) {
-    val cardWidth = CardDimensions.portraitRowWidth(widthSizeClass, gutter = rowGutter)
+    val cardWidth = widthSizeClass.portraitWidth
     val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
     val headerBottomPadding = if (onViewAllClick != null) 4.dp else 16.dp
 
@@ -161,9 +161,9 @@ fun DiscoverSection(
         }
 
         LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
+            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
+            contentPadding = CardRowContentPadding,
         ) {
             items(
                 items = items,
@@ -191,13 +191,13 @@ fun StudiosSection(
         CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     val fixedRowHeight = cardHeight + 10.dp
 
-    Column(modifier = modifier.padding(horizontal = 14.dp)) {
+    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = stringResource(R.string.section_studios))
 
         LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
+            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
+            contentPadding = CardRowContentPadding,
         ) {
             items(items = studios, key = { studio -> "studio_${studio.id}" }) { studio ->
                 StudioCard(
@@ -221,13 +221,13 @@ fun NetworksSection(
     val cardHeight =
         CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
 
-    Column(modifier = modifier.padding(horizontal = 14.dp)) {
+    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = stringResource(R.string.section_networks))
 
         LazyRow(
-            modifier = Modifier.height(cardHeight),
+            modifier = Modifier.height(cardHeight).cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
+            contentPadding = CardRowContentPadding,
         ) {
             items(items = networks, key = { network -> "network_${network.id}" }) { network ->
                 NetworkCard(
@@ -253,13 +253,13 @@ fun MovieGenresSection(
         CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     val fixedRowHeight = cardHeight + 10.dp
 
-    Column(modifier = modifier.padding(horizontal = 14.dp)) {
+    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = stringResource(R.string.section_movie_genres))
 
         LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
+            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
+            contentPadding = CardRowContentPadding,
         ) {
             items(items = genres, key = { genre -> "movie_genre_${genre.id}" }) { genre ->
                 GenreCard(
@@ -286,13 +286,13 @@ fun TvGenresSection(
         CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     val fixedRowHeight = cardHeight + 10.dp
 
-    Column(modifier = modifier.padding(horizontal = 14.dp)) {
+    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = stringResource(R.string.section_tv_genres))
 
         LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
+            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
+            contentPadding = CardRowContentPadding,
         ) {
             items(items = genres, key = { genre -> "tv_genre_${genre.id}" }) { genre ->
                 GenreCard(

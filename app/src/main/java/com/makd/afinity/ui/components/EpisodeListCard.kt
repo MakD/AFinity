@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -134,21 +133,7 @@ fun EpisodeListCard(
                 }
 
                 if (item.played) {
-                    Box(
-                        modifier =
-                            Modifier.align(Alignment.TopEnd)
-                                .padding(8.dp)
-                                .size(24.dp)
-                                .background(MaterialTheme.colorScheme.primary, CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_check),
-                            contentDescription = stringResource(R.string.cd_watched),
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(16.dp),
-                        )
-                    }
+                    PlayedBadge(modifier = Modifier.align(Alignment.TopEnd))
                 }
             }
 

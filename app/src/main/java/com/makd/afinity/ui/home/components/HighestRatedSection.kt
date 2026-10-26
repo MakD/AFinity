@@ -3,17 +3,11 @@ package com.makd.afinity.ui.home.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Card
@@ -33,7 +27,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
@@ -44,11 +37,15 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.CardRowContentPadding
 import com.makd.afinity.ui.components.MediaCountBadge
 import com.makd.afinity.ui.components.MetadataOverflowRow
 import com.makd.afinity.ui.components.PlayedBadge
+import com.makd.afinity.ui.components.RankedCardFrame
+import com.makd.afinity.ui.components.cardRowBleed
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.ui.theme.CardDimensions
+import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import java.util.Locale
 
 @Composable
@@ -57,18 +54,18 @@ fun HighestRatedSection(
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
 ) {
-    val cardWidth = CardDimensions.portraitRowWidth(widthSizeClass, gap = 22.dp, reserved = 20.dp)
+    val cardWidth = widthSizeClass.portraitWidth
     val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
-    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
+    Column(modifier = Modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = stringResource(R.string.home_critics_choice))
 
         val uniqueItems = items.distinctBy { it.id }
 
         LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
-            horizontalArrangement = Arrangement.spacedBy(22.dp),
-            contentPadding = PaddingValues(start = 4.dp, end = 24.dp),
+            modifier = Modifier.height(fixedRowHeight).cardRowBleed(),
+            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+            contentPadding = CardRowContentPadding,
         ) {
             itemsIndexed(items = uniqueItems, key = { _, item -> item.id }) { index, item ->
                 HighestRatedCard(
@@ -84,119 +81,142 @@ fun HighestRatedSection(
 
 @Composable
 fun HighestRatedCard(item: AfinityItem, ranking: Int, onClick: () -> Unit, cardWidth: Dp) {
-    val ratingScale = rememberRatingMetadataScale()
-    val metadataFontSize = MaterialTheme.typography.bodySmall.fontSize * ratingScale.textScale
-    val imdbIconSize = ratingScale.imdbIconSize
-    val rtIconSize = ratingScale.rtIconSize
+    RankedCardFrame(
+        ranking = ranking,
+        cardWidth = cardWidth,
+        aspectRatio = CardDimensions.ASPECT_RATIO_PORTRAIT,
+        details = { HighestRatedDetails(item = item) },
+    ) {
+        Card(
+            onClick = onClick,
+            modifier = Modifier.fillMaxSize(),
+            colors =
+                CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                AsyncImage(
+                    imageUrl = item.images.primaryImageUrl ?: item.images.backdropImageUrl,
+                    contentDescription = item.name,
+                    blurHash = item.images.primaryBlurHash ?: item.images.backdropBlurHash,
+                    targetWidth = cardWidth,
+                    targetHeight = cardWidth * 3f / 2f,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
 
-    Column(modifier = Modifier.width(cardWidth)) {
-        Box(modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT)) {
-            Card(
-                onClick = onClick,
-                modifier = Modifier.fillMaxSize().offset(x = 16.dp),
-                colors =
-                    CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-            ) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    AsyncImage(
-                        imageUrl = item.images.primaryImageUrl ?: item.images.backdropImageUrl,
-                        contentDescription = item.name,
-                        blurHash = item.images.primaryBlurHash ?: item.images.backdropBlurHash,
-                        targetWidth = cardWidth,
-                        targetHeight = cardWidth * 3f / 2f,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
+                when {
+                    item.played -> {
+                        PlayedBadge(modifier = Modifier.align(Alignment.TopEnd))
+                    }
 
-                    when {
-                        item.played -> {
-                            PlayedBadge(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp))
-                        }
-
-                        item is AfinityShow -> {
-                            val displayCount = item.unplayedItemCount ?: item.episodeCount
-                            displayCount?.let { count ->
-                                if (count > 0) {
-                                    MediaCountBadge(
-                                        text =
-                                            if (count > 99)
-                                                stringResource(R.string.home_episode_count_plus)
-                                            else
-                                                stringResource(
-                                                    R.string.home_episode_count_fmt,
-                                                    count,
-                                                ),
-                                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-                                    )
-                                }
+                    item is AfinityShow -> {
+                        val displayCount = item.unplayedItemCount ?: item.episodeCount
+                        displayCount?.let { count ->
+                            if (count > 0) {
+                                MediaCountBadge(
+                                    text =
+                                        if (count > 99)
+                                            stringResource(R.string.home_episode_count_plus)
+                                        else
+                                            stringResource(
+                                                R.string.home_episode_count_fmt,
+                                                count,
+                                            ),
+                                    modifier = Modifier.align(Alignment.TopEnd),
+                                )
                             }
                         }
                     }
                 }
             }
+        }
+    }
+}
 
-            Text(
-                text = ranking.toString(),
-                style =
-                    MaterialTheme.typography.displayLarge.copy(
-                        fontSize = 82.sp,
-                        fontWeight = FontWeight.Black,
-                    ),
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.align(Alignment.BottomStart).offset(y = 12.dp),
-            )
+@Composable
+private fun HighestRatedDetails(item: AfinityItem) {
+    val ratingScale = rememberRatingMetadataScale()
+    val metadataFontSize = MaterialTheme.typography.bodySmall.fontSize * ratingScale.textScale
+    val rtIconSize = ratingScale.rtIconSize
+
+    Column {
+        Text(
+            text = item.name,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+
+        val metadataItems = mutableListOf<@Composable () -> Unit>()
+
+        when (item) {
+            is AfinityMovie -> item.productionYear
+            is AfinityShow -> item.productionYear
+            else -> null
+        }?.let { year ->
+            metadataItems.add {
+                Text(
+                    text = year.toString(),
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = metadataFontSize),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Column(modifier = Modifier.offset(x = 16.dp)) {
-            Text(
-                text = item.name,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.onBackground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-
-            val metadataItems = mutableListOf<@Composable () -> Unit>()
-
+        if (LocalShowRatings.current) {
             when (item) {
-                is AfinityMovie -> item.productionYear
-                is AfinityShow -> item.productionYear
+                is AfinityMovie -> item.communityRating
+                is AfinityShow -> item.communityRating
                 else -> null
-            }?.let { year ->
+            }?.let { rating ->
                 metadataItems.add {
-                    Text(
-                        text = year.toString(),
-                        style =
-                            MaterialTheme.typography.bodySmall.copy(fontSize = metadataFontSize),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_community_rating),
+                            contentDescription = stringResource(R.string.cd_imdb),
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(rtIconSize),
+                        )
+                        Text(
+                            text = String.format(Locale.US, "%.1f", rating),
+                            style =
+                                MaterialTheme.typography.bodySmall.copy(
+                                    fontSize = metadataFontSize
+                                ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
 
-            if (LocalShowRatings.current) {
-                when (item) {
-                    is AfinityMovie -> item.communityRating
-                    is AfinityShow -> item.communityRating
-                    else -> null
-                }?.let { rating ->
+            if (item is AfinityMovie) {
+                item.criticRating?.let { rtRating ->
                     metadataItems.add {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(2.dp),
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_community_rating),
-                                contentDescription = stringResource(R.string.cd_imdb),
+                                painter =
+                                    painterResource(
+                                        id =
+                                            if (rtRating > 60) {
+                                                R.drawable.ic_rotten_tomato_fresh
+                                            } else {
+                                                R.drawable.ic_rotten_tomato_rotten
+                                            }
+                                    ),
+                                contentDescription = stringResource(R.string.cd_rotten_tomatoes),
                                 tint = Color.Unspecified,
                                 modifier = Modifier.size(rtIconSize),
                             )
                             Text(
-                                text = String.format(Locale.US, "%.1f", rating),
+                                text = "${rtRating.toInt()}%",
                                 style =
                                     MaterialTheme.typography.bodySmall.copy(
                                         fontSize = metadataFontSize
@@ -206,44 +226,9 @@ fun HighestRatedCard(item: AfinityItem, ranking: Int, onClick: () -> Unit, cardW
                         }
                     }
                 }
-
-                if (item is AfinityMovie) {
-                    item.criticRating?.let { rtRating ->
-                        metadataItems.add {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                            ) {
-                                Icon(
-                                    painter =
-                                        painterResource(
-                                            id =
-                                                if (rtRating > 60) {
-                                                    R.drawable.ic_rotten_tomato_fresh
-                                                } else {
-                                                    R.drawable.ic_rotten_tomato_rotten
-                                                }
-                                        ),
-                                    contentDescription =
-                                        stringResource(R.string.cd_rotten_tomatoes),
-                                    tint = Color.Unspecified,
-                                    modifier = Modifier.size(rtIconSize),
-                                )
-                                Text(
-                                    text = "${rtRating.toInt()}%",
-                                    style =
-                                        MaterialTheme.typography.bodySmall.copy(
-                                            fontSize = metadataFontSize
-                                        ),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    }
-                }
             }
-
-            MetadataOverflowRow(items = metadataItems)
         }
+
+        MetadataOverflowRow(items = metadataItems)
     }
 }

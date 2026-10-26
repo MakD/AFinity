@@ -2,7 +2,6 @@ package com.makd.afinity.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
@@ -27,8 +26,9 @@ fun MediaRowSection(
         SectionRowHeader(title = title, onViewAllClick = onViewAllClick)
 
         LazyRow(
+            modifier = Modifier.cardRowBleed(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
+            contentPadding = CardRowContentPadding,
         ) {
             items(items, key = { it.id }) { item ->
                 if (item is AfinityEpisode) {

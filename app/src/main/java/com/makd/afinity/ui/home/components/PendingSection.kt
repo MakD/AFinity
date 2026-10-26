@@ -12,7 +12,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.carousel.CarouselDefaults
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
-import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,7 +35,6 @@ fun PendingSection(
     title: String,
     cardStyle: CustomSectionCardStyle,
     onVisible: () -> Unit,
-    widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
 ) {
     var hasBeenVisible by remember { mutableStateOf(false) }
@@ -48,7 +46,7 @@ fun PendingSection(
         }
     }
 
-    Column(modifier = modifier.padding(horizontal = 14.dp)) {
+    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = title)
 
         if (cardStyle == CustomSectionCardStyle.SPOTLIGHT) {
@@ -85,7 +83,7 @@ fun PendingSection(
                 }
             }
         } else {
-            val cardWidth = CardDimensions.cardWidthFor(cardStyle, widthSizeClass)
+            val cardWidth = CardDimensions.cardWidthFor(cardStyle)
             val aspectRatio = CardDimensions.aspectRatioFor(cardStyle)
 
             MediaRowSkeleton(

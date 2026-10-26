@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -12,10 +11,8 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -37,7 +34,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.extensions.backdropBlurHash
@@ -146,46 +142,19 @@ fun ContinueWatchingCard(
                 }
 
                 if (isMissingAndAired) {
-                    Box(
-                        modifier =
-                            Modifier.align(Alignment.TopEnd)
-                                .padding(8.dp)
-                                .background(Color.Red.copy(alpha = 0.8f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 4.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.episode_missing),
-                            color = Color.White,
-                            style =
-                                MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 0.5.sp,
-                                ),
-                        )
-                    }
+                    MediaStatusBadge(
+                        text = stringResource(R.string.episode_missing),
+                        containerColor = Color.Red.copy(alpha = 0.8f),
+                        modifier = Modifier.align(Alignment.TopEnd),
+                    )
                 } else if (isUpcoming) {
-                    Box(
-                        modifier =
-                            Modifier.align(Alignment.TopEnd)
-                                .padding(8.dp)
-                                .background(
-                                    Color(0xFF2E7D32).copy(alpha = 0.9f),
-                                    RoundedCornerShape(4.dp),
-                                )
-                                .padding(horizontal = 4.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.episode_upcoming),
-                            color = Color.White,
-                            style =
-                                MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 0.5.sp,
-                                ),
-                        )
-                    }
+                    MediaStatusBadge(
+                        text = stringResource(R.string.episode_upcoming),
+                        containerColor = Color(0xFF2E7D32).copy(alpha = 0.9f),
+                        modifier = Modifier.align(Alignment.TopEnd),
+                    )
                 } else if (item.played) {
-                    PlayedBadge(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp))
+                    PlayedBadge(modifier = Modifier.align(Alignment.TopEnd))
                 }
             }
         }
