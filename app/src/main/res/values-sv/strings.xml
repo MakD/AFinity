@@ -3250,4 +3250,6 @@
     <string name="seek_step_seconds_fmt">%1$d sekunder</string>
     <string name="cd_rewind_seconds_fmt">Spola %1$d sekunder bakåt</string>
     <string name="cd_forward_seconds_fmt">Spola %1$d sekunder framåt</string>
+    <string name="card_size_large">Stor</string>
+    <string name="seerr_detail_open_library_4k">Öppna 4K i bibliotek</string>
 </resources>

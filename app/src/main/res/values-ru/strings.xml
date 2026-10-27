@@ -3384,4 +3384,6 @@
     <string name="seek_step_seconds_fmt">%1$d секунд</string>
     <string name="cd_rewind_seconds_fmt">Отмотать на %1$d секунд назад</string>
     <string name="cd_forward_seconds_fmt">Промотать на %1$d секунд вперед</string>
+    <string name="card_size_large">Большой</string>
+    <string name="seerr_detail_open_library_4k">Открыть 4К в библиотеке</string>
 </resources>
