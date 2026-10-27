@@ -80,7 +80,9 @@ fun AudioFormatBadge(
         fontSize = 10.sp,
         fontWeight = FontWeight.Medium,
         letterSpacing = 0.6.sp,
-        color = if (isTranscoding) accentColor else Color.White.copy(alpha = 0.75f),
+        color =
+            if (isTranscoding) accentColor
+            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
         modifier = modifier,
     )
 }

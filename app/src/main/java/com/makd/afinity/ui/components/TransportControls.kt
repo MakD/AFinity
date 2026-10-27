@@ -34,6 +34,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
@@ -70,6 +71,22 @@ fun TransportControls(
     var sliderValue by remember(position) { mutableFloatStateOf(position) }
     var isDragging by remember { mutableStateOf(false) }
 
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val trackColor = if (isDark) Color.White else MaterialTheme.colorScheme.primary
+    val inactiveTrackColor =
+        if (isDark) Color.White.copy(alpha = 0.2f)
+        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+    val bufferedTrackColor =
+        if (isDark) Color.White.copy(alpha = 0.4f)
+        else MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+    val primaryControlTint = if (isDark) Color.White else MaterialTheme.colorScheme.onSurface
+    val secondaryControlTint =
+        if (isDark) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
+    val playButtonBg = if (isDark) Color.White else MaterialTheme.colorScheme.primary
+    val playButtonTint = if (isDark) Color.Black else MaterialTheme.colorScheme.onPrimary
+    val timeLabelColor =
+        if (isDark) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
+
     Column(modifier = modifier.fillMaxWidth()) {
         Box(contentAlignment = Alignment.CenterStart) {
             Slider(
@@ -86,12 +103,12 @@ fun TransportControls(
                 modifier = Modifier.fillMaxWidth(),
                 colors =
                     SliderDefaults.colors(
-                        thumbColor = Color.White,
-                        activeTrackColor = Color.White,
-                        inactiveTrackColor = Color.White.copy(alpha = 0.3f),
+                        thumbColor = trackColor,
+                        activeTrackColor = trackColor,
+                        inactiveTrackColor = inactiveTrackColor,
                     ),
                 thumb = {
-                    Box(modifier = Modifier.size(16.dp).background(Color.White, CircleShape))
+                    Box(modifier = Modifier.size(16.dp).background(trackColor, CircleShape))
                 },
                 track = { sliderState ->
                     Canvas(modifier = Modifier.fillMaxWidth().height(2.dp)) {
@@ -109,7 +126,7 @@ fun TransportControls(
                         val thumbCenterX = trackStart + progress * trackRange
 
                         drawRoundRect(
-                            color = Color.White.copy(alpha = 0.2f),
+                            color = inactiveTrackColor,
                             topLeft = Offset(trackStart, 0f),
                             size = Size(trackRange, h),
                             cornerRadius = cornerR,
@@ -122,7 +139,7 @@ fun TransportControls(
                             (trackStart + bufferedFraction * trackRange).coerceAtMost(trackEnd)
                         if (bufferedEndX > thumbCenterX) {
                             drawRoundRect(
-                                color = Color.White.copy(alpha = 0.4f),
+                                color = bufferedTrackColor,
                                 topLeft = Offset(thumbCenterX, 0f),
                                 size = Size(bufferedEndX - thumbCenterX, h),
                                 cornerRadius = cornerR,
@@ -130,7 +147,7 @@ fun TransportControls(
                         }
 
                         drawRoundRect(
-                            color = Color.White,
+                            color = trackColor,
                             topLeft = Offset(trackStart, 0f),
                             size = Size((thumbCenterX - trackStart).coerceAtLeast(0f), h),
                             cornerRadius = cornerR,
@@ -148,13 +165,13 @@ fun TransportControls(
             Text(
                 text = elapsedLabel,
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.7f),
+                color = timeLabelColor,
             )
             timeRowCenter?.invoke()
             Text(
                 text = totalLabel,
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.7f),
+                color = timeLabelColor,
             )
         }
 
@@ -169,7 +186,7 @@ fun TransportControls(
                 Icon(
                     painter = painterResource(R.drawable.ic_player_skip_back),
                     contentDescription = previousContentDescription,
-                    tint = Color.White.copy(alpha = 0.7f),
+                    tint = secondaryControlTint,
                     modifier = Modifier.size(28.dp),
                 )
             }
@@ -178,7 +195,7 @@ fun TransportControls(
                 Icon(
                     painter = painterResource(R.drawable.ic_rewind_backward_30),
                     contentDescription = seekBackwardContentDescription,
-                    tint = Color.White,
+                    tint = primaryControlTint,
                     modifier = Modifier.size(34.dp),
                 )
             }
@@ -186,13 +203,17 @@ fun TransportControls(
             Surface(
                 onClick = onPlayPauseClick,
                 shape = RoundedCornerShape(28.dp),
-                color = Color.White,
+                color = playButtonBg,
                 modifier = Modifier.size(76.dp),
                 shadowElevation = 8.dp,
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     if (isBuffering) {
-                        BufferingIndicator(size = 32.dp, strokeWidth = 3.dp, color = accentColor)
+                        BufferingIndicator(
+                            size = 32.dp,
+                            strokeWidth = 3.dp,
+                            color = if (isDark) accentColor else playButtonTint,
+                        )
                     } else {
                         Icon(
                             painter =
@@ -200,7 +221,7 @@ fun TransportControls(
                                 else painterResource(R.drawable.ic_player_play_filled),
                             contentDescription =
                                 if (isPlaying) pauseContentDescription else playContentDescription,
-                            tint = Color.Black,
+                            tint = playButtonTint,
                             modifier = Modifier.size(38.dp),
                         )
                     }
@@ -211,7 +232,7 @@ fun TransportControls(
                 Icon(
                     painter = painterResource(R.drawable.ic_rewind_forward_30),
                     contentDescription = seekForwardContentDescription,
-                    tint = Color.White,
+                    tint = primaryControlTint,
                     modifier = Modifier.size(34.dp),
                 )
             }
@@ -220,7 +241,7 @@ fun TransportControls(
                 Icon(
                     painter = painterResource(R.drawable.ic_player_skip_forward),
                     contentDescription = nextContentDescription,
-                    tint = Color.White.copy(alpha = 0.7f),
+                    tint = secondaryControlTint,
                     modifier = Modifier.size(28.dp),
                 )
             }

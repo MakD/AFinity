@@ -36,7 +36,8 @@ object AudioPlayerLayout {
     val IconSize = 22.dp
     val ActiveDotSize = 4.dp
 
-    val InactiveTint = Color.White.copy(alpha = 0.8f)
+    val InactiveTint: Color
+        @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
 
     val CoverSizeCap: Modifier = Modifier.sizeIn(maxWidth = CoverMaxSize, maxHeight = CoverMaxSize)
 }
@@ -91,7 +92,7 @@ fun AudioPlayerValueSlot(
             modifier =
                 Modifier.minimumInteractiveComponentSize()
                     .clip(RoundedCornerShape(50))
-                    .background(Color.White.copy(alpha = 0.14f))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                     .clickable(
                         onClickLabel = contentDescription,
                         role = Role.Button,
@@ -104,7 +105,7 @@ fun AudioPlayerValueSlot(
                 text = value,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (active) activeColor else Color.White,
+                color = if (active) activeColor else MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
             )
         }

@@ -35,6 +35,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -88,25 +89,31 @@ fun AudioPlayerScaffold(
     actions: @Composable RowScope.() -> Unit,
     overlays: @Composable () -> Unit,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val gradientColors =
+        if (isDark) {
+            listOf(
+                accentColor.copy(alpha = 0.8f),
+                Color.Black.copy(alpha = 0.5f),
+                Color.Black.copy(alpha = 0.95f),
+            )
+        } else {
+            listOf(
+                accentColor.copy(alpha = 0.45f),
+                MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.6f),
+                MaterialTheme.colorScheme.surface,
+            )
+        }
+
     Scaffold(
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) })
         },
-        containerColor = Color.Transparent,
+        containerColor = if (isDark) Color.Black else MaterialTheme.colorScheme.surface,
     ) { paddingValues ->
         Box(
             modifier =
-                Modifier.fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors =
-                                listOf(
-                                    accentColor.copy(alpha = 0.8f),
-                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
-                                    Color.Black.copy(alpha = 0.9f),
-                                )
-                        )
-                    )
+                Modifier.fillMaxSize().background(Brush.verticalGradient(colors = gradientColors))
         ) {
             if (isCasting) {
                 castRemote()
@@ -205,7 +212,7 @@ private fun AudioPlayerTopRow(
             Icon(
                 painter = painterResource(R.drawable.ic_keyboard_arrow_down),
                 contentDescription = stringResource(R.string.cd_abs_minimize),
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = if (isLandscape) Modifier else Modifier.size(32.dp),
             )
         }
@@ -213,7 +220,7 @@ private fun AudioPlayerTopRow(
         Text(
             stringResource(R.string.abs_now_playing),
             style = MaterialTheme.typography.labelSmall,
-            color = Color.White.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             letterSpacing = 2.sp,
             modifier = Modifier.align(Alignment.Center),
         )
@@ -227,7 +234,7 @@ private fun AudioPlayerTopRow(
                     Icon(
                         painter = painterResource(R.drawable.ic_cast_devices),
                         contentDescription = stringResource(R.string.cd_cast),
-                        tint = if (isCasting) accentColor else Color.White,
+                        tint = if (isCasting) accentColor else MaterialTheme.colorScheme.onSurface,
                     )
                     Box(
                         modifier =
@@ -242,7 +249,7 @@ private fun AudioPlayerTopRow(
                 Icon(
                     painter = painterResource(R.drawable.ic_dots_vertical),
                     contentDescription = stringResource(R.string.cd_music_more_options),
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
         }
@@ -261,6 +268,14 @@ fun AudioPlayerTitleBlock(
     onAccentLineClick: (() -> Unit)? = null,
     trailing: @Composable () -> Unit = {},
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val displayAccentColor =
+        if (!isDark && accentColor.luminance() > 0.5f) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            accentColor
+        }
+
     Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -273,7 +288,7 @@ fun AudioPlayerTitleBlock(
                             fontWeight = FontWeight.ExtraBold
                         )
                     },
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -285,7 +300,7 @@ fun AudioPlayerTitleBlock(
                 style =
                     if (isLandscape) MaterialTheme.typography.bodyMedium
                     else MaterialTheme.typography.titleMedium,
-                color = Color.White.copy(alpha = 0.7f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.plainClickable(onSubtitleClick),
@@ -294,7 +309,7 @@ fun AudioPlayerTitleBlock(
             Text(
                 text = accentLine ?: " ",
                 style = MaterialTheme.typography.labelLarge,
-                color = accentColor,
+                color = displayAccentColor,
                 maxLines = 1,
                 modifier =
                     Modifier.plainClickable(onAccentLineClick)

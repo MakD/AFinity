@@ -197,7 +197,7 @@ fun SharedTransitionScope.MusicPlayerScreen(
                             contentDescription = stringResource(R.string.cd_favorite),
                             tint =
                                 if (track?.favorite == true) Color.Red
-                                else Color.White.copy(alpha = 0.8f),
+                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                         )
                     }
                 },

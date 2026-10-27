@@ -57,6 +57,7 @@ fun MusicLyricsView(
     val positionState = rememberUpdatedState(positionMs)
     val playingState = rememberUpdatedState(isPlaying)
     val seekState = rememberUpdatedState(onSeek)
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
     LaunchedEffect(currentLineIndex) {
         if (currentLineIndex >= 0) {
@@ -69,7 +70,7 @@ fun MusicLyricsView(
             isLoading -> {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
-                    color = Color.White,
+                    color = if (isDark) Color.White else MaterialTheme.colorScheme.primary,
                     strokeWidth = 2.dp,
                 )
             }
@@ -77,7 +78,7 @@ fun MusicLyricsView(
                 Text(
                     text = stringResource(R.string.music_player_no_lyrics),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.5f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     modifier = Modifier.align(Alignment.Center),
                 )
             }
@@ -98,6 +99,7 @@ fun MusicLyricsView(
                             playingState = playingState,
                             seekState = seekState,
                             accentColor = accentColor,
+                            isDark = isDark,
                         )
                     }
                     item { Spacer(Modifier.height(48.dp)) }
@@ -117,8 +119,13 @@ private fun LyricLineRow(
     playingState: State<Boolean>,
     seekState: State<(Long) -> Unit>,
     accentColor: Color,
+    isDark: Boolean,
 ) {
-    val readableAccent = remember(accentColor) { accentColor.readableOnDark() }
+    val readableAccent =
+        remember(accentColor, isDark) {
+            if (isDark) accentColor.readableOnDark() else accentColor.readableOnLight()
+        }
+    val defaultLyricColor = if (isDark) Color.White else MaterialTheme.colorScheme.onSurface
     val lineAlpha =
         animateFloatAsState(
             targetValue =
@@ -184,7 +191,7 @@ private fun LyricLineRow(
             Text(
                 text = line.text,
                 style = textStyle,
-                color = Color.White,
+                color = defaultLyricColor,
                 modifier = Modifier.fillMaxWidth(),
             )
             Text(
@@ -202,7 +209,7 @@ private fun LyricLineRow(
         Text(
             text = line.text,
             style = textStyle,
-            color = if (isCurrent) readableAccent else Color.White,
+            color = if (isCurrent) readableAccent else defaultLyricColor,
             modifier = rowModifier,
         )
     }
@@ -213,6 +220,13 @@ private fun Color.readableOnDark(minLuminance: Float = 0.45f): Color {
     if (current >= minLuminance) return this
     val lift = (((minLuminance - current) / minLuminance) * 0.7f).coerceIn(0f, 0.7f)
     return lerp(this, Color.White, lift)
+}
+
+private fun Color.readableOnLight(maxLuminance: Float = 0.35f): Color {
+    val current = luminance()
+    if (current <= maxLuminance) return this
+    val drop = (((current - maxLuminance) / (1f - maxLuminance)) * 0.7f).coerceIn(0f, 0.7f)
+    return lerp(this, Color.Black, drop)
 }
 
 private fun ContentDrawScope.drawKaraokeFill(layout: TextLayoutResult?, progress: Float) {
