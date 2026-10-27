@@ -841,6 +841,7 @@ constructor(
                 when (item) {
                     is AfinityShow -> item.id
                     is AfinityEpisode -> item.seriesId
+                    is AfinitySeason -> item.seriesId
                     else -> null
                 } ?: continue
             if (item is AfinityShow) directShows[seriesId] = item
