@@ -54,6 +54,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -79,10 +80,12 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -1635,9 +1638,18 @@ private fun SeekBar(
         if (uiState.isLiveChannel) {
             LiveBadge()
         } else {
+            val timeLabelStyle =
+                LocalTextStyle.current.copy(fontSize = 12.sp, fontFeatureSettings = "tnum")
+            val textMeasurer = rememberTextMeasurer()
+            val density = LocalDensity.current
+            val timeLabelWidth =
+                remember(duration, timeLabelStyle, textMeasurer, density) {
+                    val widest = "-" + formatTime(duration).replace(Regex("\\d"), "0")
+                    with(density) { textMeasurer.measure(widest, timeLabelStyle).size.width.toDp() }
+                }
             Box(
                 modifier =
-                    Modifier.width(50.dp).clickable(
+                    Modifier.width(maxOf(50.dp, timeLabelWidth)).clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
                         role = Role.Button,
@@ -1654,7 +1666,7 @@ private fun SeekBar(
                             formatTime(position)
                         },
                     color = Color.White,
-                    fontSize = 12.sp,
+                    style = timeLabelStyle,
                     maxLines = 1,
                 )
             }

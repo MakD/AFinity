@@ -76,6 +76,7 @@ import com.makd.afinity.ui.components.PortraitDetailLayout
 import com.makd.afinity.ui.components.PortraitHero
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.backdropChainOf
+import com.makd.afinity.ui.components.detailListBottomPadding
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
 import com.makd.afinity.ui.item.components.shared.OverviewSection
@@ -552,7 +553,8 @@ fun MusicArtistScreen(
         SnackbarHost(
             hostState = snackbarHostState,
             snackbar = { AFinitySnackbar(it) },
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
+            modifier =
+                Modifier.align(Alignment.BottomCenter).padding(bottom = detailListBottomPadding()),
         )
     }
 
