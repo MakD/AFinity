@@ -79,6 +79,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -1095,11 +1096,11 @@ private fun TopControls(
             modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(
-                    WindowInsets.safeDrawing
-                        .only(WindowInsetsSides.Horizontal)
-                        .union(WindowInsets.displayCutout.only(WindowInsetsSides.Top))
+                    WindowInsets.safeDrawing.only(
+                        WindowInsetsSides.Horizontal + WindowInsetsSides.Top
+                    )
                 )
-                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 24.dp)
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 8.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
             IconButton(onClick = onBackClick, modifier = Modifier.size(36.dp)) {
@@ -1209,6 +1210,11 @@ private fun CenterPlayButton(
     onPreviousClick: () -> Unit,
 ) {
     val showSkipButtons = hasQueueNeighbors && !uiState.isPlayingIntro
+    val isCompact = LocalConfiguration.current.screenWidthDp < 420
+    val buttonSize = if (isCompact) 48.dp else 60.dp
+    val iconSize = if (isCompact) 26.dp else 32.dp
+    val playIconSize = if (isCompact) 32.dp else 40.dp
+    val spacing = if (isCompact) 8.dp else 16.dp
 
     AnimatedVisibility(
         visible = showPlayButton,
@@ -1217,22 +1223,22 @@ private fun CenterPlayButton(
         modifier = modifier,
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(spacing),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (showSkipButtons) {
-                IconButton(onClick = onPreviousClick, modifier = Modifier.size(60.dp)) {
+                IconButton(onClick = onPreviousClick, modifier = Modifier.size(buttonSize)) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_player_skip_back),
                         contentDescription = stringResource(R.string.cd_previous),
                         tint = Color.White,
-                        modifier = Modifier.size(32.dp),
+                        modifier = Modifier.size(iconSize),
                     )
                 }
             }
 
             if (!uiState.isPlayingIntro) {
-                IconButton(onClick = onSeekBackward, modifier = Modifier.size(60.dp)) {
+                IconButton(onClick = onSeekBackward, modifier = Modifier.size(buttonSize)) {
                     Icon(
                         painter = painterResource(id = uiState.seekBackStep.backIcon),
                         contentDescription =
@@ -1241,17 +1247,17 @@ private fun CenterPlayButton(
                                 uiState.seekBackStep.seconds,
                             ),
                         tint = Color.White,
-                        modifier = Modifier.size(32.dp),
+                        modifier = Modifier.size(iconSize),
                     )
                 }
             }
 
-            IconButton(onClick = onPlayPauseClick, modifier = Modifier.size(60.dp)) {
+            IconButton(onClick = onPlayPauseClick, modifier = Modifier.size(buttonSize)) {
                 if (isBuffering) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(40.dp),
+                        modifier = Modifier.size(playIconSize),
                         color = Color.White,
-                        strokeWidth = 4.dp,
+                        strokeWidth = if (isCompact) 3.dp else 4.dp,
                     )
                 } else {
                     Icon(
@@ -1262,13 +1268,13 @@ private fun CenterPlayButton(
                             if (isPlaying) stringResource(R.string.cd_pause)
                             else stringResource(R.string.cd_play),
                         tint = Color.White,
-                        modifier = Modifier.size(40.dp),
+                        modifier = Modifier.size(playIconSize),
                     )
                 }
             }
 
             if (!uiState.isPlayingIntro) {
-                IconButton(onClick = onSeekForward, modifier = Modifier.size(60.dp)) {
+                IconButton(onClick = onSeekForward, modifier = Modifier.size(buttonSize)) {
                     Icon(
                         painter = painterResource(id = uiState.seekForwardStep.forwardIcon),
                         contentDescription =
@@ -1277,18 +1283,18 @@ private fun CenterPlayButton(
                                 uiState.seekForwardStep.seconds,
                             ),
                         tint = Color.White,
-                        modifier = Modifier.size(32.dp),
+                        modifier = Modifier.size(iconSize),
                     )
                 }
             }
 
             if (showSkipButtons) {
-                IconButton(onClick = onNextClick, modifier = Modifier.size(60.dp)) {
+                IconButton(onClick = onNextClick, modifier = Modifier.size(buttonSize)) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_player_skip_forward),
                         contentDescription = stringResource(R.string.cd_next),
                         tint = Color.White,
-                        modifier = Modifier.size(32.dp),
+                        modifier = Modifier.size(iconSize),
                     )
                 }
             }
@@ -1340,77 +1346,89 @@ private fun BottomControls(
                 )
             }
             if (!uiState.isPlayingIntro) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+                val isCompact = LocalConfiguration.current.screenWidthDp < 540
+                if (isCompact) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        LabeledControl(
-                            painter = painterResource(id = R.drawable.ic_settings),
-                            label = stringResource(R.string.player_tracks_label),
-                            showLabel = false,
-                            onClick = onTrackPanelToggle,
-                        )
-                        if (!uiState.isLiveChannel) {
-                            LabeledControl(
-                                painter = painterResource(id = R.drawable.ic_speed),
-                                label = stringResource(R.string.cd_speed),
-                                showLabel = false,
-                                onClick = onSpeedToggle,
-                            )
-                        }
-                        val sleepTimerArmed = uiState.isSleepTimerArmed
-                        LabeledControl(
-                            painter =
-                                painterResource(
-                                    id =
-                                        if (sleepTimerArmed) R.drawable.ic_moon_filled
-                                        else R.drawable.ic_moon
-                                ),
-                            label =
-                                if (sleepTimerArmed) formatTime(uiState.sleepTimerRemainingMs)
-                                else stringResource(R.string.player_sleep_timer_title),
-                            tint =
-                                if (sleepTimerArmed) MaterialTheme.colorScheme.primary
-                                else Color.White.copy(alpha = 0.72f),
-                            showLabel = sleepTimerArmed,
-                            onClick = onSleepTimerToggle,
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         PlaybackBadges(uiState = uiState, onClick = onQualityToggle)
-
-                        if (uiState.availableSources.size > 1) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            if (uiState.availableSources.size > 1) {
+                                LabeledControl(
+                                    painter = painterResource(id = R.drawable.ic_versions),
+                                    label = stringResource(R.string.cd_version_selector),
+                                    showLabel = false,
+                                    onClick = onVersionToggle,
+                                )
+                            }
+                            if (showChapterSwitcherButton) {
+                                LabeledControl(
+                                    painter = painterResource(id = R.drawable.ic_bookmarks),
+                                    label = stringResource(R.string.chapters_title),
+                                    showLabel = false,
+                                    onClick = onChapterSwitcherToggle,
+                                )
+                            }
+                            if (showEpisodeSwitcherButton) {
+                                LabeledControl(
+                                    painter = painterResource(id = R.drawable.ic_episodes_list),
+                                    label = stringResource(R.string.cd_episodes),
+                                    showLabel = false,
+                                    onClick = onEpisodeSwitcherToggle,
+                                )
+                            }
                             LabeledControl(
-                                painter = painterResource(id = R.drawable.ic_versions),
-                                label = stringResource(R.string.cd_version_selector),
+                                painter = painterResource(id = R.drawable.ic_info),
+                                label = stringResource(R.string.cd_playback_info),
                                 showLabel = false,
-                                onClick = onVersionToggle,
+                                onClick = { onPlayerEvent(PlayerEvent.TogglePlaybackStats) },
                             )
                         }
-                        if (showChapterSwitcherButton) {
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
                             LabeledControl(
-                                painter = painterResource(id = R.drawable.ic_bookmarks),
-                                label = stringResource(R.string.chapters_title),
+                                painter = painterResource(id = R.drawable.ic_settings),
+                                label = stringResource(R.string.player_tracks_label),
                                 showLabel = false,
-                                onClick = onChapterSwitcherToggle,
+                                onClick = onTrackPanelToggle,
                             )
-                        }
-                        if (showEpisodeSwitcherButton) {
+                            if (!uiState.isLiveChannel) {
+                                LabeledControl(
+                                    painter = painterResource(id = R.drawable.ic_speed),
+                                    label = stringResource(R.string.cd_speed),
+                                    showLabel = false,
+                                    onClick = onSpeedToggle,
+                                )
+                            }
+                            val sleepTimerArmed = uiState.isSleepTimerArmed
                             LabeledControl(
-                                painter = painterResource(id = R.drawable.ic_episodes_list),
-                                label = stringResource(R.string.cd_episodes),
-                                showLabel = false,
-                                onClick = onEpisodeSwitcherToggle,
+                                painter =
+                                    painterResource(
+                                        id =
+                                            if (sleepTimerArmed) R.drawable.ic_moon_filled
+                                            else R.drawable.ic_moon
+                                    ),
+                                label =
+                                    if (sleepTimerArmed) formatTime(uiState.sleepTimerRemainingMs)
+                                    else stringResource(R.string.player_sleep_timer_title),
+                                tint =
+                                    if (sleepTimerArmed) MaterialTheme.colorScheme.primary
+                                    else Color.White.copy(alpha = 0.72f),
+                                showLabel = sleepTimerArmed,
+                                onClick = onSleepTimerToggle,
                             )
                         }
                         LabeledControl(
@@ -1419,12 +1437,94 @@ private fun BottomControls(
                             showLabel = false,
                             onClick = { onPlayerEvent(PlayerEvent.CycleScreenRotation) },
                         )
-                        LabeledControl(
-                            painter = painterResource(id = R.drawable.ic_info),
-                            label = stringResource(R.string.cd_playback_info),
-                            showLabel = false,
-                            onClick = { onPlayerEvent(PlayerEvent.TogglePlaybackStats) },
-                        )
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            LabeledControl(
+                                painter = painterResource(id = R.drawable.ic_settings),
+                                label = stringResource(R.string.player_tracks_label),
+                                showLabel = false,
+                                onClick = onTrackPanelToggle,
+                            )
+                            if (!uiState.isLiveChannel) {
+                                LabeledControl(
+                                    painter = painterResource(id = R.drawable.ic_speed),
+                                    label = stringResource(R.string.cd_speed),
+                                    showLabel = false,
+                                    onClick = onSpeedToggle,
+                                )
+                            }
+                            val sleepTimerArmed = uiState.isSleepTimerArmed
+                            LabeledControl(
+                                painter =
+                                    painterResource(
+                                        id =
+                                            if (sleepTimerArmed) R.drawable.ic_moon_filled
+                                            else R.drawable.ic_moon
+                                    ),
+                                label =
+                                    if (sleepTimerArmed) formatTime(uiState.sleepTimerRemainingMs)
+                                    else stringResource(R.string.player_sleep_timer_title),
+                                tint =
+                                    if (sleepTimerArmed) MaterialTheme.colorScheme.primary
+                                    else Color.White.copy(alpha = 0.72f),
+                                showLabel = sleepTimerArmed,
+                                onClick = onSleepTimerToggle,
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            PlaybackBadges(uiState = uiState, onClick = onQualityToggle)
+
+                            if (uiState.availableSources.size > 1) {
+                                LabeledControl(
+                                    painter = painterResource(id = R.drawable.ic_versions),
+                                    label = stringResource(R.string.cd_version_selector),
+                                    showLabel = false,
+                                    onClick = onVersionToggle,
+                                )
+                            }
+                            if (showChapterSwitcherButton) {
+                                LabeledControl(
+                                    painter = painterResource(id = R.drawable.ic_bookmarks),
+                                    label = stringResource(R.string.chapters_title),
+                                    showLabel = false,
+                                    onClick = onChapterSwitcherToggle,
+                                )
+                            }
+                            if (showEpisodeSwitcherButton) {
+                                LabeledControl(
+                                    painter = painterResource(id = R.drawable.ic_episodes_list),
+                                    label = stringResource(R.string.cd_episodes),
+                                    showLabel = false,
+                                    onClick = onEpisodeSwitcherToggle,
+                                )
+                            }
+                            LabeledControl(
+                                painter = painterResource(id = R.drawable.ic_screen_rotation),
+                                label = stringResource(R.string.cd_screen_rotation),
+                                showLabel = false,
+                                onClick = { onPlayerEvent(PlayerEvent.CycleScreenRotation) },
+                            )
+                            LabeledControl(
+                                painter = painterResource(id = R.drawable.ic_info),
+                                label = stringResource(R.string.cd_playback_info),
+                                showLabel = false,
+                                onClick = { onPlayerEvent(PlayerEvent.TogglePlaybackStats) },
+                            )
+                        }
                     }
                 }
             }
@@ -2176,6 +2276,7 @@ private fun PauseDetailsOverlay(
         modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f))
     ) {
         val compact = maxHeight < PauseCompactHeight
+        val isWide = maxWidth >= 600.dp
         val shownCast = if (compact) cast.take(2) else cast
         val compactAwards = compact && awardsHighlight != null && ratingChips.isNotEmpty()
         Column(
@@ -2328,7 +2429,7 @@ private fun PauseDetailsOverlay(
                     }
                 }
 
-                if (shownCast.isNotEmpty()) {
+                if (isWide && shownCast.isNotEmpty()) {
                     Column(
                         modifier = Modifier.widthIn(max = 280.dp),
                         verticalArrangement = Arrangement.spacedBy(if (compact) 10.dp else 16.dp),
@@ -2347,55 +2448,113 @@ private fun PauseDetailsOverlay(
                 }
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = if (compact) 12.dp else 22.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Button(
-                    onClick = { onPlayerEvent(PlayerEvent.Play) },
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = Color.Black,
-                        ),
+            if (isWide) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = if (compact) 12.dp else 22.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_player_play_filled),
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = { onPlayerEvent(PlayerEvent.Play) },
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = Color.White,
+                                contentColor = Color.Black,
+                            ),
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_player_play_filled),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.player_resume),
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    TextButton(
+                        onClick = {
+                            onPlayerEvent(PlayerEvent.Seek(0))
+                            onPlayerEvent(PlayerEvent.Play)
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_player_skip_back),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = stringResource(R.string.player_restart))
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
                     Text(
-                        text = stringResource(R.string.player_resume),
-                        fontWeight = FontWeight.SemiBold,
+                        text =
+                            stringResource(R.string.player_time_left, formatTime(remainingMs)) +
+                                "  ·  " +
+                                stringResource(R.string.player_ends_at, endsAt),
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 13.sp,
+                        maxLines = 1,
                     )
                 }
-                Spacer(modifier = Modifier.width(12.dp))
-                TextButton(
-                    onClick = {
-                        onPlayerEvent(PlayerEvent.Seek(0))
-                        onPlayerEvent(PlayerEvent.Play)
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(top = if (compact) 12.dp else 20.dp)
                 ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_player_skip_back),
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
+                    Text(
+                        text =
+                            stringResource(R.string.player_time_left, formatTime(remainingMs)) +
+                                "  ·  " +
+                                stringResource(R.string.player_ends_at, endsAt),
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 13.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(bottom = 10.dp),
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = stringResource(R.string.player_restart))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Button(
+                            onClick = { onPlayerEvent(PlayerEvent.Play) },
+                            colors =
+                                ButtonDefaults.buttonColors(
+                                    containerColor = Color.White,
+                                    contentColor = Color.Black,
+                                ),
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_player_play_filled),
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(R.string.player_resume),
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        TextButton(
+                            onClick = {
+                                onPlayerEvent(PlayerEvent.Seek(0))
+                                onPlayerEvent(PlayerEvent.Play)
+                            },
+                            colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_player_skip_back),
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = stringResource(R.string.player_restart))
+                        }
+                    }
                 }
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    text =
-                        stringResource(R.string.player_time_left, formatTime(remainingMs)) +
-                            "  ·  " +
-                            stringResource(R.string.player_ends_at, endsAt),
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 13.sp,
-                    maxLines = 1,
-                )
             }
         }
     }

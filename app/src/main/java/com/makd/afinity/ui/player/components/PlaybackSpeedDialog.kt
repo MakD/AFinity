@@ -168,7 +168,7 @@ fun PlaybackSpeedPanel(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
             ) {
                 SpeedChip(
                     speed = 0.25f,
@@ -204,7 +204,7 @@ fun PlaybackSpeedPanel(
 private fun SpeedChip(speed: Float, isSelected: Boolean, onClick: () -> Unit) {
     Button(
         onClick = onClick,
-        modifier = Modifier.heightIn(min = 40.dp),
+        modifier = Modifier.heightIn(min = 36.dp),
         shape = RoundedCornerShape(20.dp),
         colors =
             ButtonDefaults.buttonColors(
@@ -221,7 +221,7 @@ private fun SpeedChip(speed: Float, isSelected: Boolean, onClick: () -> Unit) {
                         MaterialTheme.colorScheme.onSurfaceVariant
                     },
             ),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
     ) {
         Text(
             text = stringResource(R.string.player_speed_value_fmt, speed),

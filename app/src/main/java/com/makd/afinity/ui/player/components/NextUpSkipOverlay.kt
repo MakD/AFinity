@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -56,6 +57,11 @@ fun NextUpSkipOverlay(
     val ratingScale = rememberRatingMetadataScale()
 
     if (nextEpisode != null && segment.type == AfinitySegmentType.OUTRO) {
+        val screenWidthDp = LocalConfiguration.current.screenWidthDp
+        val isCompact = screenWidthDp < 480
+        val showThumbnail = screenWidthDp >= 340
+        val thumbnailWidth = if (isCompact) 110.dp else 200.dp
+
         Card(
             modifier = modifier.widthIn(max = 540.dp),
             shape = RoundedCornerShape(16.dp),
@@ -63,32 +69,35 @@ fun NextUpSkipOverlay(
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         ) {
             Row(
-                modifier = Modifier.padding(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.padding(if (isCompact) 10.dp else 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(if (isCompact) 10.dp else 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box(
-                    modifier =
-                        Modifier.width(200.dp)
-                            .aspectRatio(16f / 9f)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                ) {
-                    val primaryImageUrl = nextEpisode.images.primaryImageUrl
-                    if (primaryImageUrl != null) {
-                        AsyncImage(
-                            imageUrl = primaryImageUrl,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize(),
-                            targetWidth = 200.dp,
-                            targetHeight = 112.dp,
-                        )
-                    } else {
-                        Box(
-                            modifier =
-                                Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.05f))
-                        )
+                if (showThumbnail) {
+                    Box(
+                        modifier =
+                            Modifier.width(thumbnailWidth)
+                                .aspectRatio(16f / 9f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    ) {
+                        val primaryImageUrl = nextEpisode.images.primaryImageUrl
+                        if (primaryImageUrl != null) {
+                            AsyncImage(
+                                imageUrl = primaryImageUrl,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize(),
+                                targetWidth = thumbnailWidth,
+                                targetHeight = thumbnailWidth * 9f / 16f,
+                            )
+                        } else {
+                            Box(
+                                modifier =
+                                    Modifier.fillMaxSize()
+                                        .background(Color.White.copy(alpha = 0.05f))
+                            )
+                        }
                     }
                 }
 
