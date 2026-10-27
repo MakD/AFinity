@@ -3124,7 +3124,7 @@
     <string name="server_backup_no_answer">Сервер не подтвердил резервную копию. Проверьте этот список еще раз через несколько минут.</string>
     <string name="title_api_keys">Ключи API</string>
     <string name="api_keys_summary">Доступ для других приложений и скриптов</string>
-    <string name="api_keys_note">У ключа есть полный административный доступ и не имеет срока действия. Делитесь им только с сервисом, которым управляете вы.</string>
+    <string name="api_keys_note">У ключа есть полный административный доступ и он не имеет срока действия. Делитесь им только с сервисом, которым управляете вы.</string>
     <string name="api_keys_empty">Нет ключей API</string>
     <string name="api_key_new">Новый ключ</string>
     <string name="api_key_new_title">Новый ключ API</string>
