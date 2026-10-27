@@ -123,7 +123,6 @@ enum class LibraryFilter(@StringRes val displayNameRes: Int) {
     Genres(R.string.music_tab_genres),
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicLibraryScreen(
     onProfileClick: () -> Unit,

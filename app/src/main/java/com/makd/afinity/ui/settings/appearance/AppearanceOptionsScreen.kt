@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -55,7 +54,6 @@ import com.makd.afinity.ui.settings.SettingsViewModel
 import com.makd.afinity.ui.theme.AppFont
 import com.makd.afinity.ui.theme.ThemeMode
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppearanceOptionsScreen(
     onBackClick: () -> Unit,
@@ -753,5 +751,6 @@ private fun getFontDisplayName(font: AppFont): String {
         AppFont.QUICKSAND -> "Quicksand"
         AppFont.IBM_PLEX_SANS -> "IBM Plex Sans"
         AppFont.IBM_PLEX_SANS_CONDENSED -> "IBM Plex Sans Condensed"
+        AppFont.NETFLIX_SANS -> "Netflix Sans"
     }
 }

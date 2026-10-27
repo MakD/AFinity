@@ -46,6 +46,13 @@ val IBMPlexSansCondensed =
         Font(R.font.ibmplexsans_condensed_bold, FontWeight.Bold),
     )
 
+val NetflixSans =
+    FontFamily(
+        Font(R.font.netflix_sans_bold, FontWeight.Bold),
+        Font(R.font.netflix_sans_medium, FontWeight.Medium),
+        Font(R.font.netflix_sans_light, FontWeight.Light),
+    )
+
 val CenterLineHeightStyle =
     LineHeightStyle(alignment = LineHeightStyle.Alignment.Center, trim = LineHeightStyle.Trim.None)
 
@@ -57,6 +64,7 @@ fun getAppTypography(appFont: AppFont): Typography {
             AppFont.QUICKSAND -> Quicksand
             AppFont.IBM_PLEX_SANS -> IBMPlexSans
             AppFont.IBM_PLEX_SANS_CONDENSED -> IBMPlexSansCondensed
+            AppFont.NETFLIX_SANS -> NetflixSans
         }
 
     return Typography(

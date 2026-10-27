@@ -43,8 +43,8 @@ object CardDimensions {
 
     private const val LANDSCAPE_HEIGHT_FRACTION = 0.4f
     private const val SQUARE_CAROUSEL_WIDTH_FRACTION = 0.48f
-    private const val RANKED_NUMBER_ZONE_FRACTION = 0.5f
-    private const val RANKED_DIGIT_HEIGHT_FRACTION = 0.7f
+    private const val RANKED_PORTRAIT_DIGIT_HEIGHT_FRACTION = 0.48f
+    private const val RANKED_SQUARE_DIGIT_HEIGHT_FRACTION = 0.54f
     private const val LANDSCAPE_POSTER_SPAN = 5
     private const val LANDSCAPE_CARD_SPAN = 3
 
@@ -132,9 +132,18 @@ object CardDimensions {
         @ReadOnlyComposable
         get() = SQUARE_CAROUSEL_WIDTH_FRACTION * LocalCardSize.current.scale
 
-    fun rankedNumberZone(posterWidth: Dp): Dp = (posterWidth + RowGap) * RANKED_NUMBER_ZONE_FRACTION
-
-    fun rankedDigitHeight(cardHeight: Dp): Dp = cardHeight * RANKED_DIGIT_HEIGHT_FRACTION
+    fun rankedDigitHeight(
+        cardHeight: Dp,
+        aspectRatio: Float = ASPECT_RATIO_PORTRAIT,
+    ): Dp {
+        val fraction =
+            if (aspectRatio >= ASPECT_RATIO_SQUARE) {
+                RANKED_SQUARE_DIGIT_HEIGHT_FRACTION
+            } else {
+                RANKED_PORTRAIT_DIGIT_HEIGHT_FRACTION
+            }
+        return cardHeight * fraction
+    }
 
     @Composable @ReadOnlyComposable fun gridCells(): GridCells = NearestCardCells(posterCardWidth)
 

@@ -138,9 +138,7 @@ constructor(
         }
 
     override suspend fun getTrackCount(libraryId: UUID, filters: MusicFilters): Int? =
-        apiCall<Int?>(null, "Failed to fetch track count for library: $libraryId") {
-            apiClient,
-            userId ->
+        apiCall(null, "Failed to fetch track count for library: $libraryId") { apiClient, userId ->
             val itemFilters = buildList {
                 if (filters.favoritesOnly) add(ItemFilter.IS_FAVORITE)
                 if (filters.unplayedOnly) add(ItemFilter.IS_UNPLAYED)
@@ -166,9 +164,8 @@ constructor(
         }
 
     override suspend fun getLibraryRuntimeTicks(libraryId: UUID): Long? =
-        apiCall<Long?>(null, "Failed to fetch total runtime for library: $libraryId") {
-            apiClient,
-            userId ->
+        apiCall(null, "Failed to fetch total runtime for library: $libraryId") { apiClient, userId
+            ->
             LibraryApi(apiClient)
                 .getItems(
                     userId = userId,
@@ -516,8 +513,7 @@ constructor(
         }
 
     override suspend fun getArtistTrackCount(artistId: UUID): Int? =
-        apiCall<Int?>(null, "Failed to fetch track count for artist: $artistId") { apiClient, userId
-            ->
+        apiCall(null, "Failed to fetch track count for artist: $artistId") { apiClient, userId ->
             LibraryApi(apiClient)
                 .getItems(
                     userId = userId,

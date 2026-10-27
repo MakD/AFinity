@@ -1,5 +1,10 @@
 package com.makd.afinity.ui.components
 
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.RectF
+import android.graphics.Typeface
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -9,24 +14,34 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.Path as ComposePath
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.asComposePath
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.layout.FirstBaseline
-import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.TextUnit
+import androidx.core.content.res.ResourcesCompat
+import com.makd.afinity.R
 import com.makd.afinity.ui.theme.CardDimensions
 
-private const val DIGIT_CAP_HEIGHT_RATIO = 0.72f
-private const val DIGIT_STROKE_FRACTION = 0.03f
-private const val DIGIT_ALPHA = 0.7f
+private const val DIGIT_STROKE_FRACTION = 0.022f
+private const val DIGIT_STROKE_ALPHA = 0.78f
+private const val DIGIT_FILL_TINT_ALPHA = 0.08f
+private const val DOUBLE_DIGIT_OVERLAP_FRACTION = 0.12f
+
+private const val NARROW_DIGIT_TUCK_FRACTION = 0.30f
+private const val SINGLE_DIGIT_TUCK_FRACTION = 0.33f
+private const val DOUBLE_DIGIT_TUCK_FRACTION = 0.34f
+
+private class RankGlyph(val paths: List<ComposePath>, val visibleWidthPx: Float)
 
 @Composable
 fun RankedCardFrame(
@@ -37,15 +52,26 @@ fun RankedCardFrame(
     details: @Composable () -> Unit,
     card: @Composable () -> Unit,
 ) {
-    val numberZone = CardDimensions.rankedNumberZone(cardWidth)
+    val context = LocalContext.current
+    val density = LocalDensity.current
     val cardHeight = CardDimensions.calculateHeight(cardWidth, aspectRatio)
+    val digitHeight = CardDimensions.rankedDigitHeight(cardHeight, aspectRatio)
+    val digitHeightPx = with(density) { digitHeight.toPx() }
+    val netflixTypeface =
+        remember(context) {
+            ResourcesCompat.getFont(context, R.font.netflix_sans_medium) ?: Typeface.DEFAULT
+        }
+    val glyph =
+        remember(ranking, netflixTypeface, digitHeightPx) {
+            rankGlyph(ranking, netflixTypeface, digitHeightPx)
+        }
+    val numberZone = with(density) { glyph.visibleWidthPx.toDp() }
 
     Column(modifier = modifier.width(numberZone + cardWidth)) {
         Box(modifier = Modifier.fillMaxWidth().height(cardHeight)) {
             RankDigits(
-                ranking = ranking,
-                digitHeight = CardDimensions.rankedDigitHeight(cardHeight),
-                modifier = Modifier.align(Alignment.BottomStart),
+                glyph = glyph,
+                modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth().height(digitHeight),
             )
             Box(modifier = Modifier.align(Alignment.TopEnd).size(cardWidth, cardHeight)) { card() }
         }
@@ -57,32 +83,98 @@ fun RankedCardFrame(
 }
 
 @Composable
-private fun RankDigits(ranking: Int, digitHeight: Dp, modifier: Modifier = Modifier) {
-    val density = LocalDensity.current
-    val fontSize = with(density) { (digitHeight / DIGIT_CAP_HEIGHT_RATIO).toSp() }
-    val strokeWidth = with(density) { (digitHeight * DIGIT_STROKE_FRACTION).toPx() }
+private fun RankDigits(glyph: RankGlyph, modifier: Modifier = Modifier) {
+    val strokeColor = MaterialTheme.colorScheme.onBackground.copy(alpha = DIGIT_STROKE_ALPHA)
 
-    Text(
-        text = ranking.toString(),
-        style =
-            MaterialTheme.typography.displayLarge.copy(
-                fontSize = fontSize,
-                lineHeight = TextUnit.Unspecified,
-                fontWeight = FontWeight.Black,
-                drawStyle = Stroke(width = strokeWidth),
-            ),
-        color = MaterialTheme.colorScheme.onBackground.copy(alpha = DIGIT_ALPHA),
-        overflow = TextOverflow.Visible,
-        maxLines = 1,
-        softWrap = false,
+    val fillColor =
+        MaterialTheme.colorScheme.onBackground
+            .copy(alpha = DIGIT_FILL_TINT_ALPHA)
+            .compositeOver(MaterialTheme.colorScheme.background)
+
+    Box(
         modifier =
-            modifier.layout { measurable, constraints ->
-                val placeable =
-                    measurable.measure(
-                        constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity)
+            modifier.drawWithCache {
+                val outerStroke =
+                    Stroke(
+                        width = size.height * DIGIT_STROKE_FRACTION * 2f,
+                        join = StrokeJoin.Miter,
+                        miter = 4f,
                     )
-                val baseline = placeable[FirstBaseline]
-                layout(placeable.width, baseline) { placeable.place(0, 0) }
-            },
+
+                onDrawBehind {
+                    glyph.paths.forEach { path ->
+                        drawPath(path = path, color = strokeColor, style = outerStroke)
+                        drawPath(path = path, color = fillColor, style = Fill)
+                    }
+                }
+            }
+    )
+}
+
+private fun rankGlyph(ranking: Int, font: Typeface, digitHeightPx: Float): RankGlyph {
+    val text = ranking.toString()
+    val isDoubleDigit = ranking >= 10
+    val strokeWidthPx = digitHeightPx * DIGIT_STROKE_FRACTION
+
+    val paint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = font
+            textSize = digitHeightPx * 2f
+        }
+
+    val digitPaths = ArrayList<Path>(text.length)
+    val digitWidths = FloatArray(text.length)
+    val charBounds = RectF()
+
+    for (i in text.indices) {
+        val charPath = Path()
+        paint.getTextPath(text, i, i + 1, 0f, 0f, charPath)
+        charPath.computeBounds(charBounds, true)
+        digitWidths[i] = charBounds.width()
+        charPath.offset(-charBounds.left, 0f)
+        digitPaths.add(charPath)
+    }
+
+    var currentX = 0f
+
+    for (i in digitPaths.indices) {
+        digitPaths[i].offset(currentX, 0f)
+
+        if (i < digitPaths.lastIndex) {
+            val overlapPx =
+                if (isDoubleDigit) digitWidths[i + 1] * DOUBLE_DIGIT_OVERLAP_FRACTION else 0f
+            currentX += digitWidths[i] - overlapPx
+        }
+    }
+
+    val boundsPath = Path()
+    digitPaths.forEach { path -> boundsPath.addPath(path) }
+
+    val totalBounds = RectF()
+    boundsPath.computeBounds(totalBounds, true)
+
+    digitPaths.forEach { path -> path.offset(-totalBounds.left, -totalBounds.top) }
+
+    val targetInkHeight = (digitHeightPx - strokeWidthPx * 2f).coerceAtLeast(1f)
+    val scale = targetInkHeight / totalBounds.height().coerceAtLeast(1f)
+    val scaleMatrix = Matrix().apply { setScale(scale, scale) }
+
+    digitPaths.forEach { path -> path.transform(scaleMatrix) }
+
+    val scaledInkWidth = totalBounds.width() * scale
+
+    val tuckFraction =
+        when {
+            isDoubleDigit -> DOUBLE_DIGIT_TUCK_FRACTION
+            ranking == 1 -> NARROW_DIGIT_TUCK_FRACTION
+            else -> SINGLE_DIGIT_TUCK_FRACTION
+        }
+
+    val translateY = digitHeightPx - targetInkHeight - strokeWidthPx
+    digitPaths.forEach { path -> path.offset(strokeWidthPx, translateY) }
+
+    return RankGlyph(
+        paths = digitPaths.map { path -> path.asComposePath() },
+        visibleWidthPx = strokeWidthPx + scaledInkWidth * (1f - tuckFraction),
     )
 }
