@@ -18,6 +18,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,7 +29,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -157,22 +160,30 @@ fun AfinitySplashScreen(
         listOf(Color.Transparent, Color.White.copy(alpha = 0.6f), Color.Transparent)
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier.fillMaxSize().background(backgroundColor),
         contentAlignment = Alignment.Center,
     ) {
+        val isCompactHeight = maxHeight < 500.dp
+        val auraSize = if (isCompactHeight) 150.dp else 260.dp
+        val logoSize = if (isCompactHeight) 80.dp else 140.dp
+        val ringSpacingDp = if (isCompactHeight) 12.dp else 20.dp
+        val spacerTitle = if (isCompactHeight) 10.dp else 40.dp
+        val spacerBottom = if (isCompactHeight) 14.dp else 48.dp
+        val contentPadding = if (isCompactHeight) 12.dp else 24.dp
+
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(24.dp),
+            modifier = Modifier.verticalScroll(rememberScrollState()).padding(contentPadding),
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Box(
                     modifier =
-                        Modifier.size(260.dp).drawBehind {
+                        Modifier.size(auraSize).drawBehind {
                             val baseRadius = (size.width / 2.8f) * logoScale
 
-                            val ringSpacing = 20.dp.toPx()
+                            val ringSpacing = ringSpacingDp.toPx()
 
                             for (i in 3 downTo 0) {
                                 val currentRadius = baseRadius + (ringSpacing * i * auraScale)
@@ -196,7 +207,7 @@ fun AfinitySplashScreen(
                     painter = painterResource(id = R.drawable.ic_launcher_splash),
                     contentDescription = stringResource(R.string.cd_app_logo),
                     modifier =
-                        Modifier.size(140.dp)
+                        Modifier.size(logoSize)
                             .graphicsLayer {
                                 scaleX = logoScale
                                 scaleY = logoScale
@@ -220,11 +231,14 @@ fun AfinitySplashScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(spacerTitle))
 
             Text(
                 text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
+                style =
+                    (if (isCompactHeight) MaterialTheme.typography.headlineMedium
+                        else MaterialTheme.typography.headlineLarge)
+                        .copy(fontWeight = FontWeight.Bold),
                 color = onBackground,
                 modifier =
                     Modifier.graphicsLayer {
@@ -247,7 +261,7 @@ fun AfinitySplashScreen(
                         },
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(spacerBottom))
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
