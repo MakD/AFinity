@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
@@ -60,6 +61,7 @@ fun AudiobookshelfLibrariesScreen(
     val isReachable by viewModel.isReachable.collectAsStateWithLifecycle()
     val personalizedSections by viewModel.personalizedSections.collectAsStateWithLifecycle()
     val config by viewModel.currentConfig.collectAsStateWithLifecycle()
+    val playerOffset = LocalPlayerOffset.current
 
     if (!isAuthenticated) {
         var showLoginSheet by remember { mutableStateOf(true) }
@@ -183,7 +185,14 @@ fun AudiobookshelfLibrariesScreen(
                 modifier = Modifier.align(Alignment.BottomCenter),
             ) {
                 Card(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .padding(
+                                start = 16.dp,
+                                end = 16.dp,
+                                top = 16.dp,
+                                bottom = 16.dp + playerOffset,
+                            ),
                     colors =
                         CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.errorContainer

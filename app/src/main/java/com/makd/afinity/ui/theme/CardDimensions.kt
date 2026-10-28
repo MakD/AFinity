@@ -40,6 +40,9 @@ object CardDimensions {
     const val ASPECT_RATIO_SQUARE = 1f
     const val ASPECT_RATIO_SPOTLIGHT = 1.85f
     const val ASPECT_RATIO_SPOTLIGHT_PORTRAIT = 1.5f
+    const val SPOTLIGHT_WIDTH_FRACTION_PORTRAIT = 0.72f
+    const val SPOTLIGHT_WIDTH_FRACTION_LANDSCAPE = 0.58f
+    val spotlightMaxSmallItemWidth: Dp = 120.dp
 
     private const val LANDSCAPE_HEIGHT_FRACTION = 0.4f
     private const val SQUARE_CAROUSEL_WIDTH_FRACTION = 0.48f
@@ -58,6 +61,11 @@ object CardDimensions {
     private val PosterGrowthStart = 411.dp
     private val PosterGrowthEnd = 1200.dp
 
+    private val EpgChannelWidthMin = 100.dp
+    private val EpgChannelWidthMax = 140.dp
+    private val EpgHourWidthMin = 180.dp
+    private val EpgHourWidthMax = 220.dp
+
     private val MetadataLineSlack = 6.dp
     private val SubtitleLineSlack = 2.dp
 
@@ -74,7 +82,6 @@ object CardDimensions {
 
     private object Values {
         val SpotlightCompact = 230.dp
-        val SpotlightMedium = 270.dp
         val SpotlightExpanded = 330.dp
 
         val DownloadGrid = 110.dp
@@ -160,12 +167,17 @@ object CardDimensions {
     fun spotlightAspectRatio(isLandscape: Boolean): Float =
         if (isLandscape) ASPECT_RATIO_SPOTLIGHT else ASPECT_RATIO_SPOTLIGHT_PORTRAIT
 
-    fun spotlightMaxHeight(windowWidth: Dp): Dp =
-        when {
-            windowWidth < 600.dp -> Values.SpotlightCompact
-            windowWidth < 840.dp -> Values.SpotlightMedium
-            else -> Values.SpotlightExpanded
-        }
+    fun spotlightWidthFraction(isLandscape: Boolean): Float =
+        if (isLandscape) SPOTLIGHT_WIDTH_FRACTION_LANDSCAPE else SPOTLIGHT_WIDTH_FRACTION_PORTRAIT
+
+    fun spotlightMaxHeight(windowWidth: Dp): Dp {
+        val growth =
+            ((windowWidth - PosterGrowthStart) / (PosterGrowthEnd - PosterGrowthStart)).coerceIn(
+                0f,
+                1f,
+            )
+        return lerp(Values.SpotlightCompact, Values.SpotlightExpanded, growth)
+    }
 
     fun carouselItemSize(
         availableWidth: Dp,
@@ -255,6 +267,42 @@ object CardDimensions {
             EpgRowChrome +
                 textHeight(MaterialTheme.typography.bodySmall) +
                 textHeight(MaterialTheme.typography.labelSmall)
+
+    fun epgChannelCellWidth(windowWidth: Dp): Dp {
+        val growth =
+            ((windowWidth - PosterGrowthStart) / (PosterGrowthEnd - PosterGrowthStart)).coerceIn(
+                0f,
+                1f,
+            )
+        return lerp(EpgChannelWidthMin, EpgChannelWidthMax, growth)
+    }
+
+    val epgChannelCellWidth: Dp
+        @Composable
+        @ReadOnlyComposable
+        get() {
+            val windowWidth =
+                with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
+            return epgChannelCellWidth(windowWidth)
+        }
+
+    fun epgHourWidth(windowWidth: Dp): Dp {
+        val growth =
+            ((windowWidth - PosterGrowthStart) / (PosterGrowthEnd - PosterGrowthStart)).coerceIn(
+                0f,
+                1f,
+            )
+        return lerp(EpgHourWidthMin, EpgHourWidthMax, growth)
+    }
+
+    val epgHourWidth: Dp
+        @Composable
+        @ReadOnlyComposable
+        get() {
+            val windowWidth =
+                with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
+            return epgHourWidth(windowWidth)
+        }
 
     @Composable
     @ReadOnlyComposable

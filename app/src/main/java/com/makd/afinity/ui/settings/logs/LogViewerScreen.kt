@@ -13,15 +13,18 @@ import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -566,7 +569,7 @@ internal fun SearchField(
     Row(
         modifier =
             Modifier.fillMaxWidth()
-                .height(44.dp)
+                .heightIn(min = 44.dp)
                 .clip(RoundedCornerShape(22.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
                 .padding(horizontal = 16.dp),
@@ -609,7 +612,7 @@ internal fun SearchField(
 internal fun TagChip(tag: String, onRemove: () -> Unit) {
     Row(
         modifier =
-            Modifier.height(32.dp)
+            Modifier.heightIn(min = 32.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f))
                 .clickable(onClick = onRemove)
@@ -1032,10 +1035,13 @@ private fun ExportSheetContent(
         )
         Spacer(modifier = Modifier.height(20.dp))
 
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            modifier = Modifier.height(IntrinsicSize.Min),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
             OutlinedButton(
                 onClick = onCancel,
-                modifier = Modifier.weight(1f).height(52.dp),
+                modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 52.dp),
                 shape = RoundedCornerShape(26.dp),
             ) {
                 Text(text = stringResource(R.string.action_cancel))
@@ -1043,7 +1049,7 @@ private fun ExportSheetContent(
             Button(
                 onClick = { onExport(visibleOnly) },
                 enabled = !isExporting,
-                modifier = Modifier.weight(1.6f).height(52.dp),
+                modifier = Modifier.weight(1.6f).fillMaxHeight().heightIn(min = 52.dp),
                 shape = RoundedCornerShape(26.dp),
             ) {
                 Text(text = stringResource(R.string.logs_save_action))

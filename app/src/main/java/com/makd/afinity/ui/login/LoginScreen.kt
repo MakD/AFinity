@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -623,7 +624,7 @@ private fun ManualServerContent(
 
                 Button(
                     onClick = onConnectToServer,
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
                     enabled = serverUrl.isNotBlank() && !isConnecting,
                     shape = RoundedCornerShape(16.dp),
                 ) {
@@ -1062,7 +1063,7 @@ private fun QuickConnectView(uiState: LoginUiState, onStart: () -> Unit, onCance
             )
             Button(
                 onClick = onStart,
-                modifier = Modifier.fillMaxWidth().height(50.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp),
                 shape = RoundedCornerShape(12.dp),
             ) {
                 Text(stringResource(R.string.login_btn_generate_code))

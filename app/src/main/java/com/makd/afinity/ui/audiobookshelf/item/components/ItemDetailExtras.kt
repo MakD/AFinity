@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -663,7 +664,7 @@ fun PodcastUpNextCard(
                 )
             }
             Row(
-                modifier = Modifier.padding(top = 6.dp),
+                modifier = Modifier.padding(top = 6.dp).height(IntrinsicSize.Min),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Button(
@@ -674,7 +675,7 @@ fun PodcastUpNextCard(
                             UpNextTarget.LATEST -> onPlayLatest
                             UpNextTarget.FIRST -> onPlayFirst
                         },
-                    modifier = Modifier.weight(1f).height(52.dp),
+                    modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 52.dp),
                     shape = RoundedCornerShape(26.dp),
                     colors =
                         ButtonDefaults.buttonColors(
@@ -706,7 +707,7 @@ fun PodcastUpNextCard(
                 secondary?.let { target ->
                     OutlinedButton(
                         onClick = if (target == UpNextTarget.FIRST) onPlayFirst else onPlayLatest,
-                        modifier = Modifier.height(52.dp),
+                        modifier = Modifier.fillMaxHeight().heightIn(min = 52.dp),
                         shape = RoundedCornerShape(26.dp),
                     ) {
                         Text(

@@ -1195,7 +1195,7 @@ private fun ImagePreviewSheet(
                             contentColor = MaterialTheme.colorScheme.onErrorContainer,
                         ),
                     shape = RoundedCornerShape(28.dp),
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
                 ) {
                     Text(stringResource(R.string.action_remove))
                 }
@@ -1215,7 +1215,7 @@ private fun ImagePreviewSheet(
                         onClick = onConfirm,
                         enabled = enabled && image.remoteUrl != null,
                         shape = RoundedCornerShape(28.dp),
-                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
                     ) {
                         Text(
                             stringResource(

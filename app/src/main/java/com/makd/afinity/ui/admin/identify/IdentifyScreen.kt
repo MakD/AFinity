@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -656,7 +655,7 @@ private fun MatchSheet(
                 onClick = onConfirm,
                 enabled = !applying,
                 shape = RoundedCornerShape(28.dp),
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
             ) {
                 if (applying) {
                     CircularProgressIndicator(

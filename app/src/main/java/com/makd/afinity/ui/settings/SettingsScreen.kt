@@ -678,7 +678,7 @@ fun SettingsScreen(
                                 ) {
                                     Button(
                                         onClick = { showLogoutDialog = true },
-                                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                                        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
                                         colors =
                                             ButtonDefaults.buttonColors(
                                                 containerColor =

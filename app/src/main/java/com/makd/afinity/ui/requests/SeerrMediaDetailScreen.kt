@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -270,7 +271,7 @@ private fun SeerrRequestActionButton(
         if (jellyfinId4k != null) {
             OutlinedButton(
                 onClick = { onItemClick(jellyfinId4k, mappedType) },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -288,7 +289,7 @@ private fun SeerrRequestActionButton(
         if (showRequest4k) {
             OutlinedButton(
                 onClick = { openRequestDialog(true) },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -320,7 +321,7 @@ private fun SeerrPrimaryActionButton(
         status == MediaStatus.AVAILABLE && jellyfinId != null -> {
             Button(
                 onClick = { onItemClick(jellyfinId, mappedType) },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
             ) {
                 Text(stringResource(R.string.seerr_detail_open_library))
             }
@@ -329,7 +330,7 @@ private fun SeerrPrimaryActionButton(
             Button(
                 onClick = {},
                 enabled = false,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
             ) {
                 Text(MediaStatus.getDisplayName(status))
             }
@@ -341,7 +342,7 @@ private fun SeerrPrimaryActionButton(
             Button(
                 onClick = {},
                 enabled = false,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
             ) {
                 Text(MediaStatus.getDisplayName(status))
             }
@@ -350,7 +351,7 @@ private fun SeerrPrimaryActionButton(
             Button(
                 onClick = onRequest,
                 enabled = requestEnabled,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

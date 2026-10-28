@@ -12,7 +12,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,9 +46,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -427,9 +432,19 @@ fun MainNavigation(
                         )
                     else -> null
                 }
+            val density = LocalDensity.current
+            var miniPlayerCardHeight by remember { mutableStateOf(80.dp) }
+            val navBarBottom =
+                WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            val targetOffset =
+                if (miniPlayerState != null) {
+                    miniPlayerCardHeight + navBarBottom
+                } else {
+                    0.dp
+                }
             val globalPlayerOffset by
                 animateDpAsState(
-                    targetValue = if (miniPlayerState != null) 112.dp else 0.dp,
+                    targetValue = targetOffset,
                     label = "globalPlayerOffset",
                 )
             val drawerBody: @Composable () -> Unit = {
@@ -2007,8 +2022,9 @@ fun MainNavigation(
                                 snackbar = { data -> AFinitySnackbar(data) },
                                 modifier =
                                     Modifier.align(Alignment.BottomCenter)
-                                        .padding(bottom = globalPlayerOffset + 8.dp)
-                                        .navigationBarsPadding(),
+                                        .padding(
+                                            bottom = max(globalPlayerOffset, navBarBottom) + 8.dp
+                                        ),
                             )
 
                             AnimatedVisibility(
@@ -2020,7 +2036,13 @@ fun MainNavigation(
                                 if (miniPlayerState != null) {
                                     AudioMiniPlayer(
                                         state = miniPlayerState,
-                                        modifier = Modifier.navigationBarsPadding(),
+                                        modifier =
+                                            Modifier.navigationBarsPadding().onSizeChanged { size ->
+                                                if (size.height > 0) {
+                                                    miniPlayerCardHeight =
+                                                        with(density) { size.height.toDp() }
+                                                }
+                                            },
                                         animatedVisibilityScope = this@AnimatedVisibility,
                                         onPlayPauseClick = {
                                             when (miniPlayerState) {

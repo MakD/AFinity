@@ -1,10 +1,13 @@
 package com.makd.afinity.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -55,7 +58,7 @@ fun ConnectedButtonGroup(buttons: List<GroupButton>, modifier: Modifier = Modifi
     if (buttons.isEmpty()) return
 
     Row(
-        modifier = modifier.fillMaxWidth().height(GroupHeight),
+        modifier = modifier.fillMaxWidth().height(IntrinsicSize.Min).heightIn(min = GroupHeight),
         horizontalArrangement = Arrangement.spacedBy(GroupGap),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -91,7 +94,7 @@ fun ConnectedButtonGroup(buttons: List<GroupButton>, modifier: Modifier = Modifi
                 contentPadding =
                     if (button is GroupButton.Wide) PaddingValues(horizontal = 16.dp)
                     else PaddingValues(0.dp),
-                modifier = sizeModifier.height(GroupHeight),
+                modifier = sizeModifier.fillMaxHeight().heightIn(min = GroupHeight),
             ) {
                 when (button) {
                     is GroupButton.Wide -> {

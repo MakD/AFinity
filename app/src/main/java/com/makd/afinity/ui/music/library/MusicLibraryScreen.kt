@@ -36,7 +36,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.carousel.CarouselDefaults
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
@@ -891,7 +890,7 @@ private fun MadeForYouCarousel(
                     availableWidth = maxWidth,
                     windowHeight = windowHeight,
                     isLandscape = isLandscape,
-                    widthFraction = if (isLandscape) 0.58f else 0.88f,
+                    widthFraction = CardDimensions.spotlightWidthFraction(isLandscape),
                     aspectRatio = CardDimensions.spotlightAspectRatio(isLandscape),
                     maxHeight = CardDimensions.spotlightMaxHeight(windowWidth),
                 )
@@ -901,7 +900,7 @@ private fun MadeForYouCarousel(
                 preferredItemWidth = itemSize.width,
                 modifier = Modifier.height(itemSize.height),
                 itemSpacing = 12.dp,
-                maxSmallItemWidth = CarouselDefaults.MinSmallItemSize,
+                maxSmallItemWidth = CardDimensions.spotlightMaxSmallItemWidth,
             ) { index ->
                 val contentAlpha = { carouselItemDrawInfo.focalAlpha }
 

@@ -3,7 +3,7 @@ package com.makd.afinity.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,7 +33,7 @@ fun LoadingButton(
     Button(
         onClick = onClick,
         enabled = enabled && !loading,
-        modifier = modifier.fillMaxWidth().height(56.dp),
+        modifier = modifier.fillMaxWidth().heightIn(min = 56.dp),
         shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
     ) {

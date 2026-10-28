@@ -840,7 +840,7 @@ private fun PersonSheet(
                             ButtonDefaults.textButtonColors(
                                 contentColor = MaterialTheme.colorScheme.error
                             ),
-                        modifier = Modifier.height(56.dp),
+                        modifier = Modifier.heightIn(min = 56.dp),
                     ) {
                         Icon(
                             painterResource(R.drawable.ic_delete),
@@ -864,7 +864,7 @@ private fun PersonSheet(
                     },
                     enabled = name.isNotBlank(),
                     shape = RoundedCornerShape(28.dp),
-                    modifier = Modifier.weight(1f).height(56.dp),
+                    modifier = Modifier.weight(1f).heightIn(min = 56.dp),
                 ) {
                     Text(stringResource(R.string.admin_person_done))
                 }

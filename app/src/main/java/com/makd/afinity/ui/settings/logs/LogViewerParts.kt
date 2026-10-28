@@ -5,8 +5,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -99,21 +101,22 @@ fun TagFilterSheetContent(
         Row(
             modifier =
                 Modifier.fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 28.dp),
+                    .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 28.dp)
+                    .height(IntrinsicSize.Min),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             OutlinedButton(
                 onClick = onClear,
                 enabled = selected.isNotEmpty(),
-                modifier = Modifier.height(52.dp),
+                modifier = Modifier.fillMaxHeight().heightIn(min = 52.dp),
                 shape = RoundedCornerShape(26.dp),
             ) {
                 Text(text = stringResource(R.string.logs_tags_clear))
             }
             Button(
                 onClick = onDone,
-                modifier = Modifier.weight(1f).height(52.dp),
+                modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 52.dp),
                 shape = RoundedCornerShape(26.dp),
             ) {
                 Text(text = stringResource(R.string.logs_tags_show_fmt, matchCount))
@@ -133,7 +136,7 @@ private fun TagRow(
     Row(
         modifier =
             Modifier.fillMaxWidth()
-                .height(52.dp)
+                .heightIn(min = 52.dp)
                 .background(
                     if (checked) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
                     else Color.Transparent

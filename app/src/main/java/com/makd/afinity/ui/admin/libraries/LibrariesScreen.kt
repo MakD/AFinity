@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -287,7 +288,7 @@ private fun LibrariesHeader(
             onClick = onScanAll,
             enabled = canScan && !isScanningAll,
             contentPadding = PaddingValues(horizontal = 14.dp),
-            modifier = Modifier.height(36.dp),
+            modifier = Modifier.heightIn(min = 36.dp),
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_refresh),

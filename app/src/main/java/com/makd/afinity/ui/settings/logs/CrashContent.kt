@@ -5,11 +5,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -321,13 +324,14 @@ fun CrashDetailContent(
                 Modifier.fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface)
                     .padding(start = 20.dp, end = 20.dp, top = 12.dp)
-                    .padding(bottom = contentPadding.calculateBottomPadding() + 12.dp),
+                    .padding(bottom = contentPadding.calculateBottomPadding() + 12.dp)
+                    .height(IntrinsicSize.Min),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Button(
                 onClick = onCopyForIssue,
                 enabled = !isExporting,
-                modifier = Modifier.weight(1.6f).height(52.dp),
+                modifier = Modifier.weight(1.6f).fillMaxHeight().heightIn(min = 52.dp),
                 shape = RoundedCornerShape(26.dp),
             ) {
                 Icon(
@@ -341,7 +345,7 @@ fun CrashDetailContent(
             OutlinedButton(
                 onClick = onShare,
                 enabled = !isExporting,
-                modifier = Modifier.weight(1f).height(52.dp),
+                modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 52.dp),
                 shape = RoundedCornerShape(26.dp),
             ) {
                 Text(text = stringResource(R.string.logs_crash_share))
@@ -361,7 +365,7 @@ private fun MetaRow(key: String, value: String, first: Boolean = false) {
         )
     }
     Row(
-        modifier = Modifier.fillMaxWidth().height(36.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 36.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {

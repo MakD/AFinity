@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -346,7 +347,9 @@ private fun RunBar(task: TaskInfo, isPending: Boolean, onRun: () -> Unit, onStop
                 },
             shape = RoundedCornerShape(24.dp),
             modifier =
-                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp).height(48.dp),
+                Modifier.fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .heightIn(min = 48.dp),
         ) {
             Icon(
                 painter =

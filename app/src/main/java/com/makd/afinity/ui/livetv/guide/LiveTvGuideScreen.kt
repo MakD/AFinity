@@ -217,21 +217,8 @@ private fun LiveTvGuideContent(
     }
 
     val playerOffset = LocalPlayerOffset.current
-    val channelCellWidth: Dp =
-        when (widthSizeClass) {
-            WindowWidthSizeClass.Compact -> 100.dp
-            WindowWidthSizeClass.Medium -> 120.dp
-            WindowWidthSizeClass.Expanded -> 150.dp
-            else -> 100.dp
-        }
-
-    val hourWidth: Dp =
-        when (widthSizeClass) {
-            WindowWidthSizeClass.Compact -> 180.dp
-            WindowWidthSizeClass.Medium -> 200.dp
-            WindowWidthSizeClass.Expanded -> 240.dp
-            else -> 180.dp
-        }
+    val channelCellWidth: Dp = CardDimensions.epgChannelCellWidth
+    val hourWidth: Dp = CardDimensions.epgHourWidth
 
     val rowHeight: Dp = CardDimensions.epgRowHeight
     val headerHeight: Dp = 40.dp
