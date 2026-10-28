@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -125,95 +127,86 @@ fun QualitySelectionDialog(
                     fontWeight = FontWeight.Bold,
                 )
 
-                if (showSourcePicker) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                Column(
+                    modifier =
+                        Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    if (showSourcePicker) {
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                    Text(
-                        text = stringResource(R.string.quality_dialog_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                        Text(
+                            text = stringResource(R.string.quality_dialog_subtitle),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.weight(1f, fill = false),
-                    ) {
-                        items(sources, key = { it.id }) { source ->
+                        sources.forEach { source ->
                             QualityOption(
                                 source = source,
                                 isSelected = selectedSource == source,
                                 onSelect = { selectedSource = source },
                             )
                         }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                    } else {
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
-                } else {
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-
-                PickerDropdown(
-                    label = stringResource(R.string.download_quality_title),
-                    selected = qualityBitrate,
-                    options = qualityOptions,
-                    optionLabel = { bitrate ->
-                        settingsQualityLabel(VideoQuality.fromBitrate(bitrate))
-                    },
-                    onSelected = { qualityBitrate = it },
-                )
-
-                if (isConverting && audioStreams.size > 1) {
-                    Spacer(modifier = Modifier.height(8.dp))
-
                     PickerDropdown(
-                        label = stringResource(R.string.download_audio_track_title),
-                        selected = audioStreamIndex,
-                        options = audioStreams.map<AfinityMediaStream, Int?> { it.index },
-                        optionLabel = { index ->
-                            audioStreams
-                                .firstOrNull { it.index == index }
-                                ?.let { it.displayTitle ?: it.language }
-                                .orEmpty()
+                        label = stringResource(R.string.download_quality_title),
+                        selected = qualityBitrate,
+                        options = qualityOptions,
+                        optionLabel = { bitrate ->
+                            settingsQualityLabel(VideoQuality.fromBitrate(bitrate))
                         },
-                        onSelected = { audioStreamIndex = it },
-                    )
-                }
-
-                if (isConverting && imageSubtitles.isNotEmpty()) {
-                    val noneLabel = stringResource(R.string.download_burn_subtitles_none)
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    PickerDropdown(
-                        label = stringResource(R.string.download_burn_subtitles_title),
-                        selected = burnSubtitleIndex,
-                        options = listOf<Int?>(null) + imageSubtitles.map { it.index },
-                        optionLabel = { index ->
-                            imageSubtitles
-                                .firstOrNull { it.index == index }
-                                ?.let { it.displayTitle ?: it.language } ?: noneLabel
-                        },
-                        onSelected = { burnSubtitleIndex = it },
-                    )
-                }
-
-                if (showVolumePicker) {
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = stringResource(R.string.download_location_section),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
+                        onSelected = { qualityBitrate = it },
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    if (isConverting && audioStreams.size > 1) {
+                        PickerDropdown(
+                            label = stringResource(R.string.download_audio_track_title),
+                            selected = audioStreamIndex,
+                            options = audioStreams.map<AfinityMediaStream, Int?> { it.index },
+                            optionLabel = { index ->
+                                audioStreams
+                                    .firstOrNull { it.index == index }
+                                    ?.let { it.displayTitle ?: it.language }
+                                    .orEmpty()
+                            },
+                            onSelected = { audioStreamIndex = it },
+                        )
+                    }
 
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.weight(1f, fill = false),
-                    ) {
-                        items(volumes, key = { it.id }) { volume ->
+                    if (isConverting && imageSubtitles.isNotEmpty()) {
+                        val noneLabel = stringResource(R.string.download_burn_subtitles_none)
+
+                        PickerDropdown(
+                            label = stringResource(R.string.download_burn_subtitles_title),
+                            selected = burnSubtitleIndex,
+                            options = listOf<Int?>(null) + imageSubtitles.map { it.index },
+                            optionLabel = { index ->
+                                imageSubtitles
+                                    .firstOrNull { it.index == index }
+                                    ?.let { it.displayTitle ?: it.language } ?: noneLabel
+                            },
+                            onSelected = { burnSubtitleIndex = it },
+                        )
+                    }
+
+                    if (showVolumePicker) {
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = stringResource(R.string.download_location_section),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                        )
+
+                        volumes.forEach { volume ->
                             VolumeOption(
                                 volume = volume,
                                 isSelected = selectedVolumeId == volume.id,
@@ -284,34 +277,33 @@ fun StorageLocationDialog(
                     fontWeight = FontWeight.Bold,
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                PickerDropdown(
-                    label = stringResource(R.string.download_quality_title),
-                    selected = qualityBitrate,
-                    options = qualityOptions,
-                    optionLabel = { bitrate ->
-                        settingsQualityLabel(VideoQuality.fromBitrate(bitrate))
-                    },
-                    onSelected = { qualityBitrate = it },
-                )
-
-                if (showVolumePicker) {
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = stringResource(R.string.download_location_section),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
-
+                Column(
+                    modifier =
+                        Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.weight(1f, fill = false),
-                    ) {
-                        items(volumes, key = { it.id }) { volume ->
+                    PickerDropdown(
+                        label = stringResource(R.string.download_quality_title),
+                        selected = qualityBitrate,
+                        options = qualityOptions,
+                        optionLabel = { bitrate ->
+                            settingsQualityLabel(VideoQuality.fromBitrate(bitrate))
+                        },
+                        onSelected = { qualityBitrate = it },
+                    )
+
+                    if (showVolumePicker) {
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = stringResource(R.string.download_location_section),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                        )
+
+                        volumes.forEach { volume ->
                             VolumeOption(
                                 volume = volume,
                                 isSelected = selectedVolumeId == volume.id,

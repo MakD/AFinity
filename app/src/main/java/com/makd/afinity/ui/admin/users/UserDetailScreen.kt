@@ -683,7 +683,10 @@ private fun SetPasswordDialog(
         onDismissRequest = onDismiss,
         title = { DialogTitle(text = stringResource(R.string.user_set_password)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 if (needsCurrentPassword) {
                     PasswordField(
                         value = currentPassword,

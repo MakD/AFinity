@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -66,7 +66,7 @@ fun BookmarksSheet(
         sheetState = sheetState,
         modifier = modifier,
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 28.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().imePadding().padding(bottom = 28.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -92,7 +92,7 @@ fun BookmarksSheet(
                 )
             }
 
-            LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
+            LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f, fill = false)) {
                 items(bookmarks, key = { it.time }) { bookmark ->
                     val isCurrent = kotlin.math.abs(bookmark.time - currentTimeSeconds) < 1.0
                     Row(

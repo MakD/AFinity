@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DisplayMode
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -720,7 +722,12 @@ private fun DateFieldPickerDialog(
         }
             .getOrNull()
     }
-    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
+    val isCompactHeight = LocalConfiguration.current.screenHeightDp < 500
+    val datePickerState =
+        rememberDatePickerState(
+            initialSelectedDateMillis = initialMillis,
+            initialDisplayMode = if (isCompactHeight) DisplayMode.Input else DisplayMode.Picker,
+        )
 
     DatePickerDialog(
         onDismissRequest = onDismiss,
@@ -758,7 +765,7 @@ private fun RegionPickerDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.discover_filter_select_region)) },
         text = {
-            LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+            LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 280.dp)) {
                 item {
                     RadioOptionRow(
                         label = stringResource(R.string.discover_filter_any),

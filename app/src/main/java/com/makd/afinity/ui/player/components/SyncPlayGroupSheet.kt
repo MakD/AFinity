@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -67,7 +69,7 @@ fun SyncPlayGroupSheet(
             ),
     ) {
         Surface(
-            modifier = Modifier.widthIn(max = 440.dp).fillMaxWidth(0.9f).padding(vertical = 24.dp),
+            modifier = Modifier.safeDrawingPadding().imePadding().widthIn(max = 440.dp).fillMaxWidth(0.9f).padding(vertical = 24.dp),
             shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {
@@ -137,7 +139,7 @@ private fun InGroupContent(
             HorizontalDivider()
             Spacer(modifier = Modifier.height(8.dp))
 
-            LazyColumn(modifier = Modifier.fillMaxWidth()) {
+            LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f, fill = false)) {
                 items(syncPlayState.members) { member ->
                     Text(
                         text = member,
@@ -254,7 +256,7 @@ private fun NotInGroupContent(
                 modifier = Modifier.padding(vertical = 8.dp),
             )
         } else {
-            LazyColumn(modifier = Modifier.fillMaxWidth()) {
+            LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f, fill = false)) {
                 items(uiState.availableGroups, key = { it.groupId }) { group ->
                     GroupRow(
                         group = group,

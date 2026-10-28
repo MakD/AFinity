@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -1288,7 +1289,10 @@ private fun MpvConfigEditorDialog(fileName: String, onDismiss: () -> Unit) {
                     TextField(
                         value = text,
                         onValueChange = { text = it },
-                        modifier = Modifier.fillMaxWidth().height(320.dp),
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .heightIn(min = 120.dp, max = 320.dp)
+                                .weight(1f, fill = false),
                         textStyle =
                             MaterialTheme.typography.bodySmall.copy(
                                 fontFamily = FontFamily.Monospace
@@ -2027,7 +2031,10 @@ private fun SimpleColorPickerDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.color_picker_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
                 Column {
                     Text(
                         stringResource(R.string.color_picker_presets),

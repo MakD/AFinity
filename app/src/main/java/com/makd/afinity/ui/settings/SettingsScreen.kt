@@ -1059,6 +1059,7 @@ private fun AuthorizeQuickConnectDialog(
                 isAuthorizing = isAuthorizing,
                 isSuccess = isSuccess,
                 errorMessage = errorMessage,
+                modifier = Modifier.verticalScroll(rememberScrollState()),
             )
         },
         confirmButton = {

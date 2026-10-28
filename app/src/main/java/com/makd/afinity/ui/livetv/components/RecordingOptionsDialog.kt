@@ -2,7 +2,9 @@ package com.makd.afinity.ui.livetv.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -36,7 +38,10 @@ fun RecordingOptionsDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.livetv_recording_options)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 PaddingMinutesField(
                     value = pre,
                     onValueChange = { pre = it },

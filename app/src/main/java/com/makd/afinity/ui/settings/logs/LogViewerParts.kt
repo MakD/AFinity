@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -64,7 +65,7 @@ fun TagFilterSheetContent(
             else tagCounts.filter { it.tag.contains(filter, ignoreCase = true) }
         }
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(modifier = modifier.fillMaxWidth().imePadding()) {
         Text(
             text = stringResource(R.string.logs_tags_title),
             style = MaterialTheme.typography.headlineSmall,
@@ -86,7 +87,7 @@ fun TagFilterSheetContent(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
         )
 
-        LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 340.dp).padding(top = 8.dp)) {
+        LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f, fill = false).padding(top = 8.dp)) {
             items(items = visible, key = { it.tag }) { tag ->
                 TagRow(
                     tag = tag,
