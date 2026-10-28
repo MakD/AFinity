@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -155,7 +156,8 @@ fun MusicSleepTimerSheet(
 private fun SleepTimerTile(minutes: Int, onClick: () -> Unit) {
     Box(
         modifier =
-            Modifier.aspectRatio(1.2f)
+            Modifier.heightIn(min = 60.dp)
+                .aspectRatio(1.0f)
                 .clip(RoundedCornerShape(16.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
                 .clickable(

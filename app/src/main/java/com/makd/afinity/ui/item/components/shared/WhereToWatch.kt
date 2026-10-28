@@ -181,7 +181,7 @@ private fun ProviderTile(option: WatchOption, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.width(56.dp).clickable(role = Role.Button, onClick = onClick),
+        modifier = Modifier.width(72.dp).clickable(role = Role.Button, onClick = onClick),
     ) {
         ProviderLogo(provider = option.provider, size = 40.dp, cornerRadius = 10.dp)
         Text(
@@ -189,7 +189,7 @@ private fun ProviderTile(option: WatchOption, onClick: () -> Unit) {
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
         option.caption()?.let { caption ->
@@ -198,6 +198,7 @@ private fun ProviderTile(option: WatchOption, onClick: () -> Unit) {
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }

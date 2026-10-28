@@ -30,7 +30,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
@@ -134,7 +133,9 @@ fun ControlPanelRoute(
             value = scaffoldValue,
             modifier = modifier,
             listPane = {
-                AnimatedPane(modifier = Modifier.preferredWidth(420.dp)) {
+                AnimatedPane(
+                    modifier = Modifier.preferredWidth(directive.defaultPanePreferredWidth)
+                ) {
                     ControlPanelHub(
                         isDualPane = true,
                         onBackClick = { currentOnBackClick() },

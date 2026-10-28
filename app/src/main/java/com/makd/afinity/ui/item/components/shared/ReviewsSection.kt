@@ -31,6 +31,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -41,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.tmdb.TmdbReview
@@ -55,6 +58,11 @@ import org.commonmark.renderer.html.HtmlRenderer
 @Composable
 fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
     if (reviews.isEmpty()) return
+
+    val density = LocalDensity.current
+    val windowInfo = LocalWindowInfo.current
+    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+    val cardWidth = minOf(340.dp, screenWidthDp - 48.dp)
 
     var selectedReview by remember { mutableStateOf<TmdbReview?>(null) }
     val sheetState = rememberAfinitySheetState()
@@ -78,6 +86,7 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
             items(reviews.take(10), key = { it.id }) { review ->
                 ReviewCard(
                     review = review,
+                    cardWidth = cardWidth,
                     linkStyles = linkStyles,
                     onReadMoreClick = { selectedReview = review },
                 )
@@ -154,6 +163,7 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
 @Composable
 private fun ReviewCard(
     review: TmdbReview,
+    cardWidth: Dp,
     linkStyles: TextLinkStyles,
     onReadMoreClick: () -> Unit,
 ) {
@@ -161,7 +171,7 @@ private fun ReviewCard(
 
     Card(
         modifier =
-            Modifier.width(340.dp).height(CardDimensions.reviewCardHeight).clickable(
+            Modifier.width(cardWidth).height(CardDimensions.reviewCardHeight).clickable(
                 role = Role.Button
             ) {
                 onReadMoreClick()

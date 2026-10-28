@@ -37,12 +37,14 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
@@ -65,7 +67,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
-private val TIME_COLUMN_WIDTH = 56.dp
+private val TIME_COLUMN_WIDTH = 56.sp
 private val TIME_GUTTER = 12.dp
 private val MARKER_SIZE = 28.dp
 private val MARKER_ICON_SIZE = 15.dp
@@ -391,6 +393,7 @@ private fun TimelineEntry(entry: ActivityEntry, followsEntry: Boolean, precedesE
         remember(entry.date) {
             entry.date.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
         }
+    val timeWidth = with(LocalDensity.current) { TIME_COLUMN_WIDTH.toDp() }
     val kind = entry.kind()
     val tone = if (entry.isError) ActivityTone.ALERT else kind.tone
     val tint = tone.color()
@@ -407,9 +410,7 @@ private fun TimelineEntry(entry: ActivityEntry, followsEntry: Boolean, precedesE
     ) {
         Box(
             modifier =
-                Modifier.width(TIME_COLUMN_WIDTH)
-                    .padding(top = ROW_VERTICAL_PADDING)
-                    .height(MARKER_SIZE),
+                Modifier.width(timeWidth).padding(top = ROW_VERTICAL_PADDING).height(MARKER_SIZE),
             contentAlignment = Alignment.CenterEnd,
         ) {
             Text(

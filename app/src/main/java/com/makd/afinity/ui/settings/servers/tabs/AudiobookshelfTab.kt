@@ -2,6 +2,7 @@ package com.makd.afinity.ui.settings.servers.tabs
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,6 +42,10 @@ internal fun AudiobookshelfTabContent(
     } else if (absStats != null) {
         val hours = (absStats.totalListeningTimeSeconds / 3600).toInt()
         val minutes = ((absStats.totalListeningTimeSeconds % 3600) / 60).toInt()
+        val numberStyle =
+            if (hours >= 100)
+                MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Black)
+            else MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Black)
 
         Surface(
             shape = RoundedCornerShape(20.dp),
@@ -59,35 +64,37 @@ internal fun AudiobookshelfTabContent(
                     fontWeight = FontWeight.Bold,
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        text = "$hours",
-                        style =
-                            MaterialTheme.typography.displayMedium.copy(
-                                fontWeight = FontWeight.Black
-                            ),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                    Text(
-                        text = stringResource(R.string.abs_hours_unit),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
-                        modifier = Modifier.padding(bottom = 6.dp, start = 2.dp, end = 8.dp),
-                    )
-                    Text(
-                        text = "$minutes",
-                        style =
-                            MaterialTheme.typography.displayMedium.copy(
-                                fontWeight = FontWeight.Black
-                            ),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                    Text(
-                        text = stringResource(R.string.abs_minutes_unit),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
-                        modifier = Modifier.padding(bottom = 6.dp, start = 2.dp),
-                    )
+                FlowRow(
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                ) {
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = "$hours",
+                            style = numberStyle,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                        Text(
+                            text = stringResource(R.string.abs_hours_unit),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                            modifier = Modifier.padding(bottom = 6.dp, start = 2.dp),
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = "$minutes",
+                            style = numberStyle,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                        Text(
+                            text = stringResource(R.string.abs_minutes_unit),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                            modifier = Modifier.padding(bottom = 6.dp, start = 2.dp),
+                        )
+                    }
                 }
             }
         }

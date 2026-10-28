@@ -22,7 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -43,9 +42,6 @@ fun DiscoverMediaCard(
     modifier: Modifier = Modifier,
     fillWidth: Boolean = false,
 ) {
-    val density = LocalDensity.current
-    val fontScale = density.fontScale
-
     Column(
         modifier =
             modifier.then(if (fillWidth) Modifier.fillMaxWidth() else Modifier.width(cardWidth))
@@ -95,13 +91,7 @@ fun DiscoverMediaCard(
             metadataItems.add {
                 Text(
                     text = year,
-                    style =
-                        MaterialTheme.typography.bodySmall.copy(
-                            fontSize =
-                                MaterialTheme.typography.bodySmall.fontSize *
-                                    if (fontScale > 1.3f) 0.8f
-                                    else if (fontScale > 1.15f) 0.9f else 1f
-                        ),
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -117,21 +107,11 @@ fun DiscoverMediaCard(
                         painter = painterResource(id = R.drawable.ic_tmdb_short),
                         contentDescription = stringResource(R.string.cd_tmdb_rating),
                         tint = Color.Unspecified,
-                        modifier =
-                            Modifier.size(
-                                if (fontScale > 1.3f) 12.dp
-                                else if (fontScale > 1.15f) 14.dp else 16.dp
-                            ),
+                        modifier = Modifier.size(16.dp),
                     )
                     Text(
                         text = rating,
-                        style =
-                            MaterialTheme.typography.bodySmall.copy(
-                                fontSize =
-                                    MaterialTheme.typography.bodySmall.fontSize *
-                                        if (fontScale > 1.3f) 0.8f
-                                        else if (fontScale > 1.15f) 0.9f else 1f
-                            ),
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }

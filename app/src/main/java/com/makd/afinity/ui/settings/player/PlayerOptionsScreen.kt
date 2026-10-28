@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -1231,7 +1232,8 @@ private fun PauseScreenDelaySelectorItem(seconds: Int, onSecondsChange: (Int) ->
                             fontWeight = FontWeight.Bold,
                         ),
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.width(72.dp).padding(vertical = 6.dp),
+                    modifier =
+                        Modifier.widthIn(min = 72.dp).padding(horizontal = 8.dp, vertical = 6.dp),
                     color = MaterialTheme.colorScheme.primary,
                 )
             }

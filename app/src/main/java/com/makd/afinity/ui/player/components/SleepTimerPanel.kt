@@ -121,17 +121,24 @@ fun SleepTimerPanel(
                     }
                 }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SLEEP_TIMER_DURATION_OPTIONS.forEach { minutes ->
-                        DurationTile(
-                            minutes = minutes,
-                            selected = selectedMinutes == minutes,
-                            onClick = {
-                                onSelectMode(SleepTimerMode.Duration(minutes))
-                                onDismiss()
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    SLEEP_TIMER_DURATION_OPTIONS.chunked(3).forEach { rowOptions ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            rowOptions.forEach { minutes ->
+                                DurationTile(
+                                    minutes = minutes,
+                                    selected = selectedMinutes == minutes,
+                                    onClick = {
+                                        onSelectMode(SleepTimerMode.Duration(minutes))
+                                        onDismiss()
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                        }
                     }
                 }
 

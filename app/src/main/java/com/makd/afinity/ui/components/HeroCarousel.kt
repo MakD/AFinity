@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
@@ -68,7 +67,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.graphics.get
 import coil3.imageLoader
 import coil3.request.ImageRequest
@@ -385,18 +383,12 @@ fun HeroCarousel(
         if (peekMetrics != null) {
             heroPeekLogoSize(cardWidth, peekMetrics.cardHeight, isLandscape)
         } else {
+            val fullBleedHeight = heroFullBleedHeight(screenHeightDp, isLandscape)
             DpSize(
                 screenWidthDp *
                     (if (isLandscape) HeroLogoLandscapeWidthFraction
                     else HeroLogoPortraitWidthFraction),
-                if (isLandscape) {
-                    heroLandscapeLogoHeight(
-                        heroFullBleedHeight(screenHeightDp, isLandscape = true),
-                        HeroLogoHeight,
-                    )
-                } else {
-                    HeroLogoHeight
-                },
+                minOf(HeroLogoHeight, fullBleedHeight * 0.25f),
             )
         }
 
@@ -431,7 +423,7 @@ fun HeroCarousel(
                 isLandscape = isLandscape,
                 screenWidthDp = screenWidthDp,
                 screenHeightDp = screenHeightDp,
-                landscapeLogoHeight = logoSize.height,
+                logoHeight = logoSize.height,
                 onWatchNowClick = onWatchNowClick,
                 onPlayTrailerClick = onPlayTrailerClick,
                 onMoreInformationClick = onMoreInformationClick,
@@ -448,7 +440,7 @@ private fun HeroFullBleed(
     isLandscape: Boolean,
     screenWidthDp: Dp,
     screenHeightDp: Dp,
-    landscapeLogoHeight: Dp,
+    logoHeight: Dp,
     onWatchNowClick: (AfinityItem) -> Unit,
     onPlayTrailerClick: (AfinityItem) -> Unit,
     onMoreInformationClick: (AfinityItem) -> Unit,
@@ -515,7 +507,7 @@ private fun HeroFullBleed(
                     pagerState = pagerState,
                     contentAlpha = contentAlpha,
                     screenWidthDp = screenWidthDp,
-                    logoHeight = landscapeLogoHeight,
+                    logoHeight = logoHeight,
                     onWatchNowClick = onWatchNowClick,
                     onPlayTrailerClick = onPlayTrailerClick,
                     onMoreInformationClick = onMoreInformationClick,
@@ -527,6 +519,7 @@ private fun HeroFullBleed(
                     pagerState = pagerState,
                     contentAlpha = contentAlpha,
                     screenWidthDp = screenWidthDp,
+                    logoHeight = logoHeight,
                     onWatchNowClick = onWatchNowClick,
                     onPlayTrailerClick = onPlayTrailerClick,
                     onMoreInformationClick = onMoreInformationClick,
@@ -830,12 +823,7 @@ private fun BoxScope.HeroPeekContentCentered(
     ) {
         HeroPeekLogo(item = item, logoSize = logoSize, alignStart = false)
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            HeroMetadata(item)
-        }
+        HeroMetadata(item)
 
         val genres = heroGenres(item)
         if (genres.isNotEmpty()) {
@@ -917,12 +905,7 @@ private fun BoxScope.HeroPeekContentRich(
         ) {
             HeroPeekLogo(item = item, logoSize = logoSize, alignStart = true)
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                HeroMetadata(item)
-            }
+            HeroMetadata(item)
 
             val genres = heroGenres(item)
             if (genres.isNotEmpty()) {
@@ -1092,6 +1075,7 @@ private fun BoxScope.HeroContentCentered(
     pagerState: PagerState,
     contentAlpha: Float,
     screenWidthDp: Dp,
+    logoHeight: Dp,
     onWatchNowClick: (AfinityItem) -> Unit,
     onPlayTrailerClick: (AfinityItem) -> Unit,
     onMoreInformationClick: (AfinityItem) -> Unit,
@@ -1099,20 +1083,20 @@ private fun BoxScope.HeroContentCentered(
     val skipServerResize = LocalSkipServerImageResize.current
     val buttonScale = heroButtonScale(HeroButtonSize)
     val (buttonContainer, buttonContent) = heroButtonColors()
+    val bottomPad = if (logoHeight < 120.dp) 64.dp else 80.dp
 
     Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
         Column(
             modifier =
                 Modifier.align(Alignment.BottomCenter)
-                    .padding(bottom = 80.dp)
+                    .padding(bottom = bottomPad)
                     .fillMaxWidth()
                     .graphicsLayer { alpha = contentAlpha },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Box(
-                modifier =
-                    Modifier.fillMaxWidth(HeroLogoPortraitWidthFraction).height(HeroLogoHeight),
+                modifier = Modifier.fillMaxWidth(HeroLogoPortraitWidthFraction).height(logoHeight),
                 contentAlignment = Alignment.Center,
             ) {
                 currentItem.images.logo?.let { _ ->
@@ -1121,7 +1105,7 @@ private fun BoxScope.HeroContentCentered(
                         contentDescription = "${currentItem.name} logo",
                         blurHash = null,
                         targetWidth = screenWidthDp * HeroLogoPortraitWidthFraction,
-                        targetHeight = HeroLogoHeight,
+                        targetHeight = logoHeight,
                         modifier =
                             Modifier.fillMaxHeight().wrapContentWidth(Alignment.CenterHorizontally),
                         contentScale = ContentScale.Fit,
@@ -1131,10 +1115,9 @@ private fun BoxScope.HeroContentCentered(
                         Text(
                             text = currentItem.name,
                             style =
-                                MaterialTheme.typography.displaySmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 36.sp,
-                                ),
+                                (if (logoHeight < 110.dp) MaterialTheme.typography.headlineLarge
+                                    else MaterialTheme.typography.displaySmall)
+                                    .copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onSurface,
                             textAlign = TextAlign.Center,
                             maxLines = 2,
@@ -1144,28 +1127,17 @@ private fun BoxScope.HeroContentCentered(
                     }
             }
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Spacer(modifier = Modifier.weight(1f))
-                HeroMetadata(currentItem)
-                Spacer(modifier = Modifier.weight(1f))
-            }
+            HeroMetadata(currentItem)
 
-            val genres =
-                when (currentItem) {
-                    is AfinityMovie -> currentItem.genres
-                    is AfinityShow -> currentItem.genres
-                    else -> emptyList()
-                }
+            val genres = heroGenres(currentItem)
             if (genres.isNotEmpty()) {
                 Text(
                     text = genres.take(3).joinToString(" • "),
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -1303,25 +1275,17 @@ private fun HeroContentRich(
                     }
                 }
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    HeroMetadata(currentItem)
-                }
+                HeroMetadata(currentItem)
 
-                val genres =
-                    when (currentItem) {
-                        is AfinityMovie -> currentItem.genres
-                        is AfinityShow -> currentItem.genres
-                        else -> emptyList()
-                    }
+                val genres = heroGenres(currentItem)
                 if (genres.isNotEmpty()) {
                     Text(
                         text = genres.take(3).joinToString(" • "),
                         style =
                             MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
 
@@ -1390,7 +1354,10 @@ private fun HeroContentRich(
 }
 
 @Composable
-private fun HeroMetadata(item: AfinityItem) {
+private fun HeroMetadata(
+    item: AfinityItem,
+    modifier: Modifier = Modifier,
+) {
     val communityRating =
         when (item) {
             is AfinityMovie -> item.communityRating
@@ -1400,92 +1367,126 @@ private fun HeroMetadata(item: AfinityItem) {
         }
     val ratingScale = rememberRatingMetadataScale()
 
-    if (LocalShowRatings.current) {
-        communityRating?.let { rating ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_community_rating),
-                    contentDescription = stringResource(R.string.cd_imdb),
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(ratingScale.rtIconSize),
-                )
-                Text(
-                    text = String.format(Locale.US, "%.1f", rating),
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
+    val items =
+        buildList<@Composable () -> Unit> {
+            if (LocalShowRatings.current) {
+                communityRating?.let { rating ->
+                    add {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_community_rating),
+                                contentDescription = stringResource(R.string.cd_imdb),
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(ratingScale.rtIconSize),
+                            )
+                            Text(
+                                text = String.format(Locale.US, "%.1f", rating),
+                                style =
+                                    MaterialTheme.typography.bodyLarge.copy(
+                                        fontWeight = FontWeight.Medium
+                                    ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
 
-        if (item is AfinityMovie) {
-            item.criticRating?.let { rtRating ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Icon(
-                        painter =
-                            painterResource(
-                                id =
-                                    if (rtRating > 60) R.drawable.ic_rotten_tomato_fresh
-                                    else R.drawable.ic_rotten_tomato_rotten
-                            ),
-                        contentDescription = null,
-                        tint = Color.Unspecified,
-                        modifier = Modifier.size(ratingScale.rtIconSize),
-                    )
+                if (item is AfinityMovie) {
+                    item.criticRating?.let { rtRating ->
+                        add {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                Icon(
+                                    painter =
+                                        painterResource(
+                                            id =
+                                                if (rtRating > 60) R.drawable.ic_rotten_tomato_fresh
+                                                else R.drawable.ic_rotten_tomato_rotten
+                                        ),
+                                    contentDescription = null,
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(ratingScale.rtIconSize),
+                                )
+                                Text(
+                                    text = "${rtRating.toInt()}%",
+                                    style =
+                                        MaterialTheme.typography.bodyLarge.copy(
+                                            fontWeight = FontWeight.Medium
+                                        ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (item is AfinityMovie) {
+                item.premiereDate?.let { date ->
+                    add {
+                        Text(
+                            text = date.year.toString(),
+                            style =
+                                MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            val officialRating =
+                when (item) {
+                    is AfinityMovie -> item.officialRating
+                    is AfinityShow -> item.officialRating
+                    else -> null
+                }
+
+            officialRating?.let { rating ->
+                add {
                     Text(
-                        text = "${rtRating.toInt()}%",
+                        text = rating,
                         style =
                             MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier =
+                            Modifier.background(
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                                    RoundedCornerShape(4.dp),
+                                )
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
                     )
                 }
             }
-        }
-    }
 
-    if (item is AfinityMovie) {
-        item.premiereDate?.let { date ->
-            Text(
-                text = date.year.toString(),
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-
-    val officialRating =
-        when (item) {
-            is AfinityMovie -> item.officialRating
-            is AfinityShow -> item.officialRating
-            else -> null
+            if (item is AfinityShow) {
+                item.seasonCount?.let { count ->
+                    add {
+                        Text(
+                            text = pluralStringResource(R.plurals.hero_season_plural, count, count),
+                            style =
+                                MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
         }
 
-    officialRating?.let { rating ->
-        Text(
-            text = rating,
-            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier =
-                Modifier.background(
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
-                        RoundedCornerShape(4.dp),
-                    )
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
+    if (items.isNotEmpty()) {
+        MetadataOverflowRow(
+            items = items,
+            spacing = 12.dp,
+            showSeparators = false,
+            modifier = modifier,
         )
-    }
-
-    if (item is AfinityShow) {
-        item.seasonCount?.let { count ->
-            Text(
-                text = pluralStringResource(R.plurals.hero_season_plural, count, count),
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
     }
 }

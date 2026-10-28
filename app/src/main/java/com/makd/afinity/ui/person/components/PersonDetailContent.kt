@@ -38,6 +38,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -170,11 +172,16 @@ private fun LandscapePersonDetailContent(
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
 ) {
+    val density = LocalDensity.current
+    val windowInfo = LocalWindowInfo.current
+    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+    val sidebarWidth = minOf(280.dp, (screenWidthDp - 72.dp) * 0.38f)
+
     LandscapeDetailLayout(
         backdropStyle = BackdropStyle.BlurredPhoto,
         backdrop = backdropChainOf(person.images.primaryImageUrl, person.images.primaryBlurHash),
         listState = lazyListState,
-        arrangement = LandscapeDetailArrangement.Sidebar(280.dp),
+        arrangement = LandscapeDetailArrangement.Sidebar(sidebarWidth),
         modifier = modifier,
         listVerticalArrangement = Arrangement.spacedBy(16.dp),
         pane = {
@@ -188,8 +195,8 @@ private fun LandscapePersonDetailContent(
                     contentDescription = person.name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
-                    targetWidth = 280.dp,
-                    targetHeight = 420.dp,
+                    targetWidth = sidebarWidth,
+                    targetHeight = sidebarWidth * 3f / 2f,
                 )
             }
         },

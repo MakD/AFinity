@@ -48,13 +48,11 @@ import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
 import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
-import androidx.compose.material3.adaptive.layout.ThreePaneScaffoldDestinationItem
 import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -93,11 +91,8 @@ import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
 import com.makd.afinity.ui.components.connectionIndicatorColor
 import com.makd.afinity.ui.components.connectionLabel
-import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.components.listDetailPaneDirective
-import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.settings.appearance.AppearanceOptionsScreen
-import com.makd.afinity.ui.settings.backup.BackupBottomSheet
 import com.makd.afinity.ui.settings.backup.BackupScreen
 import com.makd.afinity.ui.settings.downloads.DownloadSettingsScreen
 import com.makd.afinity.ui.settings.downloads.StorageSettingsScreen
@@ -117,14 +112,14 @@ fun SettingsScreen(
     onBackClick: () -> Unit,
     onAddAccountClick: (serverUrl: String) -> Unit,
     onControlPanelClick: () -> Unit,
-    onAppearanceClick: () -> Unit,
-    onPlayerOptionsClick: () -> Unit,
-    onStorageClick: () -> Unit,
-    onDownloadSettingsClick: () -> Unit,
-    onServerManagementClick: () -> Unit,
+    onAppearanceClick: () -> Unit = {},
+    onPlayerOptionsClick: () -> Unit = {},
+    onStorageClick: () -> Unit = {},
+    onDownloadSettingsClick: () -> Unit = {},
+    onServerManagementClick: () -> Unit = {},
     onServicesHubClick: () -> Unit,
-    onLogsClick: () -> Unit,
-    onLicensesClick: () -> Unit,
+    onLogsClick: () -> Unit = {},
+    onLicensesClick: () -> Unit = {},
     onAbsItemClick: (String) -> Unit,
     onAddServerClick: () -> Unit,
     onEditServerClick: (serverId: String) -> Unit,
@@ -152,42 +147,13 @@ fun SettingsScreen(
         }
 
     var showLogoutDialog by remember { mutableStateOf(false) }
-    var showLanguageDialog by remember { mutableStateOf(false) }
-    var showBackupSheet by remember { mutableStateOf(false) }
-    var showQuickConnectDialog by remember { mutableStateOf(false) }
-    var showSessionSwitcherSheet by remember { mutableStateOf(false) }
-    val sessionSwitcherSheetState = rememberAfinitySheetState()
-    val backupSheetState = rememberAfinitySheetState()
     val playerOffset = LocalPlayerOffset.current
-    val isLandscape = isLandscapeWindow()
     val customDirective = listDetailPaneDirective()
 
-    var activeRole by rememberSaveable { mutableStateOf(ListDetailPaneScaffoldRole.List) }
-    var activePane by rememberSaveable { mutableStateOf<SettingsPaneDestination?>(null) }
-
     val navigator =
-        key(isLandscape) {
-            val initialHistory =
-                mutableListOf<ThreePaneScaffoldDestinationItem<SettingsPaneDestination>>(
-                    ThreePaneScaffoldDestinationItem(ListDetailPaneScaffoldRole.List, null)
-                )
-
-            if (activePane != null) {
-                initialHistory.add(ThreePaneScaffoldDestinationItem(activeRole, activePane))
-            }
-
-            rememberListDetailPaneScaffoldNavigator(
-                scaffoldDirective = customDirective,
-                initialDestinationHistory = initialHistory,
-            )
-        }
-
-    LaunchedEffect(navigator.currentDestination) {
-        navigator.currentDestination?.let { dest ->
-            activeRole = dest.pane
-            activePane = dest.contentKey
-        }
-    }
+        rememberListDetailPaneScaffoldNavigator<SettingsPaneDestination>(
+            scaffoldDirective = customDirective
+        )
 
     val scope = rememberCoroutineScope()
     val isDualPane =
@@ -204,41 +170,6 @@ fun SettingsScreen(
                 viewModel.logout()
             },
             onDismiss = { showLogoutDialog = false },
-        )
-    }
-
-    if (showLanguageDialog) {
-        LanguagePickerDialog(onDismiss = { showLanguageDialog = false })
-    }
-
-    if (showBackupSheet) {
-        BackupBottomSheet(
-            onDismiss = { showBackupSheet = false },
-            sheetState = backupSheetState,
-        )
-    }
-
-    if (showQuickConnectDialog) {
-        AuthorizeQuickConnectDialog(
-            isAuthorizing = uiState.isAuthorizingQuickConnect,
-            isSuccess = uiState.quickConnectAuthSuccess,
-            errorMessage = uiState.quickConnectAuthError,
-            onAuthorize = { code -> viewModel.authorizeQuickConnect(code) },
-            onDismiss = {
-                showQuickConnectDialog = false
-                viewModel.clearQuickConnectAuthState()
-            },
-        )
-    }
-
-    if (showSessionSwitcherSheet) {
-        SessionSwitcherBottomSheet(
-            onDismiss = { showSessionSwitcherSheet = false },
-            onAddAccountClick = { server ->
-                showSessionSwitcherSheet = false
-                onAddAccountClick(server.address)
-            },
-            sheetState = sessionSwitcherSheetState,
         )
     }
 
@@ -260,7 +191,9 @@ fun SettingsScreen(
         navigator = navigator,
         modifier = modifier,
         listPane = {
-            AnimatedPane(modifier = Modifier.preferredWidth(420.dp)) {
+            AnimatedPane(
+                modifier = Modifier.preferredWidth(customDirective.defaultPanePreferredWidth)
+            ) {
                 AfinityScreen(
                     topBar = { backgroundOpacity ->
                         AfinityTopBar(
@@ -387,15 +320,11 @@ fun SettingsScreen(
                                         title = stringResource(R.string.pref_appearance),
                                         subtitle = stringResource(R.string.pref_appearance_summary),
                                         onClick = {
-                                            if (isDualPane) {
-                                                scope.launch {
-                                                    navigator.navigateTo(
-                                                        ListDetailPaneScaffoldRole.Detail,
-                                                        SettingsPaneDestination.Appearance,
-                                                    )
-                                                }
-                                            } else {
-                                                onAppearanceClick()
+                                            scope.launch {
+                                                navigator.navigateTo(
+                                                    ListDetailPaneScaffoldRole.Detail,
+                                                    SettingsPaneDestination.Appearance,
+                                                )
                                             }
                                         },
                                     )
@@ -405,15 +334,11 @@ fun SettingsScreen(
                                         title = stringResource(R.string.pref_app_language),
                                         subtitle = appLanguageSubtitle,
                                         onClick = {
-                                            if (isDualPane) {
-                                                scope.launch {
-                                                    navigator.navigateTo(
-                                                        ListDetailPaneScaffoldRole.Detail,
-                                                        SettingsPaneDestination.Language,
-                                                    )
-                                                }
-                                            } else {
-                                                showLanguageDialog = true
+                                            scope.launch {
+                                                navigator.navigateTo(
+                                                    ListDetailPaneScaffoldRole.Detail,
+                                                    SettingsPaneDestination.Language,
+                                                )
                                             }
                                         },
                                     )
@@ -423,15 +348,11 @@ fun SettingsScreen(
                                         title = stringResource(R.string.backup_title),
                                         subtitle = stringResource(R.string.backup_settings_summary),
                                         onClick = {
-                                            if (isDualPane) {
-                                                scope.launch {
-                                                    navigator.navigateTo(
-                                                        ListDetailPaneScaffoldRole.Detail,
-                                                        SettingsPaneDestination.Backup,
-                                                    )
-                                                }
-                                            } else {
-                                                showBackupSheet = true
+                                            scope.launch {
+                                                navigator.navigateTo(
+                                                    ListDetailPaneScaffoldRole.Detail,
+                                                    SettingsPaneDestination.Backup,
+                                                )
                                             }
                                         },
                                     )
@@ -449,15 +370,11 @@ fun SettingsScreen(
                                         title = stringResource(R.string.pref_playback),
                                         subtitle = stringResource(R.string.pref_playback_summary),
                                         onClick = {
-                                            if (isDualPane) {
-                                                scope.launch {
-                                                    navigator.navigateTo(
-                                                        ListDetailPaneScaffoldRole.Detail,
-                                                        SettingsPaneDestination.Player,
-                                                    )
-                                                }
-                                            } else {
-                                                onPlayerOptionsClick()
+                                            scope.launch {
+                                                navigator.navigateTo(
+                                                    ListDetailPaneScaffoldRole.Detail,
+                                                    SettingsPaneDestination.Player,
+                                                )
                                             }
                                         },
                                     )
@@ -470,15 +387,11 @@ fun SettingsScreen(
                                                 R.string.pref_downloads_and_storage_summary
                                             ),
                                         onClick = {
-                                            if (isDualPane) {
-                                                scope.launch {
-                                                    navigator.navigateTo(
-                                                        ListDetailPaneScaffoldRole.Detail,
-                                                        SettingsPaneDestination.StorageSettings,
-                                                    )
-                                                }
-                                            } else {
-                                                onStorageClick()
+                                            scope.launch {
+                                                navigator.navigateTo(
+                                                    ListDetailPaneScaffoldRole.Detail,
+                                                    SettingsPaneDestination.StorageSettings,
+                                                )
                                             }
                                         },
                                     )
@@ -490,15 +403,11 @@ fun SettingsScreen(
                                             subtitle =
                                                 stringResource(R.string.pref_offline_media_summary),
                                             onClick = {
-                                                if (isDualPane) {
-                                                    scope.launch {
-                                                        navigator.navigateTo(
-                                                            ListDetailPaneScaffoldRole.Detail,
-                                                            SettingsPaneDestination.Downloads,
-                                                        )
-                                                    }
-                                                } else {
-                                                    onDownloadSettingsClick()
+                                                scope.launch {
+                                                    navigator.navigateTo(
+                                                        ListDetailPaneScaffoldRole.Detail,
+                                                        SettingsPaneDestination.Downloads,
+                                                    )
                                                 }
                                             },
                                         )
@@ -519,16 +428,11 @@ fun SettingsScreen(
                                         onClick =
                                             if (!effectiveOfflineMode) {
                                                 {
-                                                    if (isDualPane) {
-                                                        scope.launch {
-                                                            navigator.navigateTo(
-                                                                ListDetailPaneScaffoldRole.Detail,
-                                                                SettingsPaneDestination
-                                                                    .SessionSwitcher,
-                                                            )
-                                                        }
-                                                    } else {
-                                                        showSessionSwitcherSheet = true
+                                                    scope.launch {
+                                                        navigator.navigateTo(
+                                                            ListDetailPaneScaffoldRole.Detail,
+                                                            SettingsPaneDestination.SessionSwitcher,
+                                                        )
                                                     }
                                                 }
                                             } else null,
@@ -540,15 +444,11 @@ fun SettingsScreen(
                                         subtitle =
                                             stringResource(R.string.pref_manage_servers_summary),
                                         onClick = {
-                                            if (isDualPane) {
-                                                scope.launch {
-                                                    navigator.navigateTo(
-                                                        ListDetailPaneScaffoldRole.Detail,
-                                                        SettingsPaneDestination.ServerManagement,
-                                                    )
-                                                }
-                                            } else {
-                                                onServerManagementClick()
+                                            scope.launch {
+                                                navigator.navigateTo(
+                                                    ListDetailPaneScaffoldRole.Detail,
+                                                    SettingsPaneDestination.ServerManagement,
+                                                )
                                             }
                                         },
                                     )
@@ -572,16 +472,11 @@ fun SettingsScreen(
                                         onClick =
                                             if (!effectiveOfflineMode) {
                                                 {
-                                                    if (isDualPane) {
-                                                        scope.launch {
-                                                            navigator.navigateTo(
-                                                                ListDetailPaneScaffoldRole.Detail,
-                                                                SettingsPaneDestination
-                                                                    .QuickConnect,
-                                                            )
-                                                        }
-                                                    } else {
-                                                        showQuickConnectDialog = true
+                                                    scope.launch {
+                                                        navigator.navigateTo(
+                                                            ListDetailPaneScaffoldRole.Detail,
+                                                            SettingsPaneDestination.QuickConnect,
+                                                        )
                                                     }
                                                 }
                                             } else null,
@@ -609,15 +504,11 @@ fun SettingsScreen(
                                         title = stringResource(R.string.pref_view_logs),
                                         subtitle = stringResource(R.string.pref_view_logs_summary),
                                         onClick = {
-                                            if (isDualPane) {
-                                                scope.launch {
-                                                    navigator.navigateTo(
-                                                        ListDetailPaneScaffoldRole.Detail,
-                                                        SettingsPaneDestination.Logs,
-                                                    )
-                                                }
-                                            } else {
-                                                onLogsClick()
+                                            scope.launch {
+                                                navigator.navigateTo(
+                                                    ListDetailPaneScaffoldRole.Detail,
+                                                    SettingsPaneDestination.Logs,
+                                                )
                                             }
                                         },
                                     )
@@ -632,15 +523,11 @@ fun SettingsScreen(
                                                 buildType,
                                             ),
                                         onClick = {
-                                            if (isDualPane) {
-                                                scope.launch {
-                                                    navigator.navigateTo(
-                                                        ListDetailPaneScaffoldRole.Detail,
-                                                        SettingsPaneDestination.Licenses,
-                                                    )
-                                                }
-                                            } else {
-                                                onLicensesClick()
+                                            scope.launch {
+                                                navigator.navigateTo(
+                                                    ListDetailPaneScaffoldRole.Detail,
+                                                    SettingsPaneDestination.Licenses,
+                                                )
                                             }
                                         },
                                     )
