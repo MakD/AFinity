@@ -18,6 +18,6 @@ object LogTextStyles {
 
     val console = mono.copy(fontSize = 12.sp, lineHeight = 18.sp)
 
-    val pill = TextStyle(fontSize = 10.sp, lineHeight = 12.sp)
-    val pillSmall = TextStyle(fontSize = 9.sp, lineHeight = 11.sp)
+    val pill = mono.copy(fontSize = 10.sp, lineHeight = 12.sp)
+    val pillSmall = mono.copy(fontSize = 9.sp, lineHeight = 11.sp)
 }

@@ -56,6 +56,8 @@ val NetflixSans =
 val CenterLineHeightStyle =
     LineHeightStyle(alignment = LineHeightStyle.Alignment.Center, trim = LineHeightStyle.Trim.None)
 
+private val NoPaddingPlatformTextStyle = PlatformTextStyle(includeFontPadding = false)
+
 fun getAppTypography(appFont: AppFont): Typography {
     val selectedFontFamily =
         when (appFont) {
@@ -75,6 +77,8 @@ fun getAppTypography(appFont: AppFont): Typography {
                 fontSize = 57.sp,
                 lineHeight = 64.sp,
                 letterSpacing = (-0.25).sp,
+                platformStyle = NoPaddingPlatformTextStyle,
+                lineHeightStyle = CenterLineHeightStyle,
             ),
         displayMedium =
             TextStyle(
@@ -83,6 +87,8 @@ fun getAppTypography(appFont: AppFont): Typography {
                 fontSize = 45.sp,
                 lineHeight = 52.sp,
                 letterSpacing = 0.sp,
+                platformStyle = NoPaddingPlatformTextStyle,
+                lineHeightStyle = CenterLineHeightStyle,
             ),
         displaySmall =
             TextStyle(
@@ -91,6 +97,8 @@ fun getAppTypography(appFont: AppFont): Typography {
                 fontSize = 36.sp,
                 lineHeight = 44.sp,
                 letterSpacing = 0.sp,
+                platformStyle = NoPaddingPlatformTextStyle,
+                lineHeightStyle = CenterLineHeightStyle,
             ),
         headlineLarge =
             TextStyle(
@@ -99,6 +107,8 @@ fun getAppTypography(appFont: AppFont): Typography {
                 fontSize = 32.sp,
                 lineHeight = 40.sp,
                 letterSpacing = 0.sp,
+                platformStyle = NoPaddingPlatformTextStyle,
+                lineHeightStyle = CenterLineHeightStyle,
             ),
         headlineMedium =
             TextStyle(
@@ -107,6 +117,8 @@ fun getAppTypography(appFont: AppFont): Typography {
                 fontSize = 28.sp,
                 lineHeight = 36.sp,
                 letterSpacing = 0.sp,
+                platformStyle = NoPaddingPlatformTextStyle,
+                lineHeightStyle = CenterLineHeightStyle,
             ),
         headlineSmall =
             TextStyle(
@@ -115,6 +127,8 @@ fun getAppTypography(appFont: AppFont): Typography {
                 fontSize = 24.sp,
                 lineHeight = 32.sp,
                 letterSpacing = 0.sp,
+                platformStyle = NoPaddingPlatformTextStyle,
+                lineHeightStyle = CenterLineHeightStyle,
             ),
         titleLarge =
             TextStyle(
@@ -123,6 +137,8 @@ fun getAppTypography(appFont: AppFont): Typography {
                 fontSize = 22.sp,
                 lineHeight = 28.sp,
                 letterSpacing = 0.sp,
+                platformStyle = NoPaddingPlatformTextStyle,
+                lineHeightStyle = CenterLineHeightStyle,
             ),
         titleMedium =
             TextStyle(
@@ -131,6 +147,8 @@ fun getAppTypography(appFont: AppFont): Typography {
                 fontSize = 16.sp,
                 lineHeight = 24.sp,
                 letterSpacing = 0.15.sp,
+                platformStyle = NoPaddingPlatformTextStyle,
+                lineHeightStyle = CenterLineHeightStyle,
             ),
         titleSmall =
             TextStyle(
@@ -139,6 +157,8 @@ fun getAppTypography(appFont: AppFont): Typography {
                 fontSize = 14.sp,
                 lineHeight = 20.sp,
                 letterSpacing = 0.1.sp,
+                platformStyle = NoPaddingPlatformTextStyle,
+                lineHeightStyle = CenterLineHeightStyle,
             ),
         bodyLarge =
             TextStyle(
@@ -147,6 +167,8 @@ fun getAppTypography(appFont: AppFont): Typography {
                 fontSize = 16.sp,
                 lineHeight = 24.sp,
                 letterSpacing = 0.5.sp,
+                platformStyle = NoPaddingPlatformTextStyle,
+                lineHeightStyle = CenterLineHeightStyle,
             ),
         bodyMedium =
             TextStyle(
@@ -155,7 +177,7 @@ fun getAppTypography(appFont: AppFont): Typography {
                 fontSize = 14.sp,
                 lineHeight = 20.sp,
                 letterSpacing = 0.25.sp,
-                platformStyle = PlatformTextStyle(includeFontPadding = false),
+                platformStyle = NoPaddingPlatformTextStyle,
                 lineHeightStyle = CenterLineHeightStyle,
             ),
         bodySmall =
@@ -165,7 +187,7 @@ fun getAppTypography(appFont: AppFont): Typography {
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
                 letterSpacing = 0.4.sp,
-                platformStyle = PlatformTextStyle(includeFontPadding = false),
+                platformStyle = NoPaddingPlatformTextStyle,
                 lineHeightStyle = CenterLineHeightStyle,
             ),
         labelLarge =
@@ -175,6 +197,8 @@ fun getAppTypography(appFont: AppFont): Typography {
                 fontSize = 14.sp,
                 lineHeight = 20.sp,
                 letterSpacing = 0.1.sp,
+                platformStyle = NoPaddingPlatformTextStyle,
+                lineHeightStyle = CenterLineHeightStyle,
             ),
         labelMedium =
             TextStyle(
@@ -183,6 +207,8 @@ fun getAppTypography(appFont: AppFont): Typography {
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
                 letterSpacing = 0.5.sp,
+                platformStyle = NoPaddingPlatformTextStyle,
+                lineHeightStyle = CenterLineHeightStyle,
             ),
         labelSmall =
             TextStyle(
@@ -191,6 +217,8 @@ fun getAppTypography(appFont: AppFont): Typography {
                 fontSize = 11.sp,
                 lineHeight = 16.sp,
                 letterSpacing = 0.5.sp,
+                platformStyle = NoPaddingPlatformTextStyle,
+                lineHeightStyle = CenterLineHeightStyle,
             ),
     )
 }
