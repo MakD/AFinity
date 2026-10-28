@@ -81,6 +81,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.admin.EditableItem
 import com.makd.afinity.data.models.admin.EditablePerson
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.admin.components.adminContentBottomPadding
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinityScreen
@@ -469,7 +470,12 @@ private fun GeneralTab(
             viewModel = viewModel,
         )
 
-        Spacer(modifier = Modifier.height(88.dp + LocalPlayerOffset.current))
+        Spacer(
+            modifier =
+                Modifier.height(
+                    adminContentBottomPadding(hasFloatingButton = true) + LocalPlayerOffset.current
+                )
+        )
     }
 }
 
@@ -631,7 +637,8 @@ private fun PeopleTab(item: EditableItem, viewModel: EditMetadataViewModel) {
                 start = 16.dp,
                 end = 16.dp,
                 top = 8.dp,
-                bottom = 88.dp + LocalPlayerOffset.current,
+                bottom =
+                    adminContentBottomPadding(hasFloatingButton = true) + LocalPlayerOffset.current,
             ),
     ) {
         item {
@@ -992,7 +999,12 @@ private fun AdvancedTab(
             }
         }
 
-        Spacer(modifier = Modifier.height(88.dp + LocalPlayerOffset.current))
+        Spacer(
+            modifier =
+                Modifier.height(
+                    adminContentBottomPadding(hasFloatingButton = true) + LocalPlayerOffset.current
+                )
+        )
     }
 }
 

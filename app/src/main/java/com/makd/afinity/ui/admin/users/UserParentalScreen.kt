@@ -50,6 +50,7 @@ import com.makd.afinity.ui.admin.components.adminContentBottomPadding
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AfinityToggleChip
 import com.makd.afinity.ui.components.AfinityToggleChipFlow
+import com.makd.afinity.ui.components.SETTINGS_TEXT_START_PADDING
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
@@ -192,7 +193,12 @@ private fun UserParentalContent(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier =
                             Modifier.fillMaxWidth()
-                                .padding(start = 56.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
+                                .padding(
+                                    start = SETTINGS_TEXT_START_PADDING,
+                                    end = 16.dp,
+                                    top = 4.dp,
+                                    bottom = 16.dp,
+                                ),
                     )
                 }
 

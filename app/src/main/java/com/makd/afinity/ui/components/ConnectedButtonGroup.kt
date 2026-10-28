@@ -92,7 +92,7 @@ fun ConnectedButtonGroup(buttons: List<GroupButton>, modifier: Modifier = Modifi
                 shape = shape,
                 colors = colors,
                 contentPadding =
-                    if (button is GroupButton.Wide) PaddingValues(horizontal = 16.dp)
+                    if (button is GroupButton.Wide) PaddingValues(horizontal = 12.dp)
                     else PaddingValues(0.dp),
                 modifier = sizeModifier.fillMaxHeight().heightIn(min = GroupHeight),
             ) {
@@ -108,7 +108,7 @@ fun ConnectedButtonGroup(buttons: List<GroupButton>, modifier: Modifier = Modifi
                             style = MaterialTheme.typography.labelLarge,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(start = 8.dp),
+                            modifier = Modifier.weight(1f, fill = false).padding(start = 6.dp),
                         )
                     }
                     is GroupButton.IconOnly ->

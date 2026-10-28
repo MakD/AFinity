@@ -45,6 +45,7 @@ import com.makd.afinity.ui.admin.tasks.formatTaskProgress
 import com.makd.afinity.ui.admin.tasks.labelRes
 import com.makd.afinity.ui.admin.tasks.scheduleSummary
 import com.makd.afinity.ui.admin.tasks.taskIconRes
+import com.makd.afinity.ui.components.SETTINGS_EXPANDED_START_PADDING
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.settings.servers.utils.formatRelativeTime
@@ -52,7 +53,6 @@ import org.jellyfin.sdk.model.api.TaskCompletionStatus
 import org.jellyfin.sdk.model.api.TaskInfo
 import org.jellyfin.sdk.model.api.TaskState
 
-private val TASK_TEXT_START_PADDING = 72.dp
 private val TASK_ACTION_SIZE = 40.dp
 private val TASK_ACTION_END_OFFSET = 8.dp
 
@@ -196,7 +196,7 @@ private fun TaskGroup(
 @Composable
 internal fun TaskDivider() {
     HorizontalDivider(
-        modifier = Modifier.padding(start = TASK_TEXT_START_PADDING, end = 16.dp),
+        modifier = Modifier.padding(start = SETTINGS_EXPANDED_START_PADDING, end = 16.dp),
         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
     )
 }
@@ -274,7 +274,7 @@ internal fun TaskRow(
     if (isRunning) {
         val progressModifier =
             Modifier.fillMaxWidth()
-                .padding(start = TASK_TEXT_START_PADDING, end = 16.dp, bottom = 14.dp)
+                .padding(start = SETTINGS_EXPANDED_START_PADDING, end = 16.dp, bottom = 14.dp)
                 .height(4.dp)
         if (progress != null) {
             LinearProgressIndicator(

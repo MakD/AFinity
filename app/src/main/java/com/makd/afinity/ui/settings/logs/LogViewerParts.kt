@@ -87,7 +87,9 @@ fun TagFilterSheetContent(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
         )
 
-        LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f, fill = false).padding(top = 8.dp)) {
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth().weight(1f, fill = false).padding(top = 8.dp)
+        ) {
             items(items = visible, key = { it.tag }) { tag ->
                 TagRow(
                     tag = tag,

@@ -70,6 +70,7 @@ import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AlphabetScroller
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
+import com.makd.afinity.ui.components.FAB_CONTENT_BOTTOM_PADDING
 import com.makd.afinity.ui.components.FilterFab
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
@@ -253,7 +254,7 @@ fun LibraryContentScreen(
                                         start = 16.dp,
                                         end = 16.dp,
                                         top = 16.dp,
-                                        bottom = 80.dp + playerOffset,
+                                        bottom = FAB_CONTENT_BOTTOM_PADDING + playerOffset,
                                     ),
                             ) { item ->
                                 MediaItemGridCard(

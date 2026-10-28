@@ -39,6 +39,7 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
+import com.makd.afinity.ui.components.MetadataOverflowRow
 import com.makd.afinity.ui.utils.htmlToAnnotatedString
 import com.makd.afinity.util.DateSkeleton
 import com.makd.afinity.util.localizedDateFormat
@@ -129,58 +130,56 @@ private fun ExpandableEpisodeItem(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    episode.publishedAt?.let { timestamp ->
-                        Text(
-                            text = formatDate(timestamp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-
-                    episode.duration?.let { duration ->
-                        if (episode.publishedAt != null) {
-                            Text(
-                                text = " • ",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                val metaItems =
+                    remember(episode.publishedAt, episode.duration, progress) {
+                        val list = mutableListOf<@Composable () -> Unit>()
+                        episode.publishedAt?.let { timestamp ->
+                            list.add {
+                                Text(
+                                    text = formatDate(timestamp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                )
+                            }
                         }
-                        Text(
-                            text = formatDuration(duration),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        episode.duration?.let { duration ->
+                            list.add {
+                                Text(
+                                    text = formatDuration(duration),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                )
+                            }
+                        }
+                        if (progress != null && !progress.isFinished && progress.progress > 0) {
+                            list.add {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    CircularProgressIndicator(
+                                        progress = { progress.progress.toFloat() },
+                                        modifier = Modifier.size(12.dp),
+                                        color = Color(0xFFFFC107),
+                                        strokeWidth = 2.dp,
+                                        trackColor =
+                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    val remainingSeconds = progress.duration - progress.currentTime
+                                    Text(
+                                        text = "${formatDuration(remainingSeconds)} left",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color =
+                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                                        fontWeight = FontWeight.SemiBold,
+                                        maxLines = 1,
+                                    )
+                                }
+                            }
+                        }
+                        list
                     }
-
-                    if (progress != null && !progress.isFinished && progress.progress > 0) {
-                        Text(
-                            text = " • ",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-
-                        Spacer(modifier = Modifier.width(2.dp))
-
-                        CircularProgressIndicator(
-                            progress = { progress.progress.toFloat() },
-                            modifier = Modifier.size(12.dp),
-                            color = Color(0xFFFFC107),
-                            strokeWidth = 2.dp,
-                            trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
-                        )
-
-                        Spacer(modifier = Modifier.width(4.dp))
-
-                        val remainingSeconds = progress.duration - progress.currentTime
-                        Text(
-                            text = "${formatDuration(remainingSeconds)} left",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
-                }
+                MetadataOverflowRow(items = metaItems)
             }
 
             Spacer(modifier = Modifier.width(4.dp))

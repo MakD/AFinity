@@ -577,6 +577,9 @@ private fun ManualServerContent(
                     text = stringResource(R.string.login_saved_servers),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false).padding(end = 8.dp),
                 )
                 TextButton(onClick = onAddNewServer) {
                     Row(verticalAlignment = Alignment.CenterVertically) {

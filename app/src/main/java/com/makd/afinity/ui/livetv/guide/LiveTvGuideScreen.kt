@@ -50,6 +50,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -288,6 +289,7 @@ private fun LiveTvGuideContent(
                             .toLocalTime(),
                     )
                 },
+                modifier = Modifier.weight(1f, fill = false).padding(end = 8.dp),
             )
 
             Button(
@@ -405,13 +407,14 @@ private fun GuideDayPicker(
     days: List<LocalDate>,
     selectedDay: LocalDate,
     onSelectDay: (LocalDate) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val now = rememberCurrentTime()
     val datePattern = stringResource(R.string.livetv_guide_date_fmt)
     val dateFormatter = remember(datePattern) { DateTimeFormatter.ofPattern(datePattern) }
     var expanded by remember { mutableStateOf(false) }
 
-    Box {
+    Box(modifier = modifier) {
         TextButton(onClick = { expanded = true }, enabled = days.size > 1) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_calendar),
@@ -421,6 +424,8 @@ private fun GuideDayPicker(
             Text(
                 text = dayTitle(selectedDay, now, dateFormatter),
                 fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(start = 8.dp),
             )
             if (days.size > 1) {

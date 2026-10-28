@@ -49,6 +49,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.DiscoverFilterOptions
@@ -438,6 +439,7 @@ fun DiscoverFilterBottomSheet(
                 Text(
                     text = stringResource(R.string.discover_filter_watch_region),
                     style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f, fill = false).padding(end = 8.dp),
                 )
                 Text(
                     text =
@@ -445,6 +447,9 @@ fun DiscoverFilterBottomSheet(
                             ?: anyLabel,
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
             }
 

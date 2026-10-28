@@ -55,6 +55,7 @@ import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.navigation.LocalSideSheetEnabled
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.FavoriteToggleButton
+import com.makd.afinity.ui.components.MetadataOverflowRow
 import com.makd.afinity.ui.components.ModalSideSheet
 import com.makd.afinity.ui.components.WatchedToggleButton
 import com.makd.afinity.ui.components.WatchlistToggleButton
@@ -179,120 +180,148 @@ fun EpisodeDetailOverlay(
                     )
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement =
-                        Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    var needsSeparator = false
-
-                    episode.premiereDate?.let { date ->
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            if (isUnaired || episode.missing) {
-                                Box(
-                                    modifier =
-                                        Modifier.background(
-                                                if (isUnaired) Color(0xFF2E7D32).copy(alpha = 0.9f)
-                                                else Color.Red.copy(alpha = 0.8f),
-                                                RoundedCornerShape(4.dp),
+                val showRatings = LocalShowRatings.current
+                val metaItems =
+                    remember(episode, isUnaired, ratingScale, showRatings) {
+                        buildList<@Composable () -> Unit> {
+                            episode.premiereDate?.let { date ->
+                                add {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        if (isUnaired || episode.missing) {
+                                            Box(
+                                                modifier =
+                                                    Modifier.background(
+                                                            if (isUnaired)
+                                                                Color(0xFF2E7D32).copy(alpha = 0.9f)
+                                                            else Color.Red.copy(alpha = 0.8f),
+                                                            RoundedCornerShape(4.dp),
+                                                        )
+                                                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                                            ) {
+                                                Text(
+                                                    text =
+                                                        if (isUnaired)
+                                                            stringResource(
+                                                                R.string.episode_upcoming
+                                                            )
+                                                        else
+                                                            stringResource(
+                                                                R.string.episode_missing
+                                                            ),
+                                                    color = Color.White,
+                                                    style =
+                                                        MaterialTheme.typography.labelSmall.copy(
+                                                            fontWeight = FontWeight.Bold,
+                                                            letterSpacing = 0.5.sp,
+                                                        ),
+                                                )
+                                            }
+                                        } else {
+                                            Icon(
+                                                painter =
+                                                    painterResource(id = R.drawable.ic_calendar),
+                                                contentDescription =
+                                                    stringResource(R.string.cd_air_date),
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(14.dp),
                                             )
-                                            .padding(horizontal = 4.dp, vertical = 2.dp)
-                                ) {
+                                        }
+
+                                        val formattedDate =
+                                            date.format(
+                                                DateTimeFormatter.ofLocalizedDate(
+                                                    FormatStyle.MEDIUM
+                                                )
+                                            )
+                                        Text(
+                                            text =
+                                                if (isUnaired) "Airs on $formattedDate"
+                                                else formattedDate,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                            }
+
+                            if (episode.runtimeTicks > 0) {
+                                add {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.ic_clock),
+                                            contentDescription =
+                                                stringResource(R.string.cd_duration),
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp),
+                                        )
+                                        Text(
+                                            text = formatRuntimeTicks(episode.runtimeTicks),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                            }
+
+                            if ((episode.partCount ?: 0) > 1) {
+                                add {
                                     Text(
                                         text =
-                                            if (isUnaired) stringResource(R.string.episode_upcoming)
-                                            else stringResource(R.string.episode_missing),
-                                        color = Color.White,
-                                        style =
-                                            MaterialTheme.typography.labelSmall.copy(
-                                                fontWeight = FontWeight.Bold,
-                                                letterSpacing = 0.5.sp,
+                                            pluralStringResource(
+                                                R.plurals.meta_parts_fmt,
+                                                episode.partCount!!,
+                                                episode.partCount,
                                             ),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
-                                MetadataDot()
-                            } else {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_calendar),
-                                    contentDescription = stringResource(R.string.cd_air_date),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(14.dp),
-                                )
                             }
 
-                            val formattedDate =
-                                date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))
-                            Text(
-                                text = if (isUnaired) "Airs on $formattedDate" else formattedDate,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            if (showRatings) {
+                                episode.communityRating?.let { rating ->
+                                    add {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                        ) {
+                                            Icon(
+                                                painter =
+                                                    painterResource(
+                                                        id = R.drawable.ic_community_rating
+                                                    ),
+                                                contentDescription =
+                                                    stringResource(R.string.cd_imdb),
+                                                tint = Color.Unspecified,
+                                                modifier = Modifier.size(ratingScale.rtIconSize),
+                                            )
+                                            Text(
+                                                text = String.format(Locale.US, "%.1f", rating),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
-                        needsSeparator = true
                     }
 
-                    if (episode.runtimeTicks > 0) {
-                        if (needsSeparator) MetadataDot()
-
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_clock),
-                                contentDescription = stringResource(R.string.cd_duration),
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(16.dp),
-                            )
-                            Text(
-                                text = formatRuntimeTicks(episode.runtimeTicks),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        needsSeparator = true
-                    }
-
-                    if ((episode.partCount ?: 0) > 1) {
-                        if (needsSeparator) MetadataDot()
-                        Text(
-                            text =
-                                pluralStringResource(
-                                    R.plurals.meta_parts_fmt,
-                                    episode.partCount!!,
-                                    episode.partCount,
-                                ),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                if (metaItems.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        MetadataOverflowRow(
+                            items = metaItems,
+                            spacing = 8.dp,
                         )
-                        needsSeparator = true
-                    }
-
-                    if (LocalShowRatings.current) {
-                        episode.communityRating?.let { rating ->
-                            if (needsSeparator) MetadataDot()
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_community_rating),
-                                    contentDescription = stringResource(R.string.cd_imdb),
-                                    tint = Color.Unspecified,
-                                    modifier = Modifier.size(ratingScale.rtIconSize),
-                                )
-                                Text(
-                                    text = String.format(Locale.US, "%.1f", rating),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
                     }
                 }
 

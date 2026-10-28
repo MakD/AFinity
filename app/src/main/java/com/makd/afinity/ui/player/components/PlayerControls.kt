@@ -35,7 +35,6 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -411,6 +410,12 @@ fun PlayerControls(
             animationSpec = tween(300),
             label = "logoStartPadding",
         )
+    val overlayBottomPadding by
+        animateDpAsState(
+            targetValue = if (shouldShowControls) 100.dp else 24.dp,
+            animationSpec = tween(300),
+            label = "overlayBottomPadding",
+        )
 
     Box(modifier = Modifier.fillMaxSize()) {
         val pauseDetailsEligible =
@@ -677,9 +682,11 @@ fun PlayerControls(
             modifier =
                 Modifier.align(Alignment.BottomEnd)
                     .windowInsetsPadding(
-                        WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+                        WindowInsets.safeDrawing.only(
+                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                        )
                     )
-                    .padding(end = 16.dp, bottom = 110.dp),
+                    .padding(end = 16.dp, bottom = overlayBottomPadding),
             enter =
                 fadeIn(tween(300)) +
                     scaleIn(
@@ -739,9 +746,11 @@ fun PlayerControls(
             modifier =
                 Modifier.align(Alignment.BottomEnd)
                     .windowInsetsPadding(
-                        WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+                        WindowInsets.safeDrawing.only(
+                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                        )
                     )
-                    .padding(end = 16.dp, bottom = 110.dp),
+                    .padding(end = 16.dp, bottom = overlayBottomPadding),
             enter =
                 fadeIn(tween(300)) +
                     scaleIn(
@@ -889,11 +898,11 @@ fun PlayerControls(
                     modifier =
                         Modifier.align(Alignment.TopEnd)
                             .windowInsetsPadding(
-                                WindowInsets.safeDrawing
-                                    .only(WindowInsetsSides.Horizontal)
-                                    .union(WindowInsets.displayCutout.only(WindowInsetsSides.Top))
+                                WindowInsets.safeDrawing.only(
+                                    WindowInsetsSides.Horizontal + WindowInsetsSides.Top
+                                )
                             )
-                            .padding(top = 72.dp, end = 16.dp)
+                            .padding(top = 60.dp, end = 16.dp)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,

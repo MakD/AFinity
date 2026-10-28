@@ -67,7 +67,7 @@ fun MediaCategoryGrid(
                     start = 16.dp,
                     top = 16.dp,
                     end = 16.dp,
-                    bottom = 80.dp + playerOffset,
+                    bottom = FAB_CONTENT_BOTTOM_PADDING + playerOffset,
                 ),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),

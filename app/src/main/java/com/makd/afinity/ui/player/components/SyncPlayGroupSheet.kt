@@ -69,7 +69,12 @@ fun SyncPlayGroupSheet(
             ),
     ) {
         Surface(
-            modifier = Modifier.safeDrawingPadding().imePadding().widthIn(max = 440.dp).fillMaxWidth(0.9f).padding(vertical = 24.dp),
+            modifier =
+                Modifier.safeDrawingPadding()
+                    .imePadding()
+                    .widthIn(max = 440.dp)
+                    .fillMaxWidth(0.9f)
+                    .padding(vertical = 24.dp),
             shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {

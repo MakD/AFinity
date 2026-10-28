@@ -1,6 +1,7 @@
 package com.makd.afinity.ui.admin.devices
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -51,13 +53,13 @@ import com.makd.afinity.ui.admin.users.AdminUserAvatar
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AfinityToggleChip
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.SETTINGS_EXPANDED_START_PADDING
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.settings.servers.utils.formatRelativeTime
 
 private val DEVICE_TILE_SIZE = 40.dp
 private val DEVICE_AVATAR_SIZE = 28.dp
-private val EXPANDED_START_PADDING = 72.dp
 
 @Composable
 fun DevicesScreen(
@@ -234,7 +236,11 @@ private fun DevicesContent(
 @Composable
 private fun DeviceFilters(state: DevicesUiState, onSelectFilter: (DeviceFilter) -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 8.dp, end = 16.dp),
+        modifier =
+            Modifier.fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
+                .padding(top = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         AfinityToggleChip(
@@ -258,7 +264,7 @@ private fun DeviceFilters(state: DevicesUiState, onSelectFilter: (DeviceFilter) 
 @Composable
 private fun DeviceDivider() {
     HorizontalDivider(
-        modifier = Modifier.padding(start = EXPANDED_START_PADDING, end = 16.dp),
+        modifier = Modifier.padding(start = SETTINGS_EXPANDED_START_PADDING, end = 16.dp),
         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
     )
 }
@@ -378,7 +384,7 @@ private fun DeviceEntries(
     Column(
         modifier =
             Modifier.fillMaxWidth()
-                .padding(start = EXPANDED_START_PADDING, end = 8.dp, bottom = 8.dp)
+                .padding(start = SETTINGS_EXPANDED_START_PADDING, end = 8.dp, bottom = 8.dp)
     ) {
         group.entries.forEach { entry ->
             Row(

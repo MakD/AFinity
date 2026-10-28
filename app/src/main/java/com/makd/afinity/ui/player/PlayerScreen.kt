@@ -432,7 +432,7 @@ fun PlayerScreen(
                         modifier =
                             Modifier.align(Alignment.BottomEnd)
                                 .playerOverlayInsets()
-                                .padding(bottom = 110.dp, end = 56.dp)
+                                .padding(bottom = 100.dp, end = 16.dp)
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null,

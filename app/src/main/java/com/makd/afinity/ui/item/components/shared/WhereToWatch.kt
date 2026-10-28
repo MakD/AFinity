@@ -283,7 +283,6 @@ fun WhereToWatchStrip(providers: TmdbRegionProviders, modifier: Modifier = Modif
             shown.forEach { option ->
                 ProviderLogo(provider = option.provider, size = 32.dp, cornerRadius = 8.dp)
             }
-            Spacer(modifier = Modifier.weight(1f))
             if (trailing != null) {
                 Text(
                     text = trailing,
@@ -291,7 +290,12 @@ fun WhereToWatchStrip(providers: TmdbRegionProviders, modifier: Modifier = Modif
                         MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.primary,
                     maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.weight(1f),
                 )
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
             }
             Icon(
                 painter = painterResource(id = R.drawable.ic_chevron_right),

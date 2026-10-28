@@ -503,6 +503,7 @@ private fun InfoRow(row: MediaInfoRow) {
             text = row.label,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f, fill = false),
         )
         Text(
             text = row.value,

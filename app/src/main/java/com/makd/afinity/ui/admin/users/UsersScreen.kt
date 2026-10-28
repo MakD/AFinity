@@ -51,6 +51,7 @@ import com.makd.afinity.R
 import com.makd.afinity.ui.admin.components.AdminLoadContent
 import com.makd.afinity.ui.admin.components.AdminPill
 import com.makd.afinity.ui.admin.components.AdminScaffold
+import com.makd.afinity.ui.admin.components.adminContentBottomPadding
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.settings.servers.utils.formatRelativeTime
 import java.util.UUID
@@ -151,7 +152,12 @@ private fun UsersContent(
                 columns = GridCells.Adaptive(minSize = USER_CARD_MIN_WIDTH),
                 modifier = Modifier.fillMaxSize().padding(contentPadding),
                 contentPadding =
-                    PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
+                    PaddingValues(
+                        start = 16.dp,
+                        top = 16.dp,
+                        end = 16.dp,
+                        bottom = adminContentBottomPadding(hasFloatingButton = true),
+                    ),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {

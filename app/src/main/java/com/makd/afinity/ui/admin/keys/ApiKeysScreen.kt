@@ -47,6 +47,7 @@ import com.makd.afinity.R
 import com.makd.afinity.ui.admin.components.AdminLoadContent
 import com.makd.afinity.ui.admin.components.AdminScaffold
 import com.makd.afinity.ui.admin.components.SecureWindowEffect
+import com.makd.afinity.ui.admin.components.adminContentBottomPadding
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
@@ -185,7 +186,11 @@ private fun ApiKeysContent(
         ) { keys ->
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(contentPadding),
-                contentPadding = PaddingValues(top = 16.dp, bottom = 96.dp),
+                contentPadding =
+                    PaddingValues(
+                        top = 16.dp,
+                        bottom = adminContentBottomPadding(hasFloatingButton = true),
+                    ),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
                 item(key = "note") { KeysNote() }

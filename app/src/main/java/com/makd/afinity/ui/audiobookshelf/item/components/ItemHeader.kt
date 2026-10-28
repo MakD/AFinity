@@ -161,15 +161,11 @@ fun ItemHeaderContent(
                 isAbridged
 
         if (hasChips) {
-            val hasGenres = !genres.isNullOrEmpty()
-            val hasLanguage = flagUrl != null || language != null
-            val dotColor = MaterialTheme.colorScheme.onSurfaceVariant
-
             Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.align(Alignment.CenterHorizontally),
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically),
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 genres?.take(2)?.forEach { genre ->
                     Surface(
@@ -183,10 +179,6 @@ fun ItemHeaderContent(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                         )
                     }
-                }
-
-                if (hasLanguage && hasGenres) {
-                    Text(text = "•", color = dotColor, style = MaterialTheme.typography.labelSmall)
                 }
 
                 if (flagUrl != null) {
@@ -216,10 +208,6 @@ fun ItemHeaderContent(
                     }
                 }
 
-                if (isExplicit && (hasGenres || hasLanguage)) {
-                    Text(text = "•", color = dotColor, style = MaterialTheme.typography.labelSmall)
-                }
-
                 if (isExplicit) {
                     Surface(
                         shape = RoundedCornerShape(4.dp),
@@ -232,10 +220,6 @@ fun ItemHeaderContent(
                             modifier = Modifier.padding(2.dp).size(14.dp),
                         )
                     }
-                }
-
-                if (isAbridged && (hasGenres || hasLanguage || isExplicit)) {
-                    Text(text = "•", color = dotColor, style = MaterialTheme.typography.labelSmall)
                 }
 
                 if (isAbridged) {

@@ -42,6 +42,7 @@ import com.makd.afinity.ui.admin.components.AdminDiscardDialog
 import com.makd.afinity.ui.admin.components.AdminRemoveButton
 import com.makd.afinity.ui.admin.components.AdminScaffold
 import com.makd.afinity.ui.admin.components.ReportUnsavedChanges
+import com.makd.afinity.ui.admin.components.adminContentBottomPadding
 import com.makd.afinity.ui.admin.config.ChoiceField
 import com.makd.afinity.ui.admin.config.ConfigField
 import com.makd.afinity.ui.admin.config.ConfigFormSections
@@ -158,7 +159,10 @@ private fun AddLibraryContent(
                 Modifier.fillMaxSize()
                     .padding(contentPadding)
                     .verticalScroll(rememberScrollState())
-                    .padding(top = 16.dp, bottom = 96.dp),
+                    .padding(
+                        top = 16.dp,
+                        bottom = adminContentBottomPadding(hasFloatingButton = true),
+                    ),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             SettingsGroup {

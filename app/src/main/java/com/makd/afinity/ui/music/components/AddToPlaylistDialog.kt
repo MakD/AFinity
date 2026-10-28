@@ -281,7 +281,7 @@ fun CreatePlaylistDialogContent(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
                         Text(
                             text = stringResource(R.string.music_playlist_public_label),
                             style = MaterialTheme.typography.bodyMedium,

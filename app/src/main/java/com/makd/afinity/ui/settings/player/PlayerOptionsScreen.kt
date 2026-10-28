@@ -103,6 +103,7 @@ import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.EndAlignedDropdownMenu
+import com.makd.afinity.ui.components.SETTINGS_TEXT_START_PADDING
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
@@ -1592,6 +1593,7 @@ private fun SubtitleSliderItem(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f).padding(end = 8.dp),
             )
             Surface(
                 shape = RoundedCornerShape(8.dp),
@@ -1659,7 +1661,12 @@ private fun VideoQualitySelectorItem(
                 text = hint,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                modifier = Modifier.padding(start = 56.dp, end = 16.dp, bottom = 12.dp),
+                modifier =
+                    Modifier.padding(
+                        start = SETTINGS_TEXT_START_PADDING,
+                        end = 16.dp,
+                        bottom = 12.dp,
+                    ),
             )
         }
     }
@@ -1782,7 +1789,12 @@ internal fun <T> SubtitleDropdownItem(
                         MaterialTheme.colorScheme.onSurfaceVariant.copy(
                             alpha = if (enabled) 0.7f else 0.38f
                         ),
-                    modifier = Modifier.padding(start = 56.dp, end = 16.dp, bottom = 12.dp),
+                    modifier =
+                        Modifier.padding(
+                            start = SETTINGS_TEXT_START_PADDING,
+                            end = 16.dp,
+                            bottom = 12.dp,
+                        ),
                 )
             }
         }

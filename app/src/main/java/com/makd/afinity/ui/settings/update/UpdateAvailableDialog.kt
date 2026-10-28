@@ -214,18 +214,11 @@ fun UpdateAvailableDialog(
             }
         },
         confirmButton = {
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                if (downloadedFile != null && verification != ApkVerification.UNAVAILABLE) {
-                    ValidateButton(
-                        verification = verification,
-                        onVerify = onVerify,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-
                 Button(
                     onClick = {
                         if (effectiveFile != null) {
@@ -235,7 +228,7 @@ fun UpdateAvailableDialog(
                         }
                     },
                     enabled = if (effectiveFile != null) installReady else !isDownloading,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     AnimatedContent(
                         targetState =
@@ -289,11 +282,24 @@ fun UpdateAvailableDialog(
                         }
                     }
                 }
+
+                if (downloadedFile != null && verification != ApkVerification.UNAVAILABLE) {
+                    ValidateButton(
+                        verification = verification,
+                        onVerify = onVerify,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.action_not_now))
+                }
             }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_not_now)) }
-        },
+        dismissButton = null,
     )
 }
 

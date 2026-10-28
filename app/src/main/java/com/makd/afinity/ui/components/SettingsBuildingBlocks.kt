@@ -88,8 +88,11 @@ fun SettingsGroupTitle(title: String, modifier: Modifier = Modifier) {
     )
 }
 
+val SETTINGS_TEXT_START_PADDING = 56.dp
+val SETTINGS_EXPANDED_START_PADDING = 72.dp
+
 @Composable
-fun SettingsDivider(startPadding: Dp = 56.dp) {
+fun SettingsDivider(startPadding: Dp = SETTINGS_TEXT_START_PADDING) {
     HorizontalDivider(
         modifier = Modifier.padding(start = startPadding, end = 16.dp),
         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),

@@ -12,14 +12,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -31,12 +31,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.data.models.media.AfinityChapter
+
+private val SEEK_BAR_START_PADDING = 24.dp
+private val SEEK_BAR_END_PADDING = 78.dp
+private val SEEK_BAR_TOP_GAP = 8.dp
+private val SEEK_BAR_BOTTOM_CLEARANCE = 80.dp
+private val PREVIEW_MARGIN = 8.dp
 
 @Composable
 fun TrickplayPreview(
@@ -47,7 +52,6 @@ fun TrickplayPreview(
     chapters: List<AfinityChapter>,
     modifier: Modifier = Modifier,
 ) {
-    val layoutDirection = LocalLayoutDirection.current
     val (previewWidth, previewHeight) =
         remember(previewImage) {
             if (previewImage != null) {
@@ -64,11 +68,6 @@ fun TrickplayPreview(
             }
         }
 
-    val safeDrawingPadding = WindowInsets.safeDrawing.asPaddingValues()
-    val bottomInset = safeDrawingPadding.calculateBottomPadding()
-    val startInset = safeDrawingPadding.calculateStartPadding(layoutDirection)
-    val endInset = safeDrawingPadding.calculateEndPadding(layoutDirection)
-
     AnimatedVisibility(
         visible = isVisible && previewImage != null,
         enter = fadeIn(),
@@ -76,33 +75,38 @@ fun TrickplayPreview(
         modifier = modifier,
     ) {
         if (previewImage != null) {
-            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                val screenWidth = maxWidth
-                val screenHeight = maxHeight
-                val seekBarY = screenHeight - 80.dp - bottomInset
-
-                val startPadding = 24.dp + startInset
-                val endPadding = 78.dp + endInset
-
-                val actualSliderWidth = screenWidth - startPadding - endPadding
+            BoxWithConstraints(
+                modifier =
+                    Modifier.fillMaxSize()
+                        .windowInsetsPadding(
+                            WindowInsets.safeDrawing.only(
+                                WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                            )
+                        )
+            ) {
+                val sliderWidth = maxWidth - SEEK_BAR_START_PADDING - SEEK_BAR_END_PADDING
                 val progress =
                     if (durationMs > 0)
                         (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
                     else 0f
-                val targetX = startPadding + (actualSliderWidth * progress)
+                val targetX = SEEK_BAR_START_PADDING + (sliderWidth * progress)
 
-                val minX = startInset + 8.dp
-                val maxX = screenWidth - previewWidth - endInset - 8.dp
+                val minX = PREVIEW_MARGIN
+                val maxX = maxWidth - previewWidth - PREVIEW_MARGIN
                 val constrainedX =
                     when {
                         targetX - previewWidth / 2 < minX -> minX
-                        targetX + previewWidth / 2 > screenWidth - endInset - 8.dp -> maxX
+                        targetX + previewWidth / 2 > maxX -> maxX
                         else -> targetX - previewWidth / 2
                     }
 
                 Card(
                     modifier =
-                        Modifier.offset(x = constrainedX, y = seekBarY - previewHeight - 8.dp)
+                        Modifier.align(Alignment.BottomStart)
+                            .offset(
+                                x = constrainedX,
+                                y = -(SEEK_BAR_BOTTOM_CLEARANCE + previewHeight + SEEK_BAR_TOP_GAP),
+                            )
                             .size(previewWidth, previewHeight),
                     colors = CardDefaults.cardColors(containerColor = Color.Black),
                     shape = RoundedCornerShape(8.dp),

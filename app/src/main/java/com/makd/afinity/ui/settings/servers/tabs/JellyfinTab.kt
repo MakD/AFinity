@@ -137,7 +137,10 @@ internal fun JellyfinTabContent(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.weight(1f, fill = false).padding(end = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_admin_panel_settings),
                             contentDescription = stringResource(R.string.cd_control_panel),

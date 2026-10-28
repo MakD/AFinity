@@ -36,6 +36,7 @@ import com.makd.afinity.R
 import com.makd.afinity.ui.admin.components.AdminLoadContent
 import com.makd.afinity.ui.admin.components.AdminPill
 import com.makd.afinity.ui.admin.components.AdminScaffold
+import com.makd.afinity.ui.components.SETTINGS_TEXT_START_PADDING
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsGroupTitle
@@ -399,7 +400,12 @@ private fun PluginHistory(versions: List<PluginVersionRow>, installedVersion: St
                         text = version.changelog,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 56.dp, end = 16.dp, bottom = 14.dp),
+                        modifier =
+                            Modifier.padding(
+                                start = SETTINGS_TEXT_START_PADDING,
+                                end = 16.dp,
+                                bottom = 14.dp,
+                            ),
                     )
                 }
             }

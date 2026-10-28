@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -623,17 +624,21 @@ fun RowScope.CastRemoteAction(
 ) {
     val color =
         if (active) lerp(accentColor, Color.White, 0.35f) else Color.White.copy(alpha = 0.74f)
-    TextButton(onClick = onClick, modifier = Modifier.weight(1f).heightIn(min = 44.dp)) {
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier.weight(1f).heightIn(min = 44.dp),
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
+    ) {
         Icon(
             painter = painter,
             contentDescription = null,
             tint = color,
             modifier = Modifier.size(18.dp),
         )
-        Spacer(modifier = Modifier.width(6.dp))
+        Spacer(modifier = Modifier.width(4.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
             color = color,
             maxLines = 1,
@@ -656,13 +661,15 @@ fun RowScope.CastRemoteValueAction(
         onClick = onClick,
         modifier =
             Modifier.weight(0.7f).heightIn(min = 44.dp).semantics { contentDescription = label },
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
     ) {
         Text(
             text = value,
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.ExtraBold,
             color = color,
             maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

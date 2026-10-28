@@ -47,7 +47,7 @@ fun ExternalTitlesSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            DetailSectionTitle(text = title)
+            DetailSectionTitle(text = title, modifier = Modifier.weight(1f, fill = false))
             if (onViewAllClick != null) {
                 Box(
                     modifier =

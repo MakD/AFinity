@@ -38,6 +38,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.admin.components.adminContentBottomPadding
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityBackButton
 import com.makd.afinity.ui.components.AfinityScreen
@@ -194,7 +195,9 @@ private fun ServerListPane(
                         top = customPadding.calculateTopPadding() + 16.dp,
                         start = customPadding.calculateStartPadding(layoutDirection) + 16.dp,
                         end = customPadding.calculateEndPadding(layoutDirection) + 16.dp,
-                        bottom = customPadding.calculateBottomPadding() + 100.dp,
+                        bottom =
+                            customPadding.calculateBottomPadding() +
+                                adminContentBottomPadding(hasFloatingButton = true),
                     ),
             ) {
                 if (activeServer != null) {

@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.R.drawable
@@ -136,6 +137,9 @@ fun DiscoverSection(
                 text = title,
                 style = afinitySectionTitleStyle(),
                 color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
             )
 
             if (onViewAllClick != null) {
@@ -188,13 +192,12 @@ fun StudiosSection(
     val cardWidth = widthSizeClass.landscapeWidth
     val cardHeight =
         CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
-    val fixedRowHeight = cardHeight + 10.dp
 
     Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = stringResource(R.string.section_studios))
 
         LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
+            modifier = Modifier.height(cardHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
@@ -250,13 +253,12 @@ fun MovieGenresSection(
     val cardWidth = widthSizeClass.landscapeWidth
     val cardHeight =
         CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
-    val fixedRowHeight = cardHeight + 10.dp
 
     Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = stringResource(R.string.section_movie_genres))
 
         LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
+            modifier = Modifier.height(cardHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
@@ -283,13 +285,12 @@ fun TvGenresSection(
     val cardWidth = widthSizeClass.landscapeWidth
     val cardHeight =
         CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
-    val fixedRowHeight = cardHeight + 10.dp
 
     Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = stringResource(R.string.section_tv_genres))
 
         LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
+            modifier = Modifier.height(cardHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {

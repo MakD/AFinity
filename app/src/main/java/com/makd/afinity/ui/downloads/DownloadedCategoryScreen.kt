@@ -45,6 +45,7 @@ import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AppBarProfile
+import com.makd.afinity.ui.components.FAB_CONTENT_BOTTOM_PADDING
 import com.makd.afinity.ui.components.FilterFab
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.MediaItemCard
@@ -402,7 +403,12 @@ fun DownloadedCategoryScreen(
         }
 
     val gridPadding =
-        PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 80.dp + playerOffset)
+        PaddingValues(
+            start = 16.dp,
+            top = 16.dp,
+            end = 16.dp,
+            bottom = FAB_CONTENT_BOTTOM_PADDING + playerOffset,
+        )
 
     AfinityScreen(
         topBar = { backgroundOpacity ->

@@ -83,6 +83,7 @@ fun EqualizerBottomSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 2.sp,
                     fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f).padding(end = 16.dp),
                 )
                 AfinitySwitch(checked = state.isEnabled, onCheckedChange = onEnabled)
             }
@@ -141,7 +142,7 @@ fun EqualizerBottomSheet(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
                         Text(
                             text = stringResource(R.string.abs_skip_silence),
                             style = MaterialTheme.typography.labelMedium,
