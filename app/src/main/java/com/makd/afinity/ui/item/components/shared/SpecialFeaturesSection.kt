@@ -44,12 +44,14 @@ fun SpecialFeaturesSection(
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
 
     if (specialFeatures.isNotEmpty()) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             DetailSectionTitle(text = stringResource(R.string.special_features_title))
 
             LazyRow(
+                modifier = Modifier.height(fixedRowHeight),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(horizontal = 0.dp),
             ) {

@@ -404,9 +404,17 @@ private fun FavoritePeopleSection(
     cardWidth: Dp,
     onViewAllClick: (() -> Unit)? = null,
 ) {
+    val fixedRowHeight =
+        CardDimensions.rowHeight(
+            cardWidth,
+            CardDimensions.ASPECT_RATIO_SQUARE,
+            titleHeight = CardDimensions.titleLine,
+            metadataHeight = 0.dp,
+        )
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SectionRowHeader(title = title, onViewAllClick = onViewAllClick)
         LazyRow(
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
@@ -467,9 +475,11 @@ private fun FavoriteChannelsSection(
     cardWidth: Dp,
     onViewAllClick: (() -> Unit)? = null,
 ) {
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SectionRowHeader(title = title, onViewAllClick = onViewAllClick)
         LazyRow(
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
@@ -549,12 +559,18 @@ private fun FavoriteTracksSection(
     onFavorite: (com.makd.afinity.data.models.music.AfinityTrack) -> Unit,
     onViewAllClick: (() -> Unit)? = null,
 ) {
+    val fixedRowHeight =
+        CardDimensions.rowHeight(
+            CardDimensions.posterCardWidth,
+            CardDimensions.ASPECT_RATIO_SQUARE,
+        )
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SectionRowHeader(
             title = stringResource(R.string.favorites_songs),
             onViewAllClick = onViewAllClick,
         )
         LazyRow(
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {

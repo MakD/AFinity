@@ -118,6 +118,8 @@ fun MusicArtistScreen(
     var showAllTracks by remember { mutableStateOf(false) }
     val isLandscape = isLandscapeWindow()
     val relatedCardWidth = CardDimensions.posterCardWidth
+    val albumRowHeight =
+        CardDimensions.rowHeight(relatedCardWidth, CardDimensions.ASPECT_RATIO_SQUARE)
     val portraitListState = rememberLazyListState()
     val landscapeListState = rememberLazyListState()
     val lazyListState = if (isLandscape) landscapeListState else portraitListState
@@ -450,7 +452,10 @@ fun MusicArtistScreen(
                     modifier = Modifier.padding(start = DetailGutter, top = 32.dp, bottom = 16.dp),
                 )
                 LazyRow(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = DetailGutter),
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .height(albumRowHeight)
+                            .padding(horizontal = DetailGutter),
                     horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
                 ) {
                     items(uiState.albums, key = { it.id }) { album ->
@@ -474,7 +479,10 @@ fun MusicArtistScreen(
                     modifier = Modifier.padding(start = DetailGutter, top = 32.dp, bottom = 16.dp),
                 )
                 LazyRow(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = DetailGutter),
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .height(albumRowHeight)
+                            .padding(horizontal = DetailGutter),
                     horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
                 ) {
                     items(uiState.appearsOn, key = { it.id }) { album ->

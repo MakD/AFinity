@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -90,6 +91,15 @@ fun MusicGenreScreen(
     val context = LocalContext.current
     val isLandscape = isLandscapeWindow()
     val relatedCardWidth = CardDimensions.posterCardWidth
+    val artistRowHeight =
+        CardDimensions.rowHeight(
+            relatedCardWidth * 0.86f,
+            CardDimensions.ASPECT_RATIO_SQUARE,
+            titleHeight = CardDimensions.titleLine,
+            metadataHeight = 0.dp,
+        )
+    val albumRowHeight =
+        CardDimensions.rowHeight(relatedCardWidth, CardDimensions.ASPECT_RATIO_SQUARE)
     val listState = rememberLazyListState()
     val topBarOpacity by rememberTopBarOpacity(listState)
     var showAllTracks by remember { mutableStateOf(false) }
@@ -184,7 +194,10 @@ fun MusicGenreScreen(
                     modifier = Modifier.padding(start = DetailGutter, top = 24.dp, bottom = 12.dp),
                 )
                 LazyRow(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = DetailGutter),
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .height(artistRowHeight)
+                            .padding(horizontal = DetailGutter),
                     horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
                 ) {
                     items(uiState.artists, key = { it.id }) { artist ->
@@ -209,7 +222,10 @@ fun MusicGenreScreen(
                     modifier = Modifier.padding(start = DetailGutter, top = 32.dp, bottom = 16.dp),
                 )
                 LazyRow(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = DetailGutter),
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .height(albumRowHeight)
+                            .padding(horizontal = DetailGutter),
                     horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
                 ) {
                     items(uiState.albums, key = { it.id }) { album ->
@@ -233,7 +249,10 @@ fun MusicGenreScreen(
                     modifier = Modifier.padding(start = DetailGutter, top = 32.dp, bottom = 16.dp),
                 )
                 LazyRow(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = DetailGutter),
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .height(albumRowHeight)
+                            .padding(horizontal = DetailGutter),
                     horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
                 ) {
                     items(uiState.recentlyAdded, key = { it.id }) { album ->

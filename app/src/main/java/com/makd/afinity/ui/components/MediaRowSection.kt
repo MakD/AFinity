@@ -3,6 +3,7 @@ package com.makd.afinity.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
@@ -11,6 +12,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.ui.theme.CardDimensions
 
 @Composable
 fun MediaRowSection(
@@ -23,10 +25,16 @@ fun MediaRowSection(
 ) {
     if (items.isEmpty()) return
 
+    val aspectRatio =
+        if (items.firstOrNull() is AfinityEpisode) CardDimensions.ASPECT_RATIO_LANDSCAPE
+        else CardDimensions.ASPECT_RATIO_PORTRAIT
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, aspectRatio)
+
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SectionRowHeader(title = title, onViewAllClick = onViewAllClick)
 
         LazyRow(
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {

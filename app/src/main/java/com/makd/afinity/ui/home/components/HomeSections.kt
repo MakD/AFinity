@@ -379,9 +379,12 @@ fun DownloadedAudiobooksSection(
     modifier: Modifier = Modifier,
     onViewAllClick: (() -> Unit)? = null,
 ) {
+    val fixedRowHeight =
+        CardDimensions.rowHeight(CardDimensions.posterCardWidth, CardDimensions.ASPECT_RATIO_SQUARE)
     Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = title, onViewAllClick = onViewAllClick)
         LazyRow(
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
@@ -405,9 +408,15 @@ fun DownloadedMusicAlbumsSection(
     modifier: Modifier = Modifier,
     onViewAllClick: (() -> Unit)? = null,
 ) {
+    val fixedRowHeight =
+        CardDimensions.rowHeight(CardDimensions.posterCardWidth, CardDimensions.ASPECT_RATIO_SQUARE)
     Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = title, onViewAllClick = onViewAllClick)
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyRow(
+            modifier = Modifier.height(fixedRowHeight),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 0.dp),
+        ) {
             items(items = albums, key = { "album_${it.id}" }) { album ->
                 SquareMediaTile(
                     imageUrl = album.images.primary?.toString(),
@@ -429,9 +438,15 @@ fun DownloadedMusicTracksSection(
     modifier: Modifier = Modifier,
     onViewAllClick: (() -> Unit)? = null,
 ) {
+    val fixedRowHeight =
+        CardDimensions.rowHeight(CardDimensions.posterCardWidth, CardDimensions.ASPECT_RATIO_SQUARE)
     Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = title, onViewAllClick = onViewAllClick)
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyRow(
+            modifier = Modifier.height(fixedRowHeight),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 0.dp),
+        ) {
             items(items = tracks, key = { "track_${it.id}" }) { track ->
                 SquareMediaTile(
                     imageUrl = track.images.primary?.toString(),

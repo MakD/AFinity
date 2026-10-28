@@ -127,8 +127,11 @@ internal fun SeasonsSection(
         DetailSectionTitle(text = stringResource(R.string.seasons_title))
 
         val cardWidth = widthSizeClass.portraitWidth
+        val fixedRowHeight =
+            CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
         LazyRow(
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {

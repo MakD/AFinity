@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,6 +46,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.makd.afinity.R
 import com.makd.afinity.data.models.server.ServerStorage
+import com.makd.afinity.ui.components.windowHeightDp
 import com.makd.afinity.ui.settings.servers.tabs.AudiobookshelfTabContent
 import com.makd.afinity.ui.settings.servers.tabs.JellyfinTabContent
 import com.makd.afinity.ui.settings.servers.tabs.JellyseerrTabContent
@@ -210,12 +212,14 @@ internal fun ServerDetailDialog(
     onDismiss: () -> Unit,
     onControlPanelClick: () -> Unit,
 ) {
+    val dialogHeight = minOf(750.dp, windowHeightDp() * 0.92f)
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Surface(
-            modifier = Modifier.fillMaxWidth().height(750.dp).padding(16.dp),
+            modifier =
+                Modifier.fillMaxWidth().widthIn(max = 560.dp).height(dialogHeight).padding(16.dp),
             shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surfaceContainerLow,
             tonalElevation = 2.dp,
