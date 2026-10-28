@@ -25,7 +25,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -44,6 +43,7 @@ import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsGroupTitle
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
+import com.makd.afinity.ui.components.isCompactHeightWindow
 import com.makd.afinity.ui.utils.IntentUtils
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -143,7 +143,7 @@ private fun PluginDetailContent(
                 verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
                 item(key = "cover") {
-                    val isCompactHeight = LocalConfiguration.current.screenHeightDp < 500
+                    val isCompactHeight = isCompactHeightWindow()
                     Box(
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.Center,

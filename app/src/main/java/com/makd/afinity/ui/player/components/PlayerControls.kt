@@ -79,7 +79,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -120,6 +119,7 @@ import com.makd.afinity.ui.components.ratings.criticRatingOf
 import com.makd.afinity.ui.components.ratings.displayPriority
 import com.makd.afinity.ui.components.ratings.excludingSupersededBy
 import com.makd.afinity.ui.components.ratings.toDisplay
+import com.makd.afinity.ui.components.windowWidthDp
 import com.makd.afinity.ui.item.components.shared.omdbAwardsHeadline
 import com.makd.afinity.ui.livetv.components.LiveBadge
 import com.makd.afinity.ui.player.PlayerViewModel
@@ -861,10 +861,9 @@ fun PlayerControls(
                     onSpeedChange = { speed -> onPlayerEvent(PlayerEvent.SetPlaybackSpeed(speed)) },
                     onDismiss = { showSpeedDialog = false },
                     modifier =
-                        Modifier.windowInsetsPadding(
-                                WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
-                            )
-                            .widthIn(min = 340.dp, max = 560.dp),
+                        Modifier.playerOverlayInsets()
+                            .padding(horizontal = 24.dp)
+                            .widthIn(max = 560.dp),
                 )
             }
         }
@@ -1225,7 +1224,7 @@ private fun CenterPlayButton(
     onPreviousClick: () -> Unit,
 ) {
     val showSkipButtons = hasQueueNeighbors && !uiState.isPlayingIntro
-    val isCompact = LocalConfiguration.current.screenWidthDp < 420
+    val isCompact = windowWidthDp() < 420.dp
     val buttonSize = if (isCompact) 48.dp else 60.dp
     val iconSize = if (isCompact) 26.dp else 32.dp
     val playIconSize = if (isCompact) 32.dp else 40.dp
@@ -1361,7 +1360,7 @@ private fun BottomControls(
                 )
             }
             if (!uiState.isPlayingIntro) {
-                val isCompact = LocalConfiguration.current.screenWidthDp < 540
+                val isCompact = windowWidthDp() < 540.dp
                 if (isCompact) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
@@ -1827,7 +1826,9 @@ private fun TrackPanel(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
                     ) {}
-                    .widthIn(min = 340.dp, max = 560.dp)
+                    .playerOverlayInsets()
+                    .padding(horizontal = 24.dp)
+                    .widthIn(max = 560.dp)
                     .heightIn(max = 440.dp),
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
@@ -1981,7 +1982,9 @@ private fun QualityPanel(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
                     ) {}
-                    .widthIn(min = 340.dp, max = 420.dp)
+                    .playerOverlayInsets()
+                    .padding(horizontal = 24.dp)
+                    .widthIn(max = 420.dp)
                     .heightIn(max = 440.dp),
         ) {
             Column(modifier = Modifier.padding(24.dp)) {

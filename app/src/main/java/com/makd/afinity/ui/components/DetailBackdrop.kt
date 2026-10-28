@@ -17,7 +17,6 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
@@ -145,7 +144,7 @@ private fun BlurredPhotoBackdrop(
     contentDescription: String?,
     onError: () -> Unit,
 ) {
-    val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
+    val backdropWidth = windowWidthDp()
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         if (backdrop != null) {
@@ -156,8 +155,8 @@ private fun BlurredPhotoBackdrop(
                 onError = onError,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize().blur(radius = 20.dp).alpha(0.6f),
-                targetWidth = screenWidthDp,
-                targetHeight = screenWidthDp,
+                targetWidth = backdropWidth,
+                targetHeight = backdropWidth,
             )
         }
         Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)))

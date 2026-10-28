@@ -94,7 +94,8 @@ fun SleepTimerPanel(
                         indication = null,
                     ) {}
                     .playerOverlayInsets()
-                    .widthIn(min = 340.dp, max = 560.dp),
+                    .padding(horizontal = 24.dp)
+                    .widthIn(max = 560.dp),
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Row(

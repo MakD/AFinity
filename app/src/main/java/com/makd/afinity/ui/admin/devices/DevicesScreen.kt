@@ -13,16 +13,17 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -54,7 +55,6 @@ import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AfinityToggleChip
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.SETTINGS_EXPANDED_START_PADDING
-import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.settings.servers.utils.formatRelativeTime
 
@@ -184,6 +184,7 @@ private fun DevicesContent(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     if (shown.isEmpty()) {
                         item(key = "empty") {
@@ -195,10 +196,13 @@ private fun DevicesContent(
                             )
                         }
                     } else {
-                        item(key = "devices") {
-                            SettingsGroup {
-                                shown.forEachIndexed { index, group ->
-                                    if (index > 0) DeviceDivider()
+                        items(items = shown, key = { it.key }) { group ->
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            ) {
+                                Column {
                                     DeviceGroupRow(
                                         group = group,
                                         expanded = group.key == expandedKey,
@@ -212,11 +216,18 @@ private fun DevicesContent(
                                         onSignOutAll = { signOutGroupTarget = group.key },
                                     )
                                 }
-                                val canSignOutIdle =
-                                    state.filter == DeviceFilter.IDLE &&
-                                        shown.any { it.removableIds.isNotEmpty() }
-                                if (canSignOutIdle) {
-                                    DeviceDivider()
+                            }
+                        }
+                        val canSignOutIdle =
+                            state.filter == DeviceFilter.IDLE &&
+                                shown.any { it.removableIds.isNotEmpty() }
+                        if (canSignOutIdle) {
+                            item(key = "sign_out_idle") {
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                                ) {
                                     SettingsItem(
                                         icon = painterResource(id = R.drawable.ic_logout),
                                         title = stringResource(R.string.device_sign_out_idle),
@@ -259,14 +270,6 @@ private fun DeviceFilters(state: DevicesUiState, onSelectFilter: (DeviceFilter) 
             onSelectedChange = { onSelectFilter(DeviceFilter.IDLE) },
         )
     }
-}
-
-@Composable
-private fun DeviceDivider() {
-    HorizontalDivider(
-        modifier = Modifier.padding(start = SETTINGS_EXPANDED_START_PADDING, end = 16.dp),
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
-    )
 }
 
 @Composable

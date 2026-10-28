@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -16,6 +17,18 @@ fun isLandscapeWindow(): Boolean {
     val size = LocalWindowInfo.current.containerSize
     return size.width > size.height
 }
+
+@Composable
+@ReadOnlyComposable
+fun windowWidthDp(): Dp =
+    with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
+
+@Composable
+@ReadOnlyComposable
+fun windowHeightDp(): Dp =
+    with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
+
+@Composable @ReadOnlyComposable fun isCompactHeightWindow(): Boolean = windowHeightDp() < 500.dp
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable

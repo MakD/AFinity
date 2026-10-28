@@ -26,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -42,6 +41,7 @@ import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
+import com.makd.afinity.ui.components.windowWidthDp
 import java.util.Locale
 
 @Composable
@@ -58,9 +58,9 @@ fun NextUpSkipOverlay(
     val ratingScale = rememberRatingMetadataScale()
 
     if (nextEpisode != null && segment.type == AfinitySegmentType.OUTRO) {
-        val screenWidthDp = LocalConfiguration.current.screenWidthDp
-        val isCompact = screenWidthDp < 480
-        val showThumbnail = screenWidthDp >= 340
+        val width = windowWidthDp()
+        val isCompact = width < 480.dp
+        val showThumbnail = width >= 340.dp
         val thumbnailWidth = if (isCompact) 110.dp else 200.dp
 
         Card(

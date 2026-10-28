@@ -1,15 +1,9 @@
 package com.makd.afinity.ui.music.genre
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -51,8 +46,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
-import com.makd.afinity.data.models.music.AfinityTrack
-import com.makd.afinity.data.models.music.MusicPlaybackState
 import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityScreenMode
@@ -79,7 +72,6 @@ import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
-import java.util.UUID
 
 @Composable
 fun MusicGenreScreen(
@@ -257,31 +249,147 @@ fun MusicGenreScreen(
         }
 
         if (uiState.tracks.isNotEmpty()) {
-            item {
-                GenreTracksSection(
-                    uiState = uiState,
-                    playbackState = playbackState,
-                    isOffline = isOffline,
-                    showAllTracks = showAllTracks,
-                    onShowAllChange = { showAllTracks = it },
-                    onPlay = { index ->
-                        startMusicService(context)
-                        playerViewModel.playQueue(uiState.tracks, index)
-                    },
-                    onInstantMix = { id ->
-                        startMusicService(context)
-                        playerViewModel.playInstantMix(id)
-                    },
-                    onRadio = { seed -> radioSeed = seed },
-                    onAddNext = { track -> playerViewModel.addNext(listOf(track)) },
-                    onAddLast = { track -> playerViewModel.addLast(listOf(track)) },
-                    onDownload =
-                        if (isDownloadAllowedByServer)
-                            ({ track -> viewModel.downloadTrack(track.id) })
-                        else null,
-                    onCancelDownload = { track -> viewModel.cancelTrackDownload(track.id) },
-                    isDownloadEnabled = canDownloadOnNetwork,
+            val fixedTracks = uiState.tracks.take(5)
+            val extraTracks = uiState.tracks.drop(5)
+            val hasMore = extraTracks.isNotEmpty()
+
+            item(key = "popular_header") {
+                Text(
+                    text = stringResource(R.string.music_section_popular),
+                    style = afinitySectionTitleStyle(),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(start = DetailGutter, top = 24.dp, bottom = 12.dp),
                 )
+            }
+
+            itemsIndexed(fixedTracks, key = { _, track -> "fixed_${track.id}" }) { index, track ->
+                val isLastFixedTrack = index == fixedTracks.lastIndex
+                val rowModifier =
+                    if (isLastFixedTrack && hasMore && !showAllTracks) {
+                        Modifier.graphicsLayer { alpha = 0.99f }
+                            .drawWithCache {
+                                val gradient =
+                                    Brush.verticalGradient(
+                                        colors = listOf(Color.Black, Color.Transparent),
+                                        startY = size.height * 0.2f,
+                                        endY = size.height,
+                                    )
+                                onDrawWithContent {
+                                    drawContent()
+                                    drawRect(gradient, blendMode = BlendMode.DstIn)
+                                }
+                            }
+                    } else Modifier
+
+                Box(modifier = Modifier.animateItem().then(rowModifier)) {
+                    MusicTrackRow(
+                        track = track,
+                        isPlaying = track.id == playbackState.currentTrack?.id,
+                        trackNumber = index + 1,
+                        showAlbumArt = true,
+                        onClick = {
+                            startMusicService(context)
+                            playerViewModel.playQueue(uiState.tracks, index)
+                        },
+                        onInstantMix =
+                            if (isOffline) null
+                            else
+                                ({
+                                    startMusicService(context)
+                                    playerViewModel.playInstantMix(track.id)
+                                }),
+                        onStartRadio =
+                            if (isOffline) null
+                            else
+                                ({
+                                    radioSeed =
+                                        RadioSeed(
+                                            trackId = track.id,
+                                            albumId = track.albumId,
+                                            sourceTracks = uiState.tracks,
+                                        )
+                                }),
+                        onAddNext = { playerViewModel.addNext(listOf(track)) },
+                        onAddLast = { playerViewModel.addLast(listOf(track)) },
+                        onDownload =
+                            if (isDownloadAllowedByServer) ({ viewModel.downloadTrack(track.id) })
+                            else null,
+                        onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
+                        isDownloadEnabled = canDownloadOnNetwork,
+                        downloadInfo = uiState.trackDownloadInfos[track.id],
+                    )
+                }
+            }
+
+            if (showAllTracks) {
+                itemsIndexed(extraTracks, key = { _, track -> "extra_${track.id}" }) { i, track ->
+                    Box(modifier = Modifier.animateItem()) {
+                        MusicTrackRow(
+                            track = track,
+                            isPlaying = track.id == playbackState.currentTrack?.id,
+                            trackNumber = fixedTracks.size + i + 1,
+                            showAlbumArt = true,
+                            onClick = {
+                                startMusicService(context)
+                                playerViewModel.playQueue(uiState.tracks, fixedTracks.size + i)
+                            },
+                            onInstantMix =
+                                if (isOffline) null
+                                else
+                                    ({
+                                        startMusicService(context)
+                                        playerViewModel.playInstantMix(track.id)
+                                    }),
+                            onStartRadio =
+                                if (isOffline) null
+                                else
+                                    ({
+                                        radioSeed =
+                                            RadioSeed(
+                                                trackId = track.id,
+                                                albumId = track.albumId,
+                                                sourceTracks = uiState.tracks,
+                                            )
+                                    }),
+                            onAddNext = { playerViewModel.addNext(listOf(track)) },
+                            onAddLast = { playerViewModel.addLast(listOf(track)) },
+                            onDownload =
+                                if (isDownloadAllowedByServer)
+                                    ({ viewModel.downloadTrack(track.id) })
+                                else null,
+                            onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
+                            isDownloadEnabled = canDownloadOnNetwork,
+                            downloadInfo = uiState.trackDownloadInfos[track.id],
+                        )
+                    }
+                }
+            }
+
+            if (hasMore) {
+                item(key = "see_more") {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 4.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        OutlinedButton(
+                            onClick = { showAllTracks = !showAllTracks },
+                            shape = CircleShape,
+                            contentPadding = PaddingValues(horizontal = 28.dp, vertical = 10.dp),
+                        ) {
+                            Crossfade(targetState = showAllTracks, label = "see_more_label") {
+                                expanded ->
+                                Text(
+                                    text =
+                                        stringResource(
+                                            if (expanded) R.string.action_see_less
+                                            else R.string.action_see_more
+                                        ),
+                                    style = MaterialTheme.typography.labelLarge,
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -326,143 +434,6 @@ fun MusicGenreScreen(
                 radioSeed = null
             },
         )
-    }
-}
-
-@Composable
-private fun GenreTracksSection(
-    uiState: MusicGenreUiState,
-    playbackState: MusicPlaybackState,
-    isOffline: Boolean,
-    showAllTracks: Boolean,
-    onShowAllChange: (Boolean) -> Unit,
-    onPlay: (Int) -> Unit,
-    onInstantMix: (UUID) -> Unit,
-    onRadio: (RadioSeed) -> Unit,
-    onAddNext: (AfinityTrack) -> Unit,
-    onAddLast: (AfinityTrack) -> Unit,
-    onDownload: ((AfinityTrack) -> Unit)? = null,
-    onCancelDownload: ((AfinityTrack) -> Unit)? = null,
-    isDownloadEnabled: Boolean = true,
-) {
-    val fixedTracks = uiState.tracks.take(5)
-    val extraTracks = uiState.tracks.drop(5)
-    val hasMore = extraTracks.isNotEmpty()
-
-    val fadeOutModifier =
-        if (hasMore && !showAllTracks) {
-            Modifier.graphicsLayer { alpha = 0.99f }
-                .drawWithCache {
-                    val gradient =
-                        Brush.verticalGradient(
-                            colors = listOf(Color.Black, Color.Transparent),
-                            startY = size.height - 80.dp.toPx(),
-                            endY = size.height,
-                        )
-                    onDrawWithContent {
-                        drawContent()
-                        drawRect(gradient, blendMode = BlendMode.DstIn)
-                    }
-                }
-        } else Modifier
-
-    Text(
-        text = stringResource(R.string.music_section_popular),
-        style = afinitySectionTitleStyle(),
-        color = MaterialTheme.colorScheme.onBackground,
-        modifier = Modifier.padding(start = DetailGutter, top = 24.dp, bottom = 12.dp),
-    )
-
-    Box(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = fadeOutModifier) {
-            fixedTracks.forEachIndexed { index, track ->
-                MusicTrackRow(
-                    track = track,
-                    isPlaying = track.id == playbackState.currentTrack?.id,
-                    trackNumber = index + 1,
-                    showAlbumArt = true,
-                    onClick = { onPlay(index) },
-                    onInstantMix = if (isOffline) null else ({ onInstantMix(track.id) }),
-                    onStartRadio =
-                        if (isOffline) null
-                        else
-                            ({
-                                onRadio(
-                                    RadioSeed(
-                                        trackId = track.id,
-                                        albumId = track.albumId,
-                                        sourceTracks = uiState.tracks,
-                                    )
-                                )
-                            }),
-                    onAddNext = { onAddNext(track) },
-                    onAddLast = { onAddLast(track) },
-                    onDownload = onDownload?.let { dl -> { dl(track) } },
-                    onCancelDownload = onCancelDownload?.let { c -> { c(track) } },
-                    isDownloadEnabled = isDownloadEnabled,
-                    downloadInfo = uiState.trackDownloadInfos[track.id],
-                )
-            }
-            AnimatedVisibility(
-                visible = showAllTracks,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut(),
-            ) {
-                Column {
-                    extraTracks.forEachIndexed { i, track ->
-                        MusicTrackRow(
-                            track = track,
-                            isPlaying = track.id == playbackState.currentTrack?.id,
-                            trackNumber = fixedTracks.size + i + 1,
-                            showAlbumArt = true,
-                            onClick = { onPlay(fixedTracks.size + i) },
-                            onInstantMix = if (isOffline) null else ({ onInstantMix(track.id) }),
-                            onStartRadio =
-                                if (isOffline) null
-                                else
-                                    ({
-                                        onRadio(
-                                            RadioSeed(
-                                                trackId = track.id,
-                                                albumId = track.albumId,
-                                                sourceTracks = uiState.tracks,
-                                            )
-                                        )
-                                    }),
-                            onAddNext = { onAddNext(track) },
-                            onAddLast = { onAddLast(track) },
-                            onDownload = onDownload?.let { dl -> { dl(track) } },
-                            onCancelDownload = onCancelDownload?.let { c -> { c(track) } },
-                            isDownloadEnabled = isDownloadEnabled,
-                            downloadInfo = uiState.trackDownloadInfos[track.id],
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    if (hasMore) {
-        Box(
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 4.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            OutlinedButton(
-                onClick = { onShowAllChange(!showAllTracks) },
-                shape = CircleShape,
-                contentPadding = PaddingValues(horizontal = 28.dp, vertical = 10.dp),
-            ) {
-                Crossfade(targetState = showAllTracks, label = "see_more_label") { expanded ->
-                    Text(
-                        text =
-                            stringResource(
-                                if (expanded) R.string.action_see_less else R.string.action_see_more
-                            ),
-                        style = MaterialTheme.typography.labelLarge,
-                    )
-                }
-            }
-        }
     }
 }
 

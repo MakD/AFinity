@@ -48,12 +48,15 @@ fun PlaybackStatsOverlay(stats: PlaybackStats, onClose: () -> Unit) {
     ) {
         Surface(
             modifier =
-                Modifier.widthIn(min = 300.dp, max = 420.dp).padding(vertical = 24.dp).clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                ) {
-                    /* Consume clicks */
-                },
+                Modifier.playerOverlayInsets()
+                    .padding(horizontal = 24.dp, vertical = 24.dp)
+                    .widthIn(max = 420.dp)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) {
+                        /* Consume clicks */
+                    },
             shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 6.dp,

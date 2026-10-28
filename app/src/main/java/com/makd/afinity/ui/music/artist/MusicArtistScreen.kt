@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -46,7 +47,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -78,6 +78,7 @@ import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.backdropChainOf
 import com.makd.afinity.ui.components.detailListBottomPadding
 import com.makd.afinity.ui.components.isLandscapeWindow
+import com.makd.afinity.ui.components.windowWidthDp
 import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
 import com.makd.afinity.ui.item.components.shared.OverviewSection
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
@@ -199,13 +200,16 @@ fun MusicArtistScreen(
     val artistHeader: @Composable ColumnScope.() -> Unit = {
         val logoUrl = uiState.artist?.images?.logo?.toString()
         if (logoUrl != null) {
-            val logoWidth = (LocalConfiguration.current.screenWidthDp * 0.8f).dp
+            val logoWidth = minOf(400.dp, windowWidthDp() * 0.8f)
             AsyncImage(
                 imageUrl = logoUrl,
                 contentDescription = uiState.artist?.name,
                 blurHash = null,
                 modifier =
-                    Modifier.fillMaxWidth(0.8f).height(120.dp).align(Alignment.CenterHorizontally),
+                    Modifier.fillMaxWidth(0.8f)
+                        .widthIn(max = 400.dp)
+                        .height(120.dp)
+                        .align(Alignment.CenterHorizontally),
                 contentScale = ContentScale.Fit,
                 alignment = Alignment.Center,
                 targetWidth = logoWidth,

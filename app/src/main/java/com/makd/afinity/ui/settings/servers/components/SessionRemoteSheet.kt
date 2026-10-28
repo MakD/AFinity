@@ -35,7 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +45,7 @@ import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinitySlider
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.isCompactHeightWindow
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.settings.servers.utils.formatTicks
 import kotlin.time.Duration.Companion.seconds
@@ -138,7 +138,7 @@ fun SessionRemoteSheet(
     }
 
     AfinityModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        val isCompactHeight = LocalConfiguration.current.screenHeightDp < 500
+        val isCompactHeight = isCompactHeightWindow()
         Column(
             modifier =
                 Modifier.fillMaxWidth()

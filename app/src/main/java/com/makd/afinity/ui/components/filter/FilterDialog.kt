@@ -25,7 +25,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -33,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.windowHeightDp
 
 @Composable
 fun FilterDialog(
@@ -44,7 +44,7 @@ fun FilterDialog(
     title: String = stringResource(R.string.discover_filter_title),
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val maxDialogHeight = (LocalConfiguration.current.screenHeightDp * 0.92f).dp
+    val maxDialogHeight = windowHeightDp() * 0.92f
 
     Dialog(
         onDismissRequest = onDismiss,

@@ -148,9 +148,9 @@ fun EpisodeSwitcher(
             Surface(
                 modifier =
                     Modifier.fillMaxHeight()
-                        .widthIn(min = 380.dp, max = 450.dp)
                         .playerOverlayInsets()
-                        .padding(16.dp)
+                        .padding(start = 32.dp, end = 16.dp, top = 16.dp, bottom = 16.dp)
+                        .widthIn(max = 450.dp)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,

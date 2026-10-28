@@ -30,7 +30,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -38,6 +37,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.RadioOptionRow
+import com.makd.afinity.ui.components.windowHeightDp
 
 @Composable
 fun MusicSortDialog(
@@ -49,7 +49,7 @@ fun MusicSortDialog(
 ) {
     var isAscending by remember { mutableStateOf(!currentDescending) }
     var selectedField by remember { mutableStateOf(currentField) }
-    val maxDialogHeight = (LocalConfiguration.current.screenHeightDp * 0.92f).dp
+    val maxDialogHeight = windowHeightDp() * 0.92f
 
     Dialog(
         onDismissRequest = {

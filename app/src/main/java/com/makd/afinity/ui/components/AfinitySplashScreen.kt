@@ -52,8 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -135,14 +134,12 @@ fun AfinitySplashScreen(
             label = "aura_scale",
         )
 
-    val configuration = LocalConfiguration.current
-    val density = LocalDensity.current
-    val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
+    val windowWidthPx = LocalWindowInfo.current.containerSize.width.toFloat()
 
     val shimmerTranslate =
         infiniteTransition.animateFloat(
-            initialValue = -screenWidthPx * 0.5f,
-            targetValue = screenWidthPx * 1.5f,
+            initialValue = -windowWidthPx * 0.5f,
+            targetValue = windowWidthPx * 1.5f,
             animationSpec =
                 infiniteRepeatable(
                     animation = tween(1800, easing = LinearEasing),
@@ -222,7 +219,7 @@ fun AfinitySplashScreen(
                                             Brush.linearGradient(
                                                 colors = logoShimmerColors,
                                                 start = Offset(start, 0f),
-                                                end = Offset(start + screenWidthPx * 0.3f, 0f),
+                                                end = Offset(start + windowWidthPx * 0.3f, 0f),
                                             ),
                                         blendMode = androidx.compose.ui.graphics.BlendMode.SrcAtop,
                                     )
@@ -254,7 +251,7 @@ fun AfinitySplashScreen(
                                     Brush.linearGradient(
                                         colors = textShimmerColors,
                                         start = Offset(start, 0f),
-                                        end = Offset(start + screenWidthPx * 0.3f, 0f),
+                                        end = Offset(start + windowWidthPx * 0.3f, 0f),
                                     ),
                                 blendMode = androidx.compose.ui.graphics.BlendMode.SrcIn,
                             )

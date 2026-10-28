@@ -44,7 +44,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -79,6 +78,7 @@ import com.makd.afinity.ui.components.MediaItemGridCard
 import com.makd.afinity.ui.components.PaginatedMediaGrid
 import com.makd.afinity.ui.components.RadioOptionRow
 import com.makd.afinity.ui.components.SortFab
+import com.makd.afinity.ui.components.windowHeightDp
 import com.makd.afinity.ui.player.PlayerLauncher
 
 @Composable
@@ -363,7 +363,7 @@ private fun SortDialog(
 ) {
     var isAscending by remember { mutableStateOf(!currentSortDescending) }
     var selectedSort by remember { mutableStateOf(currentSortBy) }
-    val maxDialogHeight = (LocalConfiguration.current.screenHeightDp * 0.92f).dp
+    val maxDialogHeight = windowHeightDp() * 0.92f
 
     Dialog(
         onDismissRequest = {

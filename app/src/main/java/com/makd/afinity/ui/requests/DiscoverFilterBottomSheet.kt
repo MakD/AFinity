@@ -45,7 +45,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -67,6 +66,7 @@ import com.makd.afinity.ui.components.filter.FilterDialog
 import com.makd.afinity.ui.components.filter.FilterSectionHeader
 import com.makd.afinity.ui.components.filter.SearchableChipMultiSelect
 import com.makd.afinity.ui.components.filter.noRippleClickable
+import com.makd.afinity.ui.components.isCompactHeightWindow
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -727,7 +727,7 @@ private fun DateFieldPickerDialog(
         }
             .getOrNull()
     }
-    val isCompactHeight = LocalConfiguration.current.screenHeightDp < 500
+    val isCompactHeight = isCompactHeightWindow()
     val datePickerState =
         rememberDatePickerState(
             initialSelectedDateMillis = initialMillis,
