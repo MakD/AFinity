@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -117,20 +118,24 @@ private fun BlurredCoverBackdrop(
                 alpha = 0.6f,
                 contentScale = ContentScale.Crop,
             )
+            val surfaceColor = MaterialTheme.colorScheme.surface
+            val surfaceHalfAlpha = surfaceColor.copy(alpha = 0.5f)
             Box(
                 modifier =
-                    Modifier.fillMaxSize()
-                        .background(
+                    Modifier.fillMaxSize().drawWithCache {
+                        val gradient =
                             Brush.verticalGradient(
                                 colors =
                                     listOf(
                                         Color.Transparent,
-                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                                        MaterialTheme.colorScheme.surface,
+                                        surfaceHalfAlpha,
+                                        surfaceColor,
                                     ),
-                                startY = 100f,
+                                startY = size.height * 0.25f,
+                                endY = size.height,
                             )
-                        )
+                        onDrawBehind { drawRect(gradient) }
+                    }
             )
         }
     } else {

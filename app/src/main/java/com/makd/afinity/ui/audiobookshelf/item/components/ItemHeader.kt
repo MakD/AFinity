@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -103,10 +104,17 @@ fun ItemHeaderContent(
 
                     Spacer(modifier = Modifier.width(4.dp))
 
+                    val finishedColor =
+                        if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) {
+                            Color(0xFF81C784)
+                        } else {
+                            Color(0xFF1B6E22)
+                        }
+
                     Icon(
                         painter = painterResource(id = R.drawable.ic_check),
                         contentDescription = stringResource(R.string.cd_finished),
-                        tint = Color(0xFF4CAF50),
+                        tint = finishedColor,
                         modifier = Modifier.size(14.dp),
                     )
 
@@ -115,7 +123,7 @@ fun ItemHeaderContent(
                     Text(
                         text = stringResource(R.string.abs_finished),
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color(0xFF4CAF50),
+                        color = finishedColor,
                         fontWeight = FontWeight.SemiBold,
                     )
                 } else if (progress != null && progress.progress > 0) {
@@ -323,7 +331,7 @@ internal fun ItemActionRow(
                         when {
                             !toggleFinishedEnabled ->
                                 MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                            finished -> Color.Green
+                            finished -> MaterialTheme.colorScheme.primary
                             else -> MaterialTheme.colorScheme.onSurfaceVariant
                         },
                     modifier = Modifier.size(26.dp),
@@ -354,7 +362,7 @@ internal fun ItemActionRow(
                                 painter = painterResource(id = R.drawable.ic_cancel),
                                 contentDescription = stringResource(R.string.cd_cancel_download),
                                 modifier = Modifier.size(14.dp),
-                                tint = Color.Red,
+                                tint = MaterialTheme.colorScheme.error,
                             )
                         }
                     }

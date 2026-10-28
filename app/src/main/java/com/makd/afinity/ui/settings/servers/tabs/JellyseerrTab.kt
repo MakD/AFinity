@@ -11,6 +11,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -109,6 +110,10 @@ internal fun JellyseerrTabContent(
             }
         }
 
+        val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+        val pendingColor = if (isDark) Color(0xFFF59E0B) else Color(0xFFB45309)
+        val approvedColor = if (isDark) Color(0xFF10B981) else Color(0xFF047857)
+
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SectionHeader(stringResource(R.string.section_request_stats))
             Row(
@@ -124,7 +129,7 @@ internal fun JellyseerrTabContent(
                     label = stringResource(R.string.stat_pending),
                     value = jellyseerrStats.pendingRequests.toString(),
                     modifier = Modifier.weight(1f),
-                    valueColor = Color(0xFFF59E0B),
+                    valueColor = pendingColor,
                 )
             }
             Row(
@@ -135,7 +140,7 @@ internal fun JellyseerrTabContent(
                     label = stringResource(R.string.stat_approved),
                     value = jellyseerrStats.approvedRequests.toString(),
                     modifier = Modifier.weight(1f),
-                    valueColor = Color(0xFF10B981),
+                    valueColor = approvedColor,
                 )
                 StatChip(
                     label = stringResource(R.string.stat_available),

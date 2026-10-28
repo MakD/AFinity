@@ -6,27 +6,42 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
-private const val LIST_SCROLL_THRESHOLD = 1500f
+private val DEFAULT_LIST_SCROLL_THRESHOLD = 450.dp
+private val DEFAULT_GRID_SCROLL_THRESHOLD = 64.dp
 
 @Composable
 fun rememberTopBarOpacity(
     state: LazyListState,
-    scrollThreshold: Float = LIST_SCROLL_THRESHOLD,
-): State<Float> =
-    remember(state, scrollThreshold) {
+    scrollThreshold: Dp = DEFAULT_LIST_SCROLL_THRESHOLD,
+): State<Float> {
+    val density = LocalDensity.current
+    val thresholdPx =
+        remember(density, scrollThreshold) { with(density) { scrollThreshold.toPx() } }
+    return remember(state, thresholdPx) {
         derivedStateOf {
             val firstIndex = state.firstVisibleItemIndex
             val offset = state.firstVisibleItemScrollOffset
-            if (firstIndex > 0 || offset > scrollThreshold) 1f else 0f
+            if (firstIndex > 0 || offset > thresholdPx) 1f else 0f
         }
     }
+}
 
 @Composable
-fun rememberTopBarOpacity(state: LazyGridState, scrollThreshold: Float = 200f): State<Float> =
-    remember(state) {
+fun rememberTopBarOpacity(
+    state: LazyGridState,
+    scrollThreshold: Dp = DEFAULT_GRID_SCROLL_THRESHOLD,
+): State<Float> {
+    val density = LocalDensity.current
+    val thresholdPx =
+        remember(density, scrollThreshold) { with(density) { scrollThreshold.toPx() } }
+    return remember(state, thresholdPx) {
         derivedStateOf {
             val offset = state.firstVisibleItemScrollOffset
-            (offset / scrollThreshold).coerceIn(0f, 1f)
+            (offset / thresholdPx).coerceIn(0f, 1f)
         }
     }
+}

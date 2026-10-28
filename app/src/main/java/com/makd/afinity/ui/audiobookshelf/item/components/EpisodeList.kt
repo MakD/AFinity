@@ -159,7 +159,7 @@ private fun ExpandableEpisodeItem(
                                     CircularProgressIndicator(
                                         progress = { progress.progress.toFloat() },
                                         modifier = Modifier.size(12.dp),
-                                        color = Color(0xFFFFC107),
+                                        color = MaterialTheme.colorScheme.primary,
                                         strokeWidth = 2.dp,
                                         trackColor =
                                             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
@@ -206,7 +206,7 @@ private fun ExpandableEpisodeItem(
                                 when {
                                     !toggleFinishedEnabled ->
                                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                                    isFinished -> Color.Green
+                                    isFinished -> MaterialTheme.colorScheme.primary
                                     else -> MaterialTheme.colorScheme.onSurfaceVariant
                                 },
                             modifier = Modifier.size(20.dp),

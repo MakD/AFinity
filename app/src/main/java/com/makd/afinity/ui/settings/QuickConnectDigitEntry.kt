@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -155,12 +156,19 @@ fun QuickConnectDigitEntry(
             )
         }
 
+        val successColor =
+            if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) {
+                Color(0xFF81C784)
+            } else {
+                Color(0xFF1B6E22)
+            }
+
         when {
             isSuccess ->
                 Text(
                     text = stringResource(R.string.dialog_quickconnect_authorized),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF4CAF50),
+                    color = successColor,
                 )
             errorMessage != null ->
                 Text(

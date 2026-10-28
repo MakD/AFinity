@@ -249,7 +249,9 @@ fun MusicTrackRow(
                                         else R.drawable.ic_favorite
                                     ),
                                 contentDescription = null,
-                                tint = if (track.favorite) Color.Red else LocalContentColor.current,
+                                tint =
+                                    if (track.favorite) MaterialTheme.colorScheme.error
+                                    else LocalContentColor.current,
                                 modifier = Modifier.size(18.dp),
                             )
                         },

@@ -41,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -329,13 +330,15 @@ private fun EpisodeSwitcherCard(
 
             Box(
                 modifier =
-                    Modifier.fillMaxSize()
-                        .background(
+                    Modifier.fillMaxSize().drawWithCache {
+                        val gradient =
                             Brush.verticalGradient(
                                 colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)),
-                                startY = 50f,
+                                startY = size.height * 0.4f,
+                                endY = size.height,
                             )
-                        )
+                        onDrawBehind { drawRect(gradient) }
+                    }
             )
 
             val watched =

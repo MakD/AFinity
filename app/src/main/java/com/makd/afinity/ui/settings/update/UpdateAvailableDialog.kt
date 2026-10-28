@@ -48,6 +48,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -315,10 +316,11 @@ private fun ValidateButton(
     onVerify: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val errorContainer = MaterialTheme.colorScheme.errorContainer
     val onErrorContainer = MaterialTheme.colorScheme.onErrorContainer
-    val successContainer = Color(0xFFD1E7DD)
-    val onSuccessContainer = Color(0xFF0F5132)
+    val successContainer = if (isDark) Color(0xFF1E4620) else Color(0xFFD1E7DD)
+    val onSuccessContainer = if (isDark) Color(0xFFA5D6A7) else Color(0xFF0F5132)
     val defaultContainer = MaterialTheme.colorScheme.secondaryContainer
     val defaultContent = MaterialTheme.colorScheme.onSecondaryContainer
 

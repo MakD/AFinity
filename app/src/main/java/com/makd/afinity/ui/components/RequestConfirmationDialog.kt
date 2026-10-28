@@ -35,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -200,18 +201,19 @@ fun RequestConfirmationDialog(
                         )
                         Box(
                             modifier =
-                                Modifier.fillMaxWidth()
-                                    .height(200.dp)
-                                    .background(
+                                Modifier.fillMaxWidth().height(200.dp).drawWithCache {
+                                    val gradient =
                                         Brush.verticalGradient(
                                             colors =
                                                 listOf(
                                                     Color.Transparent,
                                                     Color.Black.copy(alpha = 0.8f),
                                                 ),
-                                            startY = 100f,
+                                            startY = size.height * 0.4f,
+                                            endY = size.height,
                                         )
-                                    )
+                                    onDrawBehind { drawRect(gradient) }
+                                }
                         )
                         Column(modifier = Modifier.align(Alignment.BottomStart).padding(12.dp)) {
                             Text(

@@ -1335,13 +1335,13 @@ private fun AudiobookshelfSearchResultItem(
                             Modifier.align(Alignment.TopEnd)
                                 .padding(4.dp)
                                 .size(24.dp)
-                                .background(Color(0xFF4CAF50), CircleShape),
+                                .background(MaterialTheme.colorScheme.primary, CircleShape),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_check),
                             contentDescription = stringResource(R.string.cd_finished),
-                            tint = Color.White,
+                            tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(16.dp),
                         )
                     }
@@ -1405,7 +1405,7 @@ private fun AudiobookshelfSearchResultItem(
                         progress = { progress.toFloat() },
                         modifier =
                             Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
-                        color = Color(0xFFFFC107),
+                        color = MaterialTheme.colorScheme.primary,
                         trackColor = MaterialTheme.colorScheme.surfaceVariant,
                     )
                 }

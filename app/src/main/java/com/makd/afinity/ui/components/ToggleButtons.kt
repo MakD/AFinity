@@ -6,7 +6,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -22,7 +21,9 @@ fun FavoriteToggleButton(isFavorite: Boolean, onClick: () -> Unit, modifier: Mod
             contentDescription =
                 if (isFavorite) stringResource(R.string.cd_favorite_remove)
                 else stringResource(R.string.cd_favorite_add),
-            tint = if (isFavorite) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
+            tint =
+                if (isFavorite) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(28.dp),
         )
     }
@@ -43,7 +44,7 @@ fun WatchlistToggleButton(
                 if (isInWatchlist) stringResource(R.string.cd_watchlist_remove)
                 else stringResource(R.string.cd_watchlist_add),
             tint =
-                if (isInWatchlist) Color(0xFFFF9800)
+                if (isInWatchlist) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(28.dp),
         )
@@ -67,7 +68,7 @@ fun WatchedToggleButton(
                 else stringResource(R.string.cd_watched_mark),
             tint =
                 when {
-                    isPlayed -> Color.Green
+                    isPlayed -> MaterialTheme.colorScheme.primary
                     enabled -> MaterialTheme.colorScheme.onSurfaceVariant
                     else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                 },

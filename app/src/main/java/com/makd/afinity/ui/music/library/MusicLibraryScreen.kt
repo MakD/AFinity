@@ -1057,13 +1057,15 @@ private fun HeroDiscoverCard(
         )
         Box(
             modifier =
-                Modifier.fillMaxSize()
-                    .background(
+                Modifier.fillMaxSize().drawWithCache {
+                    val gradient =
                         Brush.verticalGradient(
                             colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)),
-                            startY = 100f,
+                            startY = size.height * 0.45f,
+                            endY = size.height,
                         )
-                    )
+                    onDrawBehind { drawRect(gradient) }
+                }
         )
         Column(
             modifier =

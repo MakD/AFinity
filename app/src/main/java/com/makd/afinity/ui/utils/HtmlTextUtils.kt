@@ -12,7 +12,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.core.text.HtmlCompat
 
-fun htmlToAnnotatedString(html: String, linkColor: Color = Color(0xFF6495ED)): AnnotatedString {
+fun htmlToAnnotatedString(html: String, linkColor: Color = Color(0xFF1E88E5)): AnnotatedString {
     val spanned = HtmlCompat.fromHtml(html, HtmlCompat.FROM_HTML_MODE_COMPACT)
     return spannedToAnnotatedString(spanned, linkColor)
 }
