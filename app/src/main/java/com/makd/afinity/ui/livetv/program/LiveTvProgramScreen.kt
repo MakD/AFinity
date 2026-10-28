@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -99,8 +100,8 @@ import com.makd.afinity.ui.livetv.components.programTimelineItems
 import com.makd.afinity.ui.livetv.components.rememberCurrentTime
 import com.makd.afinity.ui.livetv.components.rememberProgramTimeFormatter
 import com.makd.afinity.ui.player.PlayerLauncher
+import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
-import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 import com.makd.afinity.util.DateSkeleton
 import com.makd.afinity.util.localizedDateFormatter
@@ -683,22 +684,30 @@ private fun LazyListScope.programDetailItems(
 
     if (similarItems.isNotEmpty()) {
         detailItem("similar", horizontalPadding) {
+            val similarCardWidth = widthSizeClass.landscapeWidth
+            val fixedRowHeight =
+                CardDimensions.rowHeight(similarCardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 DetailSectionTitle(text = stringResource(R.string.similar_items_title))
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                LazyRow(
+                    modifier = Modifier.height(fixedRowHeight),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
                     items(items = similarItems, key = { it.id.toString() }) { similar ->
                         when (similar) {
                             is LiveTvSimilarItem.Program ->
                                 ProgramCard(
                                     program = similar.program,
                                     onClick = { onProgramClick(similar.program) },
-                                    cardWidth = widthSizeClass.landscapeWidth,
+                                    cardWidth = similarCardWidth,
                                 )
+
                             is LiveTvSimilarItem.Library ->
                                 MediaItemCard(
                                     item = similar.item,
                                     onClick = { onSimilarItemClick(similar.item) },
-                                    cardWidth = widthSizeClass.portraitWidth,
+                                    cardWidth = similarCardWidth,
+                                    aspectRatio = CardDimensions.ASPECT_RATIO_LANDSCAPE,
                                 )
                         }
                     }

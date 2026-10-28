@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.jellyseerr.GenreSliderItem
@@ -131,11 +132,14 @@ fun GenreCard(
 
                 Text(
                     text = genre.name,
-                    style =
-                        MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = Color.White,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.align(Alignment.Center).padding(12.dp),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier =
+                        Modifier.align(Alignment.Center)
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
                 )
             }
         }

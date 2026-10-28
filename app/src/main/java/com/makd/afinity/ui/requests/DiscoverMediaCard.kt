@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -68,7 +69,10 @@ fun DiscoverMediaCard(
                     item.getDisplayStatus()?.let { status ->
                         StatusChip(
                             attributes = mediaStatusAttributes(status),
-                            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                            modifier =
+                                Modifier.align(Alignment.TopEnd)
+                                    .padding(8.dp)
+                                    .widthIn(max = cardWidth - 16.dp),
                         )
                     }
                 }

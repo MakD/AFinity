@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
@@ -75,6 +76,8 @@ fun StatusChip(attributes: StatusAttributes, modifier: Modifier = Modifier) {
             text = stringResource(attributes.textRes),
             style = MaterialTheme.typography.labelSmall,
             color = attributes.contentColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
             fontWeight = FontWeight.Bold,
         )

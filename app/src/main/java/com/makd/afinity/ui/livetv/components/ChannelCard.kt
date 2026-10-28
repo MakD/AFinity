@@ -3,6 +3,7 @@ package com.makd.afinity.ui.livetv.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -79,7 +80,7 @@ fun ChannelCard(
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
             shape = MaterialTheme.shapes.medium,
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                 if (displayImageUrl != null) {
                     val imageMod =
                         if (!showProgramImage) {
@@ -108,24 +109,28 @@ fun ChannelCard(
                     }
                 }
 
+                val isCompactCard = maxWidth < 150.dp
+                val logoSize = if (isCompactCard) 20.dp else 28.dp
+                val overlayPadding = if (isCompactCard) 4.dp else 6.dp
+
                 if (showProgramImage && channel.images.primary != null) {
                     Box(
                         modifier =
                             Modifier.align(Alignment.BottomStart)
-                                .padding(6.dp)
+                                .padding(overlayPadding)
                                 .background(
                                     MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
                                     RoundedCornerShape(6.dp),
                                 )
-                                .padding(4.dp)
+                                .padding(if (isCompactCard) 2.dp else 4.dp)
                     ) {
                         AsyncImage(
                             imageUrl = channel.images.primary.toString(),
                             contentDescription = null,
-                            modifier = Modifier.size(28.dp),
+                            modifier = Modifier.size(logoSize),
                             contentScale = ContentScale.Fit,
-                            targetWidth = 28.dp,
-                            targetHeight = 28.dp,
+                            targetWidth = logoSize,
+                            targetHeight = logoSize,
                         )
                     }
                 }
@@ -156,7 +161,9 @@ fun ChannelCard(
                 val isAiring = currentProgram?.isCurrentlyAiring(rememberCurrentTime()) == true
 
                 if (showProgramOverlays && isAiring) {
-                    Box(modifier = Modifier.align(Alignment.TopStart).padding(6.dp)) { LiveBadge() }
+                    Box(modifier = Modifier.align(Alignment.TopStart).padding(overlayPadding)) {
+                        LiveBadge()
+                    }
                 }
 
                 if (showProgramOverlays && isAiring) {

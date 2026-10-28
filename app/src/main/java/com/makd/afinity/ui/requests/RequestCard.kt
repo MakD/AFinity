@@ -96,32 +96,27 @@ fun RequestCard(
                     )
                 }
 
-                val statusAttributes = getRequestStatusAttributes(request)
-                StatusChip(
-                    attributes = statusAttributes,
-                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-                )
+                val rawAvatarUrl = request.requestedBy.avatar
+                val avatarUrl =
+                    remember(rawAvatarUrl, baseUrl) {
+                        if (rawAvatarUrl.isNullOrBlank()) null
+                        else if (rawAvatarUrl.startsWith("http")) rawAvatarUrl
+                        else if (!baseUrl.isNullOrBlank()) {
+                            var cleanBase = baseUrl.trimEnd('/')
+                            if (!cleanBase.startsWith("http")) cleanBase = "http://$cleanBase"
+                            "$cleanBase/${rawAvatarUrl.trimStart('/')}"
+                        } else null
+                    }
+
                 Row(
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.align(Alignment.TopEnd).padding(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    val rawAvatarUrl = request.requestedBy.avatar
-                    val avatarUrl =
-                        remember(rawAvatarUrl, baseUrl) {
-                            if (rawAvatarUrl.isNullOrBlank()) null
-                            else if (rawAvatarUrl.startsWith("http")) rawAvatarUrl
-                            else if (!baseUrl.isNullOrBlank()) {
-                                var cleanBase = baseUrl.trimEnd('/')
-                                if (!cleanBase.startsWith("http")) cleanBase = "http://$cleanBase"
-                                "$cleanBase/${rawAvatarUrl.trimStart('/')}"
-                            } else null
-                        }
-
                     UserAvatar(
                         imageUrl = avatarUrl,
                         name = request.requestedBy.displayName,
-                        size = 24.dp,
+                        size = 20.dp,
                         containerColor = Color.Transparent,
                         contentColor = Color.White.copy(alpha = 0.8f),
                         contentDescription =
@@ -131,11 +126,20 @@ fun RequestCard(
                             ),
                     )
 
-                    if (isPending && isAdmin) {
+                    val statusAttributes = getRequestStatusAttributes(request)
+                    StatusChip(attributes = statusAttributes)
+                }
+
+                if (isPending && isAdmin) {
+                    Row(
+                        modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         FilledIconButton(
                             onClick = onApprove,
-                            modifier = Modifier.size(36.dp),
-                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.size(30.dp),
+                            shape = RoundedCornerShape(6.dp),
                             colors =
                                 IconButtonDefaults.filledIconButtonColors(
                                     containerColor = MaterialTheme.colorScheme.primary,
@@ -145,14 +149,14 @@ fun RequestCard(
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_check),
                                 contentDescription = stringResource(R.string.cd_approve),
-                                modifier = Modifier.size(18.dp),
+                                modifier = Modifier.size(16.dp),
                             )
                         }
 
                         FilledIconButton(
                             onClick = onDecline,
-                            modifier = Modifier.size(36.dp),
-                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.size(30.dp),
+                            shape = RoundedCornerShape(6.dp),
                             colors =
                                 IconButtonDefaults.filledIconButtonColors(
                                     containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -162,7 +166,7 @@ fun RequestCard(
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_cancel),
                                 contentDescription = stringResource(R.string.cd_decline),
-                                modifier = Modifier.size(18.dp),
+                                modifier = Modifier.size(16.dp),
                             )
                         }
                     }

@@ -6,10 +6,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -979,25 +979,25 @@ private fun PlayingSessionCard(
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
     ) {
-        Box(modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
+        Box(modifier = Modifier.fillMaxWidth().heightIn(min = 180.dp)) {
             if (backdropUrl != null) {
                 AsyncImage(
                     imageUrl = backdropUrl,
                     contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.matchParentSize(),
                     contentScale = ContentScale.Crop,
                 )
             } else {
                 Box(
                     modifier =
-                        Modifier.fillMaxSize()
+                        Modifier.matchParentSize()
                             .background(MaterialTheme.colorScheme.surfaceContainerLow)
                 )
             }
 
             Box(
                 modifier =
-                    Modifier.fillMaxSize()
+                    Modifier.matchParentSize()
                         .background(
                             Brush.verticalGradient(
                                 0f to Color.Black.copy(alpha = 0.55f),
@@ -1007,7 +1007,7 @@ private fun PlayingSessionCard(
                         )
             )
 
-            Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
+            Column(modifier = Modifier.fillMaxWidth().heightIn(min = 180.dp).padding(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (clientIconUrl != null) {
                         AsyncImage(
@@ -1054,9 +1054,9 @@ private fun PlayingSessionCard(
                     Text(
                         text = title,
                         style =
-                            MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = Color.White,
-                        maxLines = 2,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
 
@@ -1131,6 +1131,8 @@ private fun PlayingSessionCard(
                                     fontWeight = FontWeight.SemiBold
                                 ),
                             color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }

@@ -83,28 +83,34 @@ fun ProgramCard(
                     }
                 }
 
+                val isCompactCard = cardWidth < 150.dp
+                val logoSize = if (isCompactCard) 20.dp else 28.dp
+                val overlayPadding = if (isCompactCard) 4.dp else 8.dp
+
                 if (isLive) {
-                    Box(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) { LiveBadge() }
+                    Box(modifier = Modifier.align(Alignment.TopEnd).padding(overlayPadding)) {
+                        LiveBadge()
+                    }
                 }
 
                 if (showChannelOverlay) {
                     Box(
                         modifier =
                             Modifier.align(Alignment.BottomStart)
-                                .padding(8.dp)
+                                .padding(overlayPadding)
                                 .background(
                                     MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
                                     RoundedCornerShape(6.dp),
                                 )
-                                .padding(4.dp)
+                                .padding(if (isCompactCard) 2.dp else 4.dp)
                     ) {
                         AsyncImage(
                             imageUrl = channelLogo.toString(),
                             contentDescription = program.channelName,
-                            modifier = Modifier.size(28.dp),
+                            modifier = Modifier.size(logoSize),
                             contentScale = ContentScale.Fit,
-                            targetWidth = 28.dp,
-                            targetHeight = 28.dp,
+                            targetWidth = logoSize,
+                            targetHeight = logoSize,
                         )
                     }
                 }

@@ -71,6 +71,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.core.graphics.toColorInt
@@ -2151,8 +2152,9 @@ private fun SubtitlePreview(
         modifier =
             modifier
                 .fillMaxWidth()
-                .height(100.dp)
-                .background(androidx.compose.ui.graphics.Color.DarkGray, RoundedCornerShape(12.dp)),
+                .heightIn(min = 100.dp)
+                .background(androidx.compose.ui.graphics.Color.DarkGray, RoundedCornerShape(12.dp))
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
         val textStyle =
@@ -2216,6 +2218,9 @@ private fun SubtitlePreview(
                                 text = stringResource(R.string.subtitle_preview_text),
                                 style = textStyle,
                                 color = outlineColor,
+                                textAlign = TextAlign.Center,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.offset(offset.x.dp, offset.y.dp),
                             )
                         }
@@ -2240,6 +2245,9 @@ private fun SubtitlePreview(
                                 text = stringResource(R.string.subtitle_preview_text),
                                 style = textStyle,
                                 color = outlineColor,
+                                textAlign = TextAlign.Center,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.offset(offset.x.dp, offset.y.dp),
                             )
                         }
@@ -2303,6 +2311,9 @@ private fun SubtitlePreview(
                                 }
                         ),
                     color = Color(subtitlePrefs.textColor),
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }

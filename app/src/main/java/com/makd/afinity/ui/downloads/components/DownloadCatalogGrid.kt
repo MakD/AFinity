@@ -263,6 +263,7 @@ private fun CardBadge(
             fontWeight = FontWeight.Medium,
             color = content,
             maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
         )
     }
