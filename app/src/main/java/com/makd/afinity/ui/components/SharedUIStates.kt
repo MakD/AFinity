@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -47,7 +49,7 @@ fun FullScreenError(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(32.dp),
+            modifier = Modifier.verticalScroll(rememberScrollState()).padding(32.dp),
         ) {
             Text(
                 text = title ?: stringResource(R.string.home_error_title),
@@ -103,7 +105,7 @@ fun FullScreenEmpty(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(32.dp),
+            modifier = Modifier.verticalScroll(rememberScrollState()).padding(32.dp),
         ) {
             if (icon != null) {
                 Icon(

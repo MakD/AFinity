@@ -5,15 +5,17 @@ import com.makd.afinity.R
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
-internal fun formatListeningDuration(seconds: Double): String {
+internal fun formatListeningDuration(context: Context, seconds: Double): String {
     val h = (seconds / 3600).toInt()
     val m = ((seconds % 3600) / 60).toInt()
+    val mUnit = context.getString(R.string.abs_minutes_unit)
+    val hUnit = context.getString(R.string.abs_hours_unit)
     return when {
-        h > 0 && m > 0 -> "${h}h ${m}m"
-        h > 0 -> "${h}h"
-        m > 0 -> "${m}m"
-        seconds > 0 -> "<1m"
-        else -> "0m"
+        h > 0 && m > 0 -> context.getString(R.string.meta_runtime_hours_minutes, h, m)
+        h > 0 -> "${h}${hUnit}"
+        m > 0 -> context.getString(R.string.meta_runtime_minutes, m)
+        seconds > 0 -> "<1$mUnit"
+        else -> "0$mUnit"
     }
 }
 

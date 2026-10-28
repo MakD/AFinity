@@ -269,7 +269,7 @@ fun RatingsAndReviews(
                     if (mdbRatingBadges.certifiedFresh) {
                         item {
                             BadgeCard(
-                                sourceName = "Tomatometer",
+                                sourceName = stringResource(R.string.rating_tomatometer),
                                 iconRes = R.drawable.ic_certified_fresh,
                                 label = stringResource(R.string.rt_certified_fresh),
                             )
@@ -279,7 +279,7 @@ fun RatingsAndReviews(
                     if (mdbRatingBadges.verifiedHot) {
                         item {
                             BadgeCard(
-                                sourceName = "Popcornmeter",
+                                sourceName = stringResource(R.string.rating_popcornmeter),
                                 iconRes = R.drawable.ic_verified_hot,
                                 label = stringResource(R.string.rt_verified_hot),
                             )
@@ -293,7 +293,7 @@ fun RatingsAndReviews(
                             sourceName = display.sourceName,
                             iconRes = display.iconRes,
                             score = display.score,
-                            subtext = display.subtext,
+                            subtext = display.resolvedSubtext(),
                         )
                     }
                 }

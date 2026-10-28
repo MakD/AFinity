@@ -267,6 +267,7 @@ fun RequestConfirmationDialog(
                         )
                         val rtCriticLabel = stringResource(R.string.request_rt_critic)
                         val rtAudienceLabel = stringResource(R.string.request_rt_audience)
+                        val languageLabel = stringResource(R.string.cd_language)
                         val metadataItems =
                             remember(
                                 ratingsCombined,
@@ -321,7 +322,7 @@ fun RequestConfirmationDialog(
                                                 MetaItem(
                                                     R.drawable.ic_language,
                                                     it.uppercase(),
-                                                    "Language",
+                                                    languageLabel,
                                                     flagUrl = getAutoFlagUrl(it),
                                                 )
                                             )
@@ -347,7 +348,7 @@ fun RequestConfirmationDialog(
                                                 painter = painterResource(id = item.icon),
                                                 contentDescription = null,
                                                 tint =
-                                                    if (item.contentDesc == "Language")
+                                                    if (item.icon == R.drawable.ic_language)
                                                         MaterialTheme.colorScheme.onSurface
                                                     else item.tint,
                                                 modifier = Modifier.size(14.dp),
@@ -401,7 +402,7 @@ fun RequestConfirmationDialog(
                         if (!mediaOverview.isNullOrBlank()) {
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text(
-                                    "Overview",
+                                    stringResource(R.string.request_overview),
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
                                 )
@@ -415,10 +416,11 @@ fun RequestConfirmationDialog(
                         director
                             ?.takeIf { it.isNotBlank() }
                             ?.let {
+                                val label = stringResource(R.string.request_director_label)
                                 Text(
                                     buildAnnotatedString {
                                         withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                            append("Director: ")
+                                            append(label)
                                         }
                                         append(it)
                                     },
@@ -430,10 +432,11 @@ fun RequestConfirmationDialog(
                             formatReleaseDate(it)
                                 .takeIf { d -> d.isNotBlank() }
                                 ?.let { d ->
+                                    val label = stringResource(R.string.request_release_date_label)
                                     Text(
                                         buildAnnotatedString {
                                             withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                                append("Release Date: ")
+                                                append(label)
                                             }
                                             append(d)
                                         },
@@ -445,28 +448,32 @@ fun RequestConfirmationDialog(
                         runtime
                             ?.takeIf { it > 0 }
                             ?.let {
+                                val label = stringResource(R.string.request_runtime_label)
+                                val formattedRuntime = formatRuntimeMinutes(it)
                                 Text(
                                     buildAnnotatedString {
                                         withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                            append("Runtime: ")
+                                            append(label)
                                         }
-                                        append(formatRuntime(it))
+                                        append(formattedRuntime)
                                     },
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurface.copy(0.9f),
                                 )
                             }
-                        if (genres.isNotEmpty())
+                        if (genres.isNotEmpty()) {
+                            val label = stringResource(R.string.request_genre_label)
                             Text(
                                 buildAnnotatedString {
                                     withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                        append("Genre: ")
+                                        append(label)
                                     }
                                     append(genres.joinToString(", "))
                                 },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(0.9f),
                             )
+                        }
                     }
                 }
 
@@ -484,11 +491,13 @@ fun RequestConfirmationDialog(
 
                         if (mediaType == MediaType.TV) {
                             if (selectedSeasons.isNotEmpty()) {
+                                val seasonsLabel =
+                                    stringResource(R.string.request_requested_seasons_label)
                                 Text(
                                     text =
                                         buildAnnotatedString {
                                             withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                                append("Requested Seasons: ")
+                                                append(seasonsLabel)
                                             }
                                             append(selectedSeasons.sorted().joinToString(", "))
                                         },
@@ -536,8 +545,7 @@ fun RequestConfirmationDialog(
                                 }
                             } else if (availableServers.isEmpty()) {
                                 Text(
-                                    text =
-                                        "No fulfillment servers available. Check your admin settings.",
+                                    text = stringResource(R.string.request_no_servers_available),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.padding(top = 8.dp),
@@ -553,7 +561,9 @@ fun RequestConfirmationDialog(
                                 MinimalSelectionTile(
                                     label = stringResource(R.string.request_destination_server),
                                     selectedText =
-                                        selectedServer?.name ?: manageServerName ?: "Default",
+                                        selectedServer?.name
+                                            ?: manageServerName
+                                            ?: stringResource(R.string.request_default),
                                     items = availableServers,
                                     itemText = { it.name },
                                     onItemSelected = onServerSelected,
@@ -564,7 +574,9 @@ fun RequestConfirmationDialog(
                                     MinimalSelectionTile(
                                         label = stringResource(R.string.request_quality_profile),
                                         selectedText =
-                                            selectedProfile?.name ?: manageProfileName ?: "Default",
+                                            selectedProfile?.name
+                                                ?: manageProfileName
+                                                ?: stringResource(R.string.request_default),
                                         items = availableProfiles,
                                         itemText = { it.name },
                                         onItemSelected = onProfileSelected,
@@ -582,7 +594,7 @@ fun RequestConfirmationDialog(
                         } else {
                             manageServerName?.let {
                                 Text(
-                                    text = "Server: $it",
+                                    text = stringResource(R.string.request_server_prefix, it),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -590,7 +602,7 @@ fun RequestConfirmationDialog(
 
                             manageProfileName?.let {
                                 Text(
-                                    text = "Profile: $it",
+                                    text = stringResource(R.string.request_profile_prefix, it),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -598,7 +610,7 @@ fun RequestConfirmationDialog(
 
                             manageRootFolder?.let {
                                 Text(
-                                    text = "Root Folder: $it",
+                                    text = stringResource(R.string.request_root_folder_prefix, it),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -610,8 +622,14 @@ fun RequestConfirmationDialog(
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
+                        val prompt =
+                            when (mediaType) {
+                                MediaType.MOVIE ->
+                                    stringResource(R.string.request_confirm_movie_prompt)
+                                MediaType.TV -> stringResource(R.string.request_confirm_tv_prompt)
+                            }
                         Text(
-                            "Request this ${mediaType.toApiString()} on Seerr?",
+                            prompt,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium,
@@ -707,7 +725,8 @@ fun RequestConfirmationDialog(
                                     else stringResource(R.string.request_sonarr_server)
                                 MinimalSelectionTile(
                                     serverLabel,
-                                    selectedServer?.name ?: "Default",
+                                    selectedServer?.name
+                                        ?: stringResource(R.string.request_default),
                                     availableServers,
                                     { it.name },
                                     onServerSelected,
@@ -715,8 +734,9 @@ fun RequestConfirmationDialog(
                                 )
                                 if (selectedServer != null) {
                                     MinimalSelectionTile(
-                                        "Quality Profile",
-                                        selectedProfile?.name ?: "Default",
+                                        stringResource(R.string.request_quality_profile),
+                                        selectedProfile?.name
+                                            ?: stringResource(R.string.request_default),
                                         availableProfiles,
                                         { it.name },
                                         onProfileSelected,
@@ -734,7 +754,8 @@ fun RequestConfirmationDialog(
                                     ) {
                                         MinimalSelectionTile(
                                             stringResource(R.string.request_language_profile),
-                                            selectedLanguageProfile?.name ?: "Default",
+                                            selectedLanguageProfile?.name
+                                                ?: stringResource(R.string.request_default),
                                             availableLanguageProfiles,
                                             { it.name },
                                             onLanguageProfileSelected,
@@ -1010,7 +1031,7 @@ private fun RootFolderTile(
             selectedText =
                 availableRootFolders.firstOrNull { it.path == selectedRootFolder }?.let(labelFor)
                     ?: selectedRootFolder
-                    ?: "Default",
+                    ?: stringResource(R.string.request_default),
             items = availableRootFolders,
             itemText = labelFor,
             onItemSelected = { onRootFolderSelected(it.path) },
@@ -1383,15 +1404,5 @@ private fun formatReleaseDate(dateString: String): String {
         date.format(localizedDateFormatter(Locale.getDefault(), DateSkeleton.MONTH_DAY_YEAR))
     } catch (e: DateTimeParseException) {
         dateString
-    }
-}
-
-private fun formatRuntime(minutes: Int): String {
-    val hours = minutes / 60
-    val mins = minutes % 60
-    return if (hours > 0) {
-        "${hours}h ${mins}m"
-    } else {
-        "${mins}m"
     }
 }

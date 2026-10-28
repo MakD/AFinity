@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -112,7 +113,7 @@ fun NextUpSkipOverlay(
                     ) {
                         Text(
                             text =
-                                "${nextEpisode.seriesName} • S${nextEpisode.parentIndexNumber}E${nextEpisode.indexNumber}",
+                                "${nextEpisode.seriesName} • ${stringResource(R.string.episode_designator_short_fmt, nextEpisode.parentIndexNumber, nextEpisode.indexNumber)}",
                             style =
                                 MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.5.sp),
                             color = MaterialTheme.colorScheme.primary,

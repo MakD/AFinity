@@ -2231,7 +2231,9 @@ fun MainNavigation(
                     if (isAuthenticating) {
                         stringResource(R.string.splash_status_authenticating)
                     } else {
-                        appLoadingState.loadingPhase.ifEmpty { "Loading..." }
+                        appLoadingState.loadingPhase.ifEmpty {
+                            stringResource(R.string.status_loading)
+                        }
                     },
                 progress = if (isAuthenticating) null else appLoadingState.loadingProgress,
                 modifier = Modifier.fillMaxSize(),

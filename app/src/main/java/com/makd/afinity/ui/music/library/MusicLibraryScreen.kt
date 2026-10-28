@@ -664,7 +664,7 @@ private fun MusicHomeContent(
                 HomeRow.Decades ->
                     uiState.albumsByDecade?.let { (decade, albums) ->
                         LatestAlbumsSection(
-                            title = "From the ${decade}s",
+                            title = stringResource(R.string.music_row_from_decade_fmt, decade),
                             albums = albums,
                             onAlbumClick = onAlbumClick,
                             modifier = m,
@@ -682,7 +682,11 @@ private fun MusicHomeContent(
                 is HomeRow.TopTracks ->
                     uiState.topTracksSections.getOrNull(row.index)?.let { (artistName, tracks) ->
                         CompactTrackGridSection(
-                            title = "Top Tracks: $artistName",
+                            title =
+                                stringResource(
+                                    R.string.music_row_top_tracks_artist_fmt,
+                                    artistName,
+                                ),
                             tracks = tracks,
                             onTrackClick = { track -> onTrackClickWithQueue(track, tracks) },
                             modifier = m,
@@ -700,7 +704,11 @@ private fun MusicHomeContent(
                 is HomeRow.NewGenreRelease ->
                     uiState.newGenreReleases.getOrNull(row.index)?.let { (genre, albums) ->
                         MusicAlbumRowSection(
-                            title = "New $genre Releases",
+                            title =
+                                stringResource(
+                                    R.string.music_row_new_genre_releases_fmt,
+                                    genre,
+                                ),
                             albums = albums,
                             onAlbumClick = onAlbumClick,
                             modifier = m,

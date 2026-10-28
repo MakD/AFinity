@@ -316,7 +316,7 @@ fun MusicAlbumScreen(
             if (isMultiDisc) {
                 item(key = "disc_$disc") {
                     Text(
-                        text = "Disc $disc",
+                        text = stringResource(R.string.music_disc_number_fmt, disc),
                         style =
                             MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onBackground,

@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -45,6 +47,7 @@ import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.EmptyState
+import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.ServiceUnreachableBanner
@@ -120,9 +123,10 @@ fun RequestsScreen(
                         uiState.error != null &&
                             uiState.requests.isEmpty() &&
                             uiState.discoverSections.isEmpty() -> {
-                            ErrorView(
+                            FullScreenError(
                                 message = uiState.error ?: stringResource(R.string.error_unknown),
-                                onRetry = {
+                                actionText = stringResource(R.string.action_retry),
+                                onActionClick = {
                                     viewModel.loadRequests()
                                     viewModel.loadDiscoverContent()
                                 },
@@ -518,7 +522,7 @@ private fun NotLoggedInView(onLoginClick: () -> Unit, modifier: Modifier = Modif
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(32.dp),
+            modifier = Modifier.verticalScroll(rememberScrollState()).padding(32.dp),
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_seerr_logo),
@@ -541,41 +545,6 @@ private fun NotLoggedInView(onLoginClick: () -> Unit, modifier: Modifier = Modif
             Button(onClick = onLoginClick) {
                 Text(
                     text = stringResource(R.string.login_btn_connect),
-                    style = MaterialTheme.typography.labelLarge,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ErrorView(message: String, onRetry: () -> Unit, modifier: Modifier = Modifier) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(32.dp),
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_exclamation_circle),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.height(48.dp),
-            )
-            Text(
-                text = stringResource(R.string.error_title),
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-            Button(onClick = onRetry) {
-                Text(
-                    text = stringResource(R.string.action_retry),
                     style = MaterialTheme.typography.labelLarge,
                 )
             }

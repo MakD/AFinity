@@ -73,7 +73,7 @@ fun RatingChipsRow(
             item(key = "badge_certified_fresh") {
                 RatingChip(
                     iconRes = R.drawable.ic_certified_fresh,
-                    contentDescription = "Tomatometer",
+                    contentDescription = stringResource(R.string.rating_tomatometer),
                     value = certifiedFresh,
                     subtext = null,
                 )
@@ -83,7 +83,7 @@ fun RatingChipsRow(
             item(key = "badge_verified_hot") {
                 RatingChip(
                     iconRes = R.drawable.ic_verified_hot,
-                    contentDescription = "Popcornmeter",
+                    contentDescription = stringResource(R.string.rating_popcornmeter),
                     value = verifiedHot,
                     subtext = null,
                 )
@@ -94,7 +94,7 @@ fun RatingChipsRow(
                 iconRes = display.iconRes,
                 contentDescription = display.sourceName,
                 value = display.score,
-                subtext = display.subtext,
+                subtext = display.resolvedSubtext(),
             )
         }
     }

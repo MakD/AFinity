@@ -183,7 +183,7 @@ fun FavoritesScreen(
                         FullScreenEmpty(
                             title = stringResource(R.string.favorites_empty_title),
                             message = stringResource(R.string.favorites_empty_message),
-                            actionText = "Browse Media",
+                            actionText = stringResource(R.string.action_browse_media),
                             onActionClick = onBrowseMediaClick,
                         )
                     } else {
@@ -648,8 +648,8 @@ internal fun FavoriteTrackCard(
                         DropdownMenuItem(
                             text = {
                                 Text(
-                                    if (track.favorite) "Remove from Favorites"
-                                    else "Add to Favorites"
+                                    if (track.favorite) stringResource(R.string.cd_favorite_remove)
+                                    else stringResource(R.string.cd_favorite_add)
                                 )
                             },
                             onClick = {

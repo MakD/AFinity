@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.player.components
 
+import android.content.Context
 import android.text.format.DateFormat
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
@@ -222,6 +223,7 @@ fun PlayerControls(
         )
 
     val isServerTranscoding = uiState.playMethod == PlayMethod.TRANSCODE
+    val context = LocalContext.current
 
     val audioStreamOptions =
         remember(
@@ -231,6 +233,7 @@ fun PlayerControls(
             isServerTranscoding,
             unknownLang,
             trackTags,
+            context,
         ) {
             val currentSource =
                 currentItem?.sources?.firstOrNull { it.id == uiState.currentMediaSourceId }
@@ -266,7 +269,7 @@ fun PlayerControls(
                         } else {
                             unknownLang
                         }
-                val channelStr = formatAudioChannels(stream)
+                val channelStr = formatAudioChannels(context, stream)
                 val profileStr = prettyAudioProfile(stream.profile, stream.codec)
                 val displayName = buildString {
                     append(localizedLang)
@@ -942,7 +945,10 @@ fun PlayerControls(
                                     modifier = Modifier.size(18.dp),
                                 )
                                 Text(
-                                    text = syncPlayGroupName.ifBlank { "Watch Party" },
+                                    text =
+                                        syncPlayGroupName.ifBlank {
+                                            stringResource(R.string.syncplay_title)
+                                        },
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold,
                                     color = Color.White,
@@ -2190,7 +2196,7 @@ private fun PauseDetailsOverlay(
             videoStream.isDolbyVision() -> "Dolby Vision"
             else -> videoStream.hdrLabel()
         }
-    val audioLabel = formatAudioChannels(audioStream)
+    val audioLabel = formatAudioChannels(context, audioStream)
 
     val genres =
         when (item) {
@@ -2246,14 +2252,12 @@ private fun PauseDetailsOverlay(
     val primaryTitle = if (item is AfinityEpisode) item.seriesName else item.name
     val episodeSubtitle =
         (item as? AfinityEpisode)?.let { ep ->
-            buildString {
-                val s = ep.parentIndexNumber
-                val e = ep.indexNumber
-                append("S$s:E$e")
-                if (ep.name.isNotBlank()) {
-                    if (isNotEmpty()) append(" · ")
-                    append(ep.name)
-                }
+            val s = ep.parentIndexNumber
+            val e = ep.indexNumber
+            if (ep.name.isNotBlank()) {
+                stringResource(R.string.episode_season_episode_fmt, s, e.toString(), ep.name)
+            } else {
+                stringResource(R.string.episode_designator_short_fmt, s, e)
             }
         }
     val communityRating =
@@ -2679,22 +2683,31 @@ private fun formatTime(timeMs: Long): String {
     }
 }
 
-private fun formatAudioChannels(stream: AfinityMediaStream?): String? {
+private fun formatAudioChannels(context: Context, stream: AfinityMediaStream?): String? {
     val channels = stream?.channels
     when (channels) {
-        1 -> return "Mono"
-        2 -> return "Stereo"
+        1 -> return context.getString(R.string.audio_channels_mono)
+        2 -> return context.getString(R.string.audio_channels_stereo)
     }
     stream?.channelLayout?.let { layout ->
         val base = layout.substringBefore('(').trim()
         if (base.isNotBlank()) {
             return when (base.lowercase()) {
-                "mono" -> "Mono"
+                "mono" -> context.getString(R.string.audio_channels_mono)
                 "stereo",
-                "downmix" -> "Stereo"
+                "downmix" -> context.getString(R.string.audio_channels_stereo)
                 else -> base
             }
         }
+    }
+    return channels?.let { context.getString(R.string.audio_channels_fmt, it) }
+}
+
+private fun rawAudioChannels(stream: AfinityMediaStream?): String? {
+    val channels = stream?.channels
+    when (channels) {
+        1 -> return "mono"
+        2 -> return "stereo"
     }
     return channels?.let { "${it}ch" }
 }
@@ -2767,7 +2780,7 @@ private fun strippedDisplayTitle(stream: AfinityMediaStream?): String? {
         stream.language.toLocalizedLanguageName()?.let { add(it.lowercase()) }
         add(stream.codec.lowercase())
         stream.channelLayout?.let { add(it.lowercase()) }
-        formatAudioChannels(stream)?.let { add(it.lowercase()) }
+        rawAudioChannels(stream)?.let { add(it.lowercase()) }
         prettySubtitleCodec(stream.codec)?.let { add(it.lowercase()) }
         addAll(listOf("default", "forced", "external", "undefined", "und"))
     }

@@ -148,13 +148,23 @@ fun EpisodeListCard(
                 ) {
                     Text(
                         text =
-                            "S${item.parentIndexNumber}:E" +
-                                if (
-                                    item.indexNumberEnd != null &&
-                                        item.indexNumberEnd != item.indexNumber
+                            if (
+                                item.indexNumberEnd != null &&
+                                    item.indexNumberEnd != item.indexNumber
+                            ) {
+                                stringResource(
+                                    R.string.episode_designator_short_range_fmt,
+                                    item.parentIndexNumber,
+                                    item.indexNumber,
+                                    item.indexNumberEnd,
                                 )
-                                    "${item.indexNumber}-E${item.indexNumberEnd}"
-                                else "${item.indexNumber}",
+                            } else {
+                                stringResource(
+                                    R.string.episode_designator_short_fmt,
+                                    item.parentIndexNumber,
+                                    item.indexNumber,
+                                )
+                            },
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.align(Alignment.CenterVertically),

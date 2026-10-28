@@ -111,6 +111,7 @@ private fun VersionOption(
     }
 }
 
+@Composable
 private fun buildVersionDetail(source: AfinitySource): String {
     val parts = mutableListOf<String>()
     val h = source.height
@@ -131,7 +132,7 @@ private fun buildVersionDetail(source: AfinitySource): String {
     source.audioCodec?.uppercase()?.let { parts += it }
     val bitrate = source.bitrate
     if (bitrate != null && bitrate > 0) {
-        parts += "${bitrate / 1_000_000} Mbps"
+        parts += stringResource(R.string.unit_mbps_fmt, (bitrate / 1_000_000).toInt())
     }
     return parts.joinToString(" · ")
 }

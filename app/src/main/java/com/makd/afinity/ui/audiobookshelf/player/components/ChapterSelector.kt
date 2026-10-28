@@ -182,13 +182,18 @@ private fun formatTime(seconds: Double): String {
     else String.format(Locale.getDefault(), "%d:%02d", minutes, secs)
 }
 
+@Composable
 private fun formatDuration(seconds: Double): String {
     val totalSeconds = seconds.toLong().coerceAtLeast(0)
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
+    val hours = (totalSeconds / 3600).toInt()
+    val minutes = ((totalSeconds % 3600) / 60).toInt()
+    val hUnit = stringResource(R.string.abs_hours_unit)
+    val sUnit = stringResource(R.string.abs_seconds_unit)
     return when {
-        hours > 0 -> "${hours}h ${minutes}m"
-        minutes > 0 -> "${minutes}m"
-        else -> "${totalSeconds}s"
+        hours > 0 && minutes > 0 ->
+            stringResource(R.string.meta_runtime_hours_minutes, hours, minutes)
+        hours > 0 -> "$hours$hUnit"
+        minutes > 0 -> stringResource(R.string.meta_runtime_minutes, minutes)
+        else -> "$totalSeconds$sUnit"
     }
 }

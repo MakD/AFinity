@@ -271,16 +271,23 @@ fun ContinueWatchingCard(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
+                            val episodeNumberStr =
+                                if (
+                                    item.indexNumberEnd != null &&
+                                        item.indexNumberEnd != item.indexNumber
+                                ) {
+                                    "${item.indexNumber}-E${item.indexNumberEnd}"
+                                } else {
+                                    "${item.indexNumber}"
+                                }
                             Text(
                                 text =
-                                    "S${item.parentIndexNumber}:E" +
-                                        (if (
-                                            item.indexNumberEnd != null &&
-                                                item.indexNumberEnd != item.indexNumber
-                                        )
-                                            "${item.indexNumber}-E${item.indexNumberEnd}"
-                                        else "${item.indexNumber}") +
-                                        " • ${item.seriesName}",
+                                    stringResource(
+                                        R.string.episode_season_episode_fmt,
+                                        item.parentIndexNumber,
+                                        episodeNumberStr,
+                                        item.seriesName,
+                                    ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,

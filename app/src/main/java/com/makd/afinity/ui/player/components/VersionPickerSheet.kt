@@ -135,6 +135,7 @@ private fun VersionItem(
     }
 }
 
+@Composable
 private fun buildVersionSubLabel(source: AfinitySource): String {
     return buildList {
             val w = source.width
@@ -143,7 +144,8 @@ private fun buildVersionSubLabel(source: AfinitySource): String {
             source.videoCodec?.uppercase()?.let { if (it.isNotBlank()) add(it) }
             source.bitrate?.let { bps ->
                 val mbps = bps / 1_000_000.0
-                add(String.format(Locale.US, "%.1f Mbps", mbps))
+                val formatted = String.format(Locale.getDefault(), "%.1f", mbps)
+                add(stringResource(R.string.player_quality_mbps_fmt, formatted))
             }
             source.container?.uppercase()?.let { if (it.isNotBlank()) add(it) }
         }

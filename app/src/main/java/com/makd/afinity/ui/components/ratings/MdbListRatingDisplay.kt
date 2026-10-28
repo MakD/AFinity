@@ -1,6 +1,9 @@
 package com.makd.afinity.ui.components.ratings
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import com.makd.afinity.R
 import com.makd.afinity.data.models.mdblist.MdbListRating
 import java.util.Locale
@@ -10,7 +13,10 @@ data class MdbListRatingDisplay(
     @param:DrawableRes val iconRes: Int?,
     val score: String,
     val subtext: String,
-)
+    @param:StringRes val subtextRes: Int? = null,
+) {
+    @Composable fun resolvedSubtext(): String = subtextRes?.let { stringResource(it) } ?: subtext
+}
 
 const val RATING_SOURCE_COMMUNITY = "community"
 const val RATING_SOURCE_IMDB = "imdb"
@@ -86,6 +92,16 @@ fun MdbListRating.toDisplay(): MdbListRatingDisplay? {
             else -> null
         }
 
+    val subtextRes =
+        when (sourceLower) {
+            RATING_SOURCE_TOMATOES ->
+                if (rawValue > 60.0) R.string.rating_fresh else R.string.rating_rotten
+            "popcorn" -> if (rawValue >= 60.0) R.string.rating_hot else R.string.rating_stale
+            "trakt",
+            "tmdb" -> R.string.rating_score
+            else -> null
+        }
+
     val subtext =
         when (sourceLower) {
             RATING_SOURCE_COMMUNITY -> "/ 10"
@@ -115,5 +131,6 @@ fun MdbListRating.toDisplay(): MdbListRatingDisplay? {
         iconRes = iconRes,
         score = if (isPercentage) "$formattedScore%" else formattedScore,
         subtext = subtext,
+        subtextRes = subtextRes,
     )
 }

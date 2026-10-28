@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -99,23 +100,24 @@ internal fun AudiobookshelfTabContent(
             }
         }
 
+        val context = LocalContext.current
         Row(
             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             StatChip(
                 label = stringResource(R.string.time_today),
-                value = formatListeningDuration(absStats.todaySeconds),
+                value = formatListeningDuration(context, absStats.todaySeconds),
                 modifier = Modifier.weight(1f),
             )
             StatChip(
                 label = stringResource(R.string.time_this_week),
-                value = formatListeningDuration(absStats.weekSeconds),
+                value = formatListeningDuration(context, absStats.weekSeconds),
                 modifier = Modifier.weight(1f),
             )
             StatChip(
                 label = stringResource(R.string.time_this_month),
-                value = formatListeningDuration(absStats.monthSeconds),
+                value = formatListeningDuration(context, absStats.monthSeconds),
                 modifier = Modifier.weight(1f),
             )
         }

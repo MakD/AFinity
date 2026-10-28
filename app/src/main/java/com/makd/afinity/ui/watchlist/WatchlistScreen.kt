@@ -127,7 +127,7 @@ fun WatchlistScreen(
                 FullScreenEmpty(
                     title = stringResource(R.string.watchlist_empty_title),
                     message = stringResource(R.string.watchlists_empty_message),
-                    actionText = "Browse Media",
+                    actionText = stringResource(R.string.action_browse_media),
                     onActionClick = onBrowseMediaClick,
                 )
             }

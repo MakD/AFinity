@@ -2,7 +2,9 @@
 
 package com.makd.afinity.ui.livetv.channel
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -10,6 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
@@ -210,13 +214,7 @@ private fun ChannelDetailContent(
                     }
 
                 uiState.scheduleFailed && schedule.isEmpty() ->
-                    item(key = "schedule_error") {
-                        FullScreenError(
-                            message = stringResource(R.string.livetv_schedule_load_failed),
-                            actionText = stringResource(R.string.action_retry),
-                            onActionClick = onRetry,
-                        )
-                    }
+                    item(key = "schedule_error") { LiveTvScheduleError(onRetry = onRetry) }
 
                 schedule.isEmpty() ->
                     detailItem("schedule_empty", horizontalPadding) {
@@ -298,4 +296,30 @@ private fun ColumnScope.ChannelHeader(
             ),
         modifier = if (isLandscape) Modifier.widthIn(max = 480.dp) else Modifier,
     )
+}
+
+@Composable
+private fun LiveTvScheduleError(onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.livetv_schedule_load_failed),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Button(
+            onClick = onRetry,
+            colors =
+                ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+        ) {
+            Text(
+                text = stringResource(R.string.action_retry),
+                style = MaterialTheme.typography.labelLarge,
+            )
+        }
+    }
 }

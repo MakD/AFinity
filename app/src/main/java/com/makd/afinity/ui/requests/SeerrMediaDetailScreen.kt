@@ -1038,12 +1038,14 @@ private fun SeerrRatingsSection(
             rtCritic?.let {
                 item {
                     SeerrScorecard(
-                        sourceName = "Rotten Tomatoes",
+                        sourceName = stringResource(R.string.rating_tomatometer),
                         iconRes =
                             if (it > 60) R.drawable.ic_rotten_tomato_fresh
                             else R.drawable.ic_rotten_tomato_rotten,
                         score = "$it%",
-                        subtext = if (it > 60) "Fresh" else "Rotten",
+                        subtext =
+                            if (it > 60) stringResource(R.string.rating_fresh)
+                            else stringResource(R.string.rating_rotten),
                     )
                 }
             }
@@ -1051,12 +1053,14 @@ private fun SeerrRatingsSection(
             rtAudience?.let {
                 item {
                     SeerrScorecard(
-                        sourceName = "Popcornmeter",
+                        sourceName = stringResource(R.string.rating_popcornmeter),
                         iconRes =
                             if (it >= 60) R.drawable.ic_rt_fresh_popcorn
                             else R.drawable.ic_rt_stale_popcorn,
                         score = "$it%",
-                        subtext = if (it >= 60) "Hot" else "Stale",
+                        subtext =
+                            if (it >= 60) stringResource(R.string.rating_hot)
+                            else stringResource(R.string.rating_stale),
                     )
                 }
             }

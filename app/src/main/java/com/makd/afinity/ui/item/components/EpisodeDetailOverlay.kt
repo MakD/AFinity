@@ -238,7 +238,11 @@ fun EpisodeDetailOverlay(
                                             )
                                         Text(
                                             text =
-                                                if (isUnaired) "Airs on $formattedDate"
+                                                if (isUnaired)
+                                                    stringResource(
+                                                        R.string.episode_airs_on_fmt,
+                                                        formattedDate,
+                                                    )
                                                 else formattedDate,
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,

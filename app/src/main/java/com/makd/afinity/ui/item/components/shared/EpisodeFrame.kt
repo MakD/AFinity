@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.item.components.shared
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,10 +22,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.extensions.showBackdropBlurHash
@@ -71,7 +74,8 @@ fun EpisodeFrame(
             }
         }
 
-    val designator = remember(episode.id) { episodeDesignator(episode) }
+    val context = LocalContext.current
+    val designator = remember(episode.id) { episodeDesignator(context, episode) }
 
     val progress =
         remember(episode.playbackPositionTicks, episode.runtimeTicks) {
@@ -157,15 +161,15 @@ fun EpisodeFrame(
     }
 }
 
-private fun episodeDesignator(episode: AfinityEpisode): String {
+private fun episodeDesignator(context: Context, episode: AfinityEpisode): String {
     val season = episode.parentIndexNumber
     val number = episode.indexNumber
     val end = episode.indexNumberEnd
 
     return if (end != null && end != episode.indexNumber) {
-        String.format(Locale.US, "S%02dE%02d-%02d", season, number, end)
+        context.getString(R.string.episode_designator_short_range_fmt, season, number, end)
     } else {
-        String.format(Locale.US, "S%02dE%02d", season, number)
+        context.getString(R.string.episode_designator_short_fmt, season, number)
     }
 }
 

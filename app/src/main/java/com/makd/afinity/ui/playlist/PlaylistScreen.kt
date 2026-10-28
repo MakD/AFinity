@@ -611,9 +611,11 @@ fun PlaylistScreen(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text(stringResource(R.string.music_delete_playlist_title)) },
             text = {
-                Text(
-                    "Are you sure you want to delete \"${uiState.playlist?.name ?: "this playlist"}\"? This cannot be undone."
-                )
+                val deleteMessage =
+                    uiState.playlist?.name?.let {
+                        stringResource(R.string.music_delete_playlist_message, it)
+                    } ?: stringResource(R.string.music_delete_playlist_message_fallback)
+                Text(deleteMessage)
             },
             confirmButton = {
                 Button(
@@ -683,9 +685,27 @@ private fun PlaylistArtistsRow(
         val label =
             when {
                 entries.size == 1 -> entries[0].name
-                entries.size == 2 -> "${entries[0].name} & ${entries[1].name}"
-                overflow == 0 -> "${entries[0].name}, ${entries[1].name} & ${entries[2].name}"
-                else -> "${entries[0].name}, ${entries[1].name} and $overflow more"
+                entries.size == 2 ->
+                    stringResource(
+                        R.string.playlist_artists_two_fmt,
+                        entries[0].name,
+                        entries[1].name,
+                    )
+                overflow == 0 ->
+                    stringResource(
+                        R.string.playlist_artists_three_fmt,
+                        entries[0].name,
+                        entries[1].name,
+                        entries[2].name,
+                    )
+                else ->
+                    pluralStringResource(
+                        R.plurals.playlist_artists_more_fmt,
+                        overflow,
+                        entries[0].name,
+                        entries[1].name,
+                        overflow,
+                    )
             }
         Text(
             text = label,

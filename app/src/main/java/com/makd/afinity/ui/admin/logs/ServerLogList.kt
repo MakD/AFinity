@@ -185,7 +185,7 @@ private fun ServerLogRowItem(
                 if (grouped) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "${row.count}x",
+                        text = stringResource(R.string.log_repeat_count_fmt, row.count),
                         style = LogTextStyles.pill,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.surface,

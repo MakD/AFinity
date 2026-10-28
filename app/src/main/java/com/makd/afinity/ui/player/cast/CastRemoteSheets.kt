@@ -312,6 +312,7 @@ private fun SheetSectionLabel(text: String) {
     )
 }
 
+@Composable
 private fun audioLabel(
     displayTitle: String?,
     language: String,
@@ -322,7 +323,15 @@ private fun audioLabel(
         ?: buildString {
             append(language.uppercase())
             if (codec.isNotBlank()) append(" · ").append(codec.uppercase())
-            if ((channels ?: 0) > 0) append(" · ").append(channels).append("ch")
+            val ch = channels ?: 0
+            if (ch > 0) {
+                append(" · ")
+                when (ch) {
+                    1 -> append(stringResource(R.string.audio_channels_mono))
+                    2 -> append(stringResource(R.string.audio_channels_stereo))
+                    else -> append(stringResource(R.string.audio_channels_fmt, ch))
+                }
+            }
         }
 
 internal fun formatCastClock(timeMs: Long): String {

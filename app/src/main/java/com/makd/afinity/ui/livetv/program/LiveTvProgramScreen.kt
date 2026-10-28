@@ -465,7 +465,7 @@ private fun ProgramBadges(
     val showNew = program.isNew && GuideIndicator.NEW in indicators
     val showRepeat = program.isRepeat && GuideIndicator.REPEAT in indicators
     val showHd = program.isHd && GuideIndicator.HD in indicators
-    val audio = program.audio?.let(::audioLabel)
+    val audio = program.audio?.let { audioLabel(it) }
     val tags = program.tags
 
     if (
@@ -717,10 +717,11 @@ private fun LazyListScope.programDetailItems(
     }
 }
 
+@Composable
 private fun audioLabel(audio: ProgramAudio): String =
     when (audio) {
-        ProgramAudio.MONO -> "Mono"
-        ProgramAudio.STEREO -> "Stereo"
+        ProgramAudio.MONO -> stringResource(R.string.audio_channels_mono)
+        ProgramAudio.STEREO -> stringResource(R.string.audio_channels_stereo)
         ProgramAudio.DOLBY -> "Dolby"
         ProgramAudio.DOLBY_DIGITAL -> "Dolby Digital"
         ProgramAudio.THX -> "THX"

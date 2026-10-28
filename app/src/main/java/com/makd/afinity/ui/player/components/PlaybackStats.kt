@@ -260,14 +260,15 @@ fun PlaybackStatsOverlay(stats: PlaybackStats, onClose: () -> Unit) {
     }
 }
 
+@Composable
 private fun formatChannelCount(channels: Int): String =
     when (channels) {
-        0 -> "Unknown"
-        1 -> "Mono"
-        2 -> "Stereo"
+        0 -> stringResource(R.string.track_unknown)
+        1 -> stringResource(R.string.audio_channels_mono)
+        2 -> stringResource(R.string.audio_channels_stereo)
         6 -> "5.1"
         8 -> "7.1"
-        else -> "${channels}ch"
+        else -> stringResource(R.string.audio_channels_fmt, channels)
     }
 
 @Composable

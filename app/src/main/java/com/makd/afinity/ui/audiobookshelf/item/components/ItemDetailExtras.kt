@@ -726,9 +726,11 @@ fun PodcastUpNextCard(
     }
 }
 
+@Composable
 internal fun formatListenTime(seconds: Double): String {
     val totalMinutes = (seconds.coerceAtLeast(0.0) / 60).toLong()
-    val hours = totalMinutes / 60
-    val minutes = totalMinutes % 60
-    return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
+    val hours = (totalMinutes / 60).toInt()
+    val minutes = (totalMinutes % 60).toInt()
+    return if (hours > 0) stringResource(R.string.meta_runtime_hours_minutes, hours, minutes)
+    else stringResource(R.string.meta_runtime_minutes, minutes)
 }

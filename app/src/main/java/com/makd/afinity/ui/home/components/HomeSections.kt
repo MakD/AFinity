@@ -325,7 +325,12 @@ fun UpcomingEpisodeCard(
             if (episode.name.isNotBlank()) {
                 Text(
                     text =
-                        "S${episode.parentIndexNumber}:E${episode.indexNumber} • ${episode.name}",
+                        stringResource(
+                            R.string.episode_season_episode_fmt,
+                            episode.parentIndexNumber,
+                            episode.indexNumber.toString(),
+                            episode.name,
+                        ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

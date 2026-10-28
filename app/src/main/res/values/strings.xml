@@ -2669,6 +2669,55 @@
     <string name="request_approve">Approve</string>
     <string name="request_decline">Decline</string>
     <string name="request_all_seasons_note">All seasons will be requested</string>
+    <string name="request_overview">Overview</string>
+    <string name="request_director_label">Director: </string>
+    <string name="request_release_date_label">Release Date: </string>
+    <string name="request_runtime_label">Runtime: </string>
+    <string name="request_genre_label">Genre: </string>
+    <string name="request_requested_seasons_label">Requested Seasons: </string>
+    <string name="request_no_servers_available">No fulfillment servers available. Check your admin settings.</string>
+    <string name="request_default">Default</string>
+    <string name="request_server_prefix">Server: %1$s</string>
+    <string name="request_profile_prefix">Profile: %1$s</string>
+    <string name="request_root_folder_prefix">Root Folder: %1$s</string>
+    <string name="request_confirm_movie_prompt">Request this movie on Seerr?</string>
+    <string name="request_confirm_tv_prompt">Request this series on Seerr?</string>
+    <string name="request_confirm_prompt">Request this %1$s on Seerr?</string>
+    <string name="cd_language">Language</string>
+    <string name="music_disc_number_fmt">Disc %1$d</string>
+    <plurals name="music_track_count_fmt">
+        <item quantity="one">%1$d track</item>
+        <item quantity="other">%1$d tracks</item>
+    </plurals>
+    <string name="abs_book_sequence_fmt">Book %1$s</string>
+    <string name="episode_airs_on_fmt">Airs on %1$s</string>
+    <string name="action_browse_media">Browse Media</string>
+    <string name="music_delete_playlist_message">Are you sure you want to delete \"%1$s\"? This cannot be undone.</string>
+    <string name="music_delete_playlist_message_fallback">Are you sure you want to delete this playlist? This cannot be undone.</string>
+    <string name="playlist_artists_two_fmt">%1$s &amp; %2$s</string>
+    <string name="playlist_artists_three_fmt">%1$s, %2$s &amp; %3$s</string>
+    <plurals name="playlist_artists_more_fmt">
+        <item quantity="one">%1$s, %2$s and %3$d more</item>
+        <item quantity="other">%1$s, %2$s and %3$d more</item>
+    </plurals>
+    <string name="music_row_from_decade_fmt">From the %1$ds</string>
+    <string name="music_row_top_tracks_artist_fmt">Top Tracks: %1$s</string>
+    <string name="music_row_new_genre_releases_fmt">New %1$s Releases</string>
+    <string name="audio_channels_mono">Mono</string>
+    <string name="audio_channels_stereo">Stereo</string>
+    <string name="audio_channels_fmt">%1$dch</string>
+    <string name="rating_fresh">Fresh</string>
+    <string name="rating_rotten">Rotten</string>
+    <string name="rating_hot">Hot</string>
+    <string name="rating_stale">Stale</string>
+    <string name="rating_score">Score</string>
+    <string name="rating_tomatometer">Tomatometer</string>
+    <string name="rating_popcornmeter">Popcornmeter</string>
+    <string name="media_type_movie">Movie</string>
+    <string name="media_type_tv">TV</string>
+    <string name="episode_designator_short_fmt">S%1$02dE%2$02d</string>
+    <string name="episode_designator_short_range_fmt">S%1$02dE%2$02d-%3$02d</string>
+    <string name="task_progress_percent_fmt">%1$.1f%%</string>
     <plurals name="request_quota_movie_remaining_fmt">
         <item quantity="one">%1$d of %2$d request remaining</item>
         <item quantity="other">%1$d of %2$d requests remaining</item>
@@ -3483,5 +3532,8 @@
         <item quantity="one">%1$d file</item>
         <item quantity="other">%1$d files</item>
     </plurals>
+    <string name="review_by_author_fmt">Review by %1$s</string>
+    <string name="log_repeat_count_fmt">%1$d×</string>
+    <string name="abs_seconds_unit">s</string>
 
 </resources>

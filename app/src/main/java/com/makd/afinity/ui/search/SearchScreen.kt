@@ -109,6 +109,7 @@ import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.MetadataOverflowRow
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
+import com.makd.afinity.ui.components.formatRuntimeMinutes
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.library.startMusicService
@@ -1137,8 +1138,11 @@ private fun JellyseerrSearchResultItem(item: SearchResultItem, onRequestClick: (
                 ) {
                     Text(
                         text =
-                            item.getMediaType()?.name
-                                ?: stringResource(R.string.media_type_unknown),
+                            when (item.getMediaType()) {
+                                MediaType.MOVIE -> stringResource(R.string.media_type_movie)
+                                MediaType.TV -> stringResource(R.string.media_type_tv)
+                                else -> stringResource(R.string.media_type_unknown)
+                            },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1291,13 +1295,6 @@ private fun getGenreIcon(genre: String, isAudiobookshelf: Boolean = false): Pain
     }
 }
 
-private fun formatAudiobookDuration(seconds: Double): String {
-    val totalMinutes = (seconds / 60).toInt()
-    val hours = totalMinutes / 60
-    val minutes = totalMinutes % 60
-    return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
-}
-
 @Composable
 private fun AudiobookshelfSearchResultItem(
     item: LibraryItem,
@@ -1396,7 +1393,7 @@ private fun AudiobookshelfSearchResultItem(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            text = formatAudiobookDuration(duration),
+                            text = formatRuntimeMinutes((duration / 60).toInt()),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -1837,8 +1834,14 @@ private fun MusicSearchResultsContent(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
+                        val count = playlist.songCount ?: 0
                         Text(
-                            "${playlist.songCount} tracks",
+                            text =
+                                pluralStringResource(
+                                    R.plurals.music_track_count_fmt,
+                                    count,
+                                    count,
+                                ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

@@ -182,7 +182,13 @@ fun EqualizerBottomSheet(
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = if (state.volumeBoostDb > 0) "+${state.volumeBoostDb} dB" else "Off",
+                    text =
+                        if (state.volumeBoostDb > 0)
+                            stringResource(
+                                R.string.unit_decibels_fmt,
+                                "+${state.volumeBoostDb}",
+                            )
+                        else stringResource(R.string.state_toggle_off),
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                     color =
                         if (state.volumeBoostDb > 0) MaterialTheme.colorScheme.primary

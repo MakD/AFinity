@@ -292,8 +292,7 @@ private fun InsecureConnectionBannerAbs(serverUrl: String) {
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text =
-                        "Warning: Connecting over HTTP sends your password in plain text. HTTPS is highly recommended.",
+                    text = stringResource(R.string.warning_http_insecure),
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     style = MaterialTheme.typography.bodyMedium,
                 )

@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import org.jellyfin.sdk.model.api.TaskCompletionStatus
@@ -56,7 +57,9 @@ internal fun TaskCompletionStatus.labelRes(): Int =
         TaskCompletionStatus.ABORTED -> R.string.task_status_aborted
     }
 
-internal fun formatTaskProgress(progress: Double): String = "${"%.1f".format(progress)}%"
+@Composable
+internal fun formatTaskProgress(progress: Double): String =
+    stringResource(R.string.task_progress_percent_fmt, progress)
 
 @Composable
 internal fun TaskTile(

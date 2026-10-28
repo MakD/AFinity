@@ -139,7 +139,11 @@ fun ItemHeaderContent(
 
                     val remainingSeconds = progress.duration - progress.currentTime
                     Text(
-                        text = "${formatDuration(remainingSeconds)} left",
+                        text =
+                            stringResource(
+                                R.string.abs_time_left_fmt,
+                                formatDuration(remainingSeconds),
+                            ),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                         fontWeight = FontWeight.SemiBold,

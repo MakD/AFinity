@@ -167,7 +167,11 @@ private fun ExpandableEpisodeItem(
                                     Spacer(modifier = Modifier.width(4.dp))
                                     val remainingSeconds = progress.duration - progress.currentTime
                                     Text(
-                                        text = "${formatDuration(remainingSeconds)} left",
+                                        text =
+                                            stringResource(
+                                                R.string.abs_time_left_fmt,
+                                                formatDuration(remainingSeconds),
+                                            ),
                                         style = MaterialTheme.typography.labelSmall,
                                         color =
                                             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),

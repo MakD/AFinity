@@ -52,6 +52,7 @@ import com.makd.afinity.ui.components.PortraitDetailLayout
 import com.makd.afinity.ui.components.PortraitHero
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.backdropChainOf
+import com.makd.afinity.ui.components.formatRuntimeMinutes
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 
@@ -197,7 +198,12 @@ private fun SeriesBookItem(
         if (serverUrl != null) "$serverUrl/api/items/${book.id}/cover?width=216" else null
 
     val sequence = book.media.metadata.series?.firstOrNull()?.sequence
-    val bookLabel = if (sequence != null) "Book $sequence" else "Book $bookNumber"
+    val bookLabel =
+        if (sequence != null) {
+            stringResource(R.string.abs_book_sequence_fmt, sequence)
+        } else {
+            stringResource(R.string.abs_book_sequence_fmt, bookNumber)
+        }
 
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
@@ -253,7 +259,7 @@ private fun SeriesBookItem(
                 book.media.duration?.let { duration ->
                     val prefix = if (book.media.metadata.publishedYear != null) " • " else ""
                     Text(
-                        text = "$prefix${formatDuration(duration)}",
+                        text = "$prefix${formatRuntimeMinutes((duration / 60).toInt())}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -270,11 +276,4 @@ private fun SeriesBookItem(
             )
         }
     }
-}
-
-private fun formatDuration(seconds: Double): String {
-    val totalSeconds = seconds.toLong()
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
 }

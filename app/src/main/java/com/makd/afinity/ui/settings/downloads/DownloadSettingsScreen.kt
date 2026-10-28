@@ -1280,10 +1280,17 @@ fun AbsActiveDownloadCard(
                 ) {
                     val statusText =
                         when (download.status) {
-                            AbsDownloadStatus.QUEUED -> "QUEUED"
+                            AbsDownloadStatus.QUEUED ->
+                                stringResource(R.string.download_status_queued).uppercase()
                             AbsDownloadStatus.DOWNLOADING ->
-                                "TRACK ${download.tracksDownloaded}/${download.tracksTotal}"
-                            AbsDownloadStatus.FAILED -> "FAILED"
+                                stringResource(
+                                        R.string.notif_track_progress_fmt,
+                                        download.tracksDownloaded,
+                                        download.tracksTotal,
+                                    )
+                                    .uppercase()
+                            AbsDownloadStatus.FAILED ->
+                                stringResource(R.string.status_failed).uppercase()
                             else -> ""
                         }
                     Text(

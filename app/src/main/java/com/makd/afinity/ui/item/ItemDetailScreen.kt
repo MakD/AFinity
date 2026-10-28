@@ -1339,7 +1339,8 @@ private fun LazyListScope.typeSpecificItems(
 
 @Composable
 private fun rememberMediaSourceOptions(item: AfinityItem): List<MediaSourceOption> {
-    return remember(item) {
+    val unknownCodec = stringResource(R.string.track_unknown)
+    return remember(item, unknownCodec) {
         item.sources.mapIndexed { index, source ->
             val videoStream = source.mediaStreams.firstOrNull { it.type == MediaStreamType.VIDEO }
             val resolution =
@@ -1354,7 +1355,7 @@ private fun rememberMediaSourceOptions(item: AfinityItem): List<MediaSourceOptio
                 when {
                     source.name.isNotBlank() && source.name != "Default" -> source.name
                     else -> {
-                        val codec = videoStream?.codec?.uppercase() ?: "Unknown"
+                        val codec = videoStream?.codec?.uppercase() ?: unknownCodec
                         "$resolution $codec"
                     }
                 }
@@ -1362,7 +1363,7 @@ private fun rememberMediaSourceOptions(item: AfinityItem): List<MediaSourceOptio
                 id = source.id,
                 name = displayName,
                 quality = resolution,
-                codec = videoStream?.codec?.uppercase() ?: "Unknown",
+                codec = videoStream?.codec?.uppercase() ?: unknownCodec,
                 size = source.size,
                 isDefault = index == 0,
             )

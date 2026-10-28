@@ -16,3 +16,11 @@ fun formatRuntimeTicks(ticks: Long): String {
     return if (hours > 0) stringResource(R.string.meta_runtime_hours_minutes, hours, minutes)
     else stringResource(R.string.meta_runtime_minutes, minutes)
 }
+
+@Composable
+fun formatRuntimeMinutes(minutes: Int): String {
+    val hours = minutes / 60
+    val mins = minutes % 60
+    return if (hours > 0) stringResource(R.string.meta_runtime_hours_minutes, hours, mins)
+    else stringResource(R.string.meta_runtime_minutes, mins)
+}
