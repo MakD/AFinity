@@ -365,6 +365,14 @@ constructor(
         Timber.d("Session URL updated: $newUrl")
     }
 
+    fun updateSessionServer(server: Server) {
+        val current = _currentSession.value ?: return
+        if (current.serverId == server.id) {
+            _currentSession.value = current.copy(server = server)
+            Timber.d("Session server updated: ${server.name}")
+        }
+    }
+
     suspend fun getOrRestoreApiClient(serverId: String): ApiClient? {
         _currentSession.value?.let { session ->
             if (session.serverId == serverId) {

@@ -5,6 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.server.ServerAddress
 import com.makd.afinity.data.repository.DatabaseRepository
@@ -51,6 +52,7 @@ constructor(
     @param:ApplicationContext private val context: Context,
     private val serverRepository: ServerRepository,
     private val databaseRepository: DatabaseRepository,
+    private val sessionManager: SessionManager,
     private val localNetworkPermission: LocalNetworkPermission,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -236,6 +238,7 @@ constructor(
                             address = url,
                         )
                     databaseRepository.updateServer(server)
+                    sessionManager.updateSessionServer(server)
                     Timber.d("Server updated: ${server.name}")
                 } else {
                     val existingServer = databaseRepository.getServer(serverInfo.id)
@@ -282,6 +285,7 @@ constructor(
                                 address = url,
                             )
                         )
+                        sessionManager.updateSessionServer(server)
                         Timber.d("Server saved: ${server.name}")
                     }
                 }

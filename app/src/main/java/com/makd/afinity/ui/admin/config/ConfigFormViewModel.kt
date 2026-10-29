@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.repository.admin.ServerAdminRepository
+import com.makd.afinity.data.repository.server.ServerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.serialization.json.JsonElement
@@ -16,6 +17,7 @@ class ConfigFormViewModel
 @Inject
 constructor(
     private val adminRepository: ServerAdminRepository,
+    private val serverRepository: ServerRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -90,6 +92,9 @@ constructor(
                     return Result.failure(it)
                 }
             }
+        }
+        if (form.spec.id == ConfigFormIds.GENERAL && "ServerName" in mainChanges) {
+            serverRepository.refreshServerInfo()
         }
         return Result.success(Unit)
     }

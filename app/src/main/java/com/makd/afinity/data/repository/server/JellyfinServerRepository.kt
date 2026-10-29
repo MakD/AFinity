@@ -437,14 +437,37 @@ constructor(
                 val response = systemApi.getPublicSystemInfo()
                 val systemInfo = response.content
 
-                val server =
-                    Server(
-                        id = systemInfo.id ?: UUID.randomUUID().toString(),
-                        name = systemInfo.serverName ?: "Jellyfin Server",
-                        version = systemInfo.version,
-                        address = _currentBaseUrl.value,
-                    )
-                _currentServer.value = server
+                val serverId =
+                    systemInfo.id
+                        ?: _currentServer.value?.id
+                        ?: sessionManager.currentSession.value?.serverId
+                        ?: UUID.randomUUID().toString()
+
+                val serverName = systemInfo.serverName ?: "Jellyfin Server"
+                val serverVersion = systemInfo.version
+                val serverAddress = _currentBaseUrl.value
+
+                val existing = databaseRepository.getServer(serverId)
+                val serverToPersist =
+                    if (existing != null) {
+                        existing.copy(
+                            name = serverName,
+                            version = serverVersion ?: existing.version,
+                            address =
+                                if (serverAddress.isNotBlank()) serverAddress else existing.address,
+                        )
+                    } else {
+                        Server(
+                            id = serverId,
+                            name = serverName,
+                            version = serverVersion,
+                            address = serverAddress,
+                        )
+                    }
+
+                databaseRepository.insertServer(serverToPersist)
+                sessionManager.updateSessionServer(serverToPersist)
+                _currentServer.value = serverToPersist
                 _isConnected.value = true
                 _unsupportedServerVersion.value =
                     if (ServerVersionSupport.isSupported(systemInfo.version)) {
@@ -455,7 +478,7 @@ constructor(
                         )
                         systemInfo.version
                     }
-                Timber.d("Server info refreshed: ${server.name}")
+                Timber.d("Server info refreshed and persisted: ${serverToPersist.name}")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
