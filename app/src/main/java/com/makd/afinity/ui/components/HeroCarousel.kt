@@ -7,6 +7,7 @@ import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -924,6 +926,7 @@ private fun BoxScope.HeroPeekContentRich(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
+                minLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
@@ -1222,25 +1225,34 @@ private fun HeroContentRich(
     val buttonScale = heroButtonScale(HeroRichButtonSize)
     val (buttonContainer, buttonContent) = heroButtonColors()
 
-    Box(
+    BoxWithConstraints(
         modifier =
             Modifier.fillMaxSize()
                 .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))
-                .padding(start = 14.dp, bottom = 48.dp, top = 48.dp, end = 48.dp)
+                .padding(start = 14.dp, end = 48.dp)
     ) {
+        val availableHeight = maxHeight
+        val isCompactHeight = availableHeight < 380.dp
+        val verticalPad = if (isCompactHeight) 24.dp else 48.dp
+        val contentSpacing = if (isCompactHeight) 8.dp else 16.dp
+        val clampedLogoHeight = if (isCompactHeight) minOf(logoHeight, 80.dp) else logoHeight
+
         Column(
-            modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier =
+                Modifier.align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(top = verticalPad, bottom = verticalPad),
+            verticalArrangement = Arrangement.spacedBy(contentSpacing),
         ) {
             Column(
                 modifier =
                     Modifier.weight(1f, fill = false).fillMaxWidth(0.75f).graphicsLayer {
                         alpha = contentAlpha
                     },
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(contentSpacing),
             ) {
                 Box(
-                    modifier = Modifier.fillMaxWidth(0.5f).height(logoHeight),
+                    modifier = Modifier.fillMaxWidth(0.5f).heightIn(max = clampedLogoHeight),
                     contentAlignment = Alignment.CenterStart,
                 ) {
                     Box(
@@ -1253,7 +1265,7 @@ private fun HeroContentRich(
                                 contentDescription = "${currentItem.name} logo",
                                 blurHash = null,
                                 targetWidth = screenWidthDp * HeroLogoLandscapeWidthFraction,
-                                targetHeight = logoHeight,
+                                targetHeight = clampedLogoHeight,
                                 modifier =
                                     Modifier.fillMaxHeight().wrapContentWidth(Alignment.Start),
                                 contentScale = ContentScale.Fit,
@@ -1289,13 +1301,15 @@ private fun HeroContentRich(
                     )
                 }
 
-                Text(
-                    text = currentItem.overview,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (currentItem.overview.isNotBlank()) {
+                    Text(
+                        text = currentItem.overview,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = if (isCompactHeight) 1 else 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
 
             Row(
