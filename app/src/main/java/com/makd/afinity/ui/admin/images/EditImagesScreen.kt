@@ -272,7 +272,7 @@ fun EditImagesScreen(
                     onSelect = viewModel::selectType,
                 )
             }
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(minSize = shape.minCell),
                     state = gridState,

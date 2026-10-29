@@ -36,12 +36,15 @@ fun EmptyState(
     badgeSize: Dp = 120.dp,
     iconSize: Dp = 56.dp,
     badgeAlpha: Float = 1f,
+    scrollable: Boolean = false,
 ) {
+    val scrollModifier =
+        if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.verticalScroll(rememberScrollState()).padding(32.dp),
+            modifier = Modifier.then(scrollModifier).padding(32.dp),
         ) {
             Box(
                 modifier =
