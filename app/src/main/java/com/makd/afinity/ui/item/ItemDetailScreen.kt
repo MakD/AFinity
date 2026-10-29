@@ -3,7 +3,6 @@
 package com.makd.afinity.ui.item
 
 import android.content.Context
-import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -136,6 +135,7 @@ fun ItemDetailScreen(
     onItemDeleted: () -> Unit,
     onHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onShowSnackbar: (String) -> Unit = {},
     viewModel: ItemDetailViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
 ) {
@@ -297,6 +297,7 @@ fun ItemDetailScreen(
                     onIdentifyClick = onIdentifyClick,
                     onItemDeleted = onItemDeleted,
                     onHomeClick = onHomeClick,
+                    onShowSnackbar = onShowSnackbar,
                     viewModel = viewModel,
                     widthSizeClass = widthSizeClass,
                 )
@@ -352,10 +353,12 @@ fun ItemDetailScreen(
             )
 
             if (showEpisodeRefreshDialog) {
+                val refreshQueuedMessage = stringResource(R.string.admin_refresh_queued)
                 RefreshMetadataDialog(
                     itemId = episode.id.toString(),
                     itemName = episode.name,
                     onDismiss = { showEpisodeRefreshDialog = false },
+                    onQueued = { onShowSnackbar(refreshQueuedMessage) },
                 )
             }
 
@@ -367,6 +370,7 @@ fun ItemDetailScreen(
                     scope = DeleteScope.ITEM,
                     viewModel = viewModel,
                     onItemDeleted = onItemDeleted,
+                    onMessage = onShowSnackbar,
                     onDismiss = { showEpisodeDeleteDialog = false },
                 )
             }
@@ -494,6 +498,7 @@ private fun ItemDetailContent(
     onIdentifyClick: (itemId: String, itemType: String) -> Unit,
     onItemDeleted: () -> Unit,
     onHomeClick: () -> Unit,
+    onShowSnackbar: (String) -> Unit,
     viewModel: ItemDetailViewModel,
     widthSizeClass: WindowWidthSizeClass,
 ) {
@@ -550,6 +555,7 @@ private fun ItemDetailContent(
                     onEditImagesClick = onEditImagesClick,
                     onIdentifyClick = onIdentifyClick,
                     onItemDeleted = onItemDeleted,
+                    onShowSnackbar = onShowSnackbar,
                     viewModel = viewModel,
                     context = context,
                     widthSizeClass = widthSizeClass,
@@ -591,6 +597,7 @@ private fun ItemDetailContent(
                     onEditImagesClick = onEditImagesClick,
                     onIdentifyClick = onIdentifyClick,
                     onItemDeleted = onItemDeleted,
+                    onShowSnackbar = onShowSnackbar,
                     viewModel = viewModel,
                     context = context,
                     widthSizeClass = widthSizeClass,
@@ -637,6 +644,7 @@ private fun LandscapeItemDetailContent(
     onEditImagesClick: (String) -> Unit,
     onIdentifyClick: (itemId: String, itemType: String) -> Unit,
     onItemDeleted: () -> Unit,
+    onShowSnackbar: (String) -> Unit,
     viewModel: ItemDetailViewModel,
     context: Context,
     widthSizeClass: WindowWidthSizeClass,
@@ -788,11 +796,13 @@ private fun LandscapeItemDetailContent(
                         )
 
                         if (showRefreshDialog) {
+                            val refreshQueuedMessage = stringResource(R.string.admin_refresh_queued)
                             RefreshMetadataDialog(
                                 itemId = item.id.toString(),
                                 itemName = item.name,
                                 includesChildren = refreshIncludesChildren(item),
                                 onDismiss = { showRefreshDialog = false },
+                                onQueued = { onShowSnackbar(refreshQueuedMessage) },
                             )
                         }
 
@@ -814,6 +824,7 @@ private fun LandscapeItemDetailContent(
                                 scope = deleteScope(item),
                                 viewModel = viewModel,
                                 onItemDeleted = onItemDeleted,
+                                onMessage = onShowSnackbar,
                                 onDismiss = { showDeleteDialog = false },
                             )
                         }
@@ -906,6 +917,7 @@ private fun PortraitItemDetailContent(
     onEditImagesClick: (String) -> Unit,
     onIdentifyClick: (itemId: String, itemType: String) -> Unit,
     onItemDeleted: () -> Unit,
+    onShowSnackbar: (String) -> Unit,
     viewModel: ItemDetailViewModel,
     context: Context,
     widthSizeClass: WindowWidthSizeClass,
@@ -1035,11 +1047,13 @@ private fun PortraitItemDetailContent(
             )
 
             if (showRefreshDialog) {
+                val refreshQueuedMessage = stringResource(R.string.admin_refresh_queued)
                 RefreshMetadataDialog(
                     itemId = item.id.toString(),
                     itemName = item.name,
                     includesChildren = refreshIncludesChildren(item),
                     onDismiss = { showRefreshDialog = false },
+                    onQueued = { onShowSnackbar(refreshQueuedMessage) },
                 )
             }
 
@@ -1061,6 +1075,7 @@ private fun PortraitItemDetailContent(
                     scope = deleteScope(item),
                     viewModel = viewModel,
                     onItemDeleted = onItemDeleted,
+                    onMessage = onShowSnackbar,
                     onDismiss = { showDeleteDialog = false },
                 )
             }
@@ -1460,6 +1475,7 @@ private fun DeleteConfirmationDialog(
     scope: DeleteScope,
     viewModel: ItemDetailViewModel,
     onItemDeleted: () -> Unit,
+    onMessage: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -1487,8 +1503,7 @@ private fun DeleteConfirmationDialog(
                 deleting = false
                 when (outcome) {
                     DeleteOutcome.DELETED -> {
-                        Toast.makeText(context, R.string.admin_delete_success, Toast.LENGTH_SHORT)
-                            .show()
+                        onMessage(context.getString(R.string.admin_delete_success))
                         if (!isMainItem) {
                             viewModel.clearSelectedEpisode()
                         } else {
@@ -1498,12 +1513,7 @@ private fun DeleteConfirmationDialog(
                     }
 
                     DeleteOutcome.STILL_RUNNING -> {
-                        Toast.makeText(
-                                context,
-                                R.string.admin_delete_still_running,
-                                Toast.LENGTH_LONG,
-                            )
-                            .show()
+                        onMessage(context.getString(R.string.admin_delete_still_running))
                         currentOnDismiss()
                     }
 

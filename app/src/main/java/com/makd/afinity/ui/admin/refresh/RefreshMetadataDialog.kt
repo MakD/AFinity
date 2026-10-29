@@ -53,6 +53,7 @@ fun RefreshMetadataDialog(
     onDismiss: () -> Unit,
     includesChildren: Boolean = false,
     viewModel: RefreshMetadataViewModel = hiltViewModel(),
+    onQueued: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val currentOnDismiss by rememberUpdatedState(onDismiss)
@@ -153,12 +154,16 @@ fun RefreshMetadataDialog(
                     viewModel.refresh(itemId, mode, replaceImages, regenerateTrickplay) { queued ->
                         refreshing = false
                         if (queued) {
-                            Toast.makeText(
-                                    context,
-                                    R.string.admin_refresh_queued,
-                                    Toast.LENGTH_SHORT,
-                                )
-                                .show()
+                            if (onQueued != null) {
+                                onQueued()
+                            } else {
+                                Toast.makeText(
+                                        context,
+                                        R.string.admin_refresh_queued,
+                                        Toast.LENGTH_SHORT,
+                                    )
+                                    .show()
+                            }
                             currentOnDismiss()
                         } else {
                             failed = true

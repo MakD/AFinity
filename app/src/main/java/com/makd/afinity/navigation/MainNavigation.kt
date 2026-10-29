@@ -778,6 +778,11 @@ fun MainNavigation(
                                         onItemDeleted = {
                                             navController.popIfCurrent(backStackEntry)
                                         },
+                                        onShowSnackbar = { message ->
+                                            coroutineScope.launch {
+                                                snackbarHostState.showSnackbar(message)
+                                            }
+                                        },
                                         onHomeClick = { navController.navigateHome() },
                                         onPlayClick = { item, selection ->
                                             PlayerLauncher.launch(
@@ -855,6 +860,11 @@ fun MainNavigation(
                                         },
                                         onItemDeleted = {
                                             navController.popIfCurrent(backStackEntry)
+                                        },
+                                        onShowSnackbar = { message ->
+                                            coroutineScope.launch {
+                                                snackbarHostState.showSnackbar(message)
+                                            }
                                         },
                                         onHomeClick = { navController.navigateHome() },
                                         widthSizeClass = widthSizeClass,

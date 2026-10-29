@@ -60,6 +60,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.navigation.LocalSkipServerImageResize
+import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
@@ -191,6 +192,7 @@ fun LiveTvProgramScreen(
 
         SnackbarHost(
             hostState = snackbarHostState,
+            snackbar = { AFinitySnackbar(it) },
             modifier =
                 Modifier.align(Alignment.BottomCenter)
                     .navigationBarsPadding()

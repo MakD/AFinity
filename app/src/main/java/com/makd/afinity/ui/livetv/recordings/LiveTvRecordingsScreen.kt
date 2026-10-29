@@ -2,7 +2,6 @@
 
 package com.makd.afinity.ui.livetv.recordings
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +54,7 @@ import com.makd.afinity.data.models.livetv.SeriesRecordingRule
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
@@ -78,6 +79,7 @@ import com.makd.afinity.util.DateSkeleton
 import com.makd.afinity.util.localizedDateFormatter
 import java.util.Locale
 import java.util.UUID
+import kotlinx.coroutines.launch
 
 private val ScreenPadding = 16.dp
 
@@ -131,6 +133,7 @@ fun LiveTvRecordingsScreen(
         snackbarHost = {
             SnackbarHost(
                 hostState = snackbarHostState,
+                snackbar = { AFinitySnackbar(it) },
                 modifier = Modifier.padding(bottom = playerOffset),
             )
         },
@@ -190,10 +193,12 @@ fun LiveTvRecordingsScreen(
         )
     }
 
+    val scope = rememberCoroutineScope()
     deleteTarget?.let { target ->
         DeleteRecordingDialog(
             recording = target,
             onDelete = viewModel::deleteRecording,
+            onMessage = { message -> scope.launch { snackbarHostState.showSnackbar(message) } },
             onDismiss = { deleteTarget = null },
         )
     }
@@ -487,6 +492,7 @@ private fun NoRecordingsCard() {
 private fun DeleteRecordingDialog(
     recording: AfinityRecording,
     onDelete: (UUID, (DeleteOutcome) -> Unit) -> Unit,
+    onMessage: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -505,18 +511,12 @@ private fun DeleteRecordingDialog(
                 deleting = false
                 when (outcome) {
                     DeleteOutcome.DELETED -> {
-                        Toast.makeText(context, R.string.admin_delete_success, Toast.LENGTH_SHORT)
-                            .show()
+                        onMessage(context.getString(R.string.admin_delete_success))
                         onDismiss()
                     }
 
                     DeleteOutcome.STILL_RUNNING -> {
-                        Toast.makeText(
-                                context,
-                                R.string.admin_delete_still_running,
-                                Toast.LENGTH_LONG,
-                            )
-                            .show()
+                        onMessage(context.getString(R.string.admin_delete_still_running))
                         onDismiss()
                     }
 
