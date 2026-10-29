@@ -359,8 +359,8 @@ private fun BadgeCard(sourceName: String, iconRes: Int, label: String) {
             Modifier.width(CardDimensions.ratingTileWidth).height(CardDimensions.ratingTileHeight),
     ) {
         val parts = label.split(" ", limit = 2)
-        val prefixText = if (parts.size > 1) parts[0].uppercase() else ""
-        val emphasisText = if (parts.size > 1) parts[1].uppercase() else label.uppercase()
+        val status = if (parts.size > 1) parts[0] else ""
+        val rating = if (parts.size > 1) parts[1] else label
 
         Column(
             modifier = Modifier.padding(16.dp),
@@ -387,32 +387,30 @@ private fun BadgeCard(sourceName: String, iconRes: Int, label: String) {
                 )
             }
 
-            if (prefixText.isNotEmpty()) {
-                Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f),
-                ) {
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = rating,
+                    style =
+                        MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+                if (status.isNotEmpty()) {
                     Text(
-                        text = prefixText,
-                        style =
-                            MaterialTheme.typography.labelSmall.copy(
-                                fontSize = 8.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                letterSpacing = 1.sp,
-                            ),
+                        text = status,
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        modifier = Modifier.padding(bottom = 4.dp),
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
-
-            Text(
-                text = emphasisText,
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
-                color = MaterialTheme.colorScheme.onBackground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
         }
     }
 }
@@ -462,12 +460,17 @@ private fun Scorecard(sourceName: String, iconRes: Int?, score: String, subtext:
                     style =
                         MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onBackground,
+                    maxLines = 1,
+                    softWrap = false,
                 )
                 Text(
                     text = subtext,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 4.dp),
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }

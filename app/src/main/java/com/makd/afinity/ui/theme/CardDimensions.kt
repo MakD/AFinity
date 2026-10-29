@@ -70,7 +70,7 @@ object CardDimensions {
     private val SubtitleLineSlack = 2.dp
 
     private val InfoTilePadding = 16.dp
-    private val RatingTileContentWidth = 100.dp
+    private val RatingTileContentWidth = 124.dp
     private val RatingTileLineGap = 12.dp
     private val ReviewCardHeaderGap = 12.dp
     private val ReviewCardFooterGap = 8.dp

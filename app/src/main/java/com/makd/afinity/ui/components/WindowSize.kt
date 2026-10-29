@@ -37,13 +37,13 @@ fun listDetailPaneDirective(): PaneScaffoldDirective {
     val windowSize = LocalWindowInfo.current.containerSize
     val isLandscape = windowSize.width > windowSize.height
     val screenWidthDp = with(LocalDensity.current) { windowSize.width.toDp() }
-    val canSplit = isLandscape && screenWidthDp >= 600.dp
+    val canSplit = isLandscape || defaultDirective.maxHorizontalPartitions >= 2
     val preferredListWidth =
         when {
             screenWidthDp >= 1200.dp -> 380.dp
             screenWidthDp >= 840.dp -> 340.dp
             screenWidthDp >= 600.dp -> (screenWidthDp * 0.38f).coerceIn(260.dp, 320.dp)
-            else -> screenWidthDp
+            else -> (screenWidthDp * 0.42f).coerceIn(240.dp, 280.dp)
         }
     return PaneScaffoldDirective(
         maxHorizontalPartitions = if (canSplit) 2 else 1,
