@@ -78,6 +78,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -2289,7 +2290,15 @@ private fun PauseDetailsOverlay(
         if (LocalShowAwards.current) omdbAwardsHeadline(uiState.omdbAwards) else null
 
     BoxWithConstraints(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f))
+        modifier =
+            Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)).pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        event.changes.forEach { it.consume() }
+                    }
+                }
+            }
     ) {
         val compact = maxHeight < PauseCompactHeight
         val isWide = maxWidth >= 600.dp
