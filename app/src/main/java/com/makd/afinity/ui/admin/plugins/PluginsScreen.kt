@@ -201,6 +201,9 @@ private fun PluginsContent(
                         item(key = "restart", span = { GridItemSpan(maxLineSpan) }) {
                             RestartBanner(
                                 enabled = !state.isBusy,
+                                serverName = state.serverName,
+                                restartingPluginNames = state.restartingPluginNames,
+                                hasPendingConfigRestart = state.hasPendingConfigRestart,
                                 onRestart = { showRestartConfirm = true },
                             )
                         }
@@ -303,7 +306,40 @@ private fun EmptyPlugins(state: PluginsUiState, onRetry: () -> Unit) {
 }
 
 @Composable
-private fun RestartBanner(enabled: Boolean, onRestart: () -> Unit) {
+private fun RestartBanner(
+    enabled: Boolean,
+    serverName: String,
+    restartingPluginNames: List<String>,
+    hasPendingConfigRestart: Boolean,
+    onRestart: () -> Unit,
+) {
+    val targetServer =
+        serverName.takeIf { it.isNotBlank() } ?: stringResource(R.string.generic_server_name)
+    val restartTitle =
+        serverName
+            .takeIf { it.isNotBlank() }
+            ?.let { stringResource(R.string.attention_server_restart_title, it) }
+            ?: stringResource(R.string.attention_restart_required)
+    val subtitle =
+        when {
+            restartingPluginNames.size == 1 ->
+                stringResource(
+                    R.string.attention_restart_plugin_single,
+                    targetServer,
+                    restartingPluginNames.first(),
+                )
+            restartingPluginNames.size > 1 ->
+                stringResource(
+                    R.string.attention_restart_plugin_multiple,
+                    targetServer,
+                    restartingPluginNames.size,
+                    restartingPluginNames.take(2).joinToString(", "),
+                )
+            hasPendingConfigRestart ->
+                stringResource(R.string.attention_restart_config, targetServer)
+            else -> stringResource(R.string.attention_restart_required_summary, targetServer)
+        }
+
     Surface(
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
@@ -311,8 +347,8 @@ private fun RestartBanner(enabled: Boolean, onRestart: () -> Unit) {
     ) {
         SettingsItem(
             icon = painterResource(id = R.drawable.ic_restart),
-            title = stringResource(R.string.attention_restart_required),
-            subtitle = stringResource(R.string.attention_restart_required_summary),
+            title = restartTitle,
+            subtitle = subtitle,
             trailing = {
                 TextButton(onClick = onRestart, enabled = enabled) {
                     Text(stringResource(R.string.action_restart))

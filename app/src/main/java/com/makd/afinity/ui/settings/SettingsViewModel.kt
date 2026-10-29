@@ -102,12 +102,21 @@ constructor(
                 adminRepository.plugins,
                 adminRepository.scheduledTasks,
             ) { systemInfo, plugins, tasks ->
+                val restartingPlugins =
+                    (plugins
+                            ?.getOrNull()
+                            .orEmpty()
+                            .filter { it.status == PluginStatus.RESTART }
+                            .map { it.name } +
+                            systemInfo?.getOrNull()?.completedInstallations.orEmpty().mapNotNull {
+                                it.name
+                            })
+                        .distinct()
+                val hasConfigRestart = systemInfo?.getOrNull()?.hasPendingRestart == true
                 ControlPanelStatus(
-                    restartRequired =
-                        systemInfo?.getOrNull()?.hasPendingRestart == true ||
-                            plugins?.getOrNull().orEmpty().any {
-                                it.status == PluginStatus.RESTART
-                            },
+                    restartRequired = hasConfigRestart || restartingPlugins.isNotEmpty(),
+                    restartingPluginNames = restartingPlugins,
+                    hasPendingConfigRestart = hasConfigRestart,
                     runningTask =
                         tasks
                             ?.getOrNull()
@@ -1751,7 +1760,12 @@ constructor(
     }
 }
 
-data class ControlPanelStatus(val restartRequired: Boolean = false, val runningTask: String? = null)
+data class ControlPanelStatus(
+    val restartRequired: Boolean = false,
+    val restartingPluginNames: List<String> = emptyList(),
+    val hasPendingConfigRestart: Boolean = false,
+    val runningTask: String? = null,
+)
 
 data class SettingsUiState(
     val currentUser: User? = null,

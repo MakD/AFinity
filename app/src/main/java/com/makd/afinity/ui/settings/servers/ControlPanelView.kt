@@ -103,6 +103,7 @@ fun ControlPanelScreen(
     val systemInfo by viewModel.systemInfo.collectAsStateWithLifecycle()
     val pluginProblems by viewModel.pluginProblems.collectAsStateWithLifecycle()
     val pluginsPendingRestart by viewModel.pluginsPendingRestart.collectAsStateWithLifecycle()
+    val restartingPluginNames by viewModel.restartingPluginNames.collectAsStateWithLifecycle()
     val isCreatingBackup by viewModel.isCreatingBackup.collectAsStateWithLifecycle()
     val userCount by viewModel.userCount.collectAsStateWithLifecycle()
     val deviceCount by viewModel.deviceCount.collectAsStateWithLifecycle()
@@ -387,6 +388,7 @@ private fun ControlPanelOverview(
     val systemInfo by viewModel.systemInfo.collectAsStateWithLifecycle()
     val pluginProblems by viewModel.pluginProblems.collectAsStateWithLifecycle()
     val pluginsPendingRestart by viewModel.pluginsPendingRestart.collectAsStateWithLifecycle()
+    val restartingPluginNames by viewModel.restartingPluginNames.collectAsStateWithLifecycle()
     val failedSignIns by viewModel.failedSignIns.collectAsStateWithLifecycle()
     val fullDisks by viewModel.fullDisks.collectAsStateWithLifecycle()
 
@@ -530,7 +532,10 @@ private fun ControlPanelOverview(
                 failedTasks.isNotEmpty()
         if (needsAttention) {
             AttentionCard(
+                serverName = serverName,
                 restartRequired = restartRequired,
+                restartingPluginNames = restartingPluginNames,
+                hasPendingConfigRestart = systemInfo?.hasPendingRestart == true,
                 failedSignIns = failedSignIns,
                 fullDisks = fullDisks,
                 pluginProblems = pluginProblems,
@@ -645,7 +650,10 @@ private fun ServerHeader(name: String, version: String?) {
 
 @Composable
 private fun AttentionCard(
+    serverName: String,
     restartRequired: Boolean,
+    restartingPluginNames: List<String>,
+    hasPendingConfigRestart: Boolean,
     failedSignIns: Int,
     fullDisks: List<StorageDevice>,
     pluginProblems: List<PluginInfo>,
@@ -666,10 +674,41 @@ private fun AttentionCard(
                 var shown = 0
                 if (restartRequired) {
                     shown++
+                    val targetServer =
+                        serverName.takeIf { it.isNotBlank() }
+                            ?: stringResource(R.string.generic_server_name)
+                    val restartTitle =
+                        serverName
+                            .takeIf { it.isNotBlank() }
+                            ?.let { stringResource(R.string.attention_server_restart_title, it) }
+                            ?: stringResource(R.string.attention_restart_required)
+                    val restartSubtitle =
+                        when {
+                            restartingPluginNames.size == 1 ->
+                                stringResource(
+                                    R.string.attention_restart_plugin_single,
+                                    targetServer,
+                                    restartingPluginNames.first(),
+                                )
+                            restartingPluginNames.size > 1 ->
+                                stringResource(
+                                    R.string.attention_restart_plugin_multiple,
+                                    targetServer,
+                                    restartingPluginNames.size,
+                                    restartingPluginNames.take(2).joinToString(", "),
+                                )
+                            hasPendingConfigRestart ->
+                                stringResource(R.string.attention_restart_config, targetServer)
+                            else ->
+                                stringResource(
+                                    R.string.attention_restart_required_summary,
+                                    targetServer,
+                                )
+                        }
                     SettingsItem(
                         icon = painterResource(id = R.drawable.ic_restart),
-                        title = stringResource(R.string.attention_restart_required),
-                        subtitle = stringResource(R.string.attention_restart_required_summary),
+                        title = restartTitle,
+                        subtitle = restartSubtitle,
                         trailing = {
                             TextButton(onClick = onRestart) {
                                 Text(stringResource(R.string.action_restart))

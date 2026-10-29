@@ -141,11 +141,27 @@ constructor(
             .map { result -> result?.getOrNull().orEmpty().filter { it.status.isProblem } }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
 
-    val pluginsPendingRestart: StateFlow<Boolean> =
-        adminRepository.plugins
-            .map { result ->
-                result?.getOrNull().orEmpty().any { it.status == PluginStatus.RESTART }
+    val restartingPluginNames: StateFlow<List<String>> =
+        combine(adminRepository.plugins, adminRepository.systemInfo) {
+                pluginsResult,
+                systemInfoResult ->
+                val fromPlugins =
+                    pluginsResult
+                        ?.getOrNull()
+                        .orEmpty()
+                        .filter { it.status == PluginStatus.RESTART }
+                        .map { it.name }
+                val fromInstallations =
+                    systemInfoResult?.getOrNull()?.completedInstallations.orEmpty().mapNotNull {
+                        it.name
+                    }
+                (fromPlugins + fromInstallations).distinct()
             }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
+
+    val pluginsPendingRestart: StateFlow<Boolean> =
+        restartingPluginNames
+            .map { it.isNotEmpty() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), false)
 
     @OptIn(ExperimentalCoroutinesApi::class)

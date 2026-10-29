@@ -1718,8 +1718,13 @@
     <string name="control_panel_overview">Overview</string>
     <string name="admin_discard_message">Your changes haven\'t been saved.</string>
     <string name="section_needs_attention">Needs attention</string>
-    <string name="attention_restart_required">Restart required</string>
-    <string name="attention_restart_required_summary">Some changes take effect after a restart</string>
+    <string name="generic_server_name">the server</string>
+    <string name="attention_server_restart_title">%1$s restart required</string>
+    <string name="attention_restart_required">Server restart required</string>
+    <string name="attention_restart_required_summary">Restart %1$s to apply changes</string>
+    <string name="attention_restart_plugin_single">Restart %1$s to apply changes to %2$s</string>
+    <string name="attention_restart_plugin_multiple">Restart %1$s to apply changes to %2$d plugins (%3$s)</string>
+    <string name="attention_restart_config">Restart %1$s to apply server configuration changes</string>
     <string name="attention_task_failed">Last run failed</string>
     <string name="title_scheduled_tasks">Scheduled Tasks</string>
     <string name="scheduled_tasks_summary">Run, stop and review server tasks</string>
@@ -1775,7 +1780,7 @@
     <string name="title_plugins">Plugins</string>
     <string name="plugins_summary">Versions and status</string>
     <string name="plugin_built_in">Built in</string>
-    <string name="plugin_status_restart">Restart required</string>
+    <string name="plugin_status_restart">Server restart required</string>
     <string name="plugin_installing">Installing…</string>
     <string name="plugins_tab_installed_fmt">Installed %1$d</string>
     <string name="plugins_tab_available">Available</string>

@@ -340,10 +340,49 @@ fun SettingsScreen(
                                             title = stringResource(R.string.title_control_panel),
                                             subtitle =
                                                 when {
-                                                    status.restartRequired ->
-                                                        stringResource(
-                                                            R.string.attention_restart_required
-                                                        )
+                                                    status.restartRequired -> {
+                                                        val targetServer =
+                                                            uiState.serverName?.takeIf {
+                                                                it.isNotBlank()
+                                                            }
+                                                                ?: stringResource(
+                                                                    R.string.generic_server_name
+                                                                )
+                                                        when {
+                                                            status.restartingPluginNames.size ==
+                                                                1 ->
+                                                                stringResource(
+                                                                    R.string
+                                                                        .attention_restart_plugin_single,
+                                                                    targetServer,
+                                                                    status.restartingPluginNames
+                                                                        .first(),
+                                                                )
+                                                            status.restartingPluginNames.size > 1 ->
+                                                                stringResource(
+                                                                    R.string
+                                                                        .attention_restart_plugin_multiple,
+                                                                    targetServer,
+                                                                    status.restartingPluginNames
+                                                                        .size,
+                                                                    status.restartingPluginNames
+                                                                        .take(2)
+                                                                        .joinToString(", "),
+                                                                )
+                                                            status.hasPendingConfigRestart ->
+                                                                stringResource(
+                                                                    R.string
+                                                                        .attention_restart_config,
+                                                                    targetServer,
+                                                                )
+                                                            else ->
+                                                                stringResource(
+                                                                    R.string
+                                                                        .attention_restart_required_summary,
+                                                                    targetServer,
+                                                                )
+                                                        }
+                                                    }
                                                     runningTask != null ->
                                                         stringResource(
                                                             R.string.tasks_running_fmt,

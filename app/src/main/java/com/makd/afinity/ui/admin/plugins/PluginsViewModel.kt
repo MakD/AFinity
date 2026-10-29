@@ -76,6 +76,8 @@ data class PluginsUiState(
     val failed: Boolean = false,
     val catalogFailed: Boolean = false,
     val restartRequired: Boolean = false,
+    val restartingPluginNames: List<String> = emptyList(),
+    val hasPendingConfigRestart: Boolean = false,
     val serverName: String = "",
     val installingId: UUID? = null,
     val isBusy: Boolean = false,
@@ -138,6 +140,8 @@ private data class PluginData(
     val catalogLoaded: Boolean,
     val catalogFailed: Boolean,
     val restartRequired: Boolean,
+    val restartingPluginNames: List<String> = emptyList(),
+    val hasPendingConfigRestart: Boolean = false,
     val serverName: String,
 )
 
@@ -170,14 +174,19 @@ constructor(
             val plugins = pluginsResult?.getOrNull()
             val systemInfo = systemInfoResult?.getOrNull()
             val baseUrl = sessionManager.currentSession.value?.serverUrl?.trimEnd('/')
+            val restartingNames =
+                (plugins.orEmpty().filter { it.status == PluginStatus.RESTART }.map { it.name } +
+                        systemInfo?.completedInstallations.orEmpty().mapNotNull { it.name })
+                    .distinct()
+            val hasConfigRestart = systemInfo?.hasPendingRestart == true
             PluginData(
                 cards = plugins?.let { buildPluginCards(it, packages, baseUrl) },
                 failed = pluginsResult?.isFailure == true,
                 catalogLoaded = packages != null,
                 catalogFailed = packagesFailed,
-                restartRequired =
-                    systemInfo?.hasPendingRestart == true ||
-                        plugins.orEmpty().any { it.status == PluginStatus.RESTART },
+                restartRequired = hasConfigRestart || restartingNames.isNotEmpty(),
+                restartingPluginNames = restartingNames,
+                hasPendingConfigRestart = hasConfigRestart,
                 serverName = systemInfo?.serverName.orEmpty(),
             )
         }
@@ -210,6 +219,8 @@ constructor(
                     failed = loaded.failed,
                     catalogFailed = loaded.catalogFailed,
                     restartRequired = loaded.restartRequired,
+                    restartingPluginNames = loaded.restartingPluginNames,
+                    hasPendingConfigRestart = loaded.hasPendingConfigRestart,
                     serverName = loaded.serverName,
                     installingId = running.installingId,
                     isBusy = running.isBusy || running.installingId != null,
