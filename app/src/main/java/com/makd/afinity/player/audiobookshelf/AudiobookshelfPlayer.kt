@@ -500,6 +500,8 @@ constructor(
                 ?: playbackManager.playbackState.value.audioTracks
         if (audioTracks.isEmpty()) return
 
+        playbackManager.updatePosition(positionSeconds)
+
         var accumulatedDuration = 0.0
         for ((index, track) in audioTracks.withIndex()) {
             if (

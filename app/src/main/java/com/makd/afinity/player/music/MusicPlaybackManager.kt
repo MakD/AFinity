@@ -215,6 +215,12 @@ constructor(
     }
 
     fun seekTo(positionMs: Long) {
+        val current = _state.value
+        updatePosition(
+            positionMs = positionMs,
+            bufferedPositionMs = current.bufferedPositionMs,
+            durationMs = current.durationMs,
+        )
         exoPlayer?.seekTo(positionMs)
     }
 

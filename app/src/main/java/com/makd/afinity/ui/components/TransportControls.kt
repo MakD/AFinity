@@ -208,7 +208,7 @@ fun TransportControls(
                 shadowElevation = 8.dp,
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    if (isBuffering) {
+                    if (isBuffering && isPlaying) {
                         BufferingIndicator(
                             size = 32.dp,
                             strokeWidth = 3.dp,

@@ -227,7 +227,7 @@ fun SharedTransitionScope.AudioMiniPlayer(
                 }
 
                 IconButton(onClick = onPlayPauseClick) {
-                    if (state.isBuffering) {
+                    if (state.isBuffering && state.isPlaying) {
                         BufferingIndicator(
                             size = 22.dp,
                             strokeWidth = 2.dp,

@@ -414,6 +414,25 @@ class AudioService : MediaSessionService() {
 
     private val playerListener =
         object : Player.Listener {
+            override fun onPositionDiscontinuity(
+                oldPosition: Player.PositionInfo,
+                newPosition: Player.PositionInfo,
+                reason: Int,
+            ) {
+                val player = exoPlayer ?: return
+                when (activeEngine) {
+                    ActiveEngine.ABS -> updateAbsPosition(player)
+                    ActiveEngine.MUSIC -> {
+                        musicPlaybackManager.updatePosition(
+                            positionMs = player.currentPosition,
+                            bufferedPositionMs = player.bufferedPosition,
+                            durationMs = player.duration.takeIf { it != C.TIME_UNSET } ?: 0L,
+                        )
+                    }
+                    ActiveEngine.NONE -> {}
+                }
+            }
+
             override fun onAudioSessionIdChanged(audioSessionId: Int) {
                 when (activeEngine) {
                     ActiveEngine.ABS -> {
