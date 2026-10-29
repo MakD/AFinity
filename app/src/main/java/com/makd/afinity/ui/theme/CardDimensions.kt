@@ -20,12 +20,38 @@ import kotlin.math.roundToInt
 
 val LocalCardSize = compositionLocalOf { CardSize.DEFAULT }
 
-private data class NearestCardCells(val cardWidth: Dp) : GridCells {
+private data class SteppedGridCells(
+    val baseCardWidth: Dp,
+    val cardSize: CardSize,
+    val minCount: Int = 2,
+    val minCardWidth: Dp = 56.dp,
+) : GridCells {
     override fun Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): List<Int> {
-        val count =
-            ((availableSize + spacing).toFloat() / (cardWidth.roundToPx() + spacing))
+        if (availableSize <= 0) return List(minCount) { 0 }
+
+        val basePx = baseCardWidth.roundToPx()
+        val baseCount =
+            ((availableSize + spacing).toFloat() / (basePx + spacing))
                 .roundToInt()
-                .coerceAtLeast(1)
+                .coerceAtLeast(minCount)
+
+        val columnDelta =
+            when (cardSize) {
+                CardSize.LARGE -> -1
+                CardSize.DEFAULT -> 0
+                CardSize.SMALL -> 1
+                CardSize.EXTRA_SMALL -> 2
+            }
+
+        var count = (baseCount + columnDelta).coerceAtLeast(minCount)
+
+        val minCardPx = minCardWidth.roundToPx()
+        while (count > minCount) {
+            val cardPx = (availableSize - spacing * (count - 1)) / count
+            if (cardPx >= minCardPx) break
+            count--
+        }
+
         val cellsSize = availableSize - spacing * (count - 1)
         val cellSize = cellsSize / count
         val remainder = cellsSize % count
@@ -152,13 +178,24 @@ object CardDimensions {
         return cardHeight * fraction
     }
 
-    @Composable @ReadOnlyComposable fun gridCells(): GridCells = NearestCardCells(posterCardWidth)
+    @Composable
+    @ReadOnlyComposable
+    fun gridCells(): GridCells =
+        SteppedGridCells(
+            baseCardWidth = 120.dp,
+            cardSize = LocalCardSize.current,
+            minCount = 2,
+            minCardWidth = 56.dp,
+        )
 
     @Composable
     @ReadOnlyComposable
     fun landscapeGridCells(followCardSize: Boolean = true): GridCells =
-        NearestCardCells(
-            if (followCardSize) landscapeCardWidth else landscapeWidthFor(defaultPosterWidth())
+        SteppedGridCells(
+            baseCardWidth = 200.dp,
+            cardSize = if (followCardSize) LocalCardSize.current else CardSize.DEFAULT,
+            minCount = 1,
+            minCardWidth = 120.dp,
         )
 
     val downloadGridCells: GridCells

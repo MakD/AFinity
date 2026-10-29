@@ -30,7 +30,6 @@ import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.size.Size
-import com.makd.afinity.navigation.LocalSkipServerImageResize
 import com.vanniktech.blurhash.BlurHash
 import java.util.concurrent.Executors
 import kotlin.math.roundToInt
@@ -76,7 +75,6 @@ internal fun optimizedImageUrl(
     heightPx: Int? = null,
 ): String? {
     if (imageUrl == null) return imageUrl
-    if (skipServerResize) return imageUrl
     if (!imageUrl.isResizableItemImage()) return imageUrl
 
     val separator = if ('?' in imageUrl) "&" else "?"
@@ -178,11 +176,8 @@ private fun rememberCachedLowResPlaceholder(
 ): LowResPlaceholder? {
     val context = LocalContext.current
 
-    val skipServerResize = LocalSkipServerImageResize.current
-
-    return remember(enabled, imageUrl, targetWidthPx, filterQuality, skipServerResize) {
+    return remember(enabled, imageUrl, targetWidthPx, filterQuality) {
         if (!enabled || imageUrl == null || targetWidthPx == null) return@remember null
-        if (skipServerResize) return@remember null
         if (!imageUrl.isResizableItemImage()) return@remember null
 
         val memoryCache = context.imageLoader.memoryCache ?: return@remember null
@@ -246,12 +241,10 @@ fun AsyncImage(
             }
         }
 
-    val skipServerResize = LocalSkipServerImageResize.current
-
     val optimizedUrl =
-        remember(imageUrl, targetWidthPx, targetHeightPx, skipServerResize) {
+        remember(imageUrl, targetWidthPx, targetHeightPx) {
             if (targetWidthPx == null) imageUrl
-            else optimizedImageUrl(imageUrl, targetWidthPx, skipServerResize, targetHeightPx)
+            else optimizedImageUrl(imageUrl, targetWidthPx, heightPx = targetHeightPx)
         }
 
     val blurHashPlaceholder = rememberBlurHashPainter(blurHash, targetWidth, targetHeight)

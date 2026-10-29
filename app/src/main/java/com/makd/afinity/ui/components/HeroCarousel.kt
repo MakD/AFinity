@@ -613,9 +613,7 @@ private fun HeroCarouselAutoScrollAndPrefetch(
             if (logoUrl != null) {
                 val logoRequest =
                     ImageRequest.Builder(context)
-                        .data(
-                            optimizedImageUrl(logoUrl, logoWidthPx, skipServerResize, logoHeightPx)
-                        )
+                        .data(optimizedImageUrl(logoUrl, logoWidthPx, heightPx = logoHeightPx))
                         .size(logoWidthPx, logoHeightPx)
                         .build()
                 context.imageLoader.enqueue(logoRequest)
