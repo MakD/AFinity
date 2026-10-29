@@ -158,10 +158,11 @@ class AudioService : MediaSessionService() {
     }
 
     private fun initializePlayer(bufferSizeMb: Int) {
+        val audioBufferSizeMb = minOf(bufferSizeMb, 16)
         val loadControl =
             DefaultLoadControl.Builder()
                 .setBufferDurationsMs(15_000, 300_000, 2_500, 5_000)
-                .setTargetBufferBytes(bufferSizeMb * 1024 * 1024)
+                .setTargetBufferBytes(audioBufferSizeMb * 1024 * 1024)
                 .build()
 
         val renderersFactory =
@@ -689,23 +690,13 @@ class AudioService : MediaSessionService() {
         val posInItemSec = player.currentPosition / 1000.0
         val bufInItemSec = player.bufferedPosition / 1000.0
 
-        val totalPosition =
-            if (state.isChapterBasedPlayback) {
-                state.chapters.getOrNull(idx)?.let { it.start + posInItemSec } ?: posInItemSec
-            } else {
-                var acc = 0.0
-                for (i in 0 until idx) acc += state.audioTracks.getOrNull(i)?.duration ?: 0.0
-                acc + posInItemSec
-            }
+        var acc = 0.0
+        for (i in 0 until idx) acc += state.audioTracks.getOrNull(i)?.duration ?: 0.0
+        val totalPosition = acc + posInItemSec
 
-        val totalBuffered =
-            if (state.isChapterBasedPlayback) {
-                state.chapters.getOrNull(idx)?.let { it.start + bufInItemSec } ?: bufInItemSec
-            } else {
-                var acc = 0.0
-                for (i in 0 until idx) acc += state.audioTracks.getOrNull(i)?.duration ?: 0.0
-                acc + bufInItemSec
-            }
+        var bufAcc = 0.0
+        for (i in 0 until idx) bufAcc += state.audioTracks.getOrNull(i)?.duration ?: 0.0
+        val totalBuffered = bufAcc + bufInItemSec
 
         absPlaybackManager.updatePosition(totalPosition, totalBuffered)
     }

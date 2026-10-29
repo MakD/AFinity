@@ -110,10 +110,6 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
             _playbackState.value.copy(isPodcastPlaylist = true, playlistEpisodeIds = episodeIds)
     }
 
-    fun setChapterBasedPlayback(isChapterBased: Boolean) {
-        _playbackState.update { it.copy(isChapterBasedPlayback = isChapterBased) }
-    }
-
     fun setActiveEpisode(episodeId: String) {
         _playbackState.update { it.copy(episodeId = episodeId) }
     }
@@ -180,7 +176,6 @@ data class AudiobookshelfPlaybackState(
     val sleepTimerChapterTarget: Int? = null,
     val isPodcastPlaylist: Boolean = false,
     val playlistEpisodeIds: List<String> = emptyList(),
-    val isChapterBasedPlayback: Boolean = false,
     val playerError: String? = null,
 ) {
     val currentChapterIndex: Int
