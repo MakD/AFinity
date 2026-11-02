@@ -8,6 +8,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.manager.ForgetUserUseCase
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.server.Server
+import com.makd.afinity.data.models.server.ServerAddress
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.JellyfinRepository
@@ -19,6 +20,7 @@ import com.makd.afinity.data.repository.server.ServerAddressResolver
 import com.makd.afinity.util.LocalNetworkPermission
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.seconds
@@ -168,6 +170,18 @@ constructor(
                         jellyfinRepository.refreshServerInfo()
                         try {
                             databaseRepository.insertServer(validationResult.server)
+                            val serverId = validationResult.server.id
+                            val savedAddress =
+                                databaseRepository.getServerAddressByUrl(serverId, workingUrl)
+                            if (savedAddress == null) {
+                                databaseRepository.insertServerAddress(
+                                    ServerAddress(
+                                        id = UUID.randomUUID(),
+                                        serverId = serverId,
+                                        address = workingUrl,
+                                    )
+                                )
+                            }
                             Timber.d(
                                 "Saved server to database: ${validationResult.server.name} (${validationResult.server.id})"
                             )

@@ -453,8 +453,6 @@ constructor(
                         existing.copy(
                             name = serverName,
                             version = serverVersion ?: existing.version,
-                            address =
-                                if (serverAddress.isNotBlank()) serverAddress else existing.address,
                         )
                     } else {
                         Server(
