@@ -66,6 +66,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -82,6 +83,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.HttpMethod
+import org.jellyfin.sdk.api.client.util.ApiSerializer
 import org.jellyfin.sdk.api.operations.AuthenticationApi
 import org.jellyfin.sdk.api.operations.BackupApi
 import org.jellyfin.sdk.api.operations.ChannelApi
@@ -182,6 +184,9 @@ private const val USER_ID = "userId"
 private const val USER_NAME_KEY = "Name"
 private const val USER_POLICY_KEY = "Policy"
 private const val POLICY_IS_DISABLED_KEY = "IsDisabled"
+private const val REPOSITORIES_PATH = "/Repositories"
+private const val TASK_TRIGGERS_PATH = "/ScheduledTasks/{taskId}/Triggers"
+private const val TASK_ID = "taskId"
 
 private class CatalogCache(
     val sessionKey: String,
@@ -892,7 +897,15 @@ constructor(
 
     override suspend fun setPluginRepositories(repositories: List<RepositoryInfo>): Result<Unit> =
         execute("set plugin repositories") { api, _ ->
-                PluginApi(api).setRepositories(repositories)
+                api.request(
+                    method = HttpMethod.POST,
+                    pathTemplate = REPOSITORIES_PATH,
+                    requestBody =
+                        ApiSerializer.json.encodeToJsonElement(
+                            ListSerializer(RepositoryInfo.serializer()),
+                            repositories,
+                        ),
+                )
             }
             .onSuccess { catalogCache = null }
 
@@ -1006,7 +1019,16 @@ constructor(
         triggers: List<TaskTriggerInfo>,
     ): Result<Unit> =
         execute("update triggers of task $taskId") { api, _ ->
-            ScheduledTaskApi(api).updateTask(taskId, triggers)
+            api.request(
+                method = HttpMethod.POST,
+                pathTemplate = TASK_TRIGGERS_PATH,
+                pathParameters = mapOf(TASK_ID to taskId),
+                requestBody =
+                    ApiSerializer.json.encodeToJsonElement(
+                        ListSerializer(TaskTriggerInfo.serializer()),
+                        triggers,
+                    ),
+            )
         }
 
     private suspend fun execute(
