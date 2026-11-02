@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
@@ -30,6 +29,7 @@ import com.makd.afinity.ui.components.AlphabetScroller
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions
 
@@ -46,7 +46,7 @@ fun AudiobookshelfLibraryScreen(
     val displayItems by viewModel.displayItems.collectAsStateWithLifecycle()
     val selectedLetter by viewModel.selectedLetter.collectAsStateWithLifecycle()
     val config by viewModel.currentConfig.collectAsStateWithLifecycle()
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
 
     AfinityScreen(
         topBar = { backgroundOpacity ->
@@ -120,10 +120,10 @@ fun AudiobookshelfLibraryScreen(
                                     start = 16.dp,
                                     end = 16.dp,
                                     top = 16.dp,
-                                    bottom = 16.dp + playerOffset,
+                                    bottom = 16.dp + playerClearance,
                                 ),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+                            verticalArrangement = Arrangement.spacedBy(CardDimensions.GridRowGap),
                         ) {
                             items(displayItems, key = { it.id }) { item ->
                                 AudiobookCard(

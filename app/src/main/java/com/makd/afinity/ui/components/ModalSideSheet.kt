@@ -28,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.dismiss
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
@@ -52,12 +51,6 @@ private val SideSheetMinWidth = 320.dp
 private val SideSheetMaxWidth = 400.dp
 
 @Composable
-fun isWideWindow(): Boolean {
-    val windowInfo = LocalWindowInfo.current
-    return windowInfo.containerSize.width > windowInfo.containerSize.height
-}
-
-@Composable
 fun ModalSideSheet(
     onDismissRequest: () -> Unit,
     title: String,
@@ -65,13 +58,10 @@ fun ModalSideSheet(
     content: @Composable () -> Unit,
 ) {
     val density = LocalDensity.current
-    val windowInfo = LocalWindowInfo.current
     val layoutDirection = LocalLayoutDirection.current
     val scope = rememberCoroutineScope()
 
-    val sheetWidth =
-        with(density) { windowInfo.containerSize.width.toDp() * 0.5f }
-            .coerceIn(SideSheetMinWidth, SideSheetMaxWidth)
+    val sheetWidth = (windowWidthDp() * 0.5f).coerceIn(SideSheetMinWidth, SideSheetMaxWidth)
     val sheetWidthPx = with(density) { sheetWidth.toPx() }
 
     val isEndOnRight = layoutDirection == LayoutDirection.Ltr

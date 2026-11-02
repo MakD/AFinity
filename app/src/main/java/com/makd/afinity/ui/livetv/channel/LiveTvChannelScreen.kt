@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListState
@@ -42,7 +41,6 @@ import com.makd.afinity.data.models.extensions.thumbBlurHash
 import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.AfinityProgram
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityScreenMode
@@ -51,6 +49,7 @@ import com.makd.afinity.ui.components.ConnectedButtonGroup
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.GroupButton
+import com.makd.afinity.ui.components.bottomClearance
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
 import com.makd.afinity.ui.item.components.shared.MediaLogoHeader
 import com.makd.afinity.ui.item.components.shared.detailItem
@@ -79,7 +78,7 @@ fun LiveTvChannelScreen(
     val topBarOpacity by rememberTopBarOpacity(lazyListState)
     val channel = uiState.channel
     val snackbarHostState = remember { SnackbarHostState() }
-    val playerOffset = LocalPlayerOffset.current
+    val bottomClearance = bottomClearance()
 
     RecordingEventsSnackbar(viewModel.recorder.events, snackbarHostState)
 
@@ -132,10 +131,7 @@ fun LiveTvChannelScreen(
         SnackbarHost(
             hostState = snackbarHostState,
             snackbar = { AFinitySnackbar(it) },
-            modifier =
-                Modifier.align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(bottom = playerOffset),
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = bottomClearance),
         )
     }
 

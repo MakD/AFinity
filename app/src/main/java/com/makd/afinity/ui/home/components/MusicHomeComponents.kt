@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,8 +29,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -43,10 +40,13 @@ import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.RankedCardFrame
 import com.makd.afinity.ui.components.SectionRowHeader
 import com.makd.afinity.ui.components.focalAlpha
 import com.makd.afinity.ui.components.isLandscapeWindow
+import com.makd.afinity.ui.components.windowHeightDp
+import com.makd.afinity.ui.components.windowWidthDp
 import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.music.components.MusicPlaylistCard
 import com.makd.afinity.ui.theme.CardDimensions
@@ -65,21 +65,13 @@ private fun MusicCarouselSection(
     if (count == 0) return
 
     val isLandscape = isLandscapeWindow()
-    val containerSize = LocalWindowInfo.current.containerSize
-    val density = LocalDensity.current
-    val windowWidth = with(density) { containerSize.width.toDp() }
-    val windowHeight = with(density) { containerSize.height.toDp() }
+    val windowWidth = windowWidthDp()
+    val windowHeight = windowHeightDp()
     val state = rememberCarouselState { count }
 
-    Column(modifier = modifier) {
-        HomeSectionHeader(
-            title = title,
-            startPadding = CardDimensions.RowGutter,
-            bottomPadding = 12.dp,
-        )
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = CardDimensions.RowGutter)
-        ) {
+    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
+        HomeSectionHeader(title = title, bottomPadding = 12.dp)
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             val itemSize =
                 CardDimensions.carouselItemSize(
                     availableWidth = maxWidth,
@@ -230,16 +222,12 @@ fun MostPlayedAlbumsSection(
             metadataHeight = CardDimensions.subtitleLine,
         )
 
-    Column(modifier = modifier) {
+    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(
             title = stringResource(R.string.music_section_most_played),
-            startPadding = CardDimensions.RowGutter,
             bottomPadding = 12.dp,
         )
-        LazyRow(
-            modifier = Modifier.height(rowHeight).padding(horizontal = CardDimensions.RowGutter),
-            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-        ) {
+        CardRow(modifier = Modifier.height(rowHeight)) {
             itemsIndexed(albums, key = { _, album -> album.id }) { index, album ->
                 MostPlayedAlbumCard(
                     album = album,
@@ -310,34 +298,21 @@ fun MusicAlbumRowSection(
     albums: List<AfinityAlbum>,
     onAlbumClick: (AfinityAlbum) -> Unit,
     modifier: Modifier = Modifier,
-    horizontalPadding: Dp = CardDimensions.RowGutter,
     onViewAllClick: (() -> Unit)? = null,
 ) {
     if (albums.isEmpty()) return
     val cardWidth = CardDimensions.posterCardWidth
-    Column(modifier = modifier) {
+    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         if (onViewAllClick != null) {
             SectionRowHeader(
                 title = title,
-                modifier =
-                    Modifier.padding(
-                        start = horizontalPadding,
-                        end = horizontalPadding,
-                        bottom = 12.dp,
-                    ),
+                modifier = Modifier.padding(bottom = 12.dp),
                 onViewAllClick = onViewAllClick,
             )
         } else {
-            HomeSectionHeader(
-                title = title,
-                startPadding = horizontalPadding,
-                bottomPadding = 12.dp,
-            )
+            HomeSectionHeader(title = title, bottomPadding = 12.dp)
         }
-        LazyRow(
-            modifier = Modifier.padding(horizontal = horizontalPadding),
-            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-        ) {
+        CardRow {
             items(albums, key = { it.id }) { album ->
                 MusicAlbumCard(
                     album = album,
@@ -355,34 +330,21 @@ fun MusicPlaylistRowSection(
     playlists: List<AfinityPlaylist>,
     onPlaylistClick: (AfinityPlaylist) -> Unit,
     modifier: Modifier = Modifier,
-    horizontalPadding: Dp = CardDimensions.RowGutter,
     onViewAllClick: (() -> Unit)? = null,
 ) {
     if (playlists.isEmpty()) return
     val cardWidth = CardDimensions.posterCardWidth
-    Column(modifier = modifier) {
+    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         if (onViewAllClick != null) {
             SectionRowHeader(
                 title = title,
-                modifier =
-                    Modifier.padding(
-                        start = horizontalPadding,
-                        end = horizontalPadding,
-                        bottom = 12.dp,
-                    ),
+                modifier = Modifier.padding(bottom = 12.dp),
                 onViewAllClick = onViewAllClick,
             )
         } else {
-            HomeSectionHeader(
-                title = title,
-                startPadding = horizontalPadding,
-                bottomPadding = 12.dp,
-            )
+            HomeSectionHeader(title = title, bottomPadding = 12.dp)
         }
-        LazyRow(
-            modifier = Modifier.padding(horizontal = horizontalPadding),
-            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-        ) {
+        CardRow {
             items(playlists, key = { it.id }) { playlist ->
                 MusicPlaylistCard(
                     playlist = playlist,
@@ -405,21 +367,16 @@ fun ArtistAlbumsCarousel(
     if (albums.isEmpty()) return
 
     val isLandscape = isLandscapeWindow()
-    val containerSize = LocalWindowInfo.current.containerSize
-    val density = LocalDensity.current
-    val windowWidth = with(density) { containerSize.width.toDp() }
-    val windowHeight = with(density) { containerSize.height.toDp() }
+    val windowWidth = windowWidthDp()
+    val windowHeight = windowHeightDp()
     val state = rememberCarouselState { albums.size }
 
-    Column(modifier = modifier) {
+    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(
             title = stringResource(R.string.home_more_from_artist_fmt, artist.name),
-            startPadding = CardDimensions.RowGutter,
             bottomPadding = 12.dp,
         )
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = CardDimensions.RowGutter)
-        ) {
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             val itemSize =
                 CardDimensions.carouselItemSize(
                     availableWidth = maxWidth,

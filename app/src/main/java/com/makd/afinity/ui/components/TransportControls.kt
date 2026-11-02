@@ -34,11 +34,11 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.ui.player.components.BufferingIndicator
+import com.makd.afinity.ui.theme.isDarkSurface
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,7 +71,7 @@ fun TransportControls(
     var sliderValue by remember(position) { mutableFloatStateOf(position) }
     var isDragging by remember { mutableStateOf(false) }
 
-    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val isDark = isDarkSurface()
     val trackColor = if (isDark) Color.White else MaterialTheme.colorScheme.primary
     val inactiveTrackColor =
         if (isDark) Color.White.copy(alpha = 0.2f)

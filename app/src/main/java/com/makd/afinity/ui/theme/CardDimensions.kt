@@ -7,7 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -16,6 +15,8 @@ import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.common.CardSize
+import com.makd.afinity.ui.components.windowHeightDp
+import com.makd.afinity.ui.components.windowWidthDp
 import kotlin.math.roundToInt
 
 val LocalCardSize = compositionLocalOf { CardSize.DEFAULT }
@@ -74,11 +75,12 @@ object CardDimensions {
     private const val SQUARE_CAROUSEL_WIDTH_FRACTION = 0.48f
     private const val RANKED_PORTRAIT_DIGIT_HEIGHT_FRACTION = 0.48f
     private const val RANKED_SQUARE_DIGIT_HEIGHT_FRACTION = 0.54f
-    private const val LANDSCAPE_POSTER_SPAN = 5
-    private const val LANDSCAPE_CARD_SPAN = 3
+    private const val LANDSCAPE_POSTER_SPAN = 3
+    private const val LANDSCAPE_CARD_SPAN = 2
 
     val RowGutter = 16.dp
     val RowGap = 12.dp
+    val GridRowGap = 16.dp
 
     val CardTextSpacing = 8.dp
 
@@ -86,6 +88,7 @@ object CardDimensions {
     private val PosterWidthMax = 180.dp
     private val PosterGrowthStart = 411.dp
     private val PosterGrowthEnd = 1200.dp
+    private const val POSTER_MAX_HEIGHT_FRACTION = 0.5f
 
     private val EpgChannelWidthMin = 100.dp
     private val EpgChannelWidthMax = 140.dp
@@ -115,18 +118,21 @@ object CardDimensions {
 
     data class CarouselItemSize(val width: Dp, val height: Dp)
 
+    private fun widthGrowth(windowWidth: Dp): Float =
+        ((windowWidth - PosterGrowthStart) / (PosterGrowthEnd - PosterGrowthStart)).coerceIn(0f, 1f)
+
     @Composable
     @ReadOnlyComposable
     private fun defaultPosterWidth(): Dp {
-        val windowWidth =
-            with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
-        val growth =
-            ((windowWidth - PosterGrowthStart) / (PosterGrowthEnd - PosterGrowthStart)).coerceIn(
-                0f,
-                1f,
-            )
-        return lerp(PosterWidthMin, PosterWidthMax, growth)
+        val widthBased = lerp(PosterWidthMin, PosterWidthMax, widthGrowth(windowWidthDp()))
+        val heightCap = windowHeightDp() * POSTER_MAX_HEIGHT_FRACTION * ASPECT_RATIO_PORTRAIT
+        return minOf(widthBased, heightCap)
     }
+
+    @Composable
+    @ReadOnlyComposable
+    private fun gridPosterWidth(): Dp =
+        defaultPosterWidth() * (windowWidthDp() / PosterGrowthStart).coerceAtMost(1f)
 
     private fun landscapeWidthFor(posterWidth: Dp): Dp =
         (posterWidth * LANDSCAPE_POSTER_SPAN +
@@ -182,7 +188,7 @@ object CardDimensions {
     @ReadOnlyComposable
     fun gridCells(): GridCells =
         SteppedGridCells(
-            baseCardWidth = 120.dp,
+            baseCardWidth = gridPosterWidth(),
             cardSize = LocalCardSize.current,
             minCount = 2,
             minCardWidth = 56.dp,
@@ -192,7 +198,7 @@ object CardDimensions {
     @ReadOnlyComposable
     fun landscapeGridCells(followCardSize: Boolean = true): GridCells =
         SteppedGridCells(
-            baseCardWidth = 200.dp,
+            baseCardWidth = landscapeWidthFor(gridPosterWidth()),
             cardSize = if (followCardSize) LocalCardSize.current else CardSize.DEFAULT,
             minCount = 1,
             minCardWidth = 120.dp,
@@ -207,14 +213,8 @@ object CardDimensions {
     fun spotlightWidthFraction(isLandscape: Boolean): Float =
         if (isLandscape) SPOTLIGHT_WIDTH_FRACTION_LANDSCAPE else SPOTLIGHT_WIDTH_FRACTION_PORTRAIT
 
-    fun spotlightMaxHeight(windowWidth: Dp): Dp {
-        val growth =
-            ((windowWidth - PosterGrowthStart) / (PosterGrowthEnd - PosterGrowthStart)).coerceIn(
-                0f,
-                1f,
-            )
-        return lerp(Values.SpotlightCompact, Values.SpotlightExpanded, growth)
-    }
+    fun spotlightMaxHeight(windowWidth: Dp): Dp =
+        lerp(Values.SpotlightCompact, Values.SpotlightExpanded, widthGrowth(windowWidth))
 
     fun carouselItemSize(
         availableWidth: Dp,
@@ -305,41 +305,17 @@ object CardDimensions {
                 textHeight(MaterialTheme.typography.bodySmall) +
                 textHeight(MaterialTheme.typography.labelSmall)
 
-    fun epgChannelCellWidth(windowWidth: Dp): Dp {
-        val growth =
-            ((windowWidth - PosterGrowthStart) / (PosterGrowthEnd - PosterGrowthStart)).coerceIn(
-                0f,
-                1f,
-            )
-        return lerp(EpgChannelWidthMin, EpgChannelWidthMax, growth)
-    }
+    fun epgChannelCellWidth(windowWidth: Dp): Dp =
+        lerp(EpgChannelWidthMin, EpgChannelWidthMax, widthGrowth(windowWidth))
 
     val epgChannelCellWidth: Dp
-        @Composable
-        @ReadOnlyComposable
-        get() {
-            val windowWidth =
-                with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
-            return epgChannelCellWidth(windowWidth)
-        }
+        @Composable @ReadOnlyComposable get() = epgChannelCellWidth(windowWidthDp())
 
-    fun epgHourWidth(windowWidth: Dp): Dp {
-        val growth =
-            ((windowWidth - PosterGrowthStart) / (PosterGrowthEnd - PosterGrowthStart)).coerceIn(
-                0f,
-                1f,
-            )
-        return lerp(EpgHourWidthMin, EpgHourWidthMax, growth)
-    }
+    fun epgHourWidth(windowWidth: Dp): Dp =
+        lerp(EpgHourWidthMin, EpgHourWidthMax, widthGrowth(windowWidth))
 
     val epgHourWidth: Dp
-        @Composable
-        @ReadOnlyComposable
-        get() {
-            val windowWidth =
-                with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
-            return epgHourWidth(windowWidth)
-        }
+        @Composable @ReadOnlyComposable get() = epgHourWidth(windowWidthDp())
 
     @Composable
     @ReadOnlyComposable

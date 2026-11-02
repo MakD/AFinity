@@ -46,7 +46,7 @@ fun MediaCategoryGrid(
     items: List<AfinityItem>,
     landscape: Boolean,
     widthSizeClass: WindowWidthSizeClass,
-    playerOffset: Dp,
+    playerClearance: Dp,
     onItemClick: (AfinityItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -67,10 +67,10 @@ fun MediaCategoryGrid(
                     start = 16.dp,
                     top = 16.dp,
                     end = 16.dp,
-                    bottom = FAB_CONTENT_BOTTOM_PADDING + playerOffset,
+                    bottom = FAB_CONTENT_BOTTOM_PADDING + playerClearance,
                 ),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+            verticalArrangement = Arrangement.spacedBy(CardDimensions.GridRowGap),
         ) {
             items(items = sortedItems, key = { it.id }) { item ->
                 if (landscape) {
@@ -91,7 +91,7 @@ fun MediaCategoryGrid(
             modifier =
                 Modifier.align(Alignment.BottomEnd)
                     .padding(end = 24.dp)
-                    .padding(bottom = 16.dp + playerOffset),
+                    .padding(bottom = 16.dp + playerClearance),
         )
     }
 

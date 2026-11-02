@@ -28,7 +28,6 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityMusicGenre
 import com.makd.afinity.data.models.music.RadioSeed
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
@@ -36,6 +35,7 @@ import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.FilterFab
 import com.makd.afinity.ui.components.SortFab
+import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
@@ -96,7 +96,7 @@ fun MusicBrowseScreen(
     var showTrackSortDialog by remember { mutableStateOf(false) }
     var showTrackFilterSheet by remember { mutableStateOf(false) }
 
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     val lazyGenres = viewModel.genresPagingFlow.collectAsLazyPagingItems()
 
     val lazyTracks = viewModel.tracksPagingFlow.collectAsLazyPagingItems()
@@ -129,7 +129,7 @@ fun MusicBrowseScreen(
             )
         },
         floatingActionButton = {
-            Box(modifier = Modifier.padding(bottom = playerOffset)) {
+            Box(modifier = Modifier.padding(bottom = playerClearance)) {
                 when (tab) {
                     LibraryFilter.Albums ->
                         Column(

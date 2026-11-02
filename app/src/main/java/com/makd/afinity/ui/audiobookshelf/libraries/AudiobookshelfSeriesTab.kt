@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.audiobookshelf.libraries
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,10 +21,11 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
+import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
@@ -62,11 +61,11 @@ fun AudiobookshelfSeriesTab(
                     CardDimensions.ASPECT_RATIO_SQUARE,
                     metadataHeight = CardDimensions.subtitleLine,
                 )
-            val playerOffset = LocalPlayerOffset.current
+            val playerClearance = playerClearance()
 
             LazyColumn(
                 modifier = modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = playerOffset),
+                contentPadding = PaddingValues(bottom = playerClearance),
             ) {
                 items(items = seriesList, key = { it.id }) { series ->
                     Column {
@@ -79,11 +78,7 @@ fun AudiobookshelfSeriesTab(
                                 modifier = Modifier.padding(bottom = 16.dp),
                             )
 
-                            LazyRow(
-                                modifier = Modifier.height(fixedRowHeight),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                contentPadding = PaddingValues(horizontal = 0.dp),
-                            ) {
+                            CardRow(modifier = Modifier.height(fixedRowHeight)) {
                                 items(
                                     items = series.books,
                                     key = { item -> "${series.id}_${item.id}" },

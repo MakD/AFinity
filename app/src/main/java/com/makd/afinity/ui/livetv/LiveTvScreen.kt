@@ -35,7 +35,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.data.models.livetv.AfinityProgram
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
@@ -45,6 +44,7 @@ import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.LibraryShortcutCard
 import com.makd.afinity.ui.components.LibraryShortcutsRow
+import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.livetv.components.ProgramCategoryRow
 import com.makd.afinity.ui.livetv.models.LiveTvCategory
 import com.makd.afinity.ui.main.MainUiState
@@ -133,7 +133,7 @@ private fun LiveTvHomeContent(
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
 ) {
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     val cardWidth = CardDimensions.landscapeCardWidth
 
     val categoriesWithPrograms =
@@ -145,7 +145,7 @@ private fun LiveTvHomeContent(
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp + playerOffset),
+        contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp + playerClearance),
     ) {
         item(key = "browse") {
             LibraryShortcutsRow(

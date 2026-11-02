@@ -48,7 +48,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -69,6 +68,7 @@ import com.airbnb.lottie.compose.rememberLottieDynamicProperty
 import com.makd.afinity.R
 import com.makd.afinity.data.updater.models.ApkVerification
 import com.makd.afinity.data.updater.models.GitHubRelease
+import com.makd.afinity.ui.theme.isDarkSurface
 import java.io.File
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -316,7 +316,7 @@ private fun ValidateButton(
     onVerify: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val isDark = isDarkSurface()
     val errorContainer = MaterialTheme.colorScheme.errorContainer
     val onErrorContainer = MaterialTheme.colorScheme.onErrorContainer
     val successContainer = if (isDark) Color(0xFF1E4620) else Color(0xFFD1E7DD)

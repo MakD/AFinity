@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -40,8 +39,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -68,6 +65,7 @@ import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.BackdropStyle
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.CircleFlagIcon
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
@@ -82,6 +80,7 @@ import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.backdropChainOf
 import com.makd.afinity.ui.components.getAutoFlagUrl
 import com.makd.afinity.ui.components.isLandscapeWindow
+import com.makd.afinity.ui.components.windowWidthDp
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
@@ -453,7 +452,7 @@ private fun SeerrCastSection(
             color = MaterialTheme.colorScheme.onBackground,
         )
 
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        CardRow {
             items(cast.take(15), key = { it.id }) { member ->
                 Column(
                     modifier =
@@ -699,9 +698,7 @@ private fun SeerrLandscapeContent(
 @Composable
 private fun ColumnScope.SeerrTitleHeader(title: String, logoUrl: String?, isLandscape: Boolean) {
     if (logoUrl != null) {
-        val density = LocalDensity.current
-        val windowInfo = LocalWindowInfo.current
-        val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+        val screenWidthDp = windowWidthDp()
         AsyncImage(
             imageUrl = logoUrl,
             contentDescription = title,
@@ -1020,10 +1017,7 @@ private fun SeerrRatingsSection(
             color = MaterialTheme.colorScheme.onBackground,
         )
 
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
+        CardRow(modifier = Modifier.fillMaxWidth()) {
             imdbScore?.let {
                 item {
                     SeerrScorecard(

@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
@@ -75,6 +74,7 @@ import com.makd.afinity.ui.audiobookshelf.item.ListeningSummary
 import com.makd.afinity.ui.audiobookshelf.item.RecommendationRow
 import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
 import com.makd.afinity.ui.item.components.shared.OverviewSection
 import com.makd.afinity.ui.theme.CardDimensions
@@ -156,10 +156,7 @@ fun NarratorsSection(narrators: List<String>, modifier: Modifier = Modifier) {
             text = stringResource(R.string.abs_narrators_title),
             trailing = narrators.size.takeIf { it > 1 }?.toString(),
         )
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-        ) {
+        CardRow {
             itemsIndexed(narrators, key = { index, name -> "${index}_$name" }) { _, name ->
                 Column(
                     modifier = Modifier.width(72.dp),
@@ -471,11 +468,7 @@ fun RecommendationRowSection(
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         DetailSectionTitle(text = title)
-        LazyRow(
-            modifier = Modifier.height(rowHeight),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+        CardRow(modifier = Modifier.height(rowHeight)) {
             items(items = row.items, key = { it.collapsedSeries?.id ?: it.id }) { entry ->
                 val series = entry.collapsedSeries
                 val booksLabel =

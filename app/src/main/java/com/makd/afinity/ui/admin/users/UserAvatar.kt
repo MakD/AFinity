@@ -14,7 +14,6 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -22,14 +21,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.UserAvatar
+import com.makd.afinity.ui.theme.isDarkSurface
 
 internal const val USER_AVATAR_MAX_WIDTH = 320
 
 internal val UserPlayingColor: Color
-    @Composable
-    get() =
-        if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) Color(0xFF81C784)
-        else Color(0xFF1B6E22)
+    @Composable get() = if (isDarkSurface()) Color(0xFF81C784) else Color(0xFF1B6E22)
 
 @Composable
 internal fun AdminUserAvatar(

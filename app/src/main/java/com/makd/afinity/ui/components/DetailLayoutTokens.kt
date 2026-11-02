@@ -14,7 +14,15 @@ val DetailGutter = 16.dp
 val DetailCoverSize = 200.dp
 
 @Composable
-fun detailListBottomPadding(): Dp {
+fun bottomClearance(): Dp {
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    return max(navBarBottom, LocalPlayerOffset.current) + 16.dp
+    return max(navBarBottom, LocalPlayerOffset.current)
 }
+
+@Composable
+fun playerClearance(): Dp {
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    return (LocalPlayerOffset.current - navBarBottom).coerceAtLeast(0.dp)
+}
+
+@Composable fun detailListBottomPadding(): Dp = bottomClearance() + 16.dp

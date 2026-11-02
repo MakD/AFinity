@@ -11,7 +11,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -25,6 +24,7 @@ import com.makd.afinity.ui.settings.servers.components.DetailRow
 import com.makd.afinity.ui.settings.servers.components.LoadingState
 import com.makd.afinity.ui.settings.servers.components.SectionHeader
 import com.makd.afinity.ui.settings.servers.components.StatChip
+import com.makd.afinity.ui.theme.isDarkSurface
 
 @Composable
 internal fun JellyseerrTabContent(
@@ -110,7 +110,7 @@ internal fun JellyseerrTabContent(
             }
         }
 
-        val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+        val isDark = isDarkSurface()
         val pendingColor = if (isDark) Color(0xFFF59E0B) else Color(0xFFB45309)
         val approvedColor = if (isDark) Color(0xFF10B981) else Color(0xFF047857)
 

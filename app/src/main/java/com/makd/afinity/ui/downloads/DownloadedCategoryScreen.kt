@@ -40,7 +40,6 @@ import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicFilterOptions
 import com.makd.afinity.data.models.music.MusicFilters
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
@@ -50,6 +49,7 @@ import com.makd.afinity.ui.components.FilterFab
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.components.SortFab
+import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.home.HomeViewModel
 import com.makd.afinity.ui.home.components.SquareMediaTile
 import com.makd.afinity.ui.main.MainUiState
@@ -289,7 +289,7 @@ fun DownloadedCategoryScreen(
     val context = LocalContext.current
     val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
     val playbackState by playerViewModel.playbackState.collectAsStateWithLifecycle()
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
 
     var sortField by rememberSaveable { mutableStateOf(MusicSortField.Name) }
     var sortDescending by rememberSaveable { mutableStateOf(false) }
@@ -407,7 +407,7 @@ fun DownloadedCategoryScreen(
             start = 16.dp,
             top = 16.dp,
             end = 16.dp,
-            bottom = FAB_CONTENT_BOTTOM_PADDING + playerOffset,
+            bottom = FAB_CONTENT_BOTTOM_PADDING + playerClearance,
         )
 
     AfinityScreen(
@@ -425,7 +425,7 @@ fun DownloadedCategoryScreen(
         },
         floatingActionButton = {
             if (category != DownloadedCategory.TRACKS && totalCount > 0) {
-                Box(modifier = Modifier.padding(bottom = playerOffset)) {
+                Box(modifier = Modifier.padding(bottom = playerClearance)) {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         horizontalAlignment = Alignment.End,
@@ -622,8 +622,8 @@ private fun <T> DownloadedGrid(
         columns = columns,
         modifier = modifier,
         contentPadding = contentPadding,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+        verticalArrangement = Arrangement.spacedBy(CardDimensions.GridRowGap),
     ) {
         items(items = items, key = { key(it) }) { item -> itemContent(item) }
     }

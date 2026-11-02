@@ -28,8 +28,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -47,11 +45,12 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.LocalShowRatings
-import com.makd.afinity.navigation.LocalSkipServerImageResize
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.focalAlpha
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
+import com.makd.afinity.ui.components.windowHeightDp
+import com.makd.afinity.ui.components.windowWidthDp
 import com.makd.afinity.ui.theme.CardDimensions
 import java.util.Locale
 
@@ -67,13 +66,10 @@ fun SpotlightCarousel(
     if (items.isEmpty()) return
 
     val isLandscape = isLandscapeWindow()
-    val containerSize = LocalWindowInfo.current.containerSize
-    val density = LocalDensity.current
-    val windowWidth = with(density) { containerSize.width.toDp() }
-    val windowHeight = with(density) { containerSize.height.toDp() }
+    val windowWidth = windowWidthDp()
+    val windowHeight = windowHeightDp()
     val state = rememberCarouselState { items.size }
     val ratingScale = rememberRatingMetadataScale()
-    val skipServerResize = LocalSkipServerImageResize.current
 
     Column(modifier = modifier) {
         HomeSectionHeader(title = title, startPadding = CardDimensions.RowGutter)
@@ -144,7 +140,7 @@ fun SpotlightCarousel(
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         val logoUrl =
-                            item.images.logoImageUrlWithTransparency(webp = !skipServerResize)
+                            item.images.logoImageUrlWithTransparency()
                                 ?: item.images.showLogoImageUrl
                         val imdbRating =
                             when (item) {

@@ -2,9 +2,8 @@ package com.makd.afinity.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -30,14 +29,13 @@ fun MediaRowSection(
         else CardDimensions.ASPECT_RATIO_PORTRAIT
     val fixedRowHeight = CardDimensions.rowHeight(cardWidth, aspectRatio)
 
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(
+        modifier = modifier.padding(horizontal = CardDimensions.RowGutter),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
         SectionRowHeader(title = title, onViewAllClick = onViewAllClick)
 
-        LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-        ) {
+        CardRow(modifier = Modifier.height(fixedRowHeight)) {
             items(items, key = { it.id }) { item ->
                 if (item is AfinityEpisode) {
                     ContinueWatchingCard(

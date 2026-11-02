@@ -20,7 +20,6 @@ import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
@@ -28,6 +27,7 @@ import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.MediaCategoryGrid
+import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.main.MainUiState
 
 enum class WatchlistCategory {
@@ -60,7 +60,7 @@ fun WatchlistCategoryScreen(
     val isDownloadAllowedByServer by
         viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
     val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
@@ -112,7 +112,7 @@ fun WatchlistCategoryScreen(
                 items = items,
                 landscape = isEpisodes,
                 widthSizeClass = widthSizeClass,
-                playerOffset = playerOffset,
+                playerClearance = playerClearance,
                 onItemClick = { item ->
                     if (isEpisodes) {
                         viewModel.selectEpisode(item as AfinityEpisode)

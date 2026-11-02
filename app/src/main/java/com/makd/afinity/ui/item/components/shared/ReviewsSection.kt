@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,8 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -48,7 +44,9 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.rememberAfinitySheetState
+import com.makd.afinity.ui.components.windowWidthDp
 import com.makd.afinity.ui.theme.CardDimensions
 import org.commonmark.ext.autolink.AutolinkExtension
 import org.commonmark.parser.Parser
@@ -59,9 +57,7 @@ import org.commonmark.renderer.html.HtmlRenderer
 fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
     if (reviews.isEmpty()) return
 
-    val density = LocalDensity.current
-    val windowInfo = LocalWindowInfo.current
-    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+    val screenWidthDp = windowWidthDp()
     val cardWidth = minOf(340.dp, screenWidthDp - 48.dp)
 
     var selectedReview by remember { mutableStateOf<TmdbReview?>(null) }
@@ -79,10 +75,7 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         DetailSectionTitle(text = stringResource(R.string.reviews_title))
 
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-        ) {
+        CardRow {
             items(reviews.take(10), key = { it.id }) { review ->
                 ReviewCard(
                     review = review,

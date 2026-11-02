@@ -18,8 +18,6 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -71,10 +69,8 @@ private fun CinematicBackdrop(
     contentDescription: String?,
     onError: () -> Unit,
 ) {
-    val density = LocalDensity.current
-    val windowInfo = LocalWindowInfo.current
-    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
-    val screenHeightDp = with(density) { windowInfo.containerSize.height.toDp() }
+    val screenWidthDp = windowWidthDp()
+    val screenHeightDp = windowHeightDp()
 
     if (backdrop != null) {
         AsyncImage(

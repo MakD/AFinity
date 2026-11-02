@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -66,8 +65,10 @@ import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.BackdropStyle
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.DetailActionRow
 import com.makd.afinity.ui.components.DetailGutter
+import com.makd.afinity.ui.components.DetailMenuAction
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.ImageHeroKind
 import com.makd.afinity.ui.components.LandscapeDetailArrangement
@@ -144,6 +145,35 @@ fun MusicArtistScreen(
                 startMusicService(context)
                 playerViewModel.playQueue(uiState.topTracks, 0)
             },
+            moreActions =
+                uiState.artist?.let { artist ->
+                    listOf(
+                        DetailMenuAction(
+                            label = stringResource(R.string.cd_music_instant_mix),
+                            iconRes = R.drawable.ic_compass,
+                            enabled = !isOffline,
+                            onClick = {
+                                startMusicService(context)
+                                playerViewModel.playInstantMix(artist.id)
+                            },
+                        ),
+                        DetailMenuAction(
+                            label = stringResource(R.string.cd_music_start_radio),
+                            iconRes = R.drawable.ic_radio,
+                            enabled = !isOffline && uiState.topTracks.isNotEmpty(),
+                            onClick = {
+                                uiState.topTracks.firstOrNull()?.let { firstTrack ->
+                                    radioSeed =
+                                        RadioSeed(
+                                            trackId = firstTrack.id,
+                                            albumId = firstTrack.albumId,
+                                            sourceTracks = uiState.topTracks,
+                                        )
+                                }
+                            },
+                        ),
+                    )
+                } ?: emptyList(),
         ) {
             IconButton(onClick = { viewModel.toggleFavorite() }) {
                 Icon(
@@ -160,41 +190,6 @@ fun MusicArtistScreen(
                         else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(26.dp),
                 )
-            }
-            uiState.artist?.let { artist ->
-                IconButton(
-                    enabled = !isOffline,
-                    onClick = {
-                        startMusicService(context)
-                        playerViewModel.playInstantMix(artist.id)
-                    },
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_compass),
-                        contentDescription = stringResource(R.string.cd_music_instant_mix),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(26.dp),
-                    )
-                }
-                IconButton(
-                    enabled = !isOffline && uiState.topTracks.isNotEmpty(),
-                    onClick = {
-                        val firstTrack = uiState.topTracks.firstOrNull() ?: return@IconButton
-                        radioSeed =
-                            RadioSeed(
-                                trackId = firstTrack.id,
-                                albumId = firstTrack.albumId,
-                                sourceTracks = uiState.topTracks,
-                            )
-                    },
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_radio),
-                        contentDescription = stringResource(R.string.cd_music_start_radio),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(26.dp),
-                    )
-                }
             }
         }
     }
@@ -445,25 +440,21 @@ fun MusicArtistScreen(
 
         if (uiState.albums.isNotEmpty()) {
             item(key = "albums_section") {
-                Text(
-                    text = stringResource(R.string.music_section_albums),
-                    style = afinitySectionTitleStyle(),
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(start = DetailGutter, top = 32.dp, bottom = 16.dp),
-                )
-                LazyRow(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .height(albumRowHeight)
-                            .padding(horizontal = DetailGutter),
-                    horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-                ) {
-                    items(uiState.albums, key = { it.id }) { album ->
-                        Box(modifier = Modifier.width(relatedCardWidth)) {
-                            MusicAlbumCard(
-                                album = album,
-                                onClick = { onMusicAlbumClick(album.id.toString()) },
-                            )
+                Column(modifier = Modifier.padding(horizontal = DetailGutter)) {
+                    Text(
+                        text = stringResource(R.string.music_section_albums),
+                        style = afinitySectionTitleStyle(),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(top = 32.dp, bottom = 16.dp),
+                    )
+                    CardRow(modifier = Modifier.fillMaxWidth().height(albumRowHeight)) {
+                        items(uiState.albums, key = { it.id }) { album ->
+                            Box(modifier = Modifier.width(relatedCardWidth)) {
+                                MusicAlbumCard(
+                                    album = album,
+                                    onClick = { onMusicAlbumClick(album.id.toString()) },
+                                )
+                            }
                         }
                     }
                 }
@@ -472,25 +463,21 @@ fun MusicArtistScreen(
 
         if (uiState.appearsOn.isNotEmpty()) {
             item(key = "appears_on_section") {
-                Text(
-                    text = stringResource(R.string.music_section_appears_on),
-                    style = afinitySectionTitleStyle(),
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(start = DetailGutter, top = 32.dp, bottom = 16.dp),
-                )
-                LazyRow(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .height(albumRowHeight)
-                            .padding(horizontal = DetailGutter),
-                    horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-                ) {
-                    items(uiState.appearsOn, key = { it.id }) { album ->
-                        Box(modifier = Modifier.width(relatedCardWidth)) {
-                            MusicAlbumCard(
-                                album = album,
-                                onClick = { onMusicAlbumClick(album.id.toString()) },
-                            )
+                Column(modifier = Modifier.padding(horizontal = DetailGutter)) {
+                    Text(
+                        text = stringResource(R.string.music_section_appears_on),
+                        style = afinitySectionTitleStyle(),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(top = 32.dp, bottom = 16.dp),
+                    )
+                    CardRow(modifier = Modifier.fillMaxWidth().height(albumRowHeight)) {
+                        items(uiState.appearsOn, key = { it.id }) { album ->
+                            Box(modifier = Modifier.width(relatedCardWidth)) {
+                                MusicAlbumCard(
+                                    album = album,
+                                    onClick = { onMusicAlbumClick(album.id.toString()) },
+                                )
+                            }
                         }
                     }
                 }

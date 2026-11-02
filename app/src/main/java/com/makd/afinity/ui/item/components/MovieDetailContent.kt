@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -49,6 +47,7 @@ import com.makd.afinity.data.models.tmdb.TmdbRegionProviders
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.item.components.shared.baseMediaDetailItems
@@ -161,11 +160,7 @@ private fun PartsSection(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         DetailSectionTitle(text = stringResource(R.string.parts_title))
 
-        LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-        ) {
+        CardRow(modifier = Modifier.height(fixedRowHeight)) {
             itemsIndexed(parts, key = { _, part -> part.id }) { index, part ->
                 PartCard(
                     part = part,
@@ -291,11 +286,7 @@ internal fun ChaptersSection(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         DetailSectionTitle(text = stringResource(R.string.chapters_title))
 
-        LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-        ) {
+        CardRow(modifier = Modifier.height(fixedRowHeight)) {
             itemsIndexed(chapters, key = { index, chapter -> "${chapter.startPosition}_$index" }) {
                 index,
                 chapter ->

@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.theme.isDarkSurface
 
 @Immutable
 data class AudioCoverStyle(
@@ -89,7 +90,7 @@ fun AudioPlayerScaffold(
     actions: @Composable RowScope.() -> Unit,
     overlays: @Composable () -> Unit,
 ) {
-    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val isDark = isDarkSurface()
     val gradientColors =
         if (isDark) {
             listOf(
@@ -268,7 +269,7 @@ fun AudioPlayerTitleBlock(
     onAccentLineClick: (() -> Unit)? = null,
     trailing: @Composable () -> Unit = {},
 ) {
-    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val isDark = isDarkSurface()
     val displayAccentColor =
         if (!isDark && accentColor.luminance() > 0.5f) {
             MaterialTheme.colorScheme.primary

@@ -65,6 +65,7 @@ import com.makd.afinity.ui.components.DetailActionRow
 import com.makd.afinity.ui.components.DetailCoverImage
 import com.makd.afinity.ui.components.DetailCoverTitle
 import com.makd.afinity.ui.components.DetailGutter
+import com.makd.afinity.ui.components.DetailMenuAction
 import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
@@ -218,6 +219,43 @@ fun PlaylistScreen(
             playbackEnabled = uiState.entries.isNotEmpty(),
             onShuffle = { onPlayRequest(true) },
             onPlay = { onPlayRequest(false) },
+            moreActions =
+                listOfNotNull(
+                    uiState.playlist?.let { playlist ->
+                        DetailMenuAction(
+                            label = stringResource(R.string.cd_music_instant_mix),
+                            iconRes = R.drawable.ic_compass,
+                            enabled = !isOffline,
+                            onClick = {
+                                startMusicService(context)
+                                playerViewModel.playInstantMix(playlist.id)
+                            },
+                        )
+                    },
+                    uiState.playlist?.let {
+                        DetailMenuAction(
+                            label = stringResource(R.string.cd_music_start_radio),
+                            iconRes = R.drawable.ic_radio,
+                            enabled = !isOffline && uiState.tracks.isNotEmpty(),
+                            onClick = {
+                                uiState.tracks.firstOrNull()?.let { firstTrack ->
+                                    radioSeed =
+                                        RadioSeed(
+                                            trackId = firstTrack.id,
+                                            albumId = firstTrack.albumId,
+                                            sourceTracks = uiState.tracks,
+                                        )
+                                }
+                            },
+                        )
+                    },
+                    DetailMenuAction(
+                        label = stringResource(R.string.cd_music_delete_playlist),
+                        iconRes = R.drawable.ic_delete,
+                        destructive = true,
+                        onClick = { showDeleteConfirm = true },
+                    ),
+                ),
         ) {
             IconButton(onClick = { viewModel.toggleFavorite() }) {
                 Icon(
@@ -234,49 +272,6 @@ fun PlaylistScreen(
                         else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(26.dp),
                 )
-            }
-            IconButton(onClick = { showDeleteConfirm = true }) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_delete),
-                    contentDescription = stringResource(R.string.cd_music_delete_playlist),
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(26.dp),
-                )
-            }
-            uiState.playlist?.let { playlist ->
-                IconButton(
-                    enabled = !isOffline,
-                    onClick = {
-                        startMusicService(context)
-                        playerViewModel.playInstantMix(playlist.id)
-                    },
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_compass),
-                        contentDescription = stringResource(R.string.cd_music_instant_mix),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(26.dp),
-                    )
-                }
-                IconButton(
-                    enabled = !isOffline && uiState.tracks.isNotEmpty(),
-                    onClick = {
-                        val firstTrack = uiState.tracks.firstOrNull() ?: return@IconButton
-                        radioSeed =
-                            RadioSeed(
-                                trackId = firstTrack.id,
-                                albumId = firstTrack.albumId,
-                                sourceTracks = uiState.tracks,
-                            )
-                    },
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_radio),
-                        contentDescription = stringResource(R.string.cd_music_start_radio),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(26.dp),
-                    )
-                }
             }
             if (isDownloadAllowedByServer) {
                 DownloadProgressIndicator(

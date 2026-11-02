@@ -28,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -37,6 +36,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
+import com.makd.afinity.ui.theme.isDarkSurface
 
 private val MaxDigitBoxSize = 42.dp
 private val MinDigitBoxSize = 24.dp
@@ -157,7 +157,7 @@ fun QuickConnectDigitEntry(
         }
 
         val successColor =
-            if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) {
+            if (isDarkSurface()) {
                 Color(0xFF81C784)
             } else {
                 Color(0xFF1B6E22)

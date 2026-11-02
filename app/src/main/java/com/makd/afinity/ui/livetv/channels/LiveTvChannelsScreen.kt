@@ -216,8 +216,8 @@ private fun LiveTvChannelsContent(
                                 top = 16.dp,
                                 bottom = max(safeBottom, playerOffset) + 16.dp,
                             ),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+                        verticalArrangement = Arrangement.spacedBy(CardDimensions.GridRowGap),
                     ) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             Column(modifier = Modifier.padding(bottom = 8.dp)) {

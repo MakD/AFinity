@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -23,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -54,6 +56,7 @@ private class CardBadgeMetrics(cardWidth: Dp) {
     val size: Dp = (cardWidth * BADGE_WIDTH_FRACTION).coerceIn(BadgeMinSize, BadgeMaxSize)
     val inset: Dp = (cardWidth * BADGE_INSET_FRACTION).coerceIn(BadgeMinInset, BadgeMaxInset)
     val showCount: Boolean = cardWidth >= CountMinCardWidth
+    val maxPillWidth: Dp = (cardWidth - inset * 2).coerceAtLeast(size)
 }
 
 @Composable
@@ -129,7 +132,7 @@ fun UnavailableBadge(modifier: Modifier = Modifier) {
 
 @Composable
 fun MediaCountBadge(text: String, modifier: Modifier = Modifier) {
-    CardTextBadge(
+    CardPill(
         text = text,
         containerColor = MaterialTheme.colorScheme.primary.copy(alpha = COUNT_CONTAINER_ALPHA),
         contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -139,7 +142,7 @@ fun MediaCountBadge(text: String, modifier: Modifier = Modifier) {
 
 @Composable
 fun MediaStatusBadge(text: String, containerColor: Color, modifier: Modifier = Modifier) {
-    CardTextBadge(
+    CardPill(
         text = text,
         containerColor = containerColor,
         contentColor = Color.White,
@@ -149,11 +152,11 @@ fun MediaStatusBadge(text: String, containerColor: Color, modifier: Modifier = M
 }
 
 @Composable
-private fun CardTextBadge(
+fun CardPill(
     text: String,
     containerColor: Color,
     contentColor: Color,
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
     letterSpacing: TextUnit = TextUnit.Unspecified,
 ) {
     CardBadgeSlot(modifier = modifier) { metrics ->
@@ -163,6 +166,7 @@ private fun CardTextBadge(
             Surface(
                 shape = RoundedCornerShape(metrics.size * COUNT_CORNER_FRACTION),
                 color = containerColor,
+                modifier = Modifier.widthIn(max = metrics.maxPillWidth),
             ) {
                 Text(
                     text = text,
@@ -175,6 +179,8 @@ private fun CardTextBadge(
                             letterSpacing = letterSpacing,
                         ),
                     color = contentColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier =
                         Modifier.padding(
                             horizontal = metrics.size * COUNT_HORIZONTAL_PADDING_FRACTION,

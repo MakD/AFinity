@@ -1,20 +1,13 @@
 package com.makd.afinity.ui.requests
 
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
+import com.makd.afinity.ui.components.AfinityBadge
 
 data class StatusAttributes(val textRes: Int, val containerColor: Color, val contentColor: Color)
 
@@ -67,19 +60,10 @@ fun mediaStatusAttributes(mediaStatus: MediaStatus): StatusAttributes =
 
 @Composable
 fun StatusChip(attributes: StatusAttributes, modifier: Modifier = Modifier) {
-    Card(
+    AfinityBadge(
+        text = stringResource(attributes.textRes),
         modifier = modifier,
-        shape = RoundedCornerShape(4.dp),
-        colors = CardDefaults.cardColors(containerColor = attributes.containerColor),
-    ) {
-        Text(
-            text = stringResource(attributes.textRes),
-            style = MaterialTheme.typography.labelSmall,
-            color = attributes.contentColor,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-            fontWeight = FontWeight.Bold,
-        )
-    }
+        containerColor = attributes.containerColor,
+        contentColor = attributes.contentColor,
+    )
 }

@@ -7,7 +7,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -48,6 +46,7 @@ import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.navigation.LocalShowAwards
 import com.makd.afinity.navigation.LocalShowRatings
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.ratings.communityRatingOf
 import com.makd.afinity.ui.components.ratings.criticRatingOf
 import com.makd.afinity.ui.components.ratings.displayPriority
@@ -261,11 +260,7 @@ fun RatingsAndReviews(
                 visible = true,
                 enter = if (isRatingsFromCache) EnterTransition.None else fadeIn(tween(500)),
             ) {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(horizontal = 0.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
+                CardRow(modifier = Modifier.fillMaxWidth()) {
                     if (mdbRatingBadges.certifiedFresh) {
                         item {
                             BadgeCard(

@@ -2,7 +2,6 @@ package com.makd.afinity.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -43,18 +41,14 @@ fun LibraryShortcutsRow(
     modifier: Modifier = Modifier,
     content: LazyListScope.() -> Unit,
 ) {
-    Column(modifier = modifier) {
+    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         Text(
             text = title,
             style = afinitySectionTitleStyle(),
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(start = CardDimensions.RowGutter, bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
         )
-        LazyRow(
-            modifier = Modifier.padding(horizontal = CardDimensions.RowGutter),
-            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-            content = content,
-        )
+        CardRow(content = content)
     }
 }
 

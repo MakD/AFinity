@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.admin.components.AdminLoadContent
 import com.makd.afinity.ui.admin.components.AdminScaffold
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
@@ -141,7 +140,6 @@ fun ServerLogViewerScreen(
                 onToggle = viewModel::toggleTag,
                 onClear = viewModel::clearTags,
                 onDone = { showTags = false },
-                modifier = Modifier.padding(bottom = LocalPlayerOffset.current),
                 subtitle = stringResource(R.string.server_log_tags_subtitle),
                 warningTint = ServerLogColors.content(LogLevel.WARN),
                 errorTint = ServerLogColors.content(LogLevel.ERROR),

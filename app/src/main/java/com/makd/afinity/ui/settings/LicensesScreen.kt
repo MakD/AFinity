@@ -25,7 +25,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
@@ -41,6 +40,7 @@ import com.makd.afinity.ui.components.AfinityBackButton
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AfinityTopBar
+import com.makd.afinity.ui.theme.isDarkSurface
 import com.mikepenz.aboutlibraries.ui.compose.LibraryDefaults
 import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
@@ -81,7 +81,7 @@ fun LicensesScreen(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
     val playerOffset = LocalPlayerOffset.current
     val uriHandler = LocalUriHandler.current
     val bannerRes =
-        if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+        if (!isDarkSurface()) {
             R.drawable.afinity_banner_light
         } else {
             R.drawable.afinity_banner

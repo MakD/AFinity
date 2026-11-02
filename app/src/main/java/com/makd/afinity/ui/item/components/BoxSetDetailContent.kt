@@ -2,10 +2,8 @@ package com.makd.afinity.ui.item.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
@@ -23,6 +21,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
@@ -131,11 +130,7 @@ private fun BoxSetTypeSection(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         DetailSectionTitle(text = title)
 
-        LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-        ) {
+        CardRow(modifier = Modifier.height(fixedRowHeight)) {
             items(items, key = { it.id.toString() }) { item ->
                 MediaItemCard(item = item, onClick = { onItemClick(item) }, cardWidth = cardWidth)
             }
@@ -155,11 +150,7 @@ private fun BoxSetEpisodesSection(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         DetailSectionTitle(text = title)
 
-        LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-        ) {
+        CardRow(modifier = Modifier.height(fixedRowHeight)) {
             items(episodes, key = { it.id.toString() }) { episode ->
                 ContinueWatchingCard(
                     item = episode,

@@ -10,8 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -24,16 +22,15 @@ import com.makd.afinity.data.models.extensions.showLogoImageUrl
 import com.makd.afinity.data.models.extensions.withLogoFormat
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
-import com.makd.afinity.navigation.LocalSkipServerImageResize
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.windowWidthDp
 
 @Composable
 fun ColumnScope.MediaLogoHeader(item: AfinityItem, isLandscape: Boolean) {
-    val webpLogo = !LocalSkipServerImageResize.current
     val logoUrl =
         if (item is AfinitySeason) {
-            item.images.showLogoImageUrl?.withLogoFormat(webp = webpLogo)
-        } else item.images.logoImageUrlWithTransparency(webp = webpLogo)
+            item.images.showLogoImageUrl?.withLogoFormat()
+        } else item.images.logoImageUrlWithTransparency()
     val name = if (item is AfinitySeason) item.seriesName else item.name
 
     MediaLogoHeader(logoUrl = logoUrl, name = name, isLandscape = isLandscape)
@@ -41,9 +38,7 @@ fun ColumnScope.MediaLogoHeader(item: AfinityItem, isLandscape: Boolean) {
 
 @Composable
 fun ColumnScope.MediaLogoHeader(logoUrl: String?, name: String, isLandscape: Boolean) {
-    val density = LocalDensity.current
-    val windowInfo = LocalWindowInfo.current
-    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+    val screenWidthDp = windowWidthDp()
 
     if (logoUrl != null) {
         AsyncImage(

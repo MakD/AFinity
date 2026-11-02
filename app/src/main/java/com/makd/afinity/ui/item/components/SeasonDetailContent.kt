@@ -1,15 +1,12 @@
 package com.makd.afinity.ui.item.components
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
@@ -33,6 +30,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.models.wikidata.WikidataAwards
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.EpisodeListCard
 import com.makd.afinity.ui.item.components.shared.DetailItemBox
@@ -156,11 +154,7 @@ private fun HorizontalEpisodesList(
 ) {
     val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
 
-    LazyRow(
-        modifier = Modifier.height(fixedRowHeight),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp),
-    ) {
+    CardRow(modifier = Modifier.height(fixedRowHeight)) {
         items(
             count = lazyEpisodeItems.itemCount,
             key = lazyEpisodeItems.itemKey { it.id },

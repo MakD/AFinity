@@ -4,14 +4,12 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -33,6 +31,7 @@ import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import org.jellyfin.sdk.model.api.ExtraType
@@ -50,11 +49,7 @@ fun SpecialFeaturesSection(
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             DetailSectionTitle(text = stringResource(R.string.special_features_title))
 
-            LazyRow(
-                modifier = Modifier.height(fixedRowHeight),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 0.dp),
-            ) {
+            CardRow(modifier = Modifier.height(fixedRowHeight)) {
                 items(specialFeatures, key = { it.id.toString() }) { feature ->
                     SpecialFeatureCard(
                         feature = feature,

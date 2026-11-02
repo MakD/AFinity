@@ -5,8 +5,7 @@ enum class AppFont {
     GOOGLE_SANS,
     QUICKSAND,
     IBM_PLEX_SANS,
-    IBM_PLEX_SANS_CONDENSED,
-    NETFLIX_SANS;
+    IBM_PLEX_SANS_CONDENSED;
 
     companion object {
         fun fromString(value: String?): AppFont {

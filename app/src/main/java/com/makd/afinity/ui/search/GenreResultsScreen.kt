@@ -29,7 +29,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -40,7 +39,6 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityBackButton
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
@@ -50,6 +48,7 @@ import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.components.PaginatedMediaGrid
+import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
 
 @Composable
@@ -66,7 +65,7 @@ fun GenreResultsScreen(
         viewModel.moviesPagingData.collectAsStateWithLifecycle().value.collectAsLazyPagingItems()
     val shows =
         viewModel.showsPagingData.collectAsStateWithLifecycle().value.collectAsLazyPagingItems()
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
@@ -82,7 +81,7 @@ fun GenreResultsScreen(
     LaunchedEffect(genre) { viewModel.loadGenreResults(genre) }
 
     val customPadding =
-        PaddingValues(top = 0.dp, start = 0.dp, end = 0.dp, bottom = max(0.dp, playerOffset))
+        PaddingValues(top = 0.dp, start = 0.dp, end = 0.dp, bottom = playerClearance)
 
     AfinityScreen(
         topBar = { backgroundOpacity ->

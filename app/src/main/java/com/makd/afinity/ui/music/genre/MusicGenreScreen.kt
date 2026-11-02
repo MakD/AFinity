@@ -2,8 +2,8 @@ package com.makd.afinity.ui.music.genre
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -53,6 +52,7 @@ import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.BackdropStyle
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.DetailActionRow
 import com.makd.afinity.ui.components.DetailCoverSize
 import com.makd.afinity.ui.components.DetailCoverTitle
@@ -187,27 +187,23 @@ fun MusicGenreScreen(
 
         if (uiState.artists.isNotEmpty()) {
             item {
-                Text(
-                    text = stringResource(R.string.music_tab_artists),
-                    style = afinitySectionTitleStyle(),
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(start = DetailGutter, top = 24.dp, bottom = 12.dp),
-                )
-                LazyRow(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .height(artistRowHeight)
-                            .padding(horizontal = DetailGutter),
-                    horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-                ) {
-                    items(uiState.artists, key = { it.id }) { artist ->
-                        MusicArtistCard(
-                            name = artist.name,
-                            imageUrl = artist.images.primary?.toString(),
-                            blurHash = artist.images.primaryImageBlurHash,
-                            size = relatedCardWidth,
-                            onClick = { onMusicArtistClick(artist.id.toString()) },
-                        )
+                Column(modifier = Modifier.padding(horizontal = DetailGutter)) {
+                    Text(
+                        text = stringResource(R.string.music_tab_artists),
+                        style = afinitySectionTitleStyle(),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(top = 24.dp, bottom = 12.dp),
+                    )
+                    CardRow(modifier = Modifier.fillMaxWidth().height(artistRowHeight)) {
+                        items(uiState.artists, key = { it.id }) { artist ->
+                            MusicArtistCard(
+                                name = artist.name,
+                                imageUrl = artist.images.primary?.toString(),
+                                blurHash = artist.images.primaryImageBlurHash,
+                                size = relatedCardWidth,
+                                onClick = { onMusicArtistClick(artist.id.toString()) },
+                            )
+                        }
                     }
                 }
             }
@@ -215,25 +211,21 @@ fun MusicGenreScreen(
 
         if (uiState.albums.isNotEmpty()) {
             item {
-                Text(
-                    text = stringResource(R.string.music_section_albums),
-                    style = afinitySectionTitleStyle(),
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(start = DetailGutter, top = 32.dp, bottom = 16.dp),
-                )
-                LazyRow(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .height(albumRowHeight)
-                            .padding(horizontal = DetailGutter),
-                    horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-                ) {
-                    items(uiState.albums, key = { it.id }) { album ->
-                        Box(modifier = Modifier.width(relatedCardWidth)) {
-                            MusicAlbumCard(
-                                album = album,
-                                onClick = { onMusicAlbumClick(album.id.toString()) },
-                            )
+                Column(modifier = Modifier.padding(horizontal = DetailGutter)) {
+                    Text(
+                        text = stringResource(R.string.music_section_albums),
+                        style = afinitySectionTitleStyle(),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(top = 32.dp, bottom = 16.dp),
+                    )
+                    CardRow(modifier = Modifier.fillMaxWidth().height(albumRowHeight)) {
+                        items(uiState.albums, key = { it.id }) { album ->
+                            Box(modifier = Modifier.width(relatedCardWidth)) {
+                                MusicAlbumCard(
+                                    album = album,
+                                    onClick = { onMusicAlbumClick(album.id.toString()) },
+                                )
+                            }
                         }
                     }
                 }
@@ -242,25 +234,21 @@ fun MusicGenreScreen(
 
         if (uiState.recentlyAdded.isNotEmpty()) {
             item {
-                Text(
-                    text = stringResource(R.string.music_section_recently_added),
-                    style = afinitySectionTitleStyle(),
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(start = DetailGutter, top = 32.dp, bottom = 16.dp),
-                )
-                LazyRow(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .height(albumRowHeight)
-                            .padding(horizontal = DetailGutter),
-                    horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-                ) {
-                    items(uiState.recentlyAdded, key = { it.id }) { album ->
-                        Box(modifier = Modifier.width(relatedCardWidth)) {
-                            MusicAlbumCard(
-                                album = album,
-                                onClick = { onMusicAlbumClick(album.id.toString()) },
-                            )
+                Column(modifier = Modifier.padding(horizontal = DetailGutter)) {
+                    Text(
+                        text = stringResource(R.string.music_section_recently_added),
+                        style = afinitySectionTitleStyle(),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(top = 32.dp, bottom = 16.dp),
+                    )
+                    CardRow(modifier = Modifier.fillMaxWidth().height(albumRowHeight)) {
+                        items(uiState.recentlyAdded, key = { it.id }) { album ->
+                            Box(modifier = Modifier.width(relatedCardWidth)) {
+                                MusicAlbumCard(
+                                    album = album,
+                                    onClick = { onMusicAlbumClick(album.id.toString()) },
+                                )
+                            }
                         }
                     }
                 }

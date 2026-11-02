@@ -11,13 +11,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Icon
@@ -57,19 +55,19 @@ import com.makd.afinity.data.models.livetv.AfinityProgram
 import com.makd.afinity.data.models.livetv.GuideIndicator
 import com.makd.afinity.data.models.livetv.LiveTvSimilarItem
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.navigation.LocalShowRatings
-import com.makd.afinity.navigation.LocalSkipServerImageResize
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityScreenMode
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.ConnectedButtonGroup
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.GroupButton
 import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.ui.components.bottomClearance
 import com.makd.afinity.ui.components.formatRuntimeTicks
 import com.makd.afinity.ui.components.ratings.communityRatingOf
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
@@ -134,7 +132,7 @@ fun LiveTvProgramScreen(
     val busyIds by viewModel.recorder.busyIds.collectAsStateWithLifecycle()
     val prompt by viewModel.recorder.prompt.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val playerOffset = LocalPlayerOffset.current
+    val bottomClearance = bottomClearance()
 
     RecordingEventsSnackbar(viewModel.recorder.events, snackbarHostState)
 
@@ -193,10 +191,7 @@ fun LiveTvProgramScreen(
         SnackbarHost(
             hostState = snackbarHostState,
             snackbar = { AFinitySnackbar(it) },
-            modifier =
-                Modifier.align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(bottom = playerOffset),
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = bottomClearance),
         )
     }
 
@@ -309,10 +304,9 @@ private fun ColumnScope.ProgramHeader(
 ) {
     val isAiring = program.isCurrentlyAiring(now)
     val textAlign = if (isLandscape) TextAlign.Start else TextAlign.Center
-    val webpLogo = !LocalSkipServerImageResize.current
 
     MediaLogoHeader(
-        logoUrl = program.images.logoImageUrlWithTransparency(webp = webpLogo),
+        logoUrl = program.images.logoImageUrlWithTransparency(),
         name = program.name,
         isLandscape = isLandscape,
     )
@@ -691,10 +685,7 @@ private fun LazyListScope.programDetailItems(
                 CardDimensions.rowHeight(similarCardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 DetailSectionTitle(text = stringResource(R.string.similar_items_title))
-                LazyRow(
-                    modifier = Modifier.height(fixedRowHeight),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
+                CardRow(modifier = Modifier.height(fixedRowHeight)) {
                     items(items = similarItems, key = { it.id.toString() }) { similar ->
                         when (similar) {
                             is LiveTvSimilarItem.Program ->

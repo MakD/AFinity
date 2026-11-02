@@ -104,19 +104,6 @@ fun ActionButtonsRow(
 
         WatchlistToggleButton(isInWatchlist = isInWatchlist, onClick = onToggleWatchlist)
 
-        if (item is AfinityShow || item is AfinitySeason) {
-            IconButton(onClick = onShufflePlay, enabled = hasPlayableItems) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_arrows_shuffle),
-                    contentDescription = stringResource(R.string.cd_shuffle_play),
-                    tint =
-                        if (hasPlayableItems) MaterialTheme.colorScheme.onSurfaceVariant
-                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-                    modifier = Modifier.size(28.dp),
-                )
-            }
-        }
-
         FavoriteToggleButton(isFavorite = item.favorite, onClick = onToggleFavorite)
 
         val visuallyPlayed = item.played && hasPlayableItems
@@ -141,8 +128,9 @@ fun ActionButtonsRow(
             )
         }
 
+        val canShuffle = item is AfinityShow || item is AfinitySeason
         val hasManageItems = isAdmin || canDelete
-        val showMenu = hasManageItems || hasMediaInfo
+        val showMenu = hasManageItems || hasMediaInfo || canShuffle
 
         if (!showMenu && onAddToPlaylist != null) {
             IconButton(onClick = onAddToPlaylist) {
@@ -174,6 +162,23 @@ fun ActionButtonsRow(
                     expanded = menuExpanded,
                     onDismissRequest = { menuExpanded = false },
                 ) {
+                    if (canShuffle) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.cd_shuffle_play)) },
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_arrows_shuffle),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            },
+                            enabled = hasPlayableItems,
+                            onClick = {
+                                menuExpanded = false
+                                onShufflePlay()
+                            },
+                        )
+                    }
                     if (hasMediaInfo) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.media_info_title)) },
@@ -206,7 +211,7 @@ fun ActionButtonsRow(
                             },
                         )
                     }
-                    if (hasManageItems && (hasMediaInfo || onAddToPlaylist != null)) {
+                    if (hasManageItems && (canShuffle || hasMediaInfo || onAddToPlaylist != null)) {
                         HorizontalDivider()
                     }
 

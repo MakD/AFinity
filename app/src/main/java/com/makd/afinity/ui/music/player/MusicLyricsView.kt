@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityLyricLine
+import com.makd.afinity.ui.theme.isDarkSurface
 
 @Composable
 fun MusicLyricsView(
@@ -57,7 +58,7 @@ fun MusicLyricsView(
     val positionState = rememberUpdatedState(positionMs)
     val playingState = rememberUpdatedState(isPlaying)
     val seekState = rememberUpdatedState(onSeek)
-    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val isDark = isDarkSurface()
 
     LaunchedEffect(currentLineIndex) {
         if (currentLineIndex >= 0) {

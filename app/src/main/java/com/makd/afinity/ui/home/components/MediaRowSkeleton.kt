@@ -1,16 +1,13 @@
 package com.makd.afinity.ui.home.components
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -21,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.utils.shimmerEffect
 
@@ -31,11 +29,7 @@ fun MediaRowSkeleton(
     itemCount: Int = 6,
     aspectRatio: Float = CardDimensions.ASPECT_RATIO_PORTRAIT,
 ) {
-    LazyRow(
-        modifier = Modifier.height(height),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp),
-    ) {
+    CardRow(modifier = Modifier.height(height)) {
         items(itemCount) {
             Column(modifier = Modifier.width(cardWidth)) {
                 Card(

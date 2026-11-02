@@ -53,7 +53,6 @@ import com.makd.afinity.data.models.livetv.SeriesRecordingOptions
 import com.makd.afinity.data.models.livetv.SeriesRecordingRule
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
@@ -65,6 +64,7 @@ import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.formatRuntimeTicks
+import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.item.DeleteOutcome
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
 import com.makd.afinity.ui.livetv.components.RecordingEventsSnackbar
@@ -106,7 +106,7 @@ fun LiveTvRecordingsScreen(
         viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
     val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     var deleteTarget by remember { mutableStateOf<AfinityRecording?>(null) }
 
     RecordingEventsSnackbar(viewModel.recorder.events, snackbarHostState)
@@ -134,7 +134,7 @@ fun LiveTvRecordingsScreen(
             SnackbarHost(
                 hostState = snackbarHostState,
                 snackbar = { AFinitySnackbar(it) },
-                modifier = Modifier.padding(bottom = playerOffset),
+                modifier = Modifier.padding(bottom = playerClearance),
             )
         },
         modifier = modifier,
@@ -231,14 +231,14 @@ private fun RecordingsContent(
     modifier: Modifier = Modifier,
 ) {
     val now = rememberCurrentTime()
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     val scheduledTitle = stringResource(R.string.livetv_scheduled)
     val seriesTitle = stringResource(R.string.livetv_series)
     val recordedTitle = stringResource(R.string.livetv_recorded)
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp + playerOffset),
+        contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp + playerClearance),
     ) {
         if (uiState.scheduled.isNotEmpty()) {
             item(key = "scheduled_title") { SectionTitle(scheduledTitle) }

@@ -43,6 +43,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.CardPill
 import com.makd.afinity.ui.downloads.DownloadCatalogEntry
 import com.makd.afinity.ui.downloads.DownloadCategory
 import com.makd.afinity.ui.downloads.DownloadCategoryUsage
@@ -158,11 +159,11 @@ fun DownloadPosterCard(
                         Modifier.fillMaxSize()
                             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.66f))
                 )
-                CardBadge(
+                CardPill(
                     text = stringResource(R.string.storage_unavailable_badge),
-                    container = MaterialTheme.colorScheme.errorContainer,
-                    content = MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.align(Alignment.TopStart).padding(6.dp),
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.align(Alignment.TopStart),
                 )
             }
 
@@ -172,7 +173,9 @@ fun DownloadPosterCard(
                     modifier = Modifier.align(Alignment.TopEnd).padding(6.dp),
                 )
             } else if (entry.isGroup) {
-                CardBadge(
+                CardPill(
+                    containerColor = PillScrim,
+                    contentColor = Color.White,
                     text =
                         if (entry.category == DownloadCategory.MUSIC) {
                             pluralStringResource(
@@ -187,13 +190,15 @@ fun DownloadPosterCard(
                                 entry.childCount,
                             )
                         },
-                    modifier = Modifier.align(Alignment.TopEnd).padding(6.dp),
+                    modifier = Modifier.align(Alignment.TopEnd),
                 )
             }
 
-            CardBadge(
+            CardPill(
                 text = formatSize(entry.sizeBytes),
-                modifier = Modifier.align(Alignment.BottomStart).padding(6.dp),
+                containerColor = PillScrim,
+                contentColor = Color.White,
+                modifier = Modifier.align(Alignment.BottomStart),
             )
         }
 
@@ -249,25 +254,7 @@ private fun SelectionIndicator(selected: Boolean, modifier: Modifier = Modifier)
     }
 }
 
-@Composable
-private fun CardBadge(
-    text: String,
-    modifier: Modifier = Modifier,
-    container: Color = Color.Black.copy(alpha = 0.7f),
-    content: Color = Color.White,
-) {
-    Surface(color = container, shape = RoundedCornerShape(6.dp), modifier = modifier) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Medium,
-            color = content,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-        )
-    }
-}
+private val PillScrim = Color.Black.copy(alpha = 0.7f)
 
 @Composable
 fun downloadCategoryColor(category: DownloadCategory): Color =

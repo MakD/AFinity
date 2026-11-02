@@ -29,7 +29,6 @@ import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.Permissions
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.hasPermission
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
@@ -40,6 +39,7 @@ import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.SortFab
+import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.scaledPortraitWidth
@@ -75,7 +75,7 @@ fun FilteredMediaScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val requestsUiState by requestsViewModel.uiState.collectAsStateWithLifecycle()
     val currentUser by requestsViewModel.currentUser.collectAsStateWithLifecycle()
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     var showSortDialog by remember { mutableStateOf(false) }
     var showFilterSheet by remember { mutableStateOf(false) }
 
@@ -118,7 +118,7 @@ fun FilteredMediaScreen(
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalAlignment = Alignment.End,
-                    modifier = Modifier.padding(bottom = playerOffset),
+                    modifier = Modifier.padding(bottom = playerClearance),
                 ) {
                     FilterFab(
                         active = false,
@@ -164,10 +164,10 @@ fun FilteredMediaScreen(
                             start = 16.dp,
                             top = 16.dp,
                             end = 16.dp,
-                            bottom = 16.dp + playerOffset,
+                            bottom = 16.dp + playerClearance,
                         ),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+                    verticalArrangement = Arrangement.spacedBy(CardDimensions.GridRowGap),
                 ) {
                     items(
                         count = uiState.items.size,

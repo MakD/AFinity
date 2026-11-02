@@ -38,8 +38,8 @@ fun PaginatedMediaGrid(
         columns = CardDimensions.gridCells(),
         state = state,
         contentPadding = contentPadding,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+        verticalArrangement = Arrangement.spacedBy(CardDimensions.GridRowGap),
         modifier = modifier,
     ) {
         items(count = items.itemCount, key = items.itemKey { it.id }) { index ->

@@ -34,6 +34,7 @@ import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.LocalSettingsSubtitleMaxLines
+import com.makd.afinity.ui.components.playerClearance
 
 private const val SUBTITLE_MAX_LINES = 3
 private val FLOATING_BUTTON_CLEARANCE = 96.dp
@@ -80,7 +81,7 @@ fun AdminScaffold(
             }
         },
         floatingActionButton = {
-            Box(modifier = Modifier.padding(bottom = playerOffset)) { floatingActionButton() }
+            Box(modifier = Modifier.padding(bottom = playerClearance())) { floatingActionButton() }
         },
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,

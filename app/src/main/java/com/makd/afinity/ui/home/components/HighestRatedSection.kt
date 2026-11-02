@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,6 +36,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.MediaCountBadge
 import com.makd.afinity.ui.components.MetadataOverflowRow
 import com.makd.afinity.ui.components.PlayedBadge
@@ -60,10 +60,7 @@ fun HighestRatedSection(
 
         val uniqueItems = items.distinctBy { it.id }
 
-        LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
-            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-        ) {
+        CardRow(modifier = Modifier.height(fixedRowHeight)) {
             itemsIndexed(items = uniqueItems, key = { _, item -> item.id }) { index, item ->
                 HighestRatedCard(
                     item = item,

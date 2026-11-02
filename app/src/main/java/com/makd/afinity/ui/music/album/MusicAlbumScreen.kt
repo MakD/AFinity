@@ -55,6 +55,7 @@ import com.makd.afinity.ui.components.DetailActionRow
 import com.makd.afinity.ui.components.DetailCoverImage
 import com.makd.afinity.ui.components.DetailCoverTitle
 import com.makd.afinity.ui.components.DetailGutter
+import com.makd.afinity.ui.components.DetailMenuAction
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.LandscapeDetailArrangement
 import com.makd.afinity.ui.components.LandscapeDetailLayout
@@ -128,6 +129,35 @@ fun MusicAlbumScreen(
                 startMusicService(context)
                 playerViewModel.playQueue(uiState.tracks, 0)
             },
+            moreActions =
+                uiState.album?.let { album ->
+                    listOf(
+                        DetailMenuAction(
+                            label = stringResource(R.string.cd_music_instant_mix),
+                            iconRes = R.drawable.ic_compass,
+                            enabled = !isOffline,
+                            onClick = {
+                                startMusicService(context)
+                                playerViewModel.playInstantMix(album.id)
+                            },
+                        ),
+                        DetailMenuAction(
+                            label = stringResource(R.string.cd_music_start_radio),
+                            iconRes = R.drawable.ic_radio,
+                            enabled = !isOffline,
+                            onClick = {
+                                uiState.tracks.firstOrNull()?.let { firstTrack ->
+                                    radioSeed =
+                                        RadioSeed(
+                                            trackId = firstTrack.id,
+                                            albumId = album.id,
+                                            sourceTracks = uiState.tracks,
+                                        )
+                                }
+                            },
+                        ),
+                    )
+                } ?: emptyList(),
         ) {
             IconButton(onClick = { viewModel.toggleFavorite() }) {
                 Icon(
@@ -144,43 +174,6 @@ fun MusicAlbumScreen(
                         else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(26.dp),
                 )
-            }
-            uiState.album?.let { album ->
-                IconButton(
-                    enabled = !isOffline,
-                    onClick = {
-                        startMusicService(context)
-                        playerViewModel.playInstantMix(album.id)
-                    },
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_compass),
-                        contentDescription = stringResource(R.string.cd_music_instant_mix),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(26.dp),
-                    )
-                }
-                IconButton(
-                    enabled = !isOffline,
-                    onClick = {
-                        val firstTrack = uiState.tracks.firstOrNull()
-                        if (firstTrack != null) {
-                            radioSeed =
-                                RadioSeed(
-                                    trackId = firstTrack.id,
-                                    albumId = album.id,
-                                    sourceTracks = uiState.tracks,
-                                )
-                        }
-                    },
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_radio),
-                        contentDescription = stringResource(R.string.cd_music_start_radio),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(26.dp),
-                    )
-                }
             }
             if (isDownloadAllowedByServer) {
                 var showDownloadQualityDialog by remember { mutableStateOf(false) }

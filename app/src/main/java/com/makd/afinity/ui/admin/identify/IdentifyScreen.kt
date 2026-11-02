@@ -67,7 +67,6 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.admin.ExternalIdProvider
 import com.makd.afinity.data.models.admin.IdentifyResult
 import com.makd.afinity.data.models.admin.IdentifyTarget
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinityScreen
@@ -76,6 +75,7 @@ import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.EmptyState
+import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 
 private val CardShape = RoundedCornerShape(16.dp)
@@ -166,7 +166,7 @@ fun IdentifyScreen(
                     start = 16.dp,
                     end = 16.dp,
                     top = 8.dp,
-                    bottom = 16.dp + LocalPlayerOffset.current,
+                    bottom = 16.dp + playerClearance(),
                 ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {

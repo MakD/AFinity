@@ -135,7 +135,7 @@ fun WatchlistScreen(
             else -> {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(customPadding),
-                    contentPadding = PaddingValues(all = 16.dp),
+                    contentPadding = PaddingValues(vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
                     if (uiState.boxSets.isNotEmpty()) {

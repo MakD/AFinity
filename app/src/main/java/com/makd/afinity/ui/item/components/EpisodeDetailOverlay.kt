@@ -60,7 +60,7 @@ import com.makd.afinity.ui.components.ModalSideSheet
 import com.makd.afinity.ui.components.WatchedToggleButton
 import com.makd.afinity.ui.components.WatchlistToggleButton
 import com.makd.afinity.ui.components.formatRuntimeTicks
-import com.makd.afinity.ui.components.isWideWindow
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.components.mediainfo.JellyfinMediaInfoSheet
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
@@ -106,7 +106,7 @@ fun EpisodeDetailOverlay(
     onPersonClick: ((UUID) -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    val isWide = LocalSideSheetEnabled.current && isWideWindow()
+    val isWide = LocalSideSheetEnabled.current && isLandscapeWindow()
     val sheetState = rememberAfinitySheetState()
     var showPeopleDialog by remember { mutableStateOf(false) }
     var showMediaInfo by remember { mutableStateOf(false) }

@@ -100,7 +100,6 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicSearchResults
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
@@ -110,6 +109,7 @@ import com.makd.afinity.ui.components.MetadataOverflowRow
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.formatRuntimeMinutes
+import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.library.startMusicService
@@ -751,7 +751,7 @@ private fun SearchHomeContent(
     onGenreClick: (String) -> Unit,
     isAudiobookshelf: Boolean = false,
 ) {
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -765,9 +765,9 @@ private fun SearchHomeContent(
         LazyVerticalGrid(
             columns = CardDimensions.landscapeGridCells(),
             modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(bottom = 16.dp + playerOffset),
+            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+            verticalArrangement = Arrangement.spacedBy(CardDimensions.GridRowGap),
+            contentPadding = PaddingValues(bottom = 16.dp + playerClearance),
         ) {
             items(genres, key = { it }) { genre ->
                 GenreCard(
@@ -787,11 +787,16 @@ private fun SearchResultsContent(
     onEpisodeClick: (AfinityEpisode) -> Unit,
 ) {
     LocalSoftwareKeyboardController.current
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding =
-            PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp + playerOffset),
+            PaddingValues(
+                start = 16.dp,
+                top = 16.dp,
+                end = 16.dp,
+                bottom = 16.dp + playerClearance,
+            ),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
@@ -1068,11 +1073,16 @@ private fun JellyseerrSearchResultsContent(
     results: List<SearchResultItem>,
     onRequestClick: (SearchResultItem) -> Unit,
 ) {
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding =
-            PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp + playerOffset),
+            PaddingValues(
+                start = 16.dp,
+                top = 16.dp,
+                end = 16.dp,
+                bottom = 16.dp + playerClearance,
+            ),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
@@ -1436,11 +1446,16 @@ private fun AudiobookshelfSearchResultsContent(
     serverUrl: String?,
     onItemClick: (String) -> Unit,
 ) {
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding =
-            PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp + playerOffset),
+            PaddingValues(
+                start = 16.dp,
+                top = 16.dp,
+                end = 16.dp,
+                bottom = 16.dp + playerClearance,
+            ),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
@@ -1510,12 +1525,17 @@ private fun CombinedSearchResultsContent(
         remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityBoxSet>() }
     val movies = remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityMovie>() }
     val shows = remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityShow>() }
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding =
-            PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp + playerOffset),
+            PaddingValues(
+                start = 16.dp,
+                top = 16.dp,
+                end = 16.dp,
+                bottom = 16.dp + playerClearance,
+            ),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (movies.isNotEmpty()) {
@@ -1715,7 +1735,7 @@ private fun MusicSearchResultsContent(
     onAddLast: (AfinityTrack) -> Unit,
     onFavorite: (java.util.UUID) -> Unit,
 ) {
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
 
     if (
         isMusicSearching &&
@@ -1729,7 +1749,7 @@ private fun MusicSearchResultsContent(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 16.dp + playerOffset),
+        contentPadding = PaddingValues(bottom = 16.dp + playerClearance),
     ) {
         if (results.tracks.isNotEmpty()) {
             item { SearchSectionHeader(stringResource(R.string.music_tab_tracks)) }

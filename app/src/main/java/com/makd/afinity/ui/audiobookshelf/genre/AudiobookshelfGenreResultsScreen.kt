@@ -31,7 +31,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
 import com.makd.afinity.ui.components.AfinityBackButton
 import com.makd.afinity.ui.components.AfinityScreen
@@ -39,6 +38,7 @@ import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.theme.CardDimensions
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -219,14 +219,19 @@ private fun AudiobookshelfItemGrid(
     serverUrl: String?,
     onItemClick: (String) -> Unit,
 ) {
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     LazyVerticalGrid(
         columns = CardDimensions.gridCells(),
         modifier = Modifier.fillMaxSize(),
         contentPadding =
-            PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + playerOffset),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+            PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = 16.dp,
+                bottom = 16.dp + playerClearance,
+            ),
+        horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+        verticalArrangement = Arrangement.spacedBy(CardDimensions.GridRowGap),
     ) {
         items(items, key = { it.id }) { item ->
             AudiobookCard(

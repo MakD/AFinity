@@ -78,6 +78,7 @@ import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AfinityTopBar
+import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.util.logging.LogLevel
 import kotlinx.coroutines.flow.first
@@ -253,7 +254,7 @@ fun LogViewerScreen(
                         showWindow = false
                         viewModel.setWindow(it)
                     },
-                    modifier = Modifier.padding(bottom = playerOffset),
+                    modifier = Modifier.padding(bottom = playerClearance()),
                 )
             }
         },
@@ -476,7 +477,6 @@ fun LogViewerScreen(
                     showExport = false
                 },
                 onCancel = { showExport = false },
-                modifier = Modifier.padding(bottom = playerOffset),
             )
         }
     }
@@ -491,7 +491,6 @@ fun LogViewerScreen(
                 onToggle = viewModel::toggleTag,
                 onClear = viewModel::clearTags,
                 onDone = { showTags = false },
-                modifier = Modifier.padding(bottom = playerOffset),
             )
         }
     }

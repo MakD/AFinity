@@ -41,7 +41,6 @@ import com.makd.afinity.data.models.jellyseerr.RequestStatus
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.hasPermission
 import com.makd.afinity.data.models.jellyseerr.isAdmin
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
@@ -51,6 +50,7 @@ import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.ServiceUnreachableBanner
+import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.settings.JellyseerrBottomSheet
@@ -75,7 +75,7 @@ fun RequestsScreen(
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     var showJellyseerrBottomSheet by remember { mutableStateOf(false) }
     val sheetState = rememberAfinitySheetState()
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
 
     LaunchedEffect(Unit) {
         viewModel.navigateToItem.collect { (jellyfinId, mediaType) ->
@@ -176,7 +176,7 @@ fun RequestsScreen(
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
                                 contentPadding =
-                                    PaddingValues(top = 16.dp, bottom = 16.dp + playerOffset),
+                                    PaddingValues(top = 16.dp, bottom = 16.dp + playerClearance),
                                 verticalArrangement = Arrangement.spacedBy(24.dp),
                             ) {
                                 if (activeRequests.isNotEmpty()) {

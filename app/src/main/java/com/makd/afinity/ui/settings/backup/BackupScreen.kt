@@ -34,7 +34,6 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.SettingsSection
 import com.makd.afinity.data.repository.settings.SettingsImportFailure
 import com.makd.afinity.data.repository.settings.SettingsImportPreview
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityBackButton
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinityScreen
@@ -44,6 +43,7 @@ import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
+import com.makd.afinity.ui.components.playerClearance
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -56,7 +56,7 @@ fun BackupScreen(
     modifier: Modifier = Modifier,
     viewModel: BackupViewModel = hiltViewModel(),
 ) {
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
 
     AfinityScreen(
         topBar = { backgroundOpacity ->
@@ -74,7 +74,7 @@ fun BackupScreen(
             modifier =
                 Modifier.padding(
                     top = innerPadding.calculateTopPadding() + 16.dp,
-                    bottom = innerPadding.calculateBottomPadding() + playerOffset + 24.dp,
+                    bottom = innerPadding.calculateBottomPadding() + playerClearance + 24.dp,
                 ),
         )
     }

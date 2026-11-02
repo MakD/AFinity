@@ -7,7 +7,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -38,8 +36,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -65,6 +61,7 @@ import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.navigation.LocalShowAwards
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.BackdropStyle
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.FavoriteToggleButton
 import com.makd.afinity.ui.components.ImageHeroKind
 import com.makd.afinity.ui.components.LandscapeDetailArrangement
@@ -75,6 +72,7 @@ import com.makd.afinity.ui.components.PortraitHero
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.backdropChainOf
 import com.makd.afinity.ui.components.isLandscapeWindow
+import com.makd.afinity.ui.components.windowWidthDp
 import com.makd.afinity.ui.item.components.shared.AwardsSectionStyle
 import com.makd.afinity.ui.item.components.shared.ExternalTitlesSection
 import com.makd.afinity.ui.item.components.shared.OverviewSection
@@ -172,9 +170,7 @@ private fun LandscapePersonDetailContent(
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
 ) {
-    val density = LocalDensity.current
-    val windowInfo = LocalWindowInfo.current
-    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+    val screenWidthDp = windowWidthDp()
     val sidebarWidth = minOf(280.dp, (screenWidthDp - 72.dp) * 0.38f)
 
     LandscapeDetailLayout(
@@ -367,10 +363,7 @@ private fun PersonFilmographySection(
             color = MaterialTheme.colorScheme.onBackground,
         )
 
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-        ) {
+        CardRow {
             items(items = items, key = { item -> item.id }) { item ->
                 FilmographyItemCard(
                     item = item,

@@ -1,9 +1,8 @@
 package com.makd.afinity.ui.settings.servers
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
+import com.makd.afinity.ui.theme.isDarkSurface
 
 internal val JellyseerrColor = Color(0xFFA88AFA)
 internal val AudiobookshelfColor = Color(0xFFCD9E46)
@@ -14,7 +13,7 @@ internal val lastFmColor = Color(0xFFD51007)
 internal val SaveColor: Color
     @Composable
     get() =
-        if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) {
+        if (isDarkSurface()) {
             Color(0xFF81C784)
         } else {
             Color(0xFF2E7D32)
@@ -23,7 +22,7 @@ internal val SaveColor: Color
 internal val CancelColor: Color
     @Composable
     get() =
-        if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) {
+        if (isDarkSurface()) {
             Color(0xFFE57373)
         } else {
             Color(0xFFC62828)

@@ -20,8 +20,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -82,8 +80,7 @@ fun ListPickerDialog(
 @Composable
 private fun ListPickerDialogWindowPreview() {
     PreviewHost(modifier = Modifier.fillMaxSize()) {
-        val containerHeight =
-            with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
+        val containerHeight = windowHeightDp()
         ListPickerDialog(
             title = stringResource(R.string.custom_sections_new),
             onDismiss = {},

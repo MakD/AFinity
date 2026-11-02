@@ -5,13 +5,11 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +31,7 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
 import com.makd.afinity.data.models.jellyseerr.Network
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.Studio
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.home.components.HomeSectionHeader
 import com.makd.afinity.ui.theme.CardDimensions
@@ -57,11 +56,7 @@ fun MyRequestsSection(
     Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = stringResource(R.string.section_recent_requests))
 
-        LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-        ) {
+        CardRow(modifier = Modifier.height(fixedRowHeight)) {
             items(items = requests, key = { request -> "request_${request.id}" }) { request ->
                 LaunchedEffect(request.id) { onRequestVisible(request) }
                 RequestCard(
@@ -92,11 +87,7 @@ fun AvailableRequestsSection(
     Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = stringResource(R.string.section_available_requests))
 
-        LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-        ) {
+        CardRow(modifier = Modifier.height(fixedRowHeight)) {
             items(
                 items = requests,
                 key = { displayItem -> "available_request_${displayItem.request.id}" },
@@ -163,11 +154,7 @@ fun DiscoverSection(
             }
         }
 
-        LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-        ) {
+        CardRow(modifier = Modifier.height(fixedRowHeight)) {
             items(
                 items = items,
                 key = { item -> "${title.replace(" ", "_")}_${item.mediaType}_${item.id}" },
@@ -196,11 +183,7 @@ fun StudiosSection(
     Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = stringResource(R.string.section_studios))
 
-        LazyRow(
-            modifier = Modifier.height(cardHeight),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-        ) {
+        CardRow(modifier = Modifier.height(cardHeight)) {
             items(items = studios, key = { studio -> "studio_${studio.id}" }) { studio ->
                 StudioCard(
                     studio = studio,
@@ -226,11 +209,7 @@ fun NetworksSection(
     Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = stringResource(R.string.section_networks))
 
-        LazyRow(
-            modifier = Modifier.height(cardHeight),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-        ) {
+        CardRow(modifier = Modifier.height(cardHeight)) {
             items(items = networks, key = { network -> "network_${network.id}" }) { network ->
                 NetworkCard(
                     network = network,
@@ -257,11 +236,7 @@ fun MovieGenresSection(
     Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = stringResource(R.string.section_movie_genres))
 
-        LazyRow(
-            modifier = Modifier.height(cardHeight),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-        ) {
+        CardRow(modifier = Modifier.height(cardHeight)) {
             items(items = genres, key = { genre -> "movie_genre_${genre.id}" }) { genre ->
                 GenreCard(
                     genre = genre,
@@ -289,11 +264,7 @@ fun TvGenresSection(
     Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = stringResource(R.string.section_tv_genres))
 
-        LazyRow(
-            modifier = Modifier.height(cardHeight),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-        ) {
+        CardRow(modifier = Modifier.height(cardHeight)) {
             items(items = genres, key = { genre -> "tv_genre_${genre.id}" }) { genre ->
                 GenreCard(
                     genre = genre,

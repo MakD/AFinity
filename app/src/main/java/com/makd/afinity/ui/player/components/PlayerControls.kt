@@ -110,7 +110,6 @@ import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.models.syncplay.SyncPlayMemberInfo
 import com.makd.afinity.navigation.LocalShowAwards
 import com.makd.afinity.navigation.LocalShowRatings
-import com.makd.afinity.navigation.LocalSkipServerImageResize
 import com.makd.afinity.player.common.TrackMapping
 import com.makd.afinity.ui.components.AfinityBadge
 import com.makd.afinity.ui.components.AsyncImage
@@ -493,15 +492,11 @@ fun PlayerControls(
                             } else {
                                 uiState.currentItem
                             }
-                        val webpLogo = !LocalSkipServerImageResize.current
 
                         if (displayItem is AfinityMovie) {
                             if (displayItem.images.logo != null) {
                                 AsyncImage(
-                                    imageUrl =
-                                        displayItem.images.logoImageUrlWithTransparency(
-                                            webp = webpLogo
-                                        ),
+                                    imageUrl = displayItem.images.logoImageUrlWithTransparency(),
                                     contentDescription = stringResource(R.string.cd_logo),
                                     modifier = Modifier.height(60.dp).widthIn(max = 200.dp),
                                     contentScale = ContentScale.Fit,
@@ -535,8 +530,7 @@ fun PlayerControls(
                                 val seriesLogoUri =
                                     displayItem.seriesLogo ?: displayItem.images.showLogo
                                 if (seriesLogoUri != null) {
-                                    val logoUrl =
-                                        seriesLogoUri.toString().withLogoFormat(webp = webpLogo)
+                                    val logoUrl = seriesLogoUri.toString().withLogoFormat()
                                     AsyncImage(
                                         imageUrl = logoUrl,
                                         contentDescription =
@@ -983,7 +977,7 @@ fun PlayerControls(
                                         if (memberInfo?.profileImageUrl != null) {
                                             AsyncImage(
                                                 imageUrl = memberInfo.profileImageUrl,
-                                                contentDescription = "Profile picture of $member",
+                                                contentDescription = null,
                                                 modifier =
                                                     Modifier.fillMaxSize()
                                                         .clip(CircleShape)
@@ -2241,16 +2235,13 @@ private fun PauseDetailsOverlay(
             DateFormat.getTimeFormat(context).format(Date(System.currentTimeMillis() + remainingMs))
         }
 
-    val webpLogo = !LocalSkipServerImageResize.current
     val logoUrl =
         when (item) {
             is AfinityEpisode ->
-                (item.seriesLogo ?: item.images.showLogo)
-                    ?.toString()
-                    ?.withLogoFormat(webp = webpLogo)
+                (item.seriesLogo ?: item.images.showLogo)?.toString()?.withLogoFormat()
 
-            is AfinityMovie -> item.images.logoImageUrlWithTransparency(webp = webpLogo)
-            is AfinityShow -> item.images.logoImageUrlWithTransparency(webp = webpLogo)
+            is AfinityMovie -> item.images.logoImageUrlWithTransparency()
+            is AfinityShow -> item.images.logoImageUrlWithTransparency()
             else -> null
         }
     val primaryTitle = if (item is AfinityEpisode) item.seriesName else item.name

@@ -88,9 +88,7 @@ fun ProgramCard(
                 val overlayPadding = if (isCompactCard) 4.dp else 8.dp
 
                 if (isLive) {
-                    Box(modifier = Modifier.align(Alignment.TopEnd).padding(overlayPadding)) {
-                        LiveBadge()
-                    }
+                    LiveCardBadge(modifier = Modifier.align(Alignment.TopEnd))
                 }
 
                 if (showChannelOverlay) {

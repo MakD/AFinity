@@ -57,13 +57,13 @@ fun RankedCardFrame(
     val cardHeight = CardDimensions.calculateHeight(cardWidth, aspectRatio)
     val digitHeight = CardDimensions.rankedDigitHeight(cardHeight, aspectRatio)
     val digitHeightPx = with(density) { digitHeight.toPx() }
-    val netflixTypeface =
+    val digitTypeface =
         remember(context) {
-            ResourcesCompat.getFont(context, R.font.netflix_sans_medium) ?: Typeface.DEFAULT
+            ResourcesCompat.getFont(context, R.font.inter_bold_digits) ?: Typeface.DEFAULT_BOLD
         }
     val glyph =
-        remember(ranking, netflixTypeface, digitHeightPx) {
-            rankGlyph(ranking, netflixTypeface, digitHeightPx)
+        remember(ranking, digitTypeface, digitHeightPx) {
+            rankGlyph(ranking, digitTypeface, digitHeightPx)
         }
     val numberZone = with(density) { glyph.visibleWidthPx.toDp() }
 

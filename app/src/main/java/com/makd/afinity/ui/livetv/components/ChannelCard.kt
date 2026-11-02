@@ -27,8 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -38,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.windowWidthDp
 
 @Composable
 fun ChannelCard(
@@ -49,8 +48,7 @@ fun ChannelCard(
     programPending: Boolean = false,
     onLongClick: (() -> Unit)? = null,
 ) {
-    val density = LocalDensity.current
-    val screenWidthDp = with(density) { LocalWindowInfo.current.containerSize.width.toDp() }
+    val screenWidthDp = windowWidthDp()
     val currentProgram = channel.currentProgram
 
     val showProgramImage =
@@ -161,9 +159,7 @@ fun ChannelCard(
                 val isAiring = currentProgram?.isCurrentlyAiring(rememberCurrentTime()) == true
 
                 if (showProgramOverlays && isAiring) {
-                    Box(modifier = Modifier.align(Alignment.TopStart).padding(overlayPadding)) {
-                        LiveBadge()
-                    }
+                    LiveCardBadge(modifier = Modifier.align(Alignment.TopStart))
                 }
 
                 if (showProgramOverlays && isAiring) {

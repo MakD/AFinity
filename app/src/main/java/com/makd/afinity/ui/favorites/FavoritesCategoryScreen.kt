@@ -27,7 +27,6 @@ import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
@@ -35,6 +34,7 @@ import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.MediaCategoryGrid
+import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.music.components.MusicArtistCard
@@ -89,7 +89,7 @@ fun FavoritesCategoryScreen(
         viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
     val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
 
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
@@ -105,7 +105,7 @@ fun FavoritesCategoryScreen(
     LaunchedEffect(Unit) { viewModel.loadFavorites() }
 
     val contentPadding =
-        PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp + playerOffset)
+        PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp + playerClearance)
 
     val isEmpty =
         when (category) {
@@ -162,7 +162,7 @@ fun FavoritesCategoryScreen(
                         items = items,
                         landscape = false,
                         widthSizeClass = widthSizeClass,
-                        playerOffset = playerOffset,
+                        playerClearance = playerClearance,
                         onItemClick = onItemClick,
                         modifier = gridModifier,
                     )
@@ -173,7 +173,7 @@ fun FavoritesCategoryScreen(
                         items = uiState.episodes,
                         landscape = true,
                         widthSizeClass = widthSizeClass,
-                        playerOffset = playerOffset,
+                        playerClearance = playerClearance,
                         onItemClick = { item -> viewModel.selectEpisode(item as AfinityEpisode) },
                         modifier = gridModifier,
                     )
@@ -318,8 +318,8 @@ private fun <T> FavoritesGrid(
         columns = columns,
         modifier = modifier.fillMaxSize(),
         contentPadding = contentPadding,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+        verticalArrangement = Arrangement.spacedBy(CardDimensions.GridRowGap),
     ) {
         items(items = items, key = { key(it) }) { item -> itemContent(item) }
     }

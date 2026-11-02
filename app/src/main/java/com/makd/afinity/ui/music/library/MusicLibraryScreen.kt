@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
@@ -54,8 +53,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -77,7 +74,6 @@ import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MadeForYouMixKind
 import com.makd.afinity.data.models.music.MadeForYouSlot
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.player.AudioService
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.ui.components.AfinityScreen
@@ -86,6 +82,7 @@ import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AlphabetScroller
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.LibraryShortcutCard
 import com.makd.afinity.ui.components.LibraryShortcutsRow
@@ -93,6 +90,9 @@ import com.makd.afinity.ui.components.SectionRowHeader
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.focalAlpha
 import com.makd.afinity.ui.components.isLandscapeWindow
+import com.makd.afinity.ui.components.playerClearance
+import com.makd.afinity.ui.components.windowHeightDp
+import com.makd.afinity.ui.components.windowWidthDp
 import com.makd.afinity.ui.home.components.ArtistAlbumsCarousel
 import com.makd.afinity.ui.home.components.LatestAlbumsSection
 import com.makd.afinity.ui.home.components.MostPlayedAlbumsSection
@@ -227,11 +227,11 @@ internal fun TracksList(
         return
     }
 
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     LazyColumn(
         state = listState,
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = playerOffset),
+        contentPadding = PaddingValues(bottom = playerClearance),
     ) {
         item(key = "tracks_header") {
             val snapshot = tracks.itemSnapshotList
@@ -307,7 +307,7 @@ internal fun AlbumsGrid(
         }
     }
 
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     Row(modifier = modifier.fillMaxSize()) {
         LazyVerticalGrid(
             columns = CardDimensions.gridCells(),
@@ -317,10 +317,10 @@ internal fun AlbumsGrid(
                     start = 16.dp,
                     end = 16.dp,
                     top = 16.dp,
-                    bottom = 16.dp + playerOffset,
+                    bottom = 16.dp + playerClearance,
                 ),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+            verticalArrangement = Arrangement.spacedBy(CardDimensions.GridRowGap),
             modifier = Modifier.weight(1f).fillMaxHeight(),
         ) {
             items(count = albums.itemCount, key = albums.itemKey { it.id }) { index ->
@@ -360,7 +360,7 @@ internal fun ArtistsGrid(
         }
     }
 
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     Row(modifier = modifier.fillMaxSize()) {
         LazyVerticalGrid(
             columns = CardDimensions.gridCells(),
@@ -370,10 +370,10 @@ internal fun ArtistsGrid(
                     start = 16.dp,
                     end = 16.dp,
                     top = 16.dp,
-                    bottom = 16.dp + playerOffset,
+                    bottom = 16.dp + playerClearance,
                 ),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+            verticalArrangement = Arrangement.spacedBy(CardDimensions.GridRowGap),
             modifier = Modifier.weight(1f).fillMaxHeight(),
         ) {
             items(count = artists.itemCount, key = artists.itemKey { it.id }) { index ->
@@ -402,14 +402,19 @@ internal fun PlaylistsGrid(
     onPlaylistClick: (AfinityPlaylist) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     LazyVerticalGrid(
         columns = CardDimensions.gridCells(),
         state = gridState,
         contentPadding =
-            PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + playerOffset),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+            PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = 16.dp,
+                bottom = 16.dp + playerClearance,
+            ),
+        horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+        verticalArrangement = Arrangement.spacedBy(CardDimensions.GridRowGap),
         modifier = modifier.fillMaxSize(),
     ) {
         items(playlists, key = { it.id }) { playlist ->
@@ -451,14 +456,19 @@ internal fun GenresGrid(
         }
         return
     }
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     LazyVerticalGrid(
         columns = CardDimensions.gridCells(),
         state = gridState,
         contentPadding =
-            PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + playerOffset),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+            PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = 16.dp,
+                bottom = 16.dp + playerClearance,
+            ),
+        horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+        verticalArrangement = Arrangement.spacedBy(CardDimensions.GridRowGap),
         modifier = modifier.fillMaxSize(),
     ) {
         items(count = genres.itemCount, key = genres.itemKey { it.id }) { index ->
@@ -547,11 +557,11 @@ private fun MusicHomeContent(
                 }
             }
 
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     LazyColumn(
         state = listState,
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 16.dp + playerOffset),
+        contentPadding = PaddingValues(bottom = 16.dp + playerClearance),
     ) {
         item(key = "top_spacer") { Spacer(Modifier.height(16.dp)) }
 
@@ -562,7 +572,7 @@ private fun MusicHomeContent(
                     slots = uiState.madeForYouSlots,
                     onPlayMix = onQueuePlay,
                     onAlbumClick = onAlbumClick,
-                    modifier = Modifier.padding(bottom = 28.dp),
+                    modifier = Modifier.padding(bottom = 24.dp),
                 )
             }
         }
@@ -570,7 +580,7 @@ private fun MusicHomeContent(
         item(key = "library_shortcuts") {
             LibraryShortcutsRow(
                 onBrowse = onBrowse,
-                modifier = Modifier.padding(bottom = 28.dp),
+                modifier = Modifier.padding(bottom = 24.dp),
             )
         }
 
@@ -582,7 +592,7 @@ private fun MusicHomeContent(
                     onTrackClick = { track ->
                         onTrackClickWithQueue(track, uiState.recentlyPlayedTracks)
                     },
-                    modifier = Modifier.padding(bottom = 28.dp),
+                    modifier = Modifier.padding(bottom = 24.dp),
                 )
             }
         }
@@ -593,7 +603,7 @@ private fun MusicHomeContent(
                     title = stringResource(R.string.music_section_recently_played_albums),
                     albums = uiState.recentlyPlayedAlbums,
                     onAlbumClick = onAlbumClick,
-                    modifier = Modifier.padding(bottom = 28.dp),
+                    modifier = Modifier.padding(bottom = 24.dp),
                 )
             }
         }
@@ -604,7 +614,7 @@ private fun MusicHomeContent(
                     title = stringResource(R.string.music_section_recently_added),
                     albums = uiState.latestAlbums,
                     onAlbumClick = onAlbumClick,
-                    modifier = Modifier.padding(bottom = 28.dp),
+                    modifier = Modifier.padding(bottom = 24.dp),
                 )
             }
         }
@@ -614,7 +624,7 @@ private fun MusicHomeContent(
                 MostPlayedAlbumsSection(
                     albums = uiState.mostPlayedAlbums,
                     onAlbumClick = onAlbumClick,
-                    modifier = Modifier.padding(bottom = 28.dp),
+                    modifier = Modifier.padding(bottom = 24.dp),
                 )
             }
         }
@@ -625,13 +635,13 @@ private fun MusicHomeContent(
                     title = stringResource(R.string.favorites_title),
                     albums = uiState.favoriteAlbums,
                     onAlbumClick = onAlbumClick,
-                    modifier = Modifier.padding(bottom = 28.dp),
+                    modifier = Modifier.padding(bottom = 24.dp),
                 )
             }
         }
 
         items(shuffledRows, key = { it.key() }) { row ->
-            val m = Modifier.padding(bottom = 28.dp)
+            val m = Modifier.padding(bottom = 24.dp)
             when (row) {
                 HomeRow.FavoriteArtists ->
                     MusicArtistsRow(
@@ -877,22 +887,20 @@ private fun MadeForYouCarousel(
     modifier: Modifier = Modifier,
 ) {
     if (slots.isEmpty()) return
-    Column(modifier = modifier) {
+    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         Text(
             text = title,
             style = afinitySectionTitleStyle(),
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
         )
 
         val isLandscape = isLandscapeWindow()
-        val containerSize = LocalWindowInfo.current.containerSize
-        val density = LocalDensity.current
-        val windowWidth = with(density) { containerSize.width.toDp() }
-        val windowHeight = with(density) { containerSize.height.toDp() }
+        val windowWidth = windowWidthDp()
+        val windowHeight = windowHeightDp()
         val state = rememberCarouselState { slots.size }
 
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             val itemSize =
                 CardDimensions.carouselItemSize(
                     availableWidth = maxWidth,
@@ -1097,20 +1105,14 @@ internal fun MusicArtistsRow(
     artists: List<AfinityArtist>,
     onArtistClick: (AfinityArtist) -> Unit,
     modifier: Modifier = Modifier,
-    horizontalPadding: Dp = 16.dp,
     onViewAllClick: (() -> Unit)? = null,
 ) {
     val cardSize = CardDimensions.posterCardWidth
-    Column(modifier = modifier) {
+    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         if (onViewAllClick != null) {
             SectionRowHeader(
                 title = title,
-                modifier =
-                    Modifier.padding(
-                        start = horizontalPadding,
-                        end = horizontalPadding,
-                        bottom = 12.dp,
-                    ),
+                modifier = Modifier.padding(bottom = 12.dp),
                 onViewAllClick = onViewAllClick,
             )
         } else {
@@ -1118,13 +1120,10 @@ internal fun MusicArtistsRow(
                 text = title,
                 style = afinitySectionTitleStyle(),
                 color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(start = horizontalPadding, bottom = 12.dp),
+                modifier = Modifier.padding(bottom = 12.dp),
             )
         }
-        LazyRow(
-            modifier = Modifier.padding(horizontal = horizontalPadding),
-            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-        ) {
+        CardRow {
             items(artists.take(15), key = { it.id }) { artist ->
                 MusicArtistCard(
                     name = artist.name,
@@ -1151,15 +1150,15 @@ fun CompactTrackGridSection(
     val itemWidth = if (isLandscape) 320.dp else 280.dp
     val gridHeight = rowHeight * rowsCount + 12.dp * (rowsCount - 1)
 
-    Column(modifier = modifier) {
+    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         Text(
             text = title,
             style = afinitySectionTitleStyle(),
-            modifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
         )
         LazyHorizontalGrid(
             rows = GridCells.Fixed(rowsCount),
-            modifier = Modifier.height(gridHeight).padding(horizontal = 16.dp),
+            modifier = Modifier.height(gridHeight),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {

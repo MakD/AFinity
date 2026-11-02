@@ -62,7 +62,6 @@ import com.makd.afinity.data.models.media.AfinityFolder
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.LibraryFilters
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
@@ -78,6 +77,7 @@ import com.makd.afinity.ui.components.MediaItemGridCard
 import com.makd.afinity.ui.components.PaginatedMediaGrid
 import com.makd.afinity.ui.components.RadioOptionRow
 import com.makd.afinity.ui.components.SortFab
+import com.makd.afinity.ui.components.bottomClearance
 import com.makd.afinity.ui.components.windowHeightDp
 import com.makd.afinity.ui.player.PlayerLauncher
 
@@ -108,7 +108,7 @@ fun LibraryContentScreen(
     val isDownloadAllowedByServer by
         viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
     val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
-    val playerOffset = LocalPlayerOffset.current
+    val bottomClearance = bottomClearance()
     val context = LocalContext.current
     val playVideo: (AfinityVideo) -> Unit = { video ->
         viewModel.resolveVideoPlayback(video) { mediaSourceId, startPositionMs ->
@@ -254,7 +254,7 @@ fun LibraryContentScreen(
                                         start = 16.dp,
                                         end = 16.dp,
                                         top = 16.dp,
-                                        bottom = FAB_CONTENT_BOTTOM_PADDING + playerOffset,
+                                        bottom = FAB_CONTENT_BOTTOM_PADDING + bottomClearance,
                                     ),
                             ) { item ->
                                 MediaItemGridCard(
@@ -297,7 +297,7 @@ fun LibraryContentScreen(
                 modifier =
                     Modifier.align(Alignment.BottomEnd)
                         .padding(end = 24.dp)
-                        .padding(bottom = 16.dp + playerOffset),
+                        .padding(bottom = 16.dp + bottomClearance),
             ) {
                 if (!uiState.filtersLocked) {
                     val activeCount = uiState.currentFilters.activeCount

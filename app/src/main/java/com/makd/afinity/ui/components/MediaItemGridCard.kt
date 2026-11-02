@@ -266,8 +266,8 @@ private fun MediaItemGridCardPreviewContent(cardSize: CardSize) {
             columns = CardDimensions.gridCells(),
             modifier = Modifier.fillMaxWidth().height(640.dp),
             contentPadding = PaddingValues(horizontal = CardDimensions.RowGutter, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+            verticalArrangement = Arrangement.spacedBy(CardDimensions.GridRowGap),
         ) {
             items(PreviewData.posterRow) { item -> MediaItemGridCard(item = item, onClick = {}) }
         }

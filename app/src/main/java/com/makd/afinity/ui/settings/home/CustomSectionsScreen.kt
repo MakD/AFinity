@@ -57,9 +57,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -109,6 +107,8 @@ import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
 import com.makd.afinity.ui.components.filter.SearchableChipMultiSelect
+import com.makd.afinity.ui.components.playerClearance
+import com.makd.afinity.ui.components.windowHeightDp
 import com.makd.afinity.ui.library.LibraryFilterBottomSheet
 import com.makd.afinity.ui.library.LibraryFilterCapabilities
 import com.makd.afinity.util.DateSkeleton
@@ -156,7 +156,7 @@ fun CustomSectionsScreen(
             if (uiState.canAddMore) {
                 FloatingActionButton(
                     onClick = { choosingTemplate = true },
-                    modifier = Modifier.padding(bottom = playerOffset),
+                    modifier = Modifier.padding(bottom = playerClearance()),
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_add),
@@ -327,8 +327,7 @@ fun CustomSectionsScreen(
         )
     }
 
-    val containerHeight =
-        with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
+    val containerHeight = windowHeightDp()
     val dialogHeight = min(720.dp, containerHeight * 0.9f)
 
     if (editingHero) {

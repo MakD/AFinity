@@ -34,8 +34,6 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -97,10 +95,8 @@ fun PortraitDetailLayout(
 
 @Composable
 private fun ImageHero(hero: PortraitHero.Image) {
-    val windowInfo = LocalWindowInfo.current
-    val density = LocalDensity.current
-    val screenWidth = with(density) { windowInfo.containerSize.width.toDp() }
-    val screenHeight = with(density) { windowInfo.containerSize.height.toDp() }
+    val screenWidth = windowWidthDp()
+    val screenHeight = windowHeightDp()
     val heroHeight =
         when (hero.kind) {
             ImageHeroKind.Backdrop ->

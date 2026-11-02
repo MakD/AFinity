@@ -316,8 +316,8 @@ fun DownloadSettingsScreen(
                     end = customPadding.calculateEndPadding(layoutDirection) + 16.dp,
                     bottom = customPadding.calculateBottomPadding() + 32.dp,
                 ),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
+            verticalArrangement = Arrangement.spacedBy(CardDimensions.GridRowGap),
         ) {
             item(key = "storage_strip", span = { GridItemSpan(maxLineSpan) }) {
                 DownloadStorageStrip(

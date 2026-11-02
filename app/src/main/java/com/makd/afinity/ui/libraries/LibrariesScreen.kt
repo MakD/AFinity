@@ -21,7 +21,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityCollection
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
@@ -30,6 +29,7 @@ import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.LibraryCard
+import com.makd.afinity.ui.components.bottomClearance
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions
 
@@ -45,7 +45,7 @@ fun LibrariesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lazyGridState = rememberLazyGridState()
-    val playerOffset = LocalPlayerOffset.current
+    val bottomClearance = bottomClearance()
 
     AfinityScreen(
         topBar = { backgroundOpacity ->
@@ -89,10 +89,10 @@ fun LibrariesScreen(
                             start = 16.dp,
                             end = 16.dp,
                             top = 16.dp,
-                            bottom = 16.dp + playerOffset,
+                            bottom = 16.dp + bottomClearance,
                         ),
                     horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(CardDimensions.GridRowGap),
                     modifier =
                         Modifier.fillMaxSize()
                             .windowInsetsPadding(

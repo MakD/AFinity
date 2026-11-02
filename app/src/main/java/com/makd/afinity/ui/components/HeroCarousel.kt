@@ -59,7 +59,6 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -87,7 +86,6 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.LocalHeroStyle
 import com.makd.afinity.navigation.LocalShowRatings
-import com.makd.afinity.navigation.LocalSkipServerImageResize
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.utils.bottomOverlap
 import com.vanniktech.blurhash.BlurHash
@@ -192,8 +190,7 @@ private data class HeroPeekMetrics(val top: Dp, val cardHeight: Dp, val indicato
         get() = top + cardHeight + indicatorHeight
 }
 
-private fun heroLogoUrl(item: AfinityItem, skipServerResize: Boolean): String? =
-    item.images.logoImageUrlWithTransparency(webp = !skipServerResize)
+private fun heroLogoUrl(item: AfinityItem): String? = item.images.logoImageUrlWithTransparency()
 
 private fun heroGenres(item: AfinityItem): List<String> =
     when (item) {
@@ -336,9 +333,7 @@ private fun heroPeekLogoSize(cardWidth: Dp, cardHeight: Dp, isLandscape: Boolean
 
 @Composable
 fun heroCarouselLayoutHeight(): Dp {
-    val density = LocalDensity.current
-    val windowInfo = LocalWindowInfo.current
-    val screenHeightDp = with(density) { windowInfo.containerSize.height.toDp() }
+    val screenHeightDp = windowHeightDp()
     val isLandscape = isLandscapeWindow()
     return when {
         LocalHeroStyle.current != HeroStyle.FULL_BLEED ->
@@ -368,9 +363,8 @@ fun HeroCarousel(
     val peek = heroStyle == HeroStyle.PEEK
 
     val density = LocalDensity.current
-    val windowInfo = LocalWindowInfo.current
-    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
-    val screenHeightDp = with(density) { windowInfo.containerSize.height.toDp() }
+    val screenWidthDp = windowWidthDp()
+    val screenHeightDp = windowHeightDp()
 
     val infinitePageCount = Int.MAX_VALUE
     val middleStart = infinitePageCount / 2
@@ -573,7 +567,6 @@ private fun HeroCarouselAutoScrollAndPrefetch(
 ) {
     val context = LocalContext.current
     val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
-    val skipServerResize = LocalSkipServerImageResize.current
 
     LaunchedEffect(pagerState.settledPage, isScrolling, isDragged, slideSeconds) {
         if (!isDragged && !isScrolling && items.size > 1) {
@@ -603,13 +596,13 @@ private fun HeroCarouselAutoScrollAndPrefetch(
         }
     }
 
-    LaunchedEffect(pagerState.currentPage, skipServerResize, logoWidthPx, logoHeightPx) {
+    LaunchedEffect(pagerState.currentPage, logoWidthPx, logoHeightPx) {
         if (items.size < 2) return@LaunchedEffect
         val current = pagerState.currentPage
         val neighbours = listOf(current + 1, current - 1).map { it.mod(items.size) }.distinct()
         for (index in neighbours) {
             val item = items[index]
-            val logoUrl = heroLogoUrl(item, skipServerResize)
+            val logoUrl = heroLogoUrl(item)
             if (logoUrl != null) {
                 val logoRequest =
                     ImageRequest.Builder(context)
@@ -969,7 +962,6 @@ private fun BoxScope.HeroPeekContentRich(
 
 @Composable
 private fun HeroPeekLogo(item: AfinityItem, logoSize: DpSize, alignStart: Boolean) {
-    val skipServerResize = LocalSkipServerImageResize.current
     val alignment = if (alignStart) Alignment.CenterStart else Alignment.Center
 
     Box(
@@ -978,8 +970,8 @@ private fun HeroPeekLogo(item: AfinityItem, logoSize: DpSize, alignStart: Boolea
     ) {
         if (item.images.logo != null) {
             AsyncImage(
-                imageUrl = heroLogoUrl(item, skipServerResize),
-                contentDescription = "${item.name} logo",
+                imageUrl = heroLogoUrl(item),
+                contentDescription = item.name,
                 blurHash = null,
                 targetWidth = logoSize.width,
                 targetHeight = logoSize.height,
@@ -1081,7 +1073,6 @@ private fun BoxScope.HeroContentCentered(
     onPlayTrailerClick: (AfinityItem) -> Unit,
     onMoreInformationClick: (AfinityItem) -> Unit,
 ) {
-    val skipServerResize = LocalSkipServerImageResize.current
     val buttonScale = heroButtonScale(HeroButtonSize)
     val (buttonContainer, buttonContent) = heroButtonColors()
     val bottomPad = if (logoHeight < 120.dp) 64.dp else 80.dp
@@ -1102,8 +1093,8 @@ private fun BoxScope.HeroContentCentered(
             ) {
                 currentItem.images.logo?.let { _ ->
                     AsyncImage(
-                        imageUrl = heroLogoUrl(currentItem, skipServerResize),
-                        contentDescription = "${currentItem.name} logo",
+                        imageUrl = heroLogoUrl(currentItem),
+                        contentDescription = currentItem.name,
                         blurHash = null,
                         targetWidth = screenWidthDp * HeroLogoPortraitWidthFraction,
                         targetHeight = logoHeight,
@@ -1219,7 +1210,6 @@ private fun HeroContentRich(
     onPlayTrailerClick: (AfinityItem) -> Unit,
     onMoreInformationClick: (AfinityItem) -> Unit,
 ) {
-    val skipServerResize = LocalSkipServerImageResize.current
     val buttonScale = heroButtonScale(HeroRichButtonSize)
     val (buttonContainer, buttonContent) = heroButtonColors()
 
@@ -1259,8 +1249,8 @@ private fun HeroContentRich(
                     ) {
                         currentItem.images.logo?.let { _ ->
                             AsyncImage(
-                                imageUrl = heroLogoUrl(currentItem, skipServerResize),
-                                contentDescription = "${currentItem.name} logo",
+                                imageUrl = heroLogoUrl(currentItem),
+                                contentDescription = currentItem.name,
                                 blurHash = null,
                                 targetWidth = screenWidthDp * HeroLogoLandscapeWidthFraction,
                                 targetHeight = clampedLogoHeight,

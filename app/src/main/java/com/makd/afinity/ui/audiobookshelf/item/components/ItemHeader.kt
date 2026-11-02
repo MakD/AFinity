@@ -27,7 +27,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -49,6 +48,7 @@ import com.makd.afinity.ui.components.DetailCoverTitle
 import com.makd.afinity.ui.components.getAutoFlagUrl
 import com.makd.afinity.ui.components.mediainfo.AudiobookMediaInfoSheet
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
+import com.makd.afinity.ui.theme.isDarkSurface
 
 @Composable
 fun ItemHeaderContent(
@@ -105,7 +105,7 @@ fun ItemHeaderContent(
                     Spacer(modifier = Modifier.width(4.dp))
 
                     val finishedColor =
-                        if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) {
+                        if (isDarkSurface()) {
                             Color(0xFF81C784)
                         } else {
                             Color(0xFF1B6E22)

@@ -7,6 +7,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.AfinityBadge
+import com.makd.afinity.ui.components.CardPill
 
 @Composable
 fun LiveBadge(modifier: Modifier = Modifier, textStyle: TextStyle? = null) {
@@ -16,6 +17,16 @@ fun LiveBadge(modifier: Modifier = Modifier, textStyle: TextStyle? = null) {
         containerColor = Color.Red,
         contentColor = Color.White,
         textStyle = textStyle,
+    )
+}
+
+@Composable
+fun LiveCardBadge(modifier: Modifier = Modifier) {
+    CardPill(
+        text = stringResource(R.string.livetv_live_badge),
+        containerColor = Color.Red,
+        contentColor = Color.White,
+        modifier = modifier,
     )
 }
 

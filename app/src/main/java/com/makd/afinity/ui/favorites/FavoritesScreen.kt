@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -66,18 +65,19 @@ import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityPersonDetail
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.MediaRowSection
 import com.makd.afinity.ui.components.SectionRowHeader
+import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.home.components.MusicAlbumRowSection
 import com.makd.afinity.ui.home.components.MusicPlaylistRowSection
 import com.makd.afinity.ui.main.MainUiState
@@ -120,7 +120,7 @@ fun FavoritesScreen(
     val isDownloadAllowedByServer by
         viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
     val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
@@ -190,12 +190,7 @@ fun FavoritesScreen(
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding =
-                                PaddingValues(
-                                    start = 16.dp,
-                                    top = 16.dp,
-                                    end = 16.dp,
-                                    bottom = 16.dp + playerOffset,
-                                ),
+                                PaddingValues(top = 16.dp, bottom = 16.dp + playerClearance),
                             verticalArrangement = Arrangement.spacedBy(24.dp),
                         ) {
                             if (uiState.boxSets.isNotEmpty()) {
@@ -303,7 +298,6 @@ fun FavoritesScreen(
                                     MusicAlbumRowSection(
                                         title = stringResource(R.string.favorites_albums),
                                         albums = uiState.favoriteAlbums,
-                                        horizontalPadding = 0.dp,
                                         onAlbumClick = { album ->
                                             onMusicAlbumClick(album.id.toString())
                                         },
@@ -318,7 +312,6 @@ fun FavoritesScreen(
                                     MusicArtistsRow(
                                         title = stringResource(R.string.favorites_artists),
                                         artists = uiState.favoriteArtists,
-                                        horizontalPadding = 0.dp,
                                         onArtistClick = { artist ->
                                             onMusicArtistClick(artist.id.toString())
                                         },
@@ -364,7 +357,6 @@ fun FavoritesScreen(
                                     MusicPlaylistRowSection(
                                         title = stringResource(R.string.section_favorite_playlists),
                                         playlists = uiState.favoritePlaylists,
-                                        horizontalPadding = 0.dp,
                                         onPlaylistClick = { playlist ->
                                             onMusicPlaylistClick(playlist.id.toString())
                                         },
@@ -411,13 +403,12 @@ private fun FavoritePeopleSection(
             titleHeight = CardDimensions.titleLine,
             metadataHeight = 0.dp,
         )
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(
+        modifier = Modifier.padding(horizontal = CardDimensions.RowGutter),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
         SectionRowHeader(title = title, onViewAllClick = onViewAllClick)
-        LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-        ) {
+        CardRow(modifier = Modifier.height(fixedRowHeight)) {
             items(people, key = { it.id.toString() }) { person ->
                 FavoritePersonCard(
                     person = person,
@@ -476,13 +467,12 @@ private fun FavoriteChannelsSection(
     onViewAllClick: (() -> Unit)? = null,
 ) {
     val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(
+        modifier = Modifier.padding(horizontal = CardDimensions.RowGutter),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
         SectionRowHeader(title = title, onViewAllClick = onViewAllClick)
-        LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-        ) {
+        CardRow(modifier = Modifier.height(fixedRowHeight)) {
             items(channels, key = { it.id.toString() }) { channel ->
                 FavoriteChannelCard(
                     channel = channel,
@@ -564,16 +554,15 @@ private fun FavoriteTracksSection(
             CardDimensions.posterCardWidth,
             CardDimensions.ASPECT_RATIO_SQUARE,
         )
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(
+        modifier = Modifier.padding(horizontal = CardDimensions.RowGutter),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
         SectionRowHeader(
             title = stringResource(R.string.favorites_songs),
             onViewAllClick = onViewAllClick,
         )
-        LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-        ) {
+        CardRow(modifier = Modifier.height(fixedRowHeight)) {
             items(tracks, key = { it.id }) { track ->
                 FavoriteTrackCard(
                     track = track,

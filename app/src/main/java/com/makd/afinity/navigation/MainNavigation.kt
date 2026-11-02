@@ -76,7 +76,6 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideoPlaylist
-import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.data.updater.UpdateManager
 import com.makd.afinity.data.websocket.WebSocketState
 import com.makd.afinity.ui.admin.identify.IdentifyScreen
@@ -147,7 +146,6 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 val LocalPlayerOffset = compositionLocalOf { 0.dp }
-val LocalSkipServerImageResize = compositionLocalOf { false }
 val LocalSideSheetEnabled = compositionLocalOf { true }
 val LocalShowRatings = compositionLocalOf { true }
 
@@ -450,7 +448,6 @@ fun MainNavigation(
             val drawerBody: @Composable () -> Unit = {
                 CompositionLocalProvider(
                     LocalPlayerOffset provides globalPlayerOffset,
-                    LocalSkipServerImageResize provides (connectionType == ConnectionType.LOCAL),
                     LocalSideSheetEnabled provides sideSheetEnabled,
                     LocalShowRatings provides showRatings,
                     LocalShowAwards provides showAwards,

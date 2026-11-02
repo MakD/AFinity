@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -80,7 +79,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.admin.EditableItem
 import com.makd.afinity.data.models.admin.EditablePerson
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.admin.components.adminContentBottomPadding
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
@@ -90,6 +88,7 @@ import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.FullScreenError
+import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 
 private const val DEFAULT_PERSON_TYPE = "Actor"
@@ -295,7 +294,7 @@ fun EditMetadataScreen(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     shape = CardShape,
-                    modifier = Modifier.padding(bottom = LocalPlayerOffset.current),
+                    modifier = Modifier.padding(bottom = playerClearance()),
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -400,7 +399,6 @@ private fun GeneralTab(
         modifier =
             Modifier.fillMaxSize()
                 .imePadding()
-                .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -473,7 +471,7 @@ private fun GeneralTab(
         Spacer(
             modifier =
                 Modifier.height(
-                    adminContentBottomPadding(hasFloatingButton = true) + LocalPlayerOffset.current
+                    adminContentBottomPadding(hasFloatingButton = true) + playerClearance()
                 )
         )
     }
@@ -637,8 +635,7 @@ private fun PeopleTab(item: EditableItem, viewModel: EditMetadataViewModel) {
                 start = 16.dp,
                 end = 16.dp,
                 top = 8.dp,
-                bottom =
-                    adminContentBottomPadding(hasFloatingButton = true) + LocalPlayerOffset.current,
+                bottom = adminContentBottomPadding(hasFloatingButton = true) + playerClearance(),
             ),
     ) {
         item {
@@ -891,7 +888,6 @@ private fun AdvancedTab(
         modifier =
             Modifier.fillMaxSize()
                 .imePadding()
-                .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -1002,7 +998,7 @@ private fun AdvancedTab(
         Spacer(
             modifier =
                 Modifier.height(
-                    adminContentBottomPadding(hasFloatingButton = true) + LocalPlayerOffset.current
+                    adminContentBottomPadding(hasFloatingButton = true) + playerClearance()
                 )
         )
     }

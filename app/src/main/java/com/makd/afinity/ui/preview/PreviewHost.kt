@@ -16,8 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -27,6 +25,7 @@ import coil3.compose.AsyncImagePreviewHandler
 import coil3.compose.LocalAsyncImagePreviewHandler
 import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.windowWidthDp
 import com.makd.afinity.ui.theme.AFinityTheme
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
@@ -78,7 +77,7 @@ fun PreviewHost(
 
 @Composable
 fun previewWidthSizeClass(): WindowWidthSizeClass {
-    val width = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
+    val width = windowWidthDp()
     return when {
         width < 600.dp -> WindowWidthSizeClass.Compact
         width < 840.dp -> WindowWidthSizeClass.Medium

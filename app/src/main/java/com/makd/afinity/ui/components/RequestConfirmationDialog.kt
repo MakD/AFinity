@@ -42,9 +42,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -164,8 +162,7 @@ fun RequestConfirmationDialog(
             }
 
     val headerImageUrl = mediaBackdropUrl?.takeIf { it.isNotBlank() } ?: mediaPosterUrl
-    val headerTargetWidth =
-        with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
+    val headerTargetWidth = windowWidthDp()
     val scrollState = rememberScrollState()
     LaunchedEffect(mediaTitle) { scrollState.scrollTo(0) }
 

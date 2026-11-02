@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -80,14 +79,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.makd.afinity.R
 import com.makd.afinity.data.models.admin.ItemImage
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AfinityTopBar
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.components.MediaCountBadge
+import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.util.formatFileSize
@@ -281,7 +281,7 @@ fun EditImagesScreen(
                             start = 16.dp,
                             end = 16.dp,
                             top = 8.dp,
-                            bottom = 16.dp + LocalPlayerOffset.current,
+                            bottom = 16.dp + playerClearance(),
                         ),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -727,11 +727,7 @@ private fun CurrentImageStrip(
         }
     val tileWidth = if (shape.ratio > 1f) 176.dp else 120.dp
 
-    LazyRow(
-        state = listState,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    CardRow(state = listState, modifier = Modifier.fillMaxWidth()) {
         itemsIndexed(ordered, key = { _, image -> image.url ?: image.hashCode() }) { index, image ->
             ReorderableItem(reorderState, key = image.url ?: image.hashCode()) { isDragging ->
                 val elevation by

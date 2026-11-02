@@ -71,7 +71,6 @@ private fun String.isLogoImage(): Boolean = contains("/Images/Logo")
 internal fun optimizedImageUrl(
     imageUrl: String?,
     widthPx: Int,
-    skipServerResize: Boolean = false,
     heightPx: Int? = null,
 ): String? {
     if (imageUrl == null) return imageUrl

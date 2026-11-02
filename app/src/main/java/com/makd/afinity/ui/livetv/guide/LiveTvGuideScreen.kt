@@ -61,7 +61,6 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.AfinityProgram
 import com.makd.afinity.data.models.livetv.LiveTvViewOptions
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
@@ -69,6 +68,7 @@ import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.FilterFab
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.livetv.components.EpgChannelCell
 import com.makd.afinity.ui.livetv.components.EpgPendingRow
 import com.makd.afinity.ui.livetv.components.EpgProgramRow
@@ -148,7 +148,7 @@ private fun BoxScope.GuideContentWithFilters(
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val context = LocalContext.current
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     var showFilters by rememberSaveable { mutableStateOf(false) }
     val activeCount = viewOptions.activeCount(includeGuideOptions = true)
 
@@ -178,7 +178,8 @@ private fun BoxScope.GuideContentWithFilters(
         onClick = { showFilters = true },
         badgeCount = activeCount,
         modifier =
-            Modifier.align(Alignment.BottomEnd).padding(end = 24.dp, bottom = 16.dp + playerOffset),
+            Modifier.align(Alignment.BottomEnd)
+                .padding(end = 24.dp, bottom = 16.dp + playerClearance),
     )
 
     if (showFilters) {
@@ -217,7 +218,7 @@ private fun LiveTvGuideContent(
         return
     }
 
-    val playerOffset = LocalPlayerOffset.current
+    val playerClearance = playerClearance()
     val channelCellWidth: Dp = CardDimensions.epgChannelCellWidth
     val hourWidth: Dp = CardDimensions.epgHourWidth
 
@@ -321,7 +322,7 @@ private fun LiveTvGuideContent(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             state = listState,
-            contentPadding = PaddingValues(bottom = playerOffset),
+            contentPadding = PaddingValues(bottom = playerClearance),
         ) {
             stickyHeader {
                 Row(

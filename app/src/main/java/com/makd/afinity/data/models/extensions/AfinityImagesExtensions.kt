@@ -38,10 +38,8 @@ val AfinityImages.showThumbBlurHash: String?
 val AfinityImages.showPrimaryBlurHash: String?
     get() = showPrimaryImageBlurHash
 
-fun String.withLogoFormat(webp: Boolean): String {
-    val format = if (webp) "webp" else "png"
-    return if (contains("?")) "$this&format=$format" else "$this?format=$format"
+fun String.withLogoFormat(): String {
+    return if (contains("?")) "$this&format=webp" else "$this?format=webp"
 }
 
-fun AfinityImages.logoImageUrlWithTransparency(webp: Boolean): String? =
-    logoImageUrl?.withLogoFormat(webp)
+fun AfinityImages.logoImageUrlWithTransparency(): String? = logoImageUrl?.withLogoFormat()

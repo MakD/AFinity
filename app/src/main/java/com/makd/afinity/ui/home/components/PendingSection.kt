@@ -18,11 +18,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.ui.components.isLandscapeWindow
+import com.makd.afinity.ui.components.windowHeightDp
+import com.makd.afinity.ui.components.windowWidthDp
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.utils.shimmerEffect
 
@@ -50,10 +50,8 @@ fun PendingSection(
 
         if (cardStyle == CustomSectionCardStyle.SPOTLIGHT) {
             val isLandscape = isLandscapeWindow()
-            val containerSize = LocalWindowInfo.current.containerSize
-            val density = LocalDensity.current
-            val containerWidth = with(density) { containerSize.width.toDp() }
-            val containerHeight = with(density) { containerSize.height.toDp() }
+            val containerWidth = windowWidthDp()
+            val containerHeight = windowHeightDp()
             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                 val itemSize =
                     CardDimensions.carouselItemSize(

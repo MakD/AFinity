@@ -2,16 +2,13 @@ package com.makd.afinity.ui.music.album
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityAlbum
+import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.DetailGutter
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.music.components.MusicAlbumCard
@@ -81,11 +79,7 @@ fun AlbumRelatedSection(
 
         val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_SQUARE)
 
-        LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-            horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
-        ) {
+        CardRow(modifier = Modifier.height(fixedRowHeight)) {
             items(albums, key = { it.id }) { album ->
                 Box(modifier = Modifier.width(cardWidth)) {
                     MusicAlbumCard(

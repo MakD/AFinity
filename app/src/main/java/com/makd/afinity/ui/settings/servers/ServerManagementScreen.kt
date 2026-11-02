@@ -45,6 +45,7 @@ import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.SettingsGroupTitle
+import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.settings.servers.components.DeleteServerConfirmationDialog
 import com.makd.afinity.ui.settings.servers.components.EmptyServersState
 import com.makd.afinity.ui.settings.servers.components.UnverifiedAddressDialog
@@ -146,7 +147,7 @@ private fun ServerListPane(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { if (!isOffline) onAddServerClick() },
-                modifier = Modifier.padding(bottom = playerOffset),
+                modifier = Modifier.padding(bottom = playerClearance()),
                 containerColor =
                     if (isOffline) MaterialTheme.colorScheme.surfaceContainerHighest
                     else MaterialTheme.colorScheme.primary,
