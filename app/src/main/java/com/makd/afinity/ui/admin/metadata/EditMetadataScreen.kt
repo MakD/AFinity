@@ -421,6 +421,12 @@ private fun GeneralTab(
             modifier = Modifier.fillMaxWidth(),
         )
         AfinityTextField(
+            value = item.forcedSortName ?: "",
+            onValueChange = viewModel::updateSortTitle,
+            label = stringResource(R.string.admin_field_sort_title),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        AfinityTextField(
             value = item.overview ?: "",
             onValueChange = viewModel::updateOverview,
             label = stringResource(R.string.admin_field_overview),

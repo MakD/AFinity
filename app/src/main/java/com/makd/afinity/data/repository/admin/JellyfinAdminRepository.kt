@@ -116,6 +116,7 @@ constructor(
                     existing.copy(
                         name = item.name,
                         originalTitle = item.originalTitle,
+                        forcedSortName = item.forcedSortName,
                         overview = item.overview,
                         productionYear = item.productionYear,
                         officialRating = item.officialRating,
@@ -747,6 +748,7 @@ constructor(
             id = id.toString(),
             name = name ?: "",
             originalTitle = originalTitle,
+            forcedSortName = forcedSortName,
             overview = overview,
             productionYear = productionYear,
             premiereDate = premiereDate?.toString(),

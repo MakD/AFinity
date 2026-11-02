@@ -95,6 +95,8 @@ constructor(
 
     fun updateOriginalTitle(value: String) = update { copy(originalTitle = value.ifBlank { null }) }
 
+    fun updateSortTitle(value: String) = update { copy(forcedSortName = value.ifBlank { null }) }
+
     fun updateOverview(value: String) = update { copy(overview = value.ifBlank { null }) }
 
     fun updateYear(value: String) {

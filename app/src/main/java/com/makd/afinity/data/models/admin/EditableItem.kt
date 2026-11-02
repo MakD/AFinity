@@ -4,6 +4,7 @@ data class EditableItem(
     val id: String,
     val name: String,
     val originalTitle: String?,
+    val forcedSortName: String?,
     val overview: String?,
     val productionYear: Int?,
     val premiereDate: String?,

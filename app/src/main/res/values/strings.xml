@@ -3019,6 +3019,7 @@
     <string name="admin_tab_advanced">Advanced</string>
     <string name="admin_field_title">Title</string>
     <string name="admin_field_original_title">Original Title</string>
+    <string name="admin_field_sort_title">Sort Title</string>
     <string name="admin_field_overview">Overview</string>
     <string name="admin_field_year">Year</string>
     <string name="admin_field_rating">Rating</string>
