@@ -20,6 +20,8 @@ import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.lastfm.LastFmRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.store.ItemStore
+import com.makd.afinity.ui.components.DownloadConfirm
+import com.makd.afinity.ui.components.DownloadConfirmKind
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
 import javax.inject.Inject
@@ -337,13 +339,28 @@ constructor(
         }
     }
 
-    fun cancelAlbumDownload() {
+    private fun albumDownloadTargets(deleteCompleted: Boolean): List<DownloadInfo> =
+        _uiState.value.trackDownloadInfos.values
+            .filter { it.seriesId == albumId.toString() }
+            .filter { (it.status == DownloadStatus.COMPLETED) == deleteCompleted }
+
+    fun albumDownloadConfirm(): DownloadConfirm? {
         val isDelete = _uiState.value.albumDownloadInfo?.status == DownloadStatus.COMPLETED
+        val targets = albumDownloadTargets(isDelete)
+        if (targets.isEmpty()) return null
+        return DownloadConfirm(
+            kind = if (isDelete) DownloadConfirmKind.DELETE else DownloadConfirmKind.CANCEL,
+            title = _uiState.value.album?.name.orEmpty(),
+            count = targets.size,
+            bytes = targets.sumOf { it.totalBytes },
+        )
+    }
+
+    fun cancelAlbumDownload(deleteCompleted: Boolean) {
         viewModelScope.launch {
-            _uiState.value.trackDownloadInfos.values
-                .filter { it.seriesId == albumId.toString() }
-                .filter { isDelete || it.status != DownloadStatus.COMPLETED }
-                .forEach { downloadRepository.cancelDownload(it.id) }
+            albumDownloadTargets(deleteCompleted).forEach {
+                downloadRepository.cancelDownload(it.id)
+            }
         }
     }
 

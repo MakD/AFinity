@@ -79,6 +79,7 @@ import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.BackdropStyle
 import com.makd.afinity.ui.components.DeleteItemDialog
 import com.makd.afinity.ui.components.DetailGutter
+import com.makd.afinity.ui.components.DownloadConfirmDialog
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.ImageHeroKind
@@ -100,6 +101,7 @@ import com.makd.afinity.ui.item.components.seasonDetailItems
 import com.makd.afinity.ui.item.components.seriesDetailItems
 import com.makd.afinity.ui.item.components.shared.ActionButtonsRow
 import com.makd.afinity.ui.item.components.shared.AdminAction
+import com.makd.afinity.ui.item.components.shared.DetailPrimaryButton
 import com.makd.afinity.ui.item.components.shared.LocalDetailLayout
 import com.makd.afinity.ui.item.components.shared.MediaLogoHeader
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
@@ -183,6 +185,27 @@ fun ItemDetailScreen(
     var showVersionPickerForPlay by remember { mutableStateOf(false) }
     var pendingNavigationSeriesId by remember { mutableStateOf<String?>(null) }
     var pendingNavigationPersonId by remember { mutableStateOf<String?>(null) }
+
+    val currentOnShowSnackbar by rememberUpdatedState(onShowSnackbar)
+    val collectionPlayFailed = stringResource(R.string.collection_play_failed)
+    val collectionPlayEmpty = stringResource(R.string.collection_play_empty)
+    LaunchedEffect(viewModel) {
+        viewModel.collectionPlaybackEvents.collect { event ->
+            when (event) {
+                is CollectionPlaybackEvent.Launch ->
+                    PlayerLauncher.launch(
+                        context = context,
+                        itemId = event.itemId,
+                        mediaSourceId = event.mediaSourceId,
+                        startPositionMs = event.startPositionMs,
+                        shuffle = event.shuffle,
+                        collectionId = event.collectionId,
+                    )
+                CollectionPlaybackEvent.Empty -> currentOnShowSnackbar(collectionPlayEmpty)
+                CollectionPlaybackEvent.Failed -> currentOnShowSnackbar(collectionPlayFailed)
+            }
+        }
+    }
 
     fun interceptPlayClick(item: AfinityItem, selection: PlaybackSelection?) {
         val remoteSources =
@@ -397,6 +420,14 @@ fun ItemDetailScreen(
                 onPersonClick(pendingNavigationPersonId!!)
                 pendingNavigationPersonId = null
             }
+        }
+
+        uiState.downloadConfirm?.let { confirm ->
+            DownloadConfirmDialog(
+                confirm = confirm,
+                onConfirm = { viewModel.confirmDownloadAction() },
+                onDismiss = { viewModel.dismissDownloadConfirm() },
+            )
         }
 
         if (uiState.showQualityDialog) {
@@ -737,9 +768,14 @@ private fun LandscapeItemDetailContent(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        if (
-                            item !is AfinityBoxSet && item !is AfinityVideoPlaylist && item.canPlay
-                        ) {
+                        if (item is AfinityBoxSet) {
+                            Box(modifier = Modifier.widthIn(max = 200.dp)) {
+                                CollectionPlayButton(
+                                    isLoading = uiState.isStartingCollectionPlayback,
+                                    onClick = { viewModel.playCollection() },
+                                )
+                            }
+                        } else if (item !is AfinityVideoPlaylist && item.canPlay) {
                             Box(modifier = Modifier.widthIn(max = 200.dp)) {
                                 PrimaryPlaybackButton(
                                     item = item,
@@ -771,7 +807,10 @@ private fun LandscapeItemDetailContent(
                             hasPlayableItems = hasPlayableItems,
                             onPlayTrailer = { playTrailer(item, context, viewModel) },
                             onToggleWatchlist = { viewModel.toggleWatchlist() },
-                            onShufflePlay = { shufflePlay(item, nextEpisode, context) },
+                            onShufflePlay = {
+                                if (item is AfinityBoxSet) viewModel.playCollection(shuffle = true)
+                                else shufflePlay(item, nextEpisode, context)
+                            },
                             onToggleFavorite = { viewModel.toggleFavorite() },
                             onToggleWatched = { viewModel.toggleWatched() },
                             onDownloadClick = { viewModel.onDownloadClick() },
@@ -1024,7 +1063,12 @@ private fun PortraitItemDetailContent(
                 )
             }
 
-            if (item !is AfinityBoxSet && item !is AfinityVideoPlaylist && item.canPlay) {
+            if (item is AfinityBoxSet) {
+                CollectionPlayButton(
+                    isLoading = uiState.isStartingCollectionPlayback,
+                    onClick = { viewModel.playCollection() },
+                )
+            } else if (item !is AfinityVideoPlaylist && item.canPlay) {
                 PrimaryPlaybackButton(
                     item = item,
                     nextEpisode = nextEpisode,
@@ -1044,7 +1088,10 @@ private fun PortraitItemDetailContent(
                 hasPlayableItems = hasPlayableItems,
                 onPlayTrailer = { playTrailer(item, context, viewModel) },
                 onToggleWatchlist = { viewModel.toggleWatchlist() },
-                onShufflePlay = { shufflePlay(item, nextEpisode, context) },
+                onShufflePlay = {
+                    if (item is AfinityBoxSet) viewModel.playCollection(shuffle = true)
+                    else shufflePlay(item, nextEpisode, context)
+                },
                 onToggleFavorite = { viewModel.toggleFavorite() },
                 onToggleWatched = { viewModel.toggleWatched() },
                 onDownloadClick = { viewModel.onDownloadClick() },
@@ -1434,6 +1481,17 @@ private fun rememberMediaSourceOptions(item: AfinityItem): List<MediaSourceOptio
             )
         }
     }
+}
+
+@Composable
+private fun CollectionPlayButton(isLoading: Boolean, onClick: () -> Unit) {
+    DetailPrimaryButton(
+        text = stringResource(R.string.action_play),
+        onClick = onClick,
+        icon = painterResource(id = R.drawable.ic_player_play_filled),
+        enabled = !isLoading,
+        isLoading = isLoading,
+    )
 }
 
 private fun identifyItemType(item: AfinityItem): String? =

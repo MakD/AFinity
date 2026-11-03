@@ -21,7 +21,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,9 +42,13 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
+import com.makd.afinity.ui.components.DownloadConfirm
+import com.makd.afinity.ui.components.DownloadConfirmDialog
 import com.makd.afinity.ui.components.MetadataOverflowRow
 import com.makd.afinity.ui.components.formatRuntimeSeconds
 import com.makd.afinity.ui.components.formatTimeLeftSeconds
+import com.makd.afinity.ui.components.matches
+import com.makd.afinity.ui.components.singleDownloadConfirm
 import com.makd.afinity.ui.utils.htmlToAnnotatedString
 import com.makd.afinity.util.DateSkeleton
 import com.makd.afinity.util.localizedDateFormat
@@ -108,6 +115,18 @@ private fun ExpandableEpisodeItem(
 ) {
     val hasDescription = !episode.description.isNullOrBlank()
     val isFinished = progress?.isFinished == true
+    var pendingDeleteConfirm by remember { mutableStateOf<DownloadConfirm?>(null) }
+
+    pendingDeleteConfirm?.let { confirm ->
+        DownloadConfirmDialog(
+            confirm = confirm,
+            onConfirm = {
+                pendingDeleteConfirm = null
+                if (downloadInfo?.matches(confirm) == true) onDeleteDownload?.invoke()
+            },
+            onDismiss = { pendingDeleteConfirm = null },
+        )
+    }
 
     Column(
         modifier =
@@ -218,7 +237,10 @@ private fun ExpandableEpisodeItem(
                     when {
                         downloadInfo?.status == AbsDownloadStatus.COMPLETED ->
                             IconButton(
-                                onClick = { onDeleteDownload?.invoke() },
+                                onClick = {
+                                    pendingDeleteConfirm =
+                                        downloadInfo?.singleDownloadConfirm(episode.title)
+                                },
                                 modifier = Modifier.size(32.dp),
                             ) {
                                 Icon(

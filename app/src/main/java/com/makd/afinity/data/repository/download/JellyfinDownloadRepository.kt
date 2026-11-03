@@ -44,7 +44,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -834,22 +833,30 @@ constructor(
             }
         }
 
-    override suspend fun cancelAllSeriesDownloads(showId: UUID): Result<Unit> =
+    override suspend fun startBoxSetDownload(
+        boxSetId: UUID,
+        volumeId: String?,
+        quality: DownloadQuality?,
+    ): Result<Int> =
         withContext(Dispatchers.IO) {
             return@withContext try {
-                val downloads = getAllDownloadsFlow().first()
-                val toCancel = downloads.filter {
-                    it.seriesId == showId.toString() && it.status != DownloadStatus.COMPLETED
+                val items = mediaRepository.getBoxSetPlaybackItemsResult(boxSetId).getOrThrow()
+                var started = 0
+                for (item in items) {
+                    startDownload(item.id, "", volumeId, null, quality)
+                        .onSuccess { started++ }
+                        .onFailure { error ->
+                            if (error is VolumeUnavailableException)
+                                return@withContext Result.failure(error)
+                            Timber.w(error, "Skipping ${item.name}: ${error.message}")
+                        }
                 }
-                for (download in toCancel) {
-                    cancelDownload(download.id)
-                }
-                Timber.i("Cancelled ${toCancel.size} downloads for series $showId")
-                Result.success(Unit)
+                Timber.i("Collection download queued $started/${items.size} items for $boxSetId")
+                Result.success(started)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Timber.e(e, "Failed to cancel series downloads")
+                Timber.e(e, "Failed to start collection download")
                 Result.failure(e)
             }
         }
@@ -962,30 +969,6 @@ constructor(
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start playlist download")
-                Result.failure(e)
-            }
-        }
-
-    override suspend fun cancelAllSeasonDownloads(seriesId: UUID, seasonNumber: Int): Result<Unit> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val downloads = getAllDownloadsFlow().first()
-                val toCancel = downloads.filter {
-                    it.seriesId == seriesId.toString() &&
-                        it.seasonNumber == seasonNumber &&
-                        it.status != DownloadStatus.COMPLETED
-                }
-                for (download in toCancel) {
-                    cancelDownload(download.id)
-                }
-                Timber.i(
-                    "Cancelled ${toCancel.size} downloads for series $seriesId season $seasonNumber"
-                )
-                Result.success(Unit)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to cancel season downloads")
                 Result.failure(e)
             }
         }

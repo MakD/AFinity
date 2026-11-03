@@ -1208,6 +1208,19 @@
         <item quantity="one">Delete %1$d item</item>
         <item quantity="other">Delete %1$d items</item>
     </plurals>
+    <string name="download_confirm_delete_one_fmt">This frees up %1$s. You can download it again later.</string>
+    <plurals name="download_confirm_delete_many_fmt">
+        <item quantity="one">Deletes %1$d download and frees up %2$s. You can download it again later.</item>
+        <item quantity="other">Deletes %1$d downloads and frees up %2$s. You can download them again later.</item>
+    </plurals>
+    <string name="download_confirm_cancel_one">Stops the download.</string>
+    <string name="download_confirm_cancel_one_fmt">Stops the download and discards the %1$s downloaded so far.</string>
+    <plurals name="download_confirm_cancel_many_fmt">
+        <item quantity="one">Stops %1$d download. Finished downloads are kept.</item>
+        <item quantity="other">Stops %1$d downloads. Finished downloads are kept.</item>
+    </plurals>
+    <string name="action_stop_download">Stop download</string>
+    <string name="action_keep_downloading">Keep downloading</string>
     <string name="downloads_open_item">Open in library</string>
     <string name="downloads_storage_free_fmt">%1$s free</string>
     <string name="downloads_sort_recent">Recently added</string>
@@ -3265,6 +3278,8 @@
     <string name="collection_update_failed">Couldn\'t update the collection</string>
     <string name="collection_open">Open</string>
     <string name="cd_collection_remove_item">Remove %1$s from the collection</string>
+    <string name="collection_play_failed">Couldn\'t load the collection for playback</string>
+    <string name="collection_play_empty">Nothing in this collection can be played</string>
     <plurals name="collection_item_count">
         <item quantity="one">%d item</item>
         <item quantity="other">%d items</item>

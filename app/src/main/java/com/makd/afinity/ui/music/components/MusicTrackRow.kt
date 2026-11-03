@@ -42,8 +42,12 @@ import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.ui.components.AfinityMenuItem
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.DownloadConfirm
+import com.makd.afinity.ui.components.DownloadConfirmDialog
 import com.makd.afinity.ui.components.formatClockTicks
+import com.makd.afinity.ui.components.matches
 import com.makd.afinity.ui.components.mediainfo.TrackMediaInfoSheet
+import com.makd.afinity.ui.components.singleDownloadConfirm
 import com.makd.afinity.ui.item.components.DownloadProgressIndicator
 
 @Composable
@@ -76,8 +80,21 @@ fun MusicTrackRow(
             downloadStatus == DownloadStatus.FAILED ||
             downloadStatus == DownloadStatus.CANCELLED
 
+    var pendingDeleteConfirm by remember { mutableStateOf<DownloadConfirm?>(null) }
+
     if (showMediaInfo) {
         TrackMediaInfoSheet(track = track, onDismiss = { showMediaInfo = false })
+    }
+
+    pendingDeleteConfirm?.let { confirm ->
+        DownloadConfirmDialog(
+            confirm = confirm,
+            onConfirm = {
+                pendingDeleteConfirm = null
+                if (downloadInfo?.matches(confirm) == true) onCancelDownload?.invoke()
+            },
+            onDismiss = { pendingDeleteConfirm = null },
+        )
     }
 
     Row(
@@ -344,6 +361,9 @@ fun MusicTrackRow(
                             showMenu = false
                             if (isDownloadIdle || downloadStatus == DownloadStatus.PAUSED) {
                                 onDownload()
+                            } else if (downloadStatus == DownloadStatus.COMPLETED) {
+                                pendingDeleteConfirm =
+                                    downloadInfo?.singleDownloadConfirm(track.name)
                             } else {
                                 onCancelDownload?.invoke()
                             }

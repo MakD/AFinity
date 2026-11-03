@@ -57,6 +57,9 @@ import com.makd.afinity.ui.components.DetailCoverImage
 import com.makd.afinity.ui.components.DetailCoverTitle
 import com.makd.afinity.ui.components.DetailGutter
 import com.makd.afinity.ui.components.DetailMenuAction
+import com.makd.afinity.ui.components.DownloadConfirm
+import com.makd.afinity.ui.components.DownloadConfirmDialog
+import com.makd.afinity.ui.components.DownloadConfirmKind
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.LandscapeDetailArrangement
 import com.makd.afinity.ui.components.LandscapeDetailLayout
@@ -238,14 +241,27 @@ fun MusicAlbumScreen(
             }
             if (isDownloadAllowedByServer) {
                 var showDownloadQualityDialog by remember { mutableStateOf(false) }
+                var pendingDownloadConfirm by remember { mutableStateOf<DownloadConfirm?>(null) }
                 val defaultDownloadQuality by
                     viewModel.defaultMusicDownloadQuality.collectAsStateWithLifecycle()
+                pendingDownloadConfirm?.let { confirm ->
+                    DownloadConfirmDialog(
+                        confirm = confirm,
+                        onConfirm = {
+                            pendingDownloadConfirm = null
+                            viewModel.cancelAlbumDownload(
+                                deleteCompleted = confirm.kind == DownloadConfirmKind.DELETE
+                            )
+                        },
+                        onDismiss = { pendingDownloadConfirm = null },
+                    )
+                }
                 DownloadProgressIndicator(
                     downloadInfo = uiState.albumDownloadInfo,
                     onDownloadClick = { viewModel.downloadAlbum() },
                     onPauseClick = {},
                     onResumeClick = { viewModel.downloadAlbum() },
-                    onCancelClick = { viewModel.cancelAlbumDownload() },
+                    onCancelClick = { pendingDownloadConfirm = viewModel.albumDownloadConfirm() },
                     canDownload = canDownloadOnNetwork,
                     onDownloadLongClick = { showDownloadQualityDialog = true },
                     iconSize = 26.dp,

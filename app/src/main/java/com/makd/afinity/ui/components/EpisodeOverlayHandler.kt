@@ -49,6 +49,20 @@ fun EpisodeOverlayHandler(
     var volumes by remember { mutableStateOf<List<StorageVolumeInfo>>(emptyList()) }
     var selectedVolumeId by remember { mutableStateOf<String?>(null) }
     var defaultQualityBitrate by remember { mutableIntStateOf(VideoQuality.ORIGINAL_BITRATE) }
+    var pendingDownloadConfirm by remember { mutableStateOf<DownloadConfirm?>(null) }
+
+    pendingDownloadConfirm?.let { confirm ->
+        DownloadConfirmDialog(
+            confirm = confirm,
+            onConfirm = {
+                pendingDownloadConfirm = null
+                if (downloadInfo?.matches(confirm) == true) {
+                    downloadDelegate.cancelDownload(scope, downloadInfo)
+                }
+            },
+            onDismiss = { pendingDownloadConfirm = null },
+        )
+    }
 
     selectedEpisode?.let { episode ->
         val openDownloadPicker = {
@@ -92,7 +106,11 @@ fun EpisodeOverlayHandler(
             },
             onPauseDownload = { downloadDelegate.pauseDownload(scope, downloadInfo) },
             onResumeDownload = { downloadDelegate.resumeDownload(scope, downloadInfo) },
-            onCancelDownload = { downloadDelegate.cancelDownload(scope, downloadInfo) },
+            onCancelDownload = {
+                val confirm = downloadInfo?.singleDownloadConfirm(episode.name)
+                if (confirm == null) downloadDelegate.cancelDownload(scope, downloadInfo)
+                else pendingDownloadConfirm = confirm
+            },
             onDownloadLongClick = openDownloadPicker,
             onGoToSeries = {
                 onClearSelection()

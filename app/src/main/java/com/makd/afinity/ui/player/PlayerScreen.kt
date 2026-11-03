@@ -77,6 +77,7 @@ fun PlayerScreen(
     seasonId: UUID? = null,
     shuffle: Boolean = false,
     playlistId: UUID? = null,
+    collectionId: UUID? = null,
     isLiveChannel: Boolean = false,
     liveStreamUrl: String? = null,
     livePlaybackInfo: LiveTvPlaybackInfo? = null,
@@ -145,6 +146,7 @@ fun PlayerScreen(
                 seasonId = seasonId,
                 shuffle = shuffle,
                 playlistId = playlistId,
+                collectionId = collectionId,
                 attachToCast = attachToCast,
             )
         }

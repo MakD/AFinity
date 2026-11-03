@@ -91,9 +91,12 @@ import com.makd.afinity.ui.components.AfinitySwitch
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.DownloadConfirm
+import com.makd.afinity.ui.components.DownloadConfirmDialog
 import com.makd.afinity.ui.components.DownloadListItemRow
 import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.components.formatRuntimeSeconds
+import com.makd.afinity.ui.components.singleDownloadConfirm
 import com.makd.afinity.ui.downloads.DownloadCatalogEntry
 import com.makd.afinity.ui.downloads.DownloadCatalogRef
 import com.makd.afinity.ui.downloads.DownloadCategory
@@ -127,6 +130,67 @@ fun DownloadSettingsScreen(
     var selectedEntry by remember { mutableStateOf<DownloadCatalogEntry?>(null) }
     var pendingBulkDelete by remember { mutableStateOf(false) }
     var pendingEntryDelete by remember { mutableStateOf<DownloadCatalogEntry?>(null) }
+    var pendingDownloadConfirm by remember {
+        mutableStateOf<Pair<DownloadConfirm, () -> Unit>?>(null)
+    }
+
+    pendingDownloadConfirm?.let { (confirm, action) ->
+        DownloadConfirmDialog(
+            confirm = confirm,
+            onConfirm = {
+                pendingDownloadConfirm = null
+                action()
+            },
+            onDismiss = { pendingDownloadConfirm = null },
+        )
+    }
+
+    fun deleteChild(downloadId: UUID) {
+        val download = uiState.completedDownloads.find { it.id == downloadId } ?: return
+        val confirm = download.singleDownloadConfirm(download.itemName) ?: return
+        pendingDownloadConfirm = confirm to { viewModel.deleteDownload(downloadId) }
+    }
+
+    fun deleteAbsChild(downloadId: UUID) {
+        val download = uiState.absCompletedDownloads.find { it.id == downloadId } ?: return
+        val confirm = download.singleDownloadConfirm(download.title) ?: return
+        pendingDownloadConfirm = confirm to { viewModel.deleteAbsDownload(downloadId) }
+    }
+
+    fun cancelActive(downloadId: UUID) {
+        val confirm =
+            uiState.activeDownloads
+                .find { it.id == downloadId }
+                ?.takeIf { it.itemType != "Audio" }
+                ?.let { it.singleDownloadConfirm(it.itemName) }
+        if (confirm == null) {
+            viewModel.cancelDownload(downloadId)
+            return
+        }
+        val action: () -> Unit = {
+            if (uiState.activeDownloads.any { it.id == downloadId }) {
+                viewModel.cancelDownload(downloadId)
+            }
+        }
+        pendingDownloadConfirm = confirm to action
+    }
+
+    fun cancelAbsActive(downloadId: UUID) {
+        val confirm =
+            uiState.absActiveDownloads
+                .find { it.id == downloadId }
+                ?.let { it.singleDownloadConfirm(it.title) }
+        if (confirm == null) {
+            viewModel.cancelAbsDownload(downloadId)
+            return
+        }
+        val action: () -> Unit = {
+            if (uiState.absActiveDownloads.any { it.id == downloadId }) {
+                viewModel.cancelAbsDownload(downloadId)
+            }
+        }
+        pendingDownloadConfirm = confirm to action
+    }
 
     var selectedKeyList by rememberSaveable { mutableStateOf(listOf<String>()) }
     val selectedKeys = remember(selectedKeyList) { selectedKeyList.toSet() }
@@ -167,8 +231,8 @@ fun DownloadSettingsScreen(
             volumeStats = uiState.volumeStorageStats,
             formatSize = viewModel::formatStorageSize,
             onDeleteAll = { pendingEntryDelete = entry },
-            onDeleteChild = viewModel::deleteDownload,
-            onDeleteAbsChild = viewModel::deleteAbsDownload,
+            onDeleteChild = ::deleteChild,
+            onDeleteAbsChild = ::deleteAbsChild,
             onOpenAbsItem = { libraryItemId ->
                 selectedEntry = null
                 onNavigateToAbsItem(libraryItemId)
@@ -353,7 +417,7 @@ fun DownloadSettingsScreen(
                         speedBps = uiState.downloadSpeeds[download.id],
                         onPause = viewModel::pauseDownload,
                         onResume = viewModel::resumeDownload,
-                        onCancel = viewModel::cancelDownload,
+                        onCancel = ::cancelActive,
                         formatSize = viewModel::formatStorageSize,
                     )
                 }
@@ -366,7 +430,7 @@ fun DownloadSettingsScreen(
                     AbsActiveDownloadCard(
                         download = download,
                         speedBps = uiState.absDownloadSpeeds[download.id],
-                        onCancel = viewModel::cancelAbsDownload,
+                        onCancel = ::cancelAbsActive,
                         formatSize = viewModel::formatStorageSize,
                     )
                 }

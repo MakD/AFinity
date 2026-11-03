@@ -66,6 +66,9 @@ import com.makd.afinity.ui.components.DetailCoverImage
 import com.makd.afinity.ui.components.DetailCoverTitle
 import com.makd.afinity.ui.components.DetailGutter
 import com.makd.afinity.ui.components.DetailMenuAction
+import com.makd.afinity.ui.components.DownloadConfirm
+import com.makd.afinity.ui.components.DownloadConfirmDialog
+import com.makd.afinity.ui.components.DownloadConfirmKind
 import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
@@ -147,8 +150,22 @@ fun PlaylistScreen(
     var playChoiceShuffle by remember { mutableStateOf<Boolean?>(null) }
     var showDownloadChoice by remember { mutableStateOf(false) }
     var showMusicQualityDialog by remember { mutableStateOf(false) }
+    var pendingDownloadConfirm by remember { mutableStateOf<DownloadConfirm?>(null) }
     val defaultMusicDownloadQuality by
         viewModel.defaultMusicDownloadQuality.collectAsStateWithLifecycle()
+
+    pendingDownloadConfirm?.let { confirm ->
+        DownloadConfirmDialog(
+            confirm = confirm,
+            onConfirm = {
+                pendingDownloadConfirm = null
+                viewModel.cancelPlaylistDownload(
+                    deleteCompleted = confirm.kind == DownloadConfirmKind.DELETE
+                )
+            },
+            onDismiss = { pendingDownloadConfirm = null },
+        )
+    }
     var draggedKey by remember { mutableStateOf<String?>(null) }
     val reorderState =
         rememberReorderableLazyListState(lazyListState) { from, to ->
@@ -311,7 +328,9 @@ fun PlaylistScreen(
                         if (uiState.audioCount > 0) {
                             { showMusicQualityDialog = true }
                         } else null,
-                    onCancelClick = { viewModel.cancelPlaylistDownload() },
+                    onCancelClick = {
+                        pendingDownloadConfirm = viewModel.playlistDownloadConfirm()
+                    },
                     canDownload = canDownloadOnNetwork,
                     iconSize = 26.dp,
                 )

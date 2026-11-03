@@ -45,10 +45,15 @@ import com.makd.afinity.ui.components.CircleFlagIcon
 import com.makd.afinity.ui.components.DetailActionRow
 import com.makd.afinity.ui.components.DetailCoverImage
 import com.makd.afinity.ui.components.DetailCoverTitle
+import com.makd.afinity.ui.components.DownloadConfirm
+import com.makd.afinity.ui.components.DownloadConfirmDialog
+import com.makd.afinity.ui.components.DownloadConfirmKind
 import com.makd.afinity.ui.components.formatRuntimeSeconds
 import com.makd.afinity.ui.components.formatTimeLeftSeconds
 import com.makd.afinity.ui.components.getAutoFlagUrl
+import com.makd.afinity.ui.components.matches
 import com.makd.afinity.ui.components.mediainfo.AudiobookMediaInfoSheet
+import com.makd.afinity.ui.components.singleDownloadConfirm
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
 import com.makd.afinity.ui.theme.isDarkSurface
 
@@ -337,12 +342,31 @@ internal fun ItemActionRow(
         }
 
         if (onDownload != null) {
+            var pendingDownloadConfirm by remember { mutableStateOf<DownloadConfirm?>(null) }
+            pendingDownloadConfirm?.let { confirm ->
+                DownloadConfirmDialog(
+                    confirm = confirm,
+                    onConfirm = {
+                        pendingDownloadConfirm = null
+                        if (downloadInfo?.matches(confirm) == true) {
+                            if (confirm.kind == DownloadConfirmKind.DELETE) {
+                                onDeleteDownload?.invoke()
+                            } else {
+                                onCancelDownload?.invoke()
+                            }
+                        }
+                    },
+                    onDismiss = { pendingDownloadConfirm = null },
+                )
+            }
             IconButton(
                 onClick = {
                     when (downloadInfo?.status) {
-                        AbsDownloadStatus.QUEUED,
-                        AbsDownloadStatus.DOWNLOADING -> onCancelDownload?.invoke()
-                        AbsDownloadStatus.COMPLETED -> onDeleteDownload?.invoke()
+                        AbsDownloadStatus.QUEUED -> onCancelDownload?.invoke()
+                        AbsDownloadStatus.DOWNLOADING,
+                        AbsDownloadStatus.COMPLETED -> pendingDownloadConfirm = downloadInfo?.let {
+                                it.singleDownloadConfirm(it.title)
+                            }
                         else -> onDownload.invoke()
                     }
                 }

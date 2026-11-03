@@ -19,6 +19,7 @@ object PlayerLauncher {
         seasonId: UUID? = null,
         shuffle: Boolean = false,
         playlistId: UUID? = null,
+        collectionId: UUID? = null,
     ) {
         Timber.d(
             "PlayerLauncher: Launching player for item $itemId, seasonId=$seasonId, shuffle=$shuffle"
@@ -32,6 +33,7 @@ object PlayerLauncher {
                 subtitleStreamIndex?.let { putExtra("subtitleStreamIndex", it) }
                 putExtra("startPositionMs", startPositionMs)
                 playlistId?.let { putExtra("playlistId", it.toString()) }
+                collectionId?.let { putExtra("collectionId", it.toString()) }
                 seasonId?.let { putExtra("seasonId", it.toString()) }
                 putExtra("shuffle", shuffle)
 

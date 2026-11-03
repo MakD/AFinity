@@ -21,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
@@ -128,7 +129,7 @@ fun ActionButtonsRow(
             )
         }
 
-        val canShuffle = item is AfinityShow || item is AfinitySeason
+        val canShuffle = item is AfinityShow || item is AfinitySeason || item is AfinityBoxSet
         val hasManageItems = isAdmin || canDelete
         val hasCollectionActions =
             onAddToCollection != null ||

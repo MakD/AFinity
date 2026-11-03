@@ -47,6 +47,7 @@ constructor(
     private var currentIndex: Int = -1
     private var currentSeriesId: UUID? = null
     private var isJellyfinPlaylistQueue: Boolean = false
+    private var isCollectionQueue: Boolean = false
     private var contentStartIndex: Int = 0
     private var isJumpOnlyQueue: Boolean = false
     private var collectionName: String? = null
@@ -56,10 +57,14 @@ constructor(
         seasonId: UUID? = null,
         startPositionMs: Long = 0L,
         playlistId: UUID? = null,
+        collectionId: UUID? = null,
         includeIntros: Boolean = true,
     ): Boolean {
         if (playlistId != null) {
             return initializeJellyfinPlaylistQueue(startingItem, playlistId)
+        }
+        if (collectionId != null) {
+            return initializeCollectionQueue(startingItem, collectionId)
         }
         if (
             startingItem is AfinityEpisode &&
@@ -142,6 +147,38 @@ constructor(
             throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to initialize playlist queue for $playlistId")
+            initializeSingleItemQueue(startingItem, emptyList())
+        }
+    }
+
+    private suspend fun initializeCollectionQueue(
+        startingItem: AfinityItem,
+        collectionId: UUID,
+    ): Boolean {
+        return try {
+            currentSeriesId = null
+            val items =
+                withLocalSources(
+                    mediaRepository.getBoxSetPlaybackItemsResult(collectionId).getOrThrow()
+                )
+            if (items.isEmpty()) {
+                return initializeSingleItemQueue(startingItem, emptyList())
+            }
+            val queue = items.toMutableList()
+            var startIndex = queue.indexOfFirst { it.id == startingItem.id }
+            if (startIndex == -1) {
+                queue.add(0, startingItem)
+                startIndex = 0
+            } else {
+                queue[startIndex] = startingItem
+            }
+            setQueue(queue, startIndex)
+            isCollectionQueue = true
+            true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to initialize collection queue for $collectionId")
             initializeSingleItemQueue(startingItem, emptyList())
         }
     }
@@ -236,6 +273,7 @@ constructor(
             when {
                 item !is AfinityMovie -> "not a movie (${item.javaClass.simpleName})"
                 isJellyfinPlaylistQueue -> "jellyfin playlist queue"
+                isCollectionQueue -> "collection queue"
                 currentSeriesId != null -> "series queue"
                 currentQueue.size - contentStartIndex > 1 -> "content queue already has siblings"
                 getCurrentItem()?.id != item.id ->
@@ -356,6 +394,7 @@ constructor(
         currentIndex = startIndex.coerceIn(0, queue.size - 1)
         contentStartIndex = contentStart.coerceIn(0, queue.size)
         isJumpOnlyQueue = false
+        isCollectionQueue = false
         collectionName = null
 
         updatePlaylistState()
@@ -456,6 +495,7 @@ constructor(
         currentIndex = -1
         currentSeriesId = null
         isJellyfinPlaylistQueue = false
+        isCollectionQueue = false
         contentStartIndex = 0
         isJumpOnlyQueue = false
         collectionName = null
@@ -473,7 +513,7 @@ constructor(
             return
         }
 
-        if (isJellyfinPlaylistQueue) {
+        if (isJellyfinPlaylistQueue || isCollectionQueue) {
             currentQueue.shuffle()
             currentIndex = 0
             contentStartIndex = 0

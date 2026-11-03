@@ -42,6 +42,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.media.toAfinityMovie
@@ -71,7 +72,10 @@ import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.data.storage.StorageVolumeInfo
 import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.data.store.withUserDataOverlay
+import com.makd.afinity.ui.components.DownloadConfirm
+import com.makd.afinity.ui.components.DownloadConfirmKind
 import com.makd.afinity.ui.components.EpisodeSelection
+import com.makd.afinity.ui.components.singleDownloadConfirm
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.components.shared.peopleOfKind
 import com.makd.afinity.ui.item.delegates.ItemDownloadDelegate
@@ -91,8 +95,10 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -209,6 +215,11 @@ constructor(
     private val _selectedMediaSource = MutableStateFlow<MediaSourceOption?>(null)
     val selectedMediaSource = _selectedMediaSource.asStateFlow()
     private val backgroundSyncTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    private val _collectionPlaybackEvents = MutableSharedFlow<CollectionPlaybackEvent>()
+    val collectionPlaybackEvents: SharedFlow<CollectionPlaybackEvent> =
+        _collectionPlaybackEvents.asSharedFlow()
+    private var collectionPlaybackJob: Job? = null
 
     fun selectMediaSource(source: MediaSourceOption) {
         _selectedMediaSource.value = source
@@ -530,11 +541,17 @@ constructor(
         viewModelScope.launch {
             try {
                 combine(
-                        _uiState.map { it.item }.distinctUntilChanged(),
+                        _uiState
+                            .map { state ->
+                                state.item to
+                                    (if (state.item is AfinityBoxSet) state.boxSetItems
+                                    else emptyList())
+                            }
+                            .distinctUntilChanged(),
                         downloadRepository.getAllDownloadsFlow(),
-                    ) { item, downloads ->
-                        computeDownloadInfo(item, downloads) to
-                            computeDownloadUnavailable(item, downloads)
+                    ) { (item, boxSetItems), downloads ->
+                        computeDownloadInfo(item, downloads, boxSetItems) to
+                            computeDownloadUnavailable(item, downloads, boxSetItems)
                     }
                     .collect { (downloadInfo, unavailable) ->
                         _uiState.value =
@@ -561,6 +578,7 @@ constructor(
     private fun computeDownloadUnavailable(
         item: AfinityItem?,
         downloads: List<DownloadInfo>,
+        boxSetItems: List<AfinityItem>,
     ): Boolean {
         if (item == null) return false
         val relevant =
@@ -571,6 +589,7 @@ constructor(
                         it.seriesId == item.seriesId.toString() &&
                             it.seasonNumber == item.indexNumber
                     }
+                is AfinityBoxSet -> collectionDownloads(boxSetItems, downloads)
                 else -> downloads.filter { it.itemId == itemId }
             }
         val completed = relevant.filter { it.status == DownloadStatus.COMPLETED }
@@ -579,11 +598,36 @@ constructor(
         return completed.all { it.storageVolumeId !in mounted }
     }
 
+    private fun collectionDownloads(
+        boxSetItems: List<AfinityItem>,
+        downloads: List<DownloadInfo>,
+    ): List<DownloadInfo> {
+        if (boxSetItems.isEmpty()) return emptyList()
+        val itemIds = HashSet<UUID>()
+        val seriesIds = HashSet<String>()
+        val seasons = HashSet<Pair<String, Int?>>()
+        boxSetItems.forEach { child ->
+            when (child) {
+                is AfinityShow -> seriesIds += child.id.toString()
+                is AfinitySeason -> seasons += child.seriesId.toString() to child.indexNumber
+                else -> itemIds += child.id
+            }
+        }
+        return downloads.filter { download ->
+            download.itemId in itemIds ||
+                download.seriesId in seriesIds ||
+                (download.seriesId to download.seasonNumber) in seasons
+        }
+    }
+
     private fun computeDownloadInfo(
         item: AfinityItem?,
         downloads: List<DownloadInfo>,
+        boxSetItems: List<AfinityItem>,
     ): DownloadInfo? {
         return when (item) {
+            is AfinityBoxSet ->
+                aggregateDownloadInfo(collectionDownloads(boxSetItems, downloads), item.id)
             is AfinityShow -> {
                 val seriesDownloads = downloads.filter { it.seriesId == item.id.toString() }
                 aggregateDownloadInfo(seriesDownloads, item.id)
@@ -1467,12 +1511,24 @@ constructor(
         val currentItem = _uiState.value.item
         when {
             selectedEpisode != null ||
-                (currentItem !is AfinityShow && currentItem !is AfinitySeason) -> {
+                (currentItem !is AfinityShow &&
+                    currentItem !is AfinitySeason &&
+                    currentItem !is AfinityBoxSet) -> {
                 itemDownloadDelegate.onDownloadClick(
                     viewModelScope,
                     selectedEpisode ?: currentItem,
                 ) {
                     showQualityDialogWithVolumes()
+                }
+            }
+            currentItem is AfinityBoxSet -> {
+                bulkDownloadJob = viewModelScope.launch {
+                    downloadRepository
+                        .startBoxSetDownload(currentItem.id)
+                        .onSuccess { count ->
+                            Timber.i("Queued $count items for collection ${currentItem.name}")
+                        }
+                        .onFailure { Timber.e(it, "Failed to start collection download") }
                 }
             }
             currentItem is AfinitySeason -> {
@@ -1508,7 +1564,10 @@ constructor(
         val selectedEpisode = episodeSelection.selected.value
         val currentItem = _uiState.value.item
         val leaf =
-            selectedEpisode ?: currentItem?.takeIf { it !is AfinityShow && it !is AfinitySeason }
+            selectedEpisode
+                ?: currentItem?.takeIf {
+                    it !is AfinityShow && it !is AfinitySeason && it !is AfinityBoxSet
+                }
         if (leaf != null) {
             showQualityDialogWithVolumes()
         } else {
@@ -1580,6 +1639,16 @@ constructor(
                         .onFailure { Timber.e(it, "Failed to initMonitoring series download") }
                 }
             }
+            is AfinityBoxSet -> {
+                bulkDownloadJob = viewModelScope.launch {
+                    downloadRepository
+                        .startBoxSetDownload(currentItem.id, volumeId, quality)
+                        .onSuccess { count ->
+                            Timber.i("Queued $count items for collection ${currentItem.name}")
+                        }
+                        .onFailure { Timber.e(it, "Failed to start collection download") }
+                }
+            }
             else -> {}
         }
     }
@@ -1606,21 +1675,27 @@ constructor(
         val currentItem = _uiState.value.item
         if (
             episodeSelection.selected.value != null ||
-                (currentItem !is AfinityShow && currentItem !is AfinitySeason)
+                (currentItem !is AfinityShow &&
+                    currentItem !is AfinitySeason &&
+                    currentItem !is AfinityBoxSet)
         ) {
             itemDownloadDelegate.resumeDownload(viewModelScope, activeDownloadInfo())
             return
         }
         viewModelScope.launch {
             val downloads = downloadRepository.getAllDownloadsFlow().first()
-            val paused = downloads.filter { download ->
+            val candidates =
+                if (currentItem is AfinityBoxSet)
+                    collectionDownloads(_uiState.value.boxSetItems, downloads)
+                else downloads
+            val paused = candidates.filter { download ->
                 download.status == DownloadStatus.PAUSED &&
                     when (currentItem) {
                         is AfinityShow -> download.seriesId == currentItem.id.toString()
                         is AfinitySeason ->
                             download.seriesId == currentItem.seriesId.toString() &&
                                 download.seasonNumber == currentItem.indexNumber
-
+                        is AfinityBoxSet -> true
                         else -> false
                     }
             }
@@ -1636,36 +1711,125 @@ constructor(
         if (episodeSelection.selected.value != null) episodeSelection.downloadInfo.value
         else _uiState.value.downloadInfo
 
+    private fun isBulkDownloadItem(item: AfinityItem?): Boolean =
+        item is AfinityShow || item is AfinitySeason || item is AfinityBoxSet
+
+    private fun bulkDownloadMembers(
+        item: AfinityItem?,
+        downloads: List<DownloadInfo>,
+    ): List<DownloadInfo> =
+        when (item) {
+            is AfinityShow -> downloads.filter { it.seriesId == item.id.toString() }
+            is AfinitySeason ->
+                downloads.filter {
+                    it.seriesId == item.seriesId.toString() && it.seasonNumber == item.indexNumber
+                }
+            is AfinityBoxSet -> collectionDownloads(_uiState.value.boxSetItems, downloads)
+            else -> emptyList()
+        }
+
     fun cancelDownload() {
         val selectedEpisode = episodeSelection.selected.value
         val currentItem = _uiState.value.item
-        when {
-            selectedEpisode != null -> {
-                itemDownloadDelegate.cancelDownload(
-                    viewModelScope,
-                    episodeSelection.downloadInfo.value,
-                )
-            }
-            currentItem is AfinityShow -> {
+        viewModelScope.launch {
+            val confirm =
+                if (selectedEpisode == null && isBulkDownloadItem(currentItem)) {
+                    val isDelete = _uiState.value.downloadInfo?.status == DownloadStatus.COMPLETED
+                    val targets =
+                        bulkDownloadMembers(
+                                currentItem,
+                                downloadRepository.getAllDownloadsFlow().first(),
+                            )
+                            .filter { (it.status == DownloadStatus.COMPLETED) == isDelete }
+                    if (targets.isEmpty()) return@launch
+                    DownloadConfirm(
+                        kind =
+                            if (isDelete) DownloadConfirmKind.DELETE
+                            else DownloadConfirmKind.CANCEL,
+                        title = currentItem?.name.orEmpty(),
+                        count = targets.size,
+                        bytes = targets.sumOf { it.totalBytes },
+                    )
+                } else {
+                    val info = activeDownloadInfo() ?: return@launch
+                    info.singleDownloadConfirm(selectedEpisode?.name ?: currentItem?.name.orEmpty())
+                }
+            if (confirm == null) performCancelDownload(deleteCompleted = false)
+            else _uiState.update { it.copy(downloadConfirm = confirm) }
+        }
+    }
+
+    fun confirmDownloadAction() {
+        val confirm = _uiState.value.downloadConfirm ?: return
+        _uiState.update { it.copy(downloadConfirm = null) }
+        performCancelDownload(deleteCompleted = confirm.kind == DownloadConfirmKind.DELETE)
+    }
+
+    fun dismissDownloadConfirm() {
+        _uiState.update { it.copy(downloadConfirm = null) }
+    }
+
+    private fun performCancelDownload(deleteCompleted: Boolean) {
+        val selectedEpisode = episodeSelection.selected.value
+        val currentItem = _uiState.value.item
+        if (selectedEpisode == null && isBulkDownloadItem(currentItem)) {
+            if (!deleteCompleted) {
                 bulkDownloadJob?.cancel()
                 bulkDownloadJob = null
-                viewModelScope.launch {
-                    downloadRepository.cancelAllSeriesDownloads(currentItem.id).onFailure {
-                        Timber.e(it, "Failed to cancel series downloads")
+            }
+            viewModelScope.launch {
+                bulkDownloadMembers(currentItem, downloadRepository.getAllDownloadsFlow().first())
+                    .filter { (it.status == DownloadStatus.COMPLETED) == deleteCompleted }
+                    .forEach { itemDownloadDelegate.cancelDownload(viewModelScope, it) }
+            }
+            return
+        }
+        val info = activeDownloadInfo() ?: return
+        if ((info.status == DownloadStatus.COMPLETED) == deleteCompleted) {
+            itemDownloadDelegate.cancelDownload(viewModelScope, info)
+        }
+    }
+
+    fun playCollection(shuffle: Boolean = false) {
+        val boxSet = _uiState.value.item as? AfinityBoxSet ?: return
+        if (collectionPlaybackJob?.isActive == true) return
+        collectionPlaybackJob = viewModelScope.launch {
+            _uiState.update { it.copy(isStartingCollectionPlayback = true) }
+            try {
+                val items =
+                    mediaRepository.getBoxSetPlaybackItemsResult(boxSet.id).getOrElse { e ->
+                        Timber.e(e, "Failed to load collection queue for ${boxSet.name}")
+                        _collectionPlaybackEvents.emit(CollectionPlaybackEvent.Failed)
+                        return@launch
                     }
+                val start =
+                    if (shuffle) items.firstOrNull()
+                    else
+                        items.firstOrNull { !it.played && it.playbackPositionTicks > 0 }
+                            ?: items.firstOrNull { !it.played }
+                            ?: items.firstOrNull()
+                if (start == null) {
+                    _collectionPlaybackEvents.emit(CollectionPlaybackEvent.Empty)
+                    return@launch
                 }
-            }
-            currentItem is AfinitySeason -> {
-                bulkDownloadJob?.cancel()
-                bulkDownloadJob = null
-                viewModelScope.launch {
-                    downloadRepository
-                        .cancelAllSeasonDownloads(currentItem.seriesId, currentItem.indexNumber)
-                        .onFailure { Timber.e(it, "Failed to cancel season downloads") }
-                }
-            }
-            else -> {
-                itemDownloadDelegate.cancelDownload(viewModelScope, _uiState.value.downloadInfo)
+                val resumeMs =
+                    if (!shuffle && !start.played && start.playbackPositionTicks > 0)
+                        start.playbackPositionTicks / 10000
+                    else 0L
+                _collectionPlaybackEvents.emit(
+                    CollectionPlaybackEvent.Launch(
+                        itemId = start.id,
+                        mediaSourceId =
+                            start.sources.firstOrNull { it.type == AfinitySourceType.LOCAL }?.id
+                                ?: start.sources.firstOrNull()?.id
+                                ?: "",
+                        startPositionMs = resumeMs,
+                        collectionId = boxSet.id,
+                        shuffle = shuffle,
+                    )
+                )
+            } finally {
+                _uiState.update { it.copy(isStartingCollectionPlayback = false) }
             }
         }
     }
@@ -1843,6 +2007,20 @@ fun Result<*>.toDeleteOutcome(): DeleteOutcome =
         else -> DeleteOutcome.FAILED
     }
 
+sealed interface CollectionPlaybackEvent {
+    data class Launch(
+        val itemId: UUID,
+        val mediaSourceId: String,
+        val startPositionMs: Long,
+        val collectionId: UUID,
+        val shuffle: Boolean,
+    ) : CollectionPlaybackEvent
+
+    data object Empty : CollectionPlaybackEvent
+
+    data object Failed : CollectionPlaybackEvent
+}
+
 data class RelatedRow(val kind: Kind, val subject: String, val items: List<AfinityItem>) {
     enum class Kind {
         STARRING,
@@ -1862,6 +2040,8 @@ data class ItemDetailUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val nextEpisode: AfinityEpisode? = null,
+    val isStartingCollectionPlayback: Boolean = false,
+    val downloadConfirm: DownloadConfirm? = null,
     val episodesPagingData: Flow<PagingData<AfinityEpisode>>? = null,
     val showQualityDialog: Boolean = false,
     val defaultVideoDownloadQuality: Int = VideoQuality.ORIGINAL_BITRATE,

@@ -2120,6 +2120,47 @@ constructor(
                 .map { boxSetDto -> boxSetDto.toAfinityBoxSet(getBaseUrl()) }
         }
 
+    override suspend fun getBoxSetPlaybackItemsResult(boxSetId: UUID): Result<List<AfinityItem>> =
+        apiInvoker.apiResult { apiClient, userId ->
+            val baseUrl = getBaseUrl()
+            val children =
+                LibraryApi(apiClient)
+                    .getItems(
+                        userId = userId,
+                        parentId = boxSetId,
+                        includeItemTypes =
+                            listOf(
+                                BaseItemKind.MOVIE,
+                                BaseItemKind.SERIES,
+                                BaseItemKind.SEASON,
+                                BaseItemKind.EPISODE,
+                            ),
+                        sortBy = listOf(ItemSortBy.PREMIERE_DATE),
+                        sortOrder = listOf(SortOrder.ASCENDING),
+                        isMissing = false,
+                        fields = FieldSets.PLAYABLE_EPISODE,
+                        enableImages = true,
+                        enableUserData = true,
+                        enableTotalRecordCount = false,
+                    )
+                    .content
+                    .items
+                    .mapNotNull { it.toAfinityItem(baseUrl) }
+            children
+                .flatMap { child ->
+                    when (child) {
+                        is AfinityMovie,
+                        is AfinityEpisode -> listOf(child)
+                        is AfinityShow -> getSeriesEpisodes(child.id, FieldSets.PLAYABLE_EPISODE)
+                        is AfinitySeason ->
+                            getEpisodes(child.id, child.seriesId, FieldSets.PLAYABLE_EPISODE)
+                        else -> emptyList()
+                    }
+                }
+                .filterNot { it is AfinityEpisode && it.missing }
+                .distinctBy { it.id }
+        }
+
     override fun getLibrariesFlow(): Flow<List<AfinityCollection>> = libraries
 
     override fun getContinueWatchingFlow(): Flow<List<AfinityItem>> = continueWatching

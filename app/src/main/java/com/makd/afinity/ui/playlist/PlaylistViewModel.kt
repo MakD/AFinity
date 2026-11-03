@@ -21,6 +21,8 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.music.MusicRepository
+import com.makd.afinity.ui.components.DownloadConfirm
+import com.makd.afinity.ui.components.DownloadConfirmKind
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
@@ -304,12 +306,28 @@ constructor(
             else -> PlaylistDownloadFilter.ALL
         }
 
-    fun cancelPlaylistDownload() {
+    private fun playlistDownloadTargets(deleteCompleted: Boolean): List<DownloadInfo> =
+        _uiState.value.trackDownloadInfos.values.filter {
+            (it.status == DownloadStatus.COMPLETED) == deleteCompleted
+        }
+
+    fun playlistDownloadConfirm(): DownloadConfirm? {
         val isDelete = _uiState.value.playlistDownloadInfo?.status == DownloadStatus.COMPLETED
+        val targets = playlistDownloadTargets(isDelete)
+        if (targets.isEmpty()) return null
+        return DownloadConfirm(
+            kind = if (isDelete) DownloadConfirmKind.DELETE else DownloadConfirmKind.CANCEL,
+            title = _uiState.value.playlist?.name.orEmpty(),
+            count = targets.size,
+            bytes = targets.sumOf { it.totalBytes },
+        )
+    }
+
+    fun cancelPlaylistDownload(deleteCompleted: Boolean) {
         viewModelScope.launch {
-            _uiState.value.trackDownloadInfos.values
-                .filter { isDelete || it.status != DownloadStatus.COMPLETED }
-                .forEach { downloadRepository.cancelDownload(it.id) }
+            playlistDownloadTargets(deleteCompleted).forEach {
+                downloadRepository.cancelDownload(it.id)
+            }
         }
     }
 

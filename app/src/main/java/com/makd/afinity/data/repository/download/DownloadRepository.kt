@@ -69,9 +69,11 @@ interface DownloadRepository {
         quality: DownloadQuality? = null,
     ): Result<Int>
 
-    suspend fun cancelAllSeriesDownloads(showId: UUID): Result<Unit>
-
-    suspend fun cancelAllSeasonDownloads(seriesId: UUID, seasonNumber: Int): Result<Unit>
+    suspend fun startBoxSetDownload(
+        boxSetId: UUID,
+        volumeId: String? = null,
+        quality: DownloadQuality? = null,
+    ): Result<Int>
 
     suspend fun startAlbumDownload(
         albumId: UUID,

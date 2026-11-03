@@ -3383,6 +3383,7 @@ constructor(
         seasonId: UUID? = null,
         shuffle: Boolean = false,
         playlistId: UUID? = null,
+        collectionId: UUID? = null,
         attachToCast: Boolean = false,
     ) {
         attachToCastItemId = if (attachToCast) item.id else null
@@ -3421,6 +3422,7 @@ constructor(
                     seasonId,
                     startPositionMs,
                     playlistId,
+                    collectionId,
                     includeIntros = false,
                 )
                 launch { playlistManager.enrichWithCollectionQueue(item) }
@@ -3438,7 +3440,13 @@ constructor(
         }
 
         viewModelScope.launch {
-            playlistManager.initializePlaylist(item, seasonId, startPositionMs, playlistId)
+            playlistManager.initializePlaylist(
+                item,
+                seasonId,
+                startPositionMs,
+                playlistId,
+                collectionId,
+            )
             if (shuffle) {
                 playlistManager.shuffleQueue()
             }
