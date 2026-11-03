@@ -5,6 +5,7 @@ import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.admin.AdminPermissionDeniedException
 import com.makd.afinity.data.models.admin.AdminRequestStillRunningException
+import com.makd.afinity.data.models.admin.CollectionChoice
 import com.makd.afinity.data.models.admin.DeleteSummary
 import com.makd.afinity.data.models.admin.EditableItem
 import com.makd.afinity.data.models.admin.EditablePerson
@@ -22,6 +23,9 @@ import com.makd.afinity.data.models.music.encodeLyricsJson
 import com.makd.afinity.data.models.music.toAfinityLyricLines
 import com.makd.afinity.data.network.toUtcString
 import com.makd.afinity.data.repository.DatabaseRepository
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZoneOffset
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,6 +37,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
@@ -42,6 +48,7 @@ import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.client.exception.TimeoutException
 import org.jellyfin.sdk.api.client.util.ApiSerializer
+import org.jellyfin.sdk.api.operations.CollectionApi
 import org.jellyfin.sdk.api.operations.ImageApi
 import org.jellyfin.sdk.api.operations.ItemLookupApi
 import org.jellyfin.sdk.api.operations.ItemUpdateApi
@@ -52,12 +59,14 @@ import org.jellyfin.sdk.model.FileInfo
 import org.jellyfin.sdk.model.api.AlbumInfo
 import org.jellyfin.sdk.model.api.AlbumInfoRemoteSearchQuery
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.BaseItemPerson
 import org.jellyfin.sdk.model.api.BoxSetInfo
 import org.jellyfin.sdk.model.api.BoxSetInfoRemoteSearchQuery
 import org.jellyfin.sdk.model.api.ImageInfo
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.ItemFields
+import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.LyricDto
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.MetadataField
@@ -66,6 +75,8 @@ import org.jellyfin.sdk.model.api.MovieInfo
 import org.jellyfin.sdk.model.api.MovieInfoRemoteSearchQuery
 import org.jellyfin.sdk.model.api.NameGuidPair
 import org.jellyfin.sdk.model.api.PersonKind
+import org.jellyfin.sdk.model.api.PersonLookupInfo
+import org.jellyfin.sdk.model.api.PersonLookupInfoRemoteSearchQuery
 import org.jellyfin.sdk.model.api.RatingType
 import org.jellyfin.sdk.model.api.RemoteSearchResult
 import org.jellyfin.sdk.model.api.SeriesInfo
@@ -73,13 +84,16 @@ import org.jellyfin.sdk.model.api.SeriesInfoRemoteSearchQuery
 import timber.log.Timber
 
 private const val SERVER_THUMB_WIDTH = 600
+private const val COLLECTION_THUMB_WIDTH = 120
 private const val SERVER_PREVIEW_WIDTH = 1600
 private val APPLY_ACCEPTED_AFTER = 20.seconds
 private const val ITEM_PATH = "/Items/{itemId}"
 private const val ITEM_ID = "itemId"
 private const val PREMIERE_DATE_KEY = "PremiereDate"
 private const val END_DATE_KEY = "EndDate"
+private const val DATE_CREATED_KEY = "DateCreated"
 private const val MUSIC_ALBUM = "MusicAlbum"
+private const val PERSON = "Person"
 private const val TICKS_PER_MS = 10_000L
 private const val NOT_FOUND = 404
 private const val MAX_LYRIC_DELETES = 5
@@ -127,8 +141,18 @@ constructor(
                 val editorResponse = itemUpdateApi.getMetadataEditorInfo(itemId = itemUuid)
                 val editorInfo = editorResponse.content
                 val availableRatings = editorInfo.parentalRatingOptions.mapNotNull { it.name }
+                val providers =
+                    editorInfo.externalIdInfos
+                        .map {
+                            ExternalIdProvider(
+                                name = it.name,
+                                key = it.key,
+                                type = it.type?.serialName,
+                            )
+                        }
+                        .distinctBy { it.key }
 
-                dto.toEditableItem(availableRatings)
+                dto.toEditableItem(availableRatings, providers)
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get editable item $itemId")
                 null
@@ -175,6 +199,11 @@ constructor(
                             else existing.artistItems.withNames(item.artists),
                         overview = item.overview,
                         productionYear = item.productionYear,
+                        productionLocations = item.productionLocations,
+                        providerIds =
+                            item.providerIds
+                                .mapValues { it.value.trim() }
+                                .filterValues { it.isNotEmpty() },
                         officialRating = item.officialRating,
                         customRating = item.customRating,
                         communityRating = item.communityRating?.toFloat(),
@@ -205,7 +234,7 @@ constructor(
                     method = HttpMethod.POST,
                     pathTemplate = ITEM_PATH,
                     pathParameters = mapOf(ITEM_ID to UUID.fromString(itemId)),
-                    requestBody = updated.toUpdateBody(),
+                    requestBody = updated.toUpdateBody(existing.editedDates(item)),
                 )
                 adminChangeBroadcaster.notifyItemChanged(itemId)
                 Result.success(Unit)
@@ -268,9 +297,11 @@ constructor(
             try {
                 val api = ItemLookupApi(getApiClient() ?: return@withContext emptyList())
                 val response = api.getExternalIdInfos(itemId = UUID.fromString(itemId))
-                response.content.map {
-                    ExternalIdProvider(name = it.name, key = it.key, type = it.type?.serialName)
-                }
+                response.content
+                    .map {
+                        ExternalIdProvider(name = it.name, key = it.key, type = it.type?.serialName)
+                    }
+                    .distinctBy { it.key }
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get external ID providers for $itemId")
                 emptyList()
@@ -368,6 +399,21 @@ constructor(
                                                 albumArtists = listOfNotNull(albumArtist),
                                                 artistProviderIds = emptyMap(),
                                                 songInfos = emptyList(),
+                                            ),
+                                        includeDisabledProviders = false,
+                                    )
+                            )
+
+                        PERSON ->
+                            api.getPersonRemoteSearchResults(
+                                data =
+                                    PersonLookupInfoRemoteSearchQuery(
+                                        itemId = itemUuid,
+                                        searchInfo =
+                                            PersonLookupInfo(
+                                                name = name,
+                                                providerIds = providerIds,
+                                                isAutomated = false,
                                             ),
                                         includeDisabledProviders = false,
                                     )
@@ -1044,6 +1090,103 @@ constructor(
             }
         }
 
+    override suspend fun getCollections(): Result<List<CollectionChoice>> =
+        collectionResult("Failed to load collections") { apiClient ->
+            val baseUrl = sessionManager.currentSession.value?.serverUrl.orEmpty().trimEnd('/')
+            LibraryApi(apiClient)
+                .getItems(
+                    userId = getUserId(),
+                    recursive = true,
+                    includeItemTypes = listOf(BaseItemKind.BOX_SET),
+                    sortBy = listOf(ItemSortBy.SORT_NAME),
+                    fields = listOf(ItemFields.CHILD_COUNT),
+                    enableTotalRecordCount = false,
+                )
+                .content
+                .items
+                .map { dto ->
+                    val tag = dto.imageTags?.get(ImageType.PRIMARY)
+                    CollectionChoice(
+                        id = dto.id.toString(),
+                        name = dto.name.orEmpty(),
+                        itemCount = dto.childCount,
+                        imageUrl =
+                            if (baseUrl.isNotEmpty() && tag != null) {
+                                "$baseUrl/Items/${dto.id}/Images/Primary" +
+                                    "?maxWidth=$COLLECTION_THUMB_WIDTH&quality=90&format=webp&tag=$tag"
+                            } else null,
+                    )
+                }
+        }
+
+    override suspend fun createCollection(
+        name: String,
+        itemIds: List<String>,
+        searchMetadata: Boolean,
+    ): Result<String> =
+        collectionResult("Failed to create collection") { apiClient ->
+            val created =
+                CollectionApi(apiClient)
+                    .createCollection(name = name, ids = itemIds, isLocked = !searchMetadata)
+                    .content
+            itemIds.forEach(adminChangeBroadcaster::notifyItemChanged)
+            created.id.toString()
+        }
+
+    override suspend fun addToCollection(
+        collectionId: String,
+        itemIds: List<String>,
+    ): Result<Unit> =
+        collectionResult("Failed to add to collection $collectionId") { apiClient ->
+            CollectionApi(apiClient)
+                .addToCollection(
+                    collectionId = UUID.fromString(collectionId),
+                    ids = itemIds.map(UUID::fromString),
+                )
+            (itemIds + collectionId).forEach(adminChangeBroadcaster::notifyItemChanged)
+        }
+
+    override suspend fun removeFromCollection(
+        collectionId: String,
+        itemIds: List<String>,
+    ): Result<Unit> =
+        collectionResult("Failed to remove from collection $collectionId") { apiClient ->
+            CollectionApi(apiClient)
+                .removeFromCollection(
+                    collectionId = UUID.fromString(collectionId),
+                    ids = itemIds.map(UUID::fromString),
+                )
+            (itemIds + collectionId).forEach(adminChangeBroadcaster::notifyItemChanged)
+        }
+
+    private suspend fun <T> collectionResult(
+        failure: String,
+        block: suspend (ApiClient) -> T,
+    ): Result<T> =
+        withContext(Dispatchers.IO) {
+            try {
+                val apiClient =
+                    getApiClient()
+                        ?: return@withContext Result.failure(IllegalStateException("No API client"))
+                Result.success(block(apiClient))
+            } catch (e: InvalidStatusException) {
+                Timber.e(e, failure)
+                if (e.status == 401 || e.status == 403) {
+                    Result.failure(AdminPermissionDeniedException(e))
+                } else {
+                    Result.failure(e)
+                }
+            } catch (e: ApiClientException) {
+                Timber.e(e, failure)
+                Result.failure(e)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, failure)
+                Result.failure(e)
+            }
+        }
+
     private fun serverImageUrl(
         baseUrl: String,
         itemId: String,
@@ -1060,7 +1203,10 @@ constructor(
         }
     }
 
-    private fun BaseItemDto.toEditableItem(availableRatings: List<String>): EditableItem =
+    private fun BaseItemDto.toEditableItem(
+        availableRatings: List<String>,
+        providers: List<ExternalIdProvider>,
+    ): EditableItem =
         EditableItem(
             id = id.toString(),
             name = name ?: "",
@@ -1071,7 +1217,15 @@ constructor(
             artists = artists.orEmpty(),
             overview = overview,
             productionYear = productionYear,
-            premiereDate = premiereDate?.toString(),
+            premiereDate = premiereDate.editableDate(),
+            endDate = endDate.editableDate(),
+            dateCreated = dateCreated.editableDate(),
+            productionLocations = productionLocations.orEmpty(),
+            providerIds =
+                providerIds
+                    .orEmpty()
+                    .mapNotNull { (key, value) -> value?.let { key to it } }
+                    .toMap(),
             officialRating = officialRating,
             customRating = customRating,
             communityRating = communityRating?.toString()?.toDoubleOrNull(),
@@ -1096,7 +1250,31 @@ constructor(
             type = type.serialName,
             path = path,
             availableParentalRatings = availableRatings,
+            externalIdProviders = providers,
         )
+
+    private fun LocalDateTime?.editableDate(): String? =
+        this?.atZone(ZoneId.systemDefault())
+            ?.withZoneSameInstant(ZoneOffset.UTC)
+            ?.toLocalDate()
+            ?.takeIf { it.year > 1 }
+            ?.toString()
+
+    private fun LocalDateTime?.dateBodyValue(edited: String?): JsonElement =
+        when {
+            edited == editableDate() -> this?.let { JsonPrimitive(it.toUtcString()) } ?: JsonNull
+            edited == null -> JsonNull
+            else -> JsonPrimitive(edited)
+        }
+
+    private fun BaseItemDto.editedDates(item: EditableItem): Map<String, JsonElement> = buildMap {
+        put(PREMIERE_DATE_KEY, premiereDate.dateBodyValue(item.premiereDate))
+        put(END_DATE_KEY, endDate.dateBodyValue(item.endDate))
+        val created = item.dateCreated
+        if (created != null && created != dateCreated.editableDate()) {
+            put(DATE_CREATED_KEY, JsonPrimitive(created))
+        }
+    }
 
     private fun BaseItemDto.albumArtistNames(): List<String> =
         albumArtists?.mapNotNull { it.name }?.takeIf { it.isNotEmpty() }
@@ -1108,13 +1286,10 @@ constructor(
                 ?: NameGuidPair(name = name, id = UUID.randomUUID())
         }
 
-    private fun BaseItemDto.toUpdateBody(): JsonObject =
+    private fun BaseItemDto.toUpdateBody(dates: Map<String, JsonElement>): JsonObject =
         JsonObject(
             ApiSerializer.json.encodeToJsonElement(BaseItemDto.serializer(), this).jsonObject +
-                listOfNotNull(
-                    premiereDate?.let { PREMIERE_DATE_KEY to JsonPrimitive(it.toUtcString()) },
-                    endDate?.let { END_DATE_KEY to JsonPrimitive(it.toUtcString()) },
-                )
+                dates
         )
 
     private fun EditablePerson.toBaseItemPerson(): BaseItemPerson =

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -62,6 +63,8 @@ import com.makd.afinity.navigation.LocalShowAwards
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.BackdropStyle
 import com.makd.afinity.ui.components.CardRow
+import com.makd.afinity.ui.components.DetailMenuAction
+import com.makd.afinity.ui.components.DetailMoreMenu
 import com.makd.afinity.ui.components.FavoriteToggleButton
 import com.makd.afinity.ui.components.ImageHeroKind
 import com.makd.afinity.ui.components.LandscapeDetailArrangement
@@ -96,6 +99,7 @@ fun PersonDetailContent(
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
+    adminActions: List<DetailMenuAction> = emptyList(),
 ) {
     val isLandscape = isLandscapeWindow()
 
@@ -137,6 +141,7 @@ fun PersonDetailContent(
             onViewAllCredits = viewAllCredits,
             modifier = modifier,
             lazyListState = lazyListState,
+            adminActions = adminActions,
         )
     } else {
         PortraitPersonDetailContent(
@@ -152,6 +157,7 @@ fun PersonDetailContent(
             widthSizeClass = widthSizeClass,
             modifier = modifier,
             lazyListState = lazyListState,
+            adminActions = adminActions,
         )
     }
 }
@@ -169,6 +175,7 @@ private fun LandscapePersonDetailContent(
     onViewAllCredits: (() -> Unit)?,
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
+    adminActions: List<DetailMenuAction> = emptyList(),
 ) {
     val screenWidthDp = windowWidthDp()
     val sidebarWidth = minOf(280.dp, (screenWidthDp - 72.dp) * 0.38f)
@@ -210,6 +217,7 @@ private fun LandscapePersonDetailContent(
                 PersonMetadataSection(
                     person = person,
                     onToggleFavorite = onToggleFavorite,
+                    adminActions = adminActions,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -248,6 +256,7 @@ private fun PortraitPersonDetailContent(
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
+    adminActions: List<DetailMenuAction> = emptyList(),
 ) {
     val cardWidth = widthSizeClass.portraitWidth
 
@@ -274,7 +283,12 @@ private fun PortraitPersonDetailContent(
                 overflow = TextOverflow.Ellipsis,
             )
 
-            PersonMetadataSection(person = person, onToggleFavorite = onToggleFavorite)
+            PersonMetadataSection(
+                person = person,
+                onToggleFavorite = onToggleFavorite,
+                adminActions = adminActions,
+                modifier = Modifier.fillMaxWidth(),
+            )
 
             PersonSharedContentBlocks(
                 person = person,
@@ -389,127 +403,121 @@ private fun FilmographyItemCard(
 private fun PersonMetadataSection(
     person: AfinityPersonDetail,
     onToggleFavorite: () -> Unit,
+    adminActions: List<DetailMenuAction>,
     modifier: Modifier = Modifier,
 ) {
-    val hasBirthday = person.premiereDate != null
-    val hasDeathDate = person.endDate != null
-    val hasBirthplace = person.productionLocations.isNotEmpty()
-    val hasExternalLinks = !person.externalUrls.isNullOrEmpty()
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        val datePattern = stringResource(R.string.person_date_fmt)
+        val formatter =
+            remember(datePattern) { java.time.format.DateTimeFormatter.ofPattern(datePattern) }
 
-    if (hasBirthday || hasDeathDate || hasBirthplace || hasExternalLinks) {
-        Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            val datePattern = stringResource(R.string.person_date_fmt)
-            val formatter =
-                remember(datePattern) { java.time.format.DateTimeFormatter.ofPattern(datePattern) }
+        person.premiereDate?.let { birthday ->
+            val isDeceased = person.endDate != null
+            Text(
+                text =
+                    if (isDeceased) {
+                        stringResource(
+                            R.string.person_born_deceased_fmt,
+                            birthday.format(formatter),
+                        )
+                    } else {
+                        val age =
+                            java.time.Period.between(
+                                    birthday.toLocalDate(),
+                                    java.time.LocalDate.now(),
+                                )
+                                .years
+                        pluralStringResource(
+                            R.plurals.person_born_fmt,
+                            age,
+                            birthday.format(formatter),
+                            age,
+                        )
+                    },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
-            person.premiereDate?.let { birthday ->
-                val isDeceased = person.endDate != null
-                Text(
-                    text =
-                        if (isDeceased) {
-                            stringResource(
-                                R.string.person_born_deceased_fmt,
-                                birthday.format(formatter),
-                            )
-                        } else {
-                            val age =
-                                java.time.Period.between(
-                                        birthday.toLocalDate(),
-                                        java.time.LocalDate.now(),
-                                    )
-                                    .years
-                            pluralStringResource(
-                                R.plurals.person_born_fmt,
-                                age,
-                                birthday.format(formatter),
-                                age,
-                            )
-                        },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            person.endDate?.let { deathDate ->
-                val age =
-                    person.premiereDate?.let { birthday ->
-                        java.time.Period.between(birthday.toLocalDate(), deathDate.toLocalDate())
-                            .years
-                    }
-                Text(
-                    text =
-                        if (age != null) {
-                            pluralStringResource(
-                                R.plurals.person_died_fmt,
-                                age,
-                                deathDate.format(formatter),
-                                age,
-                            )
-                        } else {
-                            stringResource(
-                                R.string.person_died_no_age_fmt,
-                                deathDate.format(formatter),
-                            )
-                        },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            person.productionLocations.firstOrNull()?.let { birthplace ->
-                val context = LocalContext.current
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier =
-                        Modifier.clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() },
-                            role = Role.Button,
-                        ) {
-                            IntentUtils.openMapLocation(context, birthplace)
-                        },
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_map_pin),
-                        contentDescription = stringResource(R.string.cd_birthplace),
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp),
-                    )
-                    Text(
-                        text = stringResource(R.string.person_birthplace_fmt, birthplace),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+        person.endDate?.let { deathDate ->
+            val age =
+                person.premiereDate?.let { birthday ->
+                    java.time.Period.between(birthday.toLocalDate(), deathDate.toLocalDate()).years
                 }
-            }
+            Text(
+                text =
+                    if (age != null) {
+                        pluralStringResource(
+                            R.plurals.person_died_fmt,
+                            age,
+                            deathDate.format(formatter),
+                            age,
+                        )
+                    } else {
+                        stringResource(R.string.person_died_no_age_fmt, deathDate.format(formatter))
+                    },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
-            if (hasExternalLinks) {
-                PersonExternalLinksSection(person = person, onToggleFavorite = onToggleFavorite)
+        person.productionLocations.firstOrNull()?.let { birthplace ->
+            val context = LocalContext.current
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier =
+                    Modifier.clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() },
+                        role = Role.Button,
+                    ) {
+                        IntentUtils.openMapLocation(context, birthplace)
+                    },
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_map_pin),
+                    contentDescription = stringResource(R.string.cd_birthplace),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp),
+                )
+                Text(
+                    text = stringResource(R.string.person_birthplace_fmt, birthplace),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
+
+        PersonActionsRow(
+            person = person,
+            onToggleFavorite = onToggleFavorite,
+            adminActions = adminActions,
+        )
     }
 }
 
 @Composable
-private fun PersonExternalLinksSection(
+private fun PersonActionsRow(
     person: AfinityPersonDetail,
     onToggleFavorite: () -> Unit,
-    modifier: Modifier = Modifier,
+    adminActions: List<DetailMenuAction>,
 ) {
     val context = LocalContext.current
-    val externalUrls = person.externalUrls ?: return
+    val externalUrls = person.externalUrls.orEmpty().filter { it.url != null }
 
     Row(
-        modifier = modifier.offset(x = (-8).dp),
+        modifier = Modifier.fillMaxWidth().offset(x = (-8).dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         FavoriteToggleButton(isFavorite = person.favorite, onClick = onToggleFavorite)
-        VerticalDivider(
-            modifier = Modifier.height(24.dp).padding(horizontal = 4.dp),
-            color = MaterialTheme.colorScheme.outlineVariant,
-        )
+        if (externalUrls.isNotEmpty()) {
+            VerticalDivider(
+                modifier = Modifier.height(24.dp).padding(horizontal = 4.dp),
+                color = MaterialTheme.colorScheme.outlineVariant,
+            )
+        }
         externalUrls.forEach { externalUrl ->
             val url = externalUrl.url ?: return@forEach
             val lowerUrl = url.lowercase()
@@ -548,6 +556,10 @@ private fun PersonExternalLinksSection(
                     modifier = Modifier.height(16.dp),
                 )
             }
+        }
+        if (adminActions.isNotEmpty()) {
+            Spacer(modifier = Modifier.weight(1f))
+            DetailMoreMenu(actions = adminActions)
         }
     }
 }

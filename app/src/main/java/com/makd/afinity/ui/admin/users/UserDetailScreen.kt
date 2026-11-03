@@ -5,7 +5,6 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,8 +25,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
@@ -59,7 +56,9 @@ import com.makd.afinity.R
 import com.makd.afinity.ui.admin.components.AdminLoadContent
 import com.makd.afinity.ui.admin.components.AdminPill
 import com.makd.afinity.ui.admin.components.AdminScaffold
+import com.makd.afinity.ui.components.AfinityActionMenu
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.DetailMenuAction
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
@@ -523,48 +522,30 @@ private fun PictureEditButton(
                 }
             }
         }
-        DropdownMenu(
+        AfinityActionMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
-        ) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.user_picture_choose)) },
-                onClick = {
-                    expanded = false
-                    onChoosePicture()
-                },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_photo_search),
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
+            actions =
+                buildList {
+                    add(
+                        DetailMenuAction(
+                            label = stringResource(R.string.user_picture_choose),
+                            iconRes = R.drawable.ic_photo_search,
+                            onClick = onChoosePicture,
+                        )
                     )
+                    if (hasPicture) {
+                        add(
+                            DetailMenuAction(
+                                label = stringResource(R.string.user_picture_remove),
+                                iconRes = R.drawable.ic_delete,
+                                onClick = onRemovePicture,
+                                destructive = true,
+                            )
+                        )
+                    }
                 },
-            )
-            if (hasPicture) {
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            text = stringResource(R.string.user_picture_remove),
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                    },
-                    onClick = {
-                        expanded = false
-                        onRemovePicture()
-                    },
-                    leadingIcon = {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_delete),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(20.dp),
-                        )
-                    },
-                )
-            }
-        }
+        )
     }
 }
 

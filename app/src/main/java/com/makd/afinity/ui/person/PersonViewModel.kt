@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.manager.resolveChangedItems
 import com.makd.afinity.data.models.external.ExternalTitles
 import com.makd.afinity.data.models.media.AfinityItem
@@ -32,8 +33,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.ItemFields
@@ -53,8 +57,14 @@ constructor(
     private val wikidataAwardsRepository: WikidataAwardsRepository,
     private val preferencesRepository: PreferencesRepository,
     private val externalTitlesRepository: ExternalTitlesRepository,
+    sessionManager: SessionManager,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
+
+    val isAdmin: StateFlow<Boolean> =
+        sessionManager.currentSession
+            .map { it?.isAdmin == true }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private val personIdStr = savedStateHandle.get<String>("personId")
     private val personId: UUID? =

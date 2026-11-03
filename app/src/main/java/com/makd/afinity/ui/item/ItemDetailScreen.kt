@@ -87,6 +87,9 @@ import com.makd.afinity.ui.components.LandscapeDetailLayout
 import com.makd.afinity.ui.components.PortraitDetailLayout
 import com.makd.afinity.ui.components.PortraitHero
 import com.makd.afinity.ui.components.isLandscapeWindow
+import com.makd.afinity.ui.item.collections.CollectionDialog
+import com.makd.afinity.ui.item.collections.CollectionDialogHost
+import com.makd.afinity.ui.item.collections.collectionMenuActions
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.item.components.QualitySelectionDialog
 import com.makd.afinity.ui.item.components.StorageLocationDialog
@@ -136,6 +139,9 @@ fun ItemDetailScreen(
     onHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
     onShowSnackbar: (String) -> Unit = {},
+    onCollectionCreated: (collectionId: String, message: String) -> Unit = { _, message ->
+        onShowSnackbar(message)
+    },
     viewModel: ItemDetailViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
 ) {
@@ -298,6 +304,7 @@ fun ItemDetailScreen(
                     onItemDeleted = onItemDeleted,
                     onHomeClick = onHomeClick,
                     onShowSnackbar = onShowSnackbar,
+                    onCollectionCreated = onCollectionCreated,
                     viewModel = viewModel,
                     widthSizeClass = widthSizeClass,
                 )
@@ -499,6 +506,7 @@ private fun ItemDetailContent(
     onItemDeleted: () -> Unit,
     onHomeClick: () -> Unit,
     onShowSnackbar: (String) -> Unit,
+    onCollectionCreated: (collectionId: String, message: String) -> Unit,
     viewModel: ItemDetailViewModel,
     widthSizeClass: WindowWidthSizeClass,
 ) {
@@ -556,6 +564,7 @@ private fun ItemDetailContent(
                     onIdentifyClick = onIdentifyClick,
                     onItemDeleted = onItemDeleted,
                     onShowSnackbar = onShowSnackbar,
+                    onCollectionCreated = onCollectionCreated,
                     viewModel = viewModel,
                     context = context,
                     widthSizeClass = widthSizeClass,
@@ -598,6 +607,7 @@ private fun ItemDetailContent(
                     onIdentifyClick = onIdentifyClick,
                     onItemDeleted = onItemDeleted,
                     onShowSnackbar = onShowSnackbar,
+                    onCollectionCreated = onCollectionCreated,
                     viewModel = viewModel,
                     context = context,
                     widthSizeClass = widthSizeClass,
@@ -645,6 +655,7 @@ private fun LandscapeItemDetailContent(
     onIdentifyClick: (itemId: String, itemType: String) -> Unit,
     onItemDeleted: () -> Unit,
     onShowSnackbar: (String) -> Unit,
+    onCollectionCreated: (collectionId: String, message: String) -> Unit,
     viewModel: ItemDetailViewModel,
     context: Context,
     widthSizeClass: WindowWidthSizeClass,
@@ -665,6 +676,12 @@ private fun LandscapeItemDetailContent(
     var showRefreshDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showAddToPlaylist by remember { mutableStateOf(false) }
+    val canManageCollections by viewModel.canManageCollections.collectAsStateWithLifecycle()
+    var collectionDialog by remember { mutableStateOf<CollectionDialog?>(null) }
+    val collectionActions =
+        collectionMenuActions(item, containingBoxSets, canManageCollections) {
+            collectionDialog = it
+        }
     val mediaSourceOptions = rememberMediaSourceOptions(item)
     val selectedMediaSource by viewModel.selectedMediaSource.collectAsStateWithLifecycle()
     val episodeLayoutFlow =
@@ -779,6 +796,9 @@ private fun LandscapeItemDetailContent(
                                 )
                                     ({ showAddToPlaylist = true })
                                 else null,
+                            onAddToCollection = collectionActions.onAdd,
+                            onRemoveFromCollection = collectionActions.onRemove,
+                            onManageCollectionItems = collectionActions.onManage,
                             onAdminAction = { action ->
                                 when (action) {
                                     AdminAction.EditMetadata ->
@@ -815,6 +835,16 @@ private fun LandscapeItemDetailContent(
                                 onResult = {},
                             )
                         }
+
+                        CollectionDialogHost(
+                            dialog = collectionDialog,
+                            item = item,
+                            containingBoxSets = containingBoxSets,
+                            boxSetItems = boxSetItems,
+                            onDismiss = { collectionDialog = null },
+                            onShowSnackbar = onShowSnackbar,
+                            onCollectionCreated = onCollectionCreated,
+                        )
 
                         if (showDeleteDialog) {
                             DeleteConfirmationDialog(
@@ -918,6 +948,7 @@ private fun PortraitItemDetailContent(
     onIdentifyClick: (itemId: String, itemType: String) -> Unit,
     onItemDeleted: () -> Unit,
     onShowSnackbar: (String) -> Unit,
+    onCollectionCreated: (collectionId: String, message: String) -> Unit,
     viewModel: ItemDetailViewModel,
     context: Context,
     widthSizeClass: WindowWidthSizeClass,
@@ -938,6 +969,12 @@ private fun PortraitItemDetailContent(
     var showRefreshDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showAddToPlaylist by remember { mutableStateOf(false) }
+    val canManageCollections by viewModel.canManageCollections.collectAsStateWithLifecycle()
+    var collectionDialog by remember { mutableStateOf<CollectionDialog?>(null) }
+    val collectionActions =
+        collectionMenuActions(item, containingBoxSets, canManageCollections) {
+            collectionDialog = it
+        }
     val mediaSourceOptions = rememberMediaSourceOptions(item)
     val selectedMediaSource by viewModel.selectedMediaSource.collectAsStateWithLifecycle()
     val episodeLayoutFlow =
@@ -1032,6 +1069,9 @@ private fun PortraitItemDetailContent(
                     )
                         ({ showAddToPlaylist = true })
                     else null,
+                onAddToCollection = collectionActions.onAdd,
+                onRemoveFromCollection = collectionActions.onRemove,
+                onManageCollectionItems = collectionActions.onManage,
                 onAdminAction = { action ->
                     when (action) {
                         AdminAction.EditMetadata -> onEditMetadataClick(item.id.toString())
@@ -1066,6 +1106,16 @@ private fun PortraitItemDetailContent(
                     onResult = {},
                 )
             }
+
+            CollectionDialogHost(
+                dialog = collectionDialog,
+                item = item,
+                containingBoxSets = containingBoxSets,
+                boxSetItems = boxSetItems,
+                onDismiss = { collectionDialog = null },
+                onShowSnackbar = onShowSnackbar,
+                onCollectionCreated = onCollectionCreated,
+            )
 
             if (showDeleteDialog) {
                 DeleteConfirmationDialog(

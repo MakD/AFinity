@@ -23,8 +23,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.ui.preview.FontScalePreviews
@@ -38,6 +40,8 @@ class DetailMenuAction(
     val enabled: Boolean = true,
     val destructive: Boolean = false,
     val dividerBefore: Boolean = false,
+    val iconTint: Color? = null,
+    val trailingText: String? = null,
 )
 
 @Composable
@@ -104,35 +108,55 @@ fun DetailActionRow(
 }
 
 @Composable
-private fun DetailMoreMenu(actions: List<DetailMenuAction>) {
+fun DetailMoreMenu(
+    actions: List<DetailMenuAction>,
+    iconSize: Dp = 26.dp,
+    contentDescription: String? = null,
+) {
     var expanded by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { expanded = true }) {
             Icon(
                 painter = painterResource(R.drawable.ic_options),
-                contentDescription = stringResource(R.string.cd_music_more_options),
+                contentDescription =
+                    contentDescription ?: stringResource(R.string.cd_music_more_options),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(26.dp),
+                modifier = Modifier.size(iconSize),
             )
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            actions.forEachIndexed { index, action ->
-                val startsDestructive =
-                    index > 0 && action.destructive && !actions[index - 1].destructive
-                if (index > 0 && (action.dividerBefore || startsDestructive)) {
-                    HorizontalDivider()
-                }
-                AfinityMenuItem(
-                    text = action.label,
-                    iconRes = action.iconRes,
-                    destructive = action.destructive,
-                    enabled = action.enabled,
-                    onClick = {
-                        expanded = false
-                        action.onClick()
-                    },
-                )
+        AfinityActionMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            actions = actions,
+        )
+    }
+}
+
+@Composable
+fun AfinityActionMenu(
+    expanded: Boolean,
+    onDismissRequest: () -> Unit,
+    actions: List<DetailMenuAction>,
+) {
+    DropdownMenu(expanded = expanded, onDismissRequest = onDismissRequest) {
+        actions.forEachIndexed { index, action ->
+            val startsDestructive =
+                index > 0 && action.destructive && !actions[index - 1].destructive
+            if (index > 0 && (action.dividerBefore || startsDestructive)) {
+                HorizontalDivider()
             }
+            AfinityMenuItem(
+                text = action.label,
+                iconRes = action.iconRes,
+                destructive = action.destructive,
+                iconTint = action.iconTint,
+                enabled = action.enabled,
+                trailingText = action.trailingText,
+                onClick = {
+                    onDismissRequest()
+                    action.onClick()
+                },
+            )
         }
     }
 }

@@ -26,6 +26,7 @@ import androidx.compose.material3.ModalWideNavigationRail
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.WideNavigationRailDefaults
@@ -227,6 +228,7 @@ fun MainNavigation(
     val webSocketState by mainViewModel.webSocketState.collectAsStateWithLifecycle()
     val serverRestartingMessage = stringResource(R.string.websocket_server_restarting)
     val serverShutdownMessage = stringResource(R.string.websocket_server_shutdown)
+    val openCollectionLabel = stringResource(R.string.collection_open)
 
     LaunchedEffect(webSocketState, isPreAuth) {
         if (isPreAuth) {
@@ -781,6 +783,23 @@ fun MainNavigation(
                                                 snackbarHostState.showSnackbar(message)
                                             }
                                         },
+                                        onCollectionCreated = { collectionId, message ->
+                                            coroutineScope.launch {
+                                                val result =
+                                                    snackbarHostState.showSnackbar(
+                                                        message = message,
+                                                        actionLabel = openCollectionLabel,
+                                                        duration = SnackbarDuration.Long,
+                                                    )
+                                                if (result == SnackbarResult.ActionPerformed) {
+                                                    navController.navigate(
+                                                        Destination.createItemDetailRoute(
+                                                            collectionId
+                                                        )
+                                                    )
+                                                }
+                                            }
+                                        },
                                         onHomeClick = { navController.navigateHome() },
                                         onPlayClick = { item, selection ->
                                             PlayerLauncher.launch(
@@ -864,6 +883,23 @@ fun MainNavigation(
                                                 snackbarHostState.showSnackbar(message)
                                             }
                                         },
+                                        onCollectionCreated = { collectionId, message ->
+                                            coroutineScope.launch {
+                                                val result =
+                                                    snackbarHostState.showSnackbar(
+                                                        message = message,
+                                                        actionLabel = openCollectionLabel,
+                                                        duration = SnackbarDuration.Long,
+                                                    )
+                                                if (result == SnackbarResult.ActionPerformed) {
+                                                    navController.navigate(
+                                                        Destination.createItemDetailRoute(
+                                                            collectionId
+                                                        )
+                                                    )
+                                                }
+                                            }
+                                        },
                                         onHomeClick = { navController.navigateHome() },
                                         widthSizeClass = widthSizeClass,
                                     )
@@ -887,6 +923,20 @@ fun MainNavigation(
                                             navController.navigateToFilteredMedia(filterParams)
                                         },
                                         onHomeClick = { navController.navigateHome() },
+                                        onEditMetadataClick = { personId ->
+                                            navController.navigateToEditMetadata(personId)
+                                        },
+                                        onEditImagesClick = { personId ->
+                                            navController.navigateToEditImages(personId)
+                                        },
+                                        onIdentifyClick = { personId ->
+                                            navController.navigate(
+                                                Destination.createIdentifyItemRoute(
+                                                    personId,
+                                                    "Person",
+                                                )
+                                            )
+                                        },
                                         modifier = Modifier.fillMaxSize(),
                                         widthSizeClass = widthSizeClass,
                                     )

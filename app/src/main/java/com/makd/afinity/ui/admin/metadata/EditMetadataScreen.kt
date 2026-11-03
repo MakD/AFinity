@@ -68,8 +68,10 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -80,7 +82,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.admin.EditableItem
 import com.makd.afinity.data.models.admin.EditablePerson
+import com.makd.afinity.data.models.admin.ExternalIdProvider
 import com.makd.afinity.ui.admin.components.AdminCardShape
+import com.makd.afinity.ui.admin.components.ProviderIdFieldGrid
 import com.makd.afinity.ui.admin.components.adminContentBottomPadding
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
@@ -89,9 +93,13 @@ import com.makd.afinity.ui.components.AfinitySwitch
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AfinityTopBar
+import com.makd.afinity.ui.components.DateFieldPickerDialog
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.components.rememberAfinitySheetState
+import com.makd.afinity.util.DateSkeleton
+import com.makd.afinity.util.localizedDateFormatter
+import java.time.LocalDate
 
 private const val DEFAULT_PERSON_TYPE = "Actor"
 private const val NEW_PERSON = -1
@@ -138,7 +146,11 @@ private val ARTIST_TYPES = setOf("Audio", "MusicVideo")
 private val ALBUM_ARTIST_TYPES = setOf("Audio", "MusicAlbum", "MusicVideo")
 private val ALBUM_TYPES = setOf("Audio", "MusicVideo")
 private val TRACK_NUMBER_TYPES = setOf("Audio")
-private val REDUCED_TYPES = setOf("MusicGenre", "Genre", "Studio", "Person")
+private const val PERSON_TYPE = "Person"
+private const val SERIES_TYPE = "Series"
+private val REDUCED_TYPES = setOf("MusicGenre", "Genre", "Studio", PERSON_TYPE)
+private val NO_DATE_TYPES = setOf("TvChannel")
+private val PERSON_LOCKABLE_FIELDS = setOf("Name", "Overview", "Tags", "ProductionLocations")
 
 private enum class EditorTab(@param:StringRes val titleRes: Int) {
     GENERAL(R.string.admin_tab_general),
@@ -191,9 +203,12 @@ private fun displayOrderLabel(order: String?): String =
     }
 
 @Composable
-private fun lockedFieldLabel(field: String): String =
+private fun lockedFieldLabel(field: String, isPerson: Boolean): String =
     when (field) {
-        "Name" -> stringResource(R.string.admin_field_title)
+        "Name" ->
+            stringResource(
+                if (isPerson) R.string.admin_field_person_name else R.string.admin_field_title
+            )
         "Overview" -> stringResource(R.string.admin_field_overview)
         "Genres" -> stringResource(R.string.admin_section_genres)
         "Tags" -> stringResource(R.string.admin_section_tags)
@@ -201,7 +216,11 @@ private fun lockedFieldLabel(field: String): String =
         "Cast" -> stringResource(R.string.admin_section_cast)
         "OfficialRating" -> stringResource(R.string.admin_field_rating)
         "Runtime" -> stringResource(R.string.discover_filter_runtime)
-        "ProductionLocations" -> stringResource(R.string.admin_locked_field_production_locations)
+        "ProductionLocations" ->
+            stringResource(
+                if (isPerson) R.string.admin_locked_field_birth_location
+                else R.string.admin_locked_field_production_locations
+            )
         else -> field
     }
 
@@ -418,29 +437,56 @@ private fun GeneralTab(
                 .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        AfinityTextField(
-            value = item.name,
-            onValueChange = viewModel::updateName,
-            label = stringResource(R.string.admin_field_title),
-            modifier = Modifier.fillMaxWidth(),
-            isError = uiState.titleMissing,
-            supportingText =
-                if (uiState.titleMissing) {
-                    stringResource(R.string.admin_metadata_title_required)
-                } else null,
-        )
+        val isPerson = item.type == PERSON_TYPE
+        if (isPerson) {
+            AfinityTextField(
+                value = item.name,
+                onValueChange = {},
+                label = stringResource(R.string.admin_field_person_name),
+                modifier = Modifier.fillMaxWidth(),
+                enabled = false,
+                supportingText = stringResource(R.string.admin_person_name_locked_hint),
+                trailingIcon = {
+                    Icon(
+                        painterResource(R.drawable.ic_lock_filled),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                },
+            )
+        } else {
+            AfinityTextField(
+                value = item.name,
+                onValueChange = viewModel::updateName,
+                label = stringResource(R.string.admin_field_title),
+                modifier = Modifier.fillMaxWidth(),
+                isError = uiState.titleMissing,
+                supportingText =
+                    if (uiState.titleMissing) {
+                        stringResource(R.string.admin_metadata_title_required)
+                    } else null,
+            )
+        }
         if (item.type !in MUSIC_TYPES) {
             AfinityTextField(
                 value = item.originalTitle ?: "",
                 onValueChange = viewModel::updateOriginalTitle,
-                label = stringResource(R.string.admin_field_original_title),
+                label =
+                    stringResource(
+                        if (isPerson) R.string.admin_field_original_name
+                        else R.string.admin_field_original_title
+                    ),
                 modifier = Modifier.fillMaxWidth(),
             )
         }
         AfinityTextField(
             value = item.forcedSortName ?: "",
             onValueChange = viewModel::updateSortTitle,
-            label = stringResource(R.string.admin_field_sort_title),
+            label =
+                stringResource(
+                    if (isPerson) R.string.admin_field_sort_name
+                    else R.string.admin_field_sort_title
+                ),
             modifier = Modifier.fillMaxWidth(),
         )
         if (item.type in ALBUM_TYPES) {
@@ -496,11 +542,32 @@ private fun GeneralTab(
             minLines = 4,
             maxLines = 8,
         )
+        if (isPerson) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                DateField(
+                    label = stringResource(R.string.admin_field_birth_date),
+                    value = item.premiereDate,
+                    onPick = viewModel::updatePremiereDate,
+                    clearable = true,
+                    modifier = Modifier.weight(1f),
+                )
+                DateField(
+                    label = stringResource(R.string.admin_field_death_date),
+                    value = item.endDate,
+                    onPick = viewModel::updateEndDate,
+                    clearable = true,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             AfinityTextField(
                 value = uiState.yearText,
                 onValueChange = viewModel::updateYear,
-                label = stringResource(R.string.admin_field_year),
+                label =
+                    stringResource(
+                        if (isPerson) R.string.admin_field_birth_year else R.string.admin_field_year
+                    ),
                 modifier = Modifier.weight(1f),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             )
@@ -512,6 +579,45 @@ private fun GeneralTab(
                     suggestions = item.availableParentalRatings,
                     modifier = Modifier.weight(1f),
                 )
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
+            }
+        }
+        if (isPerson) {
+            AfinityTextField(
+                value = item.productionLocations.firstOrNull().orEmpty(),
+                onValueChange = viewModel::updatePlaceOfBirth,
+                label = stringResource(R.string.admin_field_place_of_birth),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        } else if (item.type !in NO_DATE_TYPES) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                DateField(
+                    label = stringResource(R.string.admin_field_release_date),
+                    value = item.premiereDate,
+                    onPick = viewModel::updatePremiereDate,
+                    clearable = true,
+                    modifier = Modifier.weight(1f),
+                )
+                DateField(
+                    label = stringResource(R.string.admin_field_date_added),
+                    value = item.dateCreated,
+                    onPick = viewModel::updateDateCreated,
+                    clearable = false,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            if (item.type == SERIES_TYPE) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    DateField(
+                        label = stringResource(R.string.admin_field_end_date),
+                        value = item.endDate,
+                        onPick = viewModel::updateEndDate,
+                        clearable = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                }
             }
         }
 
@@ -1010,7 +1116,15 @@ private fun AdvancedTab(
             }
         }
 
-        if (item.type == "Series") {
+        if (item.externalIdProviders.isNotEmpty()) {
+            ExternalIdsCard(
+                providers = item.externalIdProviders,
+                providerIds = item.providerIds,
+                onIdChange = viewModel::updateProviderId,
+            )
+        }
+
+        if (item.type == SERIES_TYPE) {
             val statusEntries =
                 listOf<Pair<String, String?>>(seriesStatusLabel(null) to null) +
                     SERIES_STATUSES.map { seriesStatusLabel(it) to it }
@@ -1073,12 +1187,16 @@ private fun AdvancedTab(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                LOCKABLE_FIELDS.forEach { field ->
+                val isPerson = item.type == PERSON_TYPE
+                val lockable =
+                    if (isPerson) LOCKABLE_FIELDS.filter { it in PERSON_LOCKABLE_FIELDS }
+                    else LOCKABLE_FIELDS
+                lockable.forEach { field ->
                     val selected = field in item.lockedFields
                     FilterChip(
                         selected = selected,
                         onClick = { viewModel.toggleLockedField(field) },
-                        label = { Text(lockedFieldLabel(field)) },
+                        label = { Text(lockedFieldLabel(field, isPerson)) },
                         leadingIcon =
                             if (selected) {
                                 {
@@ -1102,6 +1220,98 @@ private fun AdvancedTab(
                 Modifier.height(
                     adminContentBottomPadding(hasFloatingButton = true) + playerClearance()
                 )
+        )
+    }
+}
+
+@Composable
+private fun ExternalIdsCard(
+    providers: List<ExternalIdProvider>,
+    providerIds: Map<String, String>,
+    onIdChange: (String, String) -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(AdminCardShape)
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.admin_section_external_ids),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.heightIn(min = 48.dp).padding(start = 4.dp, top = 14.dp),
+        )
+        Text(
+            text = stringResource(R.string.admin_external_ids_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 4.dp),
+        )
+        ProviderIdFieldGrid(
+            providers = providers,
+            providerIds = providerIds,
+            onIdChange = onIdChange,
+        )
+    }
+}
+
+@Composable
+private fun DateField(
+    label: String,
+    value: String?,
+    onPick: (String?) -> Unit,
+    clearable: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    var picking by remember { mutableStateOf(false) }
+    val locale = LocalConfiguration.current.locales[0]
+    val formatter = remember(locale) { localizedDateFormatter(locale, DateSkeleton.MONTH_DAY_YEAR) }
+    val text =
+        remember(value, formatter) {
+            value?.let { runCatching { LocalDate.parse(it).format(formatter) }.getOrNull() }
+        }
+    Box(modifier = modifier) {
+        AfinityTextField(
+            value = text.orEmpty(),
+            onValueChange = {},
+            label = label,
+            modifier = Modifier.fillMaxWidth(),
+            trailingIcon = {
+                Icon(
+                    painterResource(R.drawable.ic_calendar),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            },
+        )
+        Box(
+            modifier =
+                Modifier.matchParentSize().clip(RoundedCornerShape(14.dp)).clickable(
+                    role = Role.Button,
+                    onClickLabel = label,
+                ) {
+                    picking = true
+                }
+        )
+    }
+    if (picking) {
+        DateFieldPickerDialog(
+            initialDate = value,
+            onConfirm = { picked ->
+                if (picked != null || clearable) onPick(picked)
+                picking = false
+            },
+            onDismiss = { picking = false },
+            onClear =
+                if (clearable && value != null) {
+                    {
+                        onPick(null)
+                        picking = false
+                    }
+                } else null,
         )
     }
 }

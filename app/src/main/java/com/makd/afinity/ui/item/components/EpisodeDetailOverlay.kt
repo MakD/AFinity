@@ -21,8 +21,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -54,6 +52,8 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.navigation.LocalSideSheetEnabled
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.DetailMenuAction
+import com.makd.afinity.ui.components.DetailMoreMenu
 import com.makd.afinity.ui.components.FavoriteToggleButton
 import com.makd.afinity.ui.components.MetadataOverflowRow
 import com.makd.afinity.ui.components.ModalSideSheet
@@ -430,138 +430,61 @@ fun EpisodeDetailOverlay(
                             }
                         }
                         if (hasManageItems) {
-                            var menuExpanded by remember { mutableStateOf(false) }
-                            Box {
-                                IconButton(onClick = { menuExpanded = true }) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.ic_options),
-                                        contentDescription =
-                                            stringResource(R.string.cd_admin_manage),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(28.dp),
+                            val actions = buildList {
+                                if (hasMediaInfo) {
+                                    add(
+                                        DetailMenuAction(
+                                            label = stringResource(R.string.media_info_title),
+                                            iconRes = R.drawable.ic_info,
+                                            onClick = { showMediaInfo = true },
+                                        )
                                     )
                                 }
-                                DropdownMenu(
-                                    expanded = menuExpanded,
-                                    onDismissRequest = { menuExpanded = false },
-                                ) {
-                                    if (hasMediaInfo) {
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(stringResource(R.string.media_info_title))
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    painter =
-                                                        painterResource(id = R.drawable.ic_info),
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(20.dp),
-                                                )
-                                            },
-                                            onClick = {
-                                                menuExpanded = false
-                                                showMediaInfo = true
-                                            },
+                                if (isAdmin) {
+                                    add(
+                                        DetailMenuAction(
+                                            label =
+                                                stringResource(R.string.admin_action_edit_metadata),
+                                            iconRes = R.drawable.ic_edit_circle,
+                                            onClick = { onAdminAction(AdminAction.EditMetadata) },
+                                            dividerBefore = hasMediaInfo,
                                         )
-                                        HorizontalDivider()
-                                    }
-                                    if (isAdmin) {
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    stringResource(
-                                                        R.string.admin_action_edit_metadata
-                                                    )
-                                                )
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    painter =
-                                                        painterResource(
-                                                            id = R.drawable.ic_edit_circle
-                                                        ),
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(20.dp),
-                                                )
-                                            },
-                                            onClick = {
-                                                menuExpanded = false
-                                                onAdminAction(AdminAction.EditMetadata)
-                                            },
+                                    )
+                                    add(
+                                        DetailMenuAction(
+                                            label =
+                                                stringResource(R.string.admin_action_edit_images),
+                                            iconRes = R.drawable.ic_photo_search,
+                                            onClick = { onAdminAction(AdminAction.EditImages) },
                                         )
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    stringResource(
-                                                        R.string.admin_action_edit_images
-                                                    )
-                                                )
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    painter =
-                                                        painterResource(
-                                                            id = R.drawable.ic_photo_search
-                                                        ),
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(20.dp),
-                                                )
-                                            },
-                                            onClick = {
-                                                menuExpanded = false
-                                                onAdminAction(AdminAction.EditImages)
-                                            },
+                                    )
+                                    add(
+                                        DetailMenuAction(
+                                            label =
+                                                stringResource(
+                                                    R.string.admin_action_refresh_metadata
+                                                ),
+                                            iconRes = R.drawable.ic_refresh,
+                                            onClick = { onAdminAction(AdminAction.Refresh) },
                                         )
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    stringResource(
-                                                        R.string.admin_action_refresh_metadata
-                                                    )
-                                                )
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    painter =
-                                                        painterResource(id = R.drawable.ic_refresh),
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(20.dp),
-                                                )
-                                            },
-                                            onClick = {
-                                                menuExpanded = false
-                                                onAdminAction(AdminAction.Refresh)
-                                            },
+                                    )
+                                }
+                                if (canDelete) {
+                                    add(
+                                        DetailMenuAction(
+                                            label = stringResource(R.string.admin_action_delete),
+                                            iconRes = R.drawable.ic_delete,
+                                            onClick = { onAdminAction(AdminAction.Delete) },
+                                            destructive = true,
                                         )
-                                    }
-                                    if (canDelete) {
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    text =
-                                                        stringResource(
-                                                            R.string.admin_action_delete
-                                                        ),
-                                                    color = MaterialTheme.colorScheme.error,
-                                                )
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    painter =
-                                                        painterResource(id = R.drawable.ic_delete),
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.error,
-                                                    modifier = Modifier.size(20.dp),
-                                                )
-                                            },
-                                            onClick = {
-                                                menuExpanded = false
-                                                onAdminAction(AdminAction.Delete)
-                                            },
-                                        )
-                                    }
+                                    )
                                 }
                             }
+                            DetailMoreMenu(
+                                actions = actions,
+                                iconSize = 28.dp,
+                                contentDescription = stringResource(R.string.cd_admin_manage),
+                            )
                         }
                     }
                 }

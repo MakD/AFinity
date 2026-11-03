@@ -1360,6 +1360,12 @@ constructor(
         }
     }
 
+    suspend fun reloadLibraries() {
+        if (!_isInitialDataLoaded.value) return
+        val libraries = loadLibraries()
+        if (libraries.isNotEmpty()) _libraries.value = libraries
+    }
+
     suspend fun refreshLibrarySections() {
         if (!_isInitialDataLoaded.value) return
         val libs = _libraries.value

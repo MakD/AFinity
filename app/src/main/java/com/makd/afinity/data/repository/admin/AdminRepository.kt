@@ -1,5 +1,6 @@
 package com.makd.afinity.data.repository.admin
 
+import com.makd.afinity.data.models.admin.CollectionChoice
 import com.makd.afinity.data.models.admin.DeleteSummary
 import com.makd.afinity.data.models.admin.EditableItem
 import com.makd.afinity.data.models.admin.ExternalIdProvider
@@ -101,4 +102,16 @@ interface AdminRepository {
         tmdbId: Int? = null,
         isMovie: Boolean? = null,
     ): Result<Unit>
+
+    suspend fun getCollections(): Result<List<CollectionChoice>>
+
+    suspend fun createCollection(
+        name: String,
+        itemIds: List<String>,
+        searchMetadata: Boolean,
+    ): Result<String>
+
+    suspend fun addToCollection(collectionId: String, itemIds: List<String>): Result<Unit>
+
+    suspend fun removeFromCollection(collectionId: String, itemIds: List<String>): Result<Unit>
 }

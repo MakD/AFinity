@@ -2,7 +2,6 @@ package com.makd.afinity.ui.admin.libraries
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -25,8 +24,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -63,7 +60,9 @@ import com.makd.afinity.ui.admin.components.AdminLoadContent
 import com.makd.afinity.ui.admin.components.AdminPill
 import com.makd.afinity.ui.admin.components.AdminScaffold
 import com.makd.afinity.ui.admin.components.adminContentBottomPadding
+import com.makd.afinity.ui.components.AfinityActionMenu
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.DetailMenuAction
 import com.makd.afinity.ui.theme.CardDimensions
 import java.util.UUID
 import kotlin.math.roundToInt
@@ -458,74 +457,45 @@ private fun LibraryMenu(
                 modifier = Modifier.size(20.dp),
             )
         }
-        DropdownMenu(
+        AfinityActionMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
-        ) {
-            if (hasItem) {
-                LibraryMenuItem(
-                    label = stringResource(R.string.library_scan),
-                    icon = R.drawable.ic_refresh,
-                    onClick = {
-                        expanded = false
-                        onScan()
-                    },
-                )
-                LibraryMenuItem(
-                    label = stringResource(R.string.library_edit_image),
-                    icon = R.drawable.ic_photo_edit,
-                    onClick = {
-                        expanded = false
-                        onEditImage()
-                    },
-                )
-            }
-            LibraryMenuItem(
-                label = stringResource(R.string.action_rename),
-                icon = R.drawable.ic_edit,
-                onClick = {
-                    expanded = false
-                    onRename()
+            actions =
+                buildList {
+                    if (hasItem) {
+                        add(
+                            DetailMenuAction(
+                                label = stringResource(R.string.library_scan),
+                                iconRes = R.drawable.ic_refresh,
+                                onClick = onScan,
+                            )
+                        )
+                        add(
+                            DetailMenuAction(
+                                label = stringResource(R.string.library_edit_image),
+                                iconRes = R.drawable.ic_photo_edit,
+                                onClick = onEditImage,
+                            )
+                        )
+                    }
+                    add(
+                        DetailMenuAction(
+                            label = stringResource(R.string.action_rename),
+                            iconRes = R.drawable.ic_edit,
+                            onClick = onRename,
+                        )
+                    )
+                    add(
+                        DetailMenuAction(
+                            label = stringResource(R.string.action_remove),
+                            iconRes = R.drawable.ic_delete,
+                            onClick = onRemove,
+                            destructive = true,
+                        )
+                    )
                 },
-            )
-            LibraryMenuItem(
-                label = stringResource(R.string.action_remove),
-                icon = R.drawable.ic_delete,
-                isDestructive = true,
-                onClick = {
-                    expanded = false
-                    onRemove()
-                },
-            )
-        }
+        )
     }
-}
-
-@Composable
-private fun LibraryMenuItem(
-    label: String,
-    @DrawableRes icon: Int,
-    onClick: () -> Unit,
-    isDestructive: Boolean = false,
-) {
-    val color =
-        if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-    val iconTint =
-        if (isDestructive) MaterialTheme.colorScheme.error
-        else MaterialTheme.colorScheme.onSurfaceVariant
-    DropdownMenuItem(
-        text = { Text(text = label, color = color) },
-        leadingIcon = {
-            Icon(
-                painter = painterResource(id = icon),
-                contentDescription = null,
-                tint = iconTint,
-                modifier = Modifier.size(20.dp),
-            )
-        },
-        onClick = onClick,
-    )
 }
 
 @DrawableRes

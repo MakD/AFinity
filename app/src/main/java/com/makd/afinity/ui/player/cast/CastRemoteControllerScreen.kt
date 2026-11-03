@@ -3,11 +3,7 @@ package com.makd.afinity.ui.player.cast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,6 +19,8 @@ import com.makd.afinity.cast.CastManager
 import com.makd.afinity.cast.CastSessionState
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.ui.components.AfinityActionMenu
+import com.makd.afinity.ui.components.DetailMenuAction
 import com.makd.afinity.ui.components.formatClock
 import com.makd.afinity.ui.player.PlayerViewModel
 import com.makd.afinity.ui.player.components.PlaybackSpeedDialog
@@ -76,34 +74,23 @@ fun CastRemoteControllerScreen(
                     contentDescription = stringResource(R.string.cd_music_more_options),
                     onClick = { showMoreMenu = true },
                 )
-                DropdownMenu(expanded = showMoreMenu, onDismissRequest = { showMoreMenu = false }) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.cd_playback_speed)) },
-                        leadingIcon = {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_speed),
-                                contentDescription = null,
-                            )
-                        },
-                        onClick = {
-                            showMoreMenu = false
-                            showSpeedDialog = true
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.cast_stop_playback)) },
-                        leadingIcon = {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_player_stop_filled),
-                                contentDescription = null,
-                            )
-                        },
-                        onClick = {
-                            showMoreMenu = false
-                            onStopPlayback()
-                        },
-                    )
-                }
+                AfinityActionMenu(
+                    expanded = showMoreMenu,
+                    onDismissRequest = { showMoreMenu = false },
+                    actions =
+                        listOf(
+                            DetailMenuAction(
+                                label = stringResource(R.string.cd_playback_speed),
+                                iconRes = R.drawable.ic_speed,
+                                onClick = { showSpeedDialog = true },
+                            ),
+                            DetailMenuAction(
+                                label = stringResource(R.string.cast_stop_playback),
+                                iconRes = R.drawable.ic_player_stop_filled,
+                                onClick = onStopPlayback,
+                            ),
+                        ),
+                )
             }
         },
         titleBlock = {

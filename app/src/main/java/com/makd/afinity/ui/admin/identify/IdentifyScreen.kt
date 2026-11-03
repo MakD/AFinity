@@ -67,6 +67,7 @@ import com.makd.afinity.data.models.admin.IdentifyResult
 import com.makd.afinity.data.models.admin.IdentifyTarget
 import com.makd.afinity.ui.admin.components.AdminCardShape
 import com.makd.afinity.ui.admin.components.AdminStateMessage
+import com.makd.afinity.ui.admin.components.ProviderIdFieldGrid
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinityScreen
@@ -98,16 +99,6 @@ private fun pillIds(providerIds: Map<String, String>): Map<String, String> =
 private fun matchSubtitle(result: IdentifyResult): String =
     listOfNotNull(result.albumArtist, result.year?.toString(), result.searchProviderName)
         .joinToString(" • ")
-
-@Composable
-private fun providerFieldLabel(provider: ExternalIdProvider, duplicateName: Boolean): String =
-    when {
-        !duplicateName -> provider.name
-        provider.type == "Album" -> stringResource(R.string.admin_identify_id_album, provider.name)
-        provider.type == "ReleaseGroup" ->
-            stringResource(R.string.admin_identify_id_release_group, provider.name)
-        else -> provider.name
-    }
 
 private fun fileName(path: String): String =
     path.trimEnd('/', '\\').substringAfterLast('/').substringAfterLast('\\')
@@ -432,10 +423,6 @@ private fun ProviderIdsPanel(
     onSearch: () -> Unit,
 ) {
     val summary = remember(providers) { providers.map { it.name }.distinct().joinToString(", ") }
-    val duplicateNames =
-        remember(providers) {
-            providers.groupingBy { it.name }.eachCount().filterValues { it > 1 }.keys
-        }
     val searchActions = KeyboardActions(onSearch = { onSearch() })
 
     Column(
@@ -488,28 +475,13 @@ private fun ProviderIdsPanel(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 4.dp),
                 )
-                providers.chunked(2).forEach { rowProviders ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        rowProviders.forEach { provider ->
-                            AfinityTextField(
-                                value = providerIds[provider.key] ?: "",
-                                onValueChange = { onIdChange(provider.key, it) },
-                                label =
-                                    providerFieldLabel(
-                                        provider = provider,
-                                        duplicateName = provider.name in duplicateNames,
-                                    ),
-                                modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                                keyboardActions = searchActions,
-                            )
-                        }
-                        if (rowProviders.size == 1) Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
+                ProviderIdFieldGrid(
+                    providers = providers,
+                    providerIds = providerIds,
+                    onIdChange = onIdChange,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = searchActions,
+                )
             }
         }
     }

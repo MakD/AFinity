@@ -188,6 +188,11 @@ constructor(
             .map { it?.isAdmin == true }
             .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    val canManageCollections: StateFlow<Boolean> =
+        sessionManager.currentSession
+            .map { it?.canManageCollections == true || it?.isAdmin == true }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     val mayDeleteMedia: StateFlow<Boolean> =
         sessionManager.currentSession
             .map { it?.isAdmin == true || it?.canDeleteMedia == true }
@@ -266,7 +271,10 @@ constructor(
         viewModelScope.launch {
             adminChangeBroadcaster.changes
                 .filter { it.itemId == itemId.toString() && it.kind == AdminChangeKind.METADATA }
-                .collect { forceReloadFromServer() }
+                .collect {
+                    forceReloadFromServer()
+                    refreshContainingBoxSets()
+                }
         }
 
         viewModelScope.launch {
@@ -1404,6 +1412,16 @@ constructor(
 
     fun forceReloadFromServer() {
         loadItem()
+    }
+
+    private suspend fun refreshContainingBoxSets() {
+        if (_uiState.value.item is AfinityBoxSet) return
+        val boxSets =
+            mediaRepository.getBoxSetsContaining(
+                itemId = itemId,
+                fields = FieldSets.MEDIA_ITEM_CARDS,
+            )
+        _uiState.update { it.copy(containingBoxSets = boxSets) }
     }
 
     fun onScreenResumed() {

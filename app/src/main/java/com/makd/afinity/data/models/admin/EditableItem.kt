@@ -11,6 +11,10 @@ data class EditableItem(
     val overview: String?,
     val productionYear: Int?,
     val premiereDate: String?,
+    val endDate: String?,
+    val dateCreated: String?,
+    val productionLocations: List<String>,
+    val providerIds: Map<String, String>,
     val officialRating: String?,
     val customRating: String?,
     val communityRating: Double?,
@@ -27,6 +31,7 @@ data class EditableItem(
     val type: String,
     val path: String?,
     val availableParentalRatings: List<String> = emptyList(),
+    val externalIdProviders: List<ExternalIdProvider> = emptyList(),
 )
 
 data class EditablePerson(

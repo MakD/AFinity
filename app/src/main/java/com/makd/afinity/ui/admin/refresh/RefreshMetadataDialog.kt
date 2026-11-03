@@ -52,6 +52,7 @@ fun RefreshMetadataDialog(
     itemName: String,
     onDismiss: () -> Unit,
     includesChildren: Boolean = false,
+    showTrickplay: Boolean = true,
     viewModel: RefreshMetadataViewModel = hiltViewModel(),
     onQueued: (() -> Unit)? = null,
 ) {
@@ -128,12 +129,14 @@ fun RefreshMetadataDialog(
                         enabled = !refreshing,
                         onToggle = { replaceImages = it },
                     )
-                    SwitchRow(
-                        label = stringResource(R.string.admin_refresh_replace_trickplay),
-                        checked = regenerateTrickplay,
-                        enabled = !refreshing,
-                        onToggle = { regenerateTrickplay = it },
-                    )
+                    if (showTrickplay) {
+                        SwitchRow(
+                            label = stringResource(R.string.admin_refresh_replace_trickplay),
+                            checked = regenerateTrickplay,
+                            enabled = !refreshing,
+                            onToggle = { regenerateTrickplay = it },
+                        )
+                    }
                 }
 
                 if (failed) {

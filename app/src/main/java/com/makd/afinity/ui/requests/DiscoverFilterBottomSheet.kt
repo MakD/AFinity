@@ -21,9 +21,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DisplayMode
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -33,7 +30,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -60,17 +56,13 @@ import com.makd.afinity.data.models.jellyseerr.WatchProviderRegion
 import com.makd.afinity.ui.components.AfinityRangeSlider
 import com.makd.afinity.ui.components.AfinityToggleChip
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.DateFieldPickerDialog
 import com.makd.afinity.ui.components.RadioOptionRow
 import com.makd.afinity.ui.components.filter.FilterAccordionSection
 import com.makd.afinity.ui.components.filter.FilterDialog
 import com.makd.afinity.ui.components.filter.FilterSectionHeader
 import com.makd.afinity.ui.components.filter.SearchableChipMultiSelect
 import com.makd.afinity.ui.components.filter.noRippleClickable
-import com.makd.afinity.ui.components.isCompactHeightWindow
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
 
 @Composable
@@ -708,54 +700,6 @@ private fun DateFieldButton(
             text = value ?: stringResource(R.string.discover_filter_any),
             style = MaterialTheme.typography.bodyLarge,
         )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DateFieldPickerDialog(
-    initialDate: String?,
-    onConfirm: (String?) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val initialMillis = initialDate?.let {
-        runCatching {
-            LocalDate.parse(it, DateTimeFormatter.ISO_LOCAL_DATE)
-                .atStartOfDay(ZoneOffset.UTC)
-                .toInstant()
-                .toEpochMilli()
-        }
-            .getOrNull()
-    }
-    val isCompactHeight = isCompactHeightWindow()
-    val datePickerState =
-        rememberDatePickerState(
-            initialSelectedDateMillis = initialMillis,
-            initialDisplayMode = if (isCompactHeight) DisplayMode.Input else DisplayMode.Picker,
-        )
-
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val millis = datePickerState.selectedDateMillis
-                    if (millis != null) {
-                        val date = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
-                        onConfirm(date.format(DateTimeFormatter.ISO_LOCAL_DATE))
-                    } else {
-                        onConfirm(null)
-                    }
-                }
-            ) {
-                Text(stringResource(R.string.action_apply))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        },
-    ) {
-        DatePicker(state = datePickerState)
     }
 }
 

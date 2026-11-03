@@ -24,8 +24,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -65,12 +63,14 @@ import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityPersonDetail
+import com.makd.afinity.ui.components.AfinityActionMenu
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.CardRow
+import com.makd.afinity.ui.components.DetailMenuAction
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
@@ -649,76 +649,40 @@ internal fun FavoriteTrackCard(
                             modifier = Modifier.size(16.dp),
                         )
                     }
-                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    if (track.favorite) stringResource(R.string.cd_favorite_remove)
-                                    else stringResource(R.string.cd_favorite_add)
-                                )
-                            },
-                            onClick = {
-                                showMenu = false
-                                onFavorite()
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    painter =
-                                        painterResource(
-                                            if (track.favorite) R.drawable.ic_favorite_filled
-                                            else R.drawable.ic_favorite
+                    AfinityActionMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        actions =
+                            listOf(
+                                DetailMenuAction(
+                                    label =
+                                        stringResource(
+                                            if (track.favorite) R.string.cd_favorite_remove
+                                            else R.string.cd_favorite_add
                                         ),
-                                    contentDescription = null,
-                                    tint =
-                                        if (track.favorite) Color.Red
-                                        else androidx.compose.material3.LocalContentColor.current,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.music_action_play_instant_mix)) },
-                            onClick = {
-                                showMenu = false
-                                onInstantMix()
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_arrows_shuffle),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.music_action_play_next)) },
-                            onClick = {
-                                showMenu = false
-                                onAddNext()
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_player_skip_forward),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.music_action_add_to_queue)) },
-                            onClick = {
-                                showMenu = false
-                                onAddLast()
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_playlist_alt),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            },
-                        )
-                    }
+                                    iconRes =
+                                        if (track.favorite) R.drawable.ic_favorite_filled
+                                        else R.drawable.ic_favorite,
+                                    onClick = onFavorite,
+                                    iconTint = if (track.favorite) Color.Red else null,
+                                ),
+                                DetailMenuAction(
+                                    label = stringResource(R.string.music_action_play_instant_mix),
+                                    iconRes = R.drawable.ic_arrows_shuffle,
+                                    onClick = onInstantMix,
+                                ),
+                                DetailMenuAction(
+                                    label = stringResource(R.string.music_action_play_next),
+                                    iconRes = R.drawable.ic_player_skip_forward,
+                                    onClick = onAddNext,
+                                ),
+                                DetailMenuAction(
+                                    label = stringResource(R.string.music_action_add_to_queue),
+                                    iconRes = R.drawable.ic_playlist_alt,
+                                    onClick = onAddLast,
+                                ),
+                            ),
+                    )
                 }
             }
         }

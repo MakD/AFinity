@@ -18,8 +18,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,6 +41,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.server.ConnectionType
+import com.makd.afinity.ui.components.AfinityActionMenu
+import com.makd.afinity.ui.components.DetailMenuAction
 import com.makd.afinity.ui.components.connectionIndicatorColor
 import com.makd.afinity.ui.components.connectionLabel
 import com.makd.afinity.ui.components.connectionTypeIcon
@@ -137,54 +137,24 @@ fun ServerCard(
                             modifier = Modifier.size(20.dp),
                         )
                     }
-                    DropdownMenu(
+                    AfinityActionMenu(
                         expanded = menuExpanded,
                         onDismissRequest = { menuExpanded = false },
-                        shape = RoundedCornerShape(12.dp),
-                    ) {
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    stringResource(R.string.title_edit_server),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                )
-                            },
-                            onClick = {
-                                menuExpanded = false
-                                onEditClick()
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    painterResource(id = R.drawable.ic_edit),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
-                                )
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    stringResource(R.string.cd_delete_server),
-                                    style =
-                                        MaterialTheme.typography.bodyMedium.copy(
-                                            color = MaterialTheme.colorScheme.error
-                                        ),
-                                )
-                            },
-                            onClick = {
-                                menuExpanded = false
-                                onDeleteClick()
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    painterResource(id = R.drawable.ic_delete),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(20.dp),
-                                )
-                            },
-                        )
-                    }
+                        actions =
+                            listOf(
+                                DetailMenuAction(
+                                    label = stringResource(R.string.title_edit_server),
+                                    iconRes = R.drawable.ic_edit,
+                                    onClick = onEditClick,
+                                ),
+                                DetailMenuAction(
+                                    label = stringResource(R.string.cd_delete_server),
+                                    iconRes = R.drawable.ic_delete,
+                                    onClick = onDeleteClick,
+                                    destructive = true,
+                                ),
+                            ),
+                    )
                 }
             }
 

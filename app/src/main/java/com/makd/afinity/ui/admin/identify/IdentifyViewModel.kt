@@ -22,12 +22,18 @@ import kotlinx.coroutines.launch
 private const val MOVIE = "Movie"
 private const val BOX_SET = "BoxSet"
 private const val MUSIC_ALBUM = "MusicAlbum"
-private val IDENTIFIABLE_TYPES = setOf(MOVIE, "Series", BOX_SET, MUSIC_ALBUM)
-private val NO_YEAR_TYPES = setOf(BOX_SET, MUSIC_ALBUM)
+private const val PERSON = "Person"
+private val IDENTIFIABLE_TYPES = setOf(MOVIE, "Series", BOX_SET, MUSIC_ALBUM, PERSON)
+private val NO_YEAR_TYPES = setOf(BOX_SET, MUSIC_ALBUM, PERSON)
 private val ALBUM_ID_TYPES = setOf("Album", "ReleaseGroup")
+private val PERSON_ID_KEYS = setOf("Tmdb", "Tvdb", "Imdb")
 
 private fun ExternalIdProvider.searchableFor(itemType: String): Boolean =
-    if (itemType == MUSIC_ALBUM) type in ALBUM_ID_TYPES else type == null || type == itemType
+    when (itemType) {
+        MUSIC_ALBUM -> type in ALBUM_ID_TYPES
+        PERSON -> key in PERSON_ID_KEYS
+        else -> type == null || type == itemType
+    }
 
 enum class IdentifyMessage(@param:StringRes val textRes: Int) {
     APPLY_FAILED(R.string.admin_identify_apply_failed),

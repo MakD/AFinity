@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,7 +38,9 @@ import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.ui.components.AfinityActionMenu
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.DetailMenuAction
 import com.makd.afinity.ui.components.formatClockTicks
 
 @Composable
@@ -131,23 +131,19 @@ fun PlaylistVideoRow(
                         modifier = Modifier.size(20.dp),
                     )
                 }
-                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.music_action_remove_from_playlist)) },
-                        onClick = {
-                            showMenu = false
-                            onRemoveFromPlaylist()
-                        },
-                        leadingIcon = {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_delete),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(18.dp),
+                AfinityActionMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false },
+                    actions =
+                        listOf(
+                            DetailMenuAction(
+                                label = stringResource(R.string.music_action_remove_from_playlist),
+                                iconRes = R.drawable.ic_delete,
+                                onClick = onRemoveFromPlaylist,
+                                destructive = true,
                             )
-                        },
-                    )
-                }
+                        ),
+                )
             }
         }
     }

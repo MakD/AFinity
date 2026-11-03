@@ -24,6 +24,7 @@ fun AfinityMenuItem(
     destructive: Boolean = false,
     iconTint: Color? = null,
     enabled: Boolean = true,
+    trailingText: String? = null,
 ) {
     val errorColor = MaterialTheme.colorScheme.error
     DropdownMenuItem(
@@ -39,5 +40,15 @@ fun AfinityMenuItem(
                 modifier = Modifier.size(MenuIconSize),
             )
         },
+        trailingIcon =
+            trailingText?.let {
+                {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
     )
 }

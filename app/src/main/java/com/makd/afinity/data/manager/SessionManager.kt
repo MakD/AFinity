@@ -61,6 +61,7 @@ data class Session(
     val canDownload: Boolean? = null,
     val canDeleteMedia: Boolean? = null,
     val canManageLiveTv: Boolean? = null,
+    val canManageCollections: Boolean? = null,
     val userConfiguration: UserConfiguration? = null,
 )
 
@@ -235,6 +236,7 @@ constructor(
                         isAdmin = user?.isAdmin == true,
                         canAccessLiveTv = user?.canAccessLiveTv,
                         canDownload = user?.canDownload,
+                        canManageCollections = user?.isAdmin == true,
                     )
 
                 securePrefsRepository.saveActiveSession(serverId, userId, resolvedUrl)
@@ -272,6 +274,8 @@ constructor(
                         val isAdmin = userDto.policy?.isAdministrator == true
                         val canAccessLiveTv = userDto.policy?.enableLiveTvAccess
                         val canManageLiveTv = userDto.policy?.enableLiveTvManagement
+                        val canManageCollections =
+                            isAdmin || userDto.policy?.enableCollectionManagement == true
                         val canDownload = userDto.policy?.enableContentDownloading
                         val canDeleteMedia =
                             userDto.policy?.let { policy ->
@@ -311,6 +315,7 @@ constructor(
                                     canDownload = canDownload,
                                     canDeleteMedia = canDeleteMedia,
                                     canManageLiveTv = canManageLiveTv,
+                                    canManageCollections = canManageCollections,
                                     user = refreshedUser,
                                     userConfiguration = userDto.configuration,
                                 )

@@ -119,6 +119,20 @@ constructor(
         }
     }
 
+    fun updatePremiereDate(value: String?) = update { copy(premiereDate = value) }
+
+    fun updateEndDate(value: String?) = update { copy(endDate = value) }
+
+    fun updateDateCreated(value: String?) = update { copy(dateCreated = value) }
+
+    fun updatePlaceOfBirth(value: String) = update {
+        copy(productionLocations = if (value.isBlank()) emptyList() else listOf(value))
+    }
+
+    fun updateProviderId(key: String, value: String) = update {
+        copy(providerIds = if (value.isBlank()) providerIds - key else providerIds + (key to value))
+    }
+
     fun updateOfficialRating(value: String) = update {
         copy(officialRating = value.ifBlank { null })
     }

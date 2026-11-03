@@ -42,7 +42,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -73,11 +72,13 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityActionMenu
 import com.makd.afinity.ui.components.AfinityBackButton
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AfinityTopBar
+import com.makd.afinity.ui.components.DetailMenuAction
 import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.util.logging.LogLevel
@@ -675,130 +676,61 @@ private fun OverflowMenu(
     onClear: () -> Unit,
     onDeleteCrashes: () -> Unit,
 ) {
-    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+    val actions =
         if (tab == LogTab.LOGS) {
-            DropdownMenuItem(
-                text = { Text(text = stringResource(R.string.logs_copy_visible)) },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_clipboard),
-                        contentDescription = null,
-                    )
-                },
-                trailingIcon = {
-                    Text(
-                        text = matchCount.toString(),
-                        style = LogTextStyles.meta,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                },
-                onClick = onCopyVisible,
-            )
-            DropdownMenuItem(
-                text = { Text(text = stringResource(R.string.logs_save_title)) },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_download),
-                        contentDescription = null,
-                    )
-                },
-                onClick = onSave,
-            )
-            DropdownMenuItem(
-                text = { Text(text = stringResource(R.string.logs_tags_action)) },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_filter),
-                        contentDescription = null,
-                    )
-                },
-                trailingIcon = {
-                    if (selectedTagCount > 0) {
-                        Text(
-                            text = selectedTagCount.toString(),
-                            style = LogTextStyles.meta,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                },
-                onClick = onTags,
-            )
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        text =
-                            stringResource(
-                                if (groupRepeats) R.string.logs_expand_repeats
-                                else R.string.logs_collapse_repeats
-                            )
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_arrows_output),
-                        contentDescription = null,
-                    )
-                },
-                onClick = onToggleGrouping,
-            )
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        text =
-                            stringResource(
-                                if (paused) R.string.logs_resume else R.string.logs_pause
-                            )
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        painter =
-                            painterResource(
-                                id =
-                                    if (paused) R.drawable.ic_player_play_filled
-                                    else R.drawable.ic_player_pause_filled
-                            ),
-                        contentDescription = null,
-                    )
-                },
-                onClick = onTogglePause,
-            )
-            HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        text = stringResource(R.string.logs_clear_action_menu),
-                        color = LogLevelColors.content(LogLevel.ERROR),
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_delete),
-                        contentDescription = null,
-                        tint = LogLevelColors.content(LogLevel.ERROR),
-                    )
-                },
-                onClick = onClear,
+            listOf(
+                DetailMenuAction(
+                    label = stringResource(R.string.logs_copy_visible),
+                    iconRes = R.drawable.ic_clipboard,
+                    onClick = onCopyVisible,
+                    trailingText = matchCount.toString(),
+                ),
+                DetailMenuAction(
+                    label = stringResource(R.string.logs_save_title),
+                    iconRes = R.drawable.ic_download,
+                    onClick = onSave,
+                ),
+                DetailMenuAction(
+                    label = stringResource(R.string.logs_tags_action),
+                    iconRes = R.drawable.ic_filter,
+                    onClick = onTags,
+                    trailingText = selectedTagCount.takeIf { it > 0 }?.toString(),
+                ),
+                DetailMenuAction(
+                    label =
+                        stringResource(
+                            if (groupRepeats) R.string.logs_expand_repeats
+                            else R.string.logs_collapse_repeats
+                        ),
+                    iconRes = R.drawable.ic_arrows_output,
+                    onClick = onToggleGrouping,
+                ),
+                DetailMenuAction(
+                    label =
+                        stringResource(if (paused) R.string.logs_resume else R.string.logs_pause),
+                    iconRes =
+                        if (paused) R.drawable.ic_player_play_filled
+                        else R.drawable.ic_player_pause_filled,
+                    onClick = onTogglePause,
+                ),
+                DetailMenuAction(
+                    label = stringResource(R.string.logs_clear_action_menu),
+                    iconRes = R.drawable.ic_delete,
+                    onClick = onClear,
+                    destructive = true,
+                ),
             )
         } else {
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        text = stringResource(R.string.logs_crash_delete_all),
-                        color = LogLevelColors.content(LogLevel.ERROR),
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_delete),
-                        contentDescription = null,
-                        tint = LogLevelColors.content(LogLevel.ERROR),
-                    )
-                },
-                onClick = onDeleteCrashes,
+            listOf(
+                DetailMenuAction(
+                    label = stringResource(R.string.logs_crash_delete_all),
+                    iconRes = R.drawable.ic_delete,
+                    onClick = onDeleteCrashes,
+                    destructive = true,
+                )
             )
         }
-    }
+    AfinityActionMenu(expanded = expanded, onDismissRequest = onDismiss, actions = actions)
 }
 
 @Composable
