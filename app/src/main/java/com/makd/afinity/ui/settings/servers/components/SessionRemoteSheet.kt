@@ -45,9 +45,9 @@ import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinitySlider
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.formatClockTicks
 import com.makd.afinity.ui.components.isCompactHeightWindow
 import com.makd.afinity.ui.components.rememberAfinitySheetState
-import com.makd.afinity.ui.settings.servers.utils.formatTicks
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.GeneralCommandType
@@ -279,12 +279,12 @@ fun SessionRemoteSheet(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = formatTicks((fraction * runtimeTicks).toLong()),
+                        text = formatClockTicks((fraction * runtimeTicks).toLong()),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        text = formatTicks(runtimeTicks),
+                        text = formatClockTicks(runtimeTicks),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

@@ -45,6 +45,8 @@ import com.makd.afinity.ui.components.CircleFlagIcon
 import com.makd.afinity.ui.components.DetailActionRow
 import com.makd.afinity.ui.components.DetailCoverImage
 import com.makd.afinity.ui.components.DetailCoverTitle
+import com.makd.afinity.ui.components.formatRuntimeSeconds
+import com.makd.afinity.ui.components.formatTimeLeftSeconds
 import com.makd.afinity.ui.components.getAutoFlagUrl
 import com.makd.afinity.ui.components.mediainfo.AudiobookMediaInfoSheet
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
@@ -88,7 +90,7 @@ fun ItemHeaderContent(
         item.media.duration?.let { duration ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = formatDuration(duration),
+                    text = formatRuntimeSeconds(duration),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -145,13 +147,8 @@ fun ItemHeaderContent(
 
                     Spacer(modifier = Modifier.width(6.dp))
 
-                    val remainingSeconds = progress.duration - progress.currentTime
                     Text(
-                        text =
-                            stringResource(
-                                R.string.abs_time_left_fmt,
-                                formatDuration(remainingSeconds),
-                            ),
+                        text = formatTimeLeftSeconds(progress.duration - progress.currentTime),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                         fontWeight = FontWeight.SemiBold,
@@ -525,11 +522,4 @@ private fun AudibleRatingRow(rating: AudibleRating, modifier: Modifier = Modifie
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
-}
-
-private fun formatDuration(seconds: Double): String {
-    val totalSeconds = seconds.toLong()
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
 }

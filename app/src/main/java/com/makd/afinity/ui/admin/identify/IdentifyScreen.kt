@@ -27,7 +27,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -49,7 +48,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -67,6 +65,8 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.admin.ExternalIdProvider
 import com.makd.afinity.data.models.admin.IdentifyResult
 import com.makd.afinity.data.models.admin.IdentifyTarget
+import com.makd.afinity.ui.admin.components.AdminCardShape
+import com.makd.afinity.ui.admin.components.AdminStateMessage
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinityScreen
@@ -74,22 +74,40 @@ import com.makd.afinity.ui.components.AfinitySwitch
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AfinityTopBar
-import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 
-private val CardShape = RoundedCornerShape(16.dp)
+private val SearchButtonSize = 56.dp
+private val FieldGap = 8.dp
 
 private fun providerIdLabel(key: String): String =
     when (key.lowercase()) {
         "imdb" -> "IMDb"
         "tmdb" -> "TMDB"
         "tvdb" -> "TVDB"
+        "musicbrainzalbum" -> "MusicBrainz"
         else -> key
     }
 
+private const val MUSICBRAINZ_ALBUM = "MusicBrainzAlbum"
+private const val MUSICBRAINZ_RELEASE_GROUP = "MusicBrainzReleaseGroup"
+
+private fun pillIds(providerIds: Map<String, String>): Map<String, String> =
+    if (MUSICBRAINZ_ALBUM in providerIds) providerIds - MUSICBRAINZ_RELEASE_GROUP else providerIds
+
 private fun matchSubtitle(result: IdentifyResult): String =
-    listOfNotNull(result.year?.toString(), result.searchProviderName).joinToString(" • ")
+    listOfNotNull(result.albumArtist, result.year?.toString(), result.searchProviderName)
+        .joinToString(" • ")
+
+@Composable
+private fun providerFieldLabel(provider: ExternalIdProvider, duplicateName: Boolean): String =
+    when {
+        !duplicateName -> provider.name
+        provider.type == "Album" -> stringResource(R.string.admin_identify_id_album, provider.name)
+        provider.type == "ReleaseGroup" ->
+            stringResource(R.string.admin_identify_id_release_group, provider.name)
+        else -> provider.name
+    }
 
 private fun fileName(path: String): String =
     path.trimEnd('/', '\\').substringAfterLast('/').substringAfterLast('\\')
@@ -134,6 +152,7 @@ fun IdentifyScreen(
     pendingResult?.let { result ->
         MatchSheet(
             result = result,
+            square = uiState.squareArt,
             replaceAllImages = uiState.replaceAllImages,
             applying = uiState.applying,
             onToggleReplaceImages = viewModel::toggleReplaceImages,
@@ -170,13 +189,16 @@ fun IdentifyScreen(
                 ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            uiState.target?.let { target -> item { TargetCard(target = target) } }
+            uiState.target?.let { target ->
+                item { TargetCard(target = target, square = uiState.squareArt) }
+            }
 
             item {
                 SearchRow(
                     uiState = uiState,
                     onNameChange = viewModel::updateSearchName,
                     onYearChange = viewModel::updateYear,
+                    onAlbumArtistChange = viewModel::updateAlbumArtist,
                     onSearch = runSearch,
                 )
             }
@@ -218,6 +240,7 @@ fun IdentifyScreen(
                 items(uiState.results) { result ->
                     MatchCard(
                         result = result,
+                        square = uiState.squareArt,
                         enabled = !uiState.applying,
                         onClick = {
                             focusManager.clearFocus()
@@ -227,8 +250,8 @@ fun IdentifyScreen(
                 }
             } else if (uiState.searchFailed) {
                 item {
-                    SearchStateMessage(
-                        icon = painterResource(R.drawable.ic_cloud_off),
+                    AdminStateMessage(
+                        iconRes = R.drawable.ic_cloud_off,
                         title = stringResource(R.string.admin_identify_search_failed_title),
                         message = stringResource(R.string.admin_identify_search_failed_message),
                         actionText = stringResource(R.string.action_retry),
@@ -238,8 +261,8 @@ fun IdentifyScreen(
             } else if (uiState.hasSearched && !uiState.searching) {
                 item {
                     val hasYear = uiState.showYear && uiState.year.isNotBlank()
-                    SearchStateMessage(
-                        icon = painterResource(R.drawable.ic_search),
+                    AdminStateMessage(
+                        iconRes = R.drawable.ic_search,
                         title = stringResource(R.string.admin_identify_no_results),
                         message = stringResource(R.string.admin_identify_no_results_hint),
                         actionText =
@@ -255,17 +278,22 @@ fun IdentifyScreen(
 }
 
 @Composable
-private fun TargetCard(target: IdentifyTarget) {
+private fun TargetCard(target: IdentifyTarget, square: Boolean) {
     Row(
         modifier =
             Modifier.fillMaxWidth()
-                .clip(CardShape)
+                .clip(AdminCardShape)
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
                 .padding(12.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Poster(url = target.imageUrl, corner = 8.dp, modifier = Modifier.width(44.dp))
+        Poster(
+            url = target.imageUrl,
+            corner = 8.dp,
+            square = square,
+            modifier = Modifier.width(if (square) 52.dp else 44.dp),
+        )
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = stringResource(R.string.admin_identify_current_match),
@@ -279,6 +307,17 @@ private fun TargetCard(target: IdentifyTarget) {
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
+            target.albumArtist
+                ?.takeIf { square && it.isNotBlank() }
+                ?.let { albumArtist ->
+                    Text(
+                        text = albumArtist,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             target.path
                 ?.takeIf { it.isNotBlank() }
                 ?.let { path ->
@@ -300,12 +339,41 @@ private fun SearchRow(
     uiState: IdentifyUiState,
     onNameChange: (String) -> Unit,
     onYearChange: (String) -> Unit,
+    onAlbumArtistChange: (String) -> Unit,
+    onSearch: () -> Unit,
+) {
+    val searchActions = KeyboardActions(onSearch = { onSearch() })
+    Column(verticalArrangement = Arrangement.spacedBy(FieldGap)) {
+        SearchFieldsRow(
+            uiState = uiState,
+            onNameChange = onNameChange,
+            onYearChange = onYearChange,
+            onSearch = onSearch,
+        )
+        if (uiState.showAlbumArtist) {
+            AfinityTextField(
+                value = uiState.albumArtist,
+                onValueChange = onAlbumArtistChange,
+                label = stringResource(R.string.admin_identify_field_album_artist),
+                modifier = Modifier.fillMaxWidth().padding(end = SearchButtonSize + FieldGap),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = searchActions,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SearchFieldsRow(
+    uiState: IdentifyUiState,
+    onNameChange: (String) -> Unit,
+    onYearChange: (String) -> Unit,
     onSearch: () -> Unit,
 ) {
     val searchActions = KeyboardActions(onSearch = { onSearch() })
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(FieldGap),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AfinityTextField(
@@ -333,9 +401,9 @@ private fun SearchRow(
         Button(
             onClick = onSearch,
             enabled = uiState.canSearch && !uiState.applying,
-            shape = CardShape,
+            shape = AdminCardShape,
             contentPadding = PaddingValues(0.dp),
-            modifier = Modifier.size(56.dp),
+            modifier = Modifier.size(SearchButtonSize),
         ) {
             if (uiState.searching) {
                 CircularProgressIndicator(
@@ -364,12 +432,16 @@ private fun ProviderIdsPanel(
     onSearch: () -> Unit,
 ) {
     val summary = remember(providers) { providers.map { it.name }.distinct().joinToString(", ") }
+    val duplicateNames =
+        remember(providers) {
+            providers.groupingBy { it.name }.eachCount().filterValues { it > 1 }.keys
+        }
     val searchActions = KeyboardActions(onSearch = { onSearch() })
 
     Column(
         modifier =
             Modifier.fillMaxWidth()
-                .clip(CardShape)
+                .clip(AdminCardShape)
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
         Row(
@@ -425,7 +497,11 @@ private fun ProviderIdsPanel(
                             AfinityTextField(
                                 value = providerIds[provider.key] ?: "",
                                 onValueChange = { onIdChange(provider.key, it) },
-                                label = provider.name,
+                                label =
+                                    providerFieldLabel(
+                                        provider = provider,
+                                        duplicateName = provider.name in duplicateNames,
+                                    ),
                                 modifier = Modifier.weight(1f),
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                                 keyboardActions = searchActions,
@@ -440,17 +516,27 @@ private fun ProviderIdsPanel(
 }
 
 @Composable
-private fun MatchCard(result: IdentifyResult, enabled: Boolean, onClick: () -> Unit) {
+private fun MatchCard(
+    result: IdentifyResult,
+    square: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
     Row(
         modifier =
             Modifier.fillMaxWidth()
-                .clip(CardShape)
+                .clip(AdminCardShape)
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
                 .clickable(enabled = enabled, onClick = onClick)
                 .padding(12.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Poster(url = result.imageUrl, corner = 12.dp, modifier = Modifier.width(60.dp))
+        Poster(
+            url = result.imageUrl,
+            corner = 12.dp,
+            square = square,
+            modifier = Modifier.width(60.dp),
+        )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 text = result.name,
@@ -489,12 +575,13 @@ private fun ProviderIdPills(providerIds: Map<String, String>, pillColor: Color) 
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        providerIds.entries.take(4).forEach { (key, value) ->
+        pillIds(providerIds).entries.take(4).forEach { (key, value) ->
             Text(
                 text = "${providerIdLabel(key)} $value",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier =
                     Modifier.clip(RoundedCornerShape(4.dp))
                         .background(pillColor)
@@ -505,11 +592,11 @@ private fun ProviderIdPills(providerIds: Map<String, String>, pillColor: Color) 
 }
 
 @Composable
-private fun Poster(url: String?, corner: Dp, modifier: Modifier = Modifier) {
+private fun Poster(url: String?, corner: Dp, square: Boolean, modifier: Modifier = Modifier) {
     Box(
         modifier =
             modifier
-                .aspectRatio(2f / 3f)
+                .aspectRatio(if (square) 1f else 2f / 3f)
                 .clip(RoundedCornerShape(corner))
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh),
         contentAlignment = Alignment.Center,
@@ -523,7 +610,7 @@ private fun Poster(url: String?, corner: Dp, modifier: Modifier = Modifier) {
             )
         } else {
             Icon(
-                painterResource(R.drawable.ic_movie),
+                painterResource(if (square) R.drawable.ic_music else R.drawable.ic_movie),
                 contentDescription = stringResource(R.string.cd_admin_no_image),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 modifier = Modifier.size(24.dp),
@@ -532,41 +619,11 @@ private fun Poster(url: String?, corner: Dp, modifier: Modifier = Modifier) {
     }
 }
 
-@Composable
-private fun SearchStateMessage(
-    icon: Painter,
-    title: String,
-    message: String,
-    actionText: String?,
-    onAction: (() -> Unit)?,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        EmptyState(
-            icon = icon,
-            title = title,
-            message = message,
-            badgeSize = 72.dp,
-            iconSize = 32.dp,
-        )
-        if (actionText != null && onAction != null) {
-            Button(
-                onClick = onAction,
-                colors =
-                    ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-            ) {
-                Text(text = actionText, style = MaterialTheme.typography.labelLarge)
-            }
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MatchSheet(
     result: IdentifyResult,
+    square: Boolean,
     replaceAllImages: Boolean,
     applying: Boolean,
     onToggleReplaceImages: () -> Unit,
@@ -585,7 +642,12 @@ private fun MatchSheet(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Poster(url = result.imageUrl, corner = 12.dp, modifier = Modifier.width(100.dp))
+                Poster(
+                    url = result.imageUrl,
+                    corner = 12.dp,
+                    square = square,
+                    modifier = Modifier.width(100.dp),
+                )
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -619,7 +681,7 @@ private fun MatchSheet(
             Row(
                 modifier =
                     Modifier.fillMaxWidth()
-                        .clip(CardShape)
+                        .clip(AdminCardShape)
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                         .clickable(enabled = !applying, onClick = onToggleReplaceImages)
                         .padding(horizontal = 16.dp, vertical = 12.dp),

@@ -48,13 +48,14 @@ import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.CardRow
+import com.makd.afinity.ui.components.formatClock
+import com.makd.afinity.ui.components.formatClockTicks
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.item.components.shared.baseMediaDetailItems
 import com.makd.afinity.ui.item.components.shared.detailItem
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
-import java.util.Locale
 import java.util.UUID
 
 fun LazyListScope.movieDetailItems(
@@ -210,7 +211,7 @@ private fun PartCard(
                 shape = RoundedCornerShape(4.dp),
             ) {
                 Text(
-                    text = formatTime(part.runtimeTicks / 10000),
+                    text = formatClockTicks(part.runtimeTicks),
                     style =
                         MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
                     color = Color.White,
@@ -326,24 +327,11 @@ internal fun ChapterCard(
             shape = RoundedCornerShape(4.dp),
         ) {
             Text(
-                text = formatTime(chapter.startPosition),
+                text = formatClock(chapter.startPosition),
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
                 color = Color.White,
                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
             )
         }
-    }
-}
-
-internal fun formatTime(positionMs: Long): String {
-    val totalSeconds = positionMs / 1000
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    val seconds = totalSeconds % 60
-
-    return if (hours > 0) {
-        String.format(Locale.US, "%d:%02d:%02d", hours, minutes, seconds)
-    } else {
-        String.format(Locale.US, "%d:%02d", minutes, seconds)
     }
 }

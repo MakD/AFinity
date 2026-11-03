@@ -2629,7 +2629,6 @@
         <item quantity="one">%1$d chapter listened</item>
         <item quantity="other">%1$d chapters listened</item>
     </plurals>
-    <string name="abs_time_left_fmt">%1$s left</string>
     <string name="abs_now_in">Now in</string>
     <string name="abs_your_listening">Your listening</string>
     <string name="abs_listened_label">listened</string>
@@ -2762,7 +2761,6 @@
     <string name="seerr_detail_budget">Budget</string>
     <string name="seerr_detail_revenue">Revenue</string>
     <string name="seerr_detail_production_country">Production Country</string>
-    <string name="seerr_runtime_minutes_fmt">%1$d min</string>
     <string name="season_no_info">No season information available. All seasons will be requested.</string>
     <plurals name="season_count_fmt">
         <item quantity="one">%1$d Season</item>
@@ -2985,6 +2983,47 @@
     <string name="admin_action_identify">Identify</string>
     <string name="admin_action_edit_images">Edit Images</string>
     <string name="admin_action_refresh_metadata">Refresh Metadata</string>
+    <string name="admin_action_edit_lyrics">Edit Lyrics</string>
+    <string name="lyrics_editor_title">Lyrics</string>
+    <string name="lyrics_current">Current lyrics</string>
+    <string name="lyrics_none_title">No lyrics</string>
+    <string name="lyrics_none_message">This track has no lyrics on the server. Upload a file or find lyrics below.</string>
+    <string name="lyrics_badge_synced">Synced</string>
+    <string name="lyrics_badge_plain">Plain text</string>
+    <string name="lyrics_source_sidecar">From %1$s beside the audio file</string>
+    <string name="lyrics_source_server">Saved on the server</string>
+    <string name="lyrics_show_all">Show All</string>
+    <string name="lyrics_show_less">Show Less</string>
+    <string name="lyrics_line_count">Lines: %1$d</string>
+    <string name="lyrics_upload">Upload File</string>
+    <string name="lyrics_delete">Delete Lyrics</string>
+    <string name="lyrics_find">Find lyrics</string>
+    <string name="lyrics_search">Search</string>
+    <string name="lyrics_search_again">Search Again</string>
+    <string name="lyrics_search_hint">Searches the server\'s lyrics providers for this track.</string>
+    <string name="lyrics_preview">Preview</string>
+    <string name="lyrics_use">Use These</string>
+    <string name="lyrics_no_results_title">No lyrics found</string>
+    <string name="lyrics_no_results_message">The server\'s lyrics providers had no match for this track.</string>
+    <string name="lyrics_search_failed_title">Search failed</string>
+    <string name="lyrics_search_failed_message">The request failed. No changes were made.</string>
+    <string name="lyrics_load_failed_title">Couldn\'t load lyrics</string>
+    <string name="lyrics_load_failed_message">Check your connection to the server and try again.</string>
+    <string name="lyrics_replace_title">Replace lyrics?</string>
+    <string name="lyrics_replace_message_server">The current lyrics saved on the server will be replaced.</string>
+    <string name="lyrics_replace_message_sidecar">The current lyrics come from %1$s beside the audio file. That file will be deleted from the music folder on the server. It can\'t be undone.</string>
+    <string name="lyrics_replace_confirm">Replace</string>
+    <string name="lyrics_delete_message_sidecar">This deletes the lyrics file %1$s from the music folder on the server. It can\'t be undone.</string>
+    <string name="lyrics_delete_message_server">This deletes the lyrics saved on the server for this track.</string>
+    <string name="lyrics_saved">Lyrics saved</string>
+    <string name="lyrics_saved_not_shown">The lyrics were sent, but the server isn\'t showing them yet. Check again in a moment.</string>
+    <string name="lyrics_deleted">Lyrics deleted</string>
+    <string name="lyrics_save_failed">Couldn\'t save the lyrics. Try again.</string>
+    <string name="lyrics_delete_failed">Couldn\'t delete the lyrics. Try again.</string>
+    <string name="lyrics_unsupported_file">Choose a .lrc or .txt file</string>
+    <string name="lyrics_file_too_large">That file is too large to be lyrics</string>
+    <string name="lyrics_file_empty">That file is empty</string>
+    <string name="lyrics_file_unreadable">Couldn\'t read that file</string>
     <string name="admin_action_delete">Delete</string>
     <string name="admin_delete_dialog_title">Delete Item</string>
     <string name="admin_delete_message_item">This permanently deletes the item and its files from the server.</string>
@@ -2994,6 +3033,11 @@
     <string name="admin_delete_failed">Couldn\'t delete this item. Try again.</string>
     <string name="admin_delete_not_allowed">You don\'t have permission to delete this item.</string>
     <string name="admin_delete_still_running">The server is still deleting this item. It will be removed once the deletion completes.</string>
+    <string name="music_admin_delete_track">Delete track</string>
+    <string name="music_admin_delete_album">Delete album</string>
+    <string name="music_admin_delete_artist">Delete artist</string>
+    <string name="music_admin_delete_counts">Albums: %1$d · Tracks: %2$d</string>
+    <string name="music_admin_delete_track_count">Tracks: %1$d</string>
 
     <!--Admin - Refresh Metadata Dialog-->
     <string name="admin_refresh_title">Refresh Metadata</string>
@@ -3020,6 +3064,12 @@
     <string name="admin_field_title">Title</string>
     <string name="admin_field_original_title">Original Title</string>
     <string name="admin_field_sort_title">Sort Title</string>
+    <string name="admin_field_album">Album</string>
+    <string name="admin_field_track_number">Track number</string>
+    <string name="admin_field_disc_number">Disc number</string>
+    <string name="admin_section_artists">Artists</string>
+    <string name="admin_section_album_artists">Album artists</string>
+    <string name="admin_album_propagation_hint">Tag and rating changes also apply to the album\'s tracks.</string>
     <string name="admin_field_overview">Overview</string>
     <string name="admin_field_year">Year</string>
     <string name="admin_field_rating">Rating</string>
@@ -3077,6 +3127,9 @@
     <string name="admin_identify_title">Identify Media</string>
     <string name="admin_identify_field_name">Name</string>
     <string name="admin_identify_field_year">Year</string>
+    <string name="admin_identify_field_album_artist">Album artist</string>
+    <string name="admin_identify_id_album">%1$s Album</string>
+    <string name="admin_identify_id_release_group">%1$s Release Group</string>
     <string name="admin_identify_provider_ids">Provider IDs (Optional)</string>
     <string name="admin_identify_replace_images">Replace all images</string>
     <string name="admin_identify_search">Search</string>
@@ -3199,6 +3252,7 @@
     <string name="music_player_now_playing">NOW PLAYING</string>
     <string name="music_player_nothing_playing">Nothing playing</string>
     <string name="music_player_no_lyrics">No lyrics available</string>
+    <string name="music_player_lyrics_unsynced">These lyrics aren\'t synced to the song</string>
     <!-- Queue -->
     <string name="music_queue_title">Queue</string>
     <string name="music_queue_now_playing">Now Playing</string>
@@ -3540,6 +3594,5 @@
     </plurals>
     <string name="review_by_author_fmt">Review by %1$s</string>
     <string name="log_repeat_count_fmt">%1$d×</string>
-    <string name="abs_seconds_unit">s</string>
 
 </resources>

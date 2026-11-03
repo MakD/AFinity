@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
+import com.makd.afinity.ui.components.formatClockSeconds
 
 private val ListenedGreen = Color(0xFF4CAF50)
 private const val CHAPTERS_BEFORE_CURRENT = 1
@@ -231,25 +232,12 @@ private fun ChapterItem(
         Spacer(modifier = Modifier.width(16.dp))
 
         Text(
-            text = formatChapterDuration(chapter.end - chapter.start),
+            text = formatClockSeconds(chapter.end - chapter.start),
             style = MaterialTheme.typography.labelSmall,
             color =
                 if (isCurrentChapter) textColor.copy(alpha = 0.8f)
                 else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha),
             fontWeight = FontWeight.Medium,
         )
-    }
-}
-
-private fun formatChapterDuration(seconds: Double): String {
-    val totalSeconds = seconds.toLong()
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    val secs = totalSeconds % 60
-
-    return if (hours > 0) {
-        "%d:%02d:%02d".format(hours, minutes, secs)
-    } else {
-        "%d:%02d".format(minutes, secs)
     }
 }

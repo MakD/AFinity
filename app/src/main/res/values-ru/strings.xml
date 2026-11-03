@@ -1721,7 +1721,6 @@
     <string name="seerr_detail_budget">Бюджет</string>
     <string name="seerr_detail_revenue">Доход</string>
     <string name="seerr_detail_production_country">Страна производства</string>
-    <string name="seerr_runtime_minutes_fmt">%1$d мин</string>
     <string name="season_no_info">Информация о сезонах недоступна. Будут запрошены все сезоны.</string>
     <plurals name="server_more_users">
         <item quantity="one">+%1$d пользователь</item>
@@ -2239,7 +2238,6 @@
         <item quantity="many">Прослушано %1$d глав</item>
         <item quantity="other">Прослушано %1$d глав</item>
     </plurals>
-    <string name="abs_time_left_fmt">Осталось: %1$s</string>
     <plurals name="abs_sessions_label">
         <item quantity="one">сеанс</item>
         <item quantity="few">сеанса</item>
@@ -3446,5 +3444,4 @@
     <string name="task_progress_percent_fmt">%1$.1f%%</string>
     <string name="review_by_author_fmt">Рецензия от %1$s</string>
     <string name="log_repeat_count_fmt">%1$d×</string>
-    <string name="abs_seconds_unit">с</string>
 </resources>

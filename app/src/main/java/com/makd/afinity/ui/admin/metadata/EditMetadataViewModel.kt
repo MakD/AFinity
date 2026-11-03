@@ -24,6 +24,8 @@ enum class ChipField {
     GENRES,
     TAGS,
     STUDIOS,
+    ARTISTS,
+    ALBUM_ARTISTS,
 }
 
 enum class EditMetadataMessage(@param:StringRes val textRes: Int) {
@@ -98,6 +100,14 @@ constructor(
     fun updateSortTitle(value: String) = update { copy(forcedSortName = value.ifBlank { null }) }
 
     fun updateOverview(value: String) = update { copy(overview = value.ifBlank { null }) }
+
+    fun updateAlbum(value: String) = update { copy(album = value.ifBlank { null }) }
+
+    fun updateIndexNumber(value: String) = update { copy(indexNumber = value.toTrackNumber()) }
+
+    fun updateParentIndexNumber(value: String) = update {
+        copy(parentIndexNumber = value.toTrackNumber())
+    }
 
     fun updateYear(value: String) {
         val digits = value.filter(Char::isDigit).take(4)
@@ -216,6 +226,8 @@ constructor(
             ChipField.GENRES -> genres
             ChipField.TAGS -> tags
             ChipField.STUDIOS -> studios
+            ChipField.ARTISTS -> artists
+            ChipField.ALBUM_ARTISTS -> albumArtists
         }
 
     private fun EditableItem.withChips(field: ChipField, values: List<String>): EditableItem =
@@ -223,7 +235,11 @@ constructor(
             ChipField.GENRES -> copy(genres = values)
             ChipField.TAGS -> copy(tags = values)
             ChipField.STUDIOS -> copy(studios = values)
+            ChipField.ARTISTS -> copy(artists = values)
+            ChipField.ALBUM_ARTISTS -> copy(albumArtists = values)
         }
+
+    private fun String.toTrackNumber(): Int? = filter(Char::isDigit).take(4).toIntOrNull()
 
     private fun ratingText(rating: Double?): String =
         when {

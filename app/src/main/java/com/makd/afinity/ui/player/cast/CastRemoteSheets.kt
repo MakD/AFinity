@@ -39,6 +39,7 @@ import com.makd.afinity.cast.CastManager
 import com.makd.afinity.cast.CastSessionState
 import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.formatClock
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import org.jellyfin.sdk.model.api.MediaStreamType
 
@@ -114,7 +115,7 @@ fun CastChaptersSheet(
                             modifier = Modifier.weight(1f),
                         )
                         Text(
-                            text = formatCastClock(chapter.startPosition),
+                            text = formatClock(chapter.startPosition),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -333,15 +334,3 @@ private fun audioLabel(
                 }
             }
         }
-
-internal fun formatCastClock(timeMs: Long): String {
-    val totalSeconds = (timeMs / 1000).coerceAtLeast(0)
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    val seconds = totalSeconds % 60
-    return if (hours > 0) {
-        String.format(java.util.Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds)
-    } else {
-        String.format(java.util.Locale.ROOT, "%d:%02d", minutes, seconds)
-    }
-}

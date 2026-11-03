@@ -1,6 +1,7 @@
 package com.makd.afinity.ui.admin.metadata
 
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -79,6 +80,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.admin.EditableItem
 import com.makd.afinity.data.models.admin.EditablePerson
+import com.makd.afinity.ui.admin.components.AdminCardShape
 import com.makd.afinity.ui.admin.components.adminContentBottomPadding
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
@@ -93,7 +95,6 @@ import com.makd.afinity.ui.components.rememberAfinitySheetState
 
 private const val DEFAULT_PERSON_TYPE = "Actor"
 private const val NEW_PERSON = -1
-private val CardShape = RoundedCornerShape(16.dp)
 private val PERSON_TYPES =
     listOf(
         DEFAULT_PERSON_TYPE,
@@ -132,6 +133,18 @@ private val LOCKABLE_FIELDS =
         "ProductionLocations",
     )
 private val FOLDER_TYPES = setOf("Series", "Season", "BoxSet")
+private val MUSIC_TYPES = setOf("MusicAlbum", "Audio", "MusicArtist", "MusicGenre", "MusicVideo")
+private val ARTIST_TYPES = setOf("Audio", "MusicVideo")
+private val ALBUM_ARTIST_TYPES = setOf("Audio", "MusicAlbum", "MusicVideo")
+private val ALBUM_TYPES = setOf("Audio", "MusicVideo")
+private val TRACK_NUMBER_TYPES = setOf("Audio")
+private val REDUCED_TYPES = setOf("MusicGenre", "Genre", "Studio", "Person")
+
+private enum class EditorTab(@param:StringRes val titleRes: Int) {
+    GENERAL(R.string.admin_tab_general),
+    PEOPLE(R.string.admin_tab_people),
+    ADVANCED(R.string.admin_tab_advanced),
+}
 
 @Composable
 private fun personTypeLabel(type: String): String =
@@ -293,7 +306,7 @@ fun EditMetadataScreen(
                     onClick = { if (!uiState.saving) viewModel.save() },
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    shape = CardShape,
+                    shape = AdminCardShape,
                     modifier = Modifier.padding(bottom = playerClearance()),
                 ) {
                     Row(
@@ -341,50 +354,52 @@ fun EditMetadataScreen(
                     onActionClick = viewModel::loadItem,
                 )
 
-            else ->
+            else -> {
+                val tabs =
+                    if (item.type in REDUCED_TYPES) {
+                        listOf(EditorTab.GENERAL, EditorTab.ADVANCED)
+                    } else EditorTab.entries
+                val currentTab = selectedTab.coerceIn(tabs.indices)
                 Column(modifier = Modifier.padding(padding)) {
                     SecondaryTabRow(
-                        selectedTabIndex = selectedTab,
+                        selectedTabIndex = currentTab,
                         containerColor = Color.Transparent,
                         divider = {},
                         indicator = {
                             TabRowDefaults.SecondaryIndicator(
-                                modifier = Modifier.tabIndicatorOffset(selectedTab),
+                                modifier = Modifier.tabIndicatorOffset(currentTab),
                                 color = MaterialTheme.colorScheme.primary,
                                 height = 3.dp,
                             )
                         },
                     ) {
-                        listOf(
-                                stringResource(R.string.admin_tab_general),
-                                stringResource(R.string.admin_tab_people),
-                                stringResource(R.string.admin_tab_advanced),
+                        tabs.forEachIndexed { index, tab ->
+                            Tab(
+                                selected = currentTab == index,
+                                onClick = { selectedTab = index },
+                                text = {
+                                    Text(
+                                        stringResource(tab.titleRes),
+                                        style =
+                                            if (currentTab == index)
+                                                MaterialTheme.typography.titleSmall
+                                            else MaterialTheme.typography.bodyMedium,
+                                    )
+                                },
+                                selectedContentColor = MaterialTheme.colorScheme.primary,
+                                unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            .forEachIndexed { index, title ->
-                                Tab(
-                                    selected = selectedTab == index,
-                                    onClick = { selectedTab = index },
-                                    text = {
-                                        Text(
-                                            title,
-                                            style =
-                                                if (selectedTab == index)
-                                                    MaterialTheme.typography.titleSmall
-                                                else MaterialTheme.typography.bodyMedium,
-                                        )
-                                    },
-                                    selectedContentColor = MaterialTheme.colorScheme.primary,
-                                    unselectedContentColor =
-                                        MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
+                        }
                     }
-                    when (selectedTab) {
-                        0 -> GeneralTab(item = item, uiState = uiState, viewModel = viewModel)
-                        1 -> PeopleTab(item = item, viewModel = viewModel)
-                        2 -> AdvancedTab(item = item, uiState = uiState, viewModel = viewModel)
+                    when (tabs[currentTab]) {
+                        EditorTab.GENERAL ->
+                            GeneralTab(item = item, uiState = uiState, viewModel = viewModel)
+                        EditorTab.PEOPLE -> PeopleTab(item = item, viewModel = viewModel)
+                        EditorTab.ADVANCED ->
+                            AdvancedTab(item = item, uiState = uiState, viewModel = viewModel)
                     }
                 }
+            }
         }
     }
 }
@@ -414,18 +429,64 @@ private fun GeneralTab(
                     stringResource(R.string.admin_metadata_title_required)
                 } else null,
         )
-        AfinityTextField(
-            value = item.originalTitle ?: "",
-            onValueChange = viewModel::updateOriginalTitle,
-            label = stringResource(R.string.admin_field_original_title),
-            modifier = Modifier.fillMaxWidth(),
-        )
+        if (item.type !in MUSIC_TYPES) {
+            AfinityTextField(
+                value = item.originalTitle ?: "",
+                onValueChange = viewModel::updateOriginalTitle,
+                label = stringResource(R.string.admin_field_original_title),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
         AfinityTextField(
             value = item.forcedSortName ?: "",
             onValueChange = viewModel::updateSortTitle,
             label = stringResource(R.string.admin_field_sort_title),
             modifier = Modifier.fillMaxWidth(),
         )
+        if (item.type in ALBUM_TYPES) {
+            AfinityTextField(
+                value = item.album ?: "",
+                onValueChange = viewModel::updateAlbum,
+                label = stringResource(R.string.admin_field_album),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        if (item.type in TRACK_NUMBER_TYPES) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                AfinityTextField(
+                    value = item.indexNumber?.toString().orEmpty(),
+                    onValueChange = viewModel::updateIndexNumber,
+                    label = stringResource(R.string.admin_field_track_number),
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                )
+                AfinityTextField(
+                    value = item.parentIndexNumber?.toString().orEmpty(),
+                    onValueChange = viewModel::updateParentIndexNumber,
+                    label = stringResource(R.string.admin_field_disc_number),
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                )
+            }
+        }
+        if (item.type in ARTIST_TYPES) {
+            ChipSection(
+                title = stringResource(R.string.admin_section_artists),
+                field = ChipField.ARTISTS,
+                chips = item.artists,
+                uiState = uiState,
+                viewModel = viewModel,
+            )
+        }
+        if (item.type in ALBUM_ARTIST_TYPES) {
+            ChipSection(
+                title = stringResource(R.string.admin_section_album_artists),
+                field = ChipField.ALBUM_ARTISTS,
+                chips = item.albumArtists,
+                uiState = uiState,
+                viewModel = viewModel,
+            )
+        }
         AfinityTextField(
             value = item.overview ?: "",
             onValueChange = viewModel::updateOverview,
@@ -443,22 +504,26 @@ private fun GeneralTab(
                 modifier = Modifier.weight(1f),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             )
-            SuggestionField(
-                value = item.officialRating ?: "",
-                onValueChange = viewModel::updateOfficialRating,
-                label = stringResource(R.string.admin_field_rating),
-                suggestions = item.availableParentalRatings,
-                modifier = Modifier.weight(1f),
-            )
+            if (item.type !in REDUCED_TYPES) {
+                SuggestionField(
+                    value = item.officialRating ?: "",
+                    onValueChange = viewModel::updateOfficialRating,
+                    label = stringResource(R.string.admin_field_rating),
+                    suggestions = item.availableParentalRatings,
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
 
-        ChipSection(
-            title = stringResource(R.string.admin_section_genres),
-            field = ChipField.GENRES,
-            chips = item.genres,
-            uiState = uiState,
-            viewModel = viewModel,
-        )
+        if (item.type !in REDUCED_TYPES) {
+            ChipSection(
+                title = stringResource(R.string.admin_section_genres),
+                field = ChipField.GENRES,
+                chips = item.genres,
+                uiState = uiState,
+                viewModel = viewModel,
+            )
+        }
         ChipSection(
             title = stringResource(R.string.admin_section_tags),
             field = ChipField.TAGS,
@@ -466,19 +531,48 @@ private fun GeneralTab(
             uiState = uiState,
             viewModel = viewModel,
         )
-        ChipSection(
-            title = stringResource(R.string.admin_section_studios),
-            field = ChipField.STUDIOS,
-            chips = item.studios,
-            uiState = uiState,
-            viewModel = viewModel,
-        )
+        if (item.type !in REDUCED_TYPES) {
+            ChipSection(
+                title = stringResource(R.string.admin_section_studios),
+                field = ChipField.STUDIOS,
+                chips = item.studios,
+                uiState = uiState,
+                viewModel = viewModel,
+            )
+        }
+        if (item.type == "MusicAlbum") {
+            PropagationNote(stringResource(R.string.admin_album_propagation_hint))
+        }
 
         Spacer(
             modifier =
                 Modifier.height(
                     adminContentBottomPadding(hasFloatingButton = true) + playerClearance()
                 )
+        )
+    }
+}
+
+@Composable
+private fun PropagationNote(text: String) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+    ) {
+        Icon(
+            painterResource(R.drawable.ic_info),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(18.dp),
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -677,7 +771,7 @@ private fun PeopleTab(item: EditableItem, viewModel: EditMetadataViewModel) {
             val last = item.people.lastIndex
             val shape: Shape =
                 when {
-                    last == 0 -> CardShape
+                    last == 0 -> AdminCardShape
                     index == 0 -> RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
                     index == last -> RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
                     else -> RectangleShape
@@ -898,20 +992,22 @@ private fun AdvancedTab(
                 .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            AfinityTextField(
-                value = uiState.communityRatingText,
-                onValueChange = viewModel::updateCommunityRating,
-                label = stringResource(R.string.admin_field_community_rating),
-                modifier = Modifier.weight(1f),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            )
-            AfinityTextField(
-                value = item.customRating ?: "",
-                onValueChange = viewModel::updateCustomRating,
-                label = stringResource(R.string.admin_field_custom_rating),
-                modifier = Modifier.weight(1f),
-            )
+        if (item.type !in REDUCED_TYPES) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                AfinityTextField(
+                    value = uiState.communityRatingText,
+                    onValueChange = viewModel::updateCommunityRating,
+                    label = stringResource(R.string.admin_field_community_rating),
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                )
+                AfinityTextField(
+                    value = item.customRating ?: "",
+                    onValueChange = viewModel::updateCustomRating,
+                    label = stringResource(R.string.admin_field_custom_rating),
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
 
         if (item.type == "Series") {
@@ -1149,7 +1245,7 @@ private fun SwitchRowSimple(
     Row(
         modifier =
             Modifier.fillMaxWidth()
-                .clip(CardShape)
+                .clip(AdminCardShape)
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
                 .clickable { onToggle() }
                 .padding(horizontal = 16.dp, vertical = 14.dp),

@@ -11,14 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,7 +23,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -41,6 +37,7 @@ class DetailMenuAction(
     val onClick: () -> Unit,
     val enabled: Boolean = true,
     val destructive: Boolean = false,
+    val dividerBefore: Boolean = false,
 )
 
 @Composable
@@ -120,29 +117,15 @@ private fun DetailMoreMenu(actions: List<DetailMenuAction>) {
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             actions.forEachIndexed { index, action ->
-                if (action.destructive && index > 0 && !actions[index - 1].destructive) {
+                val startsDestructive =
+                    index > 0 && action.destructive && !actions[index - 1].destructive
+                if (index > 0 && (action.dividerBefore || startsDestructive)) {
                     HorizontalDivider()
                 }
-                val tint =
-                    if (action.destructive) MaterialTheme.colorScheme.error
-                    else LocalContentColor.current
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            text = action.label,
-                            color =
-                                if (action.destructive) MaterialTheme.colorScheme.error
-                                else Color.Unspecified,
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            painter = painterResource(action.iconRes),
-                            contentDescription = null,
-                            tint = tint,
-                            modifier = Modifier.size(20.dp),
-                        )
-                    },
+                AfinityMenuItem(
+                    text = action.label,
+                    iconRes = action.iconRes,
+                    destructive = action.destructive,
                     enabled = action.enabled,
                     onClick = {
                         expanded = false

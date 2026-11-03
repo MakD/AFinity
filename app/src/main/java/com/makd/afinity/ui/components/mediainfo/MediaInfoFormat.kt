@@ -2,6 +2,8 @@ package com.makd.afinity.ui.components.mediainfo
 
 import android.content.Context
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.formatRuntime
+import com.makd.afinity.ui.components.ticksToTotalMinutes
 import com.makd.afinity.util.formatFileSize
 import java.util.Locale
 
@@ -23,28 +25,7 @@ internal class MediaInfoFormat(private val context: Context) {
 
     fun size(bytes: Long): String = formatFileSize(context, bytes)
 
-    fun runtime(ticks: Long): String {
-        val totalMinutes = (ticks + 599_999_999L) / 600_000_000L
-        val hours = (totalMinutes / 60).toInt()
-        val minutes = (totalMinutes % 60).toInt()
-        return if (hours > 0) {
-            context.getString(R.string.meta_runtime_hours_minutes, hours, minutes)
-        } else {
-            context.getString(R.string.meta_runtime_minutes, minutes)
-        }
-    }
-
-    fun clock(seconds: Double): String {
-        val total = seconds.toLong().coerceAtLeast(0L)
-        val hours = total / 3600
-        val minutes = (total % 3600) / 60
-        val secs = total % 60
-        return if (hours > 0) {
-            String.format(locale, "%d:%02d:%02d", hours, minutes, secs)
-        } else {
-            String.format(locale, "%d:%02d", minutes, secs)
-        }
-    }
+    fun runtime(ticks: Long): String = formatRuntime(context, ticksToTotalMinutes(ticks))
 
     fun decimal(value: Double, maxFractionDigits: Int): String {
         val text = String.format(Locale.ROOT, "%.${maxFractionDigits}f", value)

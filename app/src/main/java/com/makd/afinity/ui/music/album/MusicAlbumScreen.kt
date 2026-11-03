@@ -25,6 +25,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,8 +73,14 @@ import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
 import com.makd.afinity.ui.music.components.LastFmAttribution
+import com.makd.afinity.ui.music.components.MusicAdminDialogs
+import com.makd.afinity.ui.music.components.MusicAdminRequest
+import com.makd.afinity.ui.music.components.MusicAdminViewModel
+import com.makd.afinity.ui.music.components.MusicDeleteKind
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
+import com.makd.afinity.ui.music.components.musicAdminMenuActions
+import com.makd.afinity.ui.music.components.rememberTrackAdminActions
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
@@ -85,9 +92,15 @@ fun MusicAlbumScreen(
     onMusicAlbumClick: (String) -> Unit,
     onMusicArtistClick: (String) -> Unit,
     onHomeClick: () -> Unit,
+    onEditMetadataClick: (String) -> Unit,
+    onEditImagesClick: (String) -> Unit,
+    onEditLyricsClick: (String) -> Unit,
+    onIdentifyClick: (String) -> Unit,
+    onNavigateUp: () -> Unit,
     viewModel: MusicAlbumViewModel = hiltViewModel(),
     playerViewModel: MusicPlayerViewModel = hiltViewModel(),
     addToPlaylistViewModel: AddToPlaylistViewModel = hiltViewModel(),
+    adminViewModel: MusicAdminViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val playbackState by playerViewModel.playbackState.collectAsStateWithLifecycle()
@@ -104,6 +117,35 @@ fun MusicAlbumScreen(
     val lazyListState = rememberLazyListState()
     val topBarOpacity by rememberTopBarOpacity(lazyListState)
     val isLandscape = isLandscapeWindow()
+    val isAdmin by adminViewModel.isAdmin.collectAsStateWithLifecycle()
+    val deletableIds by adminViewModel.deletableIds.collectAsStateWithLifecycle()
+    var adminRequest by remember { mutableStateOf<MusicAdminRequest?>(null) }
+    val trackAdminActions =
+        rememberTrackAdminActions(
+            adminViewModel = adminViewModel,
+            onEditMetadata = onEditMetadataClick,
+            onEditImages = onEditImagesClick,
+            onEditLyrics = onEditLyricsClick,
+            onRequest = { adminRequest = it },
+        )
+
+    LaunchedEffect(isAdmin, viewModel.albumId) {
+        if (isAdmin) adminViewModel.checkCanDelete(viewModel.albumId)
+    }
+
+    MusicAdminDialogs(
+        request = adminRequest,
+        onDismiss = { adminRequest = null },
+        onMessage = { message -> scope.launch { snackbarHostState.showSnackbar(message) } },
+        onDeleted = { deleted ->
+            when (deleted.kind) {
+                MusicDeleteKind.TRACK ->
+                    if (viewModel.removeTrack(deleted.itemId) == 0) onNavigateUp()
+                else -> onNavigateUp()
+            }
+        },
+        viewModel = adminViewModel,
+    )
 
     if (uiState.isLoading) {
         Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -156,7 +198,26 @@ fun MusicAlbumScreen(
                                 }
                             },
                         ),
-                    )
+                    ) +
+                        musicAdminMenuActions(
+                            isAdmin = isAdmin,
+                            canDelete = album.id in deletableIds,
+                            deleteLabel = R.string.music_admin_delete_album,
+                            onEditMetadata = { onEditMetadataClick(album.id.toString()) },
+                            onEditImages = { onEditImagesClick(album.id.toString()) },
+                            onRefresh = {
+                                adminRequest = MusicAdminRequest.Refresh(album.id, album.name, true)
+                            },
+                            onDelete = {
+                                adminRequest =
+                                    MusicAdminRequest.Delete(
+                                        album.id,
+                                        album.name,
+                                        MusicDeleteKind.ALBUM,
+                                    )
+                            },
+                            onIdentify = { onIdentifyClick(album.id.toString()) },
+                        )
                 } ?: emptyList(),
         ) {
             IconButton(onClick = { viewModel.toggleFavorite() }) {
@@ -366,6 +427,7 @@ fun MusicAlbumScreen(
                     isDownloadEnabled = canDownloadOnNetwork,
                     onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
                     downloadInfo = uiState.trackDownloadInfos[track.id],
+                    adminActions = trackAdminActions,
                 )
             }
         }

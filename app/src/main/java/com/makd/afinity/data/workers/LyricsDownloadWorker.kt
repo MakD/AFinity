@@ -7,7 +7,7 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.music.encodeLyricsJson
-import com.makd.afinity.data.models.music.toAfinityLyricLine
+import com.makd.afinity.data.models.music.toAfinityLyricLines
 import com.makd.afinity.data.repository.DatabaseRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -71,7 +71,7 @@ constructor(
                     return@withContext Result.success(workDataOf())
                 }
 
-                val lyricsJson = encodeLyricsJson(lines.mapNotNull { it.toAfinityLyricLine() })
+                val lyricsJson = encodeLyricsJson(lines.toAfinityLyricLines())
 
                 databaseRepository.insertMusicLyrics(
                     trackId = itemId,

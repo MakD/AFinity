@@ -66,9 +66,9 @@ import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsGroupTitle
 import com.makd.afinity.ui.components.SettingsItem
+import com.makd.afinity.ui.components.formatClockTicks
 import com.makd.afinity.ui.settings.servers.components.SessionRemoteSheet
 import com.makd.afinity.ui.settings.servers.components.playMethodLabelRes
-import com.makd.afinity.ui.settings.servers.utils.formatTicks
 import com.makd.afinity.util.formatFileSize
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
@@ -1008,7 +1008,7 @@ private fun PlayingSessionCard(
     val year = item.productionYear?.toString()
     val timeText =
         if (runtimeTicks != null) {
-            "${formatTicks(localPositionTicks)} / ${formatTicks(runtimeTicks)}"
+            "${formatClockTicks(localPositionTicks)} / ${formatClockTicks(runtimeTicks)}"
         } else null
     val userName = session.userName ?: stringResource(R.string.unknown_user)
 

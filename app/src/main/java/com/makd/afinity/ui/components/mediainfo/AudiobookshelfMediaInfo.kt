@@ -6,6 +6,7 @@ import com.makd.afinity.data.models.audiobookshelf.AudioFile
 import com.makd.afinity.data.models.audiobookshelf.AudioTrack
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
+import com.makd.afinity.ui.components.formatClockSeconds
 import java.text.DateFormat
 import java.util.Date
 
@@ -181,7 +182,7 @@ fun buildPodcastEpisodeMediaInfo(
                 ?.let {
                     MediaInfoRow(
                         format.string(R.string.media_info_label_duration),
-                        format.clock(it),
+                        formatClockSeconds(it),
                     )
                 },
             file
@@ -265,7 +266,7 @@ private fun fileSummary(format: MediaInfoFormat, file: AbsFile): String? =
             file.codec?.takeIf { it.isNotBlank() }?.uppercase(),
             file.bitRate?.takeIf { it > 0 }?.let { format.bitrate(it.toLong()) },
             file.size?.takeIf { it > 0 }?.let { format.size(it) },
-            file.duration?.takeIf { it > 0 }?.let { format.clock(it) },
+            file.duration?.takeIf { it > 0 }?.let { formatClockSeconds(it) },
         )
         .joinToString(" · ")
         .takeIf { it.isNotBlank() }
@@ -325,7 +326,7 @@ private fun fileRows(
                 ?.let {
                     MediaInfoRow(
                         format.string(R.string.media_info_label_duration),
-                        format.clock(it),
+                        formatClockSeconds(it),
                     )
                 },
             file.path

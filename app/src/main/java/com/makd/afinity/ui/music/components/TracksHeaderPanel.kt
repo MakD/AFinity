@@ -50,7 +50,6 @@ private val CoverBorderWidth = 3.dp
 private val SingleRowMinWidth = 600.dp
 private const val SINGLE_ROW_STACK_SCALE = 0.86f
 private const val MAX_STACK_COVERS = 5
-private const val TICKS_PER_MINUTE = 600_000_000L
 
 @Composable
 fun TracksHeaderPanel(
@@ -199,20 +198,6 @@ fun musicSortSummary(field: MusicSortField, descending: Boolean): String {
     val direction =
         stringResource(if (descending) R.string.sort_descending else R.string.sort_ascending)
     return "$label · $direction"
-}
-
-@Composable
-fun musicTotalRuntimeLabel(runtimeTicks: Long): String {
-    val totalMinutes = runtimeTicks / TICKS_PER_MINUTE
-    return if (totalMinutes >= 60) {
-        stringResource(
-            R.string.meta_runtime_hours_minutes,
-            (totalMinutes / 60).toInt(),
-            (totalMinutes % 60).toInt(),
-        )
-    } else {
-        stringResource(R.string.meta_runtime_minutes, totalMinutes.toInt())
-    }
 }
 
 @Composable

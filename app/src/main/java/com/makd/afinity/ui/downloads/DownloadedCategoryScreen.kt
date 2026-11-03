@@ -49,6 +49,7 @@ import com.makd.afinity.ui.components.FilterFab
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.components.SortFab
+import com.makd.afinity.ui.components.formatRuntimeTicks
 import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.home.HomeViewModel
 import com.makd.afinity.ui.home.components.SquareMediaTile
@@ -57,7 +58,6 @@ import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.music.components.SortFilterHeaderActions
 import com.makd.afinity.ui.music.components.musicFiltersSummary
 import com.makd.afinity.ui.music.components.musicSortSummary
-import com.makd.afinity.ui.music.components.musicTotalRuntimeLabel
 import com.makd.afinity.ui.music.library.MusicFilterBottomSheet
 import com.makd.afinity.ui.music.library.MusicSortDialog
 import com.makd.afinity.ui.music.library.MusicSortField
@@ -533,7 +533,7 @@ fun DownloadedCategoryScreen(
                         )
                     }
                 val lazyTracks = pagingFlow.collectAsLazyPagingItems()
-                val durationLabel = musicTotalRuntimeLabel(tracks.sumOf { it.runtimeTicks })
+                val durationLabel = formatRuntimeTicks(tracks.sumOf { it.runtimeTicks })
                 val headerSubtitle =
                     listOfNotNull(
                             durationLabel,

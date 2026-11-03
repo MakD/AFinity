@@ -102,6 +102,7 @@ import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.music.components.MusicArtistCard
 import com.makd.afinity.ui.music.components.MusicGenreCard
 import com.makd.afinity.ui.music.components.MusicTrackRow
+import com.makd.afinity.ui.music.components.TrackAdminActions
 import com.makd.afinity.ui.music.components.TracksHeaderPanel
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.theme.CardDimensions
@@ -220,6 +221,7 @@ internal fun TracksList(
     trackDownloadInfos: Map<UUID, DownloadInfo> = emptyMap(),
     headerSubtitle: String? = null,
     headerActions: @Composable RowScope.() -> Unit = {},
+    adminActions: TrackAdminActions? = null,
 ) {
     val isInitialLoading = tracks.loadState.refresh is LoadState.Loading && tracks.itemCount == 0
     if (isInitialLoading) {
@@ -279,6 +281,7 @@ internal fun TracksList(
                 onCancelDownload = onCancelDownload?.let { c -> { c(track) } },
                 isDownloadEnabled = isDownloadEnabled,
                 downloadInfo = trackDownloadInfos[track.id],
+                adminActions = adminActions,
             )
         }
     }

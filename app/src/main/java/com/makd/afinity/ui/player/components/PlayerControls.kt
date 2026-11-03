@@ -113,6 +113,7 @@ import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.player.common.TrackMapping
 import com.makd.afinity.ui.components.AfinityBadge
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.formatClock
 import com.makd.afinity.ui.components.formatRuntimeTicks
 import com.makd.afinity.ui.components.ratings.communityRatingOf
 import com.makd.afinity.ui.components.ratings.criticRatingOf
@@ -125,8 +126,6 @@ import com.makd.afinity.ui.livetv.components.LiveBadge
 import com.makd.afinity.ui.player.PlayerViewModel
 import com.makd.afinity.ui.player.toLocalizedLanguageName
 import java.util.Date
-import java.util.Locale
-import kotlin.math.abs
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.MediaStreamType
@@ -1431,7 +1430,7 @@ private fun BottomControls(
                                             else R.drawable.ic_moon
                                     ),
                                 label =
-                                    if (sleepTimerArmed) formatTime(uiState.sleepTimerRemainingMs)
+                                    if (sleepTimerArmed) formatClock(uiState.sleepTimerRemainingMs)
                                     else stringResource(R.string.player_sleep_timer_title),
                                 tint =
                                     if (sleepTimerArmed) MaterialTheme.colorScheme.primary
@@ -1479,7 +1478,7 @@ private fun BottomControls(
                                             else R.drawable.ic_moon
                                     ),
                                 label =
-                                    if (sleepTimerArmed) formatTime(uiState.sleepTimerRemainingMs)
+                                    if (sleepTimerArmed) formatClock(uiState.sleepTimerRemainingMs)
                                     else stringResource(R.string.player_sleep_timer_title),
                                 tint =
                                     if (sleepTimerArmed) MaterialTheme.colorScheme.primary
@@ -1753,7 +1752,7 @@ private fun SeekBar(
             val density = LocalDensity.current
             val timeLabelWidth =
                 remember(duration, timeLabelStyle, textMeasurer, density) {
-                    val widest = "-" + formatTime(duration).replace(Regex("\\d"), "0")
+                    val widest = "-" + formatClock(duration).replace(Regex("\\d"), "0")
                     with(density) { textMeasurer.measure(widest, timeLabelStyle).size.width.toDp() }
                 }
             Box(
@@ -1770,9 +1769,9 @@ private fun SeekBar(
                 Text(
                     text =
                         if (uiState.showRemainingTime) {
-                            "-${formatTime((duration - position).coerceAtLeast(0L))}"
+                            "-${formatClock((duration - position).coerceAtLeast(0L))}"
                         } else {
-                            formatTime(position)
+                            formatClock(position)
                         },
                     color = Color.White,
                     style = timeLabelStyle,
@@ -2507,7 +2506,7 @@ private fun PauseDetailsOverlay(
                     Spacer(modifier = Modifier.weight(1f))
                     Text(
                         text =
-                            stringResource(R.string.player_time_left, formatTime(remainingMs)) +
+                            stringResource(R.string.player_time_left, formatClock(remainingMs)) +
                                 "  ·  " +
                                 stringResource(R.string.player_ends_at, endsAt),
                         color = Color.White.copy(alpha = 0.8f),
@@ -2521,7 +2520,7 @@ private fun PauseDetailsOverlay(
                 ) {
                     Text(
                         text =
-                            stringResource(R.string.player_time_left, formatTime(remainingMs)) +
+                            stringResource(R.string.player_time_left, formatClock(remainingMs)) +
                                 "  ·  " +
                                 stringResource(R.string.player_ends_at, endsAt),
                         color = Color.White.copy(alpha = 0.8f),
@@ -2670,19 +2669,6 @@ private fun CastRow(person: AfinityPerson, avatarSize: Dp) {
                 )
             }
         }
-    }
-}
-
-private fun formatTime(timeMs: Long): String {
-    val totalSeconds = abs(timeMs / 1000).toInt()
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    val seconds = totalSeconds % 60
-
-    return if (hours > 0) {
-        String.format(Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds)
-    } else {
-        String.format(Locale.ROOT, "%d:%02d", minutes, seconds)
     }
 }
 

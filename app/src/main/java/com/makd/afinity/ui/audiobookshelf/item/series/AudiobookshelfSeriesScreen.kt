@@ -52,7 +52,7 @@ import com.makd.afinity.ui.components.PortraitDetailLayout
 import com.makd.afinity.ui.components.PortraitHero
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.backdropChainOf
-import com.makd.afinity.ui.components.formatRuntimeMinutes
+import com.makd.afinity.ui.components.formatRuntimeSeconds
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 
@@ -259,7 +259,7 @@ private fun SeriesBookItem(
                 book.media.duration?.let { duration ->
                     val prefix = if (book.media.metadata.publishedYear != null) " • " else ""
                     Text(
-                        text = "$prefix${formatRuntimeMinutes((duration / 60).toInt())}",
+                        text = "$prefix${formatRuntimeSeconds(duration)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

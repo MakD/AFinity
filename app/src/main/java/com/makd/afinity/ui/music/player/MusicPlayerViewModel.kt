@@ -10,6 +10,8 @@ import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.cast.CastEvent
 import com.makd.afinity.cast.CastManager
+import com.makd.afinity.data.manager.AdminChangeBroadcaster
+import com.makd.afinity.data.manager.AdminChangeKind
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.music.AfinityLyricLine
@@ -66,6 +68,7 @@ constructor(
     private val appDataRepository: AppDataRepository,
     private val playbackRepository: PlaybackRepository,
     preferencesRepository: PreferencesRepository,
+    private val adminChangeBroadcaster: AdminChangeBroadcaster,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -232,6 +235,17 @@ constructor(
                 .collectLatest { trackId ->
                     if (trackId != null) loadLyrics(trackId) else _lyrics.value = emptyList()
                 }
+        }
+        viewModelScope.launch {
+            adminChangeBroadcaster.changes.collect { change ->
+                val trackId = playbackState.value.currentTrack?.id ?: return@collect
+                if (
+                    change.kind != AdminChangeKind.DELETED &&
+                        change.itemId.equals(trackId.toString(), ignoreCase = true)
+                ) {
+                    loadLyrics(trackId)
+                }
+            }
         }
         viewModelScope.launch {
             castManager.castEvents.collect { event ->

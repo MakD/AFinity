@@ -55,6 +55,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.player.SLEEP_TIMER_EXTEND_MINUTES
 import com.makd.afinity.data.models.player.SLEEP_TIMER_PROMPT_THRESHOLD_MS
 import com.makd.afinity.data.models.player.SleepTimerMode
+import com.makd.afinity.ui.components.formatClock
 import com.makd.afinity.ui.player.PlayerViewModel
 
 private val SLEEP_TIMER_DURATION_OPTIONS = listOf(5, 15, 30, 45, 60, 90)
@@ -113,7 +114,7 @@ fun SleepTimerPanel(
                             text =
                                 stringResource(
                                     R.string.player_time_left,
-                                    formatSleepCountdown(uiState.sleepTimerRemainingMs),
+                                    formatClock(uiState.sleepTimerRemainingMs),
                                 ),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
@@ -253,7 +254,7 @@ private fun EndOfItemRow(
             modifier = Modifier.weight(1f),
         )
         Text(
-            text = stringResource(R.string.player_time_left, formatSleepCountdown(remainingMs)),
+            text = stringResource(R.string.player_time_left, formatClock(remainingMs)),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -300,7 +301,7 @@ fun SleepTimerExtendPrompt(
             text =
                 stringResource(
                     R.string.player_sleep_timer_ends_in,
-                    formatSleepCountdown(remainingMs),
+                    formatClock(remainingMs),
                 ),
             style = MaterialTheme.typography.labelMedium,
             color = Color.White.copy(alpha = 0.78f),
@@ -413,7 +414,7 @@ fun SleepTimerEndedOverlay(
                     text =
                         stringResource(
                             R.string.player_sleep_timer_paused_fmt,
-                            formatSleepCountdown(currentPositionMs()),
+                            formatClock(currentPositionMs()),
                             pluralStringResource(
                                 R.plurals.player_sleep_timer_closing_in,
                                 uiState.sleepTimerCloseInSeconds,

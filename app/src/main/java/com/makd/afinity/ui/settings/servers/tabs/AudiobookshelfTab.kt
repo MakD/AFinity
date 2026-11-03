@@ -16,12 +16,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.formatRuntimeSeconds
 import com.makd.afinity.ui.settings.servers.AudiobookshelfStats
 import com.makd.afinity.ui.settings.servers.ServerWithUserCount
 import com.makd.afinity.ui.settings.servers.components.AddAddressField
@@ -29,7 +29,6 @@ import com.makd.afinity.ui.settings.servers.components.LoadingState
 import com.makd.afinity.ui.settings.servers.components.SectionHeader
 import com.makd.afinity.ui.settings.servers.components.ServiceAddressItem
 import com.makd.afinity.ui.settings.servers.components.StatChip
-import com.makd.afinity.ui.settings.servers.utils.formatListeningDuration
 import java.util.UUID
 
 @Composable
@@ -100,24 +99,23 @@ internal fun AudiobookshelfTabContent(
             }
         }
 
-        val context = LocalContext.current
         Row(
             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             StatChip(
                 label = stringResource(R.string.time_today),
-                value = formatListeningDuration(context, absStats.todaySeconds),
+                value = formatRuntimeSeconds(absStats.todaySeconds),
                 modifier = Modifier.weight(1f),
             )
             StatChip(
                 label = stringResource(R.string.time_this_week),
-                value = formatListeningDuration(context, absStats.weekSeconds),
+                value = formatRuntimeSeconds(absStats.weekSeconds),
                 modifier = Modifier.weight(1f),
             )
             StatChip(
                 label = stringResource(R.string.time_this_month),
-                value = formatListeningDuration(context, absStats.monthSeconds),
+                value = formatRuntimeSeconds(absStats.monthSeconds),
                 modifier = Modifier.weight(1f),
             )
         }

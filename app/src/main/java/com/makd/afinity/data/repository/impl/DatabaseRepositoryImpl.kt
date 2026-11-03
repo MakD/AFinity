@@ -985,6 +985,10 @@ constructor(
         return musicLyricsDao.get(trackId.toString(), serverId, userId)?.lyricsJson
     }
 
+    override suspend fun deleteMusicLyrics(trackId: UUID, serverId: String, userId: String) {
+        musicLyricsDao.delete(trackId.toString(), serverId, userId)
+    }
+
     override fun getAllMusicTracksFlowByUser(userId: UUID): Flow<List<AfinityTrack>> =
         musicTrackDao.getAllFlowByUser(userId.toString()).map { list ->
             list.map { it.toAfinityTrack() }

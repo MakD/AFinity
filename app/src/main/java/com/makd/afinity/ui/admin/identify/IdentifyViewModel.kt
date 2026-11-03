@@ -21,7 +21,13 @@ import kotlinx.coroutines.launch
 
 private const val MOVIE = "Movie"
 private const val BOX_SET = "BoxSet"
-private val IDENTIFIABLE_TYPES = setOf(MOVIE, "Series", BOX_SET)
+private const val MUSIC_ALBUM = "MusicAlbum"
+private val IDENTIFIABLE_TYPES = setOf(MOVIE, "Series", BOX_SET, MUSIC_ALBUM)
+private val NO_YEAR_TYPES = setOf(BOX_SET, MUSIC_ALBUM)
+private val ALBUM_ID_TYPES = setOf("Album", "ReleaseGroup")
+
+private fun ExternalIdProvider.searchableFor(itemType: String): Boolean =
+    if (itemType == MUSIC_ALBUM) type in ALBUM_ID_TYPES else type == null || type == itemType
 
 enum class IdentifyMessage(@param:StringRes val textRes: Int) {
     APPLY_FAILED(R.string.admin_identify_apply_failed),
@@ -33,6 +39,8 @@ data class IdentifyUiState(
     val searchName: String = "",
     val year: String = "",
     val showYear: Boolean = true,
+    val albumArtist: String = "",
+    val showAlbumArtist: Boolean = false,
     val providers: List<ExternalIdProvider> = emptyList(),
     val providerIds: Map<String, String> = emptyMap(),
     val results: List<IdentifyResult> = emptyList(),
@@ -44,6 +52,9 @@ data class IdentifyUiState(
     val replaceAllImages: Boolean = true,
     val message: IdentifyMessage? = null,
 ) {
+    val squareArt: Boolean
+        get() = showAlbumArtist
+
     val canSearch: Boolean
         get() =
             !searching && (searchName.isNotBlank() || providerIds.values.any { it.isNotBlank() })
@@ -61,9 +72,16 @@ constructor(
 
     private var itemType: String = savedStateHandle["itemType"] ?: MOVIE
     private var nameEdited = false
+    private var albumArtistEdited = false
     private var searchJob: Job? = null
 
-    private val _uiState = MutableStateFlow(IdentifyUiState(showYear = itemType != BOX_SET))
+    private val _uiState =
+        MutableStateFlow(
+            IdentifyUiState(
+                showYear = itemType !in NO_YEAR_TYPES,
+                showAlbumArtist = itemType == MUSIC_ALBUM,
+            )
+        )
     val uiState: StateFlow<IdentifyUiState> = _uiState.asStateFlow()
 
     init {
@@ -79,14 +97,15 @@ constructor(
                     it.copy(
                         target = target,
                         searchName = if (nameEdited) it.searchName else target.name,
-                        showYear = itemType != BOX_SET,
+                        showYear = itemType !in NO_YEAR_TYPES,
+                        showAlbumArtist = itemType == MUSIC_ALBUM,
+                        albumArtist =
+                            if (albumArtistEdited) it.albumArtist else target.albumArtist.orEmpty(),
                     )
                 }
             }
             val providers =
-                adminRepository.getExternalIdProviders(itemId).filter {
-                    it.type == null || it.type == itemType
-                }
+                adminRepository.getExternalIdProviders(itemId).filter { it.searchableFor(itemType) }
             _uiState.update { it.copy(providers = providers) }
         }
     }
@@ -94,6 +113,11 @@ constructor(
     fun updateSearchName(name: String) {
         nameEdited = true
         _uiState.update { it.copy(searchName = name) }
+    }
+
+    fun updateAlbumArtist(albumArtist: String) {
+        albumArtistEdited = true
+        _uiState.update { it.copy(albumArtist = albumArtist) }
     }
 
     fun updateYear(year: String) = _uiState.update {
@@ -111,6 +135,8 @@ constructor(
         if (!state.canSearch || state.applying) return
         val name = state.searchName.trim()
         val year = if (state.showYear) state.year.toIntOrNull() else null
+        val albumArtist =
+            if (state.showAlbumArtist) state.albumArtist.trim().ifEmpty { null } else null
         val providerIds =
             state.providerIds.mapValues { it.value.trim() }.filterValues { it.isNotEmpty() }
         searchJob?.cancel()
@@ -124,7 +150,7 @@ constructor(
                 )
             }
             adminRepository
-                .searchRemoteResult(itemId, itemType, name, year, providerIds)
+                .searchRemoteResult(itemId, itemType, name, year, providerIds, albumArtist)
                 .onSuccess { results ->
                     _uiState.update { it.copy(searching = false, results = results) }
                 }

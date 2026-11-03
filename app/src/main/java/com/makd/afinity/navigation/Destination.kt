@@ -110,6 +110,7 @@ enum class Destination(
         const val EDIT_METADATA_ROUTE = "admin/edit_metadata/{itemId}"
         const val IDENTIFY_ITEM_ROUTE = "admin/identify/{itemId}/{itemType}"
         const val EDIT_IMAGES_ROUTE = "admin/edit_images/{itemId}"
+        const val EDIT_LYRICS_ROUTE = "admin/edit_lyrics/{itemId}"
         const val ADMIN_SERVER_ROUTE = "admin/server"
         const val ADMIN_OVERVIEW_ROUTE = "admin/server/overview"
         const val ADMIN_TASKS_ROUTE = "admin/server/tasks"
@@ -164,6 +165,8 @@ enum class Destination(
             "admin/identify/$itemId/$itemType"
 
         fun createEditImagesRoute(itemId: String): String = "admin/edit_images/$itemId"
+
+        fun createEditLyricsRoute(itemId: String): String = "admin/edit_lyrics/$itemId"
 
         const val MUSIC_LIBRARY_ROUTE = "music/library/{libraryId}/{libraryName}"
         const val MUSIC_BROWSE_ROUTE = "music/library/{libraryId}/{libraryName}/browse/{tab}"

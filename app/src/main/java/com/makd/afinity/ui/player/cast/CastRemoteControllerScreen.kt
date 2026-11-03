@@ -23,6 +23,7 @@ import com.makd.afinity.cast.CastManager
 import com.makd.afinity.cast.CastSessionState
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.ui.components.formatClock
 import com.makd.afinity.ui.player.PlayerViewModel
 import com.makd.afinity.ui.player.components.PlaybackSpeedDialog
 import com.makd.afinity.ui.player.components.rememberDominantColor
@@ -117,7 +118,7 @@ fun CastRemoteControllerScreen(
             CastRemoteTransport(
                 position = position.toFloat(),
                 valueRange = 0f..duration,
-                formatTime = { formatCastClock(it.toLong()) },
+                formatTime = { formatClock(it.toLong()) },
                 accentColor = accentColor,
                 isPlaying = castState.isPlaying,
                 isBuffering = castState.isBuffering,

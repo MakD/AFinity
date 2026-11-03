@@ -341,6 +341,8 @@ interface DatabaseRepository {
 
     suspend fun getMusicLyricsJson(trackId: UUID, serverId: String, userId: String): String?
 
+    suspend fun deleteMusicLyrics(trackId: UUID, serverId: String, userId: String)
+
     suspend fun getCompletedAudioDownloadsByAlbum(
         albumSeriesId: String,
         serverId: String,

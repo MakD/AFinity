@@ -42,8 +42,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.formatClock
 import com.makd.afinity.ui.components.rememberAfinitySheetState
-import com.makd.afinity.ui.player.components.formatSleepCountdown
 import com.makd.afinity.ui.player.components.rememberSleepTimerRemainingMs
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -118,7 +118,7 @@ fun SleepTimerDialog(
                             text =
                                 stringResource(
                                     R.string.player_time_left,
-                                    formatSleepCountdown(remainingMs),
+                                    formatClock(remainingMs),
                                 ),
                             style =
                                 MaterialTheme.typography.headlineSmall.copy(
@@ -229,7 +229,7 @@ private fun ChapterTimerRow(
                 text =
                     stringResource(
                         R.string.player_time_left,
-                        formatSleepCountdown((remainingSeconds * 1000).toLong()),
+                        formatClock((remainingSeconds * 1000).toLong()),
                     ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

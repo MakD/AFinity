@@ -79,6 +79,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.makd.afinity.R
 import com.makd.afinity.data.models.admin.ItemImage
+import com.makd.afinity.ui.admin.components.AdminCardShape
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinityScreen
@@ -96,7 +97,6 @@ import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
 private const val LOGO = "Logo"
-private val CardShape = RoundedCornerShape(16.dp)
 private val TileShape = RoundedCornerShape(12.dp)
 
 private enum class ImageShape(val ratio: Float, val minCell: Dp, val thumbWidth: Dp) {
@@ -526,7 +526,7 @@ private fun LoadFailedCard(onRetry: () -> Unit) {
     Row(
         modifier =
             Modifier.fillMaxWidth()
-                .clip(CardShape)
+                .clip(AdminCardShape)
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
                 .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -552,7 +552,7 @@ private fun CurrentImageCard(
 ) {
     val cardModifier =
         Modifier.fillMaxWidth()
-            .clip(CardShape)
+            .clip(AdminCardShape)
             .background(MaterialTheme.colorScheme.surfaceContainerLow)
             .padding(12.dp)
     val onThumbnailClick = { if (image != null) onPreview(image) else onUpload() }
@@ -1142,7 +1142,7 @@ private fun ImagePreviewSheet(
                     Modifier.widthIn(max = if (isPortrait) 280.dp else 560.dp)
                         .fillMaxWidth(if (isPortrait) 0.7f else 1f)
                         .aspectRatio(ratio)
-                        .clip(CardShape)
+                        .clip(AdminCardShape)
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             ) {
                 Artwork(url = image.url, fit = fit)

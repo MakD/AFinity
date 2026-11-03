@@ -5,20 +5,6 @@ import com.makd.afinity.R
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
-internal fun formatListeningDuration(context: Context, seconds: Double): String {
-    val h = (seconds / 3600).toInt()
-    val m = ((seconds % 3600) / 60).toInt()
-    val mUnit = context.getString(R.string.abs_minutes_unit)
-    val hUnit = context.getString(R.string.abs_hours_unit)
-    return when {
-        h > 0 && m > 0 -> context.getString(R.string.meta_runtime_hours_minutes, h, m)
-        h > 0 -> "${h}${hUnit}"
-        m > 0 -> context.getString(R.string.meta_runtime_minutes, m)
-        seconds > 0 -> "<1$mUnit"
-        else -> "0$mUnit"
-    }
-}
-
 internal fun formatRelativeTime(context: Context, time: LocalDateTime): String {
     val agoMinutes = ChronoUnit.MINUTES.between(time, LocalDateTime.now())
     return when {
@@ -27,13 +13,4 @@ internal fun formatRelativeTime(context: Context, time: LocalDateTime): String {
         agoMinutes < 1440 -> context.getString(R.string.task_hours_ago, agoMinutes / 60)
         else -> context.getString(R.string.task_days_ago, agoMinutes / 1440)
     }
-}
-
-internal fun formatTicks(ticks: Long): String {
-    val totalSeconds = ticks / 10_000_000L
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    val seconds = totalSeconds % 60
-    return if (hours > 0) "%d:%02d:%02d".format(hours, minutes, seconds)
-    else "%d:%02d".format(minutes, seconds)
 }

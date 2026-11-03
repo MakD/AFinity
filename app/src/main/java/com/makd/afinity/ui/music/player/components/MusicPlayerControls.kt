@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.TransportControls
-import com.makd.afinity.ui.player.cast.formatCastClock
+import com.makd.afinity.ui.components.formatClock
 import com.makd.afinity.ui.player.components.AudioFormatBadge
 
 @Composable
@@ -42,8 +42,8 @@ fun MusicPlayerControls(
         bufferedPosition = bufferedPositionMs.toFloat(),
         isPlaying = isPlaying,
         isBuffering = isBuffering,
-        elapsedLabel = formatCastClock(positionMs),
-        totalLabel = formatCastClock(durationMs),
+        elapsedLabel = formatClock(positionMs),
+        totalLabel = formatClock(durationMs),
         onSeek = { onSeek(it.toLong()) },
         onPlayPauseClick = onPlayPauseClick,
         onSkipBackward = onSeekBackward,

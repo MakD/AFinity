@@ -24,7 +24,8 @@ import com.makd.afinity.data.models.music.MusicFilterOptions
 import com.makd.afinity.data.models.music.MusicFilters
 import com.makd.afinity.data.models.music.MusicSearchResults
 import com.makd.afinity.data.models.music.decodeLyricsJson
-import com.makd.afinity.data.models.music.toAfinityLyricLine
+import com.makd.afinity.data.models.music.encodeLyricsJson
+import com.makd.afinity.data.models.music.toAfinityLyricLines
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinApiInvoker
@@ -845,13 +846,16 @@ constructor(
     override suspend fun getLyrics(trackId: UUID): List<AfinityLyricLine> =
         withContext(Dispatchers.IO) {
             val cached = readCachedLyrics(trackId)
-            if (cached != null && cached.cueAware) return@withContext cached.lines
+            if (cached != null && cached.cueAware && cached.lines.isNotEmpty()) {
+                return@withContext cached.lines
+            }
 
             val fallback = cached?.lines.orEmpty()
             try {
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext fallback
                 val response = LyricApi(apiClient).getLyrics(itemId = trackId)
-                val fresh = response.content.lyrics.mapNotNull { it.toAfinityLyricLine() }
+                val fresh = response.content.lyrics.toAfinityLyricLines()
+                if (cached != null && fresh.isNotEmpty()) refreshCachedLyrics(trackId, fresh)
                 fresh.ifEmpty { fallback }
             } catch (e: ApiClientException) {
                 Timber.d("No lyrics found for track: $trackId")
@@ -1353,6 +1357,16 @@ constructor(
 
     override suspend fun getCachedLyrics(trackId: UUID): List<AfinityLyricLine>? =
         readCachedLyrics(trackId)?.lines
+
+    private suspend fun refreshCachedLyrics(trackId: UUID, lines: List<AfinityLyricLine>) {
+        val session = sessionManager.currentSession.value ?: return
+        databaseRepository.insertMusicLyrics(
+            trackId,
+            session.serverId,
+            session.userId.toString(),
+            encodeLyricsJson(lines),
+        )
+    }
 
     private suspend fun readCachedLyrics(trackId: UUID): CachedLyrics? {
         val session = sessionManager.currentSession.value ?: return null

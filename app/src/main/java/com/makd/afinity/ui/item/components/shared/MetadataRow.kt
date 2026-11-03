@@ -35,8 +35,8 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.ui.components.formatRuntimeTicks
+import com.makd.afinity.ui.components.formatTimeLeftTicks
 import com.makd.afinity.ui.components.isLandscapeWindow
-import com.makd.afinity.ui.components.ticksToTotalMinutes
 import com.makd.afinity.util.DateSkeleton
 import com.makd.afinity.util.localizedDateFormat
 import java.util.Date
@@ -295,20 +295,7 @@ fun MetadataDot() {
 
 @Composable
 fun MetadataTimeLeft(progress: Float, remainingTicks: Long) {
-    val remainingTotalMinutes = ticksToTotalMinutes(remainingTicks)
-    val remainingHours = remainingTotalMinutes / 60
-    val remainingMinutes = remainingTotalMinutes % 60
-
-    val remainingText =
-        if (remainingHours > 0) {
-            stringResource(
-                R.string.meta_time_remaining_hours_minutes,
-                remainingHours,
-                remainingMinutes,
-            )
-        } else {
-            stringResource(R.string.meta_time_remaining_minutes, remainingMinutes)
-        }
+    val remainingText = formatTimeLeftTicks(remainingTicks)
 
     Row(
         verticalAlignment = Alignment.CenterVertically,

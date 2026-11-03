@@ -2497,7 +2497,6 @@
         <item quantity="many">%1$d chapitres écoutés</item>
         <item quantity="other">%1$d chapitres écoutés</item>
     </plurals>
-    <string name="abs_time_left_fmt">%1$s restant</string>
     <string name="abs_now_in">Actuellement dans</string>
     <string name="abs_your_listening">Votre écoute</string>
     <string name="abs_listened_label">écouté</string>
@@ -2583,7 +2582,6 @@
     <string name="seerr_detail_budget">Budget</string>
     <string name="seerr_detail_revenue">Recettes</string>
     <string name="seerr_detail_production_country">Pays de production</string>
-    <string name="seerr_runtime_minutes_fmt">%1$d min</string>
     <string name="season_no_info">Aucune information de saison disponible. Toutes les saisons seront demandées.</string>
     <plurals name="season_count_fmt">
         <item quantity="one">%1$d saison</item>

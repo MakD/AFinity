@@ -78,6 +78,8 @@ import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.SeparatedFlowRow
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.backdropChainOf
+import com.makd.afinity.ui.components.formatRuntime
+import com.makd.afinity.ui.components.formatRuntimeMinutes
 import com.makd.afinity.ui.components.getAutoFlagUrl
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.components.windowWidthDp
@@ -782,14 +784,7 @@ private fun SeerrMetadataRow(
     centered: Boolean = true,
 ) {
     val year = (details.releaseDate ?: details.firstAirDate)?.take(4)?.takeIf { it.isNotBlank() }
-    val runtime =
-        details.runtime
-            ?.takeIf { it > 0 }
-            ?.let { minutes ->
-                val hours = minutes / 60
-                val mins = minutes % 60
-                if (hours > 0) "${hours}h ${mins}m" else "${mins}m"
-            }
+    val runtime = details.runtime?.takeIf { it > 0 }?.let { formatRuntimeMinutes(it) }
     val seasonCount =
         if (mediaType == MediaType.TV) details.getSeasonCount().takeIf { it > 0 } else null
     val certification = details.getCertification()?.takeIf { it.isNotBlank() }
@@ -889,7 +884,7 @@ private fun buildSeerrDetailRows(
                 add(
                     SeerrDetailRowData(
                         context.getString(R.string.seerr_detail_episode_runtime),
-                        context.getString(R.string.seerr_runtime_minutes_fmt, it),
+                        formatRuntime(context, it),
                     )
                 )
             }

@@ -1579,7 +1579,6 @@
     <string name="seerr_detail_budget">Budget</string>
     <string name="seerr_detail_revenue">Intäkter</string>
     <string name="seerr_detail_production_country">Produktionsland</string>
-    <string name="seerr_runtime_minutes_fmt">%1$d min</string>
     <string name="season_no_info">Ingen säsongsinformation är tillgänglig. Alla säsonger kommer att begäras.</string>
     <string name="notif_channel_downloads">Nedladdningar</string>
     <string name="notif_channel_audiobook_downloads">Ljudboksnedladdningar</string>
@@ -2956,7 +2955,6 @@
     <string name="abs_author_label">Författare</string>
     <string name="abs_more_by_fmt">Mer av %1$s</string>
     <string name="abs_narrated_by_fmt">Inläst av %1$s</string>
-    <string name="abs_time_left_fmt">%1$s kvar</string>
     <string name="abs_now_in">Nu i</string>
     <string name="abs_your_listening">Din lyssning</string>
     <string name="abs_listened_label">lyssnat</string>
@@ -3302,7 +3300,6 @@
     <string name="task_progress_percent_fmt">%1$.1f%%</string>
     <string name="review_by_author_fmt">Recension av %1$s</string>
     <string name="log_repeat_count_fmt">%1$d×</string>
-    <string name="abs_seconds_unit">s</string>
     <string name="audio_channels_fmt">%1$d kanaler</string>
     <string name="generic_server_name">servern</string>
     <string name="attention_server_restart_title">%1$s omstart krävs</string>

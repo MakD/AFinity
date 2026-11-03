@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -28,6 +30,7 @@ fun DeleteItemDialog(
     @StringRes errorRes: Int?,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
+    details: (@Composable () -> Unit)? = null,
 ) {
     AlertDialog(
         onDismissRequest = { if (!deleting) onDismiss() },
@@ -48,8 +51,12 @@ fun DeleteItemDialog(
             }
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+            ) {
                 Text(text = message, style = MaterialTheme.typography.bodyMedium)
+                details?.invoke()
                 errorRes?.let { res ->
                     Text(
                         text = stringResource(res),

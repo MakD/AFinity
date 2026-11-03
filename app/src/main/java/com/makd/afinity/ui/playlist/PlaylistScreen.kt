@@ -81,8 +81,12 @@ import com.makd.afinity.ui.item.components.MusicDownloadQualityDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
+import com.makd.afinity.ui.music.components.MusicAdminDialogs
+import com.makd.afinity.ui.music.components.MusicAdminRequest
+import com.makd.afinity.ui.music.components.MusicAdminViewModel
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
+import com.makd.afinity.ui.music.components.rememberTrackAdminActions
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.player.PlayerLauncher
@@ -97,9 +101,13 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 fun PlaylistScreen(
     onPlaylistDeleted: () -> Unit,
     onHomeClick: () -> Unit,
+    onEditMetadataClick: (String) -> Unit,
+    onEditImagesClick: (String) -> Unit,
+    onEditLyricsClick: (String) -> Unit,
     viewModel: PlaylistViewModel = hiltViewModel(),
     playerViewModel: MusicPlayerViewModel = hiltViewModel(),
     addToPlaylistViewModel: AddToPlaylistViewModel = hiltViewModel(),
+    adminViewModel: MusicAdminViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val playbackState by playerViewModel.playbackState.collectAsStateWithLifecycle()
@@ -118,6 +126,23 @@ fun PlaylistScreen(
     var showAddToPlaylist by remember { mutableStateOf(false) }
     var radioSeed by remember { mutableStateOf<RadioSeed?>(null) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var adminRequest by remember { mutableStateOf<MusicAdminRequest?>(null) }
+    val trackAdminActions =
+        rememberTrackAdminActions(
+            adminViewModel = adminViewModel,
+            onEditMetadata = onEditMetadataClick,
+            onEditImages = onEditImagesClick,
+            onEditLyrics = onEditLyricsClick,
+            onRequest = { adminRequest = it },
+        )
+
+    MusicAdminDialogs(
+        request = adminRequest,
+        onDismiss = { adminRequest = null },
+        onMessage = { message -> scope.launch { snackbarHostState.showSnackbar(message) } },
+        onDeleted = { viewModel.reload() },
+        viewModel = adminViewModel,
+    )
 
     var playChoiceShuffle by remember { mutableStateOf<Boolean?>(null) }
     var showDownloadChoice by remember { mutableStateOf(false) }
@@ -403,6 +428,7 @@ fun PlaylistScreen(
                             isDownloadEnabled = canDownloadOnNetwork,
                             onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
                             downloadInfo = uiState.trackDownloadInfos[track.id],
+                            adminActions = trackAdminActions,
                             modifier = dragModifier,
                         )
                     }

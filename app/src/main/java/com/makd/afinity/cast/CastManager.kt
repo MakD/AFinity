@@ -30,6 +30,7 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
+import com.makd.afinity.ui.components.formatRuntime
 import com.makd.afinity.ui.components.ticksToTotalMinutes
 import com.makd.afinity.ui.player.PlaylistManager
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -392,18 +393,10 @@ constructor(
             ?.let {
                 return it
             }
-        val totalMinutes = ticksToTotalMinutes(movie.runtimeTicks)
         val runtime =
-            when {
-                totalMinutes <= 0 -> null
-                totalMinutes >= 60 ->
-                    context.getString(
-                        R.string.meta_runtime_hours_minutes,
-                        totalMinutes / 60,
-                        totalMinutes % 60,
-                    )
-                else -> context.getString(R.string.meta_runtime_minutes, totalMinutes)
-            }
+            ticksToTotalMinutes(movie.runtimeTicks)
+                .takeIf { it > 0 }
+                ?.let { formatRuntime(context, it) }
         return listOfNotNull(movie.officialRating?.takeIf { it.isNotBlank() }, runtime)
             .joinToString(" • ")
             .ifEmpty { null }

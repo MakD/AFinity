@@ -52,7 +52,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.getChapterImageUrl
 import com.makd.afinity.ui.components.AsyncImage
-import java.util.Locale
+import com.makd.afinity.ui.components.formatClock
 import java.util.UUID
 
 private val ChapterCardWidth = 220.dp
@@ -214,7 +214,7 @@ private fun ChapterSwitcherCard(
                 shape = RoundedCornerShape(4.dp),
             ) {
                 Text(
-                    text = formatChapterTime(chapter.startPosition),
+                    text = formatClock(chapter.startPosition),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -236,17 +236,5 @@ private fun ChapterSwitcherCard(
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
         )
-    }
-}
-
-private fun formatChapterTime(positionMs: Long): String {
-    val totalSeconds = positionMs / 1000
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    val seconds = totalSeconds % 60
-    return if (hours > 0) {
-        String.format(Locale.US, "%d:%02d:%02d", hours, minutes, seconds)
-    } else {
-        String.format(Locale.US, "%d:%02d", minutes, seconds)
     }
 }

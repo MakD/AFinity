@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
+import com.makd.afinity.data.manager.AdminChangeKind
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.download.DownloadInfo
@@ -85,6 +86,17 @@ constructor(
         observeDownloads()
 
         viewModelScope.launch {
+            adminChangeBroadcaster.changes.collect { change ->
+                if (change.kind == AdminChangeKind.DELETED) return@collect
+                val state = _uiState.value
+                val ownIds = mutableSetOf(artistId.toString())
+                state.albums.mapTo(ownIds) { it.id.toString() }
+                state.topTracks.mapTo(ownIds) { it.id.toString() }
+                if (change.itemId in ownIds) load(showLoading = false)
+            }
+        }
+
+        viewModelScope.launch {
             offlineModeManager.isOffline
                 .drop(1)
                 .filter { !it }
@@ -158,9 +170,15 @@ constructor(
         }
     }
 
-    private fun load() {
+    fun removeTrack(trackId: UUID) {
+        _uiState.update { state ->
+            state.copy(topTracks = state.topTracks.filterNot { it.id == trackId })
+        }
+    }
+
+    private fun load(showLoading: Boolean = true) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            if (showLoading) _uiState.update { it.copy(isLoading = true) }
             try {
                 val artistDeferred = async { musicRepository.getArtistById(artistId) }
                 val tracksDeferred = async {

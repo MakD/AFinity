@@ -40,6 +40,8 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
 import com.makd.afinity.ui.components.MetadataOverflowRow
+import com.makd.afinity.ui.components.formatRuntimeSeconds
+import com.makd.afinity.ui.components.formatTimeLeftSeconds
 import com.makd.afinity.ui.utils.htmlToAnnotatedString
 import com.makd.afinity.util.DateSkeleton
 import com.makd.afinity.util.localizedDateFormat
@@ -146,7 +148,7 @@ private fun ExpandableEpisodeItem(
                         episode.duration?.let { duration ->
                             list.add {
                                 Text(
-                                    text = formatDuration(duration),
+                                    text = formatRuntimeSeconds(duration),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,
@@ -165,12 +167,10 @@ private fun ExpandableEpisodeItem(
                                             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    val remainingSeconds = progress.duration - progress.currentTime
                                     Text(
                                         text =
-                                            stringResource(
-                                                R.string.abs_time_left_fmt,
-                                                formatDuration(remainingSeconds),
+                                            formatTimeLeftSeconds(
+                                                progress.duration - progress.currentTime
                                             ),
                                         style = MaterialTheme.typography.labelSmall,
                                         color =
@@ -361,16 +361,4 @@ fun HtmlText(
 private fun formatDate(timestamp: Long): String {
     val locale = Locale.getDefault()
     return localizedDateFormat(locale, DateSkeleton.MONTH_DAY_YEAR).format(Date(timestamp))
-}
-
-private fun formatDuration(seconds: Double): String {
-    val totalSeconds = seconds.toLong()
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-
-    return when {
-        hours > 0 -> "${hours}h ${minutes}m"
-        minutes > 0 -> "${minutes}m"
-        else -> "< 1m"
-    }
 }

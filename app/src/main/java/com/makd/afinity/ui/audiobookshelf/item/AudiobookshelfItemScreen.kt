@@ -66,7 +66,6 @@ import com.makd.afinity.ui.audiobookshelf.item.components.PodcastUpNextCard
 import com.makd.afinity.ui.audiobookshelf.item.components.RecommendationRowSection
 import com.makd.afinity.ui.audiobookshelf.item.components.chapterWindowItems
 import com.makd.afinity.ui.audiobookshelf.item.components.episodeListItems
-import com.makd.afinity.ui.audiobookshelf.item.components.formatListenTime
 import com.makd.afinity.ui.audiobookshelf.item.components.hasItemActions
 import com.makd.afinity.ui.audiobookshelf.withAbsWidth
 import com.makd.afinity.ui.components.AfinityScreen
@@ -82,6 +81,7 @@ import com.makd.afinity.ui.components.PortraitDetailLayout
 import com.makd.afinity.ui.components.PortraitHero
 import com.makd.afinity.ui.components.RadioOptionRow
 import com.makd.afinity.ui.components.backdropChainOf
+import com.makd.afinity.ui.components.formatRuntimeSeconds
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.components.mediainfo.PodcastEpisodeMediaInfoSheet
 import com.makd.afinity.ui.item.components.shared.DetailSectionGap
@@ -238,7 +238,7 @@ fun AudiobookshelfItemScreen(
                     val chaptersTrailing =
                         listOfNotNull(
                                 uiState.chapters.size.toString(),
-                                currentItem.media.duration?.let { formatListenTime(it) },
+                                currentItem.media.duration?.let { formatRuntimeSeconds(it) },
                             )
                             .joinToString(" · ")
                     val showNetworkSections = !isPodcast && !isOffline

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
@@ -41,6 +42,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityLyricLine
+import com.makd.afinity.data.models.music.isSynced
 import com.makd.afinity.ui.theme.isDarkSurface
 
 @Composable
@@ -54,7 +56,8 @@ fun MusicLyricsView(
     accentColor: Color = MaterialTheme.colorScheme.primary,
 ) {
     val listState = rememberLazyListState()
-    val currentLineIndex = lineIndexAt(lyrics, positionMs / 1000.0)
+    val synced = lyrics.isSynced
+    val currentLineIndex = if (synced) lineIndexAt(lyrics, positionMs / 1000.0) else -1
     val positionState = rememberUpdatedState(positionMs)
     val playingState = rememberUpdatedState(isPlaying)
     val seekState = rememberUpdatedState(onSeek)
@@ -90,18 +93,23 @@ fun MusicLyricsView(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     item { Spacer(Modifier.height(48.dp)) }
-                    itemsIndexed(lyrics) { index, line ->
-                        LyricLineRow(
-                            line = line,
-                            nextLineStartSeconds = lyrics.getOrNull(index + 1)?.startSeconds,
-                            isCurrent = index == currentLineIndex,
-                            isPast = index < currentLineIndex,
-                            positionState = positionState,
-                            playingState = playingState,
-                            seekState = seekState,
-                            accentColor = accentColor,
-                            isDark = isDark,
-                        )
+                    if (!synced) {
+                        item { UnsyncedLabel(isDark = isDark) }
+                        items(lyrics) { line -> PlainLyricLine(text = line.text, isDark = isDark) }
+                    } else {
+                        itemsIndexed(lyrics) { index, line ->
+                            LyricLineRow(
+                                line = line,
+                                nextLineStartSeconds = lyrics.getOrNull(index + 1)?.startSeconds,
+                                isCurrent = index == currentLineIndex,
+                                isPast = index < currentLineIndex,
+                                positionState = positionState,
+                                playingState = playingState,
+                                seekState = seekState,
+                                accentColor = accentColor,
+                                isDark = isDark,
+                            )
+                        }
                     }
                     item { Spacer(Modifier.height(48.dp)) }
                 }
@@ -158,7 +166,7 @@ private fun LyricLineRow(
                 indication = null,
                 interactionSource = remember { MutableInteractionSource() },
             ) {
-                seekState.value((line.startSeconds * 1000).toLong())
+                line.startSeconds?.let { seekState.value((it * 1000).toLong()) }
             }
             .padding(horizontal = 24.dp, vertical = 10.dp)
             .graphicsLayer {
@@ -216,6 +224,29 @@ private fun LyricLineRow(
     }
 }
 
+@Composable
+private fun UnsyncedLabel(isDark: Boolean) {
+    Text(
+        text = stringResource(R.string.music_player_lyrics_unsynced),
+        style = MaterialTheme.typography.labelMedium,
+        color =
+            if (isDark) Color.White.copy(alpha = 0.6f)
+            else MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+    )
+}
+
+@Composable
+private fun PlainLyricLine(text: String, isDark: Boolean) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium.copy(textAlign = TextAlign.Center),
+        color = if (isDark) Color.White.copy(alpha = 0.9f) else MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp),
+    )
+}
+
 private fun Color.readableOnDark(minLuminance: Float = 0.45f): Color {
     val current = luminance()
     if (current >= minLuminance) return this
@@ -265,7 +296,7 @@ private fun lineIndexAt(lyrics: List<AfinityLyricLine>, seconds: Double): Int {
     var result = 0
     while (low <= high) {
         val mid = (low + high) / 2
-        if (lyrics[mid].startSeconds <= seconds) {
+        if ((lyrics[mid].startSeconds ?: Double.MAX_VALUE) <= seconds) {
             result = mid
             low = mid + 1
         } else {

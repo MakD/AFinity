@@ -26,6 +26,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityLyricLine
 import com.makd.afinity.data.models.music.RepeatMode
 import com.makd.afinity.data.models.player.PlaybackStats
+import com.makd.afinity.ui.components.formatClock
 import com.makd.afinity.ui.player.cast.CastInfoBottomSheet
 import com.makd.afinity.ui.player.cast.CastRemoteAction
 import com.makd.afinity.ui.player.cast.CastRemoteArtwork
@@ -33,7 +34,6 @@ import com.makd.afinity.ui.player.cast.CastRemoteIconButton
 import com.makd.afinity.ui.player.cast.CastRemoteLayout
 import com.makd.afinity.ui.player.cast.CastRemoteTitle
 import com.makd.afinity.ui.player.cast.CastRemoteTransport
-import com.makd.afinity.ui.player.cast.formatCastClock
 import com.makd.afinity.ui.player.components.SwipeCoverItem
 import com.makd.afinity.ui.player.components.SwipeableCover
 
@@ -107,7 +107,7 @@ fun MusicCastRemote(
             CastRemoteTransport(
                 position = playbackState.positionMs.toFloat(),
                 valueRange = 0f..durationMs,
-                formatTime = { formatCastClock(it.toLong()) },
+                formatTime = { formatClock(it.toLong()) },
                 accentColor = accentColor,
                 isPlaying = playbackState.isPlaying,
                 isBuffering = playbackState.isBuffering,

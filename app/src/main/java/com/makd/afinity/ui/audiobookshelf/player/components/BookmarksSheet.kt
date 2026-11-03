@@ -42,8 +42,8 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.Bookmark
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.formatClockSeconds
 import com.makd.afinity.ui.components.rememberAfinitySheetState
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -148,7 +148,7 @@ fun BookmarksSheet(
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = formatBookmarkTime(bookmark.time),
+                                text = formatClockSeconds(bookmark.time),
                                 style = MaterialTheme.typography.labelSmall,
                                 color =
                                     MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
@@ -207,7 +207,7 @@ fun BookmarksSheet(
                 Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)) {
                     Button(
                         onClick = {
-                            title = formatBookmarkTime(currentTimeSeconds)
+                            title = formatClockSeconds(currentTimeSeconds)
                             showTitleInput = true
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -216,7 +216,7 @@ fun BookmarksSheet(
                             text =
                                 stringResource(
                                     R.string.abs_bookmark_add_at_fmt,
-                                    formatBookmarkTime(currentTimeSeconds),
+                                    formatClockSeconds(currentTimeSeconds),
                                 ),
                             fontSize = 14.sp,
                         )
@@ -224,17 +224,5 @@ fun BookmarksSheet(
                 }
             }
         }
-    }
-}
-
-private fun formatBookmarkTime(seconds: Double): String {
-    val total = seconds.toLong().coerceAtLeast(0L)
-    val h = total / 3600
-    val m = (total % 3600) / 60
-    val s = total % 60
-    return if (h > 0) {
-        String.format(Locale.US, "%d:%02d:%02d", h, m, s)
-    } else {
-        String.format(Locale.US, "%d:%02d", m, s)
     }
 }

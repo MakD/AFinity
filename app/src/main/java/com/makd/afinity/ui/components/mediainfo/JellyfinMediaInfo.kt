@@ -7,6 +7,7 @@ import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.hdrLabel
 import com.makd.afinity.data.models.media.isDolbyVision
+import com.makd.afinity.ui.components.formatClockTicks
 import com.makd.afinity.ui.player.toLocalizedLanguageName
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.VideoRangeType
@@ -104,7 +105,7 @@ private fun fileSection(
                 ?.let {
                     MediaInfoRow(
                         format.string(R.string.media_info_label_duration),
-                        if (isAudioOnly) format.clock(it / 10_000_000.0) else format.runtime(it),
+                        if (isAudioOnly) formatClockTicks(it) else format.runtime(it),
                     )
                 },
             album

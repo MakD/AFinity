@@ -5,36 +5,61 @@ import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.admin.AdminPermissionDeniedException
 import com.makd.afinity.data.models.admin.AdminRequestStillRunningException
+import com.makd.afinity.data.models.admin.DeleteSummary
 import com.makd.afinity.data.models.admin.EditableItem
 import com.makd.afinity.data.models.admin.EditablePerson
 import com.makd.afinity.data.models.admin.ExternalIdProvider
 import com.makd.afinity.data.models.admin.IdentifyResult
 import com.makd.afinity.data.models.admin.IdentifyTarget
 import com.makd.afinity.data.models.admin.ItemImage
+import com.makd.afinity.data.models.admin.LyricsContent
+import com.makd.afinity.data.models.admin.LyricsLineInfo
+import com.makd.afinity.data.models.admin.LyricsNotSavedException
+import com.makd.afinity.data.models.admin.LyricsTarget
+import com.makd.afinity.data.models.admin.RemoteLyrics
+import com.makd.afinity.data.models.admin.TrackLyrics
+import com.makd.afinity.data.models.music.encodeLyricsJson
+import com.makd.afinity.data.models.music.toAfinityLyricLines
+import com.makd.afinity.data.network.toUtcString
+import com.makd.afinity.data.repository.DatabaseRepository
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
+import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.HttpMethod
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.client.exception.TimeoutException
+import org.jellyfin.sdk.api.client.util.ApiSerializer
 import org.jellyfin.sdk.api.operations.ImageApi
 import org.jellyfin.sdk.api.operations.ItemLookupApi
 import org.jellyfin.sdk.api.operations.ItemUpdateApi
 import org.jellyfin.sdk.api.operations.LibraryApi
+import org.jellyfin.sdk.api.operations.LyricApi
 import org.jellyfin.sdk.api.operations.RemoteImageApi
 import org.jellyfin.sdk.model.FileInfo
+import org.jellyfin.sdk.model.api.AlbumInfo
+import org.jellyfin.sdk.model.api.AlbumInfoRemoteSearchQuery
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemPerson
 import org.jellyfin.sdk.model.api.BoxSetInfo
 import org.jellyfin.sdk.model.api.BoxSetInfoRemoteSearchQuery
 import org.jellyfin.sdk.model.api.ImageInfo
 import org.jellyfin.sdk.model.api.ImageType
+import org.jellyfin.sdk.model.api.ItemFields
+import org.jellyfin.sdk.model.api.LyricDto
+import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.MetadataField
 import org.jellyfin.sdk.model.api.MetadataRefreshMode
 import org.jellyfin.sdk.model.api.MovieInfo
@@ -50,6 +75,29 @@ import timber.log.Timber
 private const val SERVER_THUMB_WIDTH = 600
 private const val SERVER_PREVIEW_WIDTH = 1600
 private val APPLY_ACCEPTED_AFTER = 20.seconds
+private const val ITEM_PATH = "/Items/{itemId}"
+private const val ITEM_ID = "itemId"
+private const val PREMIERE_DATE_KEY = "PremiereDate"
+private const val END_DATE_KEY = "EndDate"
+private const val MUSIC_ALBUM = "MusicAlbum"
+private const val TICKS_PER_MS = 10_000L
+private const val NOT_FOUND = 404
+private const val MAX_LYRIC_DELETES = 5
+private const val LYRIC_POLL_ATTEMPTS = 12
+private val LYRIC_POLL_INTERVAL = 300.milliseconds
+
+private fun String.lastSeparator(): Int = maxOf(lastIndexOf('/'), lastIndexOf('\\'))
+
+private fun String.parentDirectory(): String = substring(0, lastSeparator().coerceAtLeast(0))
+
+private fun String.fileNamePart(): String = substring(lastSeparator() + 1)
+
+private fun LyricDto.toLyricsContent(): LyricsContent =
+    LyricsContent(
+        lyrics
+            .map { LyricsLineInfo(text = it.text, startMs = it.start?.div(TICKS_PER_MS)) }
+            .dropLastWhile { it.text.isBlank() }
+    )
 
 @Singleton
 class JellyfinAdminRepository
@@ -57,6 +105,7 @@ class JellyfinAdminRepository
 constructor(
     private val sessionManager: SessionManager,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
+    private val databaseRepository: DatabaseRepository,
 ) : AdminRepository {
 
     private fun getApiClient() = sessionManager.getCurrentApiClient()
@@ -98,7 +147,7 @@ constructor(
                 val apiClient =
                     getApiClient()
                         ?: return@withContext Result.failure(IllegalStateException("No API client"))
-                val api = ItemUpdateApi(sessionManager.getBackgroundApiClient() ?: apiClient)
+                val updateClient = sessionManager.getBackgroundApiClient() ?: apiClient
                 val userId =
                     getUserId()
                         ?: return@withContext Result.failure(IllegalStateException("No user"))
@@ -117,6 +166,13 @@ constructor(
                         name = item.name,
                         originalTitle = item.originalTitle,
                         forcedSortName = item.forcedSortName,
+                        album = item.album,
+                        albumArtists =
+                            if (item.albumArtists == existing.albumArtistNames()) null
+                            else existing.albumArtists.withNames(item.albumArtists),
+                        artistItems =
+                            if (item.artists == existing.artists.orEmpty()) null
+                            else existing.artistItems.withNames(item.artists),
                         overview = item.overview,
                         productionYear = item.productionYear,
                         officialRating = item.officialRating,
@@ -140,9 +196,17 @@ constructor(
                         chapters = null,
                         userData = null,
                         imageBlurHashes = null,
+                        dateCreated = null,
+                        dateLastMediaAdded = null,
+                        startDate = null,
                     )
                 posted = TimeSource.Monotonic.markNow()
-                api.updateItem(itemId = UUID.fromString(itemId), data = updated)
+                updateClient.request(
+                    method = HttpMethod.POST,
+                    pathTemplate = ITEM_PATH,
+                    pathParameters = mapOf(ITEM_ID to UUID.fromString(itemId)),
+                    requestBody = updated.toUpdateBody(),
+                )
                 adminChangeBroadcaster.notifyItemChanged(itemId)
                 Result.success(Unit)
             } catch (e: TimeoutException) {
@@ -186,6 +250,7 @@ constructor(
                             "${baseUrl.trimEnd('/')}/Items/$itemId/Images/Primary" +
                                 "?maxWidth=$SERVER_THUMB_WIDTH&quality=90&format=webp&tag=$primaryTag"
                         } else null,
+                    albumArtist = dto.albumArtistNames().firstOrNull(),
                 )
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get identify target $itemId")
@@ -223,12 +288,19 @@ constructor(
         name: String,
         year: Int?,
         providerIds: Map<String, String>,
+        albumArtist: String?,
     ): Result<List<IdentifyResult>> =
         withContext(Dispatchers.IO) {
             try {
+                val client =
+                    if (itemType == MUSIC_ALBUM) {
+                        sessionManager.getBackgroundApiClient() ?: getApiClient()
+                    } else {
+                        getApiClient()
+                    }
                 val api =
                     ItemLookupApi(
-                        getApiClient()
+                        client
                             ?: return@withContext Result.failure(
                                 IllegalStateException("No API client")
                             )
@@ -278,6 +350,24 @@ constructor(
                                                 name = name,
                                                 providerIds = providerIds,
                                                 isAutomated = false,
+                                            ),
+                                        includeDisabledProviders = false,
+                                    )
+                            )
+
+                        MUSIC_ALBUM ->
+                            api.getMusicAlbumRemoteSearchResults(
+                                data =
+                                    AlbumInfoRemoteSearchQuery(
+                                        itemId = itemUuid,
+                                        searchInfo =
+                                            AlbumInfo(
+                                                name = name,
+                                                providerIds = providerIds,
+                                                isAutomated = false,
+                                                albumArtists = listOfNotNull(albumArtist),
+                                                artistProviderIds = emptyMap(),
+                                                songInfos = emptyList(),
                                             ),
                                         includeDisabledProviders = false,
                                     )
@@ -350,6 +440,197 @@ constructor(
                 Result.failure(e)
             }
         }
+
+    override suspend fun getLyricsTarget(trackId: String): Result<LyricsTarget> =
+        withContext(Dispatchers.IO) {
+            try {
+                val apiClient =
+                    getApiClient()
+                        ?: return@withContext Result.failure(IllegalStateException("No API client"))
+                val userId =
+                    getUserId()
+                        ?: return@withContext Result.failure(IllegalStateException("No user"))
+                val uuid = UUID.fromString(trackId)
+                val dto = LibraryApi(apiClient).getItem(userId = userId, itemId = uuid).content
+                val lyrics =
+                    fetchServedLyrics(apiClient, uuid)?.let { content ->
+                        TrackLyrics(content = content, sidecarFileName = dto.sidecarLyricFileName())
+                    }
+                Result.success(
+                    LyricsTarget(
+                        trackName = dto.name.orEmpty(),
+                        artist = dto.artists?.firstOrNull() ?: dto.albumArtistNames().firstOrNull(),
+                        lyrics = lyrics,
+                    )
+                )
+            } catch (e: ApiClientException) {
+                Timber.e(e, "Failed to load lyrics for $trackId")
+                Result.failure(e)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error loading lyrics for $trackId")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun searchRemoteLyrics(trackId: String): Result<List<RemoteLyrics>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val apiClient =
+                    sessionManager.getBackgroundApiClient()
+                        ?: getApiClient()
+                        ?: return@withContext Result.failure(IllegalStateException("No API client"))
+                val results =
+                    LyricApi(apiClient)
+                        .searchRemoteLyrics(itemId = UUID.fromString(trackId))
+                        .content
+                Result.success(
+                    results.map { info ->
+                        val content = info.lyrics.toLyricsContent()
+                        val metadata = info.lyrics.metadata
+                        RemoteLyrics(
+                            id = info.id,
+                            providerName = info.providerName,
+                            title = metadata.title,
+                            artist = metadata.artist,
+                            album = metadata.album,
+                            lengthMs = metadata.length?.div(TICKS_PER_MS)?.takeIf { it > 0 },
+                            synced = metadata.isSynced ?: content.synced,
+                            content = content,
+                        )
+                    }
+                )
+            } catch (e: ApiClientException) {
+                Timber.e(e, "Failed to search lyrics for $trackId")
+                Result.failure(e)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error searching lyrics for $trackId")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun replaceWithRemoteLyrics(trackId: String, lyricId: String): Result<Unit> =
+        writeLyrics(trackId) { apiClient, uuid ->
+            deleteAllServedLyrics(apiClient, uuid)
+            LyricApi(apiClient).downloadRemoteLyrics(itemId = uuid, lyricId = lyricId)
+            if (!awaitServedLyrics(apiClient, uuid)) throw LyricsNotSavedException()
+        }
+
+    override suspend fun replaceWithUploadedLyrics(
+        trackId: String,
+        fileName: String,
+        text: String,
+    ): Result<Unit> =
+        writeLyrics(trackId) { apiClient, uuid ->
+            deleteAllServedLyrics(apiClient, uuid)
+            LyricApi(apiClient).uploadLyrics(itemId = uuid, fileName = fileName, data = text)
+            if (!awaitServedLyrics(apiClient, uuid)) throw LyricsNotSavedException()
+        }
+
+    override suspend fun deleteLyrics(trackId: String): Result<Unit> =
+        writeLyrics(trackId) { apiClient, uuid -> deleteAllServedLyrics(apiClient, uuid) }
+
+    private suspend fun writeLyrics(
+        trackId: String,
+        block: suspend (ApiClient, UUID) -> Unit,
+    ): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                val apiClient =
+                    sessionManager.getBackgroundApiClient()
+                        ?: getApiClient()
+                        ?: return@withContext Result.failure(IllegalStateException("No API client"))
+                val uuid = UUID.fromString(trackId)
+                try {
+                    block(apiClient, uuid)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    syncLyricsCache(apiClient, uuid)
+                    adminChangeBroadcaster.notifyItemChanged(trackId)
+                    throw e
+                }
+                syncLyricsCache(apiClient, uuid)
+                adminChangeBroadcaster.notifyItemChanged(trackId)
+                Result.success(Unit)
+            } catch (e: ApiClientException) {
+                Timber.e(e, "Failed to change lyrics for $trackId")
+                Result.failure(e)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error changing lyrics for $trackId")
+                Result.failure(e)
+            }
+        }
+
+    private suspend fun fetchServedLyrics(apiClient: ApiClient, trackId: UUID): LyricsContent? =
+        try {
+            LyricApi(apiClient).getLyrics(itemId = trackId).content.toLyricsContent()
+        } catch (e: InvalidStatusException) {
+            if (e.status == NOT_FOUND) null else throw e
+        }
+
+    private suspend fun deleteAllServedLyrics(apiClient: ApiClient, trackId: UUID) {
+        repeat(MAX_LYRIC_DELETES) {
+            if (fetchServedLyrics(apiClient, trackId) == null) return
+            LyricApi(apiClient).deleteLyrics(itemId = trackId)
+        }
+    }
+
+    private suspend fun awaitServedLyrics(apiClient: ApiClient, trackId: UUID): Boolean {
+        repeat(LYRIC_POLL_ATTEMPTS) {
+            if (fetchServedLyrics(apiClient, trackId) != null) return true
+            delay(LYRIC_POLL_INTERVAL)
+        }
+        return false
+    }
+
+    private suspend fun syncLyricsCache(apiClient: ApiClient, trackId: UUID) {
+        val session = sessionManager.currentSession.value ?: return
+        val userId = session.userId.toString()
+        try {
+            if (databaseRepository.getMusicLyricsJson(trackId, session.serverId, userId) == null) {
+                return
+            }
+            val lines =
+                try {
+                    LyricApi(apiClient)
+                        .getLyrics(itemId = trackId)
+                        .content
+                        .lyrics
+                        .toAfinityLyricLines()
+                } catch (e: InvalidStatusException) {
+                    if (e.status == NOT_FOUND) emptyList() else throw e
+                }
+            if (lines.isEmpty()) {
+                databaseRepository.deleteMusicLyrics(trackId, session.serverId, userId)
+            } else {
+                databaseRepository.insertMusicLyrics(
+                    trackId,
+                    session.serverId,
+                    userId,
+                    encodeLyricsJson(lines),
+                )
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to refresh cached lyrics for $trackId")
+        }
+    }
+
+    private fun BaseItemDto.sidecarLyricFileName(): String? {
+        val audioDirectory = path?.parentDirectory() ?: return null
+        val lyricPath =
+            mediaStreams?.firstOrNull { it.type == MediaStreamType.LYRIC }?.path ?: return null
+        return if (lyricPath.parentDirectory().equals(audioDirectory, ignoreCase = true)) {
+            lyricPath.fileNamePart()
+        } else null
+    }
 
     override suspend fun getItemImagesResult(itemId: String): Result<List<ItemImage>> =
         withContext(Dispatchers.IO) {
@@ -688,6 +969,42 @@ constructor(
             }
         }
 
+    override suspend fun getDeleteSummary(itemId: String): DeleteSummary? =
+        withContext(Dispatchers.IO) {
+            try {
+                val apiClient = getApiClient() ?: return@withContext null
+                val userId = getUserId() ?: return@withContext null
+                val dto =
+                    LibraryApi(apiClient)
+                        .getItems(
+                            userId = userId,
+                            ids = listOf(UUID.fromString(itemId)),
+                            fields =
+                                listOf(
+                                    ItemFields.PATH,
+                                    ItemFields.CHILD_COUNT,
+                                    ItemFields.RECURSIVE_ITEM_COUNT,
+                                ),
+                        )
+                        .content
+                        .items
+                        .firstOrNull() ?: return@withContext null
+                DeleteSummary(
+                    path = dto.path,
+                    childCount = dto.childCount ?: 0,
+                    recursiveItemCount = dto.recursiveItemCount ?: 0,
+                )
+            } catch (e: ApiClientException) {
+                Timber.e(e, "Failed to load delete summary for $itemId")
+                null
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error loading delete summary for $itemId")
+                null
+            }
+        }
+
     override suspend fun deleteItem(
         itemId: String,
         tmdbId: Int?,
@@ -749,6 +1066,9 @@ constructor(
             name = name ?: "",
             originalTitle = originalTitle,
             forcedSortName = forcedSortName,
+            album = album,
+            albumArtists = albumArtistNames(),
+            artists = artists.orEmpty(),
             overview = overview,
             productionYear = productionYear,
             premiereDate = premiereDate?.toString(),
@@ -778,6 +1098,25 @@ constructor(
             availableParentalRatings = availableRatings,
         )
 
+    private fun BaseItemDto.albumArtistNames(): List<String> =
+        albumArtists?.mapNotNull { it.name }?.takeIf { it.isNotEmpty() }
+            ?: listOfNotNull(albumArtist?.takeIf { it.isNotBlank() })
+
+    private fun List<NameGuidPair>?.withNames(names: List<String>): List<NameGuidPair> =
+        names.map { name ->
+            this?.firstOrNull { it.name == name }
+                ?: NameGuidPair(name = name, id = UUID.randomUUID())
+        }
+
+    private fun BaseItemDto.toUpdateBody(): JsonObject =
+        JsonObject(
+            ApiSerializer.json.encodeToJsonElement(BaseItemDto.serializer(), this).jsonObject +
+                listOfNotNull(
+                    premiereDate?.let { PREMIERE_DATE_KEY to JsonPrimitive(it.toUtcString()) },
+                    endDate?.let { END_DATE_KEY to JsonPrimitive(it.toUtcString()) },
+                )
+        )
+
     private fun EditablePerson.toBaseItemPerson(): BaseItemPerson =
         BaseItemPerson(
             id = if (id != null) UUID.fromString(id) else UUID.randomUUID(),
@@ -795,5 +1134,6 @@ constructor(
             providerIds = providerIds.filterValues { it.isNotEmpty() },
             overview = overview,
             premiereDate = premiereDate?.toString(),
+            albumArtist = albumArtist?.name ?: artists.firstOrNull()?.name,
         )
 }

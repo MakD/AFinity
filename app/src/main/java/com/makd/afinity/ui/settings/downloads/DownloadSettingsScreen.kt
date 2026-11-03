@@ -93,6 +93,7 @@ import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.DownloadListItemRow
 import com.makd.afinity.ui.components.EmptyState
+import com.makd.afinity.ui.components.formatRuntimeSeconds
 import com.makd.afinity.ui.downloads.DownloadCatalogEntry
 import com.makd.afinity.ui.downloads.DownloadCatalogRef
 import com.makd.afinity.ui.downloads.DownloadCategory
@@ -1343,16 +1344,10 @@ fun AbsCompletedDownloadRow(
     onDelete: (UUID) -> Unit,
     formatSize: (Long) -> String,
 ) {
-    val durationMinutes = (download.duration / 60).toInt()
-    val durationStr =
-        when {
-            durationMinutes >= 60 -> "${durationMinutes / 60}h ${durationMinutes % 60}m"
-            durationMinutes > 0 -> "${durationMinutes}m"
-            else -> ""
-        }
+    val durationStr = download.duration.takeIf { it > 0 }?.let { formatRuntimeSeconds(it) }
     val subtitleText = buildString {
         if (!download.authorName.isNullOrBlank()) append("${download.authorName} • ")
-        if (durationStr.isNotEmpty()) append("$durationStr • ")
+        if (durationStr != null) append("$durationStr • ")
         append(formatSize(download.bytesDownloaded))
     }
 

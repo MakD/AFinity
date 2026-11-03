@@ -35,15 +35,19 @@ import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.FilterFab
 import com.makd.afinity.ui.components.SortFab
+import com.makd.afinity.ui.components.formatRuntimeTicks
 import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
+import com.makd.afinity.ui.music.components.MusicAdminDialogs
+import com.makd.afinity.ui.music.components.MusicAdminRequest
+import com.makd.afinity.ui.music.components.MusicAdminViewModel
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
 import com.makd.afinity.ui.music.components.SortFilterHeaderActions
 import com.makd.afinity.ui.music.components.musicFiltersSummary
 import com.makd.afinity.ui.music.components.musicSortSummary
-import com.makd.afinity.ui.music.components.musicTotalRuntimeLabel
+import com.makd.afinity.ui.music.components.rememberTrackAdminActions
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import java.util.UUID
 import kotlinx.coroutines.launch
@@ -59,9 +63,13 @@ fun MusicBrowseScreen(
     onMusicPlaylistClick: (String) -> Unit,
     onMusicGenreClick: (genre: AfinityMusicGenre, libraryId: UUID) -> Unit,
     onOpenMusicPlayer: () -> Unit,
+    onEditMetadataClick: (String) -> Unit,
+    onEditImagesClick: (String) -> Unit,
+    onEditLyricsClick: (String) -> Unit,
     viewModel: MusicLibraryViewModel = hiltViewModel(),
     playerViewModel: MusicPlayerViewModel = hiltViewModel(),
     addToPlaylistViewModel: AddToPlaylistViewModel = hiltViewModel(),
+    adminViewModel: MusicAdminViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val userProfileImageUrl by viewModel.userProfileImageUrl.collectAsStateWithLifecycle()
@@ -95,6 +103,22 @@ fun MusicBrowseScreen(
     var showAllArtistFilterSheet by remember { mutableStateOf(false) }
     var showTrackSortDialog by remember { mutableStateOf(false) }
     var showTrackFilterSheet by remember { mutableStateOf(false) }
+    var adminRequest by remember { mutableStateOf<MusicAdminRequest?>(null) }
+    val trackAdminActions =
+        rememberTrackAdminActions(
+            adminViewModel = adminViewModel,
+            onEditMetadata = onEditMetadataClick,
+            onEditImages = onEditImagesClick,
+            onEditLyrics = onEditLyricsClick,
+            onRequest = { adminRequest = it },
+        )
+
+    MusicAdminDialogs(
+        request = adminRequest,
+        onDismiss = { adminRequest = null },
+        onMessage = { message -> scope.launch { snackbarHostState.showSnackbar(message) } },
+        viewModel = adminViewModel,
+    )
 
     val playerClearance = playerClearance()
     val lazyGenres = viewModel.genresPagingFlow.collectAsLazyPagingItems()
@@ -175,7 +199,7 @@ fun MusicBrowseScreen(
             listOfNotNull(
                     trackTotals.runtimeTicks
                         ?.takeIf { !trackFilters.isActive }
-                        ?.let { musicTotalRuntimeLabel(it) },
+                        ?.let { formatRuntimeTicks(it) },
                     trackSortSummary.takeIf { trackCount != null },
                     musicFiltersSummary(trackFilters),
                 )
@@ -219,6 +243,7 @@ fun MusicBrowseScreen(
                 )
             LibraryFilter.Tracks ->
                 TracksList(
+                    adminActions = trackAdminActions,
                     listState = tracksListState,
                     tracks = lazyTracks,
                     favoriteOverrides = uiState.trackFavoriteOverrides,

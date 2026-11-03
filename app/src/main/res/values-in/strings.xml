@@ -1618,7 +1618,6 @@
     <string name="seerr_detail_budget">Anggaran</string>
     <string name="seerr_detail_revenue">Pendapatan</string>
     <string name="seerr_detail_production_country">Negara Produksi</string>
-    <string name="seerr_runtime_minutes_fmt">%1$d mnt</string>
     <string name="season_no_info">Tidak ada informasi musim yang tersedia. Semua musim akan diminta.</string>
     <plurals name="server_more_users">
         <item quantity="other">+%1$d pengguna lainnya</item>
@@ -2708,7 +2707,6 @@
     <plurals name="abs_chapters_listened_fmt">
         <item quantity="other">%1$d bab didengarkan</item>
     </plurals>
-    <string name="abs_time_left_fmt">Tersisa %1$s</string>
     <string name="abs_now_in">Sekarang di</string>
     <string name="abs_your_listening">Riwayat mendengarkan Anda</string>
     <string name="abs_listened_label">didengarkan</string>

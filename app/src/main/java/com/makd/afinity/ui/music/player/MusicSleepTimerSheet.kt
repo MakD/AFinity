@@ -38,8 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.formatClock
 import com.makd.afinity.ui.components.rememberAfinitySheetState
-import com.makd.afinity.ui.player.components.formatSleepCountdown
 import com.makd.afinity.ui.player.components.rememberSleepTimerRemainingMs
 
 private val TIMER_OPTIONS = listOf(5, 10, 15, 30, 45, 60, 90, 120)
@@ -95,7 +95,7 @@ fun MusicSleepTimerSheet(
                             text =
                                 stringResource(
                                     R.string.player_time_left,
-                                    formatSleepCountdown(remainingMs),
+                                    formatClock(remainingMs),
                                 ),
                             style =
                                 MaterialTheme.typography.headlineSmall.copy(

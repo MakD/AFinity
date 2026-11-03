@@ -17,6 +17,8 @@ import com.makd.afinity.R
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackState
 import com.makd.afinity.ui.audiobookshelf.player.components.formatSpeed
 import com.makd.afinity.ui.audiobookshelf.withAbsWidth
+import com.makd.afinity.ui.components.formatClock
+import com.makd.afinity.ui.components.formatTimeLeftSeconds
 import com.makd.afinity.ui.player.cast.CastInfoBottomSheet
 import com.makd.afinity.ui.player.cast.CastRemoteAction
 import com.makd.afinity.ui.player.cast.CastRemoteArtwork
@@ -25,7 +27,6 @@ import com.makd.afinity.ui.player.cast.CastRemoteLayout
 import com.makd.afinity.ui.player.cast.CastRemoteTitle
 import com.makd.afinity.ui.player.cast.CastRemoteTransport
 import com.makd.afinity.ui.player.cast.CastRemoteValueAction
-import com.makd.afinity.ui.player.cast.formatCastClock
 import com.makd.afinity.ui.player.components.SwipeCoverItem
 import com.makd.afinity.ui.player.components.SwipeableCover
 
@@ -79,7 +80,12 @@ fun AbsCastRemote(
                 accentColor = accentColor,
                 overline = chapter?.title?.takeIf { it.isNotBlank() },
                 meta =
-                    listOfNotNull(author, timeLeftLabel(playbackState.remainingTime))
+                    listOfNotNull(
+                            author,
+                            playbackState.remainingTime
+                                .takeIf { it > 0 }
+                                ?.let { formatTimeLeftSeconds(it) },
+                        )
                         .joinToString(" · "),
             )
         },
@@ -87,7 +93,7 @@ fun AbsCastRemote(
             CastRemoteTransport(
                 position = playbackState.currentTime.toFloat(),
                 valueRange = rangeStart.toFloat()..rangeEnd.toFloat(),
-                formatTime = { formatCastClock((it * 1000).toLong()) },
+                formatTime = { formatClock((it * 1000).toLong()) },
                 accentColor = accentColor,
                 isPlaying = playbackState.isPlaying,
                 isBuffering = playbackState.isBuffering,
@@ -182,18 +188,5 @@ fun AbsCastRemote(
             onDismiss = { showDeviceSheet = false },
             showBitrate = false,
         )
-    }
-}
-
-@Composable
-private fun timeLeftLabel(remainingSeconds: Double): String? {
-    val totalMinutes = (remainingSeconds / 60.0).toInt()
-    if (totalMinutes <= 0) return null
-    val hours = totalMinutes / 60
-    val minutes = totalMinutes % 60
-    return if (hours > 0) {
-        stringResource(R.string.meta_time_remaining_hours_minutes, hours, minutes)
-    } else {
-        stringResource(R.string.meta_time_remaining_minutes, minutes)
     }
 }

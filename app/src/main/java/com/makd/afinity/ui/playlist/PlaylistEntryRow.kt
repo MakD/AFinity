@@ -41,7 +41,7 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.ui.components.AsyncImage
-import java.util.concurrent.TimeUnit
+import com.makd.afinity.ui.components.formatClockTicks
 
 @Composable
 fun PlaylistVideoRow(
@@ -115,7 +115,7 @@ fun PlaylistVideoRow(
         }
 
         Text(
-            text = formatEntryDuration(item.runtimeTicks / 10_000L),
+            text = formatClockTicks(item.runtimeTicks),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 6.dp),
@@ -181,9 +181,3 @@ private fun playlistVideoSubtitle(item: AfinityItem): String =
                 .joinToString(" · ")
         else -> ""
     }
-
-private fun formatEntryDuration(ms: Long): String {
-    val minutes = TimeUnit.MILLISECONDS.toMinutes(ms)
-    val seconds = TimeUnit.MILLISECONDS.toSeconds(ms) % 60
-    return "%d:%02d".format(minutes, seconds)
-}

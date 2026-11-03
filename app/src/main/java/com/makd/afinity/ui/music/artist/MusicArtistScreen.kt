@@ -32,6 +32,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -86,9 +87,15 @@ import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
 import com.makd.afinity.ui.music.components.LastFmAttribution
+import com.makd.afinity.ui.music.components.MusicAdminDialogs
+import com.makd.afinity.ui.music.components.MusicAdminRequest
+import com.makd.afinity.ui.music.components.MusicAdminViewModel
 import com.makd.afinity.ui.music.components.MusicAlbumCard
+import com.makd.afinity.ui.music.components.MusicDeleteKind
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
+import com.makd.afinity.ui.music.components.musicAdminMenuActions
+import com.makd.afinity.ui.music.components.rememberTrackAdminActions
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.theme.CardDimensions
@@ -100,9 +107,14 @@ import kotlinx.coroutines.launch
 fun MusicArtistScreen(
     onMusicAlbumClick: (String) -> Unit,
     onHomeClick: () -> Unit,
+    onEditMetadataClick: (String) -> Unit,
+    onEditImagesClick: (String) -> Unit,
+    onEditLyricsClick: (String) -> Unit,
+    onNavigateUp: () -> Unit,
     viewModel: MusicArtistViewModel = hiltViewModel(),
     playerViewModel: MusicPlayerViewModel = hiltViewModel(),
     addToPlaylistViewModel: AddToPlaylistViewModel = hiltViewModel(),
+    adminViewModel: MusicAdminViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val playbackState by playerViewModel.playbackState.collectAsStateWithLifecycle()
@@ -125,6 +137,34 @@ fun MusicArtistScreen(
     val landscapeListState = rememberLazyListState()
     val lazyListState = if (isLandscape) landscapeListState else portraitListState
     val topBarOpacity by rememberTopBarOpacity(lazyListState)
+    val isAdmin by adminViewModel.isAdmin.collectAsStateWithLifecycle()
+    val deletableIds by adminViewModel.deletableIds.collectAsStateWithLifecycle()
+    var adminRequest by remember { mutableStateOf<MusicAdminRequest?>(null) }
+    val trackAdminActions =
+        rememberTrackAdminActions(
+            adminViewModel = adminViewModel,
+            onEditMetadata = onEditMetadataClick,
+            onEditImages = onEditImagesClick,
+            onEditLyrics = onEditLyricsClick,
+            onRequest = { adminRequest = it },
+        )
+
+    LaunchedEffect(isAdmin, viewModel.artistId) {
+        if (isAdmin) adminViewModel.checkCanDelete(viewModel.artistId)
+    }
+
+    MusicAdminDialogs(
+        request = adminRequest,
+        onDismiss = { adminRequest = null },
+        onMessage = { message -> scope.launch { snackbarHostState.showSnackbar(message) } },
+        onDeleted = { deleted ->
+            when (deleted.kind) {
+                MusicDeleteKind.TRACK -> viewModel.removeTrack(deleted.itemId)
+                else -> onNavigateUp()
+            }
+        },
+        viewModel = adminViewModel,
+    )
 
     if (uiState.isLoading) {
         Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -172,7 +212,26 @@ fun MusicArtistScreen(
                                 }
                             },
                         ),
-                    )
+                    ) +
+                        musicAdminMenuActions(
+                            isAdmin = isAdmin,
+                            canDelete = artist.id in deletableIds,
+                            deleteLabel = R.string.music_admin_delete_artist,
+                            onEditMetadata = { onEditMetadataClick(artist.id.toString()) },
+                            onEditImages = { onEditImagesClick(artist.id.toString()) },
+                            onRefresh = {
+                                adminRequest =
+                                    MusicAdminRequest.Refresh(artist.id, artist.name, true)
+                            },
+                            onDelete = {
+                                adminRequest =
+                                    MusicAdminRequest.Delete(
+                                        artist.id,
+                                        artist.name,
+                                        MusicDeleteKind.ARTIST,
+                                    )
+                            },
+                        )
                 } ?: emptyList(),
         ) {
             IconButton(onClick = { viewModel.toggleFavorite() }) {
@@ -340,6 +399,7 @@ fun MusicArtistScreen(
                         isDownloadEnabled = canDownloadOnNetwork,
                         onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
                         downloadInfo = uiState.trackDownloadInfos[track.id],
+                        adminActions = trackAdminActions,
                     )
                 }
             }
@@ -401,6 +461,7 @@ fun MusicArtistScreen(
                                     isDownloadEnabled = canDownloadOnNetwork,
                                     onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
                                     downloadInfo = uiState.trackDownloadInfos[track.id],
+                                    adminActions = trackAdminActions,
                                 )
                             }
                         }

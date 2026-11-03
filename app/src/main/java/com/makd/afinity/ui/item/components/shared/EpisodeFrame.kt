@@ -40,7 +40,7 @@ import com.makd.afinity.data.models.extensions.thumbBlurHash
 import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.ui.components.AsyncImage
-import java.util.Locale
+import com.makd.afinity.ui.components.formatClockTicks
 
 @Composable
 fun EpisodeFrame(
@@ -89,13 +89,8 @@ fun EpisodeFrame(
             when {
                 episode.runtimeTicks <= 0L -> null
                 episode.playbackPositionTicks > 0L ->
-                    "-" +
-                        formatTimecode(
-                            (episode.runtimeTicks - episode.playbackPositionTicks).coerceAtLeast(
-                                0L
-                            ) / 10_000L
-                        )
-                else -> formatTimecode(episode.runtimeTicks / 10_000L)
+                    "-" + formatClockTicks(episode.runtimeTicks - episode.playbackPositionTicks)
+                else -> formatClockTicks(episode.runtimeTicks)
             }
         }
 
@@ -170,18 +165,5 @@ private fun episodeDesignator(context: Context, episode: AfinityEpisode): String
         context.getString(R.string.episode_designator_short_range_fmt, season, number, end)
     } else {
         context.getString(R.string.episode_designator_short_fmt, season, number)
-    }
-}
-
-private fun formatTimecode(milliseconds: Long): String {
-    val totalSeconds = milliseconds / 1000L
-    val hours = totalSeconds / 3600L
-    val minutes = (totalSeconds % 3600L) / 60L
-    val seconds = totalSeconds % 60L
-
-    return if (hours > 0L) {
-        String.format(Locale.US, "%d:%02d:%02d", hours, minutes, seconds)
-    } else {
-        String.format(Locale.US, "%d:%02d", minutes, seconds)
     }
 }

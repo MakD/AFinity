@@ -348,6 +348,11 @@ constructor(
         }
     }
 
+    fun refreshResults() {
+        if (_uiState.value.searchQuery.trim().length < 2) return
+        viewModelScope.launch { runSearchForCurrentFilter() }
+    }
+
     fun onScreenResumed() {
         val query = _uiState.value.searchQuery.trim()
         if (query.length >= 2 && appDataRepository.lastUserDataChangedAt.value > lastQueryAt) {

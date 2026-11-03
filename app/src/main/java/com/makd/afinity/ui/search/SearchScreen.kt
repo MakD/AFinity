@@ -2,6 +2,7 @@
 
 package com.makd.afinity.ui.search
 
+import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -108,10 +109,15 @@ import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.MetadataOverflowRow
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
-import com.makd.afinity.ui.components.formatRuntimeMinutes
+import com.makd.afinity.ui.components.formatRuntimeSeconds
 import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
+import com.makd.afinity.ui.music.components.MusicAdminDialogs
+import com.makd.afinity.ui.music.components.MusicAdminRequest
+import com.makd.afinity.ui.music.components.MusicAdminViewModel
 import com.makd.afinity.ui.music.components.MusicTrackRow
+import com.makd.afinity.ui.music.components.TrackAdminActions
+import com.makd.afinity.ui.music.components.rememberTrackAdminActions
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.theme.CardDimensions
@@ -134,16 +140,41 @@ fun SearchScreen(
     onMusicArtistClick: (String) -> Unit = {},
     onMusicPlaylistClick: (String) -> Unit = {},
     onNavigateToSeerrMedia: (item: SearchResultItem) -> Unit = {},
+    onEditMetadataClick: (String) -> Unit = {},
+    onEditImagesClick: (String) -> Unit = {},
+    onEditLyricsClick: (String) -> Unit = {},
     viewModel: SearchViewModel = hiltViewModel(),
     musicPlayerViewModel: MusicPlayerViewModel = hiltViewModel(),
+    adminViewModel: MusicAdminViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
+    val refreshOnResume = remember { mutableStateOf(false) }
+    var adminRequest by remember { mutableStateOf<MusicAdminRequest?>(null) }
+    val trackAdminActions =
+        rememberTrackAdminActions(
+            adminViewModel = adminViewModel,
+            onEditMetadata = { id ->
+                refreshOnResume.value = true
+                onEditMetadataClick(id)
+            },
+            onEditImages = { id ->
+                refreshOnResume.value = true
+                onEditImagesClick(id)
+            },
+            onEditLyrics = onEditLyricsClick,
+            onRequest = { adminRequest = it },
+        )
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.onScreenResumed()
+                if (refreshOnResume.value) {
+                    refreshOnResume.value = false
+                    viewModel.refreshResults()
+                } else {
+                    viewModel.onScreenResumed()
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -164,6 +195,15 @@ fun SearchScreen(
     val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val context = LocalContext.current
+
+    MusicAdminDialogs(
+        request = adminRequest,
+        onDismiss = { adminRequest = null },
+        onMessage = { message -> Toast.makeText(context, message, Toast.LENGTH_SHORT).show() },
+        onDeleted = { viewModel.refreshResults() },
+        viewModel = adminViewModel,
+    )
+
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     LocalFocusManager.current
@@ -301,6 +341,7 @@ fun SearchScreen(
                         onAddNext = { track -> musicPlayerViewModel.addNext(listOf(track)) },
                         onAddLast = { track -> musicPlayerViewModel.addLast(listOf(track)) },
                         onFavorite = { trackId -> viewModel.toggleTrackFavorite(trackId) },
+                        trackAdminActions = trackAdminActions,
                     )
                 }
 
@@ -335,6 +376,7 @@ fun SearchScreen(
                             viewModel.toggleTrackFavorite(trackId)
                         },
                         onRequestClick = { item -> onNavigateToSeerrMedia(item) },
+                        trackAdminActions = trackAdminActions,
                     )
                 }
 
@@ -1403,7 +1445,7 @@ private fun AudiobookshelfSearchResultItem(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            text = formatRuntimeMinutes((duration / 60).toInt()),
+                            text = formatRuntimeSeconds(duration),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -1520,6 +1562,7 @@ private fun CombinedSearchResultsContent(
     onMusicInstantMix: (java.util.UUID) -> Unit,
     onMusicTrackFavorite: (java.util.UUID) -> Unit,
     onRequestClick: (SearchResultItem) -> Unit,
+    trackAdminActions: TrackAdminActions? = null,
 ) {
     val collections =
         remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityBoxSet>() }
@@ -1633,6 +1676,7 @@ private fun CombinedSearchResultsContent(
                     onClick = { onMusicTrackClick(track, musicTracks) },
                     onInstantMix = { onMusicInstantMix(track.id) },
                     onFavorite = { onMusicTrackFavorite(track.id) },
+                    adminActions = trackAdminActions,
                 )
             }
         }
@@ -1734,6 +1778,7 @@ private fun MusicSearchResultsContent(
     onAddNext: (AfinityTrack) -> Unit,
     onAddLast: (AfinityTrack) -> Unit,
     onFavorite: (java.util.UUID) -> Unit,
+    trackAdminActions: TrackAdminActions? = null,
 ) {
     val playerClearance = playerClearance()
 
@@ -1762,6 +1807,7 @@ private fun MusicSearchResultsContent(
                     onAddNext = { onAddNext(track) },
                     onAddLast = { onAddLast(track) },
                     onFavorite = { onFavorite(track.id) },
+                    adminActions = trackAdminActions,
                 )
             }
         }

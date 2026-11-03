@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.music.genre
 
+import android.widget.Toast
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -65,10 +66,15 @@ import com.makd.afinity.ui.components.PortraitHero
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.backdropChainOf
 import com.makd.afinity.ui.components.isLandscapeWindow
+import com.makd.afinity.ui.music.components.MusicAdminDialogs
+import com.makd.afinity.ui.music.components.MusicAdminRequest
+import com.makd.afinity.ui.music.components.MusicAdminViewModel
 import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.music.components.MusicArtistCard
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
+import com.makd.afinity.ui.music.components.musicAdminMenuActions
+import com.makd.afinity.ui.music.components.rememberTrackAdminActions
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.theme.CardDimensions
@@ -79,8 +85,12 @@ fun MusicGenreScreen(
     onMusicAlbumClick: (String) -> Unit,
     onMusicArtistClick: (String) -> Unit,
     onHomeClick: () -> Unit,
+    onEditMetadataClick: (String) -> Unit,
+    onEditImagesClick: (String) -> Unit,
+    onEditLyricsClick: (String) -> Unit,
     viewModel: MusicGenreViewModel = hiltViewModel(),
     playerViewModel: MusicPlayerViewModel = hiltViewModel(),
+    adminViewModel: MusicAdminViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val playbackState by playerViewModel.playbackState.collectAsStateWithLifecycle()
@@ -104,6 +114,24 @@ fun MusicGenreScreen(
     val topBarOpacity by rememberTopBarOpacity(listState)
     var showAllTracks by remember { mutableStateOf(false) }
     var radioSeed by remember { mutableStateOf<RadioSeed?>(null) }
+    val isAdmin by adminViewModel.isAdmin.collectAsStateWithLifecycle()
+    var adminRequest by remember { mutableStateOf<MusicAdminRequest?>(null) }
+    val trackAdminActions =
+        rememberTrackAdminActions(
+            adminViewModel = adminViewModel,
+            onEditMetadata = onEditMetadataClick,
+            onEditImages = onEditImagesClick,
+            onEditLyrics = onEditLyricsClick,
+            onRequest = { adminRequest = it },
+        )
+
+    MusicAdminDialogs(
+        request = adminRequest,
+        onDismiss = { adminRequest = null },
+        onMessage = { message -> Toast.makeText(context, message, Toast.LENGTH_SHORT).show() },
+        onDeleted = { deleted -> viewModel.removeTrack(deleted.itemId) },
+        viewModel = adminViewModel,
+    )
 
     if (uiState.isLoading) {
         Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -124,6 +152,20 @@ fun MusicGenreScreen(
                 startMusicService(context)
                 playerViewModel.playQueue(uiState.tracks, 0)
             },
+            moreActions =
+                viewModel.genreId?.let { id ->
+                    musicAdminMenuActions(
+                        isAdmin = isAdmin,
+                        canDelete = false,
+                        deleteLabel = null,
+                        onEditMetadata = { onEditMetadataClick(id.toString()) },
+                        onEditImages = { onEditImagesClick(id.toString()) },
+                        onRefresh = {
+                            adminRequest = MusicAdminRequest.Refresh(id, viewModel.genreName, false)
+                        },
+                        onDelete = {},
+                    )
+                } ?: emptyList(),
         ) {
             val genreId = viewModel.genreId
             if (genreId != null) {
@@ -324,6 +366,7 @@ fun MusicGenreScreen(
                         onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
                         isDownloadEnabled = canDownloadOnNetwork,
                         downloadInfo = uiState.trackDownloadInfos[track.id],
+                        adminActions = trackAdminActions,
                     )
                 }
             }
@@ -367,6 +410,7 @@ fun MusicGenreScreen(
                             onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
                             isDownloadEnabled = canDownloadOnNetwork,
                             downloadInfo = uiState.trackDownloadInfos[track.id],
+                            adminActions = trackAdminActions,
                         )
                     }
                 }

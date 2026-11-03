@@ -6,8 +6,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import java.util.Locale
-import kotlin.math.abs
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 
@@ -25,17 +23,4 @@ fun rememberSleepTimerRemainingMs(endTimeMs: Long?): Long {
     }
 
     return if (endTimeMs == null) 0L else (endTimeMs - now).coerceAtLeast(0L)
-}
-
-fun formatSleepCountdown(timeMs: Long): String {
-    val totalSeconds = abs(timeMs / 1000).toInt()
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    val seconds = totalSeconds % 60
-
-    return if (hours > 0) {
-        String.format(Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds)
-    } else {
-        String.format(Locale.ROOT, "%d:%02d", minutes, seconds)
-    }
 }

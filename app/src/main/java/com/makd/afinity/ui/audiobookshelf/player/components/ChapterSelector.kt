@@ -37,8 +37,9 @@ import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.formatClockSeconds
+import com.makd.afinity.ui.components.formatRuntimeSeconds
 import com.makd.afinity.ui.components.rememberAfinitySheetState
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -152,7 +153,7 @@ private fun ChapterRow(chapter: BookChapter, index: Int, isCurrent: Boolean, onC
             Spacer(modifier = Modifier.height(2.dp))
 
             Text(
-                text = "${formatTime(chapter.start)} - ${formatTime(chapter.end)}",
+                text = "${formatClockSeconds(chapter.start)} - ${formatClockSeconds(chapter.end)}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             )
@@ -165,35 +166,10 @@ private fun ChapterRow(chapter: BookChapter, index: Int, isCurrent: Boolean, onC
                     .padding(horizontal = 8.dp, vertical = 4.dp)
         ) {
             Text(
-                text = formatDuration(chapter.end - chapter.start),
+                text = formatRuntimeSeconds(chapter.end - chapter.start),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-    }
-}
-
-private fun formatTime(seconds: Double): String {
-    val totalSeconds = seconds.toLong().coerceAtLeast(0)
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    val secs = totalSeconds % 60
-    return if (hours > 0) String.format(Locale.getDefault(), "%d:%02d:%02d", hours, minutes, secs)
-    else String.format(Locale.getDefault(), "%d:%02d", minutes, secs)
-}
-
-@Composable
-private fun formatDuration(seconds: Double): String {
-    val totalSeconds = seconds.toLong().coerceAtLeast(0)
-    val hours = (totalSeconds / 3600).toInt()
-    val minutes = ((totalSeconds % 3600) / 60).toInt()
-    val hUnit = stringResource(R.string.abs_hours_unit)
-    val sUnit = stringResource(R.string.abs_seconds_unit)
-    return when {
-        hours > 0 && minutes > 0 ->
-            stringResource(R.string.meta_runtime_hours_minutes, hours, minutes)
-        hours > 0 -> "$hours$hUnit"
-        minutes > 0 -> stringResource(R.string.meta_runtime_minutes, minutes)
-        else -> "$totalSeconds$sUnit"
     }
 }

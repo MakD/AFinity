@@ -80,6 +80,7 @@ import com.makd.afinity.data.updater.UpdateManager
 import com.makd.afinity.data.websocket.WebSocketState
 import com.makd.afinity.ui.admin.identify.IdentifyScreen
 import com.makd.afinity.ui.admin.images.EditImagesScreen
+import com.makd.afinity.ui.admin.lyrics.EditLyricsScreen
 import com.makd.afinity.ui.admin.metadata.EditMetadataScreen
 import com.makd.afinity.ui.audiobookshelf.genre.AudiobookshelfGenreResultsScreen
 import com.makd.afinity.ui.audiobookshelf.item.AudiobookshelfItemScreen
@@ -924,6 +925,14 @@ fun MainNavigation(
                                     EditImagesScreen(onNavigateUp = { navController.navigateUp() })
                                 }
 
+                                composable(
+                                    route = Destination.EDIT_LYRICS_ROUTE,
+                                    arguments =
+                                        listOf(navArgument("itemId") { type = NavType.StringType }),
+                                ) {
+                                    EditLyricsScreen(onNavigateUp = { navController.navigateUp() })
+                                }
+
                                 composable(Destination.FAVORITES.route) {
                                     FavoritesScreen(
                                         onMenuClick = onMenuClick,
@@ -1371,6 +1380,15 @@ fun MainNavigation(
                                                 Destination.createPlaylistRoute(playlistId)
                                             )
                                         },
+                                        onEditMetadataClick = { itemId ->
+                                            navController.navigateToEditMetadata(itemId)
+                                        },
+                                        onEditImagesClick = { itemId ->
+                                            navController.navigateToEditImages(itemId)
+                                        },
+                                        onEditLyricsClick = { itemId ->
+                                            navController.navigateToEditLyrics(itemId)
+                                        },
                                         modifier = Modifier.fillMaxSize(),
                                     )
                                 }
@@ -1740,6 +1758,15 @@ fun MainNavigation(
                                         onOpenMusicPlayer = {
                                             navController.navigateToMusicPlayer()
                                         },
+                                        onEditMetadataClick = { itemId ->
+                                            navController.navigateToEditMetadata(itemId)
+                                        },
+                                        onEditImagesClick = { itemId ->
+                                            navController.navigateToEditImages(itemId)
+                                        },
+                                        onEditLyricsClick = { itemId ->
+                                            navController.navigateToEditLyrics(itemId)
+                                        },
                                     )
                                 }
 
@@ -1749,7 +1776,7 @@ fun MainNavigation(
                                         listOf(
                                             navArgument("albumId") { type = NavType.StringType }
                                         ),
-                                ) {
+                                ) { backStackEntry ->
                                     MusicAlbumScreen(
                                         onMusicAlbumClick = { albumId ->
                                             navController.navigateToMusicAlbum(albumId)
@@ -1758,6 +1785,26 @@ fun MainNavigation(
                                             navController.navigateToMusicArtist(artistId)
                                         },
                                         onHomeClick = { navController.navigateHome() },
+                                        onEditMetadataClick = { itemId ->
+                                            navController.navigateToEditMetadata(itemId)
+                                        },
+                                        onEditImagesClick = { itemId ->
+                                            navController.navigateToEditImages(itemId)
+                                        },
+                                        onEditLyricsClick = { itemId ->
+                                            navController.navigateToEditLyrics(itemId)
+                                        },
+                                        onIdentifyClick = { itemId ->
+                                            navController.navigate(
+                                                Destination.createIdentifyItemRoute(
+                                                    itemId,
+                                                    "MusicAlbum",
+                                                )
+                                            )
+                                        },
+                                        onNavigateUp = {
+                                            navController.popIfCurrent(backStackEntry)
+                                        },
                                     )
                                 }
 
@@ -1767,12 +1814,24 @@ fun MainNavigation(
                                         listOf(
                                             navArgument("artistId") { type = NavType.StringType }
                                         ),
-                                ) {
+                                ) { backStackEntry ->
                                     MusicArtistScreen(
                                         onMusicAlbumClick = { albumId ->
                                             navController.navigateToMusicAlbum(albumId)
                                         },
                                         onHomeClick = { navController.navigateHome() },
+                                        onEditMetadataClick = { itemId ->
+                                            navController.navigateToEditMetadata(itemId)
+                                        },
+                                        onEditImagesClick = { itemId ->
+                                            navController.navigateToEditImages(itemId)
+                                        },
+                                        onEditLyricsClick = { itemId ->
+                                            navController.navigateToEditLyrics(itemId)
+                                        },
+                                        onNavigateUp = {
+                                            navController.popIfCurrent(backStackEntry)
+                                        },
                                     )
                                 }
 
@@ -1790,6 +1849,15 @@ fun MainNavigation(
                                     PlaylistScreen(
                                         onPlaylistDeleted = { navController.popBackStack() },
                                         onHomeClick = { navController.navigateHome() },
+                                        onEditMetadataClick = { itemId ->
+                                            navController.navigateToEditMetadata(itemId)
+                                        },
+                                        onEditImagesClick = { itemId ->
+                                            navController.navigateToEditImages(itemId)
+                                        },
+                                        onEditLyricsClick = { itemId ->
+                                            navController.navigateToEditLyrics(itemId)
+                                        },
                                     )
                                 }
 
@@ -1823,6 +1891,15 @@ fun MainNavigation(
                                             navController.navigateToMusicArtist(artistId)
                                         },
                                         onHomeClick = { navController.navigateHome() },
+                                        onEditMetadataClick = { itemId ->
+                                            navController.navigateToEditMetadata(itemId)
+                                        },
+                                        onEditImagesClick = { itemId ->
+                                            navController.navigateToEditImages(itemId)
+                                        },
+                                        onEditLyricsClick = { itemId ->
+                                            navController.navigateToEditLyrics(itemId)
+                                        },
                                     )
                                 }
 
@@ -2392,6 +2469,18 @@ private fun NavController.navigateToMusicArtist(artistId: String) {
 
 private fun NavController.navigateToMusicPlaylist(playlistId: String) {
     navigate(Destination.createPlaylistRoute(playlistId, audioOnly = true))
+}
+
+private fun NavController.navigateToEditMetadata(itemId: String) {
+    navigate(Destination.createEditMetadataRoute(itemId))
+}
+
+private fun NavController.navigateToEditImages(itemId: String) {
+    navigate(Destination.createEditImagesRoute(itemId))
+}
+
+private fun NavController.navigateToEditLyrics(itemId: String) {
+    navigate(Destination.createEditLyricsRoute(itemId))
 }
 
 private fun NavController.navigateToSeason(season: AfinitySeason) {

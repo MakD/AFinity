@@ -75,6 +75,8 @@ import com.makd.afinity.ui.audiobookshelf.item.RecommendationRow
 import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.CardRow
+import com.makd.afinity.ui.components.formatRuntimeSeconds
+import com.makd.afinity.ui.components.formatTimeLeftSeconds
 import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
 import com.makd.afinity.ui.item.components.shared.OverviewSection
 import com.makd.afinity.ui.theme.CardDimensions
@@ -288,7 +290,7 @@ fun ListeningSection(summary: ListeningSummary, modifier: Modifier = Modifier) {
         ) {
             StatTile(
                 iconRes = R.drawable.ic_headphones,
-                value = formatListenTime(summary.totalListened),
+                value = formatRuntimeSeconds(summary.totalListened),
                 label = stringResource(R.string.abs_listened_label),
                 modifier = Modifier.weight(1f).fillMaxHeight(),
             )
@@ -434,7 +436,7 @@ private fun SessionRow(session: ListeningSession, dateText: String?) {
         )
         Spacer(modifier = Modifier.width(12.dp))
         Text(
-            text = formatListenTime(session.timeListening),
+            text = formatRuntimeSeconds(session.timeListening),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -555,14 +557,11 @@ fun PodcastUpNextCard(
         )
     val meta =
         if (primary == UpNextTarget.RESUME && resumeProgress != null) {
-            stringResource(
-                R.string.abs_time_left_fmt,
-                formatListenTime(resumeProgress.duration - resumeProgress.currentTime),
-            )
+            formatTimeLeftSeconds(resumeProgress.duration - resumeProgress.currentTime)
         } else {
             listOfNotNull(
                     featured.publishedAt?.let { dateFormat.format(Date(it)) },
-                    featured.duration?.let { formatListenTime(it) },
+                    featured.duration?.let { formatRuntimeSeconds(it) },
                 )
                 .joinToString(" · ")
         }
@@ -717,13 +716,4 @@ fun PodcastUpNextCard(
             }
         }
     }
-}
-
-@Composable
-internal fun formatListenTime(seconds: Double): String {
-    val totalMinutes = (seconds.coerceAtLeast(0.0) / 60).toLong()
-    val hours = (totalMinutes / 60).toInt()
-    val minutes = (totalMinutes % 60).toInt()
-    return if (hours > 0) stringResource(R.string.meta_runtime_hours_minutes, hours, minutes)
-    else stringResource(R.string.meta_runtime_minutes, minutes)
 }

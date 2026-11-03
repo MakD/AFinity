@@ -8,7 +8,7 @@ import androidx.compose.ui.res.stringResource
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
 import com.makd.afinity.ui.components.TransportControls
-import com.makd.afinity.ui.player.cast.formatCastClock
+import com.makd.afinity.ui.components.formatClock
 import com.makd.afinity.ui.player.components.AudioFormatBadge
 
 @Composable
@@ -45,8 +45,8 @@ fun PlayerControls(
         bufferedPosition = bufferedPosition.toFloat(),
         isPlaying = isPlaying,
         isBuffering = isBuffering,
-        elapsedLabel = formatCastClock((displayElapsed * 1000).toLong()),
-        totalLabel = formatCastClock((displayTotal * 1000).toLong()),
+        elapsedLabel = formatClock((displayElapsed * 1000).toLong()),
+        totalLabel = formatClock((displayTotal * 1000).toLong()),
         onSeek = { onSeek(it.toDouble()) },
         onPlayPauseClick = onPlayPauseClick,
         onSkipBackward = onSkipBackward,

@@ -24,13 +24,22 @@ data class AfinityLyricCue(
 @Serializable
 data class AfinityLyricLine(
     val text: String,
-    val startSeconds: Double,
+    val startSeconds: Double? = null,
     val cues: List<AfinityLyricCue> = emptyList(),
 )
 
-fun LyricLine.toAfinityLyricLine(): AfinityLyricLine? {
-    val start = start ?: return null
-    return AfinityLyricLine(
+val List<AfinityLyricLine>.isSynced: Boolean
+    get() = firstOrNull()?.startSeconds != null
+
+fun List<LyricLine>.toAfinityLyricLines(): List<AfinityLyricLine> =
+    if (any { it.start != null }) {
+        mapNotNull { line -> line.start?.let { line.toAfinityLyricLine(it) } }
+    } else {
+        map { AfinityLyricLine(text = it.text) }.dropLastWhile { it.text.isBlank() }
+    }
+
+private fun LyricLine.toAfinityLyricLine(start: Long): AfinityLyricLine =
+    AfinityLyricLine(
         text = text,
         startSeconds = start / TICKS_PER_SECOND,
         cues =
@@ -39,7 +48,6 @@ fun LyricLine.toAfinityLyricLine(): AfinityLyricLine? {
                 .mapNotNull { it.toAfinityLyricCue(text.length) }
                 .sortedBy { it.startSeconds },
     )
-}
 
 private fun LyricLineCue.toAfinityLyricCue(textLength: Int): AfinityLyricCue? {
     val from = position.coerceIn(0, textLength)

@@ -1,10 +1,13 @@
 package com.makd.afinity.data.repository.admin
 
+import com.makd.afinity.data.models.admin.DeleteSummary
 import com.makd.afinity.data.models.admin.EditableItem
 import com.makd.afinity.data.models.admin.ExternalIdProvider
 import com.makd.afinity.data.models.admin.IdentifyResult
 import com.makd.afinity.data.models.admin.IdentifyTarget
 import com.makd.afinity.data.models.admin.ItemImage
+import com.makd.afinity.data.models.admin.LyricsTarget
+import com.makd.afinity.data.models.admin.RemoteLyrics
 
 interface AdminRepository {
 
@@ -22,6 +25,7 @@ interface AdminRepository {
         name: String,
         year: Int?,
         providerIds: Map<String, String>,
+        albumArtist: String? = null,
     ): Result<List<IdentifyResult>>
 
     suspend fun applyIdentifyResult(
@@ -29,6 +33,20 @@ interface AdminRepository {
         result: IdentifyResult,
         replaceAllImages: Boolean,
     ): Result<Unit>
+
+    suspend fun getLyricsTarget(trackId: String): Result<LyricsTarget>
+
+    suspend fun searchRemoteLyrics(trackId: String): Result<List<RemoteLyrics>>
+
+    suspend fun replaceWithRemoteLyrics(trackId: String, lyricId: String): Result<Unit>
+
+    suspend fun replaceWithUploadedLyrics(
+        trackId: String,
+        fileName: String,
+        text: String,
+    ): Result<Unit>
+
+    suspend fun deleteLyrics(trackId: String): Result<Unit>
 
     suspend fun getItemImagesResult(itemId: String): Result<List<ItemImage>>
 
@@ -75,6 +93,8 @@ interface AdminRepository {
     ): Result<Unit>
 
     suspend fun canDeleteItem(itemId: String): Boolean
+
+    suspend fun getDeleteSummary(itemId: String): DeleteSummary?
 
     suspend fun deleteItem(
         itemId: String,

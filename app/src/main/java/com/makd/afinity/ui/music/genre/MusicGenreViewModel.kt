@@ -3,6 +3,8 @@ package com.makd.afinity.ui.music.genre
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.manager.AdminChangeBroadcaster
+import com.makd.afinity.data.manager.AdminChangeKind
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.music.AfinityAlbum
@@ -42,6 +44,7 @@ constructor(
     private val appDataRepository: AppDataRepository,
     private val downloadRepository: DownloadRepository,
     private val downloadPermissions: DownloadPermissions,
+    private val adminChangeBroadcaster: AdminChangeBroadcaster,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -68,6 +71,24 @@ constructor(
     init {
         viewModelScope.launch { loadGenreContent() }
         observeDownloads()
+
+        viewModelScope.launch {
+            adminChangeBroadcaster.changes.collect { change ->
+                if (change.kind == AdminChangeKind.DELETED) return@collect
+                val state = _uiState.value
+                val ownIds = mutableSetOf<String>()
+                genreId?.let { ownIds.add(it.toString()) }
+                state.tracks.mapTo(ownIds) { it.id.toString() }
+                state.albums.mapTo(ownIds) { it.id.toString() }
+                if (change.itemId in ownIds) loadGenreContent(showLoading = false)
+            }
+        }
+    }
+
+    fun removeTrack(trackId: UUID) {
+        _uiState.update { state ->
+            state.copy(tracks = state.tracks.filterNot { it.id == trackId })
+        }
     }
 
     private fun observeDownloads() {
@@ -98,9 +119,9 @@ constructor(
         viewModelScope.launch { downloadRepository.cancelDownload(info.id) }
     }
 
-    private suspend fun loadGenreContent() {
+    private suspend fun loadGenreContent(showLoading: Boolean = true) {
         if (genreName.isBlank()) return
-        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+        if (showLoading) _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         try {
             coroutineScope {
                 val albumsJob = async {
