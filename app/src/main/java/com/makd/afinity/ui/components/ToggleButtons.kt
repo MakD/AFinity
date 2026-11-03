@@ -6,10 +6,17 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.ui.theme.isDarkSurface
+
+private val WatchlistLight = Color(0xFFC66900)
+private val WatchlistDark = Color(0xFFFFB74D)
+private val WatchedLight = Color(0xFF2E7D32)
+private val WatchedDark = Color(0xFF81C784)
 
 @Composable
 fun FavoriteToggleButton(isFavorite: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
@@ -44,8 +51,11 @@ fun WatchlistToggleButton(
                 if (isInWatchlist) stringResource(R.string.cd_watchlist_remove)
                 else stringResource(R.string.cd_watchlist_add),
             tint =
-                if (isInWatchlist) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant,
+                when {
+                    !isInWatchlist -> MaterialTheme.colorScheme.onSurfaceVariant
+                    isDarkSurface() -> WatchlistDark
+                    else -> WatchlistLight
+                },
             modifier = Modifier.size(28.dp),
         )
     }
@@ -68,7 +78,7 @@ fun WatchedToggleButton(
                 else stringResource(R.string.cd_watched_mark),
             tint =
                 when {
-                    isPlayed -> MaterialTheme.colorScheme.primary
+                    isPlayed -> if (isDarkSurface()) WatchedDark else WatchedLight
                     enabled -> MaterialTheme.colorScheme.onSurfaceVariant
                     else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                 },
