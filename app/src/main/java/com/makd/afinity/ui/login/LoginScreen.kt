@@ -45,9 +45,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.VerticalDivider
@@ -94,10 +92,12 @@ import coil3.request.crossfade
 import com.makd.afinity.R
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
+import com.makd.afinity.ui.components.AfinitySegmentedTabs
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.ForgetAccountDialog
 import com.makd.afinity.ui.components.LoadingButton
 import com.makd.afinity.ui.components.LocalNetworkPermissionCard
+import com.makd.afinity.ui.components.SegmentedTab
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.util.isInsecurePublicUrl
 
@@ -837,23 +837,17 @@ private fun UserSelectionAndTabs(
             Spacer(modifier = Modifier.height(24.dp))
         }
 
-        SecondaryTabRow(
-            selectedTabIndex = selectedMethod.ordinal,
-            containerColor = Color.Transparent,
-            divider = {},
-            indicator = {},
-        ) {
-            Tab(
-                selected = selectedMethod == LoginMethod.PASSWORD,
-                onClick = { onMethodChange(LoginMethod.PASSWORD) },
-                text = { Text(stringResource(R.string.login_method_password)) },
-            )
-            Tab(
-                selected = selectedMethod == LoginMethod.QUICK_CONNECT,
-                onClick = { onMethodChange(LoginMethod.QUICK_CONNECT) },
-                text = { Text(stringResource(R.string.login_method_quick_connect)) },
-            )
-        }
+        val methods = listOf(LoginMethod.PASSWORD, LoginMethod.QUICK_CONNECT)
+        AfinitySegmentedTabs(
+            tabs =
+                listOf(
+                    SegmentedTab(stringResource(R.string.login_method_password)),
+                    SegmentedTab(stringResource(R.string.login_method_quick_connect)),
+                ),
+            selectedIndex = methods.indexOf(selectedMethod).coerceAtLeast(0),
+            onSelect = { onMethodChange(methods[it]) },
+            horizontalPadding = 0.dp,
+        )
     }
 }
 

@@ -46,11 +46,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -83,11 +80,13 @@ import com.makd.afinity.ui.admin.components.AdminCardShape
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinityScreen
+import com.makd.afinity.ui.components.AfinitySegmentedTabs
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.components.MediaCountBadge
+import com.makd.afinity.ui.components.SegmentedTab
 import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
@@ -382,7 +381,6 @@ fun EditImagesScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ImageTypeTabs(
     types: List<String>,
@@ -391,53 +389,13 @@ private fun ImageTypeTabs(
     onSelect: (String) -> Unit,
 ) {
     val selectedIndex = types.indexOf(selectedType).coerceAtLeast(0)
-    SecondaryScrollableTabRow(
-        selectedTabIndex = selectedIndex,
-        containerColor = Color.Transparent,
-        edgePadding = 8.dp,
-        divider = {},
-        indicator = {
-            TabRowDefaults.SecondaryIndicator(
-                modifier = Modifier.tabIndicatorOffset(selectedIndex),
-                color = MaterialTheme.colorScheme.primary,
-                height = 3.dp,
-            )
-        },
-    ) {
-        types.forEachIndexed { index, type ->
-            val count = counts[type] ?: 0
-            Tab(
-                selected = selectedIndex == index,
-                onClick = { onSelect(type) },
-                text = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Text(
-                            imageTypeLabel(type),
-                            style =
-                                if (selectedIndex == index) MaterialTheme.typography.titleSmall
-                                else MaterialTheme.typography.bodyMedium,
-                        )
-                        if (count > 0) {
-                            Text(
-                                text = count.toString(),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier =
-                                    Modifier.clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                                        .padding(horizontal = 6.dp, vertical = 1.dp),
-                            )
-                        }
-                    }
-                },
-                selectedContentColor = MaterialTheme.colorScheme.primary,
-                unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
+    AfinitySegmentedTabs(
+        tabs = types.map { SegmentedTab(label = imageTypeLabel(it), count = counts[it]) },
+        selectedIndex = selectedIndex,
+        onSelect = { onSelect(types[it]) },
+        modifier = Modifier.padding(vertical = 8.dp),
+        scrollable = true,
+    )
 }
 
 @Composable

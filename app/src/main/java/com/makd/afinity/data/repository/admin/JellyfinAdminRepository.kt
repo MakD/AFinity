@@ -85,6 +85,7 @@ import timber.log.Timber
 
 private const val SERVER_THUMB_WIDTH = 600
 private const val COLLECTION_THUMB_WIDTH = 120
+private const val PERSON_THUMB_WIDTH = 120
 private const val SERVER_PREVIEW_WIDTH = 1600
 private val APPLY_ACCEPTED_AFTER = 20.seconds
 private const val ITEM_PATH = "/Items/{itemId}"
@@ -1239,6 +1240,7 @@ constructor(
                         name = person.name ?: "",
                         type = person.type.serialName,
                         role = person.role,
+                        imageUrl = personImageUrl(person.id.toString(), person.primaryImageTag),
                     )
                 } ?: emptyList(),
             indexNumber = indexNumber,
@@ -1252,6 +1254,13 @@ constructor(
             availableParentalRatings = availableRatings,
             externalIdProviders = providers,
         )
+
+    private fun personImageUrl(personId: String, tag: String?): String? {
+        val baseUrl = sessionManager.currentSession.value?.serverUrl.orEmpty().trimEnd('/')
+        if (baseUrl.isEmpty() || tag == null) return null
+        return "$baseUrl/Items/$personId/Images/Primary" +
+            "?maxWidth=$PERSON_THUMB_WIDTH&quality=90&format=webp&tag=$tag"
+    }
 
     private fun LocalDateTime?.editableDate(): String? =
         this?.atZone(ZoneId.systemDefault())

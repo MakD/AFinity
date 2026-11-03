@@ -44,11 +44,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -65,7 +62,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalConfiguration
@@ -89,12 +85,15 @@ import com.makd.afinity.ui.admin.components.adminContentBottomPadding
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinityScreen
+import com.makd.afinity.ui.components.AfinitySegmentedTabs
 import com.makd.afinity.ui.components.AfinitySwitch
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.DateFieldPickerDialog
 import com.makd.afinity.ui.components.FullScreenError
+import com.makd.afinity.ui.components.SegmentedTab
+import com.makd.afinity.ui.components.UserAvatar
 import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.util.DateSkeleton
@@ -380,36 +379,12 @@ fun EditMetadataScreen(
                     } else EditorTab.entries
                 val currentTab = selectedTab.coerceIn(tabs.indices)
                 Column(modifier = Modifier.padding(padding)) {
-                    SecondaryTabRow(
-                        selectedTabIndex = currentTab,
-                        containerColor = Color.Transparent,
-                        divider = {},
-                        indicator = {
-                            TabRowDefaults.SecondaryIndicator(
-                                modifier = Modifier.tabIndicatorOffset(currentTab),
-                                color = MaterialTheme.colorScheme.primary,
-                                height = 3.dp,
-                            )
-                        },
-                    ) {
-                        tabs.forEachIndexed { index, tab ->
-                            Tab(
-                                selected = currentTab == index,
-                                onClick = { selectedTab = index },
-                                text = {
-                                    Text(
-                                        stringResource(tab.titleRes),
-                                        style =
-                                            if (currentTab == index)
-                                                MaterialTheme.typography.titleSmall
-                                            else MaterialTheme.typography.bodyMedium,
-                                    )
-                                },
-                                selectedContentColor = MaterialTheme.colorScheme.primary,
-                                unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
+                    AfinitySegmentedTabs(
+                        tabs = tabs.map { SegmentedTab(stringResource(it.titleRes)) },
+                        selectedIndex = currentTab,
+                        onSelect = { selectedTab = it },
+                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                    )
                     when (tabs[currentTab]) {
                         EditorTab.GENERAL ->
                             GeneralTab(item = item, uiState = uiState, viewModel = viewModel)
@@ -918,18 +893,12 @@ private fun PersonRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Box(
-                modifier =
-                    Modifier.size(40.dp)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = person.name.trim().take(1).uppercase(),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            UserAvatar(
+                imageUrl = person.imageUrl,
+                name = person.name,
+                size = 40.dp,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = person.name,
@@ -1069,6 +1038,7 @@ private fun PersonSheet(
                                 name = name.trim(),
                                 type = type,
                                 role = role.trim().ifBlank { null },
+                                imageUrl = person?.imageUrl?.takeIf { person.name == name.trim() },
                             )
                         )
                     },

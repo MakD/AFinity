@@ -39,4 +39,5 @@ data class EditablePerson(
     val name: String,
     val type: String,
     val role: String?,
+    val imageUrl: String? = null,
 )
