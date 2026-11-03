@@ -3306,4 +3306,5 @@
     <string name="attention_restart_plugin_single">Starta om %1$s för att tillämpa ändringar till %2$s</string>
     <string name="attention_restart_plugin_multiple">Starta om %1$s för att tillämpa ändringar till %2$d insticksprogram (%3$s)</string>
     <string name="attention_restart_config">Starta om %1$s för att tillämpa ändringar till serverkonfigurationen</string>
+    <string name="admin_field_sort_title">Sortera efter titel</string>
 </resources>

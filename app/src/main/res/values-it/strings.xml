@@ -497,4 +497,25 @@
     <string name="home_row_latest_movies">Ultimi film</string>
     <string name="custom_sections_add">Aggiungi sezione</string>
     <string name="custom_sections_new">Nuova sezione</string>
+    <string name="attention_restart_config">Riavvia %1$s per applicare le modifiche alla configurazione del server</string>
+    <string name="attention_task_failed">L\'ultima esecuzione non è riuscita</string>
+    <string name="title_scheduled_tasks">Attività pianificate</string>
+    <string name="scheduled_tasks_summary">Esegui, interrompi ed esamina le attività del server</string>
+    <string name="section_server">Server</string>
+    <string name="section_advanced">Avanzato</string>
+    <string name="title_users">Utenti</string>
+    <string name="users_summary">Account e ruoli</string>
+    <string name="users_count_fmt">Conti: %1$d</string>
+    <string name="users_admins_fmt">Amministratori: %1$d</string>
+    <string name="users_disabled_fmt">Disabilitato: %1$d</string>
+    <string name="user_playing_now">In riproduzione</string>
+    <string name="title_user">Utente</string>
+    <string name="user_tile_all">Tutto</string>
+    <string name="user_tile_count_of_fmt">%1$d di %2$d</string>
+    <string name="user_tile_rating">Limite di valutazione</string>
+    <string name="user_tile_remote_access">Accesso remoto</string>
+    <string name="user_tile_transcoding">Transcodifica</string>
+    <string name="hero_content_title">Contenuto del carosello in evidenza</string>
+    <string name="hero_content_settings_cd">Scegli cosa mostrare nel carosello in evidenza</string>
+    <string name="hero_content_random">Casuale</string>
 </resources>
