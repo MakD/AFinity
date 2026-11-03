@@ -36,8 +36,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -53,7 +51,6 @@ import com.makd.afinity.ui.admin.components.AdminScaffold
 import com.makd.afinity.ui.admin.users.AdminUserAvatar
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AfinityToggleChip
-import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.SETTINGS_EXPANDED_START_PADDING
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.settings.servers.utils.formatRelativeTime
@@ -333,10 +330,6 @@ private fun DeviceGroupRow(
 
 @Composable
 private fun DeviceTile(group: AdminDeviceGroup) {
-    val imageUrl = group.iconUrl ?: group.logoUrl
-    val isLogo = group.iconUrl == null
-    var imageFailed by remember(imageUrl) { mutableStateOf(false) }
-    val showsImage = imageUrl != null && !imageFailed
     val contentColor =
         if (group.isThisDevice) MaterialTheme.colorScheme.onPrimaryContainer
         else MaterialTheme.colorScheme.onSurfaceVariant
@@ -351,25 +344,16 @@ private fun DeviceTile(group: AdminDeviceGroup) {
                 ),
         contentAlignment = Alignment.Center,
     ) {
-        if (showsImage) {
-            AsyncImage(
-                imageUrl = imageUrl,
-                contentDescription = null,
-                modifier =
-                    if (isLogo) Modifier.size(22.dp)
-                    else Modifier.size(28.dp).clip(RoundedCornerShape(6.dp)),
-                contentScale = ContentScale.Fit,
-                colorFilter = if (isLogo) ColorFilter.tint(contentColor) else null,
-                onError = { imageFailed = true },
-            )
-        } else {
-            Icon(
-                painter = painterResource(id = group.kind.iconRes()),
-                contentDescription = null,
-                tint = contentColor,
-                modifier = Modifier.size(22.dp),
-            )
-        }
+        DeviceLogo(
+            appName = group.app,
+            deviceName = group.name,
+            iconUrl = group.iconUrl,
+            logoUrl = group.logoUrl,
+            tint = contentColor,
+            logoSize = 22.dp,
+            iconSize = 28.dp,
+            iconCorner = 6.dp,
+        )
     }
 }
 
@@ -457,17 +441,6 @@ private fun DeviceEntries(
         }
     }
 }
-
-private fun DeviceKind.iconRes(): Int =
-    when (this) {
-        DeviceKind.PHONE -> R.drawable.ic_device_mobile
-        DeviceKind.TABLET -> R.drawable.ic_device_tablet
-        DeviceKind.TV -> R.drawable.ic_tv
-        DeviceKind.BROWSER -> R.drawable.ic_world
-        DeviceKind.MUSIC -> R.drawable.ic_headphones
-        DeviceKind.SERVICE -> R.drawable.ic_server
-        DeviceKind.OTHER -> R.drawable.ic_devices
-    }
 
 @Composable
 private fun RenameDeviceDialog(

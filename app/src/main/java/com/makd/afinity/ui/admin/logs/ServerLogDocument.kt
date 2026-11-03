@@ -68,7 +68,7 @@ internal constructor(
     val matchCount: Int,
     val groupCount: Int,
     private val groupRows: List<ServerLogRow>?,
-    private val entryIndices: IntArray,
+    internal val entryIndices: IntArray,
 ) {
     val size: Int
         get() = groupRows?.size ?: entryIndices.size
@@ -80,6 +80,14 @@ internal constructor(
 
     fun rowAt(index: Int): ServerLogRow =
         groupRows?.get(index) ?: document.entryRow(entryIndices[index])
+
+    val errorRowIndices: List<Int> by lazy {
+        (0 until size).filter { index ->
+            val rows = groupRows
+            if (rows != null) rows[index].level == LogLevel.ERROR
+            else document.isError(entryIndices[index])
+        }
+    }
 }
 
 private class ServerLogGroup(
@@ -129,6 +137,27 @@ private constructor(
     fun rawText(fromIndex: Int, toIndex: Int): String =
         synchronized(reader) { readText(fromIndex.coerceAtLeast(0), toIndex, Int.MAX_VALUE) }
             .trimEnd()
+
+    fun rawText(indices: IntArray, maxBytes: Long): String {
+        var budget = maxBytes
+        var from = indices.size
+        while (from > 0) {
+            val index = indices[from - 1]
+            val length = starts[index + 1] - starts[index]
+            if (length > budget) break
+            budget -= length
+            from--
+        }
+        return synchronized(reader) {
+                buildString {
+                    for (position in from until indices.size) {
+                        val index = indices[position]
+                        append(readText(index, index, Int.MAX_VALUE))
+                    }
+                }
+            }
+            .trimEnd()
+    }
 
     fun search(query: String, checkActive: () -> Unit): BitSet {
         val matches = BitSet(entryCount)
@@ -187,6 +216,8 @@ private constructor(
             entryIndices = indices,
         )
     }
+
+    internal fun isError(index: Int): Boolean = levels[index].toInt() == LogLevel.ERROR.ordinal
 
     internal fun entryRow(index: Int): ServerLogRow =
         ServerLogRow(

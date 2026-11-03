@@ -71,6 +71,7 @@ constructor(
         private const val SEARCH_DEBOUNCE_MS = 250L
         private const val CACHE_DIRECTORY = "server_logs"
         private const val CLIP_LABEL = "Server log"
+        private const val MAX_COPY_BYTES = 256L * 1024
     }
 
     val fileName: String = savedStateHandle.get<String>("name").orEmpty()
@@ -196,6 +197,19 @@ constructor(
         copy(entryIndex - CONTEXT_ENTRIES, entryIndex)
     }
 
+    fun copyVisible() {
+        val current = document ?: return
+        val indices = _state.value.view?.entryIndices ?: return
+        viewModelScope.launch {
+            val secrets = logSecretsCollector.collect()
+            val text =
+                withContext(Dispatchers.IO) {
+                    LogExporter.scrub(current.rawText(indices, MAX_COPY_BYTES), secrets)
+                }
+            LogClipboard.copy(context, CLIP_LABEL, text)
+        }
+    }
+
     override fun onCleared() {
         document?.close()
         cacheFile.delete()
@@ -217,7 +231,7 @@ constructor(
                             level = snapshot.level,
                             selectedTags = snapshot.tags,
                             matches = matches,
-                            grouped = snapshot.groupRepeats,
+                            grouped = snapshot.groupRepeats && snapshot.level != null,
                             groupId = snapshot.groupFilter,
                         )
                     }

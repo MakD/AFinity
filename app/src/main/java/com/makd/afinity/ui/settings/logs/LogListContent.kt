@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,10 +45,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.windowWidthDp
 import com.makd.afinity.util.logging.LabelPart
+import com.makd.afinity.util.logging.LogLevel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -58,6 +62,8 @@ private val TimeGutter = 12.dp
 private val RailColumnWidth = 18.dp
 private val FirstLineHeight = 18.sp
 private val TagColumnWidth = 100.sp
+private val CompactTagColumnWidth = 72.sp
+private val CompactWidthBreakpoint = 600.dp
 private val RibbonWidth = 3.dp
 private const val GapContentType = "gap"
 private const val LaunchContentType = "launch"
@@ -75,8 +81,8 @@ fun LogListContent(
     onFilterTag: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val compactFormatter = remember { SimpleDateFormat("HH:mm:ss.SSS", Locale.US) }
-    val fullFormatter = remember { SimpleDateFormat("HH:mm:ss", Locale.US) }
+    val formatter = remember { SimpleDateFormat("HH:mm:ss", Locale.US) }
+    val millisFormatter = remember { SimpleDateFormat("HH:mm:ss.SSS", Locale.US) }
 
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
@@ -96,26 +102,26 @@ fun LogListContent(
         ) { row ->
             when (row) {
                 is TimelineRow.Gap -> GapRow(row)
-                is TimelineRow.Launch -> LaunchRow(row, fullFormatter)
+                is TimelineRow.Launch -> LaunchRow(row, formatter)
                 is TimelineRow.Event ->
                     when (density) {
                         LogDensity.COMPACT ->
                             if (row.key == expandedKey) {
                                 ExpandedRow(
                                     row = row,
-                                    formatter = fullFormatter,
+                                    formatter = millisFormatter,
                                     onCollapse = { onRowClick(row) },
                                     onCopy = { onCopy(row) },
                                     onCopyWithContext = { onCopyWithContext(row) },
                                     onFilterTag = { onFilterTag(row.entry.tag) },
                                 )
                             } else {
-                                CompactRow(row, compactFormatter) { onRowClick(row) }
+                                CompactRow(row, formatter) { onRowClick(row) }
                             }
                         LogDensity.COMFORTABLE ->
                             ComfortableRow(
                                 row = row,
-                                formatter = fullFormatter,
+                                formatter = formatter,
                                 expanded = row.key == expandedKey,
                                 onClick = { onRowClick(row) },
                                 onCopy = { onCopy(row) },
@@ -135,16 +141,38 @@ private fun CompactRow(
     onClick: () -> Unit,
 ) {
     val entry = row.entry
-    val tint = LogLevelColors.content(entry.level)
-    val ribbon = LogLevelColors.ribbon(entry.level)
+    ConsoleLine(
+        time = formatter.format(Date(entry.timeMillis)),
+        tag = entry.tag,
+        level = entry.level,
+        message = highlighted(compactMessage(entry.message, entry.stackTrace), row.highlights),
+        onClick = onClick,
+    )
+}
+
+@Composable
+@ReadOnlyComposable
+private fun consoleTagWidth(): TextUnit =
+    if (windowWidthDp() < CompactWidthBreakpoint) CompactTagColumnWidth else TagColumnWidth
+
+@Composable
+internal fun ConsoleLine(
+    time: String,
+    tag: String,
+    level: LogLevel,
+    message: AnnotatedString,
+    onClick: () -> Unit,
+) {
+    val tint = LogLevelColors.content(level)
+    val ribbon = LogLevelColors.ribbon(level)
     val density = LocalDensity.current
     val ribbonWidthPx = with(density) { RibbonWidth.toPx() }
-    val tagWidth = with(density) { TagColumnWidth.toDp() }
+    val tagWidth = with(density) { consoleTagWidth().toDp() }
 
     Row(
         modifier =
             Modifier.fillMaxWidth()
-                .background(LogLevelColors.rowTint(entry.level))
+                .background(LogLevelColors.rowTint(level))
                 .clickable(onClick = onClick)
                 .drawBehind {
                     val start =
@@ -156,16 +184,17 @@ private fun CompactRow(
                         size = Size(ribbonWidthPx, size.height),
                     )
                 }
-                .padding(start = RibbonWidth)
+                .padding(start = RibbonWidth, top = 2.dp, bottom = 2.dp)
     ) {
         Text(
-            text = formatter.format(Date(entry.timeMillis)),
+            text = time,
             style = LogTextStyles.console,
             color = MaterialTheme.colorScheme.outline,
+            maxLines = 1,
             modifier = Modifier.padding(start = 10.dp),
         )
         Text(
-            text = entry.tag.uppercase(),
+            text = tag.uppercase(),
             style = LogTextStyles.console,
             color = tint,
             maxLines = 1,
@@ -173,11 +202,9 @@ private fun CompactRow(
             modifier = Modifier.width(tagWidth).padding(start = 8.dp),
         )
         Text(
-            text = highlighted(compactMessage(entry.message, entry.stackTrace), row.highlights),
+            text = message,
             style = LogTextStyles.console,
             color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).padding(start = 8.dp, end = 12.dp),
         )
     }
@@ -346,14 +373,40 @@ private fun ExpandedRow(
     onFilterTag: () -> Unit,
 ) {
     val entry = row.entry
-    val tint = LogLevelColors.content(entry.level)
-    val ribbon = LogLevelColors.ribbon(entry.level)
+    ConsoleExpandedLine(
+        level = entry.level,
+        time = formatter.format(Date(entry.timeMillis)),
+        tag = entry.tag,
+        message = highlighted(entry.message, row.highlights),
+        trace = entry.stackTrace,
+        onCollapse = onCollapse,
+    ) {
+        RowActions(
+            onCopy = onCopy,
+            onCopyWithContext = onCopyWithContext,
+            onFilterTag = onFilterTag,
+        )
+    }
+}
+
+@Composable
+internal fun ConsoleExpandedLine(
+    level: LogLevel,
+    time: String,
+    tag: String,
+    message: AnnotatedString,
+    trace: String?,
+    onCollapse: () -> Unit,
+    actions: @Composable () -> Unit,
+) {
+    val tint = LogLevelColors.content(level)
+    val ribbon = LogLevelColors.ribbon(level)
     val ribbonWidthPx = with(LocalDensity.current) { RibbonWidth.toPx() }
 
     Row(
         modifier =
             Modifier.fillMaxWidth()
-                .background(LogLevelColors.expandedTint(entry.level))
+                .background(LogLevelColors.expandedTint(level))
                 .drawBehind {
                     val start =
                         if (layoutDirection == LayoutDirection.Ltr) 0f
@@ -377,22 +430,22 @@ private fun ExpandedRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
-                    text = entry.level.name,
+                    text = level.name,
                     style = LogTextStyles.badge,
                     fontWeight = FontWeight.SemiBold,
-                    color = LogLevelColors.container(entry.level),
+                    color = LogLevelColors.container(level),
                     modifier =
                         Modifier.clip(RoundedCornerShape(8.dp))
                             .background(tint)
                             .padding(horizontal = 7.dp, vertical = 2.dp),
                 )
                 Text(
-                    text = formatter.format(Date(entry.timeMillis)),
+                    text = time,
                     style = LogTextStyles.metaSmall,
                     color = MaterialTheme.colorScheme.outline,
                 )
                 Text(
-                    text = entry.tag.uppercase(),
+                    text = tag.uppercase(),
                     style = LogTextStyles.metaSmall,
                     color = tint,
                     maxLines = 1,
@@ -401,35 +454,30 @@ private fun ExpandedRow(
             }
 
             Text(
-                text = highlighted(entry.message, row.highlights),
+                text = message,
                 style = LogTextStyles.message,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(top = 7.dp),
             )
 
-            entry.stackTrace?.let { trace ->
+            trace?.let {
                 Box(
                     modifier =
                         Modifier.fillMaxWidth()
                             .padding(top = 9.dp)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(LogLevelColors.container(entry.level))
+                            .background(LogLevelColors.container(level))
                             .padding(horizontal = 12.dp, vertical = 10.dp)
                 ) {
                     Text(
-                        text = trace,
+                        text = it,
                         style = LogTextStyles.trace,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
 
-            RowActions(
-                onCopy = onCopy,
-                onCopyWithContext = onCopyWithContext,
-                onFilterTag = onFilterTag,
-                modifier = Modifier.padding(top = 12.dp),
-            )
+            Box(modifier = Modifier.padding(top = 12.dp)) { actions() }
         }
     }
 }
@@ -594,7 +642,7 @@ private fun highlighted(text: String, ranges: List<IntRange>): AnnotatedString {
     }
 }
 
-private fun compactMessage(message: String, stackTrace: String?): String {
+internal fun compactMessage(message: String, stackTrace: String?): String {
     if (stackTrace == null) return message
     val frames = stackTrace.lines().size
     return "$message  +$frames frames"

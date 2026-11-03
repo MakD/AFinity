@@ -2,7 +2,6 @@ package com.makd.afinity.ui.admin.devices
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.makd.afinity.core.AppConstants
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.repository.NoActiveSessionException
 import com.makd.afinity.data.repository.admin.ServerAdminRepository
@@ -46,7 +45,6 @@ constructor(
         private const val IDLE_AFTER_DAYS = 30L
         private const val WEEK_DAYS = 7L
         private const val USER_AVATAR_MAX_WIDTH = 96
-        private const val OWN_APP_NAME = "AFinity"
     }
 
     private val _state = MutableStateFlow(DevicesUiState())
@@ -205,10 +203,7 @@ constructor(
                 iconUrl =
                     device.iconUrl?.takeIf { it.isNotBlank() }
                         ?: device.capabilities.iconUrl?.takeIf { it.isNotBlank() }
-                        ?: sessionIcons[id]
-                        ?: AppConstants.CLIENT_ICON_URL.takeIf {
-                            appName.equals(OWN_APP_NAME, ignoreCase = true)
-                        },
+                        ?: sessionIcons[id],
                 logoUrl = baseUrl?.let { webDeviceLogoUrl(it, appName, device.name.orEmpty()) },
                 isThisDevice = id == ownId,
             )

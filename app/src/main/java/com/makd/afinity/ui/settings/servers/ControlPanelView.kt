@@ -60,6 +60,8 @@ import com.makd.afinity.data.models.server.StorageDevice
 import com.makd.afinity.ui.admin.components.AdminPill
 import com.makd.afinity.ui.admin.components.AdminScaffold
 import com.makd.afinity.ui.admin.config.ConfigFormIds
+import com.makd.afinity.ui.admin.devices.DeviceLogo
+import com.makd.afinity.ui.admin.devices.webDeviceLogoUrl
 import com.makd.afinity.ui.admin.plugins.labelRes
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.SettingsDivider
@@ -966,7 +968,12 @@ private fun PlayingSessionCard(
             }
         }
 
-    val clientIconUrl = session.capabilities?.iconUrl
+    val clientName = session.client.orEmpty()
+    val deviceName = session.deviceName.orEmpty()
+    val clientLogoUrl =
+        remember(baseUrl, clientName, deviceName) {
+            baseUrl.takeIf { it.isNotEmpty() }?.let { webDeviceLogoUrl(it, clientName, deviceName) }
+        }
 
     val userAvatarUrl =
         remember(baseUrl, session.userId, session.userPrimaryImageTag) {
@@ -1048,21 +1055,16 @@ private fun PlayingSessionCard(
 
             Column(modifier = Modifier.fillMaxWidth().heightIn(min = 180.dp).padding(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (clientIconUrl != null) {
-                        AsyncImage(
-                            imageUrl = clientIconUrl,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp).clip(RoundedCornerShape(3.dp)),
-                            contentScale = ContentScale.Fit,
-                        )
-                    } else {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_devices),
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(14.dp),
-                        )
-                    }
+                    DeviceLogo(
+                        appName = clientName,
+                        deviceName = deviceName,
+                        iconUrl = session.capabilities?.iconUrl,
+                        logoUrl = clientLogoUrl,
+                        tint = Color.White,
+                        logoSize = 14.dp,
+                        iconSize = 16.dp,
+                        iconCorner = 3.dp,
+                    )
                     Spacer(modifier = Modifier.width(5.dp))
                     Text(
                         text = deviceInfo,

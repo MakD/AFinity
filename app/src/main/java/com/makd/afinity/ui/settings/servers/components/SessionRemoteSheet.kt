@@ -41,6 +41,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.ui.admin.devices.DeviceLogo
+import com.makd.afinity.ui.admin.devices.webDeviceLogoUrl
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinitySlider
 import com.makd.afinity.ui.components.AfinityTextField
@@ -211,15 +213,35 @@ fun SessionRemoteSheet(
                 overflow = TextOverflow.Ellipsis,
             )
 
-            Text(
-                text =
-                    buildString {
-                        append(session.deviceName ?: stringResource(R.string.unknown_device))
-                        session.client?.let { append(" · $it") }
-                    },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                val clientName = session.client.orEmpty()
+                val deviceName = session.deviceName.orEmpty()
+                DeviceLogo(
+                    appName = clientName,
+                    deviceName = deviceName,
+                    iconUrl = session.capabilities?.iconUrl,
+                    logoUrl =
+                        baseUrl
+                            .takeIf { it.isNotEmpty() }
+                            ?.let { webDeviceLogoUrl(it, clientName, deviceName) },
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    logoSize = 16.dp,
+                    iconSize = 18.dp,
+                    iconCorner = 4.dp,
+                )
+                Text(
+                    text =
+                        buildString {
+                            append(session.deviceName ?: stringResource(R.string.unknown_device))
+                            session.client?.let { append(" · $it") }
+                        },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
 
             if (item == null) {
                 Text(

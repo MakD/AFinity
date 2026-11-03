@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -47,7 +48,11 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
+import com.makd.afinity.ui.settings.logs.ConsoleExpandedLine
+import com.makd.afinity.ui.settings.logs.ConsoleLine
+import com.makd.afinity.ui.settings.logs.LogLevelColors
 import com.makd.afinity.ui.settings.logs.LogTextStyles
+import com.makd.afinity.ui.settings.logs.compactMessage
 import com.makd.afinity.util.logging.LabelPart
 
 private val RowStartPadding = 20.dp
@@ -59,6 +64,7 @@ private const val COLLAPSED_MESSAGE_LINES = 4
 private const val COLLAPSED_TRACE_LINES = 3
 private const val HIGHLIGHT_ALPHA = 0.26f
 private const val ROW_CONTENT_TYPE = "event"
+private const val CONSOLE_CONTENT_TYPE = "console"
 private const val VARIABLE_LABEL = "…"
 
 @Composable
@@ -103,6 +109,61 @@ internal fun ServerLogList(
 }
 
 @Composable
+internal fun ServerLogConsoleList(
+    view: ServerLogView,
+    query: String,
+    expandedKey: String?,
+    listState: LazyListState,
+    contentPadding: PaddingValues,
+    onRowClick: (String) -> Unit,
+    onCopy: (Int) -> Unit,
+    onCopyWithContext: (Int) -> Unit,
+    onFilterTag: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxWidth(),
+        state = listState,
+        contentPadding = contentPadding,
+    ) {
+        items(
+            count = view.size,
+            key = { index -> view.keyAt(index) },
+            contentType = { CONSOLE_CONTENT_TYPE },
+        ) { index ->
+            val row = remember(view, index) { view.rowAt(index) }
+            val entry = remember(view, row.entryIndex) { view.document.entry(row.entryIndex) }
+            if (row.key == expandedKey) {
+                ConsoleExpandedLine(
+                    level = row.level,
+                    time = row.time,
+                    tag = row.tag,
+                    message = highlighted(entry.message, query),
+                    trace = entry.trace,
+                    onCollapse = { onRowClick(row.key) },
+                ) {
+                    RowActions(
+                        repeatCount = 0,
+                        onCopy = { onCopy(row.entryIndex) },
+                        onCopyWithContext = { onCopyWithContext(row.entryIndex) },
+                        onFilterTag = { onFilterTag(row.tag) },
+                        onShowAll = {},
+                    )
+                }
+            } else {
+                ConsoleLine(
+                    time = row.time,
+                    tag = row.tag,
+                    level = row.level,
+                    message = highlighted(compactMessage(entry.message, entry.trace), query),
+                    onClick = { onRowClick(row.key) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun ServerLogRowItem(
     row: ServerLogRow,
     entry: ServerLogEntry,
@@ -114,7 +175,7 @@ private fun ServerLogRowItem(
     onFilterTag: () -> Unit,
     onShowAll: () -> Unit,
 ) {
-    val tint = ServerLogColors.content(row.level)
+    val tint = LogLevelColors.content(row.level)
     val grouped = row.count > 1
     val railColor = MaterialTheme.colorScheme.outlineVariant
     val density = LocalDensity.current
@@ -160,12 +221,12 @@ private fun ServerLogRowItem(
         ) {
             Box(
                 modifier =
-                    Modifier.size(17.dp)
+                    Modifier.requiredSize(17.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surface)
                         .border(2.dp, tint, CircleShape)
             )
-            Box(modifier = Modifier.size(9.dp).clip(CircleShape).background(tint))
+            Box(modifier = Modifier.requiredSize(9.dp).clip(CircleShape).background(tint))
         }
 
         Column(modifier = Modifier.weight(1f).padding(start = 14.dp, end = 20.dp, bottom = 20.dp)) {
@@ -219,7 +280,7 @@ private fun ServerLogRowItem(
                         Modifier.fillMaxWidth()
                             .padding(top = 8.dp)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(ServerLogColors.container(row.level))
+                            .background(LogLevelColors.container(row.level))
                             .padding(horizontal = 12.dp, vertical = 10.dp)
                 ) {
                     Text(

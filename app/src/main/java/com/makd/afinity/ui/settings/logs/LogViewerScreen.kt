@@ -62,6 +62,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -734,7 +735,11 @@ private fun OverflowMenu(
 }
 
 @Composable
-private fun JumpToLatestPill(visible: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+internal fun JumpToLatestPill(
+    visible: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     AnimatedVisibility(
         visible = visible,
         modifier = modifier,
@@ -767,13 +772,13 @@ private fun JumpToLatestPill(visible: Boolean, onClick: () -> Unit, modifier: Mo
 }
 
 @Composable
-private fun ErrorJumpPill(
+internal fun ErrorJumpPill(
     count: Int,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     modifier: Modifier = Modifier,
+    tint: Color = LogLevelColors.content(LogLevel.ERROR),
 ) {
-    val tint = LogLevelColors.content(LogLevel.ERROR)
     Column(
         modifier =
             modifier

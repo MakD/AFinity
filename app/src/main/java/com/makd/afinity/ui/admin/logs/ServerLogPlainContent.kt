@@ -3,6 +3,7 @@ package com.makd.afinity.ui.admin.logs
 import androidx.annotation.StringRes
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -22,11 +23,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -34,6 +38,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.settings.logs.JumpToLatestPill
+import kotlinx.coroutines.launch
 
 private enum class LogLevelFilter(@param:StringRes val label: Int) {
     ALL(R.string.server_log_level_all),
@@ -55,6 +61,8 @@ internal fun ServerLogPlainContent(
     var query by rememberSaveable { mutableStateOf("") }
     var level by rememberSaveable { mutableStateOf(LogLevelFilter.ALL) }
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    val atEnd by remember { derivedStateOf { !listState.canScrollForward } }
     val isFiltered = query.isNotBlank() || level != LogLevelFilter.ALL
     val shown =
         remember(lines, query, level) {
@@ -94,14 +102,21 @@ internal fun ServerLogPlainContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
-        SelectionContainer {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
-            ) {
-                items(count = shown.size) { index -> LogLine(line = shown[index]) }
+        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            SelectionContainer {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                ) {
+                    items(count = shown.size) { index -> LogLine(line = shown[index]) }
+                }
             }
+            JumpToLatestPill(
+                visible = shown.isNotEmpty() && !atEnd,
+                onClick = { scope.launch { listState.animateScrollToItem(shown.lastIndex) } },
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp),
+            )
         }
     }
 }
