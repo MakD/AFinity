@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
-import com.makd.afinity.data.manager.Session
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.server.ServerAddress
 import com.makd.afinity.data.repository.AudiobookshelfRepository
@@ -65,9 +64,6 @@ constructor(
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    private val _remoteConfiguredHost = MutableStateFlow<String?>(null)
-    val remoteConfiguredHost = _remoteConfiguredHost.asStateFlow()
-
     private val _remoteVerifying = MutableStateFlow(false)
     val remoteVerifying = _remoteVerifying.asStateFlow()
 
@@ -80,14 +76,6 @@ constructor(
     fun onLocalNetworkPermissionGranted() {
         _remoteNeedsLocalNetworkPermission.value = false
         _remoteError.value = null
-    }
-
-    init {
-        viewModelScope.launch {
-            sessionManager.currentSession.collect { session ->
-                if (session != null) refreshRemoteAccess(session)
-            }
-        }
     }
 
     fun markFirstRunDone() {
@@ -144,7 +132,6 @@ constructor(
                                 )
                             )
                         }
-                        refreshRemoteAccess(session)
                         onSaved()
                     }
                     is JellyfinServerRepository.ServerConnectionResult.Error -> {
@@ -167,13 +154,6 @@ constructor(
                 _remoteVerifying.value = false
             }
         }
-    }
-
-    private suspend fun refreshRemoteAccess(session: Session) {
-        val currentHost = hostOf(session.serverUrl)
-        val addresses = databaseRepository.getServerAddresses(session.serverId)
-        _remoteConfiguredHost.value =
-            addresses.map { hostOf(it.address) }.firstOrNull { it != null && it != currentHost }
     }
 
     private fun hostOf(url: String?): String? {

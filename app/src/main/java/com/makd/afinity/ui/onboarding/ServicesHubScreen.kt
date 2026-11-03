@@ -48,6 +48,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -145,7 +146,6 @@ fun ServicesHubScreen(
     val serverName by viewModel.serverName.collectAsStateWithLifecycle()
     val seerrConnected by viewModel.isJellyseerrConnected.collectAsStateWithLifecycle()
     val absConnected by viewModel.isAudiobookshelfConnected.collectAsStateWithLifecycle()
-    val remoteHost by viewModel.remoteConfiguredHost.collectAsStateWithLifecycle()
     val remoteVerifying by viewModel.remoteVerifying.collectAsStateWithLifecycle()
     val remoteError by viewModel.remoteError.collectAsStateWithLifecycle()
     val remoteNeedsPermission by
@@ -154,6 +154,13 @@ fun ServicesHubScreen(
     val smViewModel: ServerManagementViewModel = hiltViewModel()
     val smState by smViewModel.state.collectAsStateWithLifecycle()
     val currentServer = smState.servers.firstOrNull { it.isActiveServer }
+
+    var seenServiceState by rememberSaveable { mutableStateOf<Pair<Boolean, Boolean>?>(null) }
+    LaunchedEffect(seerrConnected, absConnected) {
+        val now = seerrConnected to absConnected
+        if (seenServiceState != null && seenServiceState != now) smViewModel.loadServers()
+        seenServiceState = now
+    }
 
     val settingsViewModel: SettingsViewModel = hiltViewModel()
     val tmdbKey by settingsViewModel.tmdbApiKey.collectAsStateWithLifecycle()
@@ -178,13 +185,12 @@ fun ServicesHubScreen(
                 liveTypes,
             )
         else emptyList()
-    val remoteDots =
-        currentServer?.let { s ->
-            addressTypeDots(
-                (listOf(s.server.address) + s.addresses.map { it.address }).distinct(),
-                liveTypes,
-            )
-        } ?: emptyList()
+    val jellyfinAddresses =
+        currentServer
+            ?.let { s -> (listOf(s.server.address) + s.addresses.map { it.address }).distinct() }
+            .orEmpty()
+    val remoteAdded = jellyfinAddresses.any { connectionTypeOf(it) != ConnectionType.LOCAL }
+    val remoteDots = if (remoteAdded) addressTypeDots(jellyfinAddresses, liveTypes) else emptyList()
     val ratingsDots =
         listOf(
             if (tmdbKey.isNotBlank()) tmdbColor else dimDot,
@@ -248,7 +254,7 @@ fun ServicesHubScreen(
                             showFinish = !showAppBar,
                             seerrConnected = seerrConnected,
                             absConnected = absConnected,
-                            remoteAdded = remoteHost != null,
+                            remoteAdded = remoteAdded,
                             ratingsCount = ratingsCount,
                             seerrDots = seerrDots,
                             absDots = absDots,
@@ -316,7 +322,7 @@ fun ServicesHubScreen(
                         showFinish = !showAppBar,
                         seerrConnected = seerrConnected,
                         absConnected = absConnected,
-                        remoteAdded = remoteHost != null,
+                        remoteAdded = remoteAdded,
                         ratingsCount = ratingsCount,
                         seerrDots = seerrDots,
                         absDots = absDots,

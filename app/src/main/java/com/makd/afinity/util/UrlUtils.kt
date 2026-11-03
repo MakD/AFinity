@@ -15,10 +15,13 @@ internal fun extractHost(url: String): String {
     }
 }
 
+private val localNameSuffixes = listOf(".local", ".lan", ".home.arpa", ".internal", ".localdomain")
+
 fun isLocalAddress(url: String): Boolean {
-    val host = extractHost(url)
+    val host = extractHost(url).removeSuffix(".")
     return host == "localhost" ||
-        host.endsWith(".local") ||
+        localNameSuffixes.any { host.endsWith(it) } ||
+        (host.isNotEmpty() && '.' !in host && ':' !in host) ||
         host.startsWith("127.") ||
         host.startsWith("169.254.") ||
         host.startsWith("192.168.") ||
