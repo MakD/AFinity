@@ -6,10 +6,13 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,8 +28,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -53,6 +59,7 @@ import com.makd.afinity.ui.components.ratings.displayPriority
 import com.makd.afinity.ui.components.ratings.excludingSupersededBy
 import com.makd.afinity.ui.components.ratings.toDisplay
 import com.makd.afinity.ui.theme.CardDimensions
+import com.makd.afinity.ui.theme.isDarkSurface
 import java.util.UUID
 
 fun LazyListScope.baseMediaDetailItems(
@@ -267,6 +274,7 @@ fun RatingsAndReviews(
                                 sourceName = stringResource(R.string.rating_tomatometer),
                                 iconRes = R.drawable.ic_certified_fresh,
                                 label = stringResource(R.string.rt_certified_fresh),
+                                stampColors = CertifiedFreshStamp,
                             )
                         }
                     }
@@ -277,6 +285,7 @@ fun RatingsAndReviews(
                                 sourceName = stringResource(R.string.rating_popcornmeter),
                                 iconRes = R.drawable.ic_verified_hot,
                                 label = stringResource(R.string.rt_verified_hot),
+                                stampColors = VerifiedHotStamp,
                             )
                         }
                     }
@@ -345,66 +354,79 @@ private fun AwardBanner(headline: String, isFromCache: Boolean) {
 }
 
 @Composable
-private fun BadgeCard(sourceName: String, iconRes: Int, label: String) {
+private fun BadgeCard(
+    sourceName: String,
+    iconRes: Int,
+    label: String,
+    stampColors: RatingStampColors,
+) {
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
+        color = stampColors.fill.copy(alpha = 0.14f),
+        border = BorderStroke(1.dp, stampColors.fill.copy(alpha = 0.35f)),
         modifier =
             Modifier.width(CardDimensions.ratingTileWidth).height(CardDimensions.ratingTileHeight),
     ) {
         val parts = label.split(" ", limit = 2)
         val status = if (parts.size > 1) parts[0] else ""
         val rating = if (parts.size > 1) parts[1] else label
+        val isDark = isDarkSurface()
+        val labelColor =
+            if (isDark) stampColors.tileLabel else MaterialTheme.colorScheme.onSurfaceVariant
+        val valueColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
 
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-            horizontalAlignment = Alignment.Start,
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Icon(
-                    painter = painterResource(id = iconRes),
-                    contentDescription = sourceName,
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(16.dp),
-                )
-                Text(
-                    text = sourceName,
-                    style =
-                        MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+        Box {
+            if (status.isNotEmpty()) {
+                RatingStamp(
+                    text = status,
+                    colors = stampColors,
+                    modifier =
+                        Modifier.align(Alignment.CenterEnd)
+                            .offset(x = 28.dp, y = 6.dp)
+                            .size(118.dp)
+                            .graphicsLayer {
+                                rotationZ = -14f
+                                alpha = 0.32f
+                            },
                 )
             }
 
-            Row(
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            Column(
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.Start,
             ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(id = iconRes),
+                        contentDescription = sourceName,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Text(
+                        text = sourceName,
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                        color = labelColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+
                 Text(
                     text = rating,
                     style =
                         MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onBackground,
+                    color = valueColor,
                     maxLines = 1,
                     softWrap = false,
+                    modifier = Modifier.semantics { contentDescription = label },
                 )
-                if (status.isNotEmpty()) {
-                    Text(
-                        text = status,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 4.dp),
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
             }
         }
     }

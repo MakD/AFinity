@@ -234,12 +234,12 @@ private fun ExpandableEpisodeItem(
                 }
 
                 if (onDownload != null || downloadInfo != null) {
-                    when {
-                        downloadInfo?.status == AbsDownloadStatus.COMPLETED ->
+                    when (downloadInfo?.status) {
+                        AbsDownloadStatus.COMPLETED ->
                             IconButton(
                                 onClick = {
                                     pendingDeleteConfirm =
-                                        downloadInfo?.singleDownloadConfirm(episode.title)
+                                        downloadInfo.singleDownloadConfirm(episode.title)
                                 },
                                 modifier = Modifier.size(32.dp),
                             ) {
@@ -252,8 +252,8 @@ private fun ExpandableEpisodeItem(
                                 )
                             }
 
-                        downloadInfo?.status == AbsDownloadStatus.DOWNLOADING ||
-                            downloadInfo?.status == AbsDownloadStatus.QUEUED -> {
+                        AbsDownloadStatus.DOWNLOADING,
+                        AbsDownloadStatus.QUEUED -> {
                             Box(
                                 modifier = Modifier.size(32.dp),
                                 contentAlignment = Alignment.Center,

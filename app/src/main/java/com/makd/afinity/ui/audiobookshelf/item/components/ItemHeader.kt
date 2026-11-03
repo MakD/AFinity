@@ -3,7 +3,6 @@ package com.makd.afinity.ui.audiobookshelf.item.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -364,7 +363,7 @@ internal fun ItemActionRow(
                     when (downloadInfo?.status) {
                         AbsDownloadStatus.QUEUED -> onCancelDownload?.invoke()
                         AbsDownloadStatus.DOWNLOADING,
-                        AbsDownloadStatus.COMPLETED -> pendingDownloadConfirm = downloadInfo?.let {
+                        AbsDownloadStatus.COMPLETED -> pendingDownloadConfirm = downloadInfo.let {
                                 it.singleDownloadConfirm(it.title)
                             }
                         else -> onDownload.invoke()
@@ -427,7 +426,6 @@ internal fun ItemActionRow(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ItemDetailsSection(item: LibraryItem, modifier: Modifier = Modifier) {
     val metadata = item.media.metadata

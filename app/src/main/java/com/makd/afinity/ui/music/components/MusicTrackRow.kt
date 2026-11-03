@@ -363,7 +363,7 @@ fun MusicTrackRow(
                                 onDownload()
                             } else if (downloadStatus == DownloadStatus.COMPLETED) {
                                 pendingDeleteConfirm =
-                                    downloadInfo?.singleDownloadConfirm(track.name)
+                                    downloadInfo.singleDownloadConfirm(track.name)
                             } else {
                                 onCancelDownload?.invoke()
                             }
