@@ -118,6 +118,29 @@ class ItemStore @Inject constructor() {
         return if (changed) merged else items
     }
 
+    fun putUserDataFrom(items: Collection<AfinityItem>) {
+        if (items.isEmpty()) return
+        _items.update { current ->
+            var changed = false
+            val next = current.toMutableMap()
+            items.forEach { item ->
+                val existing = next[item.id]
+                val updated =
+                    when (existing) {
+                        null -> item
+                        is AfinityItem -> existing.withUserDataFrom(item)
+                        else -> existing
+                    }
+                if (updated !== existing) {
+                    next[item.id] = updated
+                    changed = true
+                }
+            }
+            if (changed) next else current
+        }
+        logGrowth()
+    }
+
     fun putIfAbsent(items: Collection<AfinityUserDataOwner>) {
         if (items.isEmpty()) return
         _items.update { current ->

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.MediaChangeManager
+import com.makd.afinity.data.manager.putFrom
 import com.makd.afinity.data.manager.resolveChangedItems
 import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
@@ -34,7 +35,6 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
-import com.makd.afinity.data.models.media.withUserDataFrom
 import com.makd.afinity.data.models.music.MusicSearchResults
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.AudiobookshelfRepository
@@ -190,26 +190,14 @@ constructor(
             itemStore.overlay.collect { overlay ->
                 if (overlay.isEmpty()) return@collect
                 _uiState.update { state ->
-                    var changed = false
-                    val newResults =
-                        state.searchResults.map { item ->
-                            val source = overlay[item.id] ?: return@map item
-                            val next = source as? AfinityItem ?: item.withUserDataFrom(source)
-                            if (next !== item) changed = true
-                            next
-                        }
-                    val newEpisodes =
-                        state.episodeResults.map { episode ->
-                            val source = overlay[episode.id] ?: return@map episode
-                            val next =
-                                episode.withUserDataFrom(source) as? AfinityEpisode ?: episode
-                            if (next !== episode) changed = true
-                            next
-                        }
-                    if (changed) {
-                        state.copy(searchResults = newResults, episodeResults = newEpisodes)
-                    } else {
+                    val newResults = itemStore.merge(state.searchResults)
+                    val newEpisodes = itemStore.merge(state.episodeResults)
+                    if (
+                        newResults === state.searchResults && newEpisodes === state.episodeResults
+                    ) {
                         state
+                    } else {
+                        state.copy(searchResults = newResults, episodeResults = newEpisodes)
                     }
                 }
             }
@@ -234,7 +222,7 @@ constructor(
                     }
                 }
                 if (resolved.isNotEmpty()) {
-                    itemStore.put(resolved)
+                    itemStore.putFrom(event, resolved)
                 }
             }
         }

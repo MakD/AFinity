@@ -6,9 +6,14 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.withUserData
 import com.makd.afinity.data.models.media.withUserDataPatch
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.store.ItemStore
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import timber.log.Timber
+
+fun ItemStore.putFrom(event: MediaChangeEvent, items: List<AfinityItem>) {
+    if (event.isUserDataChange) putUserDataFrom(items) else put(items)
+}
 
 suspend fun MediaChangeEvent.resolveChangedItems(
     mediaRepository: MediaRepository,

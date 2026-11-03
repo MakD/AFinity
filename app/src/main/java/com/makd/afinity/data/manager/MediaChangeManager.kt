@@ -99,9 +99,9 @@ constructor(
     }
 
     private suspend fun emitBatch(batch: MediaChangeBatch) {
-        itemStore.put(
-            batch.changes.flatMap { listOfNotNull(it.updatedItem, it.parentItem, it.seasonItem) }
-        )
+        val (userDataChanges, contentChanges) = batch.changes.partition { it.isUserDataChange }
+        itemStore.put(contentChanges.flatMap { it.storeItems() })
+        itemStore.putUserDataFrom(userDataChanges.flatMap { it.storeItems() })
         _batches.emit(batch)
     }
 
@@ -447,7 +447,12 @@ data class MediaChangeEvent(
     val source: MediaChangeSource,
     val userData: UserItemDataDto? = null,
     val patch: UserDataPatch? = null,
-)
+) {
+    val isUserDataChange: Boolean
+        get() = userData != null || patch != null
+
+    fun storeItems(): List<AfinityItem> = listOfNotNull(updatedItem, parentItem, seasonItem)
+}
 
 enum class MediaChangeSource {
     MANUAL,

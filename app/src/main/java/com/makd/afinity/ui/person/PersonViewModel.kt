@@ -8,6 +8,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.manager.putFrom
 import com.makd.afinity.data.manager.resolveChangedItems
 import com.makd.afinity.data.models.external.ExternalTitles
 import com.makd.afinity.data.models.media.AfinityItem
@@ -145,7 +146,7 @@ constructor(
                         },
                     )
                 if (resolved.isNotEmpty()) {
-                    itemStore.put(resolved)
+                    itemStore.putFrom(event, resolved)
                 }
             }
         }

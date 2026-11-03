@@ -21,6 +21,7 @@ import com.makd.afinity.data.manager.PlaybackEvent
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.manager.UnreachableReason
+import com.makd.afinity.data.manager.putFrom
 import com.makd.afinity.data.manager.resolveTargetItem
 import com.makd.afinity.data.models.admin.AdminPermissionDeniedException
 import com.makd.afinity.data.models.admin.AdminRequestStillRunningException
@@ -423,7 +424,7 @@ constructor(
 
                 targetItem?.let { item ->
                     if (item is AfinityEpisode) {
-                        itemStore.put(item)
+                        itemStore.putFrom(event, listOf(item))
                         episodeSelection.refresh(item)
                     }
 
@@ -432,8 +433,7 @@ constructor(
                         val membershipMayHaveChanged =
                             currentItem !is AfinityBoxSet &&
                                 event.source != MediaChangeSource.PLAYBACK &&
-                                event.userData == null &&
-                                event.patch == null
+                                !event.isUserDataChange
                         if (membershipMayHaveChanged) {
                             launch {
                                 try {
