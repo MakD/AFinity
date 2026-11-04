@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -61,6 +64,7 @@ import com.makd.afinity.ui.components.SegmentedTab
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsSwitchItem
+import com.makd.afinity.ui.components.listDetailPaneDirective
 import com.makd.afinity.widget.AudioWidgetEngine
 import com.makd.afinity.widget.AudioWidgetLook
 import com.makd.afinity.widget.AudioWidgetSettings
@@ -70,6 +74,8 @@ import com.makd.afinity.widget.WidgetAlignment
 import com.makd.afinity.widget.WidgetBadgeColours
 import com.makd.afinity.widget.WidgetTextColour
 import kotlin.math.roundToInt
+
+private val PREVIEW_MAX_WIDTH = 520.dp
 
 private val WidgetFont =
     FontFamily(
@@ -103,124 +109,175 @@ fun AudioWidgetConfigScreen(
         }
     ) { innerPadding ->
         val current = settings ?: return@AfinityScreen
-        Column(
-            modifier =
-                Modifier.fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(
-                        top = innerPadding.calculateTopPadding() + 8.dp,
-                        bottom = innerPadding.calculateBottomPadding() + 16.dp,
+        val layoutDirection = LocalLayoutDirection.current
+        val start = innerPadding.calculateStartPadding(layoutDirection)
+        val end = innerPadding.calculateEndPadding(layoutDirection)
+        val top = innerPadding.calculateTopPadding()
+        val bottom = innerPadding.calculateBottomPadding()
+        val directive = listDetailPaneDirective()
+
+        if (directive.maxHorizontalPartitions >= 2) {
+            Row(modifier = Modifier.fillMaxSize().padding(start = start, end = end)) {
+                Column(
+                    modifier =
+                        Modifier.width(directive.defaultPanePreferredWidth)
+                            .fillMaxHeight()
+                            .verticalScroll(rememberScrollState())
+                            .padding(top = top + 16.dp, bottom = bottom + 16.dp)
+                ) {
+                    SettingsSections(current, viewModel, onSaved)
+                }
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    PreviewSection(
+                        settings = current,
+                        state = viewModel.previewState,
+                        modifier =
+                            Modifier.verticalScroll(rememberScrollState())
+                                .padding(
+                                    start = 24.dp,
+                                    end = 24.dp,
+                                    top = top + 16.dp,
+                                    bottom = bottom + 16.dp,
+                                )
+                                .widthIn(max = PREVIEW_MAX_WIDTH),
                     )
-        ) {
-            PreviewSection(current, viewModel.previewState)
-
-            Spacer(modifier = Modifier.height(24.dp))
-            SettingsGroup(title = stringResource(R.string.widget_settings_layout)) {
-                SettingsSwitchItem(
-                    title = stringResource(R.string.widget_setting_cover),
-                    subtitle = stringResource(R.string.widget_setting_cover_desc),
-                    checked = current.showCover,
-                    onCheckedChange = { checked ->
-                        viewModel.update { it.copy(showCover = checked) }
-                    },
-                )
-                SettingsDivider(startPadding = 16.dp)
-                SettingsSwitchItem(
-                    title = stringResource(R.string.widget_setting_status),
-                    subtitle = stringResource(R.string.widget_setting_status_desc),
-                    checked = current.showStatus,
-                    onCheckedChange = { checked ->
-                        viewModel.update { it.copy(showStatus = checked) }
-                    },
-                )
-                SettingsDivider(startPadding = 16.dp)
-                SegmentedSetting(
-                    title = stringResource(R.string.widget_setting_alignment),
-                    subtitle = null,
-                    options =
-                        listOf(
-                            stringResource(R.string.widget_align_left),
-                            stringResource(R.string.widget_align_right),
-                        ),
-                    selectedIndex = current.alignment.ordinal,
-                    onSelect = { index ->
-                        viewModel.update { it.copy(alignment = WidgetAlignment.entries[index]) }
-                    },
-                )
-                SettingsDivider(startPadding = 16.dp)
-                SettingsSwitchItem(
-                    title = stringResource(R.string.widget_setting_continue),
-                    subtitle = stringResource(R.string.widget_setting_continue_desc),
-                    checked = current.showContinue,
-                    onCheckedChange = { checked ->
-                        viewModel.update { it.copy(showContinue = checked) }
-                    },
-                )
+                }
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            SettingsGroup(title = stringResource(R.string.widget_settings_appearance)) {
-                OpacitySetting(
-                    value = current.backgroundOpacity,
-                    onValueChange = { value ->
-                        viewModel.update { it.copy(backgroundOpacity = value) }
-                    },
-                )
-                SettingsDivider(startPadding = 16.dp)
-                SettingsSwitchItem(
-                    title = stringResource(R.string.widget_setting_shadow),
-                    subtitle = stringResource(R.string.widget_setting_shadow_desc),
-                    checked = current.textShadow,
-                    onCheckedChange = { checked ->
-                        viewModel.update { it.copy(textShadow = checked) }
-                    },
-                )
-                SettingsDivider(startPadding = 16.dp)
-                SegmentedSetting(
-                    title = stringResource(R.string.widget_setting_text_colour),
-                    subtitle = stringResource(R.string.widget_setting_text_colour_desc),
-                    options =
-                        listOf(
-                            stringResource(R.string.widget_text_auto),
-                            stringResource(R.string.widget_text_light),
-                            stringResource(R.string.widget_text_dark),
-                        ),
-                    selectedIndex = current.textColour.ordinal,
-                    onSelect = { index ->
-                        viewModel.update { it.copy(textColour = WidgetTextColour.entries[index]) }
-                    },
-                )
-                SettingsDivider(startPadding = 16.dp)
-                SegmentedSetting(
-                    title = stringResource(R.string.widget_setting_badge),
-                    subtitle = null,
-                    options =
-                        listOf(
-                            stringResource(R.string.widget_badge_status),
-                            stringResource(R.string.widget_badge_you),
-                        ),
-                    selectedIndex = current.badgeColours.ordinal,
-                    onSelect = { index ->
-                        viewModel.update {
-                            it.copy(badgeColours = WidgetBadgeColours.entries[index])
-                        }
-                    },
-                )
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-            Button(
-                onClick = { viewModel.save(onSaved) },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(48.dp),
+        } else {
+            Column(
+                modifier =
+                    Modifier.fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(
+                            start = start,
+                            end = end,
+                            top = top + 8.dp,
+                            bottom = bottom + 16.dp,
+                        )
             ) {
-                Text(stringResource(R.string.btn_save_changes))
+                PreviewSection(
+                    settings = current,
+                    state = viewModel.previewState,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                SettingsSections(current, viewModel, onSaved)
             }
         }
     }
 }
 
 @Composable
-private fun PreviewSection(settings: AudioWidgetSettings, state: AudioWidgetState?) {
+private fun SettingsSections(
+    current: AudioWidgetSettings,
+    viewModel: AudioWidgetConfigViewModel,
+    onSaved: () -> Unit,
+) {
+    Column {
+        SettingsGroup(title = stringResource(R.string.widget_settings_layout)) {
+            SettingsSwitchItem(
+                title = stringResource(R.string.widget_setting_cover),
+                subtitle = stringResource(R.string.widget_setting_cover_desc),
+                checked = current.showCover,
+                onCheckedChange = { checked -> viewModel.update { it.copy(showCover = checked) } },
+            )
+            SettingsDivider(startPadding = 16.dp)
+            SettingsSwitchItem(
+                title = stringResource(R.string.widget_setting_status),
+                subtitle = stringResource(R.string.widget_setting_status_desc),
+                checked = current.showStatus,
+                onCheckedChange = { checked -> viewModel.update { it.copy(showStatus = checked) } },
+            )
+            SettingsDivider(startPadding = 16.dp)
+            SegmentedSetting(
+                title = stringResource(R.string.widget_setting_alignment),
+                subtitle = null,
+                options =
+                    listOf(
+                        stringResource(R.string.widget_align_left),
+                        stringResource(R.string.widget_align_right),
+                    ),
+                selectedIndex = current.alignment.ordinal,
+                onSelect = { index ->
+                    viewModel.update { it.copy(alignment = WidgetAlignment.entries[index]) }
+                },
+            )
+            SettingsDivider(startPadding = 16.dp)
+            SettingsSwitchItem(
+                title = stringResource(R.string.widget_setting_continue),
+                subtitle = stringResource(R.string.widget_setting_continue_desc),
+                checked = current.showContinue,
+                onCheckedChange = { checked ->
+                    viewModel.update { it.copy(showContinue = checked) }
+                },
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+        SettingsGroup(title = stringResource(R.string.widget_settings_appearance)) {
+            OpacitySetting(
+                value = current.backgroundOpacity,
+                onValueChange = { value ->
+                    viewModel.update { it.copy(backgroundOpacity = value) }
+                },
+            )
+            SettingsDivider(startPadding = 16.dp)
+            SettingsSwitchItem(
+                title = stringResource(R.string.widget_setting_shadow),
+                subtitle = stringResource(R.string.widget_setting_shadow_desc),
+                checked = current.textShadow,
+                onCheckedChange = { checked -> viewModel.update { it.copy(textShadow = checked) } },
+            )
+            SettingsDivider(startPadding = 16.dp)
+            SegmentedSetting(
+                title = stringResource(R.string.widget_setting_text_colour),
+                subtitle = stringResource(R.string.widget_setting_text_colour_desc),
+                options =
+                    listOf(
+                        stringResource(R.string.widget_text_auto),
+                        stringResource(R.string.widget_text_light),
+                        stringResource(R.string.widget_text_dark),
+                    ),
+                selectedIndex = current.textColour.ordinal,
+                onSelect = { index ->
+                    viewModel.update { it.copy(textColour = WidgetTextColour.entries[index]) }
+                },
+            )
+            SettingsDivider(startPadding = 16.dp)
+            SegmentedSetting(
+                title = stringResource(R.string.widget_setting_badge),
+                subtitle = null,
+                options =
+                    listOf(
+                        stringResource(R.string.widget_badge_status),
+                        stringResource(R.string.widget_badge_you),
+                    ),
+                selectedIndex = current.badgeColours.ordinal,
+                onSelect = { index ->
+                    viewModel.update { it.copy(badgeColours = WidgetBadgeColours.entries[index]) }
+                },
+            )
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+        Button(
+            onClick = { viewModel.save(onSaved) },
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(48.dp),
+        ) {
+            Text(stringResource(R.string.btn_save_changes))
+        }
+    }
+}
+
+@Composable
+private fun PreviewSection(
+    settings: AudioWidgetSettings,
+    state: AudioWidgetState?,
+    modifier: Modifier = Modifier,
+) {
     var darkWallpaper by rememberSaveable { mutableStateOf(true) }
     val systemDark = isSystemInDarkTheme()
     val lightText =
@@ -231,7 +288,7 @@ private fun PreviewSection(settings: AudioWidgetSettings, state: AudioWidgetStat
                 if (settings.backgroundOpacity >= 50) systemDark else darkWallpaper
         }
 
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+    Column(modifier = modifier) {
         Box(
             modifier =
                 Modifier.fillMaxWidth()
