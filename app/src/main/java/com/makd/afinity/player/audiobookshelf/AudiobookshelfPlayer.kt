@@ -83,6 +83,12 @@ constructor(
         val startPositions: Map<Int, Double>,
     )
 
+    data class PreparedSession(
+        val mediaItems: List<MediaItem>,
+        val startIndex: Int,
+        val startPositionMs: Long,
+    )
+
     private val queueListener =
         object : Player.Listener {
             override fun onPositionDiscontinuity(
@@ -216,123 +222,154 @@ constructor(
             val controller = getConnectedController() ?: return@launch
             Timber.d("ABS loadSession: controller connected")
 
-            val token = securePreferencesRepository.getCachedAudiobookshelfToken()
-            val queue = buildPodcastQueue(session, episodeSort, includePlayed)
-            val isPodcastPlaylist = queue != null
+            val prepared =
+                prepareSession(session, baseUrl, startPosition, episodeSort, includePlayed)
+                    ?: return@launch
 
-            val audioTracks =
-                if (queue != null) {
-                    Timber.d("Loading ${queue.tracks.size} episodes for podcast playlist")
-                    queue.tracks
-                } else if (session.audioTracks.isNullOrEmpty()) {
-                    Timber.e("No audio tracks found in session. Session data: $session")
-                    return@launch
-                } else {
-                    session.audioTracks
-                }
-
-            val enhancedSession =
-                if (queue != null) {
-                    var accumulatedTime = 0.0
-                    val episodeChapters =
-                        queue.episodes.mapIndexed { index, episode ->
-                            val length = queue.tracks[index].duration
-                            BookChapter(
-                                    id = index,
-                                    start = accumulatedTime,
-                                    end = accumulatedTime + length,
-                                    title = episode.title,
-                                )
-                                .also { accumulatedTime += length }
-                        }
-
-                    session.copy(
-                        audioTracks = audioTracks,
-                        displayTitle =
-                            session.mediaMetadata?.title ?: session.displayTitle ?: "Podcast",
-                        displayAuthor = session.mediaMetadata?.authorName ?: session.displayAuthor,
-                        duration = accumulatedTime,
-                        chapters = episodeChapters,
-                    )
-                } else {
-                    session
-                }
-
-            playbackManager.setSession(enhancedSession, baseUrl, token)
-            progressSyncer.onSessionLoaded(session.episodeId)
-            queueStartPositions = queue?.startPositions ?: emptyMap()
-
-            if (queue != null) {
-                playbackManager.setPlaylistInfo(queue.episodes.map { it.id })
-            }
-
-            val artUrl =
-                if (enhancedSession.id.startsWith("local_")) {
-                    enhancedSession.coverPath
-                } else if (baseUrl.isNotEmpty()) {
-                    "$baseUrl/api/items/${enhancedSession.libraryItemId}/cover?raw=1"
-                } else {
-                    enhancedSession.coverPath
-                }
-
-            val mediaItems = audioTracks.mapIndexed { index, track ->
-                val url =
-                    if (
-                        track.contentUrl?.startsWith("http") == true ||
-                            track.contentUrl?.startsWith("file") == true
-                    )
-                        track.contentUrl
-                    else "$baseUrl${track.contentUrl}"
-
-                val itemTitle =
-                    if (isPodcastPlaylist && track.title != null) {
-                        track.title
-                    } else {
-                        enhancedSession.displayTitle
-                            ?: enhancedSession.mediaMetadata?.title
-                            ?: "Unknown"
-                    }
-
-                MediaItem.Builder()
-                    .setUri(url)
-                    .setMediaId(index.toString())
-                    .setMediaMetadata(
-                        MediaMetadata.Builder()
-                            .setTitle(itemTitle)
-                            .setArtist(
-                                enhancedSession.displayAuthor
-                                    ?: enhancedSession.mediaMetadata?.authorName
-                                    ?: ""
-                            )
-                            .setArtworkUri(artUrl?.toUri())
-                            .build()
-                    )
-                    .build()
-            }
-
-            Timber.d("Sending ${mediaItems.size} items to player")
+            Timber.d("Sending ${prepared.mediaItems.size} items to player")
 
             controller.stop()
             controller.clearMediaItems()
-            controller.setMediaItems(mediaItems)
+            controller.setMediaItems(
+                prepared.mediaItems,
+                prepared.startIndex,
+                prepared.startPositionMs,
+            )
             controller.prepare()
-
-            if (queue != null && session.episodeId != null) {
-                val episodeIndex = queue.episodes.indexOfFirst { it.id == session.episodeId }
-                val seekPosition = startPosition ?: session.currentTime
-                if (episodeIndex > 0) {
-                    controller.seekTo(episodeIndex, (seekPosition * 1000).toLong())
-                } else if (seekPosition > 0) {
-                    controller.seekTo(0, (seekPosition * 1000).toLong())
-                }
-            } else {
-                val seekPosition = startPosition ?: session.currentTime
-                if (seekPosition > 0) {
-                    seekToPosition(seekPosition)
-                }
-            }
             controller.play()
         }
+    }
+
+    @UnstableApi suspend fun connectController(): Boolean = getConnectedController() != null
+
+    suspend fun prepareSession(
+        session: PlaybackSession,
+        baseUrl: String,
+        startPosition: Double? = null,
+        episodeSort: String? = null,
+        includePlayed: Boolean = false,
+    ): PreparedSession? {
+        val token = securePreferencesRepository.getCachedAudiobookshelfToken()
+        val queue = buildPodcastQueue(session, episodeSort, includePlayed)
+        val isPodcastPlaylist = queue != null
+
+        val audioTracks =
+            if (queue != null) {
+                Timber.d("Loading ${queue.tracks.size} episodes for podcast playlist")
+                queue.tracks
+            } else if (session.audioTracks.isNullOrEmpty()) {
+                Timber.e("No audio tracks found in session. Session data: $session")
+                return null
+            } else {
+                session.audioTracks
+            }
+
+        val enhancedSession =
+            if (queue != null) {
+                var accumulatedTime = 0.0
+                val episodeChapters =
+                    queue.episodes.mapIndexed { index, episode ->
+                        val length = queue.tracks[index].duration
+                        BookChapter(
+                                id = index,
+                                start = accumulatedTime,
+                                end = accumulatedTime + length,
+                                title = episode.title,
+                            )
+                            .also { accumulatedTime += length }
+                    }
+
+                session.copy(
+                    audioTracks = audioTracks,
+                    displayTitle =
+                        session.mediaMetadata?.title ?: session.displayTitle ?: "Podcast",
+                    displayAuthor = session.mediaMetadata?.authorName ?: session.displayAuthor,
+                    duration = accumulatedTime,
+                    chapters = episodeChapters,
+                )
+            } else {
+                session
+            }
+
+        playbackManager.setSession(enhancedSession, baseUrl, token)
+        progressSyncer.onSessionLoaded(session.episodeId)
+        queueStartPositions = queue?.startPositions ?: emptyMap()
+
+        if (queue != null) {
+            playbackManager.setPlaylistInfo(queue.episodes.map { it.id })
+        }
+
+        val artUrl =
+            if (enhancedSession.id.startsWith("local_")) {
+                enhancedSession.coverPath
+            } else if (baseUrl.isNotEmpty()) {
+                "$baseUrl/api/items/${enhancedSession.libraryItemId}/cover?raw=1"
+            } else {
+                enhancedSession.coverPath
+            }
+
+        val mediaItems = audioTracks.mapIndexed { index, track ->
+            val url =
+                if (
+                    track.contentUrl?.startsWith("http") == true ||
+                        track.contentUrl?.startsWith("file") == true
+                )
+                    track.contentUrl
+                else "$baseUrl${track.contentUrl}"
+
+            val itemTitle =
+                if (isPodcastPlaylist && track.title != null) {
+                    track.title
+                } else {
+                    enhancedSession.displayTitle
+                        ?: enhancedSession.mediaMetadata?.title
+                        ?: "Unknown"
+                }
+
+            MediaItem.Builder()
+                .setUri(url)
+                .setMediaId(index.toString())
+                .setMediaMetadata(
+                    MediaMetadata.Builder()
+                        .setTitle(itemTitle)
+                        .setArtist(
+                            enhancedSession.displayAuthor
+                                ?: enhancedSession.mediaMetadata?.authorName
+                                ?: ""
+                        )
+                        .setArtworkUri(artUrl?.toUri())
+                        .build()
+                )
+                .build()
+        }
+
+        val seekPosition = startPosition ?: session.currentTime
+        if (queue != null && session.episodeId != null) {
+            val episodeIndex = queue.episodes.indexOfFirst { it.id == session.episodeId }
+            return PreparedSession(
+                mediaItems,
+                episodeIndex.coerceAtLeast(0),
+                (seekPosition * 1000).toLong().coerceAtLeast(0L),
+            )
+        }
+        if (seekPosition <= 0) return PreparedSession(mediaItems, 0, 0L)
+        playbackManager.updatePosition(seekPosition)
+        val (startIndex, startOffsetMs) = locate(audioTracks, seekPosition)
+        return PreparedSession(mediaItems, startIndex, startOffsetMs)
+    }
+
+    private fun locate(tracks: List<AudioTrack>, positionSeconds: Double): Pair<Int, Long> {
+        var accumulatedDuration = 0.0
+        for ((index, track) in tracks.withIndex()) {
+            if (
+                positionSeconds < accumulatedDuration + track.duration || index == tracks.lastIndex
+            ) {
+                val posInTrack = (positionSeconds - accumulatedDuration).coerceAtLeast(0.0)
+                return index to (posInTrack * 1000).toLong()
+            }
+            accumulatedDuration += track.duration
+        }
+        return 0 to 0L
     }
 
     private suspend fun buildPodcastQueue(
@@ -493,27 +530,18 @@ constructor(
         playbackManager.updatePlaybackSpeed(applied)
     }
 
-    fun seekToPosition(positionSeconds: Double) {
-        val controller = mediaController ?: return
+    fun seekToPosition(positionSeconds: Double): Boolean {
+        val controller = mediaController ?: return false
         val audioTracks =
             playbackManager.currentSession.value?.audioTracks
                 ?: playbackManager.playbackState.value.audioTracks
-        if (audioTracks.isEmpty()) return
+        if (audioTracks.isEmpty()) return false
 
         playbackManager.updatePosition(positionSeconds)
 
-        var accumulatedDuration = 0.0
-        for ((index, track) in audioTracks.withIndex()) {
-            if (
-                positionSeconds < accumulatedDuration + track.duration ||
-                    index == audioTracks.lastIndex
-            ) {
-                val posInTrack = (positionSeconds - accumulatedDuration).coerceAtLeast(0.0)
-                controller.seekTo(index, (posInTrack * 1000).toLong())
-                break
-            }
-            accumulatedDuration += track.duration
-        }
+        val (index, offsetMs) = locate(audioTracks, positionSeconds)
+        controller.seekTo(index, offsetMs)
+        return true
     }
 
     fun seekToChapter(chapterIndex: Int) {
@@ -522,14 +550,14 @@ constructor(
         seekToPosition(state.chapters[chapterIndex].start)
     }
 
-    fun skipForward(seconds: Int = 30) {
+    fun skipForward(seconds: Int = 30): Boolean {
         val current = playbackManager.playbackState.value.currentTime
-        seekToPosition(current + seconds)
+        return seekToPosition(current + seconds)
     }
 
-    fun skipBackward(seconds: Int = 30) {
+    fun skipBackward(seconds: Int = 30): Boolean {
         val current = playbackManager.playbackState.value.currentTime
-        seekToPosition((current - seconds).coerceAtLeast(0.0))
+        return seekToPosition((current - seconds).coerceAtLeast(0.0))
     }
 
     fun setSleepTimer(durationMinutes: Int) {

@@ -3658,5 +3658,40 @@
     </plurals>
     <string name="review_by_author_fmt">Review by %1$s</string>
     <string name="log_repeat_count_fmt">%1$d×</string>
+    <string name="widget_audio_name">AFinity player</string>
+    <string name="widget_audio_description">Music, audiobooks and podcasts on your home screen</string>
+    <string name="widget_status_playing">PLAYING</string>
+    <string name="widget_status_paused">PAUSED</string>
+    <string name="widget_status_stopped">STOPPED</string>
+    <string name="widget_by_fmt">by %1$s</string>
+    <string name="widget_continue_listening">CONTINUE LISTENING</string>
+    <string name="widget_resume_fmt">Resume %1$s</string>
+    <string name="widget_settings_title">Widget settings</string>
+    <string name="widget_settings_layout">Layout</string>
+    <string name="widget_settings_appearance">Appearance</string>
+    <string name="widget_preview_dark">Dark wallpaper</string>
+    <string name="widget_preview_light">Light wallpaper</string>
+    <string name="widget_setting_cover">Show cover</string>
+    <string name="widget_setting_cover_desc">Album or book art beside the title</string>
+    <string name="widget_setting_status">Show status line</string>
+    <string name="widget_setting_status_desc">The PLAYING / PAUSED label above the title</string>
+    <string name="widget_setting_alignment">Alignment</string>
+    <string name="widget_align_left">Left</string>
+    <string name="widget_align_right">Right</string>
+    <string name="widget_setting_continue">Show Continue listening</string>
+    <string name="widget_setting_continue_desc">When the widget is 3 rows or taller</string>
+    <string name="widget_setting_opacity">Background opacity</string>
+    <string name="widget_setting_opacity_desc">0% is fully transparent</string>
+    <string name="widget_opacity_value_fmt">%1$d%%</string>
+    <string name="widget_setting_shadow">Text shadow</string>
+    <string name="widget_setting_shadow_desc">Keeps text readable on busy wallpapers</string>
+    <string name="widget_setting_text_colour">Text colour</string>
+    <string name="widget_setting_text_colour_desc">Auto follows the wallpaper</string>
+    <string name="widget_text_auto">Auto</string>
+    <string name="widget_text_light">Light</string>
+    <string name="widget_text_dark">Dark</string>
+    <string name="widget_setting_badge">Status badge colour</string>
+    <string name="widget_badge_status">Status colours</string>
+    <string name="widget_badge_you">Material You</string>
 
 </resources>

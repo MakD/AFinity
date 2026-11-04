@@ -38,6 +38,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -68,6 +69,11 @@ data class LoadQueueEvent(
 data class RearrangeQueueEvent(
     val mediaItems: List<MediaItem>,
     val currentIndex: Int,
+)
+
+data class ResumptionQueue(
+    val mediaItems: List<MediaItem>,
+    val startIndex: Int,
 )
 
 private val KEY_CURRENT_INDEX = intPreferencesKey("music_current_index")
@@ -192,8 +198,10 @@ constructor(
         )
     }
 
+    private val restoreJob: Job
+
     init {
-        scope.launch { restoreFromRoom() }
+        restoreJob = scope.launch { restoreFromRoom() }
 
         scope.launch {
             preferencesRepository.getMusicQualityWifiFlow().collect { wifiMusicQualityBitrate = it }
@@ -484,6 +492,18 @@ constructor(
             Timber.d("Track ${track.id} needs a server transcode: ${decision.transcodeReasons}")
         }
         return !isDirect
+    }
+
+    suspend fun resumptionQueue(): ResumptionQueue? {
+        restoreJob.join()
+        val tracks = _queue.value
+        if (tracks.isEmpty()) return null
+        val startIndex = _currentIndex.value.coerceIn(0, tracks.size - 1)
+        withTimeoutOrNull(DOWNLOADS_READY_TIMEOUT_MS.milliseconds) {
+            downloadedTrackPaths.filterNotNull().first()
+        }
+        ensureResolved(tracks[startIndex])
+        return ResumptionQueue(tracks.map { buildMediaItem(it) }, startIndex)
     }
 
     fun mediaItemFor(track: AfinityTrack): MediaItem = buildMediaItem(track)

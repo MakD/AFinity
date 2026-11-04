@@ -5,14 +5,19 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.media.MediaCodecList
 import android.os.Bundle
 import android.os.Handler
 import androidx.annotation.OptIn
+import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
+import androidx.core.net.toUri
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -36,21 +41,26 @@ import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import androidx.media3.exoplayer.upstream.LoadErrorHandlingPolicy
 import androidx.media3.session.CommandButton
 import androidx.media3.session.DefaultMediaNotificationProvider
+import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
-import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.SettableFuture
 import com.makd.afinity.MainActivity
 import com.makd.afinity.R
+import com.makd.afinity.cast.CastManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.RepeatMode
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
+import com.makd.afinity.data.repository.auth.AuthRepository
+import com.makd.afinity.data.repository.music.MusicRepository
+import com.makd.afinity.player.audiobookshelf.AbsPlaybackStarter
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfEqualizerManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
@@ -61,11 +71,13 @@ import com.makd.afinity.player.music.MusicPlaybackManager
 import com.makd.afinity.player.music.MusicProgressReporter
 import com.makd.afinity.player.music.MusicQueueManager
 import com.makd.afinity.player.music.RadioManager
+import com.makd.afinity.widget.AudioWidgetUpdater
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import kotlin.math.pow
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -77,12 +89,13 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 
 @UnstableApi
 @OptIn(UnstableApi::class)
 @AndroidEntryPoint
-class AudioService : MediaSessionService() {
+class AudioService : MediaLibraryService() {
 
     enum class ActiveEngine {
         NONE,
@@ -96,7 +109,24 @@ class AudioService : MediaSessionService() {
         const val ACTION_STOP = "com.makd.afinity.player.ACTION_STOP"
         const val ACTION_PAUSE_FOR_CAST = "com.makd.afinity.player.ACTION_PAUSE_FOR_CAST"
 
+        const val COMMAND_REWIND = "action_rewind"
+        const val COMMAND_FORWARD = "action_forward"
+        const val COMMAND_SHUFFLE_ALL = "action_shuffle_all"
+        const val COMMAND_RESUME_MUSIC = "action_resume_music"
+        const val COMMAND_PLAY_ABS_ITEM = "action_play_abs_item"
+        const val ARG_ITEM_ID = "item_id"
+        const val ARG_EPISODE_ID = "episode_id"
+        private const val COMMAND_SHUFFLE = "action_shuffle"
+        private const val COMMAND_REPEAT = "action_repeat"
+        private const val SHUFFLE_ALL_TRACK_COUNT = 200
+
         private const val CHANNEL_ID = "afinity_audio_playback"
+        private const val MUSIC_POSITION_SAVE_TICKS = 10
+        private const val SEEK_STEP_MS = 30_000L
+        private const val SEEK_STEP_SECONDS = 30
+        private const val RESUME_PREVIEW_MEDIA_ID = "afinity_resume_preview"
+        private const val RESUMPTION_SHUTDOWN_NOTIFICATION_ID = 4107
+        private val RESUMPTION_TIMEOUT = 8.seconds
 
         private val ABS_AUDIO_ATTRIBUTES =
             AudioAttributes.Builder()
@@ -124,8 +154,14 @@ class AudioService : MediaSessionService() {
     @Inject lateinit var securePreferencesRepository: SecurePreferencesRepository
     @Inject lateinit var preferencesRepository: PreferencesRepository
     @Inject lateinit var sessionManager: SessionManager
+    @Inject lateinit var authRepository: AuthRepository
+    @Inject lateinit var lastPlaybackStore: LastPlaybackStore
+    @Inject lateinit var absPlaybackStarter: AbsPlaybackStarter
+    @Inject lateinit var musicRepository: MusicRepository
+    @Inject lateinit var audioWidgetUpdater: AudioWidgetUpdater
+    @Inject lateinit var castManager: CastManager
 
-    private var mediaSession: MediaSession? = null
+    private var mediaSession: MediaLibrarySession? = null
     private var exoPlayer: ExoPlayer? = null
     private val activeEngineRef = AtomicReference(ActiveEngine.NONE)
     var activeEngine: ActiveEngine
@@ -142,6 +178,7 @@ class AudioService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
+        audioWidgetUpdater.startIfWidgetsPlaced()
         createNotificationChannel()
         val bufferSizeMb = runBlocking { preferencesRepository.getBufferSizeMb() }
         initializePlayer(bufferSizeMb)
@@ -265,10 +302,9 @@ class AudioService : MediaSessionService() {
             )
 
         mediaSession =
-            MediaSession.Builder(this, exoPlayer!!)
+            MediaLibrarySession.Builder(this, exoPlayer!!, AudioServiceCallback())
                 .setId("afinity_audio")
                 .setSessionActivity(pendingIntent)
-                .setCallback(AudioServiceCallback())
                 .build()
 
         setMediaNotificationProvider(
@@ -448,9 +484,11 @@ class AudioService : MediaSessionService() {
             }
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
+                if (isPlaying) recordNowPlayingDisplay()
                 when (activeEngine) {
                     ActiveEngine.ABS -> {
                         absPlaybackManager.updatePlayingState(isPlaying)
+                        recordAbsPlayback()
                         if (isPlaying) {
                             startPositionUpdates()
                             absProgressSyncer.startSyncing()
@@ -462,13 +500,18 @@ class AudioService : MediaSessionService() {
                     }
                     ActiveEngine.MUSIC -> {
                         musicPlaybackManager.updatePlayingState(isPlaying)
+                        val positionMs = exoPlayer?.currentPosition ?: 0L
                         if (isPlaying) {
+                            currentSessionKey()?.let {
+                                lastPlaybackStore.recordMusic(it, positionMs)
+                            }
                             startPositionUpdates()
                             musicProgressReporter.startProgressUpdates(
                                 getPositionMs = { musicPlaybackManager.state.value.positionMs },
                                 isPaused = { !musicPlaybackManager.state.value.isPlaying },
                             )
                         } else {
+                            lastPlaybackStore.recordMusicPosition(positionMs)
                             stopPositionUpdates()
                             musicProgressReporter.stopProgressUpdates()
                         }
@@ -518,6 +561,9 @@ class AudioService : MediaSessionService() {
             }
 
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                if (mediaItem != null && activeEngine != ActiveEngine.NONE) {
+                    recordNowPlayingDisplay()
+                }
                 if (activeEngine != ActiveEngine.MUSIC) return
                 if (mediaItem == null) {
                     musicProgressReporter.onPlaybackStopped(
@@ -530,6 +576,7 @@ class AudioService : MediaSessionService() {
                 }
                 val newIndex = exoPlayer?.currentMediaItemIndex ?: 0
                 musicQueueManager.onTrackChanged(newIndex)
+                lastPlaybackStore.recordMusicPosition(exoPlayer?.currentPosition ?: 0L)
                 val track = musicQueueManager.currentTrack
                 musicPlaybackManager.updateTrack(track)
                 musicPlaybackManager.updateServerTranscode(
@@ -685,6 +732,7 @@ class AudioService : MediaSessionService() {
     private fun startPositionUpdates() {
         stopPositionUpdates()
         positionUpdateJob = serviceScope.launch {
+            var ticks = 0
             while (isActive) {
                 val player = exoPlayer ?: break
                 when (activeEngine) {
@@ -695,6 +743,9 @@ class AudioService : MediaSessionService() {
                             bufferedPositionMs = player.bufferedPosition,
                             durationMs = player.duration.takeIf { it != C.TIME_UNSET } ?: 0L,
                         )
+                        if (++ticks % MUSIC_POSITION_SAVE_TICKS == 0) {
+                            lastPlaybackStore.recordMusicPosition(player.currentPosition)
+                        }
                     }
                     ActiveEngine.NONE -> break
                 }
@@ -746,12 +797,12 @@ class AudioService : MediaSessionService() {
     private fun absCustomLayout() =
         ImmutableList.of(
             CommandButton.Builder(CommandButton.ICON_REWIND)
-                .setSessionCommand(SessionCommand("action_rewind", Bundle.EMPTY))
+                .setSessionCommand(SessionCommand(COMMAND_REWIND, Bundle.EMPTY))
                 .setDisplayName("Rewind")
                 .setEnabled(true)
                 .build(),
             CommandButton.Builder(CommandButton.ICON_FAST_FORWARD)
-                .setSessionCommand(SessionCommand("action_forward", Bundle.EMPTY))
+                .setSessionCommand(SessionCommand(COMMAND_FORWARD, Bundle.EMPTY))
                 .setDisplayName("Forward")
                 .setEnabled(true)
                 .build(),
@@ -765,7 +816,7 @@ class AudioService : MediaSessionService() {
             CommandButton.Builder(
                     if (shuffled) CommandButton.ICON_SHUFFLE_ON else CommandButton.ICON_SHUFFLE_OFF
                 )
-                .setSessionCommand(SessionCommand("action_shuffle", Bundle.EMPTY))
+                .setSessionCommand(SessionCommand(COMMAND_SHUFFLE, Bundle.EMPTY))
                 .setDisplayName(if (shuffled) "Shuffle On" else "Shuffle Off")
                 .setEnabled(true)
                 .build(),
@@ -776,26 +827,31 @@ class AudioService : MediaSessionService() {
                         else -> CommandButton.ICON_REPEAT_OFF
                     }
                 )
-                .setSessionCommand(SessionCommand("action_repeat", Bundle.EMPTY))
+                .setSessionCommand(SessionCommand(COMMAND_REPEAT, Bundle.EMPTY))
                 .setDisplayName("Repeat")
                 .setEnabled(true)
                 .build(),
         )
 
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
-        mediaSession
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? {
+        ensurePlayerInitialized()
+        return mediaSession
+    }
 
-    private inner class AudioServiceCallback : MediaSession.Callback {
+    private inner class AudioServiceCallback : MediaLibrarySession.Callback {
         override fun onConnect(
             session: MediaSession,
             controller: MediaSession.ControllerInfo,
         ): MediaSession.ConnectionResult {
             val allCommands =
                 MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
-                    .add(SessionCommand("action_rewind", Bundle.EMPTY))
-                    .add(SessionCommand("action_forward", Bundle.EMPTY))
-                    .add(SessionCommand("action_shuffle", Bundle.EMPTY))
-                    .add(SessionCommand("action_repeat", Bundle.EMPTY))
+                    .add(SessionCommand(COMMAND_REWIND, Bundle.EMPTY))
+                    .add(SessionCommand(COMMAND_FORWARD, Bundle.EMPTY))
+                    .add(SessionCommand(COMMAND_SHUFFLE, Bundle.EMPTY))
+                    .add(SessionCommand(COMMAND_REPEAT, Bundle.EMPTY))
+                    .add(SessionCommand(COMMAND_SHUFFLE_ALL, Bundle.EMPTY))
+                    .add(SessionCommand(COMMAND_RESUME_MUSIC, Bundle.EMPTY))
+                    .add(SessionCommand(COMMAND_PLAY_ABS_ITEM, Bundle.EMPTY))
                     .build()
             val layout =
                 if (activeEngine == ActiveEngine.MUSIC) musicCustomLayout() else absCustomLayout()
@@ -815,19 +871,46 @@ class AudioService : MediaSessionService() {
                 exoPlayer
                     ?: return Futures.immediateFuture(SessionResult(SessionError.ERROR_UNKNOWN))
             when (customCommand.customAction) {
-                "action_rewind" -> {
-                    player.seekTo(maxOf(0, player.currentPosition - 15_000))
+                COMMAND_SHUFFLE_ALL -> {
+                    serviceScope.launch { shuffleAll() }
                     return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
                 }
-                "action_forward" -> {
-                    val next =
-                        if (player.duration != C.TIME_UNSET)
-                            minOf(player.duration, player.currentPosition + 30_000)
-                        else player.currentPosition + 30_000
-                    player.seekTo(next)
+                COMMAND_RESUME_MUSIC -> {
+                    serviceScope.launch {
+                        playResolved { resumeMusic(lastPlaybackStore.readMusicPosition()) }
+                    }
                     return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
                 }
-                "action_shuffle" -> {
+                COMMAND_PLAY_ABS_ITEM -> {
+                    val itemId =
+                        args.getString(ARG_ITEM_ID)
+                            ?: return Futures.immediateFuture(
+                                SessionResult(SessionError.ERROR_BAD_VALUE)
+                            )
+                    val episodeId = args.getString(ARG_EPISODE_ID)
+                    serviceScope.launch { playResolved { resumeAbs(itemId, episodeId) } }
+                    return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+                }
+                COMMAND_REWIND -> {
+                    val handled =
+                        activeEngine == ActiveEngine.ABS &&
+                            absPlayer.skipBackward(SEEK_STEP_SECONDS)
+                    if (!handled) player.seekTo(maxOf(0, player.currentPosition - SEEK_STEP_MS))
+                    return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+                }
+                COMMAND_FORWARD -> {
+                    val handled =
+                        activeEngine == ActiveEngine.ABS && absPlayer.skipForward(SEEK_STEP_SECONDS)
+                    if (!handled) {
+                        val next =
+                            if (player.duration != C.TIME_UNSET)
+                                minOf(player.duration, player.currentPosition + SEEK_STEP_MS)
+                            else player.currentPosition + SEEK_STEP_MS
+                        player.seekTo(next)
+                    }
+                    return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+                }
+                COMMAND_SHUFFLE -> {
                     val wasShuffled = musicPlaybackManager.state.value.shuffled
                     musicQueueManager.toggleShuffle(player.currentPosition)
                     val isNowShuffled = !wasShuffled
@@ -837,7 +920,7 @@ class AudioService : MediaSessionService() {
                     )
                     return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
                 }
-                "action_repeat" -> {
+                COMMAND_REPEAT -> {
                     player.repeatMode =
                         when (player.repeatMode) {
                             Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
@@ -850,12 +933,177 @@ class AudioService : MediaSessionService() {
             return super.onCustomCommand(session, controller, customCommand, args)
         }
 
-        @Suppress("OVERRIDE_DEPRECATION")
         override fun onPlaybackResumption(
             mediaSession: MediaSession,
             controller: MediaSession.ControllerInfo,
-        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> =
-            Futures.immediateFuture(MediaSession.MediaItemsWithStartPosition(emptyList(), 0, 0L))
+            isForPlayback: Boolean,
+        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            val cast = castManager.castState.value
+            if (cast.isMusicCasting || cast.isAbsCasting) {
+                if (isForPlayback) {
+                    castManager.play()
+                    stopIfIdleAfterFailedResumption()
+                }
+                return Futures.immediateFailedFuture(
+                    UnsupportedOperationException("Casting, resumption handled by the cast device")
+                )
+            }
+            val future = SettableFuture.create<MediaSession.MediaItemsWithStartPosition>()
+            serviceScope.launch {
+                val resumed =
+                    try {
+                        if (isForPlayback) {
+                            withTimeoutOrNull(RESUMPTION_TIMEOUT) { resolveResumption() }
+                        } else {
+                            resolveResumptionPreview()
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Timber.w(e, "Playback resumption failed")
+                        null
+                    }
+                if (resumed != null) {
+                    future.set(resumed)
+                } else {
+                    future.setException(UnsupportedOperationException("Nothing to resume"))
+                    if (isForPlayback) stopIfIdleAfterFailedResumption()
+                }
+            }
+            return future
+        }
+    }
+
+    private suspend fun resolveResumption(): MediaSession.MediaItemsWithStartPosition? {
+        val last = lastPlaybackStore.read() ?: return null
+        if (authRepository.ensureAuthenticationRestored() is AuthRepository.RestoreResult.Failed) {
+            return null
+        }
+        if (last.sessionKey != currentSessionKey()) return null
+        return when (last) {
+            is LastPlayback.Music -> resumeMusic(last.positionMs)
+            is LastPlayback.Abs -> resumeAbs(last.itemId, last.episodeId)
+        }
+    }
+
+    private suspend fun resumeMusic(positionMs: Long): MediaSession.MediaItemsWithStartPosition? {
+        val queue = musicQueueManager.resumptionQueue() ?: return null
+        absPlayer.releaseForEngineSwitch()
+        switchToMusic()
+        return MediaSession.MediaItemsWithStartPosition(
+            queue.mediaItems,
+            queue.startIndex,
+            positionMs,
+        )
+    }
+
+    private suspend fun resumeAbs(
+        itemId: String,
+        episodeId: String?,
+    ): MediaSession.MediaItemsWithStartPosition? {
+        musicPlaybackManager.updateTrack(null)
+        switchToAbs()
+        val prepared = absPlaybackStarter.prepareForResumption(itemId, episodeId) ?: return null
+        return MediaSession.MediaItemsWithStartPosition(
+            prepared.mediaItems,
+            prepared.startIndex,
+            prepared.startPositionMs,
+        )
+    }
+
+    private suspend fun playResolved(
+        resolve: suspend () -> MediaSession.MediaItemsWithStartPosition?
+    ) {
+        if (authRepository.ensureAuthenticationRestored() is AuthRepository.RestoreResult.Failed) {
+            return
+        }
+        val items = withTimeoutOrNull(RESUMPTION_TIMEOUT) { resolve() } ?: return
+        ensurePlayerInitialized()
+        val player = exoPlayer ?: return
+        player.setMediaItems(items.mediaItems, items.startIndex, items.startPositionMs)
+        player.prepare()
+        player.play()
+    }
+
+    private suspend fun resolveResumptionPreview(): MediaSession.MediaItemsWithStartPosition? {
+        if (!authRepository.hasValidSavedAuth()) return null
+        if (lastPlaybackStore.read() == null) return null
+        val display = lastPlaybackStore.readDisplay() ?: return null
+        val item =
+            MediaItem.Builder()
+                .setMediaId(RESUME_PREVIEW_MEDIA_ID)
+                .setMediaMetadata(
+                    MediaMetadata.Builder()
+                        .setTitle(display.title)
+                        .setArtist(display.subtitle)
+                        .setArtworkUri(display.artworkUri?.toUri())
+                        .setIsPlayable(true)
+                        .setIsBrowsable(false)
+                        .build()
+                )
+                .build()
+        return MediaSession.MediaItemsWithStartPosition(listOf(item), 0, C.TIME_UNSET)
+    }
+
+    private suspend fun shuffleAll() {
+        if (authRepository.ensureAuthenticationRestored() is AuthRepository.RestoreResult.Failed) {
+            return
+        }
+        val tracks = musicRepository.getRandomTracks(SHUFFLE_ALL_TRACK_COUNT)
+        if (tracks.isEmpty()) {
+            Timber.w("Shuffle all: no tracks returned")
+            return
+        }
+        absPlayer.releaseForEngineSwitch()
+        ensurePlayerInitialized()
+        switchToMusic()
+        radioManager.stopRadio()
+        musicQueueManager.loadQueue(tracks, 0)
+    }
+
+    private fun stopIfIdleAfterFailedResumption() {
+        val player = exoPlayer
+        if (player != null && player.mediaItemCount > 0) return
+        try {
+            val notification =
+                NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_launcher_monochrome)
+                    .setContentTitle(getString(R.string.app_name))
+                    .setSilent(true)
+                    .build()
+            ServiceCompat.startForeground(
+                this,
+                RESUMPTION_SHUTDOWN_NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK,
+            )
+            ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+        } catch (e: IllegalStateException) {
+            Timber.w(e, "Could not enter foreground before stopping after failed resumption")
+        }
+        stopSelf()
+    }
+
+    private fun recordNowPlayingDisplay() {
+        val metadata = exoPlayer?.currentMediaItem?.mediaMetadata ?: return
+        val title = metadata.title?.toString()?.takeIf { it.isNotBlank() } ?: return
+        lastPlaybackStore.recordDisplay(
+            title,
+            metadata.artist?.toString()?.takeIf { it.isNotBlank() },
+            metadata.artworkUri?.toString(),
+        )
+    }
+
+    private fun currentSessionKey(): String? =
+        sessionManager.currentSession.value?.let {
+            LastPlaybackStore.sessionKey(it.serverId, it.userId)
+        }
+
+    private fun recordAbsPlayback() {
+        val state = absPlaybackManager.playbackState.value
+        val itemId = state.itemId ?: return
+        val sessionKey = currentSessionKey() ?: return
+        lastPlaybackStore.recordAbs(sessionKey, itemId, state.episodeId)
     }
 
     override fun onDestroy() {

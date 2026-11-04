@@ -15,6 +15,8 @@ interface AuthRepository {
 
     suspend fun restoreAuthenticationState(): RestoreResult
 
+    suspend fun ensureAuthenticationRestored(): RestoreResult
+
     suspend fun hasValidSavedAuth(): Boolean
 
     suspend fun clearAllAuthData()

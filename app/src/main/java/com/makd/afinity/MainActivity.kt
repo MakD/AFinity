@@ -54,6 +54,8 @@ import com.makd.afinity.ui.components.StatusBarIconsEffect
 import com.makd.afinity.ui.components.StatusBarIconsState
 import com.makd.afinity.ui.theme.AFinityTheme
 import com.makd.afinity.ui.theme.ThemeMode
+import com.makd.afinity.widget.AudioWidgetIntents
+import com.makd.afinity.widget.AudioWidgetUpdater
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -72,6 +74,8 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var audiobookshelfSocketManager: AudiobookshelfSocketManager
 
     @Inject lateinit var pendingNavigationManager: PendingNavigationManager
+
+    @Inject lateinit var audioWidgetUpdater: AudioWidgetUpdater
 
     @Inject lateinit var remoteMessageManager: RemoteMessageManager
 
@@ -92,6 +96,7 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        audioWidgetUpdater.startIfWidgetsPlaced()
 
         setContent {
             @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
@@ -228,6 +233,21 @@ class MainActivity : AppCompatActivity() {
         if (intent.getBooleanExtra(PendingNavigationManager.EXTRA_OPEN_DOWNLOADS, false)) {
             pendingNavigationManager.navigateTo(Destination.createDownloadSettingsRoute())
         }
+        when (intent.getStringExtra(AudioWidgetIntents.EXTRA_OPEN_PLAYER)) {
+            AudioWidgetIntents.PLAYER_MUSIC ->
+                pendingNavigationManager.navigateTo(Destination.MUSIC_PLAYER_ROUTE)
+            AudioWidgetIntents.PLAYER_ABS ->
+                intent.getStringExtra(AudioWidgetIntents.EXTRA_ABS_ITEM_ID)?.let { itemId ->
+                    pendingNavigationManager.navigateTo(
+                        Destination.createAudiobookshelfPlayerRoute(
+                            itemId = itemId,
+                            episodeId =
+                                intent.getStringExtra(AudioWidgetIntents.EXTRA_ABS_EPISODE_ID),
+                        )
+                    )
+                }
+        }
+        intent.removeExtra(AudioWidgetIntents.EXTRA_OPEN_PLAYER)
     }
 }
 

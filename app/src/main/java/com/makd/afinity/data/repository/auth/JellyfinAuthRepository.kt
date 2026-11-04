@@ -24,6 +24,8 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.Jellyfin
@@ -78,6 +80,8 @@ constructor(
 
     override val isSwitchingSession: StateFlow<Boolean> = sessionManager.isSwitchingSession
 
+    private val restoreMutex = Mutex()
+
     init {
         Timber.d("AuthRepository initialized")
         sessionManager.currentSession
@@ -87,6 +91,12 @@ constructor(
             .onEach { registerClientCapabilities() }
             .launchIn(scope)
     }
+
+    override suspend fun ensureAuthenticationRestored(): AuthRepository.RestoreResult =
+        restoreMutex.withLock {
+            if (sessionManager.currentSession.value != null) AuthRepository.RestoreResult.Success
+            else restoreAuthenticationState()
+        }
 
     override suspend fun restoreAuthenticationState(): AuthRepository.RestoreResult {
         return withContext(Dispatchers.IO) {

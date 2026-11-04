@@ -16,6 +16,8 @@ import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
+import com.makd.afinity.player.audiobookshelf.AbsPlaybackStarter
+import com.makd.afinity.player.audiobookshelf.AbsServerUrlUnavailableException
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfEqualizerManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
@@ -49,6 +51,7 @@ constructor(
     private val skipSilenceManager: AudiobookshelfSkipSilenceManager,
     val castManager: CastManager,
     private val securePreferencesRepository: SecurePreferencesRepository,
+    private val absPlaybackStarter: AbsPlaybackStarter,
     preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
 
@@ -159,43 +162,22 @@ constructor(
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            val needsPreload = currentState.displayTitle.isEmpty() || currentState.itemId != itemId
-            if (needsPreload) {
-                val cached = audiobookshelfRepository.getCachedItemMetadata(itemId)
-                if (cached != null) {
-                    val (title, author, coverUrl) = cached
-                    playbackManager.preloadDisplayMetadata(itemId, title, author, coverUrl)
-                }
-            }
-
-            val result = audiobookshelfRepository.startPlaybackSession(itemId, episodeId)
-
-            result.fold(
-                onSuccess = { session ->
-                    val serverUrl = currentConfig.value?.serverUrl
-                    if (serverUrl != null) {
-                        audiobookshelfPlayer.loadSession(
-                            session,
-                            serverUrl,
-                            startPosition,
-                            episodeSort,
-                            includePlayed,
-                        )
+            absPlaybackStarter
+                .start(itemId, episodeId, startPosition, episodeSort, includePlayed)
+                .fold(
+                    onSuccess = {
                         _uiState.value = _uiState.value.copy(isLoading = false)
-                        Timber.d("Started playback session: ${session.id}")
-                    } else {
-                        _uiState.value =
-                            _uiState.value.copy(
-                                isLoading = false,
-                                error = context.getString(R.string.error_server_url_not_available),
-                            )
-                    }
-                },
-                onFailure = { error ->
-                    _uiState.value = _uiState.value.copy(isLoading = false, error = error.message)
-                    Timber.e(error, "Failed to start playback session")
-                },
-            )
+                        Timber.d("Started playback session for item: $itemId")
+                    },
+                    onFailure = { error ->
+                        val message =
+                            if (error is AbsServerUrlUnavailableException)
+                                context.getString(R.string.error_server_url_not_available)
+                            else error.message
+                        _uiState.value = _uiState.value.copy(isLoading = false, error = message)
+                        Timber.e(error, "Failed to start playback session")
+                    },
+                )
         }
     }
 

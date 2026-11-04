@@ -39,7 +39,7 @@ class AuthViewModel @Inject constructor(private val authRepository: AuthReposito
             try {
                 Timber.d("Checking authentication state...")
 
-                when (val result = authRepository.restoreAuthenticationState()) {
+                when (val result = authRepository.ensureAuthenticationRestored()) {
                     is AuthRepository.RestoreResult.Success -> {
                         Timber.d("Authentication restored successfully")
                         _authenticationState.value = AuthenticationState.Authenticated
