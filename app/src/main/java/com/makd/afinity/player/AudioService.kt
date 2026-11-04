@@ -41,6 +41,7 @@ import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import androidx.media3.exoplayer.upstream.LoadErrorHandlingPolicy
 import androidx.media3.session.CommandButton
 import androidx.media3.session.DefaultMediaNotificationProvider
+import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
@@ -844,7 +845,7 @@ class AudioService : MediaLibraryService() {
             controller: MediaSession.ControllerInfo,
         ): MediaSession.ConnectionResult {
             val allCommands =
-                MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
+                MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS.buildUpon()
                     .add(SessionCommand(COMMAND_REWIND, Bundle.EMPTY))
                     .add(SessionCommand(COMMAND_FORWARD, Bundle.EMPTY))
                     .add(SessionCommand(COMMAND_SHUFFLE, Bundle.EMPTY))
@@ -859,6 +860,21 @@ class AudioService : MediaLibraryService() {
                 .setAvailableSessionCommands(allCommands)
                 .setCustomLayout(layout)
                 .build()
+        }
+
+        override fun onGetLibraryRoot(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            params: LibraryParams?,
+        ): ListenableFuture<LibraryResult<MediaItem>> {
+            val rootItem =
+                MediaItem.Builder()
+                    .setMediaId("afinity_root")
+                    .setMediaMetadata(
+                        MediaMetadata.Builder().setIsBrowsable(true).setIsPlayable(false).build()
+                    )
+                    .build()
+            return Futures.immediateFuture(LibraryResult.ofItem(rootItem, params))
         }
 
         override fun onCustomCommand(
