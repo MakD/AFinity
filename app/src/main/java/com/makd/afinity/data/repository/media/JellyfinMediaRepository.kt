@@ -76,6 +76,7 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.operations.ArtistApi
 import org.jellyfin.sdk.api.operations.FilterApi
 import org.jellyfin.sdk.api.operations.GenreApi
@@ -1045,8 +1046,19 @@ constructor(
             )
             .content
             .items
-            .firstOrNull()
+            .firstOrNull() ?: getSingleItemOrNull(apiClient, itemId, userId)
     }
+
+    private suspend fun getSingleItemOrNull(
+        apiClient: ApiClient,
+        itemId: UUID,
+        userId: UUID,
+    ): BaseItemDto? =
+        try {
+            LibraryApi(apiClient).getItem(itemId = itemId, userId = userId).content
+        } catch (e: InvalidStatusException) {
+            if (e.status == 404) null else throw e
+        }
 
     override suspend fun getItemDetail(itemId: UUID): BaseItemDto? =
         apiCall(null, "Failed to get item detail for id: $itemId") { apiClient, userId ->
