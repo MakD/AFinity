@@ -711,10 +711,42 @@ fun PlayerControls(
                     nextItem = nextItem,
                     segment = currentSegment,
                     skipButtonText = uiState.skipButtonText,
-                    onSkipClick = { onPlayerEvent(PlayerEvent.SkipSegment(currentSegment)) },
+                    onSkipClick = { onPlayerEvent(PlayerEvent.SkipPromptPressed) },
                     countdownMs = uiState.skipCountdownMs,
+                    isAutoSkip = uiState.skipPromptIsAuto,
                 )
             }
+        }
+
+        AnimatedVisibility(
+            visible =
+                uiState.undoSkipPositionMs != null &&
+                    !uiState.showSkipButton &&
+                    !uiState.sleepTimerExpired,
+            modifier =
+                Modifier.align(Alignment.BottomEnd)
+                    .windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(
+                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                        )
+                    )
+                    .padding(end = 16.dp, bottom = overlayBottomPadding),
+            enter =
+                fadeIn(tween(300)) +
+                    scaleIn(
+                        initialScale = 0.8f,
+                        animationSpec = tween(300),
+                        transformOrigin = TransformOrigin(1f, 1f),
+                    ),
+            exit =
+                fadeOut(tween(300)) +
+                    scaleOut(
+                        targetScale = 0.8f,
+                        animationSpec = tween(300),
+                        transformOrigin = TransformOrigin(1f, 1f),
+                    ),
+        ) {
+            UndoSkipChip(onClick = { onPlayerEvent(PlayerEvent.UndoSkip) })
         }
 
         if (showChapterSwitcher && uiState.chapters.isNotEmpty()) {
@@ -743,6 +775,7 @@ fun PlayerControls(
                 uiState.showSleepTimerExtendPrompt &&
                     uiState.isPlaying &&
                     !uiState.showSkipButton &&
+                    uiState.undoSkipPositionMs == null &&
                     !uiState.isControlsLocked &&
                     !uiState.isInPictureInPictureMode,
             modifier =

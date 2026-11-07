@@ -9,12 +9,15 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ButtonElevation
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Icon
@@ -39,6 +42,7 @@ fun SkipButton(
     onClick: (AfinitySegment) -> Unit,
     modifier: Modifier = Modifier,
     countdownMs: Long = 8000L,
+    isAutoSkip: Boolean = false,
 ) {
     val timerProgress = remember { Animatable(1f) }
 
@@ -63,17 +67,8 @@ fun SkipButton(
         ElevatedButton(
             onClick = { onClick(segment) },
             shape = CircleShape,
-            colors =
-                ButtonDefaults.elevatedButtonColors(
-                    containerColor =
-                        MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f),
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                ),
-            elevation =
-                ButtonDefaults.elevatedButtonElevation(
-                    defaultElevation = 6.dp,
-                    pressedElevation = 2.dp,
-                ),
+            colors = skipPillColors(),
+            elevation = skipPillElevation(),
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
         ) {
             Box(contentAlignment = Alignment.Center) {
@@ -85,8 +80,17 @@ fun SkipButton(
                     trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
                 )
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_player_skip_forward),
-                    contentDescription = stringResource(R.string.cd_skip_button_icon),
+                    painter =
+                        painterResource(
+                            id =
+                                if (isAutoSkip) R.drawable.ic_close
+                                else R.drawable.ic_player_skip_forward
+                        ),
+                    contentDescription =
+                        stringResource(
+                            if (isAutoSkip) R.string.cd_cancel_auto_skip
+                            else R.string.cd_skip_button_icon
+                        ),
                     modifier = Modifier.size(14.dp),
                     tint = MaterialTheme.colorScheme.primary,
                 )
@@ -94,11 +98,62 @@ fun SkipButton(
 
             Spacer(modifier = Modifier.width(10.dp))
 
-            Text(
-                text = skipButtonText,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-            )
+            if (isAutoSkip) {
+                Column {
+                    Text(
+                        text = skipButtonText,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = stringResource(R.string.skip_tap_to_cancel),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                Text(
+                    text = skipButtonText,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
     }
 }
+
+@Composable
+fun UndoSkipChip(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    ElevatedButton(
+        onClick = onClick,
+        modifier = modifier,
+        shape = CircleShape,
+        colors = skipPillColors(),
+        elevation = skipPillElevation(),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.ic_replay),
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = stringResource(R.string.undo_skip),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+}
+
+@Composable
+private fun skipPillColors(): ButtonColors =
+    ButtonDefaults.elevatedButtonColors(
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+    )
+
+@Composable
+private fun skipPillElevation(): ButtonElevation =
+    ButtonDefaults.elevatedButtonElevation(defaultElevation = 6.dp, pressedElevation = 2.dp)

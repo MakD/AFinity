@@ -254,6 +254,7 @@ constructor(
     private var currentMediaSegments: List<AfinitySegment> = emptyList()
     private var segmentCheckingJob: Job? = null
     private var skipButtonHideJob: Job? = null
+    private var undoSkipHideJob: Job? = null
     private var lastShownSegmentKey: String? = null
     private var lastSegmentPollPositionMs: Long = -1L
 
@@ -307,6 +308,7 @@ constructor(
     private val SKIP_BUTTON_MIN_DURATION_MS = 3000L
     private val AUTO_SKIP_MIN_DURATION_MS = 1000L
     private val AUTO_SKIP_END_MARGIN_MS = 1000L
+    private val UNDO_SKIP_TIMEOUT_MS = 5000L
 
     init {
         castManager.videoRemoteAttached = true
@@ -1410,6 +1412,7 @@ constructor(
 
                 is PlayerEvent.SkipSegment -> {
                     skipButtonHideJob?.cancel()
+                    clearUndoSkip()
 
                     updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
 
@@ -1441,12 +1444,28 @@ constructor(
                                 setInternalVolume(originalVolume)
                             } else {
                                 executeSegmentSeek(event.segment.endTicks)
+                                event.undoPositionMs?.let { offerUndoSkip(it) }
                             }
                         }
                     } else {
                         executeSegmentSeek(event.segment.endTicks)
+                        event.undoPositionMs?.let { offerUndoSkip(it) }
                     }
                 }
+
+                is PlayerEvent.SkipPromptPressed -> {
+                    val state = _uiState.value
+                    val segment = state.currentSegment
+                    if (state.showSkipButton && segment != null) {
+                        if (state.skipPromptIsAuto) {
+                            cancelAutoSkip()
+                        } else {
+                            handlePlayerEvent(PlayerEvent.SkipSegment(segment))
+                        }
+                    }
+                }
+
+                is PlayerEvent.UndoSkip -> undoSkip()
 
                 is PlayerEvent.Stop -> player.stop()
                 is PlayerEvent.OnSeekBarDragStart -> {
@@ -3228,6 +3247,7 @@ constructor(
         currentMediaSegments = emptyList()
         lastShownSegmentKey = null
         lastSegmentPollPositionMs = -1L
+        clearUndoSkip()
         updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
 
         currentMediaSegments =
@@ -3299,11 +3319,13 @@ constructor(
     }
 
     private fun showSkipButton(segment: AfinitySegment) {
+        clearUndoSkip()
         updateUiState {
             it.copy(
                 currentSegment = segment,
                 skipButtonText = getSkipButtonText(segment, SkipMode.BUTTON),
                 skipCountdownMs = SKIP_BUTTON_TIMEOUT_MS,
+                skipPromptIsAuto = false,
                 showSkipButton = true,
             )
         }
@@ -3319,15 +3341,17 @@ constructor(
         val countdownMs = minOf(SKIP_BUTTON_TIMEOUT_MS, (remainingMs / speed).toLong())
 
         if (durationMs < SKIP_BUTTON_MIN_DURATION_MS || countdownMs <= 0L) {
-            handlePlayerEvent(PlayerEvent.SkipSegment(segment))
+            handlePlayerEvent(PlayerEvent.SkipSegment(segment, undoPositionMs = positionMs))
             return
         }
 
+        clearUndoSkip()
         updateUiState {
             it.copy(
                 currentSegment = segment,
                 skipButtonText = getSkipButtonText(segment, SkipMode.AUTO_SKIP),
                 skipCountdownMs = countdownMs,
+                skipPromptIsAuto = true,
                 showSkipButton = true,
             )
         }
@@ -3335,6 +3359,33 @@ constructor(
             delay(countdownMs.milliseconds)
             handlePlayerEvent(PlayerEvent.SkipSegment(segment))
         }
+    }
+
+    private fun cancelAutoSkip() {
+        skipButtonHideJob?.cancel()
+        updateUiState { it.copy(showSkipButton = false) }
+    }
+
+    private fun offerUndoSkip(positionMs: Long) {
+        undoSkipHideJob?.cancel()
+        updateUiState { it.copy(undoSkipPositionMs = positionMs) }
+        undoSkipHideJob = viewModelScope.launch {
+            delay(UNDO_SKIP_TIMEOUT_MS.milliseconds)
+            updateUiState { it.copy(undoSkipPositionMs = null) }
+        }
+    }
+
+    private fun clearUndoSkip() {
+        undoSkipHideJob?.cancel()
+        if (_uiState.value.undoSkipPositionMs != null) {
+            updateUiState { it.copy(undoSkipPositionMs = null) }
+        }
+    }
+
+    private fun undoSkip() {
+        val positionMs = _uiState.value.undoSkipPositionMs ?: return
+        clearUndoSkip()
+        executeSegmentSeek(positionMs)
     }
 
     private fun getSkipButtonText(segment: AfinitySegment, skipMode: SkipMode): String {
@@ -4111,6 +4162,7 @@ constructor(
         progressReportingJob?.cancel()
         segmentCheckingJob?.cancel()
         skipButtonHideJob?.cancel()
+        undoSkipHideJob?.cancel()
         controlsHideJob?.cancel()
         statsPollingJob?.cancel()
         sleepTimerJob?.cancel()
@@ -4185,6 +4237,8 @@ constructor(
         val showSkipButton: Boolean = false,
         val skipButtonText: String = "Skip",
         val skipCountdownMs: Long = 8000L,
+        val skipPromptIsAuto: Boolean = false,
+        val undoSkipPositionMs: Long? = null,
         val showBrightnessIndicator: Boolean = false,
         val showVolumeIndicator: Boolean = false,
         val volumeLevel: Int = 50,

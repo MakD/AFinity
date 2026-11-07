@@ -1012,6 +1012,7 @@
     <string name="percent_fmt">%1$d%%</string>
 
     <string name="cd_skip_button_icon">Skip</string>
+    <string name="cd_cancel_auto_skip">Cancel auto-skip</string>
 
     <string name="player_live_tuning_fmt">Tuning %1$s…</string>
     <string name="player_error_stream_load">Failed to load stream</string>
@@ -1041,6 +1042,8 @@
     <string name="skipping_preview">Skipping Preview…</string>
     <string name="skipping_commercial">Skipping Commercial…</string>
     <string name="skipping_generic">Skipping…</string>
+    <string name="skip_tap_to_cancel">Tap to cancel</string>
+    <string name="undo_skip">Undo skip</string>
 
     <string name="error_get_stream_url">Failed to get stream URL</string>
     <string name="error_load_channel_fmt">Failed to load channel: %1$s</string>

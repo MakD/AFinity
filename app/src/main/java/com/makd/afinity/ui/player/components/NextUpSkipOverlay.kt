@@ -52,6 +52,7 @@ fun NextUpSkipOverlay(
     onSkipClick: (AfinitySegment) -> Unit,
     modifier: Modifier = Modifier,
     countdownMs: Long = 8000L,
+    isAutoSkip: Boolean = false,
 ) {
     val nextEpisode = nextItem as? AfinityEpisode
     val overlayColor = Color.Black.copy(alpha = 0.9f)
@@ -175,6 +176,7 @@ fun NextUpSkipOverlay(
                             skipButtonText = skipButtonText,
                             onClick = onSkipClick,
                             countdownMs = countdownMs,
+                            isAutoSkip = isAutoSkip,
                         )
                     }
                 }
@@ -187,6 +189,7 @@ fun NextUpSkipOverlay(
             onClick = onSkipClick,
             modifier = modifier,
             countdownMs = countdownMs,
+            isAutoSkip = isAutoSkip,
         )
     }
 }

@@ -47,7 +47,12 @@ sealed class PlayerEvent {
         val playbackInfo: LiveTvPlaybackInfo,
     ) : PlayerEvent()
 
-    data class SkipSegment(val segment: AfinitySegment) : PlayerEvent()
+    data class SkipSegment(val segment: AfinitySegment, val undoPositionMs: Long? = null) :
+        PlayerEvent()
+
+    data object SkipPromptPressed : PlayerEvent()
+
+    data object UndoSkip : PlayerEvent()
 
     object OnSeekBarDragStart : PlayerEvent()
 

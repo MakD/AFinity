@@ -369,10 +369,16 @@ class PlayerActivity : AppCompatActivity() {
             }
             KeyEvent.KEYCODE_ENTER,
             KeyEvent.KEYCODE_NUMPAD_ENTER -> {
-                val segment = state.currentSegment
-                if (state.showSkipButton && segment != null && !state.sleepTimerExpired) {
-                    { viewModel.handlePlayerEvent(PlayerEvent.SkipSegment(segment)) }
-                } else null
+                when {
+                    state.sleepTimerExpired -> null
+                    state.showSkipButton && state.currentSegment != null -> {
+                        { viewModel.handlePlayerEvent(PlayerEvent.SkipPromptPressed) }
+                    }
+                    state.undoSkipPositionMs != null -> {
+                        { viewModel.handlePlayerEvent(PlayerEvent.UndoSkip) }
+                    }
+                    else -> null
+                }
             }
             KeyEvent.KEYCODE_J -> if (canSeek) seekBy(-10_000) else noOp
             KeyEvent.KEYCODE_L -> if (canSeek) seekBy(10_000) else noOp
