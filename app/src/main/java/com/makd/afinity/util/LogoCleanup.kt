@@ -46,16 +46,21 @@ object LogoCleanup {
     }
 
     private fun removeBackground(argb: IntArray, width: Int, height: Int): Boolean {
-        val border = IntArray(2 * width + 2 * height)
+        val edge = IntArray(2 * width + 2 * height)
         var n = 0
+        fun sample(pixel: Int) {
+            if (alpha(pixel) >= OPAQUE_ALPHA) edge[n++] = pixel
+        }
         for (x in 0 until width) {
-            border[n++] = argb[x]
-            border[n++] = argb[(height - 1) * width + x]
+            sample(argb[x])
+            sample(argb[(height - 1) * width + x])
         }
         for (y in 0 until height) {
-            border[n++] = argb[y * width]
-            border[n++] = argb[y * width + width - 1]
+            sample(argb[y * width])
+            sample(argb[y * width + width - 1])
         }
+        if (n < edge.size / 2) return false
+        val border = edge.copyOf(n)
         val background = medianColor(border)
         val uniform = border.count { distance(it, background) <= BACKGROUND_DISTANCE }
         if (uniform < border.size * BORDER_UNIFORM_SHARE) return false
@@ -64,8 +69,9 @@ object LogoCleanup {
         var removed = 0
         var holes = 0
         for (i in argb.indices) {
-            if (alpha(argb[i]) < OPAQUE_ALPHA) holes++
-            if (distance(argb[i], background) <= BACKGROUND_DISTANCE) {
+            val hole = alpha(argb[i]) < OPAQUE_ALPHA
+            if (hole) holes++
+            if (hole || distance(argb[i], background) <= BACKGROUND_DISTANCE) {
                 removedMask[i] = true
                 removed++
             }
