@@ -1905,7 +1905,7 @@ constructor(
                 )
                 .content
                 .items
-                .filter { it.id != movieId }
+                .filter { it.id != movieId && it.type == BaseItemKind.MOVIE }
                 .map { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
         }
 
