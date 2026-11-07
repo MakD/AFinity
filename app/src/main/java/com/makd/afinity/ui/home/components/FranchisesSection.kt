@@ -23,7 +23,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -150,24 +154,34 @@ private fun FranchiseLogo(
                         .transformations(LogoCleanupTransformation())
                         .build()
                 }
-            coil3.compose.AsyncImage(
-                model = request,
-                contentDescription = name,
-                contentScale = ContentScale.Fit,
-                onError = { wikidataFailed = true },
-                modifier = modifier.size(logoWidth, logoHeight),
-            )
+            LogoWithShadow(modifier = modifier.size(logoWidth, logoHeight)) {
+                layerModifier,
+                colorFilter ->
+                coil3.compose.AsyncImage(
+                    model = request,
+                    contentDescription = if (colorFilter == null) name else null,
+                    contentScale = ContentScale.Fit,
+                    colorFilter = colorFilter,
+                    onError = { wikidataFailed = true },
+                    modifier = layerModifier,
+                )
+            }
         }
 
         jellyfinLogo != null -> {
-            AsyncImage(
-                imageUrl = jellyfinLogo,
-                contentDescription = name,
-                targetWidth = logoWidth,
-                targetHeight = logoHeight,
-                contentScale = ContentScale.Fit,
-                modifier = modifier.size(logoWidth, logoHeight),
-            )
+            LogoWithShadow(modifier = modifier.size(logoWidth, logoHeight)) {
+                layerModifier,
+                colorFilter ->
+                AsyncImage(
+                    imageUrl = jellyfinLogo,
+                    contentDescription = if (colorFilter == null) name else null,
+                    targetWidth = logoWidth,
+                    targetHeight = logoHeight,
+                    contentScale = ContentScale.Fit,
+                    colorFilter = colorFilter,
+                    modifier = layerModifier,
+                )
+            }
         }
 
         else -> {
@@ -184,6 +198,24 @@ private fun FranchiseLogo(
     }
 }
 
-private const val SCRIM_ALPHA = 0.45f
+@Composable
+private fun LogoWithShadow(
+    modifier: Modifier,
+    logo: @Composable (layerModifier: Modifier, colorFilter: ColorFilter?) -> Unit,
+) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        logo(
+            Modifier.matchParentSize()
+                .blur(LOGO_SHADOW_BLUR, BlurredEdgeTreatment.Unbounded)
+                .alpha(LOGO_SHADOW_ALPHA),
+            ColorFilter.tint(Color.Black),
+        )
+        logo(Modifier.matchParentSize(), null)
+    }
+}
+
+private const val SCRIM_ALPHA = 0.55f
+private const val LOGO_SHADOW_ALPHA = 0.75f
+private val LOGO_SHADOW_BLUR = 6.dp
 private const val LOGO_WIDTH_FRACTION = 0.72f
 private const val LOGO_HEIGHT_FRACTION = 0.46f

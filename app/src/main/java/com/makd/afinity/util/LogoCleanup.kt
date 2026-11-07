@@ -3,6 +3,7 @@ package com.makd.afinity.util
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 object LogoCleanup {
 
@@ -14,6 +15,7 @@ object LogoCleanup {
     private const val BACKGROUND_DISTANCE = 40
     private const val FRINGE_DISTANCE = 120
     private const val MAX_REMOVED_SHARE = 0.97
+    private const val KNOCKOUT_HOLE_SHARE = 0.01
     private const val DARK_LUMINANCE = 90.0
     private const val DARK_SATURATION = 0.3
     private const val DARK_INK_SHARE = 0.9
@@ -58,52 +60,54 @@ object LogoCleanup {
         val uniform = border.count { distance(it, background) <= BACKGROUND_DISTANCE }
         if (uniform < border.size * BORDER_UNIFORM_SHARE) return false
 
-        val out = argb.copyOf()
-        val visited = BooleanArray(argb.size)
-        val queue = IntArray(argb.size)
-        var head = 0
-        var tail = 0
-        fun offer(index: Int) {
-            if (!visited[index]) {
-                visited[index] = true
-                queue[tail++] = index
+        val removedMask = BooleanArray(argb.size)
+        var removed = 0
+        var holes = 0
+        for (i in argb.indices) {
+            if (alpha(argb[i]) < OPAQUE_ALPHA) holes++
+            if (distance(argb[i], background) <= BACKGROUND_DISTANCE) {
+                removedMask[i] = true
+                removed++
             }
         }
-        for (x in 0 until width) {
-            offer(x)
-            offer((height - 1) * width + x)
-        }
-        for (y in 0 until height) {
-            offer(y * width)
-            offer(y * width + width - 1)
+        if (removed == 0) return false
+        if (removed > argb.size * MAX_REMOVED_SHARE) {
+            if (holes < argb.size * KNOCKOUT_HOLE_SHARE) return false
+            val ink = background and WHITE_RGB
+            for (i in argb.indices) argb[i] = ((255 - alpha(argb[i])) shl 24) or ink
+            return true
         }
 
-        var removed = 0
-        while (head < tail) {
-            val index = queue[head++]
-            val pixel = argb[index]
-            val d = distance(pixel, background)
-            if (d >= FRINGE_DISTANCE) continue
-            if (d > BACKGROUND_DISTANCE) {
-                val scaled =
-                    alpha(pixel) * (d - BACKGROUND_DISTANCE) /
-                        (FRINGE_DISTANCE - BACKGROUND_DISTANCE)
-                out[index] = (scaled shl 24) or (pixel and WHITE_RGB)
+        val out = argb.copyOf()
+        for (i in argb.indices) {
+            if (removedMask[i]) {
+                out[i] = argb[i] and WHITE_RGB
                 continue
             }
-            out[index] = pixel and WHITE_RGB
-            removed++
-            val x = index % width
-            val y = index / width
-            if (x > 0) offer(index - 1)
-            if (x < width - 1) offer(index + 1)
-            if (y > 0) offer(index - width)
-            if (y < height - 1) offer(index + width)
+            val pixel = argb[i]
+            val d = distance(pixel, background)
+            if (d >= FRINGE_DISTANCE || !touchesRemoved(removedMask, i, width, height)) continue
+            val keep = (d - BACKGROUND_DISTANCE).toFloat() / (FRINGE_DISTANCE - BACKGROUND_DISTANCE)
+            val r = unblend(red(pixel), red(background), keep)
+            val g = unblend(green(pixel), green(background), keep)
+            val b = unblend(blue(pixel), blue(background), keep)
+            out[i] = ((alpha(pixel) * keep).roundToInt() shl 24) or (r shl 16) or (g shl 8) or b
         }
-        if (removed == 0 || removed > argb.size * MAX_REMOVED_SHARE) return false
         out.copyInto(argb)
         return true
     }
+
+    private fun touchesRemoved(mask: BooleanArray, index: Int, width: Int, height: Int): Boolean {
+        val x = index % width
+        val y = index / width
+        return (x > 0 && mask[index - 1]) ||
+            (x < width - 1 && mask[index + 1]) ||
+            (y > 0 && mask[index - width]) ||
+            (y < height - 1 && mask[index + width])
+    }
+
+    private fun unblend(channel: Int, background: Int, keep: Float): Int =
+        ((channel - background * (1f - keep)) / keep).roundToInt().coerceIn(0, 255)
 
     private fun isDarkInk(argb: IntArray): Boolean {
         val step = max(1, argb.size / SAMPLE_TARGET)
