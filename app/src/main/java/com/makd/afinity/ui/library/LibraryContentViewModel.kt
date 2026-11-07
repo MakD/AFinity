@@ -239,7 +239,7 @@ constructor(
         }
         viewModelScope.launch {
             adminChangeBroadcaster.changes.collect { change ->
-                if (change.kind != AdminChangeKind.DELETED) refreshItems()
+                if (change.kind == AdminChangeKind.METADATA) refreshItems()
             }
         }
 
