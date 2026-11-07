@@ -38,8 +38,11 @@ constructor(
     private val mutex = Mutex()
     private var memory: Pair<String, List<Franchise>>? = null
 
-    suspend fun franchises(force: Boolean = false): List<Franchise> = mutex.withLock {
-        val sk = sessionKey() ?: return emptyList()
+    suspend fun franchises(force: Boolean = false): List<Franchise> =
+        franchisesOrNull(force).orEmpty()
+
+    suspend fun franchisesOrNull(force: Boolean = false): List<Franchise>? = mutex.withLock {
+        val sk = sessionKey() ?: return null
         if (!force) {
             memory
                 ?.takeIf { it.first == sk }
@@ -54,7 +57,7 @@ constructor(
         val built =
             build()
                 ?: return restore(sk, null)?.also { memory = sk to it }
-                    ?: memory?.takeIf { it.first == sk }?.second.orEmpty()
+                    ?: memory?.takeIf { it.first == sk }?.second
         homeCacheRepository.putRaw(cacheKey(sk), json.encodeToString(built))
         memory = sk to built
         built

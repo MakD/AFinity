@@ -21,7 +21,6 @@ import com.makd.afinity.data.models.PersonSectionType
 import com.makd.afinity.data.models.PersonWithCount
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityItem
-import com.makd.afinity.data.models.franchise.FranchiseCard
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
@@ -58,11 +57,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -134,10 +134,9 @@ constructor(
     private val _popularStudiosLoaded = MutableStateFlow(false)
     val popularStudiosLoaded: StateFlow<Boolean> = _popularStudiosLoaded.asStateFlow()
 
-    private val _franchises = MutableStateFlow<List<FranchiseCard>>(emptyList())
-    val franchises: StateFlow<List<FranchiseCard>> = _franchises.asStateFlow()
-
     private var franchisesJob: Job? = null
+
+    private var franchisesPrewarmJob: Job? = null
 
     private var criticsChoiceJob: Job? = null
 
@@ -171,12 +170,18 @@ constructor(
                     if (key == null) {
                         emptyFlow()
                     } else {
+                        var previous: DiscoveryConfig? = null
                         homeLayoutPreferencesRepository.discoveryConfig
                             .distinctUntilChanged()
-                            .drop(1)
+                            .mapNotNull { config ->
+                                val before = previous
+                                previous = config
+                                before?.let { it to config }
+                            }
                     }
                 }
-                .collect {
+                .collect { (before, after) ->
+                    if (applyToggleChange(before, after)) return@collect
                     sessionKey()?.let { sk -> homeCacheRepository.invalidate(layoutCacheKey(sk)) }
                     ensureLayout(force = true)
                 }
@@ -192,7 +197,6 @@ constructor(
                 if (HomeRow.WATCH_AGAIN in shown) ensureWatchAgain(force = false)
                 if (HomeRow.CRITICS_CHOICE in shown) ensureCriticsChoice(force = false)
                 if (HomeRow.POPULAR_STUDIOS in shown) ensurePopularStudios(force = false)
-                if (HomeRow.FRANCHISES in shown) ensureFranchises(force = false)
             }
         }
     }
@@ -446,7 +450,6 @@ constructor(
         ensureWatchAgain(force)
         ensureCriticsChoice(force)
         ensurePopularStudios(force)
-        ensureFranchises(force)
         val sk = sessionKey() ?: return
         if (!force && sk == layoutSessionKey && _layout.value.isNotEmpty()) return
         if (!force && buildJob?.isActive == true) return
@@ -475,6 +478,7 @@ constructor(
                             layoutSessionKey = sk
                             retainPinnedContent()
                             _layout.value = reinterleave(cachedLayout.distinctBy { it.key })
+                            prewarmFranchises()
                             Timber.d(
                                 "Home layout restored from cache (${cachedLayout.size} sections)"
                             )
@@ -498,6 +502,7 @@ constructor(
                     retainPinnedContent()
                     oldKeys.forEach { homeCacheRepository.invalidate(contentCacheKey(sk, it)) }
                     _layout.value = fresh
+                    prewarmFranchises()
                     homeCacheRepository.putRaw(layoutCacheKey(sk), json.encodeToString(fresh))
                     if (force) refreshPinnedSections("home layout rebuild")
                     Timber.d("Built fresh home layout (${fresh.size} sections)")
@@ -597,31 +602,90 @@ constructor(
             }
     }
 
-    private fun ensureFranchises(force: Boolean) {
-        if (sessionKey() == null) return
-        if (!force && _franchises.value.isNotEmpty()) return
-        if (!force && franchisesJob?.isActive == true) return
+    private suspend fun applyToggleChange(
+        before: DiscoveryConfig,
+        after: DiscoveryConfig,
+    ): Boolean {
+        val (toggles, others) = DiscoverySection.entries.partition { it.isToggle }
+        if (others.any { before.countFor(it) != after.countFor(it) }) return false
+        val sk = sessionKey() ?: return false
+        if (sk != layoutSessionKey || buildJob?.isActive == true) return false
 
-        franchisesJob?.cancel()
-        franchisesJob =
+        val removedKeys =
+            toggles
+                .filter { before.countFor(it) > 0 && after.countFor(it) == 0 }
+                .mapNotNull { toggleDescriptor(it)?.key }
+                .toSet()
+        val added =
+            toggles
+                .filter { before.countFor(it) == 0 && after.countFor(it) > 0 }
+                .mapNotNull(::toggleDescriptor)
+        if (removedKeys.isEmpty() && added.isEmpty()) return true
+
+        val updated = _layout.updateAndGet { current ->
+            val result = current.filterNot { it.key in removedKeys }.toMutableList()
+            added
+                .filter { descriptor -> result.none { it.key == descriptor.key } }
+                .forEach { descriptor -> result.add(Random.nextInt(result.size + 1), descriptor) }
+            result
+        }
+        if (removedKeys.isNotEmpty()) _content.update { it - removedKeys }
+        homeCacheRepository.putRaw(layoutCacheKey(sk), json.encodeToString(updated))
+        if (added.any { it.type == HomeSectionType.FRANCHISES }) prewarmFranchises()
+        return true
+    }
+
+    private fun toggleDescriptor(section: DiscoverySection): HomeSectionDescriptor? =
+        when (section) {
+            DiscoverySection.TOP_IMDB_MOVIES ->
+                HomeSectionDescriptor(
+                    key = TOP_IMDB_MOVIES_KEY,
+                    type = HomeSectionType.TOP_IMDB_MOVIES,
+                    title = context.getString(R.string.discovery_section_top_imdb_movies),
+                )
+            DiscoverySection.TOP_IMDB_SHOWS ->
+                HomeSectionDescriptor(
+                    key = TOP_IMDB_SHOWS_KEY,
+                    type = HomeSectionType.TOP_IMDB_SHOWS,
+                    title = context.getString(R.string.discovery_section_top_imdb_shows),
+                )
+            DiscoverySection.FRANCHISES ->
+                HomeSectionDescriptor(
+                    key = FRANCHISES_KEY,
+                    type = HomeSectionType.FRANCHISES,
+                    title = context.getString(R.string.home_franchises),
+                )
+            else -> null
+        }
+
+    private fun prewarmFranchises() {
+        if (_layout.value.none { it.type == HomeSectionType.FRANCHISES }) return
+        if (franchisesPrewarmJob?.isActive == true) return
+        franchisesPrewarmJob =
             scope.launch(Dispatchers.IO) {
                 try {
-                    if (isRowHidden(HomeRow.FRANCHISES)) return@launch
-                    val picked =
-                        presentationSample(
-                            FRANCHISES_KEY,
-                            franchiseRepository.franchises(force),
-                            FRANCHISES_ROW_SIZE,
-                        )
-                    _franchises.value =
-                        if (picked.isEmpty()) emptyList()
-                        else franchiseRepository.cards(picked, presentationSeed)
+                    franchiseRepository.franchisesOrNull()
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    Timber.e(e, "Failed to load franchises")
+                    Timber.e(e, "Failed to prewarm franchises")
                 }
             }
+    }
+
+    private fun hydrateFranchisesDetached(descriptor: HomeSectionDescriptor, isRefresh: Boolean) {
+        if (!isRefresh && franchisesJob?.isActive == true) return
+        franchisesJob?.cancel()
+        franchisesJob = scope.launch(Dispatchers.IO) { hydrateAndPublish(descriptor, isRefresh) }
+    }
+
+    private suspend fun hydrateFranchises(bypassCache: Boolean): HomeSectionContent {
+        val all =
+            franchiseRepository.franchisesOrNull(force = bypassCache)
+                ?: return HomeSectionContent.Unavailable
+        val picked = presentationSample(FRANCHISES_KEY, all, FRANCHISES_ROW_SIZE)
+        if (picked.isEmpty()) return HomeSectionContent.Empty
+        return HomeSectionContent.Franchises(franchiseRepository.cards(picked, presentationSeed))
     }
 
     private suspend fun isRowHidden(row: HomeRow): Boolean =
@@ -682,27 +746,36 @@ constructor(
                     ?: _pinnedLayout.value.firstOrNull { it.key == descriptorKey }
                     ?: continue
 
-            try {
-                val content = hydrateDescriptor(descriptor, bypassCache = isRefresh)
-                if (content != null) {
-                    registerRenderedItems(content)
-                    _content.update { it + (descriptorKey to content) }
-                    if (content == HomeSectionContent.Empty) pruneEmptyDescriptor(descriptorKey)
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to hydrate home section $descriptorKey")
+            if (descriptor.type == HomeSectionType.FRANCHISES) {
+                hydrateFranchisesDetached(descriptor, isRefresh)
+                continue
             }
+            hydrateAndPublish(descriptor, isRefresh)
+        }
+    }
+
+    private suspend fun hydrateAndPublish(descriptor: HomeSectionDescriptor, isRefresh: Boolean) {
+        val descriptorKey = descriptor.key
+        try {
+            val content = hydrateDescriptor(descriptor, bypassCache = isRefresh)
+            if (content != null) {
+                registerRenderedItems(content)
+                _content.update { it + (descriptorKey to content) }
+                if (content == HomeSectionContent.Empty) pruneEmptyDescriptor(descriptorKey)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to hydrate home section $descriptorKey")
         }
     }
 
     private suspend fun pruneEmptyDescriptor(descriptorKey: String) {
         val sk = sessionKey() ?: return
-        val current = _layout.value
-        if (current.none { it.key == descriptorKey }) return
-        val pruned = current.filterNot { it.key == descriptorKey }
-        _layout.value = pruned
+        if (_layout.value.none { it.key == descriptorKey }) return
+        val pruned = _layout.updateAndGet { current ->
+            current.filterNot { it.key == descriptorKey }
+        }
         homeCacheRepository.invalidate(contentCacheKey(sk, descriptorKey))
         homeCacheRepository.putRaw(layoutCacheKey(sk), json.encodeToString(pruned))
     }
@@ -757,7 +830,6 @@ constructor(
         ensureWatchAgain(force = true)
         ensureCriticsChoice(force = true)
         ensurePopularStudios(force = true)
-        ensureFranchises(force = true)
         refreshPinnedSections(reason)
         refreshDiscoverySections(reason)
     }
@@ -879,6 +951,7 @@ constructor(
             is HomeSectionContent.RankedItems -> {
                 filterItems(content.items)?.let { HomeSectionContent.RankedItems(it) } ?: content
             }
+            is HomeSectionContent.Franchises,
             HomeSectionContent.Empty,
             HomeSectionContent.Unavailable -> content
         }
@@ -925,7 +998,7 @@ constructor(
         _popularStudios.value = emptyList()
         _popularStudiosLoaded.value = false
         franchisesJob?.cancel()
-        _franchises.value = emptyList()
+        franchisesPrewarmJob?.cancel()
         franchiseRepository.clear()
     }
 
@@ -975,6 +1048,7 @@ constructor(
             is HomeSectionContent.RankedItems -> {
                 patchItems(content.items)?.let { HomeSectionContent.RankedItems(it) } ?: content
             }
+            is HomeSectionContent.Franchises,
             HomeSectionContent.Empty,
             HomeSectionContent.Unavailable -> content
         }
@@ -991,6 +1065,7 @@ constructor(
                 is HomeSectionContent.Spotlight -> content.items.map { it.id } to true
                 is HomeSectionContent.Items -> content.items.map { it.id } to false
                 is HomeSectionContent.RankedItems -> content.items.map { it.id } to false
+                is HomeSectionContent.Franchises,
                 HomeSectionContent.Empty,
                 HomeSectionContent.Unavailable -> return
             }
@@ -1046,6 +1121,7 @@ constructor(
                 hydrateImdbTop(descriptor, ImdbTopList.MOVIES, bypassCache)
             HomeSectionType.TOP_IMDB_SHOWS ->
                 hydrateImdbTop(descriptor, ImdbTopList.SHOWS, bypassCache)
+            HomeSectionType.FRANCHISES -> hydrateFranchises(bypassCache)
             HomeSectionType.CUSTOM -> hydrateCustomSection(descriptor, bypassCache)
             HomeSectionType.SPOTLIGHT_GENRE_MOVIE,
             HomeSectionType.SPOTLIGHT_GENRE_SHOW,
@@ -1912,26 +1988,8 @@ constructor(
             }
             val spotlights = spotlightDescriptors.shuffled().take(spotlightCap)
 
-            val topImdbDescriptors = buildList {
-                if (cap(DiscoverySection.TOP_IMDB_MOVIES) > 0) {
-                    add(
-                        HomeSectionDescriptor(
-                            key = TOP_IMDB_MOVIES_KEY,
-                            type = HomeSectionType.TOP_IMDB_MOVIES,
-                            title = context.getString(R.string.discovery_section_top_imdb_movies),
-                        )
-                    )
-                }
-                if (cap(DiscoverySection.TOP_IMDB_SHOWS) > 0) {
-                    add(
-                        HomeSectionDescriptor(
-                            key = TOP_IMDB_SHOWS_KEY,
-                            type = HomeSectionType.TOP_IMDB_SHOWS,
-                            title = context.getString(R.string.discovery_section_top_imdb_shows),
-                        )
-                    )
-                }
-            }
+            val toggleDescriptors =
+                DiscoverySection.entries.filter { cap(it) > 0 }.mapNotNull(::toggleDescriptor)
 
             val recommendationDescriptors =
                 (actorDescriptors +
@@ -1940,7 +1998,7 @@ constructor(
                         becauseYouWatchedDescriptors +
                         becauseYouLikedDescriptors +
                         personFromMovieDescriptors +
-                        topImdbDescriptors)
+                        toggleDescriptors)
                     .shuffled()
 
             val genreDescriptors =
@@ -1990,7 +2048,8 @@ constructor(
                         it.type == HomeSectionType.DIRECTOR_FROM_MOVIE ||
                         it.type == HomeSectionType.WRITER_FROM_MOVIE ||
                         it.type == HomeSectionType.TOP_IMDB_MOVIES ||
-                        it.type == HomeSectionType.TOP_IMDB_SHOWS
+                        it.type == HomeSectionType.TOP_IMDB_SHOWS ||
+                        it.type == HomeSectionType.FRANCHISES
                 }
                 .shuffled()
 

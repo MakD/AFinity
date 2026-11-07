@@ -17,8 +17,7 @@ enum class HomeRow(
     UPCOMING_EPISODES("upcoming_episodes", R.string.home_row_upcoming),
     CRITICS_CHOICE("critics_choice", R.string.home_row_critics_choice),
     WATCH_AGAIN("watch_again", R.string.home_row_watch_again),
-    POPULAR_STUDIOS("popular_studios", R.string.home_row_popular_studios),
-    FRANCHISES("franchises", R.string.home_row_franchises);
+    POPULAR_STUDIOS("popular_studios", R.string.home_row_popular_studios);
 
     companion object {
         fun fromKey(key: String): HomeRow? = entries.firstOrNull { it.key == key }

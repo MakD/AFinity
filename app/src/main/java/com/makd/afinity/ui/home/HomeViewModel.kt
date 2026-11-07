@@ -336,12 +336,6 @@ constructor(
         }
 
         viewModelScope.launch {
-            homeSectionsRepository.franchises.collect { franchises ->
-                _uiState.update { it.copy(franchises = franchises) }
-            }
-        }
-
-        viewModelScope.launch {
             homeSectionsRepository.criticsChoice.collect { items ->
                 _uiState.update { it.copy(highestRated = items) }
             }
@@ -882,6 +876,7 @@ sealed interface HomeSection {
         override val key: String,
         val title: String,
         val cardStyle: CustomSectionCardStyle,
+        val showText: Boolean = true,
     ) : HomeSection
 
     data class Person(override val key: String, val section: PersonSection) : HomeSection
@@ -909,6 +904,8 @@ sealed interface HomeSection {
 
     data class Ranked(override val key: String, val title: String, val items: List<AfinityItem>) :
         HomeSection
+
+    data class Franchises(override val key: String, val cards: List<FranchiseCard>) : HomeSection
 }
 
 private fun HomeSectionDescriptor.toHomeSection(content: HomeSectionContent?): HomeSection? =
@@ -929,6 +926,7 @@ private fun HomeSectionDescriptor.toHomeSection(content: HomeSectionContent?): H
                                 HomeSectionType.SPOTLIGHT_GENRE_SHOW,
                                 HomeSectionType.SPOTLIGHT_STUDIO,
                                 HomeSectionType.SPOTLIGHT_BOXSET -> CustomSectionCardStyle.SPOTLIGHT
+                                HomeSectionType.FRANCHISES -> CustomSectionCardStyle.LANDSCAPE
                                 HomeSectionType.CUSTOM ->
                                     cardStyle?.let {
                                         runCatching { CustomSectionCardStyle.valueOf(it) }
@@ -936,6 +934,7 @@ private fun HomeSectionDescriptor.toHomeSection(content: HomeSectionContent?): H
                                     } ?: CustomSectionCardStyle.PORTRAIT
                                 else -> CustomSectionCardStyle.PORTRAIT
                             },
+                        showText = type != HomeSectionType.FRANCHISES,
                     )
                 HomeSectionContent.Empty,
                 HomeSectionContent.Unavailable -> null
@@ -945,6 +944,7 @@ private fun HomeSectionDescriptor.toHomeSection(content: HomeSectionContent?): H
                     HomeSection.PersonFromMovie(key, content.section)
                 is HomeSectionContent.Spotlight -> HomeSection.Spotlight(key, title, content.items)
                 is HomeSectionContent.RankedItems -> HomeSection.Ranked(key, title, content.items)
+                is HomeSectionContent.Franchises -> HomeSection.Franchises(key, content.cards)
                 is HomeSectionContent.Items ->
                     HomeSection.Items(
                         key = key,
@@ -980,7 +980,6 @@ data class HomeUiState(
     val highestRatedLoaded: Boolean = false,
     val popularStudios: List<AfinityStudio> = emptyList(),
     val popularStudiosLoaded: Boolean = false,
-    val franchises: List<FranchiseCard> = emptyList(),
     val nextUpLoaded: Boolean = false,
     val upcomingLoaded: Boolean = false,
     val hiddenRows: Set<HomeRow> = emptySet(),

@@ -674,24 +674,6 @@ fun HomeScreen(
                             }
                         }
 
-                        if (
-                            !uiState.isOffline &&
-                                uiState.franchises.isNotEmpty() &&
-                                HomeRow.FRANCHISES !in uiState.hiddenRows
-                        ) {
-                            item(key = "franchises") {
-                                Box(modifier = baseModifier.padding(top = 24.dp)) {
-                                    FranchisesSection(
-                                        franchises = uiState.franchises,
-                                        onFranchiseClick = { franchise ->
-                                            onFranchiseClick(franchise.id)
-                                        },
-                                        widthSizeClass = widthSizeClass,
-                                    )
-                                }
-                            }
-                        }
-
                         if (!uiState.isOffline && uiState.pinnedSections.isNotEmpty()) {
                             items(
                                 items = uiState.pinnedSections,
@@ -791,6 +773,7 @@ fun HomeScreen(
                                                 onVisible = {
                                                     viewModel.hydrateSection(section.key)
                                                 },
+                                                showText = section.showText,
                                             )
                                         }
 
@@ -842,6 +825,16 @@ fun HomeScreen(
                                                 title = section.title,
                                                 items = section.items,
                                                 onItemClick = onItemClick,
+                                                widthSizeClass = widthSizeClass,
+                                            )
+                                        }
+
+                                        is HomeSection.Franchises -> {
+                                            FranchisesSection(
+                                                franchises = section.cards,
+                                                onFranchiseClick = { franchise ->
+                                                    onFranchiseClick(franchise.id)
+                                                },
                                                 widthSizeClass = widthSizeClass,
                                             )
                                         }

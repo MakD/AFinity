@@ -35,6 +35,7 @@ fun PendingSection(
     cardStyle: CustomSectionCardStyle,
     onVisible: () -> Unit,
     modifier: Modifier = Modifier,
+    showText: Boolean = true,
 ) {
     var hasBeenVisible by remember { mutableStateOf(false) }
 
@@ -85,8 +86,17 @@ fun PendingSection(
 
             MediaRowSkeleton(
                 cardWidth = cardWidth,
-                height = CardDimensions.rowHeight(cardWidth, aspectRatio),
+                height =
+                    if (showText) CardDimensions.rowHeight(cardWidth, aspectRatio)
+                    else
+                        CardDimensions.rowHeight(
+                            cardWidth,
+                            aspectRatio,
+                            titleHeight = 0.dp,
+                            metadataHeight = 0.dp,
+                        ),
                 aspectRatio = aspectRatio,
+                showText = showText,
             )
         }
     }

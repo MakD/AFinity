@@ -28,6 +28,7 @@ fun MediaRowSkeleton(
     height: Dp,
     itemCount: Int = 6,
     aspectRatio: Float = CardDimensions.ASPECT_RATIO_PORTRAIT,
+    showText: Boolean = true,
 ) {
     CardRow(modifier = Modifier.height(height)) {
         items(itemCount) {
@@ -42,30 +43,32 @@ fun MediaRowSkeleton(
 
                 Spacer(modifier = Modifier.height(CardDimensions.CardTextSpacing))
 
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(CardDimensions.titleLine),
-                    contentAlignment = Alignment.CenterStart,
-                ) {
+                if (showText) {
                     Box(
-                        modifier =
-                            Modifier.fillMaxWidth(0.8f)
-                                .height(14.dp)
-                                .clip(RoundedCornerShape(4.dp))
-                                .shimmerEffect()
-                    )
-                }
+                        modifier = Modifier.fillMaxWidth().height(CardDimensions.titleLine),
+                        contentAlignment = Alignment.CenterStart,
+                    ) {
+                        Box(
+                            modifier =
+                                Modifier.fillMaxWidth(0.8f)
+                                    .height(14.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .shimmerEffect()
+                        )
+                    }
 
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(CardDimensions.metadataLine),
-                    contentAlignment = Alignment.CenterStart,
-                ) {
                     Box(
-                        modifier =
-                            Modifier.fillMaxWidth(0.45f)
-                                .height(12.dp)
-                                .clip(RoundedCornerShape(4.dp))
-                                .shimmerEffect()
-                    )
+                        modifier = Modifier.fillMaxWidth().height(CardDimensions.metadataLine),
+                        contentAlignment = Alignment.CenterStart,
+                    ) {
+                        Box(
+                            modifier =
+                                Modifier.fillMaxWidth(0.45f)
+                                    .height(12.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .shimmerEffect()
+                        )
+                    }
                 }
             }
         }
