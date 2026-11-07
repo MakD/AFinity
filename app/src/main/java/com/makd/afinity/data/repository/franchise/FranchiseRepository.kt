@@ -8,6 +8,7 @@ import com.makd.afinity.data.models.franchise.FranchiseTitle
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.LibraryIndexEntry
 import com.makd.afinity.data.repository.FieldSets
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.home.HomeCacheRepository
 import com.makd.afinity.data.repository.media.LibraryIndexRepository
 import com.makd.afinity.data.repository.media.MediaRepository
@@ -32,6 +33,7 @@ constructor(
     private val libraryIndexRepository: LibraryIndexRepository,
     private val wikidataFranchiseRepository: WikidataFranchiseRepository,
     private val sessionManager: SessionManager,
+    private val preferencesRepository: PreferencesRepository,
     private val homeCacheRepository: HomeCacheRepository,
     private val backgroundWorkQueue: BackgroundWorkQueue,
 ) {
@@ -45,6 +47,7 @@ constructor(
 
     suspend fun franchisesOrNull(force: Boolean = false): List<Franchise>? = mutex.withLock {
         val sk = sessionKey() ?: return null
+        if (!wikidataEnabled()) return null
         if (!force) {
             memory
                 ?.takeIf { it.first == sk }
@@ -172,6 +175,11 @@ constructor(
         } catch (e: IllegalArgumentException) {
             null
         }
+
+    private suspend fun wikidataEnabled(): Boolean {
+        val session = sessionManager.currentSession.value ?: return false
+        return preferencesRepository.getWikidataEnabled(session.serverId, session.userId.toString())
+    }
 
     private fun sessionKey(): String? {
         val session = sessionManager.currentSession.value ?: return null

@@ -1269,7 +1269,15 @@ constructor(
     }
 
     private suspend fun loadWikidataAwards(item: AfinityItem, hasInternet: Boolean) {
-        if (!preferencesRepository.getShowAwards() || !preferencesRepository.getWikidataEnabled()) {
+        val session = sessionManager.currentSession.value
+        if (
+            session == null ||
+                !preferencesRepository.getShowAwards() ||
+                !preferencesRepository.getWikidataEnabled(
+                    session.serverId,
+                    session.userId.toString(),
+                )
+        ) {
             _uiState.update { it.copy(wikidataAwards = null, isLoadingWikidataAwards = false) }
             return
         }

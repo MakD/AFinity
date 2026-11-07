@@ -1772,15 +1772,10 @@
     <string name="mdblist_usage_unknown">—</string>
     <string name="services_hub_tile_wikidata">Викиданные</string>
     <string name="wikidata_connect_title">Подключить Викиданные</string>
-    <string name="wikidata_connect_blurb">Награды и номинации для фильмов, сериалов и персон. Бесплатно и открыто для всех — без регистраций и ключей API.</string>
     <string name="wikidata_connect_sends_title">Что AFinity передает</string>
-    <string name="wikidata_connect_sends_body">Идентификатор элемента в TMDB при открытии страницы с подробностями, и ваш IP-адрес, в общедоступный сервис запросов Викимедиа.</string>
     <string name="wikidata_connect_never_title">Что никогда не передается</string>
-    <string name="wikidata_connect_never_body">Ничего с вашего сервера Jellyfin — данные аккаунта, токен, адрес сервера, или историю просмотров.</string>
     <string name="wikidata_connect_action">Включить</string>
-    <string name="wikidata_scope_note">Эта настройка применяется ко всем серверам и профилям на этом устройстве, а не только к тому, в который вы вошли.</string>
     <string name="wikidata_disconnect_title">Отключиться от Викиданных?</string>
-    <string name="wikidata_disconnect_message">История наград перестанет загружаться на всех серверах и профилях на этом устройстве. Сохраненные данные не будут удалены.</string>
     <string name="wikidata_disconnect_action">Отключиться</string>
     <string name="pref_show_awards_title">Показать награды</string>
     <string name="pref_show_awards_summary">Награды и история побед на экране с подробностями</string>

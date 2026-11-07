@@ -494,11 +494,11 @@ interface PreferencesRepository {
 
     fun getShowAwardsFlow(): Flow<Boolean>
 
-    suspend fun setWikidataEnabled(enabled: Boolean)
+    suspend fun setWikidataEnabled(serverId: String, userId: String, enabled: Boolean)
 
-    suspend fun getWikidataEnabled(): Boolean
+    suspend fun getWikidataEnabled(serverId: String, userId: String): Boolean
 
-    fun getWikidataEnabledFlow(): Flow<Boolean>
+    fun getWikidataEnabledFlow(serverId: String, userId: String): Flow<Boolean>
 
     suspend fun setNotificationPermissionDeclined(declined: Boolean)
 

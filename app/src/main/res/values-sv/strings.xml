@@ -1606,15 +1606,10 @@
     <string name="mdblist_usage_unknown">Okänt</string>
     <string name="services_hub_tile_wikidata">Wikidata</string>
     <string name="wikidata_connect_title">Anslut Wikidata</string>
-    <string name="wikidata_connect_blurb">Vinster och nomineringar för filmer, serier och personer. Gratis och offentligt. Inget konto eller API-nyckel krävs.</string>
     <string name="wikidata_connect_sends_title">Vad AFinity skickar</string>
-    <string name="wikidata_connect_sends_body">Ett objekts TMDB-id när du öppnar dess informationsskärm samt din IP-adress till Wikimedias offentliga frågetjänst.</string>
     <string name="wikidata_connect_never_title">Vad den aldrig skickar</string>
-    <string name="wikidata_connect_never_body">Ingenting från din Jellyfin-server skickas: inget konto, ingen token, ingen serveradress och ingen tittarhistorik.</string>
     <string name="wikidata_connect_action">Aktivera</string>
-    <string name="wikidata_scope_note">Gäller varje server och profil på enheten, inte bara den du är inloggad på.</string>
     <string name="wikidata_disconnect_title">Koppla från Wikidata?</string>
-    <string name="wikidata_disconnect_message">Utmärkelsehistorik slutar läsas in för varje server och profil på enheten. Inget som redan sparats tas bort.</string>
     <string name="wikidata_disconnect_action">Koppla från</string>
     <string name="pref_show_awards_title">Visa utmärkelser</string>
     <string name="pref_show_awards_summary">Utmärkelsebanderoll och vinsthistorik på informationsskärmar</string>

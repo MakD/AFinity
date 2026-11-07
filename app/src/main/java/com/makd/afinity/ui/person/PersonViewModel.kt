@@ -58,7 +58,7 @@ constructor(
     private val wikidataAwardsRepository: WikidataAwardsRepository,
     private val preferencesRepository: PreferencesRepository,
     private val externalTitlesRepository: ExternalTitlesRepository,
-    sessionManager: SessionManager,
+    private val sessionManager: SessionManager,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -279,9 +279,14 @@ constructor(
         awardsTmdbId = tmdbId
 
         viewModelScope.launch {
+            val session = sessionManager.currentSession.value
             if (
-                !preferencesRepository.getShowAwards() ||
-                    !preferencesRepository.getWikidataEnabled()
+                session == null ||
+                    !preferencesRepository.getShowAwards() ||
+                    !preferencesRepository.getWikidataEnabled(
+                        session.serverId,
+                        session.userId.toString(),
+                    )
             ) {
                 _uiState.update { it.copy(awards = null, isLoadingAwards = false) }
                 return@launch

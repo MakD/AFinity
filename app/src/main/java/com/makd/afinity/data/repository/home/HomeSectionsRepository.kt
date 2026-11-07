@@ -32,6 +32,7 @@ import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.GenreRepository
 import com.makd.afinity.data.repository.PeopleRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.franchise.FranchiseRepository
 import com.makd.afinity.data.repository.media.LibraryIndexRepository
 import com.makd.afinity.data.repository.media.MediaRepository
@@ -59,6 +60,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -95,6 +97,7 @@ constructor(
     private val backgroundWorkQueue: BackgroundWorkQueue,
     private val franchiseRepository: FranchiseRepository,
     private val libraryIndexRepository: LibraryIndexRepository,
+    private val preferencesRepository: PreferencesRepository,
     private val okHttpClient: OkHttpClient,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
@@ -199,6 +202,32 @@ constructor(
                 if (HomeRow.FRANCHISES in shown) ensureFranchises(force = false)
                 if (HomeRow.POPULAR_STUDIOS in shown) ensurePopularStudios(force = false)
             }
+        }
+
+        scope.launch {
+            sessionManager.currentSession
+                .map { session ->
+                    session
+                        ?.takeIf { it.serverId.isNotBlank() }
+                        ?.let { it.serverId to it.userId.toString() }
+                }
+                .distinctUntilChanged()
+                .flatMapLatest { scopeIds ->
+                    if (scopeIds == null) emptyFlow()
+                    else
+                        preferencesRepository
+                            .getWikidataEnabledFlow(scopeIds.first, scopeIds.second)
+                            .distinctUntilChanged()
+                            .drop(1)
+                }
+                .collect { enabled ->
+                    if (enabled) {
+                        ensureFranchises(force = false)
+                    } else {
+                        franchisesJob?.cancel()
+                        _franchises.value = emptyList()
+                    }
+                }
         }
     }
 

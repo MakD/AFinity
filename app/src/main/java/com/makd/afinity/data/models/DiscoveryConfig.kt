@@ -25,6 +25,7 @@ enum class DiscoverySection(
     val labelRes: Int,
     val defaultCount: Int,
     val ceiling: Int,
+    val summaryRes: Int? = null,
 ) {
     GENRES("discovery_genres", R.string.discovery_section_genres, 15, 30),
     SPOTLIGHTS("discovery_spotlights", R.string.discovery_section_spotlights, 20, 32),
@@ -41,15 +42,34 @@ enum class DiscoverySection(
     ACTOR_FROM_MOVIE("discovery_actor_from", R.string.discovery_section_actor_from, 3, 6),
     DIRECTOR_FROM_MOVIE("discovery_director_from", R.string.discovery_section_director_from, 2, 6),
     WRITER_FROM_MOVIE("discovery_writer_from", R.string.discovery_section_writer_from, 2, 6),
-    TOP_IMDB_MOVIES("discovery_top_imdb_movies", R.string.discovery_section_top_imdb_movies, 1, 1),
-    TOP_IMDB_SHOWS("discovery_top_imdb_shows", R.string.discovery_section_top_imdb_shows, 1, 1),
+    TOP_IMDB_MOVIES(
+        "discovery_top_imdb_movies",
+        R.string.discovery_section_top_imdb_movies,
+        1,
+        1,
+        R.string.discovery_section_top_imdb_movies_summary,
+    ),
+    TOP_IMDB_SHOWS(
+        "discovery_top_imdb_shows",
+        R.string.discovery_section_top_imdb_shows,
+        1,
+        1,
+        R.string.discovery_section_top_imdb_shows_summary,
+    ),
     TRENDING_MOVIES(
         "discovery_trending_movies",
         R.string.discovery_section_trending_movies,
         1,
         1,
+        R.string.discovery_section_trending_movies_summary,
     ),
-    TRENDING_SHOWS("discovery_trending_shows", R.string.discovery_section_trending_shows, 1, 1);
+    TRENDING_SHOWS(
+        "discovery_trending_shows",
+        R.string.discovery_section_trending_shows,
+        1,
+        1,
+        R.string.discovery_section_trending_shows_summary,
+    );
 
     val isToggle: Boolean
         get() = ceiling == 1

@@ -226,6 +226,7 @@ fun CustomSectionsScreen(
                             } else {
                                 SettingsSwitchItem(
                                     title = stringResource(row.labelRes),
+                                    subtitle = row.summaryRes?.let { stringResource(it) },
                                     checked = row !in uiState.hiddenRows,
                                     onCheckedChange = { viewModel.setRowVisible(row, it) },
                                 )
@@ -287,6 +288,7 @@ fun CustomSectionsScreen(
                                     SettingsDivider()
                                     SettingsSwitchItem(
                                         title = stringResource(section.labelRes),
+                                        subtitle = section.summaryRes?.let { stringResource(it) },
                                         checked = uiState.discovery.isEnabled(section),
                                         onCheckedChange = {
                                             viewModel.setDiscoveryEnabled(section, it)

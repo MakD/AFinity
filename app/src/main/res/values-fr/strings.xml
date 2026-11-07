@@ -733,7 +733,6 @@
     <string name="cd_next_month">Mois suivant</string>
     <string name="custom_sections_sources_loading">Chargement des sources…</string>
     <string name="wikidata_connect_action">Activer</string>
-    <string name="wikidata_scope_note">Ceci s\'applique à tous les serveurs et profils de cet appareil, et pas seulement à celui sur lequel vous êtes connecté.</string>
     <string name="wikidata_disconnect_title">Déconnecter Wikidata ?</string>
     <string name="wikidata_disconnect_action">Déconnecter</string>
     <string name="pref_show_awards_title">Afficher les récompenses</string>
@@ -1568,12 +1567,8 @@
     <string name="mdblist_usage_unknown">—</string>
     <string name="services_hub_tile_wikidata">Wikidata</string>
     <string name="wikidata_connect_title">Connecter Wikidata</string>
-    <string name="wikidata_connect_blurb">Récompenses et nominations pour des films, des séries et des personnalités. Service gratuit et public : aucun compte ni clé API requis.</string>
     <string name="wikidata_connect_sends_title">Ce qu\'AFinity envoie</string>
-    <string name="wikidata_connect_sends_body">L\'identifiant TMDB d\'un contenu lorsque vous ouvrez sa fiche, ainsi que votre adresse IP, au service de requêtes public de Wikimedia.</string>
     <string name="wikidata_connect_never_title">Ce qu\'il n\'envoie jamais</string>
-    <string name="wikidata_connect_never_body">Rien de votre serveur Jellyfin : ni compte, ni jeton, ni adresse de serveur, ni historique de visionnage.</string>
-    <string name="wikidata_disconnect_message">L\'historique des récompenses cessera d\'être chargé sur tous les serveurs et profils de cet appareil. Rien de ce qui est déjà enregistré n\'est supprimé.</string>
     <string name="pref_show_awards_summary">Bannière de récompense et historique des victoires sur les fiches détaillées</string>
     <string name="awards_headline_won_fmt">A remporté %1$s</string>
     <string name="awards_headline_nominated_fmt">Nominé pour %1$s</string>
