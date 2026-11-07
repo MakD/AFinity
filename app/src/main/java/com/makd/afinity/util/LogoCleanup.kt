@@ -119,7 +119,8 @@ object LogoCleanup {
         val step = max(1, argb.size / SAMPLE_TARGET)
         var sampled = 0
         var opaque = 0
-        var dark = 0
+        var neutral = 0
+        var luminanceSum = 0.0
         for (i in argb.indices step step) {
             sampled++
             val pixel = argb[i]
@@ -130,13 +131,15 @@ object LogoCleanup {
             val b = blue(pixel)
             val high = max(r, max(g, b))
             val low = min(r, min(g, b))
-            val luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+            luminanceSum += 0.2126 * r + 0.7152 * g + 0.0722 * b
             val saturation = if (high == 0) 0.0 else (high - low).toDouble() / high
-            if (luminance < DARK_LUMINANCE && saturation < DARK_SATURATION) dark++
+            if (saturation < DARK_SATURATION) neutral++
         }
         if (opaque == 0) return false
         val transparent = 1.0 - opaque.toDouble() / sampled
-        return transparent >= MIN_TRANSPARENT_SHARE && dark >= opaque * DARK_INK_SHARE
+        return transparent >= MIN_TRANSPARENT_SHARE &&
+            neutral >= opaque * DARK_INK_SHARE &&
+            luminanceSum / opaque < DARK_LUMINANCE
     }
 
     private fun medianColor(colors: IntArray): Int {
