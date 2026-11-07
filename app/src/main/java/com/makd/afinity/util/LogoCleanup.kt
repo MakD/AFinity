@@ -17,7 +17,7 @@ object LogoCleanup {
     private const val MAX_REMOVED_SHARE = 0.97
     private const val KNOCKOUT_HOLE_SHARE = 0.01
     private const val DARK_LUMINANCE = 90.0
-    private const val DARK_SATURATION = 0.3
+    private const val NEUTRAL_CHROMA = 32
     private const val DARK_INK_SHARE = 0.9
     private const val SAMPLE_TARGET = 20_000
 
@@ -129,11 +129,9 @@ object LogoCleanup {
             val r = red(pixel)
             val g = green(pixel)
             val b = blue(pixel)
-            val high = max(r, max(g, b))
-            val low = min(r, min(g, b))
+            val chroma = max(r, max(g, b)) - min(r, min(g, b))
             luminanceSum += 0.2126 * r + 0.7152 * g + 0.0722 * b
-            val saturation = if (high == 0) 0.0 else (high - low).toDouble() / high
-            if (saturation < DARK_SATURATION) neutral++
+            if (chroma < NEUTRAL_CHROMA) neutral++
         }
         if (opaque == 0) return false
         val transparent = 1.0 - opaque.toDouble() / sampled
