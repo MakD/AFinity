@@ -143,6 +143,8 @@ interface MediaRepository {
 
     suspend fun getItemsByIds(ids: List<UUID>, fields: List<ItemFields>? = null): List<AfinityItem>
 
+    suspend fun getImdbIdIndexResult(itemType: BaseItemKind): Result<Map<UUID, String>>
+
     suspend fun getUserDataByIds(ids: List<UUID>): List<UserItemDataDto>
 
     suspend fun getIntros(itemId: UUID): List<AfinityItem>

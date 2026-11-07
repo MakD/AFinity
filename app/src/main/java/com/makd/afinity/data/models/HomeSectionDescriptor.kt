@@ -21,6 +21,8 @@ enum class HomeSectionType {
     GENRE_MOVIE,
     GENRE_SHOW,
     CRITICS_CHOICE,
+    TOP_IMDB_MOVIES,
+    TOP_IMDB_SHOWS,
     CUSTOM,
 }
 
@@ -53,4 +55,6 @@ sealed interface HomeSectionContent {
     data class RankedItems(val items: List<AfinityItem>) : HomeSectionContent
 
     data object Empty : HomeSectionContent
+
+    data object Unavailable : HomeSectionContent
 }

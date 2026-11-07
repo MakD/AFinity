@@ -40,7 +40,9 @@ enum class DiscoverySection(
     BECAUSE_YOU_LIKED("discovery_because_liked", R.string.discovery_section_because_liked, 3, 10),
     ACTOR_FROM_MOVIE("discovery_actor_from", R.string.discovery_section_actor_from, 3, 6),
     DIRECTOR_FROM_MOVIE("discovery_director_from", R.string.discovery_section_director_from, 2, 6),
-    WRITER_FROM_MOVIE("discovery_writer_from", R.string.discovery_section_writer_from, 2, 6);
+    WRITER_FROM_MOVIE("discovery_writer_from", R.string.discovery_section_writer_from, 2, 6),
+    TOP_IMDB_MOVIES("discovery_top_imdb_movies", R.string.discovery_section_top_imdb_movies, 1, 1),
+    TOP_IMDB_SHOWS("discovery_top_imdb_shows", R.string.discovery_section_top_imdb_shows, 1, 1);
 
     companion object {
         fun fromKey(key: String): DiscoverySection? = entries.firstOrNull { it.key == key }

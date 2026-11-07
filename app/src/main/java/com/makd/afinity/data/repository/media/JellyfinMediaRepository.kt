@@ -1088,6 +1088,32 @@ constructor(
                 .mapNotNull { it.toAfinityItem(getBaseUrl()) }
         }
 
+    override suspend fun getImdbIdIndexResult(itemType: BaseItemKind): Result<Map<UUID, String>> =
+        apiInvoker.apiResult { apiClient, userId ->
+            LibraryApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    includeItemTypes = listOf(itemType),
+                    recursive = true,
+                    hasImdbId = true,
+                    fields = listOf(ItemFields.PROVIDER_IDS),
+                    enableImages = false,
+                    enableUserData = false,
+                    enableTotalRecordCount = false,
+                )
+                .content
+                .items
+                .mapNotNull { item ->
+                    item.providerIds
+                        ?.entries
+                        ?.firstOrNull { it.key.equals("imdb", ignoreCase = true) }
+                        ?.value
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { item.id to it }
+                }
+                .toMap()
+        }
+
     override suspend fun getUserDataByIds(ids: List<UUID>): List<UserItemDataDto> =
         apiCall(emptyList(), "Failed to batch-fetch user data by ids") { apiClient, userId ->
             if (ids.isEmpty()) return@apiCall emptyList()

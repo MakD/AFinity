@@ -819,6 +819,7 @@ fun HomeScreen(
 
                                         is HomeSection.Ranked -> {
                                             HighestRatedSection(
+                                                title = section.title,
                                                 items = section.items,
                                                 onItemClick = onItemClick,
                                                 widthSizeClass = widthSizeClass,

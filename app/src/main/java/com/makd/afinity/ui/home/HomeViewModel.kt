@@ -900,7 +900,8 @@ sealed interface HomeSection {
         val customSectionId: String? = null,
     ) : HomeSection
 
-    data class Ranked(override val key: String, val items: List<AfinityItem>) : HomeSection
+    data class Ranked(override val key: String, val title: String, val items: List<AfinityItem>) :
+        HomeSection
 }
 
 private fun HomeSectionDescriptor.toHomeSection(content: HomeSectionContent?): HomeSection? =
@@ -929,13 +930,14 @@ private fun HomeSectionDescriptor.toHomeSection(content: HomeSectionContent?): H
                                 else -> CustomSectionCardStyle.PORTRAIT
                             },
                     )
-                HomeSectionContent.Empty -> null
+                HomeSectionContent.Empty,
+                HomeSectionContent.Unavailable -> null
                 is HomeSectionContent.Person -> HomeSection.Person(key, content.section)
                 is HomeSectionContent.Movie -> HomeSection.Movie(key, content.section)
                 is HomeSectionContent.PersonFromMovie ->
                     HomeSection.PersonFromMovie(key, content.section)
                 is HomeSectionContent.Spotlight -> HomeSection.Spotlight(key, title, content.items)
-                is HomeSectionContent.RankedItems -> HomeSection.Ranked(key, content.items)
+                is HomeSectionContent.RankedItems -> HomeSection.Ranked(key, title, content.items)
                 is HomeSectionContent.Items ->
                     HomeSection.Items(
                         key = key,

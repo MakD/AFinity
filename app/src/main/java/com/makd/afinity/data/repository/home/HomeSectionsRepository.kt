@@ -34,10 +34,13 @@ import com.makd.afinity.data.repository.PeopleRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.IOException
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
@@ -61,8 +64,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.PersonKind
 import timber.log.Timber
@@ -81,12 +89,17 @@ constructor(
     private val customHomeSectionsRepository: CustomHomeSectionsRepository,
     private val homeLayoutPreferencesRepository: HomeLayoutPreferencesRepository,
     private val backgroundWorkQueue: BackgroundWorkQueue,
+    private val okHttpClient: OkHttpClient,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
     private val layoutTTL = 24.hours.inWholeMilliseconds
     private val recentCacheTTL = 6.hours.inWholeMilliseconds
     private val studiosTTL = 24.hours.inWholeMilliseconds
     private val boxSetsTTL = 24.hours.inWholeMilliseconds
+    private val imdbTopListTTL = 7.days.inWholeMilliseconds
+    private val imdbIndexTTL = 24.hours.inWholeMilliseconds
+
+    private val imdbIndexCache = ConcurrentHashMap<String, Pair<Long, Map<String, UUID>>>()
 
     private val json = Json { ignoreUnknownKeys = true }
     private val converters = AfinityTypeConverters()
@@ -828,7 +841,8 @@ constructor(
             is HomeSectionContent.RankedItems -> {
                 filterItems(content.items)?.let { HomeSectionContent.RankedItems(it) } ?: content
             }
-            HomeSectionContent.Empty -> content
+            HomeSectionContent.Empty,
+            HomeSectionContent.Unavailable -> content
         }
     }
 
@@ -861,6 +875,7 @@ constructor(
             boxSetsFailedAt = 0L
         }
         customSectionSignatures.clear()
+        imdbIndexCache.clear()
         presentationSeed = System.currentTimeMillis()
         watchAgainJob?.cancel()
         _watchAgain.value = emptyList()
@@ -919,7 +934,8 @@ constructor(
             is HomeSectionContent.RankedItems -> {
                 patchItems(content.items)?.let { HomeSectionContent.RankedItems(it) } ?: content
             }
-            HomeSectionContent.Empty -> content
+            HomeSectionContent.Empty,
+            HomeSectionContent.Unavailable -> content
         }
     }
 
@@ -934,7 +950,8 @@ constructor(
                 is HomeSectionContent.Spotlight -> content.items.map { it.id } to true
                 is HomeSectionContent.Items -> content.items.map { it.id } to false
                 is HomeSectionContent.RankedItems -> content.items.map { it.id } to false
-                HomeSectionContent.Empty -> return
+                HomeSectionContent.Empty,
+                HomeSectionContent.Unavailable -> return
             }
         hydrationMutex.withLock {
             if (isSpotlight) spotlightSeenIds.addAll(ids) else renderedItemIds.addAll(ids)
@@ -984,6 +1001,10 @@ constructor(
                 )
             HomeSectionType.WATCH_AGAIN -> hydrateWatchAgain(descriptor, bypassCache)
             HomeSectionType.CRITICS_CHOICE -> hydrateCriticsChoice(descriptor, bypassCache)
+            HomeSectionType.TOP_IMDB_MOVIES ->
+                hydrateImdbTop(descriptor, ImdbTopList.MOVIES, bypassCache)
+            HomeSectionType.TOP_IMDB_SHOWS ->
+                hydrateImdbTop(descriptor, ImdbTopList.SHOWS, bypassCache)
             HomeSectionType.CUSTOM -> hydrateCustomSection(descriptor, bypassCache)
             HomeSectionType.SPOTLIGHT_GENRE_MOVIE,
             HomeSectionType.SPOTLIGHT_GENRE_SHOW,
@@ -1216,6 +1237,126 @@ constructor(
                 else -> 0f
             }
         }
+
+    private suspend fun hydrateImdbTop(
+        descriptor: HomeSectionDescriptor,
+        list: ImdbTopList,
+        bypassCache: Boolean = false,
+    ): HomeSectionContent {
+        val sk = sessionKey() ?: return HomeSectionContent.Empty
+        val cacheKey = contentCacheKey(sk, descriptor.key)
+        val baseUrl = mediaRepository.getBaseUrl()
+        if (!bypassCache) {
+            homeCacheRepository
+                .getItems(cacheKey, baseUrl, recentCacheTTL)
+                ?.takeIf { it.isNotEmpty() }
+                ?.let {
+                    return HomeSectionContent.RankedItems(it)
+                }
+        }
+
+        val rankedImdbIds = imdbTopIds(list)
+        val index = imdbIndex(sk, list, bypassCache)
+        if (rankedImdbIds == null || index == null) return staleImdbTop(cacheKey, baseUrl)
+
+        val matchedIds = rankedImdbIds.mapNotNull { index[it] }.distinct().take(TOP_IMDB_ROW_SIZE)
+        if (matchedIds.isEmpty()) return HomeSectionContent.Empty
+
+        val byId =
+            mediaRepository.getItemsByIds(matchedIds, FieldSets.MEDIA_ITEM_CARDS).associateBy {
+                it.id
+            }
+        val items = matchedIds.mapNotNull { byId[it] }
+        if (items.isEmpty()) return staleImdbTop(cacheKey, baseUrl)
+
+        homeCacheRepository.putItems(cacheKey, items)
+        return HomeSectionContent.RankedItems(items)
+    }
+
+    private suspend fun staleImdbTop(cacheKey: String, baseUrl: String): HomeSectionContent =
+        homeCacheRepository
+            .getItems(cacheKey, baseUrl)
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { HomeSectionContent.RankedItems(it) } ?: HomeSectionContent.Unavailable
+
+    private suspend fun imdbIndex(
+        sk: String,
+        list: ImdbTopList,
+        bypassCache: Boolean,
+    ): Map<String, UUID>? {
+        val key = "${sk}_${list.name}"
+        val now = System.currentTimeMillis()
+        if (!bypassCache) {
+            imdbIndexCache[key]
+                ?.takeIf { now - it.first < imdbIndexTTL }
+                ?.let {
+                    return it.second
+                }
+        }
+        val raw =
+            mediaRepository.getImdbIdIndexResult(list.itemType).getOrElse { e ->
+                if (e is CancellationException) throw e
+                Timber.w(e, "Failed to load IMDb index for ${list.name}")
+                return null
+            }
+        val byImdbId = HashMap<String, UUID>(raw.size)
+        raw.forEach { (itemId, imdbId) -> byImdbId.putIfAbsent(normalizeImdbId(imdbId), itemId) }
+        imdbIndexCache[key] = now to byImdbId
+        return byImdbId
+    }
+
+    private suspend fun imdbTopIds(list: ImdbTopList): List<String>? {
+        homeCacheRepository.getRaw(list.idsCacheKey, imdbTopListTTL)?.let(::decodeIdList)?.let {
+            return it
+        }
+        val downloaded = downloadImdbTopIds(list)
+        if (!downloaded.isNullOrEmpty()) {
+            homeCacheRepository.putRaw(list.idsCacheKey, json.encodeToString(downloaded))
+            return downloaded
+        }
+        return homeCacheRepository.getRaw(list.idsCacheKey)?.let(::decodeIdList)
+    }
+
+    private fun decodeIdList(raw: String): List<String>? = runCatching {
+        json.decodeFromString<List<String>>(raw)
+    }.getOrNull()?.takeIf { it.isNotEmpty() }
+
+    private suspend fun downloadImdbTopIds(list: ImdbTopList): List<String>? =
+        withContext(Dispatchers.IO) {
+            try {
+                okHttpClient.newCall(Request.Builder().url(list.url).build()).execute().use {
+                    response ->
+                    if (response.isSuccessful) {
+                        parseMdbListTopIds(response.body.string())
+                    } else {
+                        Timber.w("IMDb top list ${list.name} returned HTTP ${response.code}")
+                        null
+                    }
+                }
+            } catch (e: IOException) {
+                Timber.w(e, "Failed to download IMDb top list ${list.name}")
+                null
+            }
+        }
+
+    private fun parseMdbListTopIds(rawJson: String): List<String>? =
+        try {
+            json
+                .decodeFromString<List<MdbListTopItem>>(rawJson)
+                .sortedBy { it.rank ?: Int.MAX_VALUE }
+                .mapNotNull { item ->
+                    item.imdbId?.takeIf { it.isNotBlank() }?.let(::normalizeImdbId)
+                }
+                .distinct()
+        } catch (e: IllegalArgumentException) {
+            Timber.w(e, "Failed to parse IMDb top list")
+            null
+        }
+
+    private fun normalizeImdbId(rawId: String): String {
+        val trimmed = rawId.trim().lowercase()
+        return if (trimmed.startsWith("tt")) trimmed else "tt$trimmed"
+    }
 
     private suspend fun hydrateCustomSection(
         descriptor: HomeSectionDescriptor,
@@ -1726,11 +1867,36 @@ constructor(
             }
             val spotlights = spotlightDescriptors.shuffled().take(spotlightCap)
 
+            val topImdbDescriptors = buildList {
+                if (cap(DiscoverySection.TOP_IMDB_MOVIES) > 0) {
+                    add(
+                        HomeSectionDescriptor(
+                            key = TOP_IMDB_MOVIES_KEY,
+                            type = HomeSectionType.TOP_IMDB_MOVIES,
+                            title = context.getString(R.string.discovery_section_top_imdb_movies),
+                        )
+                    )
+                }
+                if (cap(DiscoverySection.TOP_IMDB_SHOWS) > 0) {
+                    add(
+                        HomeSectionDescriptor(
+                            key = TOP_IMDB_SHOWS_KEY,
+                            type = HomeSectionType.TOP_IMDB_SHOWS,
+                            title = context.getString(R.string.discovery_section_top_imdb_shows),
+                        )
+                    )
+                }
+            }
+
             val recommendationDescriptors =
-                (actorDescriptors + directorDescriptors).shuffled() +
-                    (writerDescriptors + becauseYouWatchedDescriptors + becauseYouLikedDescriptors)
-                        .shuffled() +
-                    personFromMovieDescriptors.shuffled()
+                (actorDescriptors +
+                        directorDescriptors +
+                        writerDescriptors +
+                        becauseYouWatchedDescriptors +
+                        becauseYouLikedDescriptors +
+                        personFromMovieDescriptors +
+                        topImdbDescriptors)
+                    .shuffled()
 
             val genreDescriptors =
                 genres.shuffled().take(cap(DiscoverySection.GENRES)).map { genre ->
@@ -1777,7 +1943,9 @@ constructor(
                         it.type == HomeSectionType.BECAUSE_YOU_LIKED ||
                         it.type == HomeSectionType.ACTOR_FROM_MOVIE ||
                         it.type == HomeSectionType.DIRECTOR_FROM_MOVIE ||
-                        it.type == HomeSectionType.WRITER_FROM_MOVIE
+                        it.type == HomeSectionType.WRITER_FROM_MOVIE ||
+                        it.type == HomeSectionType.TOP_IMDB_MOVIES ||
+                        it.type == HomeSectionType.TOP_IMDB_SHOWS
                 }
                 .shuffled()
 
@@ -1974,3 +2142,31 @@ private const val SPOTLIGHT_ROW_SIZE = 10
 private const val CRITICS_ROW_SIZE = 10
 private const val SIMILAR_POOL = 50
 private const val PERSON_POOL = 50
+
+@Serializable
+private data class MdbListTopItem(
+    val rank: Int? = null,
+    @SerialName("imdb_id") val imdbId: String? = null,
+    val title: String? = null,
+)
+
+private enum class ImdbTopList(
+    val url: String,
+    val idsCacheKey: String,
+    val itemType: BaseItemKind,
+) {
+    MOVIES(
+        "https://mdblist.com/lists/snoak/imdb-top-250-movies/json",
+        "imdb_top_movies_ids",
+        BaseItemKind.MOVIE,
+    ),
+    SHOWS(
+        "https://mdblist.com/lists/snoak/imdb-top-250-shows/json",
+        "imdb_top_shows_ids",
+        BaseItemKind.SERIES,
+    ),
+}
+
+private const val TOP_IMDB_MOVIES_KEY = "top_imdb_movies"
+private const val TOP_IMDB_SHOWS_KEY = "top_imdb_shows"
+private const val TOP_IMDB_ROW_SIZE = 15

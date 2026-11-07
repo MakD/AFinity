@@ -51,12 +51,13 @@ fun HighestRatedSection(
     items: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
+    title: String = stringResource(R.string.home_critics_choice),
 ) {
     val cardWidth = widthSizeClass.portraitWidth
     val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
     Column(modifier = Modifier.padding(horizontal = CardDimensions.RowGutter)) {
-        HomeSectionHeader(title = stringResource(R.string.home_critics_choice))
+        HomeSectionHeader(title = title)
 
         val uniqueItems = items.distinctBy { it.id }
 
