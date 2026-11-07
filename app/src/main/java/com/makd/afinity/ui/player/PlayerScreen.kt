@@ -50,6 +50,7 @@ import com.makd.afinity.ui.player.components.MpvSurface
 import com.makd.afinity.ui.player.components.PlaybackStatsOverlay
 import com.makd.afinity.ui.player.components.PlayerControls
 import com.makd.afinity.ui.player.components.PlayerIndicators
+import com.makd.afinity.ui.player.components.SeekBarAnchor
 import com.makd.afinity.ui.player.components.SyncPlayGroupSheet
 import com.makd.afinity.ui.player.components.SyncPlayWaitingOverlay
 import com.makd.afinity.ui.player.components.TrickplayPreview
@@ -112,6 +113,7 @@ fun PlayerScreen(
     var dragStartBrightness by remember { mutableFloatStateOf(-1f) }
     var showVersionPicker by remember { mutableStateOf(false) }
     var isControlsPanelOpen by remember { mutableStateOf(false) }
+    val seekBarAnchor = remember { SeekBarAnchor() }
     val isOverlayPanelOpen =
         isControlsPanelOpen || (showVersionPicker && uiState.availableSources.size > 1)
     DisposableEffect(isOverlayPanelOpen) {
@@ -380,6 +382,7 @@ fun PlayerScreen(
                 syncPlayGroupName = syncPlayState.groupName,
                 syncPlayMemberInfo = syncPlayMemberInfo,
                 onPanelOpenChange = { isControlsPanelOpen = it },
+                seekBarAnchor = seekBarAnchor,
             )
 
             if (syncPlayState.isInGroup && syncPlayState.groupState == GroupStateType.WAITING) {
@@ -392,6 +395,7 @@ fun PlayerScreen(
                 positionMs = uiState.trickplayPreviewPosition,
                 durationMs = uiState.duration,
                 chapters = uiState.chapters,
+                seekBarAnchor = seekBarAnchor,
                 modifier = Modifier.fillMaxSize(),
             )
 

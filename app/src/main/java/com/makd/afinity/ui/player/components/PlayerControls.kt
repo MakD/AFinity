@@ -80,6 +80,8 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -173,6 +175,7 @@ fun PlayerControls(
     syncPlayGroupName: String = "",
     syncPlayMemberInfo: Map<String, SyncPlayMemberInfo> = emptyMap(),
     onPanelOpenChange: (Boolean) -> Unit = {},
+    seekBarAnchor: SeekBarAnchor? = null,
 ) {
     var showTrackPanel by remember { mutableStateOf(false) }
     var showQualityPanel by remember { mutableStateOf(false) }
@@ -641,6 +644,7 @@ fun PlayerControls(
                         showChapterSwitcherButton =
                             uiState.chapters.isNotEmpty() && !uiState.isPlayingIntro,
                         onVersionToggle = onVersionToggleRequest,
+                        seekBarAnchor = seekBarAnchor,
                         modifier = Modifier.align(Alignment.BottomCenter),
                     )
                 }
@@ -667,6 +671,7 @@ fun PlayerControls(
                         uiState = uiState,
                         playbackProgress = playbackProgress,
                         onPlayerEvent = onPlayerEvent,
+                        seekBarAnchor = seekBarAnchor,
                     )
                     Spacer(modifier = Modifier.height(48.dp))
                 }
@@ -1326,6 +1331,7 @@ private fun BottomControls(
     onChapterSwitcherToggle: () -> Unit = {},
     showChapterSwitcherButton: Boolean = false,
     onVersionToggle: () -> Unit = {},
+    seekBarAnchor: SeekBarAnchor? = null,
 ) {
     Box(
         modifier =
@@ -1344,6 +1350,7 @@ private fun BottomControls(
                     uiState = uiState,
                     playbackProgress = playbackProgress,
                     onPlayerEvent = onPlayerEvent,
+                    seekBarAnchor = seekBarAnchor,
                 )
             } else {
                 Text(
@@ -1631,8 +1638,11 @@ private fun SeekBar(
     uiState: PlayerViewModel.PlayerUiState,
     playbackProgress: State<PlayerViewModel.PlaybackProgress>,
     onPlayerEvent: (PlayerEvent) -> Unit,
+    seekBarAnchor: SeekBarAnchor?,
     modifier: Modifier = Modifier,
 ) {
+    val anchorOwner = remember { Any() }
+    DisposableEffect(seekBarAnchor) { onDispose { seekBarAnchor?.release(anchorOwner) } }
     var draggedPosition by remember { mutableStateOf<Float?>(null) }
     val duration = uiState.duration
     val position =
@@ -1739,7 +1749,10 @@ private fun SeekBar(
                         }
                     }
                 },
-                modifier = Modifier.weight(1f).height(18.dp).padding(start = 8.dp),
+                modifier =
+                    Modifier.weight(1f).height(18.dp).padding(start = 8.dp).onGloballyPositioned {
+                        seekBarAnchor?.report(anchorOwner, it.boundsInWindow())
+                    },
             )
         }
 

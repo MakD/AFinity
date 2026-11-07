@@ -24,7 +24,7 @@ import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.AfinityVideoPlaylist
 import com.makd.afinity.data.models.media.toAfinityExternalUrl
 import com.makd.afinity.data.models.media.toAfinityMediaStream
-import com.makd.afinity.data.models.media.toAfinityTrickplayInfo
+import com.makd.afinity.data.models.media.toAfinityTrickplayInfoMap
 import java.util.UUID
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -97,14 +97,7 @@ fun BaseItemDto.toAfinityMovie(baseUrl: String): AfinityMovie {
         tagline = taglines?.firstOrNull(),
         images = toAfinityImages(baseUrl),
         chapters = toAfinityChapters(),
-        trickplayInfo =
-            trickplay
-                ?.flatMap { (_, widthMap) ->
-                    widthMap.orEmpty().map { (width, info) ->
-                        width to info.toAfinityTrickplayInfo()
-                    }
-                }
-                ?.toMap(),
+        trickplayInfo = trickplay?.toAfinityTrickplayInfoMap(),
         providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
         externalUrls = toAfinityExternalUrls(),
         liked = userData?.likes == true,
@@ -216,14 +209,7 @@ fun BaseItemDto.toAfinityEpisode(baseUrl: String): AfinityEpisode? {
             missing = locationType == LocationType.VIRTUAL,
             images = toAfinityImages(baseUrl),
             chapters = toAfinityChapters(),
-            trickplayInfo =
-                trickplay
-                    ?.flatMap { (_, widthMap) ->
-                        widthMap.orEmpty().map { (width, info) ->
-                            width to info.toAfinityTrickplayInfo()
-                        }
-                    }
-                    ?.toMap(),
+            trickplayInfo = trickplay?.toAfinityTrickplayInfoMap(),
             providerIds =
                 providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
             externalUrls = toAfinityExternalUrls(),

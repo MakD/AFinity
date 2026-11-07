@@ -39,7 +39,7 @@ data class AfinityMovie(
     override val unplayedItemCount: Int? = null,
     override val images: AfinityImages,
     override val chapters: List<AfinityChapter>,
-    override val trickplayInfo: Map<String, AfinityTrickplayInfo>?,
+    override val trickplayInfo: Map<String, List<AfinityTrickplayInfo>>?,
     override val providerIds: Map<String, String>?,
     override val externalUrls: List<AfinityExternalUrl>?,
     val tmdbReviews: List<TmdbReview> = emptyList(),
@@ -83,10 +83,7 @@ suspend fun BaseItemDto.toAfinityMovie(
         trailer = remoteTrailers?.getOrNull(0)?.url,
         images = toAfinityImages(baseUrl),
         chapters = toAfinityChapters(),
-        trickplayInfo =
-            trickplay?.mapValues { (_, widthMap) ->
-                widthMap!![widthMap.keys.max()]!!.toAfinityTrickplayInfo()
-            },
+        trickplayInfo = trickplay?.toAfinityTrickplayInfoMap(),
         providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
         externalUrls = externalUrls?.map { it.toAfinityExternalUrl() },
         tmdbReviews = emptyList(),

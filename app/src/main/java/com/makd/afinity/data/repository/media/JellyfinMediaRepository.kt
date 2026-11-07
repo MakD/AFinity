@@ -105,7 +105,10 @@ import org.jellyfin.sdk.model.api.SeriesStatus
 import org.jellyfin.sdk.model.api.SortOrder
 import org.jellyfin.sdk.model.api.UserItemDataDto
 import org.jellyfin.sdk.model.api.VideoType
+import org.jellyfin.sdk.model.serializer.toUUIDOrNull
 import timber.log.Timber
+
+private const val LOCAL_SOURCE_SUFFIX = "_local"
 
 private val RESUMABLE_ITEM_TYPES = listOf(BaseItemKind.MOVIE, BaseItemKind.EPISODE)
 
@@ -1932,50 +1935,68 @@ constructor(
             LocalizationApi(apiClient).getParentalRatings().content
         }
 
-    override suspend fun getTrickplayData(itemId: UUID, width: Int, index: Int): ByteArray? =
+    override suspend fun getTrickplayLocalDir(itemId: UUID, mediaSourceId: String?): File? =
         withContext(Dispatchers.IO) {
             try {
-                Timber.d(
-                    "Attempting to load trickplay tile: itemId=$itemId, width=$width, index=$index"
-                )
-
                 val download = databaseRepository.getDownloadByItemId(itemId)
+                val playingSourceId = mediaSourceId?.removeSuffix(LOCAL_SOURCE_SUFFIX)
+                if (
+                    download != null &&
+                        playingSourceId != null &&
+                        download.sourceId.removeSuffix(LOCAL_SOURCE_SUFFIX) != playingSourceId
+                ) {
+                    return@withContext null
+                }
                 val volumeId =
                     download?.storageVolumeId ?: StorageLocationProvider.PRIMARY_VOLUME_ID
                 val baseDir =
                     storageLocationProvider.resolveBaseDir(volumeId)
                         ?: storageLocationProvider.primaryBaseDir()
-                val itemDir = File(baseDir, download?.folderPath ?: itemId.toString())
-                val trickplayFile = File(itemDir, "trickplay/$width/$index.jpg")
-
-                Timber.d("Looking for trickplay file: ${trickplayFile.absolutePath}")
-                Timber.d("File exists: ${trickplayFile.exists()}")
-
-                if (trickplayFile.exists()) {
-                    Timber.i(
-                        "Loading trickplay tile from local storage: $width/$index.jpg (${trickplayFile.length()} bytes)"
-                    )
-                    return@withContext trickplayFile.readBytes()
-                } else {
-                    Timber.d("Trickplay file not found locally, trying API")
+                File(File(baseDir, download?.folderPath ?: itemId.toString()), "trickplay").takeIf {
+                    it.isDirectory
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Timber.w(e, "Failed to load trickplay from local storage, falling back to API")
+                Timber.w(e, "Failed to resolve local trickplay directory for $itemId")
+                null
+            }
+        }
+
+    override suspend fun getTrickplayTile(
+        itemId: UUID,
+        mediaSourceId: String?,
+        width: Int,
+        index: Int,
+        localDir: File?,
+    ): ByteArray? =
+        withContext(Dispatchers.IO) {
+            if (localDir != null) {
+                try {
+                    val file = File(localDir, "$width/$index.jpg")
+                    if (file.isFile) return@withContext file.readBytes()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to read local trickplay tile $width/$index")
+                }
             }
 
-            return@withContext try {
-                Timber.d("Fetching trickplay tile from API: $width/$index")
+            try {
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
-                val trickPlayApi = TrickPlayApi(apiClient)
-                val response = trickPlayApi.getTrickplayTileImage(itemId, width, index)
-                Timber.d("Fetched trickplay tile from API: ${response.content.size} bytes")
-                response.content
+                TrickPlayApi(apiClient)
+                    .getTrickplayTileImage(
+                        itemId = itemId,
+                        width = width,
+                        index = index,
+                        mediaSourceId =
+                            mediaSourceId?.removeSuffix(LOCAL_SOURCE_SUFFIX)?.toUUIDOrNull(),
+                    )
+                    .content
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Timber.w(e, "Failed to get trickplay data for tile $index")
+                Timber.w(e, "Failed to get trickplay tile $width/$index for $itemId")
                 null
             }
         }

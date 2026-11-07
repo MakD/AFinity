@@ -42,7 +42,7 @@ data class AfinityEpisode(
     val partCount: Int? = null,
     override val images: AfinityImages,
     override val chapters: List<AfinityChapter>,
-    override val trickplayInfo: Map<String, AfinityTrickplayInfo>?,
+    override val trickplayInfo: Map<String, List<AfinityTrickplayInfo>>?,
     override val providerIds: Map<String, String>?,
     override val externalUrls: List<AfinityExternalUrl>?,
 ) : AfinityItem, AfinitySources
@@ -89,10 +89,7 @@ suspend fun BaseItemDto.toAfinityEpisode(
             partCount = partCount,
             images = toAfinityImages(baseUrl),
             chapters = toAfinityChapters(),
-            trickplayInfo =
-                trickplay?.mapValues { (_, widthMap) ->
-                    widthMap!![widthMap.keys.max()]!!.toAfinityTrickplayInfo()
-                },
+            trickplayInfo = trickplay?.toAfinityTrickplayInfoMap(),
             providerIds =
                 providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
             externalUrls = externalUrls?.map { it.toAfinityExternalUrl() },
@@ -108,10 +105,10 @@ suspend fun AfinityEpisodeDto.toAfinityEpisode(
 ): AfinityEpisode {
     val userData = database.getUserDataOrCreateNew(id, userId, serverId)
     val sources = database.getSources(id).map { it.toAfinitySource(database) }
-    val trickplayInfos = mutableMapOf<String, AfinityTrickplayInfo>()
+    val trickplayInfos = mutableMapOf<String, List<AfinityTrickplayInfo>>()
     for (source in sources) {
         database.getTrickplayInfo(source.id)?.toAfinityTrickplayInfo()?.let {
-            trickplayInfos[source.id] = it
+            trickplayInfos[source.id] = listOf(it)
         }
     }
     return AfinityEpisode(

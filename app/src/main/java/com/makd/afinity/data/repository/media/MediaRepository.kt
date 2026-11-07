@@ -22,6 +22,7 @@ import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.data.models.media.LibraryIndexEntry
 import com.makd.afinity.data.models.music.AfinityPlaylistContents
 import com.makd.afinity.data.models.omdb.OmdbApiResult
+import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -285,7 +286,15 @@ interface MediaRepository {
 
     suspend fun getSpecialFeatures(itemId: UUID, userId: UUID): List<AfinityItem>
 
-    suspend fun getTrickplayData(itemId: UUID, width: Int, index: Int): ByteArray?
+    suspend fun getTrickplayLocalDir(itemId: UUID, mediaSourceId: String?): File?
+
+    suspend fun getTrickplayTile(
+        itemId: UUID,
+        mediaSourceId: String?,
+        width: Int,
+        index: Int,
+        localDir: File?,
+    ): ByteArray?
 
     suspend fun searchItems(
         query: String,

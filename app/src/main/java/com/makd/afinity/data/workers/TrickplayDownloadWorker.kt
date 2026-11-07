@@ -10,6 +10,8 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityMovie
 import com.makd.afinity.data.models.media.AfinityTrickplayInfo
+import com.makd.afinity.data.models.media.closestTo
+import com.makd.afinity.data.models.media.forSource
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.di.DownloadClient
@@ -51,6 +53,7 @@ constructor(
         const val KEY_ITEM_ID = "item_id"
         const val KEY_SOURCE_ID = "source_id"
         const val BUFFER_SIZE = 8192
+        const val DOWNLOAD_TRICKPLAY_WIDTH = 320
     }
 
     override suspend fun doWork(): Result =
@@ -141,9 +144,10 @@ constructor(
                             )
                     }
 
-                val trickplayInfo = item.trickplayInfo
-                if (trickplayInfo.isNullOrEmpty()) {
-                    Timber.d("No trickplay info available for item: $itemId")
+                val trickplayInfo =
+                    item.trickplayInfo?.forSource(sourceId)?.closestTo(DOWNLOAD_TRICKPLAY_WIDTH)
+                if (trickplayInfo == null) {
+                    Timber.d("No trickplay info available for item: $itemId source: $sourceId")
                     return@withContext Result.success()
                 }
 
@@ -158,41 +162,28 @@ constructor(
                 }
                 Timber.d("Trickplay download base directory: ${trickplayDir.absolutePath}")
 
-                coroutineScope {
-                    trickplayInfo
-                        .map { (resolution, info) ->
-                            async {
-                                try {
-                                    downloadTrickplayTiles(
-                                        apiClient = apiClient,
-                                        itemId = itemId,
-                                        resolution = resolution,
-                                        info = info,
-                                        baseUrl = baseUrl,
-                                        outputDir = trickplayDir,
-                                    )
-                                } catch (e: CancellationException) {
-                                    throw e
-                                } catch (e: Exception) {
-                                    Timber.w(
-                                        e,
-                                        "Failed to download trickplay for resolution: $resolution",
-                                    )
-                                }
-                            }
-                        }
-                        .awaitAll()
+                try {
+                    downloadTrickplayTiles(
+                        apiClient = apiClient,
+                        itemId = itemId,
+                        mediaSourceId = sourceId,
+                        info = trickplayInfo,
+                        baseUrl = baseUrl,
+                        outputDir = trickplayDir,
+                    )
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to download trickplay at width ${trickplayInfo.width}")
                 }
 
                 val localSourceId = "${sourceId}_local"
-                trickplayInfo.forEach { (_, info) ->
-                    try {
-                        databaseRepository.insertTrickplayInfo(info, localSourceId)
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        Timber.w(e, "Failed to save trickplay info to database")
-                    }
+                try {
+                    databaseRepository.insertTrickplayInfo(trickplayInfo, localSourceId)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to save trickplay info to database")
                 }
 
                 Timber.i("Trickplay download completed for item: $itemId")
@@ -217,11 +208,12 @@ constructor(
     private suspend fun downloadTrickplayTiles(
         apiClient: ApiClient,
         itemId: UUID,
-        resolution: String,
+        mediaSourceId: String,
         info: AfinityTrickplayInfo,
         baseUrl: String,
         outputDir: File,
     ) {
+        val resolution = info.width.toString()
         val resolutionDir = File(outputDir, resolution)
         if (!resolutionDir.exists() && !resolutionDir.mkdirs()) {
             Timber.e("Failed to create trickplay resolution directory for $resolution")
@@ -251,7 +243,7 @@ constructor(
                                     return@withPermit
                                 }
                                 val tileUrl =
-                                    "$baseUrl/Videos/$itemId/Trickplay/$width/$tileIndex.jpg"
+                                    "$baseUrl/Videos/$itemId/Trickplay/$width/$tileIndex.jpg?mediaSourceId=$mediaSourceId"
                                 Timber.d(
                                     "Downloading trickplay tile to: ${outputFile.absolutePath}"
                                 )

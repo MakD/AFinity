@@ -593,10 +593,10 @@ constructor(
     ): AfinityMovie {
         val userData = database.getUserDataOrCreateNew(id, userId, serverId)
         val sources = database.getSources(id).map { it.toAfinitySource(database) }
-        val trickplayInfos = mutableMapOf<String, AfinityTrickplayInfo>()
+        val trickplayInfos = mutableMapOf<String, List<AfinityTrickplayInfo>>()
         for (source in sources) {
             database.getTrickplayInfo(source.id)?.toAfinityTrickplayInfo()?.let {
-                trickplayInfos[source.id] = it
+                trickplayInfos[source.id] = listOf(it)
             }
         }
         return AfinityMovie(
@@ -718,10 +718,10 @@ constructor(
     ): AfinityEpisode {
         val userData = database.getUserDataOrCreateNew(id, userId, serverId)
         val sources = database.getSources(id).map { it.toAfinitySource(database) }
-        val trickplayInfos = mutableMapOf<String, AfinityTrickplayInfo>()
+        val trickplayInfos = mutableMapOf<String, List<AfinityTrickplayInfo>>()
         for (source in sources) {
             database.getTrickplayInfo(source.id)?.toAfinityTrickplayInfo()?.let {
-                trickplayInfos[source.id] = it
+                trickplayInfos[source.id] = listOf(it)
             }
         }
         return AfinityEpisode(
