@@ -24,6 +24,8 @@ enum class HomeSectionType {
     CRITICS_CHOICE,
     TOP_IMDB_MOVIES,
     TOP_IMDB_SHOWS,
+    TRENDING_MOVIES,
+    TRENDING_SHOWS,
     FRANCHISES,
     CUSTOM,
 }

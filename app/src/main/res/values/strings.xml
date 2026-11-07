@@ -123,6 +123,8 @@
     <string name="discovery_section_writer_from">Written by, from a watched film</string>
     <string name="discovery_section_top_imdb_movies">IMDb Top Movies</string>
     <string name="discovery_section_top_imdb_shows">IMDb Top Series</string>
+    <string name="discovery_section_trending_movies">Trending Movies</string>
+    <string name="discovery_section_trending_shows">Trending Series</string>
     <string name="discovery_section_franchises">Franchises</string>
     <string name="home_row_popular_studios">Popular Studios</string>
     <string name="home_row_hero_carousel">Spotlight carousel</string>
