@@ -56,6 +56,7 @@
     <string name="home_downloaded_shows">Downloaded Shows</string>
     <string name="home_critics_choice">Critics\' Choice</string>
     <string name="home_popular_studios">Popular Studios</string>
+    <string name="home_franchises">Franchises</string>
     <string name="home_episode_count_fmt">%1$d EP</string>
     <string name="home_episode_count_plus">99+ EP</string>
     <string name="cd_app_logo">App Logo</string>
@@ -123,6 +124,7 @@
     <string name="discovery_section_top_imdb_movies">IMDb Top Movies</string>
     <string name="discovery_section_top_imdb_shows">IMDb Top Series</string>
     <string name="home_row_popular_studios">Popular Studios</string>
+    <string name="home_row_franchises">Franchises</string>
     <string name="home_row_hero_carousel">Spotlight carousel</string>
     <string name="hero_content_title">Spotlight carousel content</string>
     <string name="hero_content_settings_cd">Choose what the spotlight carousel shows</string>
@@ -3422,6 +3424,7 @@
     <string name="cd_music_seek_forward">Seek forward</string>
     <string name="cd_music_delete_playlist">Delete playlist</string>
     <string name="library_load_failed">Couldn\'t load this library. Check your connection and try again.</string>
+    <string name="franchise_load_failed">Couldn\'t load this franchise. Check your connection and try again.</string>
     <string name="home_load_failed">Couldn\'t reach your server. Check your connection and try again.</string>
     <string name="item_error_no_route">Your server isn\'t reachable from this network.</string>
     <string name="service_unreachable_fmt">Can\'t reach %1$s. Showing saved content.</string>

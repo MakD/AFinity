@@ -21,6 +21,7 @@ import com.makd.afinity.data.models.PersonSectionType
 import com.makd.afinity.data.models.PersonWithCount
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityItem
+import com.makd.afinity.data.models.franchise.FranchiseCard
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
@@ -31,6 +32,7 @@ import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.GenreRepository
 import com.makd.afinity.data.repository.PeopleRepository
+import com.makd.afinity.data.repository.franchise.FranchiseRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -89,6 +91,7 @@ constructor(
     private val customHomeSectionsRepository: CustomHomeSectionsRepository,
     private val homeLayoutPreferencesRepository: HomeLayoutPreferencesRepository,
     private val backgroundWorkQueue: BackgroundWorkQueue,
+    private val franchiseRepository: FranchiseRepository,
     private val okHttpClient: OkHttpClient,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
@@ -130,6 +133,11 @@ constructor(
 
     private val _popularStudiosLoaded = MutableStateFlow(false)
     val popularStudiosLoaded: StateFlow<Boolean> = _popularStudiosLoaded.asStateFlow()
+
+    private val _franchises = MutableStateFlow<List<FranchiseCard>>(emptyList())
+    val franchises: StateFlow<List<FranchiseCard>> = _franchises.asStateFlow()
+
+    private var franchisesJob: Job? = null
 
     private var criticsChoiceJob: Job? = null
 
@@ -184,6 +192,7 @@ constructor(
                 if (HomeRow.WATCH_AGAIN in shown) ensureWatchAgain(force = false)
                 if (HomeRow.CRITICS_CHOICE in shown) ensureCriticsChoice(force = false)
                 if (HomeRow.POPULAR_STUDIOS in shown) ensurePopularStudios(force = false)
+                if (HomeRow.FRANCHISES in shown) ensureFranchises(force = false)
             }
         }
     }
@@ -437,6 +446,7 @@ constructor(
         ensureWatchAgain(force)
         ensureCriticsChoice(force)
         ensurePopularStudios(force)
+        ensureFranchises(force)
         val sk = sessionKey() ?: return
         if (!force && sk == layoutSessionKey && _layout.value.isNotEmpty()) return
         if (!force && buildJob?.isActive == true) return
@@ -587,6 +597,33 @@ constructor(
             }
     }
 
+    private fun ensureFranchises(force: Boolean) {
+        if (sessionKey() == null) return
+        if (!force && _franchises.value.isNotEmpty()) return
+        if (!force && franchisesJob?.isActive == true) return
+
+        franchisesJob?.cancel()
+        franchisesJob =
+            scope.launch(Dispatchers.IO) {
+                try {
+                    if (isRowHidden(HomeRow.FRANCHISES)) return@launch
+                    val picked =
+                        presentationSample(
+                            FRANCHISES_KEY,
+                            franchiseRepository.franchises(force),
+                            FRANCHISES_ROW_SIZE,
+                        )
+                    _franchises.value =
+                        if (picked.isEmpty()) emptyList()
+                        else franchiseRepository.cards(picked, presentationSeed)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to load franchises")
+                }
+            }
+    }
+
     private suspend fun isRowHidden(row: HomeRow): Boolean =
         row in homeLayoutPreferencesRepository.getHiddenRows()
 
@@ -720,6 +757,7 @@ constructor(
         ensureWatchAgain(force = true)
         ensureCriticsChoice(force = true)
         ensurePopularStudios(force = true)
+        ensureFranchises(force = true)
         refreshPinnedSections(reason)
         refreshDiscoverySections(reason)
     }
@@ -886,6 +924,9 @@ constructor(
         popularStudiosJob?.cancel()
         _popularStudios.value = emptyList()
         _popularStudiosLoaded.value = false
+        franchisesJob?.cancel()
+        _franchises.value = emptyList()
+        franchiseRepository.clear()
     }
 
     private fun patchContent(
@@ -1293,14 +1334,16 @@ constructor(
                     return it.second
                 }
         }
-        val raw =
-            mediaRepository.getImdbIdIndexResult(list.itemType).getOrElse { e ->
+        val entries =
+            mediaRepository.getLibraryIndexResult(list.itemType).getOrElse { e ->
                 if (e is CancellationException) throw e
                 Timber.w(e, "Failed to load IMDb index for ${list.name}")
                 return null
             }
-        val byImdbId = HashMap<String, UUID>(raw.size)
-        raw.forEach { (itemId, imdbId) -> byImdbId.putIfAbsent(normalizeImdbId(imdbId), itemId) }
+        val byImdbId = HashMap<String, UUID>(entries.size)
+        entries.forEach { entry ->
+            entry.imdbId?.let { byImdbId.putIfAbsent(normalizeImdbId(it), entry.id) }
+        }
         imdbIndexCache[key] = now to byImdbId
         return byImdbId
     }
@@ -1319,7 +1362,9 @@ constructor(
 
     private fun decodeIdList(raw: String): List<String>? = runCatching {
         json.decodeFromString<List<String>>(raw)
-    }.getOrNull()?.takeIf { it.isNotEmpty() }
+    }
+        .getOrNull()
+        ?.takeIf { it.isNotEmpty() }
 
     private suspend fun downloadImdbTopIds(list: ImdbTopList): List<String>? =
         withContext(Dispatchers.IO) {
@@ -2130,6 +2175,8 @@ private data class CachedStudio(
 }
 
 private const val POPULAR_STUDIOS_POOL = 20
+private const val FRANCHISES_KEY = "franchises"
+private const val FRANCHISES_ROW_SIZE = 20
 private const val MIN_POPULAR_STUDIOS = 3
 private val POPULAR_STUDIOS_TYPES = listOf("MOVIE", "SERIES")
 private const val MIN_CRITICS_RATING = 6.5f

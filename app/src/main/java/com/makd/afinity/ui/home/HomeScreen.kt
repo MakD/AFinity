@@ -87,6 +87,7 @@ import com.makd.afinity.ui.downloads.DownloadedCategory
 import com.makd.afinity.ui.home.components.DownloadedAudiobooksSection
 import com.makd.afinity.ui.home.components.DownloadedMusicAlbumsSection
 import com.makd.afinity.ui.home.components.DownloadedMusicTracksSection
+import com.makd.afinity.ui.home.components.FranchisesSection
 import com.makd.afinity.ui.home.components.GenreSection
 import com.makd.afinity.ui.home.components.HighestRatedSection
 import com.makd.afinity.ui.home.components.ItemsRowSection
@@ -123,6 +124,7 @@ fun HomeScreen(
     onMusicAlbumClick: (String) -> Unit,
     onOpenMusicPlayer: () -> Unit,
     onStudioClick: (String) -> Unit,
+    onFranchiseClick: (String) -> Unit,
     onCustomSectionClick: (String) -> Unit,
     onSeriesClick: (String) -> Unit,
     onPersonClick: (String) -> Unit,
@@ -666,6 +668,24 @@ fun HomeScreen(
                                     PopularStudiosSection(
                                         studios = uiState.popularStudios,
                                         onStudioClick = { studio -> onStudioClick(studio.name) },
+                                        widthSizeClass = widthSizeClass,
+                                    )
+                                }
+                            }
+                        }
+
+                        if (
+                            !uiState.isOffline &&
+                                uiState.franchises.isNotEmpty() &&
+                                HomeRow.FRANCHISES !in uiState.hiddenRows
+                        ) {
+                            item(key = "franchises") {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                    FranchisesSection(
+                                        franchises = uiState.franchises,
+                                        onFranchiseClick = { franchise ->
+                                            onFranchiseClick(franchise.id)
+                                        },
                                         widthSizeClass = widthSizeClass,
                                     )
                                 }

@@ -212,7 +212,7 @@ object NetworkModule {
         "AFinity/${BuildConfig.VERSION_NAME} (Android ${Build.VERSION.RELEASE}; ${Build.MODEL})"
 
     private val wikidataUserAgent =
-        "AFinity/${BuildConfig.VERSION_NAME} (https://github.com/MakD/AFinity; award lookups, cached client-side)"
+        "AFinity/${BuildConfig.VERSION_NAME} (https://github.com/MakD/AFinity; award and franchise lookups, cached client-side)"
 
     private val lastFmUserAgent =
         "AFinity/${BuildConfig.VERSION_NAME} (https://github.com/MakD/AFinity; popular tracks, cached client-side)"

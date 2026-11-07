@@ -33,6 +33,7 @@ import com.makd.afinity.data.models.media.ContinueWatchingOrder
 import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.models.media.LibraryFilterOptions
 import com.makd.afinity.data.models.media.LibraryFilters
+import com.makd.afinity.data.models.media.LibraryIndexEntry
 import com.makd.afinity.data.models.media.LibraryLanguageOption
 import com.makd.afinity.data.models.media.PlaylistEntry
 import com.makd.afinity.data.models.media.toAfinityCollection
@@ -1088,14 +1089,42 @@ constructor(
                 .mapNotNull { it.toAfinityItem(getBaseUrl()) }
         }
 
-    override suspend fun getImdbIdIndexResult(itemType: BaseItemKind): Result<Map<UUID, String>> =
+    override suspend fun getLibraryIndexResult(
+        itemType: BaseItemKind
+    ): Result<List<LibraryIndexEntry>> = apiInvoker.apiResult { apiClient, userId ->
+        LibraryApi(apiClient)
+            .getItems(
+                userId = userId,
+                includeItemTypes = listOf(itemType),
+                recursive = true,
+                collapseBoxSetItems = false,
+                hasImdbId = true,
+                fields = listOf(ItemFields.PROVIDER_IDS),
+                enableImages = false,
+                enableUserData = false,
+                enableTotalRecordCount = false,
+            )
+            .content
+            .items
+            .map { item ->
+                LibraryIndexEntry(
+                    id = item.id,
+                    name = item.name.orEmpty(),
+                    year = item.productionYear,
+                    isSeries = item.type == BaseItemKind.SERIES,
+                    imdbId = item.providerId("imdb"),
+                    tmdbCollectionId = item.providerId("tmdbcollection"),
+                )
+            }
+    }
+
+    override suspend fun getCollectionTmdbIdsResult(): Result<Set<String>> =
         apiInvoker.apiResult { apiClient, userId ->
             LibraryApi(apiClient)
                 .getItems(
                     userId = userId,
-                    includeItemTypes = listOf(itemType),
+                    includeItemTypes = listOf(BaseItemKind.BOX_SET),
                     recursive = true,
-                    hasImdbId = true,
                     fields = listOf(ItemFields.PROVIDER_IDS),
                     enableImages = false,
                     enableUserData = false,
@@ -1103,16 +1132,16 @@ constructor(
                 )
                 .content
                 .items
-                .mapNotNull { item ->
-                    item.providerIds
-                        ?.entries
-                        ?.firstOrNull { it.key.equals("imdb", ignoreCase = true) }
-                        ?.value
-                        ?.takeIf { it.isNotBlank() }
-                        ?.let { item.id to it }
-                }
-                .toMap()
+                .mapNotNull { it.providerId("tmdb") }
+                .toSet()
         }
+
+    private fun BaseItemDto.providerId(key: String): String? =
+        providerIds
+            ?.entries
+            ?.firstOrNull { it.key.equals(key, ignoreCase = true) }
+            ?.value
+            ?.takeIf { it.isNotBlank() }
 
     override suspend fun getUserDataByIds(ids: List<UUID>): List<UserItemDataDto> =
         apiCall(emptyList(), "Failed to batch-fetch user data by ids") { apiClient, userId ->

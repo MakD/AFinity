@@ -101,6 +101,7 @@ import com.makd.afinity.ui.downloads.DownloadedCategoryScreen
 import com.makd.afinity.ui.favorites.FavoritesCategory
 import com.makd.afinity.ui.favorites.FavoritesCategoryScreen
 import com.makd.afinity.ui.favorites.FavoritesScreen
+import com.makd.afinity.ui.franchise.FranchiseScreen
 import com.makd.afinity.ui.home.HomeScreen
 import com.makd.afinity.ui.home.HomeViewModel
 import com.makd.afinity.ui.item.ItemDetailScreen
@@ -549,6 +550,11 @@ fun MainNavigation(
                                         onStudioClick = { studioName ->
                                             navController.navigate(
                                                 Destination.createStudioContentRoute(studioName)
+                                            )
+                                        },
+                                        onFranchiseClick = { franchiseId ->
+                                            navController.navigate(
+                                                Destination.createFranchiseRoute(franchiseId)
                                             )
                                         },
                                         onCustomSectionClick = { sectionId ->
@@ -1308,6 +1314,25 @@ fun MainNavigation(
                                         onOpenMusicPlayer = {
                                             navController.navigateToMusicPlayer()
                                         },
+                                        widthSizeClass = widthSizeClass,
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                }
+
+                                composable(
+                                    route = Destination.FRANCHISE_ROUTE,
+                                    arguments =
+                                        listOf(
+                                            navArgument("franchiseId") { type = NavType.StringType }
+                                        ),
+                                ) {
+                                    FranchiseScreen(
+                                        mainUiState = mainUiState,
+                                        onItemClick = { item ->
+                                            navController.navigateToItem(item)
+                                        },
+                                        onSearchClick = { navController.navigateToSearch() },
+                                        onProfileClick = { navController.navigateToSettings() },
                                         widthSizeClass = widthSizeClass,
                                         modifier = Modifier.fillMaxSize(),
                                     )

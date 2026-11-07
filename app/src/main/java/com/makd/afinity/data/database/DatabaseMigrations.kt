@@ -1793,6 +1793,31 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_87_88 =
+        object : Migration(87, 88) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `wikidata_franchise_titles` (" +
+                        "`imdbId` TEXT NOT NULL, " +
+                        "`entityId` TEXT, " +
+                        "`groupRefs` TEXT NOT NULL, " +
+                        "`linkRefs` TEXT NOT NULL, " +
+                        "`fetchedAt` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`imdbId`))"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `wikidata_franchise_entities` (" +
+                        "`entityId` TEXT NOT NULL, " +
+                        "`label` TEXT, " +
+                        "`types` TEXT NOT NULL, " +
+                        "`parents` TEXT NOT NULL, " +
+                        "`logo` TEXT, " +
+                        "`fetchedAt` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`entityId`))"
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1881,5 +1906,6 @@ object DatabaseMigrations {
             MIGRATION_84_85,
             MIGRATION_85_86,
             MIGRATION_86_87,
+            MIGRATION_87_88,
         )
 }

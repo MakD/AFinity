@@ -280,17 +280,33 @@ fun CustomSectionsScreen(
                             isSelected = { it == uiState.discovery.density },
                             onSelect = { viewModel.setDensity(it) },
                         )
+                        if (!uiState.discovery.isDiscoveryOff) {
+                            DiscoverySection.entries
+                                .filter { it.isToggle }
+                                .forEach { section ->
+                                    SettingsDivider()
+                                    SettingsSwitchItem(
+                                        title = stringResource(section.labelRes),
+                                        checked = uiState.discovery.isEnabled(section),
+                                        onCheckedChange = {
+                                            viewModel.setDiscoveryEnabled(section, it)
+                                        },
+                                    )
+                                }
+                        }
                         if (uiState.discovery.density == DiscoveryDensity.CUSTOM) {
                             SettingsDivider()
                             AdvancedHeader()
-                            DiscoverySection.entries.forEach { section ->
-                                SettingsDivider()
-                                DiscoveryCountItem(
-                                    section = section,
-                                    config = uiState.discovery,
-                                    onCount = { viewModel.setDiscoveryCount(section, it) },
-                                )
-                            }
+                            DiscoverySection.entries
+                                .filterNot { it.isToggle }
+                                .forEach { section ->
+                                    SettingsDivider()
+                                    DiscoveryCountItem(
+                                        section = section,
+                                        config = uiState.discovery,
+                                        onCount = { viewModel.setDiscoveryCount(section, it) },
+                                    )
+                                }
                         }
                     }
                 }

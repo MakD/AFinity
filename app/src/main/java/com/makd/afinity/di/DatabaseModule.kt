@@ -32,6 +32,7 @@ import com.makd.afinity.data.database.dao.TopPeopleDao
 import com.makd.afinity.data.database.dao.UserDao
 import com.makd.afinity.data.database.dao.UserDataDao
 import com.makd.afinity.data.database.dao.WikidataAwardsDao
+import com.makd.afinity.data.database.dao.WikidataFranchiseDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -123,6 +124,11 @@ object DatabaseModule {
     @Provides
     fun provideWikidataAwardsDao(database: AfinityDatabase): WikidataAwardsDao {
         return database.wikidataAwardsDao()
+    }
+
+    @Provides
+    fun provideWikidataFranchiseDao(database: AfinityDatabase): WikidataFranchiseDao {
+        return database.wikidataFranchiseDao()
     }
 
     @Provides

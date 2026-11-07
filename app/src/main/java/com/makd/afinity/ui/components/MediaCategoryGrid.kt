@@ -49,9 +49,10 @@ fun MediaCategoryGrid(
     playerClearance: Dp,
     onItemClick: (AfinityItem) -> Unit,
     modifier: Modifier = Modifier,
+    initialSortBy: SortBy = SortBy.NAME,
 ) {
     var showSortDialog by remember { mutableStateOf(false) }
-    var sortBy by remember { mutableStateOf(SortBy.NAME) }
+    var sortBy by remember { mutableStateOf(initialSortBy) }
     var descending by remember { mutableStateOf(false) }
 
     val sortedItems =

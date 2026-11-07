@@ -44,6 +44,9 @@ enum class DiscoverySection(
     TOP_IMDB_MOVIES("discovery_top_imdb_movies", R.string.discovery_section_top_imdb_movies, 1, 1),
     TOP_IMDB_SHOWS("discovery_top_imdb_shows", R.string.discovery_section_top_imdb_shows, 1, 1);
 
+    val isToggle: Boolean
+        get() = ceiling == 1
+
     companion object {
         fun fromKey(key: String): DiscoverySection? = entries.firstOrNull { it.key == key }
 

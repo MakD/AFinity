@@ -19,6 +19,7 @@ import com.makd.afinity.data.models.media.ContinueWatchingOrder
 import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.models.media.LibraryFilterOptions
 import com.makd.afinity.data.models.media.LibraryFilters
+import com.makd.afinity.data.models.media.LibraryIndexEntry
 import com.makd.afinity.data.models.music.AfinityPlaylistContents
 import com.makd.afinity.data.models.omdb.OmdbApiResult
 import java.util.UUID
@@ -143,7 +144,9 @@ interface MediaRepository {
 
     suspend fun getItemsByIds(ids: List<UUID>, fields: List<ItemFields>? = null): List<AfinityItem>
 
-    suspend fun getImdbIdIndexResult(itemType: BaseItemKind): Result<Map<UUID, String>>
+    suspend fun getLibraryIndexResult(itemType: BaseItemKind): Result<List<LibraryIndexEntry>>
+
+    suspend fun getCollectionTmdbIdsResult(): Result<Set<String>>
 
     suspend fun getUserDataByIds(ids: List<UUID>): List<UserItemDataDto>
 

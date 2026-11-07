@@ -30,6 +30,7 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.extensions.toAfinityItem
+import com.makd.afinity.data.models.franchise.FranchiseCard
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -331,6 +332,12 @@ constructor(
         viewModelScope.launch {
             homeSectionsRepository.popularStudiosLoaded.collect { loaded ->
                 _uiState.update { it.copy(popularStudiosLoaded = loaded) }
+            }
+        }
+
+        viewModelScope.launch {
+            homeSectionsRepository.franchises.collect { franchises ->
+                _uiState.update { it.copy(franchises = franchises) }
             }
         }
 
@@ -973,6 +980,7 @@ data class HomeUiState(
     val highestRatedLoaded: Boolean = false,
     val popularStudios: List<AfinityStudio> = emptyList(),
     val popularStudiosLoaded: Boolean = false,
+    val franchises: List<FranchiseCard> = emptyList(),
     val nextUpLoaded: Boolean = false,
     val upcomingLoaded: Boolean = false,
     val hiddenRows: Set<HomeRow> = emptySet(),

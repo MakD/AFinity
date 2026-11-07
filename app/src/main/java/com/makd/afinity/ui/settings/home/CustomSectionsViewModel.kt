@@ -196,6 +196,16 @@ constructor(
         viewModelScope.launch { homeLayoutPreferencesRepository.setDiscoveryDensity(density) }
     }
 
+    fun setDiscoveryEnabled(section: DiscoverySection, enabled: Boolean) {
+        viewModelScope.launch {
+            homeLayoutPreferencesRepository.setDiscoverySection(
+                section,
+                enabled = enabled,
+                maxCount = null,
+            )
+        }
+    }
+
     fun setDiscoveryCount(section: DiscoverySection, count: Int) {
         viewModelScope.launch {
             if (count <= 0) {
