@@ -12,12 +12,14 @@ import com.makd.afinity.data.network.WikidataApiService
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import retrofit2.HttpException
 import timber.log.Timber
 
 @Singleton
@@ -176,10 +178,16 @@ constructor(
                 throw e
             } catch (e: Exception) {
                 Timber.w(e, "Wikidata franchise query failed (attempt ${attempt + 1})")
-                if (attempt < QUERY_ATTEMPTS - 1) delay(RETRY_DELAY)
+                if (attempt < QUERY_ATTEMPTS - 1) delay(retryDelay(e))
             }
         }
         return null
+    }
+
+    private fun retryDelay(e: Exception): Duration {
+        if (e !is HttpException || e.code() != HTTP_TOO_MANY_REQUESTS) return RETRY_DELAY
+        val seconds = e.response()?.headers()?.get("Retry-After")?.trim()?.toLongOrNull()
+        return seconds?.seconds?.coerceIn(RETRY_DELAY, MAX_RETRY_AFTER) ?: MAX_RETRY_AFTER
     }
 
     private fun SparqlValue?.entityId(): String? =
@@ -200,11 +208,13 @@ constructor(
         private val ENTITY_ID = Regex("^Q\\d+$")
         private val GROUP_PROPS = listOf("P8345", "P179")
         private val LINK_PROPS = listOf("P2512", "P4969", "P144", "P155", "P156")
-        private const val TITLE_BATCH = 150
-        private const val ENTITY_BATCH = 200
+        private const val TITLE_BATCH = 500
+        private const val ENTITY_BATCH = 500
         private const val SQL_CHUNK = 500
         private const val QUERY_ATTEMPTS = 2
         private val RETRY_DELAY = 3.seconds
+        private val MAX_RETRY_AFTER = 60.seconds
+        private const val HTTP_TOO_MANY_REQUESTS = 429
         private const val FOUND_TTL_MS = 180L * 24L * 60L * 60L * 1000L
         private const val NOT_FOUND_TTL_MS = 30L * 24L * 60L * 60L * 1000L
     }

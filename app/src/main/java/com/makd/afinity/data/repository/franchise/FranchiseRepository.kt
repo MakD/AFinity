@@ -9,6 +9,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.LibraryIndexEntry
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.home.HomeCacheRepository
+import com.makd.afinity.data.repository.media.LibraryIndexRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.wikidata.WikidataFranchiseRepository
 import java.util.UUID
@@ -28,6 +29,7 @@ class FranchiseRepository
 @Inject
 constructor(
     private val mediaRepository: MediaRepository,
+    private val libraryIndexRepository: LibraryIndexRepository,
     private val wikidataFranchiseRepository: WikidataFranchiseRepository,
     private val sessionManager: SessionManager,
     private val homeCacheRepository: HomeCacheRepository,
@@ -146,7 +148,7 @@ constructor(
 
     private suspend fun index(type: BaseItemKind): List<LibraryIndexEntry>? =
         backgroundWorkQueue
-            .run("franchise index $type") { mediaRepository.getLibraryIndexResult(type) }
+            .run("franchise index $type") { libraryIndexRepository.index(type) }
             .getOrElse { e ->
                 if (e is CancellationException) throw e
                 Timber.w(e, "Failed to load library index ($type) for franchises")

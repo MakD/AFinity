@@ -125,7 +125,6 @@
     <string name="discovery_section_top_imdb_shows">IMDb Top Series</string>
     <string name="discovery_section_trending_movies">Trending Movies</string>
     <string name="discovery_section_trending_shows">Trending Series</string>
-    <string name="discovery_section_franchises">Franchises</string>
     <string name="home_row_popular_studios">Popular Studios</string>
     <string name="home_row_hero_carousel">Spotlight carousel</string>
     <string name="hero_content_title">Spotlight carousel content</string>
@@ -163,6 +162,7 @@
     <string name="home_row_continue_watching">Continue Watching</string>
     <string name="home_row_next_up">Next Up</string>
     <string name="home_row_critics_choice">Critics\' Choice</string>
+    <string name="home_row_franchises">Franchises</string>
     <string name="home_row_watch_again">Watch Again</string>
     <string name="home_row_upcoming">Upcoming</string>
     <string name="home_row_latest_movies">Latest Movies</string>

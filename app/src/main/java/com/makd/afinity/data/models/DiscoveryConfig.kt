@@ -49,8 +49,7 @@ enum class DiscoverySection(
         1,
         1,
     ),
-    TRENDING_SHOWS("discovery_trending_shows", R.string.discovery_section_trending_shows, 1, 1),
-    FRANCHISES("discovery_franchises", R.string.discovery_section_franchises, 1, 1);
+    TRENDING_SHOWS("discovery_trending_shows", R.string.discovery_section_trending_shows, 1, 1);
 
     val isToggle: Boolean
         get() = ceiling == 1

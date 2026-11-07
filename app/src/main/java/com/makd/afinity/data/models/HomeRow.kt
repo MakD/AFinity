@@ -16,6 +16,7 @@ enum class HomeRow(
     LATEST_TV("latest_tv", R.string.home_row_latest_tv),
     UPCOMING_EPISODES("upcoming_episodes", R.string.home_row_upcoming),
     CRITICS_CHOICE("critics_choice", R.string.home_row_critics_choice),
+    FRANCHISES("franchises", R.string.home_row_franchises),
     WATCH_AGAIN("watch_again", R.string.home_row_watch_again),
     POPULAR_STUDIOS("popular_studios", R.string.home_row_popular_studios);
 

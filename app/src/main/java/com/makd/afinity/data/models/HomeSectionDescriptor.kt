@@ -1,6 +1,5 @@
 package com.makd.afinity.data.models
 
-import com.makd.afinity.data.models.franchise.FranchiseCard
 import com.makd.afinity.data.models.media.AfinityItem
 import kotlinx.serialization.Serializable
 
@@ -26,7 +25,6 @@ enum class HomeSectionType {
     TOP_IMDB_SHOWS,
     TRENDING_MOVIES,
     TRENDING_SHOWS,
-    FRANCHISES,
     CUSTOM,
 }
 
@@ -57,8 +55,6 @@ sealed interface HomeSectionContent {
     data class Items(val items: List<AfinityItem>) : HomeSectionContent
 
     data class RankedItems(val items: List<AfinityItem>) : HomeSectionContent
-
-    data class Franchises(val cards: List<FranchiseCard>) : HomeSectionContent
 
     data object Empty : HomeSectionContent
 
