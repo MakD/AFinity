@@ -206,7 +206,7 @@ constructor(
     companion object {
         private val IMDB_ID = Regex("^tt\\d+$")
         private val ENTITY_ID = Regex("^Q\\d+$")
-        private val GROUP_PROPS = listOf("P8345", "P179")
+        private val GROUP_PROPS = listOf("P8345", "P179", "P1434")
         private val LINK_PROPS = listOf("P2512", "P4969", "P144", "P155", "P156")
         private const val TITLE_BATCH = 500
         private const val ENTITY_BATCH = 500
