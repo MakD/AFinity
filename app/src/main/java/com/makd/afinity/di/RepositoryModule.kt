@@ -25,6 +25,8 @@ import com.makd.afinity.data.repository.playback.JellyfinPlaybackRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.data.repository.server.ServerRepository
+import com.makd.afinity.data.repository.subtitles.SubtitleSearchRepository
+import com.makd.afinity.data.repository.subtitles.SubtitleSearchRepositoryImpl
 import com.makd.afinity.data.repository.syncplay.JellyfinSyncPlayRepository
 import com.makd.afinity.data.repository.syncplay.SyncPlayRepository
 import com.makd.afinity.data.repository.userdata.JellyfinUserDataRepository
@@ -113,6 +115,12 @@ abstract class RepositoryModule {
     abstract fun bindMusicRepository(
         jellyfinMusicRepository: JellyfinMusicRepository
     ): MusicRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSubtitleSearchRepository(
+        subtitleSearchRepositoryImpl: SubtitleSearchRepositoryImpl
+    ): SubtitleSearchRepository
 
     companion object {
         @Provides

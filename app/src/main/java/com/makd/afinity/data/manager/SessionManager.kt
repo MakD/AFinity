@@ -37,6 +37,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
+import org.jellyfin.sdk.api.operations.LibraryApi
 import org.jellyfin.sdk.api.operations.UserApi
 import org.jellyfin.sdk.api.sockets.DefaultSocketApi
 import org.jellyfin.sdk.model.DeviceInfo
@@ -62,6 +63,8 @@ data class Session(
     val canDeleteMedia: Boolean? = null,
     val canManageLiveTv: Boolean? = null,
     val canManageCollections: Boolean? = null,
+    val canManageSubtitles: Boolean? = null,
+    val hasSubtitleProvider: Boolean? = null,
     val userConfiguration: UserConfiguration? = null,
 )
 
@@ -276,6 +279,8 @@ constructor(
                         val canManageLiveTv = userDto.policy?.enableLiveTvManagement
                         val canManageCollections =
                             isAdmin || userDto.policy?.enableCollectionManagement == true
+                        val canManageSubtitles =
+                            isAdmin || userDto.policy?.enableSubtitleManagement == true
                         val canDownload = userDto.policy?.enableContentDownloading
                         val canDeleteMedia =
                             userDto.policy?.let { policy ->
@@ -316,6 +321,7 @@ constructor(
                                     canDeleteMedia = canDeleteMedia,
                                     canManageLiveTv = canManageLiveTv,
                                     canManageCollections = canManageCollections,
+                                    canManageSubtitles = canManageSubtitles,
                                     user = refreshedUser,
                                     userConfiguration = userDto.configuration,
                                 )
@@ -323,6 +329,9 @@ constructor(
                         Timber.d(
                             "Admin status refreshed from policy: isAdmin=$isAdmin, canDownload=$canDownload"
                         )
+                        if (canManageSubtitles) {
+                            refreshSubtitleProvider(apiClient, serverId, userId)
+                        }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
@@ -337,6 +346,26 @@ constructor(
                 Timber.e(e, "Failed to start session")
                 Result.failure(e)
             }
+        }
+    }
+
+    private suspend fun refreshSubtitleProvider(
+        apiClient: ApiClient,
+        serverId: String,
+        userId: UUID,
+    ) {
+        val hasProvider =
+            try {
+                LibraryApi(apiClient).getLibraryOptionsInfo().content.subtitleFetchers.isNotEmpty()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to check for a subtitle provider")
+                return
+            }
+        val current = _currentSession.value
+        if (current?.serverId == serverId && current.userId == userId) {
+            _currentSession.value = current.copy(hasSubtitleProvider = hasProvider)
         }
     }
 

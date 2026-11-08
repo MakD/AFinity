@@ -14,6 +14,7 @@ import com.makd.afinity.data.network.LastFmApiService
 import com.makd.afinity.data.network.MdbListApiService
 import com.makd.afinity.data.network.OmdbApiService
 import com.makd.afinity.data.network.SeerrCookieJar
+import com.makd.afinity.data.network.SubtitleDbApiService
 import com.makd.afinity.data.network.TmdbApiService
 import com.makd.afinity.data.network.WikidataApiService
 import com.makd.afinity.data.network.resolveDynamicBaseUrl
@@ -87,6 +88,8 @@ import timber.log.Timber
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class WikidataClient
 
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class LastFmClient
+
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class SubtitleDbClient
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -213,6 +216,11 @@ object NetworkModule {
 
     private val wikidataUserAgent =
         "AFinity/${BuildConfig.VERSION_NAME} (https://github.com/MakD/AFinity; award and franchise lookups, cached client-side)"
+
+    private val subtitleDbUserAgent =
+        "subtitledb-afinity/${BuildConfig.VERSION_NAME} (+https://github.com/MakD/AFinity)"
+
+    private const val SUBTITLE_DB_MAX_RETRY_AFTER_SECONDS = 5L
 
     private val lastFmUserAgent =
         "AFinity/${BuildConfig.VERSION_NAME} (https://github.com/MakD/AFinity; popular tracks, cached client-side)"
@@ -872,6 +880,66 @@ object NetworkModule {
     @Singleton
     fun provideWikidataApiService(@WikidataClient retrofit: Retrofit): WikidataApiService {
         return retrofit.create(WikidataApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    @SubtitleDbClient
+    fun provideSubtitleDbRetrofit(baseOkHttpClient: OkHttpClient): Retrofit {
+        val contentType = "application/json".toMediaType()
+        val json = Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            explicitNulls = false
+        }
+
+        val subtitleDbClient =
+            baseOkHttpClient
+                .newBuilder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(20, TimeUnit.SECONDS)
+                .callTimeout(30, TimeUnit.SECONDS)
+                .addInterceptor { chain ->
+                    val request =
+                        chain
+                            .request()
+                            .newBuilder()
+                            .header("User-Agent", subtitleDbUserAgent)
+                            .build()
+                    val response = chain.proceed(request)
+                    val retryAfter = response.header("Retry-After")?.trim()?.toLongOrNull()
+                    if (
+                        response.code == 503 &&
+                            retryAfter != null &&
+                            retryAfter in 0..SUBTITLE_DB_MAX_RETRY_AFTER_SECONDS
+                    ) {
+                        response.close()
+                        Thread.sleep(retryAfter.seconds.inWholeMilliseconds)
+                        chain.proceed(request)
+                    } else {
+                        response
+                    }
+                }
+                .addNetworkInterceptor { chain ->
+                    val host = chain.request().url.host
+                    if (host !in SubtitleDbApiService.ALLOWED_HOSTS) {
+                        throw IOException("Refused redirect to an unexpected subtitle host")
+                    }
+                    chain.proceed(chain.request())
+                }
+                .build()
+
+        return Retrofit.Builder()
+            .baseUrl(SubtitleDbApiService.BASE_URL)
+            .client(subtitleDbClient)
+            .addConverterFactory(json.asConverterFactory(contentType))
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideSubtitleDbApiService(@SubtitleDbClient retrofit: Retrofit): SubtitleDbApiService {
+        return retrofit.create(SubtitleDbApiService::class.java)
     }
 
     @Provides

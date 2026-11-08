@@ -1386,6 +1386,19 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
     override fun getWikidataEnabledFlow(serverId: String, userId: String): Flow<Boolean> =
         dataStore.data.map { it.wikidataEnabled(serverId, userId) }
 
+    private fun subtitleDbEnabledKey(serverId: String, userId: String) =
+        booleanPreferencesKey("subtitledb_enabled_${serverId}_$userId")
+
+    override suspend fun setSubtitleDbEnabled(serverId: String, userId: String, enabled: Boolean) {
+        dataStore.edit { it[subtitleDbEnabledKey(serverId, userId)] = enabled }
+    }
+
+    override suspend fun getSubtitleDbEnabled(serverId: String, userId: String): Boolean =
+        dataStore.data.first()[subtitleDbEnabledKey(serverId, userId)] ?: false
+
+    override fun getSubtitleDbEnabledFlow(serverId: String, userId: String): Flow<Boolean> =
+        dataStore.data.map { it[subtitleDbEnabledKey(serverId, userId)] ?: false }
+
     override fun getShowRatingsFlow(): Flow<Boolean> {
         return dataStore.data.map { preferences -> preferences[Keys.SHOW_RATINGS] ?: true }
     }

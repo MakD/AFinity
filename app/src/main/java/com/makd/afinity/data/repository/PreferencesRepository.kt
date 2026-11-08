@@ -500,6 +500,12 @@ interface PreferencesRepository {
 
     fun getWikidataEnabledFlow(serverId: String, userId: String): Flow<Boolean>
 
+    suspend fun setSubtitleDbEnabled(serverId: String, userId: String, enabled: Boolean)
+
+    suspend fun getSubtitleDbEnabled(serverId: String, userId: String): Boolean
+
+    fun getSubtitleDbEnabledFlow(serverId: String, userId: String): Flow<Boolean>
+
     suspend fun setNotificationPermissionDeclined(declined: Boolean)
 
     suspend fun getNotificationPermissionDeclined(): Boolean
