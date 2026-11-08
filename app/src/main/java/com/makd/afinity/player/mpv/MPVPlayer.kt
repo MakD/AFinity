@@ -348,7 +348,6 @@ class MPVPlayer(
 
     private fun writeFontsConf(context: Context, configDir: File) {
         val configFile = File(configDir, "fonts.conf")
-        if (configFile.exists()) return
 
         val fontcacheDir = File(context.cacheDir, "fontconfig")
         if (!fontcacheDir.exists()) fontcacheDir.mkdirs()
@@ -371,6 +370,13 @@ class MPVPlayer(
                     <prefer>
                         <family>Roboto</family>
                         <family>Noto Sans</family>
+                        <family>Noto Sans Devanagari UI</family>
+                        <family>Noto Sans Myanmar UI</family>
+                        <family>Noto Sans Khmer UI</family>
+                        <family>Noto Naskh Arabic UI</family>
+                        <family>Noto Sans Kannada UI</family>
+                        <family>Noto Sans Lao UI</family>
+                        <family>Noto Sans Telugu UI</family>
                     </prefer>
                 </alias>
 
@@ -384,6 +390,7 @@ class MPVPlayer(
                 .trimIndent()
 
         try {
+            if (configFile.exists() && configFile.readText() == config) return
             configFile.writeText(config)
         } catch (e: IOException) {
             Timber.w("Failed to write fonts.conf: $e")
