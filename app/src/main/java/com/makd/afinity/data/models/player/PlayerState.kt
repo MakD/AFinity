@@ -3,6 +3,7 @@ package com.makd.afinity.data.models.player
 import com.makd.afinity.data.models.livetv.LiveTvPlaybackInfo
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySegment
+import com.makd.afinity.data.repository.subtitles.AddedSubtitle
 import java.util.UUID
 
 sealed class PlayerEvent {
@@ -86,6 +87,8 @@ sealed class PlayerEvent {
         val audioStreamIndex: Int? = null,
         val subtitleStreamIndex: Int? = null,
     ) : PlayerEvent()
+
+    data class SubtitleAdded(val added: AddedSubtitle) : PlayerEvent()
 
     data class SetSleepTimer(val mode: SleepTimerMode) : PlayerEvent()
 

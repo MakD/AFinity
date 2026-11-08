@@ -41,16 +41,21 @@ class DeviceSubtitleStore @Inject constructor(@ApplicationContext private val co
     private val root: File
         get() = File(context.filesDir, ROOT_DIR)
 
+    suspend fun hasAnyFolder(scope: SubtitleScope): Boolean =
+        withContext(Dispatchers.IO) {
+            profileDir(scope).listFiles()?.any { it.isDirectory } == true
+        }
+
     suspend fun list(
         scope: SubtitleScope,
         itemId: UUID,
-        identity: SubtitleItemIdentity,
+        identity: SubtitleItemIdentity?,
     ): List<DeviceSubtitle> =
         withContext(Dispatchers.IO) {
             mutex.withLock {
                 val dir =
                     itemDir(scope, itemId).takeIf { it.isDirectory }
-                        ?: reattachLocked(scope, itemId, identity)
+                        ?: identity?.let { reattachLocked(scope, itemId, it) }
                         ?: return@withLock emptyList()
                 val folder = readFolder(dir) ?: return@withLock emptyList()
                 folder.subtitles.mapNotNull { meta ->

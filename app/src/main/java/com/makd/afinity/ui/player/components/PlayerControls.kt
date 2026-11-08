@@ -125,6 +125,7 @@ import com.makd.afinity.ui.components.ratings.toDisplay
 import com.makd.afinity.ui.components.windowWidthDp
 import com.makd.afinity.ui.item.components.shared.omdbAwardsHeadline
 import com.makd.afinity.ui.livetv.components.LiveBadge
+import com.makd.afinity.ui.player.LocalSubtitleOrigin
 import com.makd.afinity.ui.player.PlayerViewModel
 import com.makd.afinity.ui.player.toLocalizedLanguageName
 import java.util.Date
@@ -295,16 +296,23 @@ fun PlayerControls(
 
     val noneText = stringResource(R.string.track_none)
     val trackFmt = stringResource(R.string.track_number_fmt)
+    val onDeviceText = stringResource(R.string.player_subtitle_on_device)
+    val outOfSyncText = stringResource(R.string.player_subtitle_out_of_sync)
+    val onServerText = stringResource(R.string.player_subtitle_on_server)
 
     val subtitleStreamOptions =
         remember(
             currentItem,
             uiState.currentMediaSourceId,
             uiState.sideLoadedSubtitleUris,
+            uiState.localSubtitleTracks,
             player.currentTracks,
             noneText,
             trackFmt,
             trackTags,
+            onDeviceText,
+            outOfSyncText,
+            onServerText,
         ) {
             val currentSource =
                 currentItem?.sources?.firstOrNull { it.id == uiState.currentMediaSourceId }
@@ -388,20 +396,27 @@ fun PlayerControls(
                                 }
                         }
 
+                    val localTrack = uiState.localSubtitleTracks[streamIndex]
                     options.add(
                         SubtitleStreamOption(
                             stream = serverStream,
-                            displayName = displayName,
+                            displayName = localTrack?.label ?: displayName,
                             isDefault = trackGroup.isSelected,
                             index = streamIndex,
                             isNone = false,
                             secondaryName =
-                                subtitleSecondaryLabel(
-                                    stream = serverStream,
-                                    formatLabel = format.label,
-                                    formatMimeType = format.sampleMimeType,
-                                    primaryLabel = displayName,
-                                ),
+                                when (localTrack?.origin) {
+                                    LocalSubtitleOrigin.DEVICE -> onDeviceText
+                                    LocalSubtitleOrigin.DEVICE_OUT_OF_SYNC -> outOfSyncText
+                                    LocalSubtitleOrigin.SERVER_ADDED -> onServerText
+                                    null ->
+                                        subtitleSecondaryLabel(
+                                            stream = serverStream,
+                                            formatLabel = format.label,
+                                            formatMimeType = format.sampleMimeType,
+                                            primaryLabel = displayName,
+                                        )
+                                },
                         )
                     )
                 }
@@ -831,6 +846,8 @@ fun PlayerControls(
                             when {
                                 trackType == C.TRACK_TYPE_AUDIO -> true
                                 trackType != C.TRACK_TYPE_TEXT -> false
+                                TrackMapping.isDeviceSubtitleIndex(index) ->
+                                    uiState.burnedInSubtitleIndex != null
                                 subtitleOption?.stream?.index?.let {
                                     it in uiState.clientRenderedSubtitles
                                 } == true -> false

@@ -1001,6 +1001,11 @@ class MPVPlayer(
         mpv.setPropertyString(trackType.propertyName, id)
     }
 
+    fun addExternalSubtitle(uri: String, label: String?, language: String?) {
+        if (isReleased) return
+        mpv.command(arrayOf("sub-add", uri, "auto", label.orEmpty(), language.orEmpty()))
+    }
+
     override fun getMediaMetadata(): MediaMetadata =
         currentMediaItem?.mediaMetadata ?: MediaMetadata.EMPTY
 

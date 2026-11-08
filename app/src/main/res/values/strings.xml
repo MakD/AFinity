@@ -899,6 +899,10 @@
     <string name="player_quality_playing_original">Playing original quality</string>
     <string name="player_quality_playing_transcoded_fmt">Playing %1$d×%2$d, transcoded from %3$d×%4$d</string>
     <string name="player_subtitle_burned_in">Burned in</string>
+    <string name="player_subtitle_source_label_fmt">%1$s (TheSubtitleDB)</string>
+    <string name="player_subtitle_on_device">On this device</string>
+    <string name="player_subtitle_out_of_sync">May be out of sync</string>
+    <string name="player_subtitle_on_server">On your server</string>
     <string name="player_transcode_reason_prefix">Transcoding — %1$s</string>
     <string name="player_transcode_reason_audio_codec">audio codec not supported</string>
     <string name="player_transcode_reason_video_codec">video codec not supported</string>

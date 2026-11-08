@@ -6,6 +6,15 @@ object TrackMapping {
 
     const val EXTERNAL_SUBTITLE_ID_BASE = 128
 
+    const val DEVICE_SUBTITLE_INDEX_BASE = 4096
+
+    fun deviceSubtitleIndex(ordinal: Int): Int = DEVICE_SUBTITLE_INDEX_BASE + ordinal
+
+    fun isDeviceSubtitleIndex(index: Int?): Boolean =
+        index != null && index >= DEVICE_SUBTITLE_INDEX_BASE
+
+    fun serverSubtitleIndex(index: Int?): Int? = index?.takeUnless { isDeviceSubtitleIndex(it) }
+
     fun embeddedOrdinal(streams: List<AfinityMediaStream>, streamIndex: Int): Int? {
         val stream = streams.firstOrNull { it.index == streamIndex } ?: return null
         if (stream.isExternal) return null

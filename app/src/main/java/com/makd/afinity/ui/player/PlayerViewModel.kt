@@ -84,6 +84,7 @@ import com.makd.afinity.data.models.player.SubtitlePreferences
 import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.models.server.ConnectionType
+import com.makd.afinity.data.models.subtitles.DeviceSubtitle
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.admin.ServerAdminRepository
@@ -94,6 +95,12 @@ import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.data.repository.playback.TranscodingUrl
 import com.makd.afinity.data.repository.segments.SegmentsRepository
 import com.makd.afinity.data.repository.server.ServerRepository
+import com.makd.afinity.data.repository.subtitles.AddedSubtitle
+import com.makd.afinity.data.repository.subtitles.DeviceSubtitleStore
+import com.makd.afinity.data.repository.subtitles.SubtitleLanguageCodes
+import com.makd.afinity.data.repository.subtitles.SubtitleScope
+import com.makd.afinity.data.repository.subtitles.SubtitleSearchRepository
+import com.makd.afinity.data.repository.subtitles.externalSubtitleFileName
 import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.player.common.TrackMapping
@@ -150,6 +157,7 @@ import org.jellyfin.sdk.model.api.TranscodingInfo
 import timber.log.Timber
 
 private const val MAX_PENDING_TRACK_ATTEMPTS = 10
+private const val DEVICE_SUBTITLE_IDENTITY_TIMEOUT_MS = 2_000L
 private const val TICKS_PER_MILLISECOND = 10_000L
 private const val REMOTE_SEEK_STEP_MS = 30_000L
 private const val REMOTE_VOLUME_STEP = 10
@@ -182,6 +190,8 @@ constructor(
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
     private val serverRepository: ServerRepository,
     private val serverAdminRepository: ServerAdminRepository,
+    private val subtitleSearchRepository: SubtitleSearchRepository,
+    private val deviceSubtitleStore: DeviceSubtitleStore,
 ) : ViewModel(), Player.Listener {
 
     lateinit var player: Player
@@ -272,6 +282,8 @@ constructor(
     private var pendingAudioStreamIndex: Int? = null
     private var pendingSubtitleStreamIndex: Int? = null
     private var sideLoadedSubtitleUris: Map<Int, String> = emptyMap()
+    private var deviceSubtitles: Map<Int, DeviceSubtitle> = emptyMap()
+    private var pendingDeviceSubtitleFile: String? = null
     private var pendingTrackResolveAttempts = 0
     private var currentItem: AfinityItem? = null
     val currentPlayingItemId: UUID?
@@ -512,7 +524,8 @@ constructor(
                 serverBaseUrl = serverBaseUrl,
                 mediaSourceId = mediaSourceId,
                 audioStreamIndex = _uiState.value.audioStreamIndex,
-                subtitleStreamIndex = _uiState.value.subtitleStreamIndex,
+                subtitleStreamIndex =
+                    TrackMapping.serverSubtitleIndex(_uiState.value.subtitleStreamIndex),
                 startPositionMs = startPositionMs,
                 maxBitrate = maxBitrate,
                 enableHevc = enableHevc,
@@ -635,7 +648,8 @@ constructor(
                                     ?: item.sources.firstOrNull()
                             val jfAudioIndex = _uiState.value.audioStreamIndex
                             val jfSubIndex =
-                                _uiState.value.subtitleStreamIndex ?: TrackSelection.NO_SUBTITLE
+                                TrackMapping.serverSubtitleIndex(_uiState.value.subtitleStreamIndex)
+                                    ?: TrackSelection.NO_SUBTITLE
 
                             val livePlaybackInfo = currentLivePlaybackInfo
                             playbackRepository.reportPlaybackProgress(
@@ -1378,6 +1392,7 @@ constructor(
                     switchToTrack(event.trackType, event.index, userInitiated = true)
                     if (event.trackType == C.TRACK_TYPE_TEXT) {
                         updateUiState { it.copy(subtitleUserSelected = true) }
+                        rememberDeviceSubtitleSelection(event.index)
                     } else if (event.trackType == C.TRACK_TYPE_AUDIO && event.index >= 0) {
                         autoUpdateSubtitleForAudio(event.index)
                     }
@@ -1589,6 +1604,8 @@ constructor(
                         subtitleStreamIndex = event.subtitleStreamIndex,
                     )
                 }
+
+                is PlayerEvent.SubtitleAdded -> applyAddedSubtitle(event.added)
 
                 is PlayerEvent.SetSleepTimer -> setSleepTimer(event.mode)
 
@@ -2153,6 +2170,252 @@ constructor(
         )
     }
 
+    private suspend fun loadDeviceSubtitles(
+        item: AfinityItem,
+        scope: SubtitleScope?,
+        allowReattach: Boolean = true,
+    ): Map<Int, DeviceSubtitle> {
+        if (scope == null) return emptyMap()
+        return try {
+            val direct = deviceSubtitleStore.list(scope, item.id, null)
+            val subtitles =
+                if (direct.isEmpty() && allowReattach && deviceSubtitleStore.hasAnyFolder(scope)) {
+                    val identity =
+                        withTimeoutOrNull(DEVICE_SUBTITLE_IDENTITY_TIMEOUT_MS) {
+                            subtitleSearchRepository.identity(item)
+                        }
+                    if (identity == null) direct
+                    else deviceSubtitleStore.list(scope, item.id, identity)
+                } else {
+                    direct
+                }
+            subtitles
+                .sortedBy { it.meta.savedAtMs }
+                .mapIndexed { ordinal, subtitle ->
+                    TrackMapping.deviceSubtitleIndex(ordinal) to subtitle
+                }
+                .toMap()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to load device subtitles")
+            emptyMap()
+        }
+    }
+
+    private suspend fun lastSelectedDeviceSubtitle(scope: SubtitleScope, itemId: UUID): String? =
+        try {
+            deviceSubtitleStore.lastSelected(scope, itemId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to read the last device subtitle")
+            null
+        }
+
+    private suspend fun serverAddedSubtitleFiles(scope: SubtitleScope, itemId: UUID): Set<String> =
+        try {
+            deviceSubtitleStore.serverAdded(scope, itemId).map { it.fileName }.toSet()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to read added server subtitles")
+            emptySet()
+        }
+
+    private fun subtitleSourceLabel(language: String): String =
+        context.getString(
+            R.string.player_subtitle_source_label_fmt,
+            language
+                .takeIf { it.isNotBlank() && !it.equals("und", ignoreCase = true) }
+                ?.let { subtitleLanguageDisplayName(it) }
+                ?: context.getString(R.string.track_unknown),
+        )
+
+    private fun deviceSubtitleUri(subtitle: DeviceSubtitle): String =
+        "file://${subtitle.file.absolutePath}"
+
+    private fun deviceSubtitleTracks(
+        item: AfinityItem,
+        device: Map<Int, DeviceSubtitle>,
+    ): Map<Int, LocalSubtitleTrack> = device.mapValues { (_, subtitle) ->
+        LocalSubtitleTrack(
+            fileName = subtitle.meta.fileName,
+            label = subtitleSourceLabel(subtitle.meta.language),
+            origin =
+                if (deviceSubtitleStore.mayBeOutOfSync(subtitle.meta, item.runtimeTicks)) {
+                    LocalSubtitleOrigin.DEVICE_OUT_OF_SYNC
+                } else {
+                    LocalSubtitleOrigin.DEVICE
+                },
+        )
+    }
+
+    private fun localSubtitleTracks(
+        item: AfinityItem,
+        device: Map<Int, DeviceSubtitle>,
+        serverSubtitles: List<AfinityMediaStream>,
+        serverAddedFiles: Set<String>,
+    ): Map<Int, LocalSubtitleTrack> {
+        val serverTracks =
+            serverSubtitles
+                .filter { it.isExternal }
+                .mapNotNull { stream ->
+                    val fileName =
+                        externalSubtitleFileName(stream.path)?.takeIf { it in serverAddedFiles }
+                            ?: return@mapNotNull null
+                    stream.index to
+                        LocalSubtitleTrack(
+                            fileName = fileName,
+                            label = subtitleSourceLabel(stream.language),
+                            origin = LocalSubtitleOrigin.SERVER_ADDED,
+                        )
+                }
+                .toMap()
+        return deviceSubtitleTracks(item, device) + serverTracks
+    }
+
+    private fun deviceSubtitleConfigurations(
+        device: Map<Int, DeviceSubtitle>
+    ): List<MediaItem.SubtitleConfiguration> = device.map { (index, subtitle) ->
+        MediaItem.SubtitleConfiguration.Builder(deviceSubtitleUri(subtitle).toUri())
+            .setId(TrackMapping.sideLoadedId(index))
+            .setLabel(subtitleSourceLabel(subtitle.meta.language))
+            .setMimeType(subtitleMimeType(subtitle.meta.format) ?: MimeTypes.APPLICATION_SUBRIP)
+            .setLanguage(SubtitleLanguageCodes.toLanguageTag(subtitle.meta.language))
+            .build()
+    }
+
+    private fun rememberDeviceSubtitleSelection(index: Int) {
+        val itemId = currentItem?.id ?: return
+        val scope = subtitleSearchRepository.currentScope() ?: return
+        if (deviceSubtitles.isEmpty()) return
+        val fileName = deviceSubtitles[index]?.meta?.fileName
+        viewModelScope.launch {
+            try {
+                deviceSubtitleStore.setLastSelected(scope, itemId, fileName)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to remember the device subtitle")
+            }
+        }
+    }
+
+    private suspend fun applyAddedSubtitle(added: AddedSubtitle) {
+        val item = currentItem ?: return
+        when (added) {
+            is AddedSubtitle.OnDevice -> addDeviceSubtitleToPlayback(item, added.subtitle)
+            is AddedSubtitle.OnServer -> reloadWithServerSubtitle(item, added.fileName)
+        }
+    }
+
+    private suspend fun addDeviceSubtitleToPlayback(item: AfinityItem, subtitle: DeviceSubtitle) {
+        val fileName = subtitle.meta.fileName
+        val scope = subtitleSearchRepository.currentScope()
+        if (scope != null) {
+            try {
+                deviceSubtitleStore.setLastSelected(scope, item.id, fileName)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to remember the device subtitle")
+            }
+        }
+        val mpv = player as? MPVPlayer
+        val refreshed =
+            if (mpv != null) loadDeviceSubtitles(item, scope, allowReattach = false) else emptyMap()
+        val entry = refreshed.entries.firstOrNull { it.value.meta.fileName == fileName }
+        if (mpv == null || entry == null) {
+            pendingDeviceSubtitleFile = fileName
+            reloadAtCurrentPosition()
+            return
+        }
+        val index = entry.key
+        val uri = deviceSubtitleUri(entry.value)
+        deviceSubtitles = refreshed
+        sideLoadedSubtitleUris = sideLoadedSubtitleUris + (index to uri)
+        pendingSubtitleStreamIndex = index
+        pendingTrackResolveAttempts = 0
+        updateUiState { state ->
+            state.copy(
+                sideLoadedSubtitleUris = sideLoadedSubtitleUris,
+                localSubtitleTracks =
+                    state.localSubtitleTracks.filterKeys {
+                        !TrackMapping.isDeviceSubtitleIndex(it)
+                    } + deviceSubtitleTracks(item, refreshed),
+                subtitleStreamIndex = index,
+                subtitleUserSelected = true,
+            )
+        }
+        mpv.addExternalSubtitle(
+            uri = uri,
+            label = subtitleSourceLabel(entry.value.meta.language),
+            language = SubtitleLanguageCodes.toLanguageTag(entry.value.meta.language),
+        )
+    }
+
+    private suspend fun reloadWithServerSubtitle(item: AfinityItem, fileName: String?) {
+        val state = _uiState.value
+        val refreshed =
+            withContext(Dispatchers.IO) { mediaRepository.getItemById(item.id) }
+                ?: run {
+                    Timber.w("Could not refresh the item after adding a subtitle")
+                    return
+                }
+        val sourceId = state.currentMediaSourceId
+        val oldStreams = item.sources.firstOrNull { it.id == sourceId }?.mediaStreams.orEmpty()
+        val newStreams =
+            refreshed.sources.firstOrNull { it.id == sourceId }?.mediaStreams
+                ?: run {
+                    Timber.w("Refreshed item has no source $sourceId")
+                    return
+                }
+        val audioIndex =
+            remapStreamIndex(oldStreams, newStreams, state.audioStreamIndex, MediaStreamType.AUDIO)
+        val subtitleIndex =
+            fileName?.let { name ->
+                newStreams
+                    .firstOrNull {
+                        it.type == MediaStreamType.SUBTITLE &&
+                            it.isExternal &&
+                            externalSubtitleFileName(it.path) == name
+                    }
+                    ?.index
+            }
+                ?: remapStreamIndex(
+                    oldStreams,
+                    newStreams,
+                    state.subtitleStreamIndex,
+                    MediaStreamType.SUBTITLE,
+                )
+        currentItem = refreshed
+        reloadAtCurrentPosition(audioStreamIndex = audioIndex, subtitleStreamIndex = subtitleIndex)
+    }
+
+    private fun remapStreamIndex(
+        oldStreams: List<AfinityMediaStream>,
+        newStreams: List<AfinityMediaStream>,
+        index: Int?,
+        type: MediaStreamType,
+    ): Int? {
+        if (index == null || index < 0 || TrackMapping.isDeviceSubtitleIndex(index)) return index
+        val oldStream =
+            oldStreams.firstOrNull { it.index == index && it.type == type } ?: return index
+        val newOfType = newStreams.filter { it.type == type }
+        if (oldStream.isExternal) {
+            val name = externalSubtitleFileName(oldStream.path) ?: return index
+            return newOfType
+                .firstOrNull { it.isExternal && externalSubtitleFileName(it.path) == name }
+                ?.index ?: index
+        }
+        val ordinal =
+            oldStreams
+                .filter { it.type == type && !it.isExternal }
+                .indexOfFirst { it.index == index }
+        return newOfType.filter { !it.isExternal }.getOrNull(ordinal)?.index ?: index
+    }
+
     private fun serverSubtitleStreamIndex(
         selectedIndex: Int?,
         subtitleStreams: List<AfinityMediaStream>,
@@ -2377,6 +2640,27 @@ constructor(
             val subtitleStreams =
                 mediaSource.mediaStreams.filter { it.type == MediaStreamType.SUBTITLE }
 
+            val subtitleScope = subtitleSearchRepository.currentScope()
+            val requestedDeviceFile =
+                pendingDeviceSubtitleFile
+                    ?: subtitleStreamIndex?.let { deviceSubtitles[it]?.meta?.fileName }
+            pendingDeviceSubtitleFile = null
+            val loadedDeviceSubtitles =
+                loadDeviceSubtitles(fullItem, subtitleScope, allowReattach = !useLocalSource)
+            deviceSubtitles = loadedDeviceSubtitles
+            val deviceSubtitleFile =
+                requestedDeviceFile
+                    ?: if (subtitleStreamIndex == null && subtitleScope != null) {
+                        lastSelectedDeviceSubtitle(subtitleScope, fullItem.id)
+                    } else {
+                        null
+                    }
+            val deviceSubtitleTarget = deviceSubtitleFile?.let { file ->
+                loadedDeviceSubtitles.entries.firstOrNull { it.value.meta.fileName == file }?.key
+            }
+            val serverAddedFiles =
+                subtitleScope?.let { serverAddedSubtitleFiles(it, fullItem.id) }.orEmpty()
+
             val isResuming = startPositionMs > 0
 
             val trackSelection =
@@ -2390,7 +2674,8 @@ constructor(
                     requestedAudioStreamIndex =
                         audioStreamIndex ?: serverSavedAudioIndex.takeIf { isResuming },
                     requestedSubtitleStreamIndex =
-                        subtitleStreamIndex ?: serverSavedSubtitleIndex.takeIf { isResuming },
+                        TrackMapping.serverSubtitleIndex(subtitleStreamIndex)
+                            ?: serverSavedSubtitleIndex.takeIf { isResuming },
                     serverDefaultAudioStreamIndex = serverSavedAudioIndex,
                     serverDefaultSubtitleStreamIndex = serverSavedSubtitleIndex,
                     playDefaultAudioTrack = resolvePlayDefaultAudioTrack(),
@@ -2401,8 +2686,12 @@ constructor(
 
             val targetAudioStreamIndex = audioPosition?.let { audioStreams.getOrNull(it)?.index }
             val targetSubtitleStreamIndex =
-                if (subtitlePosition == TrackSelection.NO_SUBTITLE) TrackSelection.NO_SUBTITLE
-                else subtitleStreams.getOrNull(subtitlePosition)?.index
+                deviceSubtitleTarget
+                    ?: if (subtitlePosition == TrackSelection.NO_SUBTITLE) {
+                        TrackSelection.NO_SUBTITLE
+                    } else {
+                        subtitleStreams.getOrNull(subtitlePosition)?.index
+                    }
 
             pendingAudioStreamIndex = targetAudioStreamIndex
             pendingSubtitleStreamIndex = targetSubtitleStreamIndex
@@ -2415,6 +2704,13 @@ constructor(
                     audioStreamIndex = targetAudioStreamIndex,
                     subtitleStreamIndex = targetSubtitleStreamIndex,
                     subtitleUserSelected = false,
+                    localSubtitleTracks =
+                        localSubtitleTracks(
+                            fullItem,
+                            loadedDeviceSubtitles,
+                            subtitleStreams,
+                            serverAddedFiles,
+                        ),
                     availableSources = fullItem.sources,
                     currentMediaSourceId = actualMediaSourceId,
                     videoQuality = quality,
@@ -2469,7 +2765,8 @@ constructor(
                                     itemId = fullItem.id,
                                     mediaSourceId = actualMediaSourceId,
                                     audioStreamIndex = targetAudioStreamIndex,
-                                    subtitleStreamIndex = targetSubtitleStreamIndex,
+                                    subtitleStreamIndex =
+                                        TrackMapping.serverSubtitleIndex(targetSubtitleStreamIndex),
                                     playSessionId = currentSessionId,
                                 )
                                 ?.let { StreamDecision.DirectPlay(it) }
@@ -2518,7 +2815,7 @@ constructor(
                     viewModelScope.launch(Dispatchers.IO) { reportPlaybackStart(fullItem) }
 
                 val externalSubtitles =
-                    if (useLocalSource) {
+                    (if (useLocalSource) {
                         val itemDir = downloadRepository.getItemDownloadDirectory(fullItem.id)
                         val subtitlesDir = java.io.File(itemDir, "subtitles")
                         if (subtitlesDir.exists()) {
@@ -2623,7 +2920,7 @@ constructor(
                                     null
                                 }
                             }
-                    }
+                    }) + deviceSubtitleConfigurations(loadedDeviceSubtitles)
 
                 sideLoadedSubtitleUris =
                     externalSubtitles
@@ -2835,8 +3132,14 @@ constructor(
                 )
             }
 
+            deviceSubtitles = emptyMap()
             updateUiState {
-                it.copy(isLoading = false, isLiveChannel = true, currentItem = channelItem)
+                it.copy(
+                    isLoading = false,
+                    isLiveChannel = true,
+                    currentItem = channelItem,
+                    localSubtitleTracks = emptyMap(),
+                )
             }
         } catch (e: CancellationException) {
             throw e
@@ -3161,6 +3464,7 @@ constructor(
 
     private fun autoUpdateSubtitleForAudio(audioStreamIndex: Int) {
         if (_uiState.value.subtitleUserSelected) return
+        if (TrackMapping.isDeviceSubtitleIndex(_uiState.value.subtitleStreamIndex)) return
 
         val sourceId = _uiState.value.currentMediaSourceId ?: return
         val source =
@@ -3222,7 +3526,9 @@ constructor(
                 val source =
                     item.sources.firstOrNull { it.id == sourceId } ?: item.sources.firstOrNull()
                 val jfAudioIndex = _uiState.value.audioStreamIndex
-                val jfSubIndex = _uiState.value.subtitleStreamIndex ?: TrackSelection.NO_SUBTITLE
+                val jfSubIndex =
+                    TrackMapping.serverSubtitleIndex(_uiState.value.subtitleStreamIndex)
+                        ?: TrackSelection.NO_SUBTITLE
 
                 playbackRepository.reportPlaybackStart(
                     itemId = item.id,
@@ -4210,6 +4516,7 @@ constructor(
         val seekPreviewPosition: Long = 0L,
         val playbackSpeed: Float = 1f,
         val sideLoadedSubtitleUris: Map<Int, String> = emptyMap(),
+        val localSubtitleTracks: Map<Int, LocalSubtitleTrack> = emptyMap(),
         val audioStreamIndex: Int? = null,
         val subtitleStreamIndex: Int? = null,
         val subtitleUserSelected: Boolean = false,
