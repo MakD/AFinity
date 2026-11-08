@@ -899,25 +899,22 @@ fun PlayerControls(
                     if (canSearchSubtitles) {
                         {
                             val item = uiState.currentItem
-                            if (item != null) {
-                                val source =
-                                    item.sources.firstOrNull {
-                                        it.id == uiState.currentMediaSourceId
-                                    } ?: item.sources.firstOrNull()
-                                val audioLanguages =
-                                    source
-                                        ?.mediaStreams
-                                        ?.filter { it.type == MediaStreamType.AUDIO }
-                                        ?.map { it.language }
-                                        .orEmpty()
-                                subtitleSearchViewModel.open(
-                                    item = item,
-                                    audioLanguages = audioLanguages,
-                                    playingDownload = source?.type == AfinitySourceType.LOCAL,
-                                )
-                                showTrackPanel = false
-                                showSubtitleSearchPanel = true
-                            }
+                            val source =
+                                item.sources.firstOrNull { it.id == uiState.currentMediaSourceId }
+                                    ?: item.sources.firstOrNull()
+                            val audioLanguages =
+                                source
+                                    ?.mediaStreams
+                                    ?.filter { it.type == MediaStreamType.AUDIO }
+                                    ?.map { it.language }
+                                    .orEmpty()
+                            subtitleSearchViewModel.open(
+                                item = item,
+                                audioLanguages = audioLanguages,
+                                playingDownload = source?.type == AfinitySourceType.LOCAL,
+                            )
+                            showTrackPanel = false
+                            showSubtitleSearchPanel = true
                         }
                     } else {
                         null
