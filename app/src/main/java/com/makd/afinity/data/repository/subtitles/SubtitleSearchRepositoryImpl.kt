@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.withContext
 import okio.Buffer
 import org.jellyfin.sdk.api.operations.LibraryApi
+import org.jellyfin.sdk.api.operations.LocalizationApi
 import org.jellyfin.sdk.api.operations.SubtitleApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
@@ -110,8 +111,8 @@ constructor(
     override suspend fun search(
         item: AfinityItem,
         language: String,
+        mode: SubtitleSearchMode,
     ): Result<SubtitleSearchResult> {
-        val mode = currentMode() ?: return Result.failure(IllegalStateException("No session"))
         return if (mode.usesSubtitleDb) {
             if (!isSubtitleDbEnabled()) return Result.failure(SubtitleDbNotEnabledException())
             searchSubtitleDb(item, language, mode)
@@ -141,11 +142,21 @@ constructor(
             .toMap()
     }
 
+    override suspend fun serverLanguages(): Result<List<String>> =
+        apiInvoker.apiResult { apiClient, _ ->
+            LocalizationApi(apiClient)
+                .getCultures()
+                .content
+                .filter { it.twoLetterIsoLanguageName.isNotBlank() }
+                .mapNotNull { it.threeLetterIsoLanguageName?.takeIf { code -> code.isNotBlank() } }
+                .distinct()
+        }
+
     override suspend fun add(
         item: AfinityItem,
         candidate: SubtitleCandidate,
+        mode: SubtitleSearchMode,
     ): Result<AddedSubtitle> {
-        val mode = currentMode() ?: return Result.failure(IllegalStateException("No session"))
         val scope = currentScope() ?: return Result.failure(IllegalStateException("No session"))
         return try {
             val added =

@@ -1,6 +1,7 @@
 package com.makd.afinity.ui.components
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -18,7 +19,7 @@ private val MenuIconSize = 20.dp
 @Composable
 fun AfinityMenuItem(
     text: String,
-    @DrawableRes iconRes: Int,
+    @DrawableRes iconRes: Int?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     destructive: Boolean = false,
@@ -33,12 +34,16 @@ fun AfinityMenuItem(
         modifier = modifier,
         enabled = enabled,
         leadingIcon = {
-            Icon(
-                painter = painterResource(iconRes),
-                contentDescription = null,
-                tint = iconTint ?: if (destructive) errorColor else LocalContentColor.current,
-                modifier = Modifier.size(MenuIconSize),
-            )
+            if (iconRes != null) {
+                Icon(
+                    painter = painterResource(iconRes),
+                    contentDescription = null,
+                    tint = iconTint ?: if (destructive) errorColor else LocalContentColor.current,
+                    modifier = Modifier.size(MenuIconSize),
+                )
+            } else {
+                Spacer(modifier = Modifier.size(MenuIconSize))
+            }
         },
         trailingIcon =
             trailingText?.let {

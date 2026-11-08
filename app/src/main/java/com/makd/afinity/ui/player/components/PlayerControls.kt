@@ -93,6 +93,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -105,6 +107,7 @@ import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.hdrLabel
 import com.makd.afinity.data.models.media.isDolbyVision
 import com.makd.afinity.data.models.player.PlayerEvent
@@ -127,6 +130,7 @@ import com.makd.afinity.ui.item.components.shared.omdbAwardsHeadline
 import com.makd.afinity.ui.livetv.components.LiveBadge
 import com.makd.afinity.ui.player.LocalSubtitleOrigin
 import com.makd.afinity.ui.player.PlayerViewModel
+import com.makd.afinity.ui.player.SubtitleSearchViewModel
 import com.makd.afinity.ui.player.toLocalizedLanguageName
 import java.util.Date
 import kotlin.time.Duration.Companion.seconds
@@ -185,9 +189,30 @@ fun PlayerControls(
     var showChapterSwitcher by remember { mutableStateOf(false) }
     var showMembersPopup by remember { mutableStateOf(false) }
     var showSleepTimerPanel by remember { mutableStateOf(false) }
+    var showSubtitleSearchPanel by remember { mutableStateOf(false) }
+
+    val subtitleSearchViewModel: SubtitleSearchViewModel = hiltViewModel()
+    val subtitleSearchAvailable by subtitleSearchViewModel.available.collectAsStateWithLifecycle()
+    val subtitleSearchState by subtitleSearchViewModel.uiState.collectAsStateWithLifecycle()
+    val canSearchSubtitles =
+        subtitleSearchAvailable &&
+            !uiState.isCasting &&
+            !uiState.isLiveChannel &&
+            uiState.currentItem != null
 
     LaunchedEffect(uiState.sleepTimerExpired) {
         if (uiState.sleepTimerExpired) showSleepTimerPanel = false
+    }
+
+    LaunchedEffect(uiState.currentItem?.id) { showSubtitleSearchPanel = false }
+
+    LaunchedEffect(canSearchSubtitles) { if (!canSearchSubtitles) showSubtitleSearchPanel = false }
+
+    LaunchedEffect(subtitleSearchViewModel) {
+        subtitleSearchViewModel.added.collect { added ->
+            showSubtitleSearchPanel = false
+            onPlayerEvent(PlayerEvent.SubtitleAdded(added))
+        }
     }
 
     // Same conditions the panels render under, so a panel that vanished doesn't stay "open".
@@ -198,7 +223,8 @@ fun PlayerControls(
             (showEpisodeSwitcher && playlistQueue.isNotEmpty()) ||
             (showChapterSwitcher && uiState.chapters.isNotEmpty()) ||
             (showMembersPopup && isSyncPlay) ||
-            showSleepTimerPanel
+            showSleepTimerPanel ||
+            showSubtitleSearchPanel
     DisposableEffect(isPanelOpen) {
         onPanelOpenChange(isPanelOpen)
         onDispose { onPanelOpenChange(false) }
@@ -869,6 +895,50 @@ fun PlayerControls(
                     }
                 },
                 onDismiss = { showTrackPanel = false },
+                onSearchOnline =
+                    if (canSearchSubtitles) {
+                        {
+                            val item = uiState.currentItem
+                            if (item != null) {
+                                val source =
+                                    item.sources.firstOrNull {
+                                        it.id == uiState.currentMediaSourceId
+                                    } ?: item.sources.firstOrNull()
+                                val audioLanguages =
+                                    source
+                                        ?.mediaStreams
+                                        ?.filter { it.type == MediaStreamType.AUDIO }
+                                        ?.map { it.language }
+                                        .orEmpty()
+                                subtitleSearchViewModel.open(
+                                    item = item,
+                                    audioLanguages = audioLanguages,
+                                    playingDownload = source?.type == AfinitySourceType.LOCAL,
+                                )
+                                showTrackPanel = false
+                                showSubtitleSearchPanel = true
+                            }
+                        }
+                    } else {
+                        null
+                    },
+            )
+        }
+
+        if (showSubtitleSearchPanel) {
+            SubtitleSearchPanel(
+                state = subtitleSearchState,
+                onBack = {
+                    showSubtitleSearchPanel = false
+                    showTrackPanel = true
+                },
+                onDismiss = { showSubtitleSearchPanel = false },
+                onEnableSubtitleDb = subtitleSearchViewModel::enableSubtitleDb,
+                onSelectLanguage = subtitleSearchViewModel::selectLanguage,
+                onLoadAllLanguages = subtitleSearchViewModel::loadAllLanguages,
+                onAdd = subtitleSearchViewModel::add,
+                onRemove = subtitleSearchViewModel::remove,
+                onRetry = subtitleSearchViewModel::retry,
             )
         }
 
@@ -1855,6 +1925,7 @@ private fun TrackPanel(
     currentSubtitleIndex: Int,
     onSelectTrack: (Int, Int) -> Unit,
     onDismiss: () -> Unit,
+    onSearchOnline: (() -> Unit)? = null,
 ) {
     val qualityAvailable = uiState.availableQualities.size > 1 && !uiState.isLiveChannel
     val reasonText =
@@ -1938,6 +2009,19 @@ private fun TrackPanel(
                                     },
                             )
                         }
+                        if (onSearchOnline != null) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant,
+                            )
+                            TrackActionRow(
+                                iconRes = R.drawable.ic_search,
+                                label = stringResource(R.string.subtitle_search_entry),
+                                secondaryLabel =
+                                    stringResource(R.string.subtitle_search_entry_summary),
+                                onClick = onSearchOnline,
+                            )
+                        }
                     }
                 }
                 if (reasonText != null) {
@@ -1952,7 +2036,7 @@ private fun TrackPanel(
 }
 
 @Composable
-private fun TranscodeReasonLine(text: String, modifier: Modifier = Modifier) {
+internal fun TranscodeReasonLine(text: String, modifier: Modifier = Modifier) {
     Row(
         modifier =
             modifier
@@ -2217,6 +2301,50 @@ private fun TrackRow(
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(18.dp),
             )
+        }
+    }
+}
+
+@Composable
+private fun TrackActionRow(
+    iconRes: Int,
+    label: String,
+    secondaryLabel: String?,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(role = Role.Button, onClick = onClick)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            painter = painterResource(id = iconRes),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(20.dp),
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (!secondaryLabel.isNullOrBlank()) {
+                Text(
+                    text = secondaryLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }

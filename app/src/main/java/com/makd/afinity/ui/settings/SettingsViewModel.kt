@@ -27,6 +27,7 @@ import com.makd.afinity.data.models.player.SeekStep
 import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.models.player.VideoZoomMode
+import com.makd.afinity.data.models.subtitles.DeviceSubtitleStats
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.network.LastFmApiService
 import com.makd.afinity.data.network.MdbListApiService
@@ -34,6 +35,7 @@ import com.makd.afinity.data.network.OmdbApiService
 import com.makd.afinity.data.network.TmdbApiService
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.AudiobookshelfRepository
+import com.makd.afinity.data.repository.DeletedItemsRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
@@ -43,6 +45,8 @@ import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.home.HomeLayoutPreferencesRepository
 import com.makd.afinity.data.repository.server.ServerRepository
+import com.makd.afinity.data.repository.subtitles.DeviceSubtitleStore
+import com.makd.afinity.data.repository.subtitles.SubtitleScope
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.player.common.TrackSelection
 import com.makd.afinity.ui.settings.servers.ServerWithUserCount
@@ -62,6 +66,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -94,6 +99,8 @@ constructor(
     private val downloadRepository: DownloadRepository,
     private val absDownloadRepository: AbsDownloadRepository,
     private val adminRepository: ServerAdminRepository,
+    private val deviceSubtitleStore: DeviceSubtitleStore,
+    private val deletedItemsRepository: DeletedItemsRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -342,6 +349,70 @@ constructor(
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = false,
             )
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val subtitleDbEnabled: StateFlow<Boolean> =
+        sessionManager.currentSession
+            .flatMapLatest { session ->
+                if (session == null) flowOf(false)
+                else
+                    preferencesRepository.getSubtitleDbEnabledFlow(
+                        session.serverId,
+                        session.userId.toString(),
+                    )
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = false,
+            )
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val deviceSubtitleStats: StateFlow<DeviceSubtitleStats> =
+        combine(sessionManager.currentSession, deviceSubtitleStore.changes) { session, _ ->
+                session?.let { SubtitleScope(it.serverId, it.userId) }
+            }
+            .mapLatest { scope ->
+                if (scope == null) return@mapLatest DeviceSubtitleStats(0, 0L)
+                try {
+                    deviceSubtitleStore.prune(scope, deletedItemsRepository.deletedIds())
+                    deviceSubtitleStore.stats(scope)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to read device subtitle stats")
+                    DeviceSubtitleStats(0, 0L)
+                }
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = DeviceSubtitleStats(0, 0L),
+            )
+
+    fun setSubtitleDbEnabled(enabled: Boolean) {
+        val session = sessionManager.currentSession.value ?: return
+        viewModelScope.launch {
+            preferencesRepository.setSubtitleDbEnabled(
+                session.serverId,
+                session.userId.toString(),
+                enabled,
+            )
+        }
+    }
+
+    fun removeAllDeviceSubtitles() {
+        val session = sessionManager.currentSession.value ?: return
+        viewModelScope.launch {
+            try {
+                deviceSubtitleStore.removeAll(SubtitleScope(session.serverId, session.userId))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to remove device subtitles")
+            }
+        }
+    }
 
     init {
         loadSettings()

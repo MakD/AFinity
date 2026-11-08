@@ -60,11 +60,21 @@ interface SubtitleSearchRepository {
 
     suspend fun identity(item: AfinityItem): SubtitleItemIdentity
 
-    suspend fun search(item: AfinityItem, language: String): Result<SubtitleSearchResult>
+    suspend fun search(
+        item: AfinityItem,
+        language: String,
+        mode: SubtitleSearchMode,
+    ): Result<SubtitleSearchResult>
 
     suspend fun serverLanguageCounts(item: AfinityItem, languages: List<String>): Map<String, Int>
 
-    suspend fun add(item: AfinityItem, candidate: SubtitleCandidate): Result<AddedSubtitle>
+    suspend fun serverLanguages(): Result<List<String>>
+
+    suspend fun add(
+        item: AfinityItem,
+        candidate: SubtitleCandidate,
+        mode: SubtitleSearchMode,
+    ): Result<AddedSubtitle>
 }
 
 fun externalSubtitleFileName(path: String?): String? =

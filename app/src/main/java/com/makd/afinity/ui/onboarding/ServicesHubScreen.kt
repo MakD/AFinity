@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.onboarding
 
+import android.text.format.Formatter
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -35,6 +36,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -53,7 +55,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,6 +71,7 @@ import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AfinityTopBar
+import com.makd.afinity.ui.components.DisclosureBlock
 import com.makd.afinity.ui.components.LocalNetworkPermissionCard
 import com.makd.afinity.ui.components.connectionIndicatorColor
 import com.makd.afinity.ui.components.connectionLabel
@@ -216,6 +221,33 @@ fun ServicesHubScreen(
         if (wikidataEnabled) showWikidataDisconnect = true else showWikidataSheet = true
     }
 
+    var showSubtitleDbConnect by remember { mutableStateOf(false) }
+    var showSubtitleDbManage by remember { mutableStateOf(false) }
+    var showSubtitleDbRemoveAll by remember { mutableStateOf(false) }
+    var showSubtitleDbDisconnect by remember { mutableStateOf(false) }
+    val subtitleDbConnectSheetState = rememberAfinitySheetState()
+    val subtitleDbManageSheetState = rememberAfinitySheetState()
+    val subtitleDbEnabled by settingsViewModel.subtitleDbEnabled.collectAsStateWithLifecycle()
+    val subtitleDbStats by settingsViewModel.deviceSubtitleStats.collectAsStateWithLifecycle()
+    val hubContext = LocalContext.current
+    val subtitleDbSize = Formatter.formatShortFileSize(hubContext, subtitleDbStats.bytes)
+    val subtitleDbStatus =
+        when {
+            subtitleDbStats.count > 0 ->
+                pluralStringResource(
+                    R.plurals.subtitledb_status_saved_fmt,
+                    subtitleDbStats.count,
+                    subtitleDbStats.count,
+                    subtitleDbSize,
+                )
+            subtitleDbEnabled -> stringResource(R.string.services_hub_status_connected)
+            else -> stringResource(R.string.services_hub_status_not_set_up)
+        }
+    val onSubtitleDbTile = {
+        if (subtitleDbEnabled || subtitleDbStats.count > 0) showSubtitleDbManage = true
+        else showSubtitleDbConnect = true
+    }
+
     val onSeerrTile = { if (seerrConnected) selected = EditorKind.SEERR else showSeerrSheet = true }
     val onAbsTile = { if (absConnected) selected = EditorKind.ABS else showAbsSheet = true }
     val onRemoteTile = { selected = EditorKind.JELLYFIN }
@@ -267,6 +299,9 @@ fun ServicesHubScreen(
                             onRatings = onRatingsTile,
                             wikidataEnabled = wikidataEnabled,
                             onWikidata = onWikidataTile,
+                            subtitleDbActive = subtitleDbEnabled,
+                            subtitleDbStatus = subtitleDbStatus,
+                            onSubtitleDb = onSubtitleDbTile,
                             onFinish = onFinish,
                             onServerManagement = onNavigateToServerManagement,
                             markDone = viewModel::markFirstRunDone,
@@ -335,6 +370,9 @@ fun ServicesHubScreen(
                         onRatings = onRatingsTile,
                         wikidataEnabled = wikidataEnabled,
                         onWikidata = onWikidataTile,
+                        subtitleDbActive = subtitleDbEnabled,
+                        subtitleDbStatus = subtitleDbStatus,
+                        onSubtitleDb = onSubtitleDbTile,
                         onFinish = onFinish,
                         onServerManagement = onNavigateToServerManagement,
                         markDone = viewModel::markFirstRunDone,
@@ -400,6 +438,77 @@ fun ServicesHubScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { showWikidataDisconnect = false }) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                },
+            )
+        }
+        if (showSubtitleDbConnect) {
+            SubtitleDbConnectSheet(
+                sheetState = subtitleDbConnectSheetState,
+                onDismiss = { showSubtitleDbConnect = false },
+                onEnable = {
+                    settingsViewModel.setSubtitleDbEnabled(true)
+                    showSubtitleDbConnect = false
+                },
+            )
+        }
+        if (showSubtitleDbManage) {
+            SubtitleDbManageSheet(
+                sheetState = subtitleDbManageSheetState,
+                enabled = subtitleDbEnabled,
+                count = subtitleDbStats.count,
+                sizeText = subtitleDbSize,
+                onDismiss = { showSubtitleDbManage = false },
+                onRemoveAll = { showSubtitleDbRemoveAll = true },
+                onDisconnect = { showSubtitleDbDisconnect = true },
+                onEnable = { settingsViewModel.setSubtitleDbEnabled(true) },
+            )
+        }
+        if (showSubtitleDbRemoveAll) {
+            AlertDialog(
+                onDismissRequest = { showSubtitleDbRemoveAll = false },
+                title = { Text(stringResource(R.string.subtitledb_remove_all_title)) },
+                text = { Text(stringResource(R.string.subtitledb_remove_all_message)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            settingsViewModel.removeAllDeviceSubtitles()
+                            showSubtitleDbRemoveAll = false
+                        },
+                        colors =
+                            ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            ),
+                    ) {
+                        Text(stringResource(R.string.action_remove))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showSubtitleDbRemoveAll = false }) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                },
+            )
+        }
+        if (showSubtitleDbDisconnect) {
+            AlertDialog(
+                onDismissRequest = { showSubtitleDbDisconnect = false },
+                title = { Text(stringResource(R.string.subtitledb_disconnect_title)) },
+                text = { Text(stringResource(R.string.subtitledb_disconnect_message)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            settingsViewModel.setSubtitleDbEnabled(false)
+                            showSubtitleDbDisconnect = false
+                            showSubtitleDbManage = false
+                        }
+                    ) {
+                        Text(stringResource(R.string.action_disconnect))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showSubtitleDbDisconnect = false }) {
                         Text(stringResource(R.string.action_cancel))
                     }
                 },
@@ -489,6 +598,9 @@ private fun HubList(
     onRatings: () -> Unit,
     wikidataEnabled: Boolean,
     onWikidata: () -> Unit,
+    subtitleDbActive: Boolean,
+    subtitleDbStatus: String,
+    onSubtitleDb: () -> Unit,
     onFinish: () -> Unit,
     onServerManagement: () -> Unit,
     markDone: () -> Unit,
@@ -610,6 +722,18 @@ private fun HubList(
                             ),
                         isSelected = false,
                         onClick = onWikidata,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                add {
+                    ServiceTile(
+                        iconRes = R.drawable.ic_subtitles,
+                        name = stringResource(R.string.services_hub_tile_subtitledb),
+                        connected = subtitleDbActive,
+                        accent = MaterialTheme.colorScheme.primary,
+                        statusText = subtitleDbStatus,
+                        isSelected = false,
+                        onClick = onSubtitleDb,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -1293,11 +1417,11 @@ private fun WikidataConnectSheet(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            WikidataDisclosureBlock(
+            DisclosureBlock(
                 title = stringResource(R.string.wikidata_connect_sends_title),
                 body = stringResource(R.string.wikidata_connect_sends_body),
             )
-            WikidataDisclosureBlock(
+            DisclosureBlock(
                 title = stringResource(R.string.wikidata_connect_never_title),
                 body = stringResource(R.string.wikidata_connect_never_body),
             )
@@ -1316,28 +1440,135 @@ private fun WikidataConnectSheet(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun WikidataDisclosureBlock(title: String, body: String) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+private fun SubtitleDbConnectSheet(
+    sheetState: SheetState,
+    onDismiss: () -> Unit,
+    onEnable: () -> Unit,
+) {
+    AfinityModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier =
+                Modifier.fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            SubtitleDbSheetTitle(text = stringResource(R.string.subtitledb_connect_title))
             Text(
-                text = title,
+                text = stringResource(R.string.subtitledb_connect_blurb),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            DisclosureBlock(
+                title = stringResource(R.string.wikidata_connect_sends_title),
+                body = stringResource(R.string.subtitledb_sends_body),
+            )
+            DisclosureBlock(
+                title = stringResource(R.string.wikidata_connect_never_title),
+                body = stringResource(R.string.wikidata_connect_never_body),
+            )
+            Text(
+                text = stringResource(R.string.wikidata_scope_note),
                 style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(onClick = onEnable, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.subtitledb_connect_action))
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SubtitleDbManageSheet(
+    sheetState: SheetState,
+    enabled: Boolean,
+    count: Int,
+    sizeText: String,
+    onDismiss: () -> Unit,
+    onRemoveAll: () -> Unit,
+    onDisconnect: () -> Unit,
+    onEnable: () -> Unit,
+) {
+    AfinityModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        Column(
+            modifier =
+                Modifier.fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            SubtitleDbSheetTitle(text = stringResource(R.string.services_hub_tile_subtitledb))
+            Text(
+                text =
+                    if (count > 0) {
+                        pluralStringResource(
+                            R.plurals.subtitledb_manage_body_fmt,
+                            count,
+                            count,
+                            sizeText,
+                        )
+                    } else {
+                        stringResource(R.string.subtitledb_manage_body_empty)
+                    },
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = body,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface,
+                text = stringResource(R.string.wikidata_scope_note),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(
+                    onClick = onRemoveAll,
+                    enabled = count > 0,
+                    colors =
+                        ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                ) {
+                    Text(stringResource(R.string.subtitledb_remove_all))
+                }
+                if (enabled) {
+                    FilledTonalButton(onClick = onDisconnect) {
+                        Text(stringResource(R.string.action_disconnect))
+                    }
+                } else {
+                    Button(onClick = onEnable) {
+                        Text(stringResource(R.string.subtitledb_connect_action))
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
         }
+    }
+}
+
+@Composable
+private fun SubtitleDbSheetTitle(text: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.ic_subtitles),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(28.dp),
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+        )
     }
 }
