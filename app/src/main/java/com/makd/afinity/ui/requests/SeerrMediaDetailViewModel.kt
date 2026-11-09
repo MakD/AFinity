@@ -111,6 +111,7 @@ constructor(
                 else jellyseerrRepository.getMovieDetails(tmdbId)
             result.fold(
                 onSuccess = { details ->
+                    jellyseerrRepository.rememberWatchlistArtwork(details, mediaType)
                     _uiState.update {
                         it.copy(
                             details = details,

@@ -7,6 +7,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
+import com.makd.afinity.data.models.jellyseerr.withArtwork
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -27,10 +28,11 @@ import javax.inject.Inject
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -55,8 +57,16 @@ constructor(
     private var lastWatchlistLoadedAt = System.currentTimeMillis()
 
     private val _seerrItems = MutableStateFlow<List<SearchResultItem>>(emptyList())
-    val seerrItems: StateFlow<List<SearchResultItem>> = _seerrItems.asStateFlow()
+    val seerrItems: StateFlow<List<SearchResultItem>> =
+        combine(_seerrItems, jellyseerrRepository.watchlistArtwork) { items, artwork ->
+                items.map { it.withArtwork(artwork) }
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     private var seerrJob: Job? = null
+
+    fun onSeerrItemVisible(item: SearchResultItem) {
+        jellyseerrRepository.loadWatchlistArtwork(item)
+    }
 
     val isDownloadAllowedByServer: StateFlow<Boolean> = downloadPermissions.isAllowedByServer
 
@@ -160,6 +170,25 @@ constructor(
         viewModelScope.launch {
             jellyseerrRepository.watchlistEvents.collect {
                 if (jellyseerrRepository.isAuthenticated.value) loadSeerrWatchlist()
+            }
+        }
+
+        viewModelScope.launch {
+            jellyseerrRepository.requestEvents.collect { event ->
+                val request = event.request
+                val updatedMediaInfo = request.media.copy(requests = listOfNotNull(request))
+                _seerrItems.update { items ->
+                    items.map { item ->
+                        if (
+                            item.id == request.media.tmdbId &&
+                                item.mediaType == request.media.mediaType
+                        ) {
+                            item.copy(mediaInfo = updatedMediaInfo)
+                        } else {
+                            item
+                        }
+                    }
+                }
             }
         }
     }

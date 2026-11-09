@@ -1217,6 +1217,12 @@ constructor(
         }
     }
 
+    val watchlistArtwork = jellyseerrRepository.watchlistArtwork
+
+    fun onWatchlistItemVisible(item: SearchResultItem) {
+        jellyseerrRepository.loadWatchlistArtwork(item)
+    }
+
     private suspend fun loadWatchlistRow(slider: DiscoverSlider) {
         publishMediaRow(
             key = sliderKey(slider),
@@ -1297,6 +1303,7 @@ constructor(
         existingStatus: MediaStatus? = null,
         existingStatus4k: MediaStatus? = null,
         is4k: Boolean = false,
+        knownDetails: MediaDetails? = null,
     ) {
         _uiState.update {
             it.copy(
@@ -1331,8 +1338,11 @@ constructor(
         viewModelScope.launch {
             val authJob = async { refreshCurrentUser() }
             val detailsJob = async {
-                if (mediaType == MediaType.TV) jellyseerrRepository.getTvDetails(tmdbId)
-                else jellyseerrRepository.getMovieDetails(tmdbId)
+                when {
+                    knownDetails != null -> Result.success(knownDetails)
+                    mediaType == MediaType.TV -> jellyseerrRepository.getTvDetails(tmdbId)
+                    else -> jellyseerrRepository.getMovieDetails(tmdbId)
+                }
             }
             authJob.await()
             refreshUserQuota()

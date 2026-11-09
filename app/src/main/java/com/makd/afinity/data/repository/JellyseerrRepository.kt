@@ -171,6 +171,12 @@ interface JellyseerrRepository {
 
     suspend fun getWatchlist(page: Int = 1, limit: Int? = null): Result<JellyseerrSearchResult>
 
+    val watchlistArtwork: StateFlow<Map<String, SearchResultItem>>
+
+    fun loadWatchlistArtwork(item: SearchResultItem)
+
+    fun rememberWatchlistArtwork(details: MediaDetails, mediaType: MediaType)
+
     suspend fun addToWatchlist(tmdbId: Int, mediaType: MediaType, title: String): Result<Unit>
 
     suspend fun removeFromWatchlist(tmdbId: Int, mediaType: MediaType): Result<Unit>

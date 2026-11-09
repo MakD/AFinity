@@ -42,6 +42,7 @@ import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.requests.DiscoverSection
 import com.makd.afinity.ui.requests.FilterParams
 import com.makd.afinity.ui.requests.FilterType
+import com.makd.afinity.ui.requests.SeerrImages
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
@@ -214,21 +215,24 @@ fun WatchlistScreen(
                         item {
                             val title =
                                 stringResource(R.string.section_seerr_watchlist_not_in_library)
-                            DiscoverSection(
-                                title = title,
-                                items = seerrItems,
-                                onItemClick = onNavigateToSeerrMedia,
-                                widthSizeClass = widthSizeClass,
-                                onViewAllClick = {
-                                    onNavigateToFilteredMedia(
-                                        FilterParams(
-                                            type = FilterType.WATCHLIST_NOT_IN_LIBRARY,
-                                            id = 0,
-                                            name = title,
+                            SeerrImages {
+                                DiscoverSection(
+                                    title = title,
+                                    items = seerrItems,
+                                    onItemClick = onNavigateToSeerrMedia,
+                                    onItemVisible = viewModel::onSeerrItemVisible,
+                                    widthSizeClass = widthSizeClass,
+                                    onViewAllClick = {
+                                        onNavigateToFilteredMedia(
+                                            FilterParams(
+                                                type = FilterType.WATCHLIST_NOT_IN_LIBRARY,
+                                                id = 0,
+                                                name = title,
+                                            )
                                         )
-                                    )
-                                },
-                            )
+                                    },
+                                )
+                            }
                         }
                     }
                 }

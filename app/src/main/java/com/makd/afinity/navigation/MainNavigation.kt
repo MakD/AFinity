@@ -126,6 +126,7 @@ import com.makd.afinity.ui.requests.FilterParams
 import com.makd.afinity.ui.requests.FilterType
 import com.makd.afinity.ui.requests.FilteredMediaScreen
 import com.makd.afinity.ui.requests.RequestsScreen
+import com.makd.afinity.ui.requests.SeerrImages
 import com.makd.afinity.ui.search.GenreResultsScreen
 import com.makd.afinity.ui.search.SearchScreen
 import com.makd.afinity.ui.settings.LicensesScreen
@@ -1061,28 +1062,30 @@ fun MainNavigation(
                                 }
 
                                 composable(Destination.REQUESTS.route) {
-                                    RequestsScreen(
-                                        onMenuClick = onMenuClick,
-                                        onSearchClick = { navController.navigateToSearch() },
-                                        onProfileClick = { navController.navigateToSettings() },
-                                        mainUiState = mainUiState,
-                                        onNavigateToFilteredMedia = { filterParams ->
-                                            navController.navigateToFilteredMedia(filterParams)
-                                        },
-                                        onItemClick = { jellyfinItemId, itemType ->
-                                            val route =
-                                                Destination.createItemDetailRoute(
-                                                    itemId = jellyfinItemId,
-                                                    itemType = itemType,
-                                                )
-                                            navController.navigate(route)
-                                        },
-                                        onNavigateToSeerrMedia = { seerrItem ->
-                                            navController.navigateToSeerrMedia(seerrItem)
-                                        },
-                                        modifier = Modifier.fillMaxSize(),
-                                        widthSizeClass = widthSizeClass,
-                                    )
+                                    SeerrImages {
+                                        RequestsScreen(
+                                            onMenuClick = onMenuClick,
+                                            onSearchClick = { navController.navigateToSearch() },
+                                            onProfileClick = { navController.navigateToSettings() },
+                                            mainUiState = mainUiState,
+                                            onNavigateToFilteredMedia = { filterParams ->
+                                                navController.navigateToFilteredMedia(filterParams)
+                                            },
+                                            onItemClick = { jellyfinItemId, itemType ->
+                                                val route =
+                                                    Destination.createItemDetailRoute(
+                                                        itemId = jellyfinItemId,
+                                                        itemType = itemType,
+                                                    )
+                                                navController.navigate(route)
+                                            },
+                                            onNavigateToSeerrMedia = { seerrItem ->
+                                                navController.navigateToSeerrMedia(seerrItem)
+                                            },
+                                            modifier = Modifier.fillMaxSize(),
+                                            widthSizeClass = widthSizeClass,
+                                        )
+                                    }
                                 }
 
                                 composable(Destination.LIVE_TV.route) {
@@ -1223,25 +1226,27 @@ fun MainNavigation(
                                     val filterParams =
                                         FilterParams(filterType, filterId, filterName)
 
-                                    FilteredMediaScreen(
-                                        filterParams = filterParams,
-                                        onSearchClick = { navController.navigateToSearch() },
-                                        onProfileClick = { navController.navigateToSettings() },
-                                        mainUiState = mainUiState,
-                                        onItemClick = { jellyfinItemId, itemType ->
-                                            val route =
-                                                Destination.createItemDetailRoute(
-                                                    itemId = jellyfinItemId,
-                                                    itemType = itemType,
-                                                )
-                                            navController.navigate(route)
-                                        },
-                                        onNavigateToSeerrMedia = { seerrItem ->
-                                            navController.navigateToSeerrMedia(seerrItem)
-                                        },
-                                        modifier = Modifier.fillMaxSize(),
-                                        widthSizeClass = widthSizeClass,
-                                    )
+                                    SeerrImages {
+                                        FilteredMediaScreen(
+                                            filterParams = filterParams,
+                                            onSearchClick = { navController.navigateToSearch() },
+                                            onProfileClick = { navController.navigateToSettings() },
+                                            mainUiState = mainUiState,
+                                            onItemClick = { jellyfinItemId, itemType ->
+                                                val route =
+                                                    Destination.createItemDetailRoute(
+                                                        itemId = jellyfinItemId,
+                                                        itemType = itemType,
+                                                    )
+                                                navController.navigate(route)
+                                            },
+                                            onNavigateToSeerrMedia = { seerrItem ->
+                                                navController.navigateToSeerrMedia(seerrItem)
+                                            },
+                                            modifier = Modifier.fillMaxSize(),
+                                            widthSizeClass = widthSizeClass,
+                                        )
+                                    }
                                 }
 
                                 composable(
@@ -1397,25 +1402,27 @@ fun MainNavigation(
                                             },
                                         ),
                                 ) {
-                                    com.makd.afinity.ui.requests.SeerrMediaDetailScreen(
-                                        onItemClick = { jellyfinItemId, itemType ->
-                                            val route =
-                                                Destination.createItemDetailRoute(
-                                                    itemId = jellyfinItemId,
-                                                    itemType = itemType,
-                                                )
-                                            navController.navigate(route)
-                                        },
-                                        onNavigateToFilteredMedia = { filterParams ->
-                                            navController.navigateToFilteredMedia(filterParams)
-                                        },
-                                        onNavigateToSeerrMedia = { seerrItem ->
-                                            navController.navigateToSeerrMedia(seerrItem)
-                                        },
-                                        onNavigateHome = { navController.navigateHome() },
-                                        modifier = Modifier.fillMaxSize(),
-                                        widthSizeClass = widthSizeClass,
-                                    )
+                                    SeerrImages {
+                                        com.makd.afinity.ui.requests.SeerrMediaDetailScreen(
+                                            onItemClick = { jellyfinItemId, itemType ->
+                                                val route =
+                                                    Destination.createItemDetailRoute(
+                                                        itemId = jellyfinItemId,
+                                                        itemType = itemType,
+                                                    )
+                                                navController.navigate(route)
+                                            },
+                                            onNavigateToFilteredMedia = { filterParams ->
+                                                navController.navigateToFilteredMedia(filterParams)
+                                            },
+                                            onNavigateToSeerrMedia = { seerrItem ->
+                                                navController.navigateToSeerrMedia(seerrItem)
+                                            },
+                                            onNavigateHome = { navController.navigateHome() },
+                                            modifier = Modifier.fillMaxSize(),
+                                            widthSizeClass = widthSizeClass,
+                                        )
+                                    }
                                 }
 
                                 composable(Destination.SEARCH_ROUTE) {

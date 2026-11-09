@@ -8,6 +8,7 @@ import com.makd.afinity.data.database.entities.JellyseerrAddressEntity
 import com.makd.afinity.data.database.entities.JellyseerrConfigEntity
 import com.makd.afinity.data.database.entities.JellyseerrDiscoverFilterEntity
 import com.makd.afinity.data.database.entities.JellyseerrRequestEntity
+import com.makd.afinity.data.database.entities.SeerrArtworkEntity
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 
@@ -124,4 +125,13 @@ interface JellyseerrDao {
         "DELETE FROM jellyseerr_discover_filters WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
     )
     suspend fun clearDiscoverFilterState(serverId: String, userId: String)
+
+    @Query("SELECT * FROM seerr_artwork WHERE `key` IN (:keys) AND fetchedAt >= :freshSince")
+    suspend fun getArtwork(keys: List<String>, freshSince: Long): List<SeerrArtworkEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun saveArtwork(entity: SeerrArtworkEntity)
+
+    @Query("DELETE FROM seerr_artwork WHERE fetchedAt < :cutoff")
+    suspend fun deleteArtworkOlderThan(cutoff: Long)
 }

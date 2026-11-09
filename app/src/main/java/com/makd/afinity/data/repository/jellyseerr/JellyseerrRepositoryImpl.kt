@@ -5,6 +5,7 @@ import com.makd.afinity.data.database.entities.JellyseerrAddressEntity
 import com.makd.afinity.data.database.entities.JellyseerrConfigEntity
 import com.makd.afinity.data.database.entities.JellyseerrDiscoverFilterEntity
 import com.makd.afinity.data.database.entities.JellyseerrRequestEntity
+import com.makd.afinity.data.database.entities.SeerrArtworkEntity
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.models.jellyseerr.CollectionDetails
 import com.makd.afinity.data.models.jellyseerr.CreateRequestBody
@@ -40,6 +41,8 @@ import com.makd.afinity.data.models.jellyseerr.WatchProviderRegion
 import com.makd.afinity.data.models.jellyseerr.WatchlistAddBody
 import com.makd.afinity.data.models.jellyseerr.WatchlistEvent
 import com.makd.afinity.data.models.jellyseerr.WatchlistItem
+import com.makd.afinity.data.models.jellyseerr.seerrArtworkKey
+import com.makd.afinity.data.models.jellyseerr.withArtwork
 import com.makd.afinity.data.models.server.AddressCheck
 import com.makd.afinity.data.network.JellyseerrApiService
 import com.makd.afinity.data.network.SeerrCookieJar
@@ -58,9 +61,6 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -71,6 +71,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -93,6 +94,7 @@ constructor(
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
     private val addressResolver: JellyseerrAddressResolver,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
+    private val seerrImageProxy: SeerrImageProxy,
     @ApplicationScope private val repositoryScope: CoroutineScope,
 ) : JellyseerrRepository {
 
@@ -118,9 +120,18 @@ constructor(
     private val _watchlistEvents = MutableSharedFlow<WatchlistEvent>(extraBufferCapacity = 8)
     override val watchlistEvents: SharedFlow<WatchlistEvent> = _watchlistEvents.asSharedFlow()
 
+    private val _watchlistArtwork = MutableStateFlow<Map<String, SearchResultItem>>(emptyMap())
+    override val watchlistArtwork: StateFlow<Map<String, SearchResultItem>> =
+        _watchlistArtwork.asStateFlow()
+    private val artworkInFlight = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+
     private var activeContext: Pair<String, UUID>? = null
 
     private var cachedPublicSettings: PublicSettings? = null
+        set(value) {
+            field = value
+            seerrImageProxy.setEnabled(value?.cacheImages == true)
+        }
 
     private val publicSettingsJson = Json {
         ignoreUnknownKeys = true
@@ -136,6 +147,7 @@ constructor(
     companion object {
         private const val CACHE_VALIDITY_MS = 5 * 60 * 1000L
         private const val MAX_REQUESTS = 1000
+        private const val ARTWORK_MAX_AGE_MS = 30L * 24 * 60 * 60 * 1000
     }
 
     private fun seerrErrorMessage(response: Response<*>): String {
@@ -1492,23 +1504,104 @@ constructor(
     override suspend fun getWatchlist(page: Int, limit: Int?): Result<JellyseerrSearchResult> =
         seerrResult("Failed to get watchlist") { api -> api.getWatchlist(page) }
             .map { response ->
-                val entries =
+                val items =
                     response.results
-                        .mapNotNull { entry -> entry.mediaTypeOrNull()?.let { entry to it } }
-                        .distinctBy { (entry, type) -> type to entry.tmdbId }
+                        .mapNotNull { entry ->
+                            entry.mediaTypeOrNull()?.let { type ->
+                                SearchResultItem(
+                                    id = entry.tmdbId,
+                                    mediaType = type.toApiString(),
+                                    title = entry.title,
+                                    mediaInfo = entry.media,
+                                )
+                            }
+                        }
+                        .distinctBy { it.mediaType to it.id }
                         .let { if (limit != null) it.take(limit) else it }
-                val items = coroutineScope {
-                    entries
-                        .map { (entry, type) -> async { hydrateWatchlistEntry(entry, type) } }
-                        .awaitAll()
-                }
+                loadStoredArtwork(items)
+                val artwork = _watchlistArtwork.value
                 JellyseerrSearchResult(
                     page = response.page,
                     totalPages = response.totalPages,
                     totalResults = response.totalResults,
-                    results = items,
+                    results = items.map { it.withArtwork(artwork) },
                 )
             }
+
+    override fun loadWatchlistArtwork(item: SearchResultItem) {
+        if (item.posterPath != null) return
+        val type = item.getMediaType() ?: return
+        val key = seerrArtworkKey(item.mediaType, item.id)
+        if (key in _watchlistArtwork.value) return
+        if (artworkInFlight.putIfAbsent(key, true) != null) return
+        repositoryScope.launch {
+            try {
+                val details =
+                    if (type == MediaType.TV) getTvDetails(item.id) else getMovieDetails(item.id)
+                details.onSuccess { rememberWatchlistArtwork(it, type) }
+            } finally {
+                artworkInFlight.remove(key)
+            }
+        }
+    }
+
+    override fun rememberWatchlistArtwork(details: MediaDetails, mediaType: MediaType) {
+        val artwork = details.toSearchResultItem(mediaType).copy(mediaInfo = null)
+        val key = seerrArtworkKey(artwork.mediaType, artwork.id)
+        _watchlistArtwork.update { it + (key to artwork) }
+        repositoryScope.launch {
+            try {
+                jellyseerrDao.saveArtwork(
+                    SeerrArtworkEntity(
+                        key = key,
+                        tmdbId = artwork.id,
+                        mediaType = artwork.mediaType,
+                        title = artwork.title ?: artwork.name,
+                        posterPath = artwork.posterPath,
+                        backdropPath = artwork.backdropPath,
+                        releaseDate = artwork.releaseDate,
+                        firstAirDate = artwork.firstAirDate,
+                        voteAverage = artwork.voteAverage,
+                    )
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to save Seerr artwork for $key")
+            }
+        }
+    }
+
+    private suspend fun loadStoredArtwork(items: List<SearchResultItem>) {
+        val known = _watchlistArtwork.value
+        val missing = items.map { seerrArtworkKey(it.mediaType, it.id) }.filter { it !in known }
+        if (missing.isEmpty()) return
+        try {
+            val freshSince = System.currentTimeMillis() - ARTWORK_MAX_AGE_MS
+            val stored =
+                withContext(Dispatchers.IO) { jellyseerrDao.getArtwork(missing, freshSince) }
+            if (stored.isEmpty()) return
+            _watchlistArtwork.update { current ->
+                current + stored.associate { entity -> entity.key to entity.toSearchResultItem() }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to read stored Seerr artwork")
+        }
+    }
+
+    private fun SeerrArtworkEntity.toSearchResultItem(): SearchResultItem =
+        SearchResultItem(
+            id = tmdbId,
+            mediaType = mediaType,
+            title = title,
+            posterPath = posterPath,
+            backdropPath = backdropPath,
+            releaseDate = releaseDate,
+            firstAirDate = firstAirDate,
+            voteAverage = voteAverage,
+        )
 
     override suspend fun addToWatchlist(
         tmdbId: Int,
@@ -1530,20 +1623,6 @@ constructor(
         MediaType.fromApiString(mediaType)
     }
         .getOrNull()
-
-    private suspend fun hydrateWatchlistEntry(
-        entry: WatchlistItem,
-        type: MediaType,
-    ): SearchResultItem {
-        val details =
-            if (type == MediaType.TV) getTvDetails(entry.tmdbId) else getMovieDetails(entry.tmdbId)
-        return details.getOrNull()?.toSearchResultItem(type)
-            ?: SearchResultItem(
-                id = entry.tmdbId,
-                mediaType = type.toApiString(),
-                title = entry.title,
-            )
-    }
 
     private suspend fun watchlistWrite(
         errorMessage: String,

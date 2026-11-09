@@ -74,6 +74,7 @@ import com.makd.afinity.data.database.entities.MusicLyricsEntity
 import com.makd.afinity.data.database.entities.MusicQueueEntity
 import com.makd.afinity.data.database.entities.MusicTrackEntity
 import com.makd.afinity.data.database.entities.PersonSectionCacheEntity
+import com.makd.afinity.data.database.entities.SeerrArtworkEntity
 import com.makd.afinity.data.database.entities.ServerStorageCacheEntity
 import com.makd.afinity.data.database.entities.ShowGenreCacheEntity
 import com.makd.afinity.data.database.entities.TopPeopleCacheEntity
@@ -86,7 +87,7 @@ import com.makd.afinity.data.models.server.ServerAddressMemory
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.models.user.User
 
-const val AFINITY_DB_VERSION = 88
+const val AFINITY_DB_VERSION = 89
 
 @Database(
     entities =
@@ -140,6 +141,7 @@ const val AFINITY_DB_VERSION = 88
             WikidataFranchiseEntityEntity::class,
             LastFmArtistCacheEntity::class,
             LastFmPopularCacheEntity::class,
+            SeerrArtworkEntity::class,
         ],
     version = AFINITY_DB_VERSION,
     exportSchema = true,

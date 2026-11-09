@@ -113,6 +113,7 @@ fun DiscoverSection(
     modifier: Modifier = Modifier,
     onViewAllClick: (() -> Unit)? = null,
     horizontalPadding: androidx.compose.ui.unit.Dp = CardDimensions.RowGutter,
+    onItemVisible: ((SearchResultItem) -> Unit)? = null,
 ) {
     val cardWidth = widthSizeClass.portraitWidth
     val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
@@ -159,6 +160,9 @@ fun DiscoverSection(
                 items = items,
                 key = { item -> "${title.replace(" ", "_")}_${item.mediaType}_${item.id}" },
             ) { item ->
+                if (onItemVisible != null) {
+                    LaunchedEffect(item.mediaType, item.id) { onItemVisible(item) }
+                }
                 DiscoverMediaCard(
                     item = item,
                     onClick = { onItemClick(item) },

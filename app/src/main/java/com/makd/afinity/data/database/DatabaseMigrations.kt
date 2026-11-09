@@ -1818,6 +1818,26 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_88_89 =
+        object : Migration(88, 89) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `seerr_artwork` (" +
+                        "`key` TEXT NOT NULL, " +
+                        "`tmdbId` INTEGER NOT NULL, " +
+                        "`mediaType` TEXT NOT NULL, " +
+                        "`title` TEXT, " +
+                        "`posterPath` TEXT, " +
+                        "`backdropPath` TEXT, " +
+                        "`releaseDate` TEXT, " +
+                        "`firstAirDate` TEXT, " +
+                        "`voteAverage` REAL, " +
+                        "`fetchedAt` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`key`))"
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1907,5 +1927,6 @@ object DatabaseMigrations {
             MIGRATION_85_86,
             MIGRATION_86_87,
             MIGRATION_87_88,
+            MIGRATION_88_89,
         )
 }

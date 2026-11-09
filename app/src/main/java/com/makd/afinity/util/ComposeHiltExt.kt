@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.repository.jellyseerr.SeerrImageProxy
 import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.ui.item.delegates.ItemDownloadDelegate
 import dagger.hilt.EntryPoint
@@ -40,6 +41,20 @@ fun rememberItemDownloadDelegate(
             ItemDownloadDelegateEntryPoint::class.java,
         )
         .itemDownloadDelegate()
+}
+
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface SeerrImageProxyEntryPoint {
+    fun seerrImageProxy(): SeerrImageProxy
+}
+
+@Composable
+fun rememberSeerrImageProxy(
+    context: Context = LocalContext.current.applicationContext
+): SeerrImageProxy {
+    return EntryPointAccessors.fromApplication(context, SeerrImageProxyEntryPoint::class.java)
+        .seerrImageProxy()
 }
 
 @EntryPoint

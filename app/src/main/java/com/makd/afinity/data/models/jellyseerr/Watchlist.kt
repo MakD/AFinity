@@ -8,7 +8,16 @@ data class WatchlistItem(
     @SerialName("tmdbId") val tmdbId: Int,
     @SerialName("mediaType") val mediaType: String,
     @SerialName("title") val title: String? = null,
+    @SerialName("media") val media: MediaInfo? = null,
 )
+
+fun seerrArtworkKey(mediaType: String, tmdbId: Int): String = "${mediaType.lowercase()}_$tmdbId"
+
+fun SearchResultItem.withArtwork(artwork: Map<String, SearchResultItem>): SearchResultItem {
+    if (posterPath != null) return this
+    val art = artwork[seerrArtworkKey(mediaType, id)] ?: return this
+    return art.copy(mediaInfo = mediaInfo)
+}
 
 @Serializable
 data class WatchlistResponse(

@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
@@ -38,6 +39,8 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 internal const val IMAGE_CROSSFADE_MILLIS = 80
+
+val LocalImageUrlRewriter = staticCompositionLocalOf<((String) -> String)?> { null }
 
 private const val BLUR_HASH_BASE_SIZE = 32
 private const val BLUR_HASH_MIN_SIZE = 25
@@ -217,6 +220,81 @@ fun AsyncImage(
     scaleFactor: Float = 1.0f,
     useLowResPlaceholder: Boolean = false,
     crossfadeMillis: Int = IMAGE_CROSSFADE_MILLIS,
+) {
+    val urlRewriter = LocalImageUrlRewriter.current
+    if (urlRewriter == null || imageUrl == null) {
+        AsyncImageContent(
+            imageUrl = imageUrl,
+            contentDescription = contentDescription,
+            modifier = modifier,
+            placeholder = placeholder,
+            error = error,
+            onLoading = onLoading,
+            onSuccess = onSuccess,
+            onError = onError,
+            alignment = alignment,
+            contentScale = contentScale,
+            alpha = alpha,
+            colorFilter = colorFilter,
+            filterQuality = filterQuality,
+            blurHash = blurHash,
+            targetWidth = targetWidth,
+            targetHeight = targetHeight,
+            scaleFactor = scaleFactor,
+            useLowResPlaceholder = useLowResPlaceholder,
+            crossfadeMillis = crossfadeMillis,
+        )
+        return
+    }
+    var rewriteFailed by remember(imageUrl) { mutableStateOf(false) }
+    val rewrittenUrl =
+        remember(imageUrl, urlRewriter, rewriteFailed) {
+            if (rewriteFailed) imageUrl else urlRewriter(imageUrl)
+        }
+    AsyncImageContent(
+        imageUrl = rewrittenUrl,
+        contentDescription = contentDescription,
+        modifier = modifier,
+        placeholder = placeholder,
+        error = error,
+        onLoading = onLoading,
+        onSuccess = onSuccess,
+        onError = { if (rewrittenUrl != imageUrl) rewriteFailed = true else onError?.invoke() },
+        alignment = alignment,
+        contentScale = contentScale,
+        alpha = alpha,
+        colorFilter = colorFilter,
+        filterQuality = filterQuality,
+        blurHash = blurHash,
+        targetWidth = targetWidth,
+        targetHeight = targetHeight,
+        scaleFactor = scaleFactor,
+        useLowResPlaceholder = useLowResPlaceholder,
+        crossfadeMillis = crossfadeMillis,
+    )
+}
+
+@Composable
+private fun AsyncImageContent(
+    imageUrl: String?,
+    contentDescription: String?,
+    modifier: Modifier,
+    placeholder: Painter?,
+    error: Painter?,
+    onLoading: ((Boolean) -> Unit)?,
+    onSuccess: (() -> Unit)?,
+    onError: (() -> Unit)?,
+    alignment: Alignment,
+    contentScale: ContentScale,
+    alpha: Float,
+    colorFilter: ColorFilter?,
+    filterQuality: FilterQuality,
+    blurHash: String?,
+    targetWidth: Dp?,
+    targetHeight: Dp?,
+    scaleFactor: Float,
+    useLowResPlaceholder: Boolean,
+    crossfadeMillis: Int,
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current

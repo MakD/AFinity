@@ -29,6 +29,7 @@ import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.Permissions
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.hasPermission
+import com.makd.afinity.data.models.jellyseerr.withArtwork
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
@@ -84,6 +85,10 @@ fun FilteredMediaScreen(
     LaunchedEffect(filterParams) { viewModel.loadContent(filterParams) }
 
     val cardWidth = widthSizeClass.scaledPortraitWidth
+    val isWatchlistGrid =
+        filterParams.type == FilterType.WATCHLIST ||
+            filterParams.type == FilterType.WATCHLIST_NOT_IN_LIBRARY
+    val watchlistArtwork by viewModel.watchlistArtwork.collectAsStateWithLifecycle()
     val isTv =
         filterParams.type == FilterType.GENRE_TV ||
             filterParams.type == FilterType.POPULAR_TV ||
@@ -175,7 +180,16 @@ fun FilteredMediaScreen(
                         count = uiState.items.size,
                         key = { index -> uiState.items[index].let { "${it.mediaType}_${it.id}" } },
                     ) { index ->
-                        val item = uiState.items[index]
+                        val item =
+                            uiState.items[index].let {
+                                if (isWatchlistGrid) it.withArtwork(watchlistArtwork) else it
+                            }
+
+                        if (isWatchlistGrid) {
+                            LaunchedEffect(item.mediaType, item.id) {
+                                viewModel.onWatchlistItemVisible(item)
+                            }
+                        }
 
                         if (
                             index >= uiState.items.size - 5 &&

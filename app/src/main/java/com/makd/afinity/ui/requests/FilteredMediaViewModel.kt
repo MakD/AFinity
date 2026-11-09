@@ -214,6 +214,12 @@ constructor(
         loadPage()
     }
 
+    val watchlistArtwork = jellyseerrRepository.watchlistArtwork
+
+    fun onWatchlistItemVisible(item: SearchResultItem) {
+        jellyseerrRepository.loadWatchlistArtwork(item)
+    }
+
     fun loadNextPage() {
         if (_uiState.value.isLoading || _uiState.value.hasReachedEnd) {
             return

@@ -41,6 +41,7 @@ import com.makd.afinity.data.models.jellyseerr.RequestStatus
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.hasPermission
 import com.makd.afinity.data.models.jellyseerr.isAdmin
+import com.makd.afinity.data.models.jellyseerr.withArtwork
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
@@ -69,6 +70,7 @@ fun RequestsScreen(
     onMenuClick: (() -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val watchlistArtwork by viewModel.watchlistArtwork.collectAsStateWithLifecycle()
     val isAuthenticated by
         viewModel.isAuthenticated.collectAsStateWithLifecycle(initialValue = false)
     val isReachable by viewModel.isReachable.collectAsStateWithLifecycle(initialValue = true)
@@ -220,9 +222,28 @@ fun RequestsScreen(
                                                     ?: builtInSectionTitleRes(section.sliderType)
                                                         ?.let { stringResource(it) }
                                                     ?: ""
+                                            val isWatchlistRow =
+                                                section.sliderType ==
+                                                    DiscoverSlider.Type.PLEX_WATCHLIST
+                                            val rowItems =
+                                                remember(section.items, watchlistArtwork) {
+                                                    if (isWatchlistRow) {
+                                                        section.items.map {
+                                                            it.withArtwork(watchlistArtwork)
+                                                        }
+                                                    } else {
+                                                        section.items
+                                                    }
+                                                }
                                             DiscoverSection(
                                                 title = title,
-                                                items = section.items,
+                                                items = rowItems,
+                                                onItemVisible =
+                                                    if (isWatchlistRow) {
+                                                        viewModel::onWatchlistItemVisible
+                                                    } else {
+                                                        null
+                                                    },
                                                 onItemClick = { item ->
                                                     if (
                                                         item.mediaInfo?.isFullyAvailable() == true

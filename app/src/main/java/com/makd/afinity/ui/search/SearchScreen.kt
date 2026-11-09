@@ -120,6 +120,7 @@ import com.makd.afinity.ui.music.components.TrackAdminActions
 import com.makd.afinity.ui.music.components.rememberTrackAdminActions
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
+import com.makd.afinity.ui.requests.SeerrImages
 import com.makd.afinity.ui.theme.CardDimensions
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -1622,7 +1623,12 @@ private fun CombinedSearchResultsContent(
                 )
             }
             items(jellyseerrResults, key = { "jellyseerr_${it.mediaType}_${it.id}" }) { item ->
-                JellyseerrSearchResultItem(item = item, onRequestClick = { onRequestClick(item) })
+                SeerrImages {
+                    JellyseerrSearchResultItem(
+                        item = item,
+                        onRequestClick = { onRequestClick(item) },
+                    )
+                }
             }
         }
 

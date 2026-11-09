@@ -263,6 +263,7 @@ private fun SeerrRequestActionButton(
             existingStatus = status,
             existingStatus4k = status4k,
             is4k = is4k,
+            knownDetails = details,
         )
     }
 
