@@ -158,6 +158,8 @@ On any item you can also:
 <p align="center">
   <img src="screenshots/control_panel.webp" width="30%" alt="Control Panel overview">
   &nbsp;
+  <img src="screenshots/admin_menu.webp" width="30%" alt="Item admin menu">
+  &nbsp;
   <img src="screenshots/edit_images.webp" width="30%" alt="Edit Images">
 </p>
 
