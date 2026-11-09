@@ -1399,6 +1399,19 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
     override fun getSubtitleDbEnabledFlow(serverId: String, userId: String): Flow<Boolean> =
         dataStore.data.map { it[subtitleDbEnabledKey(serverId, userId)] ?: false }
 
+    private fun seerrWatchlistSyncKey(serverId: String, userId: String) =
+        booleanPreferencesKey("seerr_watchlist_sync_${serverId}_$userId")
+
+    override suspend fun setSeerrWatchlistSync(serverId: String, userId: String, enabled: Boolean) {
+        dataStore.edit { it[seerrWatchlistSyncKey(serverId, userId)] = enabled }
+    }
+
+    override suspend fun getSeerrWatchlistSync(serverId: String, userId: String): Boolean =
+        dataStore.data.first()[seerrWatchlistSyncKey(serverId, userId)] ?: true
+
+    override fun getSeerrWatchlistSyncFlow(serverId: String, userId: String): Flow<Boolean> =
+        dataStore.data.map { it[seerrWatchlistSyncKey(serverId, userId)] ?: true }
+
     override fun getShowRatingsFlow(): Flow<Boolean> {
         return dataStore.data.map { preferences -> preferences[Keys.SHOW_RATINGS] ?: true }
     }

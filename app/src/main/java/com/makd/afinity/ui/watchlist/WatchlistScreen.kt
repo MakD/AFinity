@@ -26,6 +26,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
+import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityScreen
@@ -38,6 +39,9 @@ import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.MediaRowSection
 import com.makd.afinity.ui.main.MainUiState
+import com.makd.afinity.ui.requests.DiscoverSection
+import com.makd.afinity.ui.requests.FilterParams
+import com.makd.afinity.ui.requests.FilterType
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
@@ -55,8 +59,11 @@ fun WatchlistScreen(
     viewModel: WatchlistViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
     onMenuClick: (() -> Unit)? = null,
+    onNavigateToSeerrMedia: (SearchResultItem) -> Unit = {},
+    onNavigateToFilteredMedia: (FilterParams) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val seerrItems by viewModel.seerrItems.collectAsStateWithLifecycle()
     val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
     val selectedEpisodeWatchlistStatus by
         viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
@@ -123,7 +130,8 @@ fun WatchlistScreen(
                 uiState.movies.isEmpty() &&
                 uiState.shows.isEmpty() &&
                 uiState.seasons.isEmpty() &&
-                uiState.episodes.isEmpty() -> {
+                uiState.episodes.isEmpty() &&
+                seerrItems.isEmpty() -> {
                 FullScreenEmpty(
                     title = stringResource(R.string.watchlist_empty_title),
                     message = stringResource(R.string.watchlists_empty_message),
@@ -198,6 +206,28 @@ fun WatchlistScreen(
                                 },
                                 cardWidth = landscapeWidth,
                                 onViewAllClick = { onViewAllClick(WatchlistCategory.EPISODES) },
+                            )
+                        }
+                    }
+
+                    if (seerrItems.isNotEmpty()) {
+                        item {
+                            val title =
+                                stringResource(R.string.section_seerr_watchlist_not_in_library)
+                            DiscoverSection(
+                                title = title,
+                                items = seerrItems,
+                                onItemClick = onNavigateToSeerrMedia,
+                                widthSizeClass = widthSizeClass,
+                                onViewAllClick = {
+                                    onNavigateToFilteredMedia(
+                                        FilterParams(
+                                            type = FilterType.WATCHLIST_NOT_IN_LIBRARY,
+                                            id = 0,
+                                            name = title,
+                                        )
+                                    )
+                                },
                             )
                         }
                     }

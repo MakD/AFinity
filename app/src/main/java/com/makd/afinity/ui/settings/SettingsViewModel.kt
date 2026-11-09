@@ -1769,6 +1769,34 @@ constructor(
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val seerrWatchlistSync: StateFlow<Boolean> =
+        sessionManager.currentSession
+            .flatMapLatest { session ->
+                if (session == null) flowOf(true)
+                else
+                    preferencesRepository.getSeerrWatchlistSyncFlow(
+                        session.serverId,
+                        session.userId.toString(),
+                    )
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = true,
+            )
+
+    fun setSeerrWatchlistSync(enabled: Boolean) {
+        val session = sessionManager.currentSession.value ?: return
+        viewModelScope.launch {
+            preferencesRepository.setSeerrWatchlistSync(
+                session.serverId,
+                session.userId.toString(),
+                enabled,
+            )
+        }
+    }
+
     private val _mdbListUsage = MutableStateFlow<MdbListUsage?>(null)
     val mdbListUsage: StateFlow<MdbListUsage?> = _mdbListUsage.asStateFlow()
 

@@ -12,6 +12,7 @@ import com.makd.afinity.data.models.tmdb.TmdbImage
 import com.makd.afinity.data.network.TmdbApiService
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
+import com.makd.afinity.data.repository.watchlist.SeerrWatchlistMirror
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -31,6 +32,7 @@ constructor(
     private val tmdbApiService: TmdbApiService,
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val sessionManager: SessionManager,
+    private val seerrWatchlistMirror: SeerrWatchlistMirror,
 ) : ViewModel() {
 
     val tmdbId: Int = checkNotNull(savedStateHandle["seerrTmdbId"])
@@ -72,10 +74,17 @@ constructor(
                     jellyseerrRepository.removeFromWatchlist(tmdbId, mediaType)
                 }
             watchlistWriteInFlight = false
-            result.onFailure { error ->
-                Timber.w(error, "Failed to update Seerr watchlist for $tmdbId, reverted UI")
-                _uiState.update { it.copy(isOnWatchlist = !target) }
-            }
+            result
+                .onSuccess {
+                    seerrWatchlistMirror.onSeerrWatchlistChanged(
+                        jellyfinItemId = details.mediaInfo?.getJellyfinItemId(),
+                        onWatchlist = target,
+                    )
+                }
+                .onFailure { error ->
+                    Timber.w(error, "Failed to update Seerr watchlist for $tmdbId, reverted UI")
+                    _uiState.update { it.copy(isOnWatchlist = !target) }
+                }
         }
     }
 

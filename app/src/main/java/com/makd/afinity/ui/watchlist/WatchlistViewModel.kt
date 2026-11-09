@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -13,6 +14,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.AppDataRepository
+import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
@@ -23,9 +25,12 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -43,10 +48,15 @@ constructor(
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val downloadPermissions: DownloadPermissions,
     private val itemStore: ItemStore,
+    private val jellyseerrRepository: JellyseerrRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WatchlistUiState())
     private var lastWatchlistLoadedAt = System.currentTimeMillis()
+
+    private val _seerrItems = MutableStateFlow<List<SearchResultItem>>(emptyList())
+    val seerrItems: StateFlow<List<SearchResultItem>> = _seerrItems.asStateFlow()
+    private var seerrJob: Job? = null
 
     val isDownloadAllowedByServer: StateFlow<Boolean> = downloadPermissions.isAllowedByServer
 
@@ -129,6 +139,39 @@ constructor(
                 appDataRepository.reloadWatchlist()
             }
         }
+
+        viewModelScope.launch {
+            combine(jellyseerrRepository.currentSessionId, jellyseerrRepository.isAuthenticated) {
+                    sessionId,
+                    isAuth ->
+                    sessionId != null && isAuth
+                }
+                .distinctUntilChanged()
+                .collect { active ->
+                    if (active) {
+                        loadSeerrWatchlist()
+                    } else {
+                        seerrJob?.cancel()
+                        _seerrItems.value = emptyList()
+                    }
+                }
+        }
+
+        viewModelScope.launch {
+            jellyseerrRepository.watchlistEvents.collect {
+                if (jellyseerrRepository.isAuthenticated.value) loadSeerrWatchlist()
+            }
+        }
+    }
+
+    private fun loadSeerrWatchlist() {
+        seerrJob?.cancel()
+        seerrJob = viewModelScope.launch {
+            jellyseerrRepository.getWatchlist().onSuccess { result ->
+                _seerrItems.value =
+                    result.results.filter { it.mediaInfo?.getJellyfinItemId() == null }
+            }
+        }
     }
 
     fun onScreenResumed() {
@@ -150,6 +193,7 @@ constructor(
             _uiState.update { it.copy(isLoading = true, error = null) }
             appDataRepository.reloadWatchlist()
         }
+        if (jellyseerrRepository.isAuthenticated.value) loadSeerrWatchlist()
     }
 
     fun onItemClick(item: AfinityItem) {

@@ -72,7 +72,10 @@ constructor(
 
         viewModelScope.launch {
             jellyseerrRepository.watchlistEvents.collect {
-                if (currentFilterParams?.type == FilterType.WATCHLIST) reloadCurrentContent()
+                val type = currentFilterParams?.type
+                if (type == FilterType.WATCHLIST || type == FilterType.WATCHLIST_NOT_IN_LIBRARY) {
+                    reloadCurrentContent()
+                }
             }
         }
 
@@ -346,7 +349,9 @@ constructor(
                             jellyseerrRepository.getTvByNetwork(params.id, currentPage)
 
                         FilterType.TRENDING -> jellyseerrRepository.getTrending(currentPage)
-                        FilterType.WATCHLIST -> jellyseerrRepository.getWatchlist(currentPage)
+                        FilterType.WATCHLIST,
+                        FilterType.WATCHLIST_NOT_IN_LIBRARY ->
+                            jellyseerrRepository.getWatchlist(currentPage)
                         FilterType.PERSON ->
                             jellyseerrRepository.getPersonCombinedCredits(params.id).map { credits
                                 ->
@@ -385,16 +390,23 @@ constructor(
                         val hasReachedEnd =
                             rawItems.isEmpty() || currentPage >= searchResult.totalPages
 
+                        val isWatchlist =
+                            params.type == FilterType.WATCHLIST ||
+                                params.type == FilterType.WATCHLIST_NOT_IN_LIBRARY
                         val hideAvailable =
                             params.type != FilterType.PERSON &&
-                                params.type != FilterType.WATCHLIST &&
+                                !isWatchlist &&
                                 jellyseerrRepository
                                     .getPublicSettings()
                                     .getOrNull()
                                     ?.hideAvailable == true
                         val newItems =
-                            if (hideAvailable) rawItems.filterNot { it.isAvailableOrPartial() }
-                            else rawItems
+                            when {
+                                params.type == FilterType.WATCHLIST_NOT_IN_LIBRARY ->
+                                    rawItems.filter { it.mediaInfo?.getJellyfinItemId() == null }
+                                hideAvailable -> rawItems.filterNot { it.isAvailableOrPartial() }
+                                else -> rawItems
+                            }
 
                         _uiState.update { state ->
                             val combinedList =

@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -37,6 +38,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -59,6 +61,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -68,6 +71,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.ui.components.AfinityBackButton
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.AfinitySwitch
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AfinityTopBar
@@ -856,6 +860,8 @@ private fun EditorContent(
                         error = null,
                         onAdd = { smViewModel.addJellyseerrAddress(server.server.id, it) },
                     )
+                    HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+                    SeerrWatchlistSyncRow(settingsViewModel)
                     Spacer(Modifier.height(4.dp))
                     DisconnectButton(onDisconnect)
                 }
@@ -1055,6 +1061,38 @@ private fun AddAddressBar(
                 color = MaterialTheme.colorScheme.error,
             )
         }
+    }
+}
+
+@Composable
+private fun SeerrWatchlistSyncRow(settingsViewModel: SettingsViewModel) {
+    val enabled by settingsViewModel.seerrWatchlistSync.collectAsStateWithLifecycle()
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .toggleable(
+                    value = enabled,
+                    role = Role.Switch,
+                    onValueChange = settingsViewModel::setSeerrWatchlistSync,
+                )
+                .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.seerr_watchlist_sync_title),
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = stringResource(R.string.seerr_watchlist_sync_summary),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+        AfinitySwitch(checked = enabled, onCheckedChange = null)
     }
 }
 

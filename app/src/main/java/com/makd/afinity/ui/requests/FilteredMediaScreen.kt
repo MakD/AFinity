@@ -56,6 +56,7 @@ enum class FilterType {
     UPCOMING_TV,
     PERSON,
     WATCHLIST,
+    WATCHLIST_NOT_IN_LIBRARY,
 }
 
 data class FilterParams(val type: FilterType, val id: Int, val name: String)

@@ -1048,6 +1048,12 @@ fun MainNavigation(
                                         onPersonClick = { personId ->
                                             navController.navigateToPerson(personId)
                                         },
+                                        onNavigateToSeerrMedia = { seerrItem ->
+                                            navController.navigateToSeerrMedia(seerrItem)
+                                        },
+                                        onNavigateToFilteredMedia = { filterParams ->
+                                            navController.navigateToFilteredMedia(filterParams)
+                                        },
                                         modifier = Modifier.fillMaxSize(),
                                         mainUiState = mainUiState,
                                         widthSizeClass = widthSizeClass,

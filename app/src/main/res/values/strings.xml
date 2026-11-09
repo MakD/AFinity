@@ -1139,6 +1139,7 @@
     <string name="section_popular_tv">Popular TV Shows</string>
     <string name="section_upcoming_tv">Upcoming TV Shows</string>
     <string name="section_seerr_watchlist">Your Watchlist</string>
+    <string name="section_seerr_watchlist_not_in_library">Not in your library yet</string>
 
     <string name="section_recent_requests">Recent Requests</string>
     <string name="section_available_requests">Available Requests</string>
@@ -3516,7 +3517,9 @@
     <string name="services_hub_status_ratings_count">%1$d of %2$d</string>
     <string name="services_hub_more_servers">Add more servers or accounts</string>
     <string name="services_hub_editor_empty">Select a service to manage.</string>
-    <string name="services_hub_editor_title_seerr">Seerr addresses</string>
+    <string name="services_hub_editor_title_seerr">Seerr</string>
+    <string name="seerr_watchlist_sync_title">Sync watchlists</string>
+    <string name="seerr_watchlist_sync_summary">Adding or removing a movie or show on your AFinity watchlist also updates your Seerr watchlist, and the other way round. Only for this profile.</string>
     <string name="services_hub_editor_title_abs">Audiobookshelf addresses</string>
     <string name="services_hub_editor_title_jellyfin">Server addresses</string>
     <string name="services_hub_editor_title_ratings">API keys</string>

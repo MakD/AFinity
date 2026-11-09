@@ -9,6 +9,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.UserDataPatch
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
+import com.makd.afinity.data.repository.watchlist.SeerrWatchlistMirror
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -24,6 +25,7 @@ constructor(
     private val appDataRepository: AppDataRepository,
     private val watchlistRepository: WatchlistRepository,
     private val mediaRefreshBus: MediaRefreshBus,
+    private val seerrWatchlistMirror: SeerrWatchlistMirror,
 ) {
     fun toggleFavorite(
         scope: CoroutineScope,
@@ -80,6 +82,7 @@ constructor(
                     revertUI()
                 } else {
                     val updatedItem = item.withLiked(!item.liked)
+                    seerrWatchlistMirror.onJellyfinWatchlistChanged(updatedItem, !item.liked)
                     appDataRepository.updateItemInCaches(updatedItem)
                     appDataRepository.updateWatchlistStatus(updatedItem, !item.liked)
                     watchlistRepository.refreshWatchlistCount()
