@@ -18,6 +18,7 @@ import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.extensions.toMostPlayedAlbums
 import com.makd.afinity.data.models.extensions.toRecentlyPlayedAlbums
 import com.makd.afinity.data.models.extensions.topArtistIds
+import com.makd.afinity.data.models.media.AfinityUserDataOwner
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityMusicGenre
@@ -37,6 +38,7 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.music.MadeForYouCache
 import com.makd.afinity.data.repository.music.MusicRepository
+import com.makd.afinity.data.store.ItemProjection
 import com.makd.afinity.data.store.ItemStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
@@ -222,7 +224,8 @@ constructor(
     val userName: StateFlow<String?> = appDataRepository.userName
 
     private val _uiState = MutableStateFlow(MusicLibraryUiState())
-    val uiState: StateFlow<MusicLibraryUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<MusicLibraryUiState> =
+        itemStore.project(viewModelScope, _uiState) { state -> projectMusicHome(state) }
 
     private var madeForYouReserve: List<AfinityAlbum> = emptyList()
     @Volatile private var madeForYouServedFromCache = false
@@ -1025,4 +1028,88 @@ constructor(
 
         _uiState.update { it.copy(isLoadingHome = false) }
     }
+}
+
+private fun ItemProjection.projectMusicHome(state: MusicLibraryUiState): MusicLibraryUiState {
+    val recentTracks = liveOwners(state.recentlyPlayedTracks)
+    val recentAlbums = liveOwners(state.recentlyPlayedAlbums)
+    val latest = liveOwners(state.latestAlbums)
+    val mostPlayed = liveOwners(state.mostPlayedAlbums)
+    val favoriteAlbums = liveOwners(state.favoriteAlbums)
+    val moreFromArtist =
+        liveNestedOwners(state.moreFromArtistSections, { it.second }, { p, l -> p.first to l })
+    val genreSections =
+        liveNestedOwners(state.musicGenreSections, { it.second }, { p, l -> p.first to l })
+    val randomAlbums = liveOwners(state.randomAlbums)
+    val randomArtists = liveOwners(state.randomArtists)
+    val decade =
+        state.albumsByDecade?.let { pair ->
+            liveNestedOwners(listOf(pair), { it.second }, { p, l -> p.first to l }).first()
+        }
+    val topRated = liveOwners(state.topRatedAlbums)
+    val topArtists = liveOwners(state.topArtists)
+    val favoriteArtists = liveOwners(state.favoriteArtists)
+    val topTracks =
+        liveNestedOwners(state.topTracksSections, { it.second }, { p, l -> p.first to l })
+    val newReleases =
+        liveNestedOwners(state.newGenreReleases, { it.second }, { p, l -> p.first to l })
+    val madeForYou =
+        liveNestedOwners<MadeForYouSlot, AfinityUserDataOwner>(
+            state.madeForYouSlots,
+            { slot ->
+                when (slot) {
+                    is MadeForYouSlot.Mix -> slot.tracks
+                    is MadeForYouSlot.Album -> listOf(slot.album)
+                    is MadeForYouSlot.Pending -> emptyList()
+                }
+            },
+            { slot, owners ->
+                when (slot) {
+                    is MadeForYouSlot.Mix ->
+                        slot.copy(tracks = owners.filterIsInstance<AfinityTrack>())
+                    is MadeForYouSlot.Album ->
+                        (owners.firstOrNull() as? AfinityAlbum)?.let { slot.copy(album = it) }
+                            ?: slot
+                    is MadeForYouSlot.Pending -> slot
+                }
+            },
+        )
+
+    val unchanged =
+        recentTracks === state.recentlyPlayedTracks &&
+            recentAlbums === state.recentlyPlayedAlbums &&
+            latest === state.latestAlbums &&
+            mostPlayed === state.mostPlayedAlbums &&
+            favoriteAlbums === state.favoriteAlbums &&
+            moreFromArtist === state.moreFromArtistSections &&
+            genreSections === state.musicGenreSections &&
+            randomAlbums === state.randomAlbums &&
+            randomArtists === state.randomArtists &&
+            decade === state.albumsByDecade &&
+            topRated === state.topRatedAlbums &&
+            topArtists === state.topArtists &&
+            favoriteArtists === state.favoriteArtists &&
+            topTracks === state.topTracksSections &&
+            newReleases === state.newGenreReleases &&
+            madeForYou === state.madeForYouSlots
+    if (unchanged) return state
+
+    return state.copy(
+        recentlyPlayedTracks = recentTracks,
+        recentlyPlayedAlbums = recentAlbums,
+        latestAlbums = latest,
+        mostPlayedAlbums = mostPlayed,
+        favoriteAlbums = favoriteAlbums,
+        moreFromArtistSections = moreFromArtist,
+        musicGenreSections = genreSections,
+        randomAlbums = randomAlbums,
+        randomArtists = randomArtists,
+        albumsByDecade = decade,
+        topRatedAlbums = topRated,
+        topArtists = topArtists,
+        favoriteArtists = favoriteArtists,
+        topTracksSections = topTracks,
+        newGenreReleases = newReleases,
+        madeForYouSlots = madeForYou,
+    )
 }

@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.map
 enum class AdminChangeKind {
     IMAGES,
     METADATA,
+    MEMBERSHIP,
     DELETED,
 }
 
@@ -38,6 +39,10 @@ class AdminChangeBroadcaster @Inject constructor() {
 
     fun notifyImagesChanged(itemId: String) {
         _changes.tryEmit(AdminChange(itemId, AdminChangeKind.IMAGES))
+    }
+
+    fun notifyMembershipChanged(collectionId: String) {
+        _changes.tryEmit(AdminChange(collectionId, AdminChangeKind.MEMBERSHIP))
     }
 
     fun notifyItemDeleted(itemId: String, tmdbId: Int? = null, isMovie: Boolean? = null) {

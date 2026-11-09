@@ -34,7 +34,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.update
@@ -65,7 +64,40 @@ constructor(
 
     val canDownloadOnNetwork: StateFlow<Boolean> = downloadPermissions.isAllowedOnNetwork
 
-    val uiState: StateFlow<FavoritesUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<FavoritesUiState> =
+        itemStore.project(viewModelScope, _uiState) { state ->
+            val movies = live(state.movies)
+            val shows = live(state.shows)
+            val seasons = live(state.seasons)
+            val episodes = live(state.episodes)
+            val boxSets = live(state.boxSets)
+            val albums = liveOwners(state.favoriteAlbums)
+            val artists = liveOwners(state.favoriteArtists)
+            val tracks = liveOwners(state.favoriteTracks)
+            if (
+                movies === state.movies &&
+                    shows === state.shows &&
+                    seasons === state.seasons &&
+                    episodes === state.episodes &&
+                    boxSets === state.boxSets &&
+                    albums === state.favoriteAlbums &&
+                    artists === state.favoriteArtists &&
+                    tracks === state.favoriteTracks
+            ) {
+                state
+            } else {
+                state.copy(
+                    movies = movies,
+                    shows = shows,
+                    seasons = seasons,
+                    episodes = episodes,
+                    boxSets = boxSets,
+                    favoriteAlbums = albums,
+                    favoriteArtists = artists,
+                    favoriteTracks = tracks,
+                )
+            }
+        }
 
     private val episodeSelection =
         EpisodeSelection(
@@ -92,28 +124,18 @@ constructor(
                     Triple(data, loaded, failed)
                 }
                 .collect { (data, loaded, failed) ->
-                    itemStore.putIfAbsent(
-                        data.movies +
-                            data.shows +
-                            data.seasons +
-                            data.episodes +
-                            data.boxSets +
-                            data.favoriteAlbums +
-                            data.favoriteArtists +
-                            data.favoriteTracks
-                    )
                     _uiState.update {
                         it.copy(
-                            movies = itemStore.merge(data.movies),
-                            shows = itemStore.merge(data.shows),
-                            seasons = itemStore.merge(data.seasons),
-                            episodes = itemStore.merge(data.episodes),
-                            boxSets = itemStore.merge(data.boxSets),
+                            movies = data.movies,
+                            shows = data.shows,
+                            seasons = data.seasons,
+                            episodes = data.episodes,
+                            boxSets = data.boxSets,
                             channels = data.channels,
                             people = data.people,
-                            favoriteAlbums = itemStore.mergeOwners(data.favoriteAlbums),
-                            favoriteArtists = itemStore.mergeOwners(data.favoriteArtists),
-                            favoriteTracks = itemStore.mergeOwners(data.favoriteTracks),
+                            favoriteAlbums = data.favoriteAlbums,
+                            favoriteArtists = data.favoriteArtists,
+                            favoriteTracks = data.favoriteTracks,
                             favoritePlaylists = data.favoritePlaylists,
                             isLoading = !loaded && !failed,
                             error =
@@ -130,7 +152,14 @@ constructor(
 
         viewModelScope.launch {
             adminChangeBroadcaster.changes
-                .filter { it.kind != AdminChangeKind.IMAGES }
+                .filter { change ->
+                    when (change.kind) {
+                        AdminChangeKind.MEMBERSHIP -> false
+                        AdminChangeKind.IMAGES ->
+                            _uiState.value.people.any { it.id.toString() == change.itemId }
+                        else -> true
+                    }
+                }
                 .collect { appDataRepository.reloadFavorites() }
         }
 
@@ -139,45 +168,6 @@ constructor(
                 if (at <= lastFavoritesLoadedAt) return@collect
                 lastFavoritesLoadedAt = System.currentTimeMillis()
                 appDataRepository.reloadFavorites()
-            }
-        }
-
-        viewModelScope.launch {
-            itemStore.overlay.collect { overlay ->
-                if (overlay.isEmpty()) return@collect
-                _uiState.update { state ->
-                    val movies = itemStore.merge(state.movies)
-                    val shows = itemStore.merge(state.shows)
-                    val seasons = itemStore.merge(state.seasons)
-                    val episodes = itemStore.merge(state.episodes)
-                    val boxSets = itemStore.merge(state.boxSets)
-                    val albums = itemStore.mergeOwners(state.favoriteAlbums)
-                    val artists = itemStore.mergeOwners(state.favoriteArtists)
-                    val tracks = itemStore.mergeOwners(state.favoriteTracks)
-                    if (
-                        movies === state.movies &&
-                            shows === state.shows &&
-                            seasons === state.seasons &&
-                            episodes === state.episodes &&
-                            boxSets === state.boxSets &&
-                            albums === state.favoriteAlbums &&
-                            artists === state.favoriteArtists &&
-                            tracks === state.favoriteTracks
-                    ) {
-                        state
-                    } else {
-                        state.copy(
-                            movies = movies,
-                            shows = shows,
-                            seasons = seasons,
-                            episodes = episodes,
-                            boxSets = boxSets,
-                            favoriteAlbums = albums,
-                            favoriteArtists = artists,
-                            favoriteTracks = tracks,
-                        )
-                    }
-                }
             }
         }
     }

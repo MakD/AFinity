@@ -40,6 +40,7 @@ import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySourceType
@@ -47,6 +48,7 @@ import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.media.toAfinityMovie
 import com.makd.afinity.data.models.media.toAfinityShow
+import com.makd.afinity.data.models.media.withUserDataFrom
 import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.models.tmdb.TmdbRegionProviders
 import com.makd.afinity.data.models.tmdb.TmdbReview
@@ -71,6 +73,8 @@ import com.makd.afinity.data.repository.wikidata.WikidataAwardsRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.data.storage.StorageVolumeInfo
 import com.makd.afinity.data.store.ItemStore
+import com.makd.afinity.data.store.QueryInvalidator
+import com.makd.afinity.data.store.QueryKey
 import com.makd.afinity.data.store.withUserDataOverlay
 import com.makd.afinity.ui.components.DownloadConfirm
 import com.makd.afinity.ui.components.DownloadConfirmKind
@@ -149,6 +153,7 @@ constructor(
     private val networkMonitor: NetworkConnectivityMonitor,
     private val downloadPermissions: DownloadPermissions,
     private val itemStore: ItemStore,
+    private val queryInvalidator: QueryInvalidator,
     private val wikidataAwardsRepository: WikidataAwardsRepository,
     private val externalTitlesRepository: ExternalTitlesRepository,
     savedStateHandle: SavedStateHandle,
@@ -188,7 +193,42 @@ constructor(
     }
 
     private val _uiState = MutableStateFlow(ItemDetailUiState())
-    val uiState: StateFlow<ItemDetailUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<ItemDetailUiState> =
+        itemStore.project(viewModelScope, _uiState) { state ->
+            val similar = live(state.similarItems)
+            val boxSet = live(state.boxSetItems)
+            val seasons = live(state.seasons)
+            val parts = live(state.movieParts)
+            val specials = live(state.specialFeatures)
+            val containing = live(state.containingBoxSets)
+            val related =
+                liveNested(
+                    state.relatedRows,
+                    { it.items },
+                    { row, items -> row.copy(items = items) },
+                )
+            if (
+                similar === state.similarItems &&
+                    boxSet === state.boxSetItems &&
+                    seasons === state.seasons &&
+                    parts === state.movieParts &&
+                    specials === state.specialFeatures &&
+                    containing === state.containingBoxSets &&
+                    related === state.relatedRows
+            ) {
+                state
+            } else {
+                state.copy(
+                    similarItems = similar,
+                    boxSetItems = boxSet,
+                    seasons = seasons,
+                    movieParts = parts,
+                    specialFeatures = specials,
+                    containingBoxSets = containing,
+                    relatedRows = related,
+                )
+            }
+        }
 
     val isAdmin: StateFlow<Boolean> =
         sessionManager.currentSession
@@ -290,6 +330,31 @@ constructor(
         }
 
         viewModelScope.launch {
+            adminChangeBroadcaster.changes
+                .filter { it.kind == AdminChangeKind.IMAGES && it.itemId in castIds() }
+                .collect { refreshCastImages() }
+        }
+
+        viewModelScope.launch {
+            queryInvalidator.invalidations.collect { keys ->
+                if (
+                    QueryKey.BoxSetChildren(itemId) in keys && _uiState.value.item is AfinityBoxSet
+                ) {
+                    loadBoxSetItems(itemId)
+                }
+                if (QueryKey.ContainingBoxSets(itemId) in keys) {
+                    try {
+                        refreshContainingBoxSets()
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to refresh containing BoxSets")
+                    }
+                }
+            }
+        }
+
+        viewModelScope.launch {
             playbackStateManager.playbackEvents.collect { event ->
                 if (event is PlaybackEvent.Stopped && event.itemId == itemId) {
                     Timber.d("Playback stopped. Waiting for WebSocket to patch UI.")
@@ -307,42 +372,6 @@ constructor(
         }
 
         viewModelScope.launch {
-            itemStore.overlay.collect { overlay ->
-                if (overlay.isEmpty()) return@collect
-                _uiState.update { state ->
-                    val similar = itemStore.merge(state.similarItems)
-                    val boxSet = itemStore.merge(state.boxSetItems)
-                    val seasons = itemStore.merge(state.seasons)
-                    val parts = itemStore.merge(state.movieParts)
-                    val related =
-                        state.relatedRows.map { row ->
-                            val merged = itemStore.merge(row.items)
-                            if (merged === row.items) row else row.copy(items = merged)
-                        }
-                    val relatedUnchanged =
-                        related.indices.all { related[it] === state.relatedRows[it] }
-                    if (
-                        similar === state.similarItems &&
-                            boxSet === state.boxSetItems &&
-                            seasons === state.seasons &&
-                            parts === state.movieParts &&
-                            relatedUnchanged
-                    ) {
-                        state
-                    } else {
-                        state.copy(
-                            similarItems = similar,
-                            boxSetItems = boxSet,
-                            seasons = seasons,
-                            movieParts = parts,
-                            relatedRows = if (relatedUnchanged) state.relatedRows else related,
-                        )
-                    }
-                }
-            }
-        }
-
-        viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
                 val currentItem = _uiState.value.item ?: return@collect
                 val targetItem =
@@ -351,8 +380,8 @@ constructor(
                         heldItem = { id ->
                             _uiState.value.item?.takeIf { it.id == id }
                                 ?: episodeSelection.selected.value?.takeIf { it.id == id }
-                                ?: _uiState.value.similarItems.firstOrNull { it.id == id }
-                                ?: _uiState.value.boxSetItems.firstOrNull { it.id == id }
+                                ?: uiState.value.similarItems.firstOrNull { it.id == id }
+                                ?: uiState.value.boxSetItems.firstOrNull { it.id == id }
                                 ?: _uiState.value.nextEpisode?.takeIf { it.id == id }
                                 ?: itemStore.get(id) as? AfinityItem
                         },
@@ -370,63 +399,22 @@ constructor(
                         trueSeasonId == currentItem.id ||
                         event.itemId == _uiState.value.nextEpisode?.id ||
                         isInBoxSet
-                val similarDirectIdx =
-                    _uiState.value.similarItems.indexOfFirst { it.id == event.itemId }
-                if (similarDirectIdx != -1) {
-                    val patchedSimilar =
-                        targetItem
-                            ?: if (event.userData?.played == true) {
-                                when (val cur = _uiState.value.similarItems[similarDirectIdx]) {
-                                    is AfinityMovie ->
-                                        cur.copy(played = true, playbackPositionTicks = 0)
-                                    is AfinityShow -> cur.copy(played = true)
-                                    else -> null
-                                }
-                            } else null
-                    patchedSimilar?.let { updated ->
-                        _uiState.update { state ->
-                            val newList = state.similarItems.toMutableList()
-                            newList[similarDirectIdx] = updated
-                            state.copy(similarItems = newList)
-                        }
-                    }
-                } else if (trueSeriesId != null && trueSeriesId != event.itemId) {
-                    val seriesSimilarIdx =
-                        _uiState.value.similarItems.indexOfFirst { it.id == trueSeriesId }
-                    if (seriesSimilarIdx != -1) {
-                        val freshParent = event.parentItem
-                        if (freshParent != null) {
-                            _uiState.update { state ->
-                                val newList = state.similarItems.toMutableList()
-                                newList[seriesSimilarIdx] = freshParent
-                                state.copy(similarItems = newList)
+                if (
+                    !event.isContentChange &&
+                        trueSeriesId != null &&
+                        trueSeriesId != event.itemId &&
+                        event.parentItem == null &&
+                        uiState.value.similarItems.any { it.id == trueSeriesId }
+                ) {
+                    launch {
+                        try {
+                            mediaRepository.refreshItemUserData(trueSeriesId)?.let {
+                                itemStore.putUserDataFrom(listOf(it))
                             }
-                        } else {
-                            launch {
-                                try {
-                                    val fresh = mediaRepository.refreshItemUserData(trueSeriesId)
-                                    if (fresh != null) {
-                                        val idx =
-                                            _uiState.value.similarItems.indexOfFirst {
-                                                it.id == trueSeriesId
-                                            }
-                                        if (idx != -1) {
-                                            _uiState.update { state ->
-                                                val newList = state.similarItems.toMutableList()
-                                                newList[idx] = fresh
-                                                state.copy(similarItems = newList)
-                                            }
-                                        }
-                                    }
-                                } catch (e: CancellationException) {
-                                    throw e
-                                } catch (e: Exception) {
-                                    Timber.e(
-                                        e,
-                                        "Failed to refresh series in similar items: $trueSeriesId",
-                                    )
-                                }
-                            }
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to refresh series in similar items: $trueSeriesId")
                         }
                     }
                 }
@@ -466,23 +454,15 @@ constructor(
                             }
                         }
                     }
-
-                    val boxSetIdx = _uiState.value.boxSetItems.indexOfFirst { it.id == item.id }
-                    if (boxSetIdx != -1) {
-                        _uiState.update { state ->
-                            val newList = state.boxSetItems.toMutableList()
-                            newList[boxSetIdx] = item
-                            state.copy(boxSetItems = newList)
-                        }
-                    }
                 }
             }
         }
 
         viewModelScope.launch {
             mediaChangeManager.batches.collect { batch ->
-                val currentItem = _uiState.value.item ?: return@collect
-                val isInBoxSet = _uiState.value.boxSetItems.any { batch.affects(it.id) }
+                val state = _uiState.value
+                val currentItem = state.item ?: return@collect
+                val isInBoxSet = state.boxSetItems.any { batch.affects(it.id) }
 
                 if (
                     currentItem !is AfinityShow &&
@@ -491,13 +471,12 @@ constructor(
                 ) {
                     return@collect
                 }
-                if (
-                    batch.source != MediaChangeSource.WEBSOCKET &&
-                        !batch.affects(currentItem.id) &&
-                        !isInBoxSet
-                ) {
-                    return@collect
-                }
+                val concernsPage =
+                    isInBoxSet ||
+                        batch.affects(currentItem.id) ||
+                        (currentItem is AfinityShow &&
+                            batch.affectsAny(state.seasons.map { it.id }))
+                if (!concernsPage) return@collect
 
                 try {
                     val nextEp =
@@ -510,6 +489,7 @@ constructor(
                                 )
                             else -> null
                         }
+                    if (nextEp != null) itemStore.putUserDataFrom(listOf(nextEp))
                     if (nextEp != null && nextEp != _uiState.value.nextEpisode) {
                         _uiState.update { it.copy(nextEpisode = nextEp) }
                     }
@@ -517,10 +497,23 @@ constructor(
                     if (currentItem is AfinityShow) {
                         val freshSeasons =
                             mediaRepository.getSeasons(currentItem.id, FieldSets.SEASON_CARDS)
+                        itemStore.putUserDataFrom(freshSeasons)
                         _uiState.update { it.copy(seasons = freshSeasons) }
                     }
 
-                    val freshMainItem = mediaRepository.getItemById(currentItem.id)
+                    val carried =
+                        batch.changes
+                            .firstNotNullOfOrNull { change ->
+                                change.parentItem?.takeIf { it.id == currentItem.id }
+                                    ?: change.updatedItem?.takeIf {
+                                        batch.source == MediaChangeSource.WEBSOCKET &&
+                                            it.id == currentItem.id
+                                    }
+                            }
+                            ?.takeIf { it::class == currentItem::class }
+                            ?.let { currentItem.withUserDataFrom(it) }
+                    val freshMainItem = carried ?: mediaRepository.getItemById(currentItem.id)
+                    if (freshMainItem != null) itemStore.put(freshMainItem)
                     if (freshMainItem != null && freshMainItem != _uiState.value.item) {
                         _uiState.update { it.copy(item = freshMainItem) }
 
@@ -750,6 +743,7 @@ constructor(
                 }
 
             if (serverItem != null) {
+                itemStore.put(serverItem)
                 if (serverItem != _uiState.value.item) {
                     _uiState.update { state -> state.copy(item = serverItem) }
                 }
@@ -761,6 +755,9 @@ constructor(
                                 try {
                                     val nextEpisode =
                                         mediaRepository.getEpisodeToPlay(serverItem.id)
+                                    if (nextEpisode != null) {
+                                        itemStore.putUserDataFrom(listOf(nextEpisode))
+                                    }
                                     if (nextEpisode != _uiState.value.nextEpisode) {
                                         _uiState.update { it.copy(nextEpisode = nextEpisode) }
                                     }
@@ -777,10 +774,9 @@ constructor(
                                             serverItem.id,
                                             FieldSets.SEASON_CARDS,
                                         )
+                                    itemStore.putUserDataFrom(seasons)
                                     if (seasons != _uiState.value.seasons) {
-                                        _uiState.update {
-                                            it.copy(seasons = itemStore.merge(seasons))
-                                        }
+                                        _uiState.update { it.copy(seasons = seasons) }
                                     }
                                 } catch (e: CancellationException) {
                                     throw e
@@ -796,6 +792,7 @@ constructor(
                                     serverItem.id,
                                     serverItem.seriesId,
                                 )
+                            if (nextEpisode != null) itemStore.putUserDataFrom(listOf(nextEpisode))
                             if (nextEpisode != _uiState.value.nextEpisode) {
                                 _uiState.update { it.copy(nextEpisode = nextEpisode) }
                             }
@@ -848,7 +845,7 @@ constructor(
                         item.copy(runtimeTicks = seriesRuntimes[item.seriesId] ?: 0L)
                     else item
                 }
-                _uiState.value = _uiState.value.copy(boxSetItems = itemStore.merge(items))
+                _uiState.value = _uiState.value.copy(boxSetItems = items)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -1087,9 +1084,7 @@ constructor(
             }
             listOfNotNull(starring?.await(), inGenre?.await()).filter { it.items.isNotEmpty() }
         }
-        _uiState.update { state ->
-            state.copy(relatedRows = rows.map { it.copy(items = itemStore.merge(it.items)) })
-        }
+        _uiState.update { state -> state.copy(relatedRows = rows) }
     }
 
     private fun launchParallelFetches(item: AfinityItem, specialFeatureCount: Int) {
@@ -1098,7 +1093,7 @@ constructor(
                 viewModelScope.launch {
                     try {
                         val similar = mediaRepository.getSimilarItems(itemId)
-                        _uiState.update { it.copy(similarItems = itemStore.merge(similar)) }
+                        _uiState.update { it.copy(similarItems = similar) }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
@@ -1172,7 +1167,7 @@ constructor(
                     viewModelScope.launch {
                         try {
                             val similar = mediaRepository.getSimilarItems(itemId)
-                            _uiState.update { it.copy(similarItems = itemStore.merge(similar)) }
+                            _uiState.update { it.copy(similarItems = similar) }
                         } catch (e: CancellationException) {
                             throw e
                         } catch (e: Exception) {
@@ -1202,7 +1197,7 @@ constructor(
         viewModelScope.launch {
             try {
                 val seasons = mediaRepository.getSeasons(itemId, FieldSets.SEASON_CARDS)
-                _uiState.update { it.copy(seasons = itemStore.merge(seasons)) }
+                _uiState.update { it.copy(seasons = seasons) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -1464,6 +1459,29 @@ constructor(
 
     fun forceReloadFromServer() {
         loadItem()
+    }
+
+    private fun castIds(): Set<String> =
+        when (val item = _uiState.value.item) {
+            is AfinityMovie -> item.people
+            is AfinityShow -> item.people
+            is AfinityEpisode -> item.people
+            else -> emptyList<AfinityPerson>()
+        }.mapTo(HashSet()) { it.id.toString() }
+
+    private suspend fun refreshCastImages() {
+        val fresh =
+            try {
+                mediaRepository.getItemById(itemId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to refresh cast images for $itemId")
+                null
+            } ?: return
+        _uiState.update { state ->
+            if (state.item?.id == fresh.id) state.copy(item = fresh) else state
+        }
     }
 
     private suspend fun refreshContainingBoxSets() {

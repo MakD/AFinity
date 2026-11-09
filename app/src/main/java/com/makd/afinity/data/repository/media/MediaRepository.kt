@@ -15,6 +15,7 @@ import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
+import com.makd.afinity.data.models.media.AfinityUserDataOwner
 import com.makd.afinity.data.models.media.ContinueWatchingOrder
 import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.models.media.LibraryFilterOptions
@@ -144,6 +145,11 @@ interface MediaRepository {
     suspend fun getItemById(itemId: UUID): AfinityItem?
 
     suspend fun getItemsByIds(ids: List<UUID>, fields: List<ItemFields>? = null): List<AfinityItem>
+
+    suspend fun getOwnersByIds(
+        ids: List<UUID>,
+        fields: List<ItemFields>? = null,
+    ): List<AfinityUserDataOwner>
 
     suspend fun getLibraryIndexResult(itemType: BaseItemKind): Result<List<LibraryIndexEntry>>
 

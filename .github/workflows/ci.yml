@@ -39,6 +39,10 @@ jobs:
         if: always()
         run: ./gradlew checkCancellationRethrow
 
+      - name: Check item projection
+        if: always()
+        run: ./gradlew checkItemProjection
+
       - name: Compile
         if: always()
         run: ./gradlew compileDebugKotlin

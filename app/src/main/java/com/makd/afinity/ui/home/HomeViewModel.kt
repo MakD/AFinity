@@ -53,6 +53,7 @@ import com.makd.afinity.data.repository.home.HomeSectionsRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
+import com.makd.afinity.data.store.ItemProjection
 import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.data.workers.HomeDataReloadWorker
 import com.makd.afinity.ui.components.EpisodeSelection
@@ -116,7 +117,8 @@ constructor(
 
     val canDownloadOnNetwork: StateFlow<Boolean> = downloadPermissions.isAllowedOnNetwork
 
-    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<HomeUiState> =
+        itemStore.project(viewModelScope, _uiState) { state -> projectHome(state) }
     private val _isFetchingRandomItem = MutableStateFlow(false)
     val isFetchingRandomItem: StateFlow<Boolean> = _isFetchingRandomItem.asStateFlow()
 
@@ -182,13 +184,13 @@ constructor(
         viewModelScope.launch {
             mediaRepository.getContinueWatchingFlow().collect { items ->
                 lastHomeRefreshedAt = System.currentTimeMillis()
-                _uiState.update { it.copy(continueWatching = itemStore.merge(items)) }
+                _uiState.update { it.copy(continueWatching = items) }
             }
         }
 
         viewModelScope.launch {
             mediaRepository.getNextUpFlow().collect { items ->
-                _uiState.update { it.copy(nextUp = itemStore.merge(items), nextUpLoaded = true) }
+                _uiState.update { it.copy(nextUp = items, nextUpLoaded = true) }
             }
         }
 
@@ -451,19 +453,12 @@ constructor(
         }
 
         viewModelScope.launch {
-            itemStore.overlay.collect { overlay ->
-                if (overlay.isEmpty()) return@collect
-                _uiState.update { state -> state.mergedWith(itemStore) }
-            }
-        }
-
-        viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
                 val targetItem =
                     event.resolveTargetItem(
                         mediaRepository = mediaRepository,
                         heldItem = { id ->
-                            _uiState.value.heldItemById(id) ?: itemStore.get(id) as? AfinityItem
+                            uiState.value.heldItemById(id) ?: itemStore.get(id) as? AfinityItem
                         },
                     )
 
@@ -472,7 +467,9 @@ constructor(
                     event.seriesId
                         ?: (targetItem as? AfinityEpisode)?.seriesId
                         ?: (targetItem as? AfinitySeason)?.seriesId
-                if (trueSeriesId != null && trueSeriesId != targetItem?.id) {
+                if (
+                    !event.isContentChange && trueSeriesId != null && trueSeriesId != targetItem?.id
+                ) {
                     parentShowItem = event.parentItem?.takeIf { it.id == trueSeriesId }
                     if (parentShowItem == null) {
                         try {
@@ -488,10 +485,7 @@ constructor(
                     }
                 }
 
-                targetItem?.let { item ->
-                    homeSectionsRepository.updateItem(item)
-                    patchUiStateItem(item)
-                }
+                targetItem?.let { item -> homeSectionsRepository.updateItem(item) }
 
                 val isPlayed = (targetItem?.played == true) || (event.userData?.played == true)
                 val idToRemove = targetItem?.id ?: event.itemId
@@ -507,7 +501,7 @@ constructor(
 
                 parentShowItem?.let { show ->
                     homeSectionsRepository.updateItem(show)
-                    patchUiStateItem(show)
+                    itemStore.put(show)
                 }
             }
         }
@@ -544,33 +538,6 @@ constructor(
 
     private fun <T : AfinityItem> List<T>.removingItem(id: UUID): List<T> =
         if (none { it.id == id }) this else filter { it.id != id }
-
-    private fun patchUiStateItem(updatedItem: AfinityItem) {
-        _uiState.update { state ->
-            fun <T : AfinityItem> patchItem(list: List<T>, replacement: T?): List<T> =
-                if (replacement == null || list.none { it.id == updatedItem.id }) list
-                else list.map { if (it.id == updatedItem.id) replacement else it }
-
-            fun <T : AfinityItem> patchMap(
-                map: Map<String, List<T>>,
-                replacement: T?,
-            ): Map<String, List<T>> =
-                if (
-                    replacement == null ||
-                        map.values.none { list -> list.any { it.id == updatedItem.id } }
-                )
-                    map
-                else map.mapValues { (_, items) -> patchItem(items, replacement) }
-
-            state.copy(
-                heroCarouselItems = patchItem(state.heroCarouselItems, updatedItem),
-                latestMovies = patchItem(state.latestMovies, updatedItem as? AfinityMovie),
-                latestTvSeries = patchItem(state.latestTvSeries, updatedItem as? AfinityShow),
-                genreMovies = patchMap(state.genreMovies, updatedItem as? AfinityMovie),
-                genreShows = patchMap(state.genreShows, updatedItem as? AfinityShow),
-            )
-        }
-    }
 
     fun hydrateSection(key: String) {
         homeSectionsRepository.hydrate(key)
@@ -1008,50 +975,47 @@ data class HomeUiState(
     val offlineReason: UnreachableReason? = null,
 )
 
-fun HomeUiState.mergedWith(itemStore: ItemStore): HomeUiState {
-    val hero = itemStore.merge(heroCarouselItems)
-    val continueW = itemStore.merge(continueWatching)
-    val next = itemStore.merge(nextUp)
-    val upcoming = itemStore.merge(upcomingEpisodes)
-    val movies = itemStore.merge(latestMovies)
-    val shows = itemStore.merge(latestTvSeries)
-    val again = itemStore.merge(watchAgain)
-    val rated = itemStore.merge(highestRated)
-    val genreM = genreMovies.mapValues { (_, list) -> itemStore.merge(list) }
-    val genreS = genreShows.mapValues { (_, list) -> itemStore.merge(list) }
-    val movieSections = separateMovieLibrarySections.map { (lib, items) ->
-        lib to itemStore.merge(items)
-    }
-    val showSections = separateTvLibrarySections.map { (lib, items) ->
-        lib to itemStore.merge(items)
-    }
-    val mixedSections = separateMixedLibrarySections.map { (lib, items) ->
-        lib to itemStore.merge(items)
-    }
+fun ItemProjection.projectHome(state: HomeUiState): HomeUiState {
+    val hero = live(state.heroCarouselItems)
+    val continueW = live(state.continueWatching)
+    val next = live(state.nextUp)
+    val upcoming = live(state.upcomingEpisodes)
+    val movies = live(state.latestMovies)
+    val shows = live(state.latestTvSeries)
+    val again = live(state.watchAgain)
+    val rated = live(state.highestRated)
+    val genreM = liveValues(state.genreMovies)
+    val genreS = liveValues(state.genreShows)
+    val movieSections =
+        liveNested(state.separateMovieLibrarySections, { it.second }, { p, l -> p.first to l })
+    val showSections =
+        liveNested(state.separateTvLibrarySections, { it.second }, { p, l -> p.first to l })
+    val mixedSections =
+        liveNested(state.separateMixedLibrarySections, { it.second }, { p, l -> p.first to l })
+    val combined =
+        liveNested(state.combinedSections, { it.sectionItems() }, { s, l -> s.withSectionItems(l) })
+    val pinned =
+        liveNested(state.pinnedSections, { it.sectionItems() }, { s, l -> s.withSectionItems(l) })
 
     val unchanged =
-        hero === heroCarouselItems &&
-            continueW === continueWatching &&
-            next === nextUp &&
-            upcoming === upcomingEpisodes &&
-            movies === latestMovies &&
-            shows === latestTvSeries &&
-            again === watchAgain &&
-            rated === highestRated &&
-            genreM.keys.all { genreM[it] === genreMovies[it] } &&
-            genreS.keys.all { genreS[it] === genreShows[it] } &&
-            movieSections.indices.all {
-                movieSections[it].second === separateMovieLibrarySections[it].second
-            } &&
-            showSections.indices.all {
-                showSections[it].second === separateTvLibrarySections[it].second
-            } &&
-            mixedSections.indices.all {
-                mixedSections[it].second === separateMixedLibrarySections[it].second
-            }
-    if (unchanged) return this
+        hero === state.heroCarouselItems &&
+            continueW === state.continueWatching &&
+            next === state.nextUp &&
+            upcoming === state.upcomingEpisodes &&
+            movies === state.latestMovies &&
+            shows === state.latestTvSeries &&
+            again === state.watchAgain &&
+            rated === state.highestRated &&
+            genreM === state.genreMovies &&
+            genreS === state.genreShows &&
+            movieSections === state.separateMovieLibrarySections &&
+            showSections === state.separateTvLibrarySections &&
+            mixedSections === state.separateMixedLibrarySections &&
+            combined === state.combinedSections &&
+            pinned === state.pinnedSections
+    if (unchanged) return state
 
-    return copy(
+    return state.copy(
         heroCarouselItems = hero,
         continueWatching = continueW,
         nextUp = next,
@@ -1065,8 +1029,36 @@ fun HomeUiState.mergedWith(itemStore: ItemStore): HomeUiState {
         separateMovieLibrarySections = movieSections,
         separateTvLibrarySections = showSections,
         separateMixedLibrarySections = mixedSections,
+        combinedSections = combined,
+        pinnedSections = pinned,
     )
 }
+
+private fun HomeSection.sectionItems(): List<AfinityItem> =
+    when (this) {
+        is HomeSection.Person -> section.items
+        is HomeSection.Movie -> section.recommendedItems
+        is HomeSection.PersonFromMovie -> section.items
+        is HomeSection.Spotlight -> items
+        is HomeSection.Items -> items
+        is HomeSection.Ranked -> items
+        is HomeSection.Pending,
+        is HomeSection.Genre -> emptyList()
+    }
+
+@Suppress("UNCHECKED_CAST")
+private fun HomeSection.withSectionItems(items: List<AfinityItem>): HomeSection =
+    when (this) {
+        is HomeSection.Person -> copy(section = section.copy(items = items))
+        is HomeSection.Movie ->
+            copy(section = section.copy(recommendedItems = items as List<AfinityMovie>))
+        is HomeSection.PersonFromMovie -> copy(section = section.copy(items = items))
+        is HomeSection.Spotlight -> copy(items = items)
+        is HomeSection.Items -> copy(items = items)
+        is HomeSection.Ranked -> copy(items = items)
+        is HomeSection.Pending,
+        is HomeSection.Genre -> this
+    }
 
 fun HomeUiState.heldItemById(id: UUID): AfinityItem? =
     continueWatching.firstOrNull { it.id == id }

@@ -13,6 +13,7 @@ import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.music.MusicRepository
+import com.makd.afinity.data.store.ItemStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
 import javax.inject.Inject
@@ -21,7 +22,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -45,6 +45,7 @@ constructor(
     private val downloadRepository: DownloadRepository,
     private val downloadPermissions: DownloadPermissions,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
+    private val itemStore: ItemStore,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -66,7 +67,28 @@ constructor(
     val userProfileImageUrl: StateFlow<String?> = appDataRepository.userProfileImageUrl
 
     private val _uiState = MutableStateFlow(MusicGenreUiState())
-    val uiState: StateFlow<MusicGenreUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<MusicGenreUiState> =
+        itemStore.project(viewModelScope, _uiState) { state ->
+            val albums = liveOwners(state.albums)
+            val artists = liveOwners(state.artists)
+            val tracks = liveOwners(state.tracks)
+            val recentlyAdded = liveOwners(state.recentlyAdded)
+            if (
+                albums === state.albums &&
+                    artists === state.artists &&
+                    tracks === state.tracks &&
+                    recentlyAdded === state.recentlyAdded
+            ) {
+                state
+            } else {
+                state.copy(
+                    albums = albums,
+                    artists = artists,
+                    tracks = tracks,
+                    recentlyAdded = recentlyAdded,
+                )
+            }
+        }
 
     init {
         viewModelScope.launch { loadGenreContent() }

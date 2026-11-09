@@ -27,8 +27,10 @@ suspend fun MediaChangeEvent.resolveChangedItems(
             ?: (updatedItem as? AfinitySeason)?.seriesId
 
     val candidateIds = linkedSetOf(itemId)
-    resolvedSeriesId?.let { candidateIds.add(it) }
-    seasonId?.let { candidateIds.add(it) }
+    if (!isContentChange) {
+        resolvedSeriesId?.let { candidateIds.add(it) }
+        seasonId?.let { candidateIds.add(it) }
+    }
 
     return candidateIds
         .filter { displayedIds == null || it in displayedIds }

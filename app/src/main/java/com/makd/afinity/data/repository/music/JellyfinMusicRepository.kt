@@ -30,6 +30,8 @@ import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinApiInvoker
 import com.makd.afinity.data.repository.NoActiveSessionException
+import com.makd.afinity.data.store.QueryInvalidator
+import com.makd.afinity.data.store.QueryKey
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -69,6 +71,7 @@ constructor(
     private val databaseRepository: DatabaseRepository,
     private val apiInvoker: JellyfinApiInvoker,
     private val mediaChangeManager: MediaChangeManager,
+    private val queryInvalidator: QueryInvalidator,
 ) : MusicRepository {
 
     private val playlistsRefreshTrigger = MutableStateFlow(0)
@@ -740,6 +743,7 @@ constructor(
                         userId = userId,
                     )
                 invalidatePlaylistsCache()
+                queryInvalidator.invalidate(setOf(QueryKey.PlaylistEntries(playlistId)))
                 mediaChangeManager.notifyLibraryContentChanged("playlist_items_added")
             } catch (e: CancellationException) {
                 throw e
@@ -759,6 +763,7 @@ constructor(
                         entryIds = entryIds,
                     )
                 invalidatePlaylistsCache()
+                queryInvalidator.invalidate(setOf(QueryKey.PlaylistEntries(playlistId)))
                 mediaChangeManager.notifyLibraryContentChanged("playlist_items_removed")
             } catch (e: CancellationException) {
                 throw e

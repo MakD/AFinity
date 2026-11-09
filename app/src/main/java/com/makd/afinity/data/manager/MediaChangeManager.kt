@@ -1,5 +1,6 @@
 package com.makd.afinity.data.manager
 
+import android.os.SystemClock
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
@@ -11,6 +12,7 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.di.ApplicationScope
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -38,6 +40,8 @@ constructor(
     private val itemStore: ItemStore,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
+
+    private val recentParents = ConcurrentHashMap<UUID, Pair<Long, AfinityItem>>()
 
     private val _batches = MutableSharedFlow<MediaChangeBatch>(extraBufferCapacity = 16)
     val batches = _batches.asSharedFlow()
@@ -99,8 +103,13 @@ constructor(
     }
 
     private suspend fun emitBatch(batch: MediaChangeBatch) {
-        val (userDataChanges, contentChanges) = batch.changes.partition { it.isUserDataChange }
-        itemStore.put(contentChanges.flatMap { it.storeItems() })
+        val (userDataChanges, otherChanges) = batch.changes.partition { it.isUserDataChange }
+        val (contentChanges, plainChanges) = otherChanges.partition { it.isContentChange }
+        itemStore.put(
+            plainChanges.flatMap { it.storeItems() } +
+                contentChanges.flatMap { listOfNotNull(it.parentItem, it.seasonItem) }
+        )
+        itemStore.putContent(contentChanges.mapNotNull { it.updatedItem })
         itemStore.putUserDataFrom(userDataChanges.flatMap { it.storeItems() })
         _batches.emit(batch)
     }
@@ -110,34 +119,53 @@ constructor(
     }
 
     suspend fun publishContentChanges(ids: List<UUID>) {
-        if (ids.isEmpty() || ids.size > CONTENT_CHANGE_PATCH_LIMIT) return
+        if (ids.isEmpty()) return
+        val wanted =
+            if (ids.size <= CONTENT_CHANGE_PATCH_LIMIT) ids
+            else itemStore.onScreen(ids).take(ON_SCREEN_PATCH_LIMIT)
+        if (ids.size > CONTENT_CHANGE_PATCH_LIMIT) {
+            Timber.d("Content batch of ${ids.size}: patching ${wanted.size} on screen")
+        }
+        itemStore.markStale(ids - wanted.toSet())
+        if (wanted.isEmpty()) return
 
-        val items =
+        val owners =
             try {
-                mediaRepository.getItemsByIds(ids, FieldSets.ITEM_DETAIL)
+                wanted.chunked(CONTENT_FETCH_CHUNK).flatMap { chunk ->
+                    mediaRepository.getOwnersByIds(chunk, FieldSets.ITEM_DETAIL)
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Timber.e(e, "Failed to resolve content changes for ${ids.size} items")
+                Timber.e(e, "Failed to resolve content changes for ${wanted.size} items")
+                itemStore.markStale(wanted)
                 return
             }
+        itemStore.markStale(wanted - owners.mapTo(HashSet()) { it.id })
+        val (items, music) = owners.partition { it is AfinityItem }
+        itemStore.putContent(music)
         if (items.isEmpty()) return
 
-        val changes = items.map { item ->
-            MediaChangeEvent(
-                itemId = item.id,
-                updatedItem = item,
-                seriesId =
-                    (item as? AfinityEpisode)?.seriesId ?: (item as? AfinitySeason)?.seriesId,
-                seasonId = (item as? AfinityEpisode)?.seasonId,
-                source = MediaChangeSource.WEBSOCKET,
-            )
-        }
+        val changes =
+            items.filterIsInstance<AfinityItem>().map { item ->
+                MediaChangeEvent(
+                    itemId = item.id,
+                    updatedItem = item,
+                    seriesId =
+                        (item as? AfinityEpisode)?.seriesId ?: (item as? AfinitySeason)?.seriesId,
+                    seasonId = (item as? AfinityEpisode)?.seasonId,
+                    source = MediaChangeSource.WEBSOCKET,
+                    isContentChange = true,
+                )
+            }
         emitBatch(MediaChangeBatch(changes, MediaChangeSource.WEBSOCKET))
     }
 
     companion object {
         const val CONTENT_CHANGE_PATCH_LIMIT = 10
+        private const val ON_SCREEN_PATCH_LIMIT = 200
+        private const val CONTENT_FETCH_CHUNK = 100
+        private const val PARENT_REUSE_MS = 2_000L
         private const val RESYNC_CHUNK_SIZE = 100
     }
 
@@ -242,7 +270,9 @@ constructor(
             val resolvedSeasonId = (item as? AfinityEpisode)?.seasonId
             val parentItem = resolvedSeriesId?.let { seriesId ->
                 resolvedById[seriesId]
-                    ?: resolvedParents.getOrPut(seriesId) { resolveParentItem(item, seriesId) }
+                    ?: resolvedParents.getOrPut(seriesId) {
+                        resolveParentItem(item, seriesId, reuseRecent = true)
+                    }
             }
             val seasonItem = resolvedSeasonId?.let { resolvedById[it] }
 
@@ -341,6 +371,8 @@ constructor(
         knownSeasonId: UUID? = null,
         source: MediaChangeSource = MediaChangeSource.MANUAL,
         userData: UserItemDataDto? = null,
+        patch: UserDataPatch? = null,
+        isContentChange: Boolean = false,
     ) {
         try {
             val parentItem = resolveParentItem(updatedItem, knownSeriesId)
@@ -369,6 +401,8 @@ constructor(
                     seasonId = resolvedSeasonId,
                     source = source,
                     userData = userData,
+                    patch = patch,
+                    isContentChange = isContentChange,
                 )
             )
         } catch (e: CancellationException) {
@@ -387,6 +421,7 @@ constructor(
     private suspend fun resolveParentItem(
         updatedItem: AfinityItem?,
         knownSeriesId: UUID?,
+        reuseRecent: Boolean = false,
     ): AfinityItem? {
         val parentId =
             when (updatedItem) {
@@ -396,7 +431,16 @@ constructor(
             }
 
         if (parentId == null || parentId == updatedItem?.id) return null
-        return mediaRepository.getItemById(parentId)
+        val startedAt = SystemClock.elapsedRealtime()
+        if (reuseRecent) {
+            recentParents[parentId]?.let { (fetchedAt, parent) ->
+                if (startedAt - fetchedAt < PARENT_REUSE_MS) return parent
+            }
+        }
+        val parent = mediaRepository.getItemById(parentId) ?: return null
+        recentParents.entries.removeIf { startedAt - it.value.first >= PARENT_REUSE_MS }
+        recentParents[parentId] = startedAt to parent
+        return parent
     }
 
     private suspend fun resolveSeasonItem(
@@ -447,6 +491,7 @@ data class MediaChangeEvent(
     val source: MediaChangeSource,
     val userData: UserItemDataDto? = null,
     val patch: UserDataPatch? = null,
+    val isContentChange: Boolean = false,
 ) {
     val isUserDataChange: Boolean
         get() = userData != null || patch != null

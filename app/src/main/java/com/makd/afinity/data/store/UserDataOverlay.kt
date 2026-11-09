@@ -3,9 +3,7 @@ package com.makd.afinity.data.store
 import androidx.paging.PagingData
 import androidx.paging.map
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.data.models.media.AfinityUserDataOwner
 import com.makd.afinity.data.models.media.withUserData
-import com.makd.afinity.data.models.media.withUserDataFrom
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
@@ -33,14 +31,7 @@ fun <T : AfinityItem> Flow<PagingData<T>>.withUserDataOverlay(
                 pagingData.map { item ->
                     val source = updates[item.id] ?: return@map item
                     @Suppress("UNCHECKED_CAST")
-                    mergedWith(item, source) as T
+                    itemStore.pagingMerge(item, source) as T
                 }
             }
         }
-
-private fun mergedWith(item: AfinityItem, source: AfinityUserDataOwner): AfinityItem =
-    if (source is AfinityItem && source::class == item::class) {
-        source
-    } else {
-        item.withUserDataFrom(source)
-    }

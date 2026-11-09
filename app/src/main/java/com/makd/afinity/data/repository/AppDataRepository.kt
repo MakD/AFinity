@@ -233,7 +233,10 @@ constructor(
                 if (changedId != null && change.kind != AdminChangeKind.DELETED) {
                     applyAdminItemChange(changedId)
                 }
-                if (change.kind != AdminChangeKind.IMAGES) {
+                if (
+                    change.kind != AdminChangeKind.IMAGES &&
+                        change.kind != AdminChangeKind.MEMBERSHIP
+                ) {
                     refreshPlaybackSections()
                 }
                 if (change.kind == AdminChangeKind.METADATA) {
@@ -680,7 +683,7 @@ constructor(
                     .collect {
                         if (!_isInitialDataLoaded.value) return@collect
                         Timber.d("Bus: library changed — refreshing library sections")
-                        itemStore.clear()
+                        itemStore.markAllStale()
                         refreshLibrarySections()
                     }
             }
@@ -692,7 +695,7 @@ constructor(
                     .collect {
                         if (!_isInitialDataLoaded.value) return@collect
                         Timber.d("Bus: content resync — refreshing library sections")
-                        itemStore.clear()
+                        itemStore.markAllStale()
                         refreshLibrarySections()
                         _lastResyncAt.value = System.currentTimeMillis()
                     }
@@ -1391,12 +1394,31 @@ constructor(
             } catch (e: Exception) {
                 Timber.e(e, "Failed to fetch item $itemId after admin change")
                 null
-            } ?: return
+            }
+                ?: run {
+                    refreshMusicContent(itemId)
+                    return
+                }
 
         updateItemInCaches(updatedItem)
         mediaRepository.patchItemImages(updatedItem)
         _heroCarouselItems.update { it.withPatchedImages(updatedItem) }
-        mediaChangeManager.publishKnownChange(updatedItem)
+        mediaChangeManager.publishKnownChange(updatedItem, isContentChange = true)
+    }
+
+    private suspend fun refreshMusicContent(itemId: UUID) {
+        val music =
+            try {
+                mediaRepository.getOwnersByIds(listOf(itemId), FieldSets.ITEM_DETAIL).filterNot {
+                    it is AfinityItem
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to refresh music item $itemId after admin change")
+                emptyList()
+            }
+        itemStore.putContent(music)
     }
 
     suspend fun updateItemInCaches(updatedItem: AfinityItem) {
@@ -1587,7 +1609,7 @@ constructor(
         itemStore.merge(items)
 
     private fun MediaChangeEvent.mayReenterLatest(): Boolean {
-        if (userData == null && patch == null) return false
+        if (userData == null && patch?.played != false) return false
         val item = updatedItem ?: return false
         if (item !is AfinityMovie && item !is AfinityShow) return false
         val data = userData

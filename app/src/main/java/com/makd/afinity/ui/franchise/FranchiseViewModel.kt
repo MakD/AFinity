@@ -5,13 +5,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.repository.franchise.FranchiseRepository
+import com.makd.afinity.data.store.ItemStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -22,12 +22,17 @@ class FranchiseViewModel
 constructor(
     savedStateHandle: SavedStateHandle,
     private val franchiseRepository: FranchiseRepository,
+    private val itemStore: ItemStore,
 ) : ViewModel() {
 
     private val franchiseId: String = savedStateHandle["franchiseId"] ?: ""
 
     private val _uiState = MutableStateFlow(FranchiseUiState())
-    val uiState: StateFlow<FranchiseUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<FranchiseUiState> =
+        itemStore.project(viewModelScope, _uiState) { state ->
+            val items = live(state.items)
+            if (items === state.items) state else state.copy(items = items)
+        }
 
     private var loadJob: Job? = null
 

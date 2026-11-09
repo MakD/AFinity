@@ -15,7 +15,6 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityShow
-import com.makd.afinity.data.models.media.withUserDataFrom
 import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.data.models.wikidata.WikidataSubjectType
 import com.makd.afinity.data.repository.AppDataRepository
@@ -36,7 +35,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -77,7 +76,13 @@ constructor(
         }
 
     private val _uiState = MutableStateFlow(PersonUiState())
-    val uiState: StateFlow<PersonUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<PersonUiState> =
+        itemStore.project(viewModelScope, _uiState) { state ->
+            val movies = live(state.movies)
+            val shows = live(state.shows)
+            if (movies === state.movies && shows === state.shows) state
+            else state.copy(movies = movies, shows = shows)
+        }
 
     private var lastLoadedAt = System.currentTimeMillis()
 
@@ -86,7 +91,11 @@ constructor(
     private var creditsTmdbId: Int? = null
 
     init {
-        viewModelScope.launch { adminChangeBroadcaster.itemChanged.collect { loadPersonDetails() } }
+        viewModelScope.launch {
+            adminChangeBroadcaster.itemChanged
+                .filter { changedId -> changedId.equals(personIdStr, ignoreCase = true) }
+                .collect { loadPersonDetails() }
+        }
 
         viewModelScope.launch {
             appDataRepository.isInitialDataLoaded.collect { isLoaded ->
@@ -106,33 +115,10 @@ constructor(
         }
 
         viewModelScope.launch {
-            itemStore.overlay.collect { overlay ->
-                if (overlay.isEmpty()) return@collect
-                _uiState.update { state ->
-                    var changed = false
-                    val newMovies =
-                        state.movies.map { movie ->
-                            val source = overlay[movie.id] ?: return@map movie
-                            val next = movie.withUserDataFrom(source) as? AfinityMovie ?: movie
-                            if (next !== movie) changed = true
-                            next
-                        }
-                    val newShows =
-                        state.shows.map { show ->
-                            val source = overlay[show.id] ?: return@map show
-                            val next = show.withUserDataFrom(source) as? AfinityShow ?: show
-                            if (next !== show) changed = true
-                            next
-                        }
-                    if (changed) state.copy(movies = newMovies, shows = newShows) else state
-                }
-            }
-        }
-        viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
                 val displayedIds = buildSet {
-                    _uiState.value.movies.forEach { add(it.id) }
-                    _uiState.value.shows.forEach { add(it.id) }
+                    uiState.value.movies.forEach { add(it.id) }
+                    uiState.value.shows.forEach { add(it.id) }
                 }
 
                 val resolved =
@@ -140,8 +126,8 @@ constructor(
                         mediaRepository = mediaRepository,
                         displayedIds = displayedIds,
                         heldItem = { id ->
-                            _uiState.value.movies.firstOrNull { it.id == id }
-                                ?: _uiState.value.shows.firstOrNull { it.id == id }
+                            uiState.value.movies.firstOrNull { it.id == id }
+                                ?: uiState.value.shows.firstOrNull { it.id == id }
                                 ?: itemStore.get(id) as? AfinityItem
                         },
                     )
@@ -198,8 +184,8 @@ constructor(
                     val personItems = itemsDeferred.await()
                     _uiState.update { currentState ->
                         currentState.copy(
-                            movies = itemStore.merge(personItems.filterIsInstance<AfinityMovie>()),
-                            shows = itemStore.merge(personItems.filterIsInstance<AfinityShow>()),
+                            movies = personItems.filterIsInstance<AfinityMovie>(),
+                            shows = personItems.filterIsInstance<AfinityShow>(),
                         )
                     }
 

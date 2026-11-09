@@ -12,6 +12,7 @@ import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.download.PlaylistDownloadFilter
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.PlaylistEntry
+import com.makd.afinity.data.models.media.UserDataPatch
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.player.MusicQuality
@@ -21,6 +22,9 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.music.MusicRepository
+import com.makd.afinity.data.store.ItemStore
+import com.makd.afinity.data.store.QueryInvalidator
+import com.makd.afinity.data.store.QueryKey
 import com.makd.afinity.ui.components.DownloadConfirm
 import com.makd.afinity.ui.components.DownloadConfirmKind
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -35,7 +39,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -70,15 +73,6 @@ private fun AfinityPlaylist.withEntryTotals(entries: List<PlaylistEntry>): Afini
                 }
             },
     )
-
-private fun List<PlaylistEntry>.withFavorite(
-    trackId: UUID,
-    favorite: Boolean,
-): List<PlaylistEntry> = map { entry ->
-    if (entry is PlaylistEntry.Audio && entry.track.id == trackId)
-        entry.copy(track = entry.track.copy(favorite = favorite))
-    else entry
-}
 
 data class PlaylistUiState(
     val playlist: AfinityPlaylist? = null,
@@ -116,6 +110,8 @@ constructor(
     private val downloadRepository: DownloadRepository,
     private val appDataRepository: AppDataRepository,
     private val downloadPermissions: DownloadPermissions,
+    private val itemStore: ItemStore,
+    private val queryInvalidator: QueryInvalidator,
     preferencesRepository: PreferencesRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -147,22 +143,49 @@ constructor(
 
     private val _downloadMessages = MutableSharedFlow<PlaylistDownloadMessage>()
     val downloadMessages = _downloadMessages.asSharedFlow()
-    val uiState: StateFlow<PlaylistUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<PlaylistUiState> =
+        itemStore.project(viewModelScope, _uiState) { state ->
+            val entries =
+                liveEach(
+                    state.entries,
+                    inner = { entry ->
+                        when (entry) {
+                            is PlaylistEntry.Video -> entry.item
+                            is PlaylistEntry.Audio -> entry.track
+                        }
+                    },
+                    rebuild = { entry, owner ->
+                        when (entry) {
+                            is PlaylistEntry.Video ->
+                                (owner as? AfinityItem)?.let { entry.copy(item = it) } ?: entry
+                            is PlaylistEntry.Audio ->
+                                (owner as? AfinityTrack)?.let { entry.copy(track = it) } ?: entry
+                        }
+                    },
+                )
+            if (entries === state.entries) state else state.copy(entries = entries)
+        }
 
     init {
         load()
         observeDownloads()
+        viewModelScope.launch {
+            queryInvalidator.invalidations.collect { keys ->
+                if (QueryKey.PlaylistEntries(playlistId) in keys) reload()
+            }
+        }
     }
 
     fun toggleTrackFavorite(trackId: UUID) {
-        val currentEntries = _uiState.value.entries
-        val track = _uiState.value.tracks.find { it.id == trackId } ?: return
+        val track = uiState.value.tracks.find { it.id == trackId } ?: return
         val newFavorite = !track.favorite
-        _uiState.update { it.copy(entries = currentEntries.withFavorite(trackId, newFavorite)) }
+        itemStore.applyPatch(trackId, UserDataPatch(favorite = newFavorite))
         viewModelScope.launch {
             runCatching { musicRepository.setFavorite(trackId, newFavorite) }
                 .onSuccess { appDataRepository.updateTrackFavoriteStatus(track, newFavorite) }
-                .onFailure { _uiState.update { it.copy(entries = currentEntries) } }
+                .onFailure {
+                    itemStore.applyPatch(trackId, UserDataPatch(favorite = track.favorite))
+                }
         }
     }
 

@@ -17,6 +17,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -32,6 +33,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.sockets.SocketApiState
 import org.jellyfin.sdk.model.api.GeneralCommand
@@ -73,8 +75,11 @@ constructor(
     private var hasConnectedBefore = false
     private var lastSessionKey: String? = null
     private var resyncedForThisConnection = false
+    private var pendingResync: Job? = null
+    private val socketDispatcher = Dispatchers.IO.limitedParallelism(1)
 
     private companion object {
+        val RESYNC_SETTLE = 1.seconds
         const val SUBSCRIPTION_RETRY_DELAY_MS = 3_000L
         const val SUBSCRIPTION_IMMEDIATE_RETRIES = 3
         const val LIBRARY_SCAN_TASK_KEY = "RefreshLibrary"
@@ -150,7 +155,7 @@ constructor(
     private suspend fun runSocket() {
         val currentApiClient = sessionManager.getCurrentApiClient() ?: return
         try {
-            coroutineScope {
+            withContext(socketDispatcher) {
                 launch { monitorSocketState(currentApiClient) }
                 launch { subscribeToLibraryChanges(currentApiClient) }
                 launch { subscribeToUserDataChanges(currentApiClient) }
@@ -166,8 +171,28 @@ constructor(
                 launch { subscribeToLiveTvTimers(currentApiClient) }
             }
         } finally {
+            pendingResync?.cancel()
+            pendingResync = null
             resyncedForThisConnection = false
             _connectionState.value = WebSocketState.DISCONNECTED
+        }
+    }
+
+    private fun scheduleResync() {
+        pendingResync?.cancel()
+        pendingResync = scope.launch {
+            delay(RESYNC_SETTLE)
+            if (_connectionState.value != WebSocketState.CONNECTED) return@launch
+            if (!resyncedForThisConnection) {
+                resyncedForThisConnection = true
+                scope.launch { mediaChangeManager.resyncUserData() }
+                if (hasConnectedBefore) {
+                    Timber.d("WebSocket reconnected - resyncing user data and content")
+                    mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
+                    mediaRefreshBus.emit(RefreshTrigger.CONTENT_RESYNC)
+                }
+            }
+            hasConnectedBefore = true
         }
     }
 
@@ -189,27 +214,18 @@ constructor(
                     previousState == WebSocketState.CONNECTED &&
                         newState != WebSocketState.CONNECTED
                 ) {
+                    pendingResync?.cancel()
+                    pendingResync = null
                     resyncedForThisConnection = false
                 }
 
-                if (
+                val becameConnected =
                     newState == WebSocketState.CONNECTED &&
                         previousState != WebSocketState.CONNECTED
-                ) {
-                    if (!resyncedForThisConnection) {
-                        resyncedForThisConnection = true
-                        scope.launch { mediaChangeManager.resyncUserData() }
-                        if (hasConnectedBefore) {
-                            Timber.d("WebSocket reconnected - resyncing user data and content")
-                            mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
-                            mediaRefreshBus.emit(RefreshTrigger.CONTENT_RESYNC)
-                        }
-                    }
-                    hasConnectedBefore = true
-                }
-
                 previousState = newState
                 _connectionState.value = newState
+
+                if (becameConnected) scheduleResync()
             }
         } catch (e: CancellationException) {
             throw e
@@ -348,20 +364,16 @@ constructor(
         if (updated.isNotEmpty()) {
             mediaChangeManager.notifyLibraryMetadataChanged("library items updated websocket event")
 
-            if (updated.size <= MediaChangeManager.CONTENT_CHANGE_PATCH_LIMIT) {
-                val ids = updated.mapNotNull { raw ->
-                    ItemIds.canonical(raw)?.let { canonical ->
-                        try {
-                            UUID.fromString(canonical)
-                        } catch (_: IllegalArgumentException) {
-                            null
-                        }
+            val ids = updated.mapNotNull { raw ->
+                ItemIds.canonical(raw)?.let { canonical ->
+                    try {
+                        UUID.fromString(canonical)
+                    } catch (_: IllegalArgumentException) {
+                        null
                     }
                 }
-                scope.launch { mediaChangeManager.publishContentChanges(ids) }
-            } else {
-                Timber.d("Skipping per-item patch for ${updated.size} updated items (scan-sized)")
             }
+            scope.launch { mediaChangeManager.publishContentChanges(ids) }
         }
     }
 

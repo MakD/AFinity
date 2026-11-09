@@ -23,6 +23,8 @@ import com.makd.afinity.data.models.music.encodeLyricsJson
 import com.makd.afinity.data.models.music.toAfinityLyricLines
 import com.makd.afinity.data.network.toUtcString
 import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.data.store.QueryInvalidator
+import com.makd.afinity.data.store.QueryKey
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -121,6 +123,7 @@ constructor(
     private val sessionManager: SessionManager,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val databaseRepository: DatabaseRepository,
+    private val queryInvalidator: QueryInvalidator,
 ) : AdminRepository {
 
     private fun getApiClient() = sessionManager.getCurrentApiClient()
@@ -1130,7 +1133,7 @@ constructor(
                 CollectionApi(apiClient)
                     .createCollection(name = name, ids = itemIds, isLocked = !searchMetadata)
                     .content
-            itemIds.forEach(adminChangeBroadcaster::notifyItemChanged)
+            announceMembership(created.id, itemIds)
             created.id.toString()
         }
 
@@ -1144,7 +1147,7 @@ constructor(
                     collectionId = UUID.fromString(collectionId),
                     ids = itemIds.map(UUID::fromString),
                 )
-            (itemIds + collectionId).forEach(adminChangeBroadcaster::notifyItemChanged)
+            announceMembership(UUID.fromString(collectionId), itemIds)
         }
 
     override suspend fun removeFromCollection(
@@ -1157,8 +1160,22 @@ constructor(
                     collectionId = UUID.fromString(collectionId),
                     ids = itemIds.map(UUID::fromString),
                 )
-            (itemIds + collectionId).forEach(adminChangeBroadcaster::notifyItemChanged)
+            announceMembership(UUID.fromString(collectionId), itemIds)
         }
+
+    private fun announceMembership(collectionId: UUID, itemIds: List<String>) {
+        adminChangeBroadcaster.notifyMembershipChanged(collectionId.toString())
+        queryInvalidator.invalidate(
+            buildSet {
+                add(QueryKey.BoxSetChildren(collectionId))
+                itemIds.forEach { raw ->
+                    runCatching { UUID.fromString(raw) }
+                        .getOrNull()
+                        ?.let { add(QueryKey.ContainingBoxSets(it)) }
+                }
+            }
+        )
+    }
 
     private suspend fun <T> collectionResult(
         failure: String,

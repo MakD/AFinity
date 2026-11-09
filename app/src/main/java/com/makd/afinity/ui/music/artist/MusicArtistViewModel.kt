@@ -8,6 +8,7 @@ import com.makd.afinity.data.manager.AdminChangeKind
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.media.UserDataPatch
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityTrack
@@ -29,7 +30,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
@@ -74,7 +74,28 @@ constructor(
     val canDownloadOnNetwork: StateFlow<Boolean> = downloadPermissions.isAllowedOnNetwork
 
     private val _uiState = MutableStateFlow(MusicArtistUiState())
-    val uiState: StateFlow<MusicArtistUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<MusicArtistUiState> =
+        itemStore.project(viewModelScope, _uiState) { state ->
+            val artist = state.artist?.let { liveOwner(it) }
+            val topTracks = liveOwners(state.topTracks)
+            val albums = liveOwners(state.albums)
+            val appearsOn = liveOwners(state.appearsOn)
+            if (
+                artist === state.artist &&
+                    topTracks === state.topTracks &&
+                    albums === state.albums &&
+                    appearsOn === state.appearsOn
+            ) {
+                state
+            } else {
+                state.copy(
+                    artist = artist,
+                    topTracks = topTracks,
+                    albums = albums,
+                    appearsOn = appearsOn,
+                )
+            }
+        }
 
     private var popularityJob: Job? = null
     private var ranking: PopularRanking? = null
@@ -118,40 +139,13 @@ constructor(
                         if (enabled) it.copy(hotTrackIds = emptySet())
                         else
                             it.copy(
-                                topTracks = itemStore.mergeOwners(playCountOrder),
+                                topTracks = playCountOrder,
                                 popularFromLastFm = false,
                             )
                     }
                     val state = _uiState.value
                     state.artist?.let { observeLastFm(it.name, state.albums) }
                 }
-        }
-
-        viewModelScope.launch {
-            itemStore.overlay.collect { overlay ->
-                if (overlay.isEmpty()) return@collect
-                _uiState.update { state ->
-                    val topTracks = itemStore.mergeOwners(state.topTracks)
-                    val albums = itemStore.mergeOwners(state.albums)
-                    val appearsOn = itemStore.mergeOwners(state.appearsOn)
-                    val artist = state.artist?.let { itemStore.mergeOwners(listOf(it)).first() }
-                    if (
-                        topTracks === state.topTracks &&
-                            albums === state.albums &&
-                            appearsOn === state.appearsOn &&
-                            artist === state.artist
-                    ) {
-                        state
-                    } else {
-                        state.copy(
-                            topTracks = topTracks,
-                            albums = albums,
-                            appearsOn = appearsOn,
-                            artist = artist,
-                        )
-                    }
-                }
-            }
         }
     }
 
@@ -209,13 +203,12 @@ constructor(
                 val popular =
                     if (ranked.isEmpty()) topTracks
                     else (ranked + topTracks).distinctBy { it.id }.take(POPULAR_COUNT)
-                itemStore.putIfAbsent(popular + albums + appearsOn + listOfNotNull(artist))
                 _uiState.update {
                     it.copy(
-                        artist = artist?.let { a -> itemStore.mergeOwners(listOf(a)).first() },
-                        topTracks = itemStore.mergeOwners(popular),
-                        albums = itemStore.mergeOwners(albums),
-                        appearsOn = itemStore.mergeOwners(appearsOn),
+                        artist = artist,
+                        topTracks = popular,
+                        albums = albums,
+                        appearsOn = appearsOn,
                         popularFromLastFm = ranked.isNotEmpty(),
                         isLoading = false,
                     )
@@ -298,10 +291,7 @@ constructor(
             }
         if (ranked.isEmpty()) return
         val popular = (ranked + playCountOrder).distinctBy { it.id }.take(POPULAR_COUNT)
-        itemStore.putIfAbsent(popular)
-        _uiState.update {
-            it.copy(topTracks = itemStore.mergeOwners(popular), popularFromLastFm = true)
-        }
+        _uiState.update { it.copy(topTracks = popular, popularFromLastFm = true) }
         if (trackCount != null) {
             val updated =
                 PopularRanking(
@@ -315,26 +305,22 @@ constructor(
     }
 
     fun toggleTrackFavorite(trackId: UUID) {
-        val tracks = _uiState.value.topTracks
-        val track = tracks.find { it.id == trackId } ?: return
+        val track = uiState.value.topTracks.find { it.id == trackId } ?: return
         val newFavorite = !track.favorite
-        _uiState.update {
-            it.copy(
-                topTracks =
-                    tracks.map { t -> if (t.id == trackId) t.copy(favorite = newFavorite) else t }
-            )
-        }
+        itemStore.applyPatch(trackId, UserDataPatch(favorite = newFavorite))
         viewModelScope.launch {
             runCatching { musicRepository.setFavorite(trackId, newFavorite) }
                 .onSuccess { appDataRepository.updateTrackFavoriteStatus(track, newFavorite) }
-                .onFailure { _uiState.update { it.copy(topTracks = tracks) } }
+                .onFailure {
+                    itemStore.applyPatch(trackId, UserDataPatch(favorite = track.favorite))
+                }
         }
     }
 
     fun toggleFavorite() {
-        val artist = _uiState.value.artist ?: return
+        val artist = uiState.value.artist ?: return
         val newFavorite = !artist.favorite
-        _uiState.update { it.copy(artist = artist.copy(favorite = newFavorite)) }
+        itemStore.applyPatch(artist.id, UserDataPatch(favorite = newFavorite))
         viewModelScope.launch {
             runCatching { musicRepository.setFavorite(artist.id, newFavorite) }
                 .onSuccess {
@@ -342,7 +328,7 @@ constructor(
                     adminChangeBroadcaster.notifyItemChanged(artist.id.toString())
                 }
                 .onFailure {
-                    _uiState.update { it.copy(artist = artist.copy(favorite = artist.favorite)) }
+                    itemStore.applyPatch(artist.id, UserDataPatch(favorite = artist.favorite))
                 }
         }
     }

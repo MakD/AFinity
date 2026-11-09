@@ -35,6 +35,7 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.UserDataPatch
 import com.makd.afinity.data.models.music.MusicSearchResults
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.AudiobookshelfRepository
@@ -102,7 +103,13 @@ constructor(
 
     val canDownloadOnNetwork: StateFlow<Boolean> = downloadPermissions.isAllowedOnNetwork
 
-    val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<SearchUiState> =
+        itemStore.project(viewModelScope, _uiState) { state ->
+            val results = live(state.searchResults)
+            val episodes = live(state.episodeResults)
+            if (results === state.searchResults && episodes === state.episodeResults) state
+            else state.copy(searchResults = results, episodeResults = episodes)
+        }
 
     val isJellyseerrAuthenticated = jellyseerrRepository.isAuthenticated
     val isAudiobookshelfAuthenticated = audiobookshelfRepository.isAuthenticated
@@ -122,7 +129,17 @@ constructor(
                     databaseRepository.getEpisode(episodeId, it)
                 }
             },
-            onEpisodeUpdated = { episode -> updateItemInSearchResults(episode) },
+            onEpisodeUpdated = { episode ->
+                itemStore.applyPatch(
+                    episode.id,
+                    UserDataPatch(
+                        played = episode.played,
+                        favorite = episode.favorite,
+                        liked = episode.liked,
+                        playbackPositionTicks = episode.playbackPositionTicks,
+                    ),
+                )
+            },
         )
 
     val selectedEpisode: StateFlow<AfinityEpisode?> = episodeSelection.selected
@@ -187,30 +204,13 @@ constructor(
         }
 
         viewModelScope.launch {
-            itemStore.overlay.collect { overlay ->
-                if (overlay.isEmpty()) return@collect
-                _uiState.update { state ->
-                    val newResults = itemStore.merge(state.searchResults)
-                    val newEpisodes = itemStore.merge(state.episodeResults)
-                    if (
-                        newResults === state.searchResults && newEpisodes === state.episodeResults
-                    ) {
-                        state
-                    } else {
-                        state.copy(searchResults = newResults, episodeResults = newEpisodes)
-                    }
-                }
-            }
-        }
-
-        viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
                 val resolved =
                     event.resolveChangedItems(
                         mediaRepository = mediaRepository,
                         heldItem = { id ->
-                            _uiState.value.searchResults.firstOrNull { it.id == id }
-                                ?: _uiState.value.episodeResults.firstOrNull { it.id == id }
+                            uiState.value.searchResults.firstOrNull { it.id == id }
+                                ?: uiState.value.episodeResults.firstOrNull { it.id == id }
                                 ?: itemStore.get(id) as? AfinityItem
                         },
                     )
@@ -1372,29 +1372,6 @@ constructor(
             runCatching { musicRepository.setFavorite(trackId, newFavorite) }
                 .onSuccess { appDataRepository.updateTrackFavoriteStatus(track, newFavorite) }
                 .onFailure { _uiState.update { it.copy(musicSearchResults = musicResults) } }
-        }
-    }
-
-    private fun updateItemInSearchResults(updatedItem: AfinityItem) {
-        val currentResults = _uiState.value.searchResults
-        val index = currentResults.indexOfFirst { it.id == updatedItem.id }
-
-        if (index != -1) {
-            val mutableResults = currentResults.toMutableList()
-            mutableResults[index] = updatedItem
-            _uiState.update { it.copy(searchResults = mutableResults) }
-            Timber.d("Updated search result: ${updatedItem.name}")
-        }
-
-        if (updatedItem is AfinityEpisode) {
-            val currentEpisodes = _uiState.value.episodeResults
-            val episodeIndex = currentEpisodes.indexOfFirst { it.id == updatedItem.id }
-
-            if (episodeIndex != -1) {
-                val mutableEpisodes = currentEpisodes.toMutableList()
-                mutableEpisodes[episodeIndex] = updatedItem
-                _uiState.update { it.copy(episodeResults = mutableEpisodes) }
-            }
         }
     }
 }

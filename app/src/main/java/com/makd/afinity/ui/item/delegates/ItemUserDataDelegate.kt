@@ -6,6 +6,7 @@ import com.makd.afinity.data.manager.MediaRefreshBus
 import com.makd.afinity.data.manager.RefreshTrigger
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.UserDataPatch
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
@@ -50,6 +51,7 @@ constructor(
                     mediaChangeManager.publishKnownChange(
                         updatedItem = updatedItem,
                         source = MediaChangeSource.MANUAL,
+                        patch = UserDataPatch(favorite = !item.favorite),
                     )
                     mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
                 }
@@ -84,6 +86,7 @@ constructor(
                     mediaChangeManager.publishKnownChange(
                         updatedItem = updatedItem,
                         source = MediaChangeSource.MANUAL,
+                        patch = UserDataPatch(liked = !item.liked),
                     )
                     mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
                 }
@@ -116,6 +119,7 @@ constructor(
                     mediaChangeManager.publishKnownChange(
                         updatedItem = updatedEpisode,
                         source = MediaChangeSource.MANUAL,
+                        patch = UserDataPatch(favorite = !episode.favorite),
                     )
                     onSuccess()
                 }

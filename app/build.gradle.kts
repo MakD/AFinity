@@ -203,7 +203,6 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.datastore.preferences)
-    implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.hilt.work)
     implementation(libs.androidx.lifecycle.process)
@@ -264,7 +263,6 @@ dependencies {
     androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
-    androidTestImplementation(libs.junit)
 
     testImplementation(libs.junit)
 
@@ -343,6 +341,84 @@ tasks.register("checkCancellationRethrow") {
                     appendLine(
                         "If the file contains no coroutines, add it to " +
                             "cancellationRethrowAllowlist in app/build.gradle.kts instead."
+                    )
+                }
+            )
+        }
+    }
+}
+
+val itemProjectionAllowlist = setOf<String>()
+
+tasks.register("checkItemProjection") {
+    group = "verification"
+    description =
+        "Fails if a screen keeps item copies in a mutable UiState without ItemStore.project."
+
+    val sourceRoot = layout.projectDirectory.dir("src/main/java/com/makd/afinity").asFile
+    val allowlist = itemProjectionAllowlist
+    inputs.dir(sourceRoot)
+
+    doLast {
+        val itemList =
+            Regex(
+                "List<(Afinity(Item|Movie|Show|Episode|Season|BoxSet|Video|VideoPlaylist|" +
+                    "Folder|Track|Album|Artist)|RelatedRow|HomeSection|PlaylistEntry)>"
+            )
+        val declaration = Regex("""data class (\w+UiState)\s*\(""")
+        val files = sourceRoot.walkTopDown().filter { it.isFile && it.extension == "kt" }.toList()
+
+        val itemHoldingStates = mutableSetOf<String>()
+        files.forEach { file ->
+            val text = file.readText()
+            declaration.findAll(text).forEach { match ->
+                val open = match.range.last
+                var depth = 0
+                var close = text.length
+                for (index in open until text.length) {
+                    when (text[index]) {
+                        '(' -> depth++
+                        ')' -> {
+                            depth--
+                            if (depth == 0) {
+                                close = index
+                                break
+                            }
+                        }
+                    }
+                }
+                if (itemList.containsMatchIn(text.substring(open, close))) {
+                    itemHoldingStates += match.groupValues[1]
+                }
+            }
+        }
+
+        val violations = files.mapNotNull { file ->
+            val relative = file.relativeTo(sourceRoot).invariantSeparatorsPath
+            if (relative in allowlist) return@mapNotNull null
+            val text = file.readText()
+            val held = itemHoldingStates.firstOrNull { name ->
+                text.contains("MutableStateFlow($name(") || text.contains("MutableStateFlow<$name>")
+            }
+            if (held != null && !text.contains(".project(")) "$relative ($held)" else null
+        }
+
+        if (violations.isNotEmpty()) {
+            throw GradleException(
+                buildString {
+                    appendLine(
+                        "${violations.size} screen(s) keep item copies in a mutable UiState " +
+                            "without ItemStore.project, so changes made elsewhere never reach them."
+                    )
+                    violations.forEach { appendLine("  $it") }
+                    appendLine()
+                    appendLine(
+                        "Expose the state through itemStore.project(viewModelScope, _uiState) " +
+                            "{ state -> state.copy(items = live(state.items)) }."
+                    )
+                    appendLine(
+                        "A screen not yet migrated goes in itemProjectionAllowlist in " +
+                            "app/build.gradle.kts; remove it from there once it is migrated."
                     )
                 }
             )

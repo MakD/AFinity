@@ -1,6 +1,7 @@
 package com.makd.afinity.data.repository.subtitles
 
 import android.util.Base64
+import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -50,6 +51,7 @@ constructor(
     private val preferencesRepository: PreferencesRepository,
     private val subtitleDbApi: SubtitleDbApiService,
     private val deviceStore: DeviceSubtitleStore,
+    private val mediaChangeManager: MediaChangeManager,
 ) : SubtitleSearchRepository {
 
     private val seriesIdentityCache = ConcurrentHashMap<UUID, Map<String, String>>()
@@ -165,6 +167,9 @@ constructor(
                     SubtitleSearchMode.UPLOAD -> uploadToServer(item, candidate, scope)
                     SubtitleSearchMode.DEVICE -> saveOnDevice(item, candidate, scope)
                 }
+            if (mode != SubtitleSearchMode.DEVICE) {
+                mediaChangeManager.publishContentChanges(listOf(item.id))
+            }
             Result.success(added)
         } catch (e: CancellationException) {
             throw e

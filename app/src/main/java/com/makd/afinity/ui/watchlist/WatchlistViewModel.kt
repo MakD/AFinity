@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
-import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.media.AfinityBoxSet
@@ -26,7 +25,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -42,7 +40,6 @@ constructor(
     private val downloadRepository: DownloadRepository,
     private val appDataRepository: AppDataRepository,
     private val mediaRepository: MediaRepository,
-    private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val downloadPermissions: DownloadPermissions,
     private val itemStore: ItemStore,
@@ -55,7 +52,31 @@ constructor(
 
     val canDownloadOnNetwork: StateFlow<Boolean> = downloadPermissions.isAllowedOnNetwork
 
-    val uiState: StateFlow<WatchlistUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<WatchlistUiState> =
+        itemStore.project(viewModelScope, _uiState) { state ->
+            val boxSets = live(state.boxSets)
+            val movies = live(state.movies)
+            val shows = live(state.shows)
+            val seasons = live(state.seasons)
+            val episodes = live(state.episodes)
+            if (
+                boxSets === state.boxSets &&
+                    movies === state.movies &&
+                    shows === state.shows &&
+                    seasons === state.seasons &&
+                    episodes === state.episodes
+            ) {
+                state
+            } else {
+                state.copy(
+                    boxSets = boxSets,
+                    movies = movies,
+                    shows = shows,
+                    seasons = seasons,
+                    episodes = episodes,
+                )
+            }
+        }
 
     private val episodeSelection =
         EpisodeSelection(
@@ -73,8 +94,6 @@ constructor(
     val selectedEpisodeDownloadInfo: StateFlow<DownloadInfo?> = episodeSelection.downloadInfo
 
     init {
-        viewModelScope.launch { adminChangeBroadcaster.itemChanged.collect { loadWatchlist() } }
-
         viewModelScope.launch {
             combine(
                     appDataRepository.watchlistData,
@@ -84,16 +103,13 @@ constructor(
                     Triple(data, loaded, failed)
                 }
                 .collect { (data, loaded, failed) ->
-                    itemStore.putIfAbsent(
-                        data.boxSets + data.movies + data.shows + data.seasons + data.episodes
-                    )
                     _uiState.value =
                         WatchlistUiState(
-                            boxSets = itemStore.merge(data.boxSets),
-                            movies = itemStore.merge(data.movies),
-                            shows = itemStore.merge(data.shows),
-                            seasons = itemStore.merge(data.seasons),
-                            episodes = itemStore.merge(data.episodes),
+                            boxSets = data.boxSets,
+                            movies = data.movies,
+                            shows = data.shows,
+                            seasons = data.seasons,
+                            episodes = data.episodes,
                             isLoading = !loaded && !failed,
                             error =
                                 if (failed && !loaded) {
@@ -111,36 +127,6 @@ constructor(
                 if (at <= lastWatchlistLoadedAt) return@collect
                 lastWatchlistLoadedAt = System.currentTimeMillis()
                 appDataRepository.reloadWatchlist()
-            }
-        }
-
-        viewModelScope.launch {
-            itemStore.overlay.collect { overlay ->
-                if (overlay.isEmpty()) return@collect
-                _uiState.update { state ->
-                    val boxSets = itemStore.merge(state.boxSets)
-                    val movies = itemStore.merge(state.movies)
-                    val shows = itemStore.merge(state.shows)
-                    val seasons = itemStore.merge(state.seasons)
-                    val episodes = itemStore.merge(state.episodes)
-                    if (
-                        boxSets === state.boxSets &&
-                            movies === state.movies &&
-                            shows === state.shows &&
-                            seasons === state.seasons &&
-                            episodes === state.episodes
-                    ) {
-                        state
-                    } else {
-                        state.copy(
-                            boxSets = boxSets,
-                            movies = movies,
-                            shows = shows,
-                            seasons = seasons,
-                            episodes = episodes,
-                        )
-                    }
-                }
             }
         }
     }

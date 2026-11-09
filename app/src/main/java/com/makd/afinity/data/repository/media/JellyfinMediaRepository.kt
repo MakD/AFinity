@@ -9,6 +9,8 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.extensions.toAfinityAlbum
+import com.makd.afinity.data.models.extensions.toAfinityArtist
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityItem
@@ -29,6 +31,7 @@ import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
+import com.makd.afinity.data.models.media.AfinityUserDataOwner
 import com.makd.afinity.data.models.media.ContinueWatchingOrder
 import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.models.media.LibraryFilterOptions
@@ -1090,6 +1093,34 @@ constructor(
                 .content
                 .items
                 .mapNotNull { it.toAfinityItem(getBaseUrl()) }
+        }
+
+    override suspend fun getOwnersByIds(
+        ids: List<UUID>,
+        fields: List<ItemFields>?,
+    ): List<AfinityUserDataOwner> =
+        apiCall(emptyList(), "Failed to batch-fetch owners by ids") { apiClient, userId ->
+            if (ids.isEmpty()) return@apiCall emptyList()
+            val baseUrl = getBaseUrl()
+            LibraryApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    ids = ids,
+                    fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                    enableImages = true,
+                    enableUserData = true,
+                    enableTotalRecordCount = false,
+                )
+                .content
+                .items
+                .mapNotNull { dto ->
+                    when (dto.type) {
+                        BaseItemKind.AUDIO -> dto.toAfinityTrack(baseUrl)
+                        BaseItemKind.MUSIC_ALBUM -> dto.toAfinityAlbum(baseUrl)
+                        BaseItemKind.MUSIC_ARTIST -> dto.toAfinityArtist(baseUrl)
+                        else -> dto.toAfinityItem(baseUrl)
+                    }
+                }
         }
 
     override suspend fun getLibraryIndexResult(
