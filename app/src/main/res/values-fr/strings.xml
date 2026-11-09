@@ -3094,7 +3094,7 @@
     <string name="services_hub_status_ratings_count">%1$d de %2$d</string>
     <string name="services_hub_more_servers">Ajouter plus de serveurs ou de comptes</string>
     <string name="services_hub_editor_empty">Sélectionnez un service à gérer.</string>
-    <string name="services_hub_editor_title_seerr">Adresses Seerr</string>
+    <string name="services_hub_editor_title_seerr">Seerr</string>
     <string name="services_hub_editor_title_abs">Adresses Audiobookshelf</string>
     <string name="services_hub_editor_title_jellyfin">Adresses du serveur</string>
     <string name="services_hub_editor_title_ratings">Clés API</string>
@@ -3601,4 +3601,10 @@
     <string name="episode_designator_short_fmt">S%1$02dE%2$02d</string>
     <string name="episode_designator_short_range_fmt">S%1$02dE%2$02d-%3$02d</string>
     <string name="task_progress_percent_fmt">%1$.1f%%</string>
+    <string name="seerr_detail_open_library_4k">Ouvrir 4K dans la bibliothèque</string>
+    <string name="review_by_author_fmt">Avis de %1$s</string>
+    <string name="log_repeat_count_fmt">%1$d×</string>
+    <string name="section_seerr_watchlist_not_in_library">Pas encore dans votre bibliothèque</string>
+    <string name="seerr_watchlist_sync_title">Synchroniser les playlist</string>
+    <string name="seerr_watchlist_sync_summary">L\'ajout ou la suppression d\'un film ou d\'une série dans votre liste de favoris AFinity met également à jour votre liste de favoris Seerr, et inversement. Uniquement pour ce profil.</string>
 </resources>
