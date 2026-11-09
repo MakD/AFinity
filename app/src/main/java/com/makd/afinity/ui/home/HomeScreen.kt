@@ -101,12 +101,16 @@ import com.makd.afinity.ui.home.components.PendingSection
 import com.makd.afinity.ui.home.components.PersonFromMovieSection
 import com.makd.afinity.ui.home.components.PersonSection
 import com.makd.afinity.ui.home.components.PopularStudiosSection
+import com.makd.afinity.ui.home.components.RowSkeleton
 import com.makd.afinity.ui.home.components.ShowGenreSection
 import com.makd.afinity.ui.home.components.SpotlightCarousel
 import com.makd.afinity.ui.home.components.UpcomingEpisodesSection
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
+import com.makd.afinity.ui.theme.CardDimensions
+import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
+import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 import kotlinx.coroutines.launch
 
@@ -609,85 +613,144 @@ fun HomeScreen(
 
                         if (
                             !uiState.isOffline &&
-                                uiState.upcomingEpisodes.isNotEmpty() &&
-                                HomeRow.UPCOMING_EPISODES !in uiState.hiddenRows
+                                uiState.showsFixedRow(
+                                    HomeRow.UPCOMING_EPISODES,
+                                    hasItems = uiState.upcomingEpisodes.isNotEmpty(),
+                                    loaded = uiState.upcomingLoaded,
+                                )
                         ) {
                             item(key = "upcoming_episodes") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
-                                    UpcomingEpisodesSection(
-                                        items = uiState.upcomingEpisodes,
-                                        onItemClick = { episode ->
-                                            viewModel.selectEpisode(episode)
-                                        },
-                                        widthSizeClass = widthSizeClass,
-                                    )
+                                    if (uiState.upcomingEpisodes.isNotEmpty()) {
+                                        UpcomingEpisodesSection(
+                                            items = uiState.upcomingEpisodes,
+                                            onItemClick = { episode ->
+                                                viewModel.selectEpisode(episode)
+                                            },
+                                            widthSizeClass = widthSizeClass,
+                                        )
+                                    } else {
+                                        RowSkeleton(
+                                            title = stringResource(R.string.home_upcoming_episodes),
+                                            cardWidth = widthSizeClass.landscapeWidth,
+                                            aspectRatio = CardDimensions.ASPECT_RATIO_LANDSCAPE,
+                                        )
+                                    }
                                 }
                             }
                         }
 
                         if (
                             !uiState.isOffline &&
-                                uiState.highestRated.isNotEmpty() &&
-                                HomeRow.CRITICS_CHOICE !in uiState.hiddenRows
+                                uiState.showsFixedRow(
+                                    HomeRow.CRITICS_CHOICE,
+                                    hasItems = uiState.highestRated.isNotEmpty(),
+                                    loaded = uiState.highestRatedLoaded,
+                                )
                         ) {
                             item(key = "highest_rated") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
-                                    HighestRatedSection(
-                                        items = uiState.highestRated,
-                                        onItemClick = onItemClick,
-                                        widthSizeClass = widthSizeClass,
-                                    )
+                                    if (uiState.highestRated.isNotEmpty()) {
+                                        HighestRatedSection(
+                                            items = uiState.highestRated,
+                                            onItemClick = onItemClick,
+                                            widthSizeClass = widthSizeClass,
+                                        )
+                                    } else {
+                                        RowSkeleton(
+                                            title = stringResource(R.string.home_critics_choice),
+                                            cardWidth = widthSizeClass.portraitWidth,
+                                            aspectRatio = CardDimensions.ASPECT_RATIO_PORTRAIT,
+                                        )
+                                    }
                                 }
                             }
                         }
 
                         if (
                             !uiState.isOffline &&
-                                uiState.franchises.isNotEmpty() &&
-                                HomeRow.FRANCHISES !in uiState.hiddenRows
+                                uiState.showsFixedRow(
+                                    HomeRow.FRANCHISES,
+                                    hasItems = uiState.franchises.isNotEmpty(),
+                                    loaded = uiState.franchisesLoaded,
+                                )
                         ) {
                             item(key = "franchises") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
-                                    FranchisesSection(
-                                        franchises = uiState.franchises,
-                                        onFranchiseClick = { franchise ->
-                                            onFranchiseClick(franchise.id)
-                                        },
-                                        widthSizeClass = widthSizeClass,
-                                    )
+                                    if (uiState.franchises.isNotEmpty()) {
+                                        FranchisesSection(
+                                            franchises = uiState.franchises,
+                                            onFranchiseClick = { franchise ->
+                                                onFranchiseClick(franchise.id)
+                                            },
+                                            widthSizeClass = widthSizeClass,
+                                        )
+                                    } else {
+                                        RowSkeleton(
+                                            title = stringResource(R.string.home_franchises),
+                                            cardWidth = widthSizeClass.landscapeWidth,
+                                            aspectRatio = CardDimensions.ASPECT_RATIO_LANDSCAPE,
+                                            showText = false,
+                                        )
+                                    }
                                 }
                             }
                         }
 
                         if (
                             !uiState.isOffline &&
-                                uiState.watchAgain.isNotEmpty() &&
-                                HomeRow.WATCH_AGAIN !in uiState.hiddenRows
+                                uiState.showsFixedRow(
+                                    HomeRow.WATCH_AGAIN,
+                                    hasItems = uiState.watchAgain.isNotEmpty(),
+                                    loaded = uiState.watchAgainLoaded,
+                                )
                         ) {
                             item(key = "watch_again") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
-                                    ItemsRowSection(
-                                        title = stringResource(R.string.home_watch_again),
-                                        items = uiState.watchAgain,
-                                        sectionKey = "watch_again",
-                                        onItemClick = onItemClick,
-                                    )
+                                    if (uiState.watchAgain.isNotEmpty()) {
+                                        ItemsRowSection(
+                                            title = stringResource(R.string.home_watch_again),
+                                            items = uiState.watchAgain,
+                                            sectionKey = "watch_again",
+                                            onItemClick = onItemClick,
+                                        )
+                                    } else {
+                                        RowSkeleton(
+                                            title = stringResource(R.string.home_watch_again),
+                                            cardWidth = widthSizeClass.portraitWidth,
+                                            aspectRatio = CardDimensions.ASPECT_RATIO_PORTRAIT,
+                                        )
+                                    }
                                 }
                             }
                         }
 
                         if (
                             !uiState.isOffline &&
-                                uiState.popularStudios.isNotEmpty() &&
-                                HomeRow.POPULAR_STUDIOS !in uiState.hiddenRows
+                                uiState.showsFixedRow(
+                                    HomeRow.POPULAR_STUDIOS,
+                                    hasItems = uiState.popularStudios.isNotEmpty(),
+                                    loaded = uiState.popularStudiosLoaded,
+                                )
                         ) {
                             item(key = "popular_studios") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
-                                    PopularStudiosSection(
-                                        studios = uiState.popularStudios,
-                                        onStudioClick = { studio -> onStudioClick(studio.name) },
-                                        widthSizeClass = widthSizeClass,
-                                    )
+                                    if (uiState.popularStudios.isNotEmpty()) {
+                                        PopularStudiosSection(
+                                            studios = uiState.popularStudios,
+                                            onStudioClick = { studio ->
+                                                onStudioClick(studio.name)
+                                            },
+                                            widthSizeClass = widthSizeClass,
+                                        )
+                                    } else {
+                                        RowSkeleton(
+                                            title = stringResource(R.string.home_popular_studios),
+                                            cardWidth = widthSizeClass.landscapeWidth,
+                                            aspectRatio = CardDimensions.ASPECT_RATIO_LANDSCAPE,
+                                            showText = false,
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -712,7 +775,10 @@ fun HomeScreen(
                                                 title = section.title,
                                                 cardStyle = section.cardStyle,
                                                 onVisible = {
-                                                    viewModel.hydrateSection(section.key)
+                                                    viewModel.onSectionVisible(section.key)
+                                                },
+                                                onHidden = {
+                                                    viewModel.onSectionHidden(section.key)
                                                 },
                                             )
                                         }
@@ -789,7 +855,10 @@ fun HomeScreen(
                                                 title = section.title,
                                                 cardStyle = section.cardStyle,
                                                 onVisible = {
-                                                    viewModel.hydrateSection(section.key)
+                                                    viewModel.onSectionVisible(section.key)
+                                                },
+                                                onHidden = {
+                                                    viewModel.onSectionHidden(section.key)
                                                 },
                                             )
                                         }
@@ -860,15 +929,10 @@ fun HomeScreen(
                                                                 section.genreItem.name
                                                             ),
                                                         onVisible = {
-                                                            if (
-                                                                uiState.genreMovies[
-                                                                        section.genreItem.name] ==
-                                                                    null
-                                                            ) {
-                                                                viewModel.loadMoviesForGenre(
-                                                                    section.genreItem.name
-                                                                )
-                                                            }
+                                                            viewModel.onSectionVisible(section.key)
+                                                        },
+                                                        onHidden = {
+                                                            viewModel.onSectionHidden(section.key)
                                                         },
                                                         onItemClick = onItemClick,
                                                         widthSizeClass = widthSizeClass,
@@ -887,15 +951,10 @@ fun HomeScreen(
                                                                 section.genreItem.name
                                                             ),
                                                         onVisible = {
-                                                            if (
-                                                                uiState.genreShows[
-                                                                        section.genreItem.name] ==
-                                                                    null
-                                                            ) {
-                                                                viewModel.loadShowsForGenre(
-                                                                    section.genreItem.name
-                                                                )
-                                                            }
+                                                            viewModel.onSectionVisible(section.key)
+                                                        },
+                                                        onHidden = {
+                                                            viewModel.onSectionHidden(section.key)
                                                         },
                                                         onItemClick = onItemClick,
                                                         widthSizeClass = widthSizeClass,
@@ -997,3 +1056,6 @@ private fun buildLatestLibraryRows(
             mixedSections.map { (library, items) -> LatestLibraryRow.Mixed(library, items) }
     return rows.sortedBy { serverOrder[it.library.id] ?: Int.MAX_VALUE }
 }
+
+private fun HomeUiState.showsFixedRow(row: HomeRow, hasItems: Boolean, loaded: Boolean): Boolean =
+    row !in hiddenRows && (hasItems || (!loaded && row in filledRows))

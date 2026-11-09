@@ -138,7 +138,10 @@ constructor(
                     )
                     secondaryLoadJob?.cancel()
                     _uiState.update {
-                        HomeUiState(mergeContinueWatchingNextUp = it.mergeContinueWatchingNextUp)
+                        HomeUiState(
+                            mergeContinueWatchingNextUp = it.mergeContinueWatchingNextUp,
+                            filledRows = homeSectionsRepository.filledRows.value,
+                        )
                     }
                 } else {
                     hasEverLoaded = true
@@ -356,6 +359,18 @@ constructor(
         }
 
         viewModelScope.launch {
+            homeSectionsRepository.franchisesLoaded.collect { loaded ->
+                _uiState.update { it.copy(franchisesLoaded = loaded) }
+            }
+        }
+
+        viewModelScope.launch {
+            homeSectionsRepository.filledRows.collect { rows ->
+                _uiState.update { it.copy(filledRows = rows) }
+            }
+        }
+
+        viewModelScope.launch {
             homeLayoutPreferencesRepository.hiddenRows.collect { hidden ->
                 _uiState.update { it.copy(hiddenRows = hidden) }
             }
@@ -380,12 +395,6 @@ constructor(
                         .take(HOME_GENRE_ROW_SIZE)
                 }
                 _uiState.update { it.copy(genreShows = ordered) }
-            }
-        }
-
-        viewModelScope.launch {
-            appDataRepository.genreLoadingStates.collect { loadingStates ->
-                _uiState.update { it.copy(genreLoadingStates = loadingStates) }
             }
         }
 
@@ -539,8 +548,12 @@ constructor(
     private fun <T : AfinityItem> List<T>.removingItem(id: UUID): List<T> =
         if (none { it.id == id }) this else filter { it.id != id }
 
-    fun hydrateSection(key: String) {
-        homeSectionsRepository.hydrate(key)
+    fun onSectionVisible(key: String) {
+        homeSectionsRepository.onSectionVisible(key)
+    }
+
+    fun onSectionHidden(key: String) {
+        homeSectionsRepository.onSectionHidden(key)
     }
 
     fun retryInitialLoad() {
@@ -770,34 +783,6 @@ constructor(
         }
     }
 
-    fun loadMoviesForGenre(genre: String) {
-        if (_uiState.value.genreLoadingStates[genre] == true) return
-
-        viewModelScope.launch {
-            try {
-                appDataRepository.loadMoviesForGenre(genre, HOME_GENRE_POOL)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load movies for genre: $genre")
-            }
-        }
-    }
-
-    fun loadShowsForGenre(genre: String) {
-        if (_uiState.value.genreLoadingStates[genre] == true) return
-
-        viewModelScope.launch {
-            try {
-                appDataRepository.loadShowsForGenre(genre, HOME_GENRE_POOL)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load shows for genre: $genre")
-            }
-        }
-    }
-
     private suspend fun loadUpcomingEpisodes() {
         try {
             if (offlineModeManager.isOffline.first()) {
@@ -806,6 +791,10 @@ constructor(
             }
             val upcoming = mediaRepository.getUpcomingEpisodes(limit = 24)
             _uiState.update { it.copy(upcomingEpisodes = upcoming, upcomingLoaded = true) }
+            homeSectionsRepository.recordRowFilled(
+                HomeRow.UPCOMING_EPISODES,
+                filled = upcoming.isNotEmpty(),
+            )
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -946,6 +935,8 @@ data class HomeUiState(
     val highestRated: List<AfinityItem> = emptyList(),
     val highestRatedLoaded: Boolean = false,
     val franchises: List<FranchiseCard> = emptyList(),
+    val franchisesLoaded: Boolean = false,
+    val filledRows: Set<HomeRow> = emptySet(),
     val popularStudios: List<AfinityStudio> = emptyList(),
     val popularStudiosLoaded: Boolean = false,
     val nextUpLoaded: Boolean = false,
@@ -953,7 +944,6 @@ data class HomeUiState(
     val hiddenRows: Set<HomeRow> = emptySet(),
     val genreMovies: Map<String, List<AfinityMovie>> = emptyMap(),
     val genreShows: Map<String, List<AfinityShow>> = emptyMap(),
-    val genreLoadingStates: Map<String, Boolean> = emptyMap(),
     val downloadedMovies: List<AfinityMovie> = emptyList(),
     val downloadedShows: List<AfinityShow> = emptyList(),
     val downloadedAudiobooks: List<AbsDownloadInfo> = emptyList(),
@@ -1079,5 +1069,4 @@ fun HomeUiState.heldItemById(id: UUID): AfinityItem? =
             items.firstOrNull { it.id == id }
         }
 
-private const val HOME_GENRE_POOL = 50
 private const val HOME_GENRE_ROW_SIZE = 20

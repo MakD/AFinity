@@ -345,7 +345,6 @@ constructor(
     val combinedGenres: StateFlow<List<GenreItem>> = genreRepository.combinedGenres
     val genreMovies: StateFlow<Map<String, List<AfinityMovie>>> = genreRepository.genreMovies
     val genreShows: StateFlow<Map<String, List<AfinityShow>>> = genreRepository.genreShows
-    val genreLoadingStates: StateFlow<Map<String, Boolean>> = genreRepository.genreLoadingStates
 
     private val _favoritesData = MutableStateFlow(FavoritesData())
     val favoritesData: StateFlow<FavoritesData> = _favoritesData.asStateFlow()
@@ -1328,12 +1327,6 @@ constructor(
     }
 
     suspend fun loadCombinedGenres() = genreRepository.loadCombinedGenres()
-
-    suspend fun loadMoviesForGenre(genre: String, limit: Int = 20) =
-        genreRepository.loadMoviesForGenre(genre, limit)
-
-    suspend fun loadShowsForGenre(genre: String, limit: Int = 20) =
-        genreRepository.loadShowsForGenre(genre, limit)
 
     private fun updateProgress(progress: Float, phase: String) {
         _loadingProgress.value = progress

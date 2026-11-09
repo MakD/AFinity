@@ -12,12 +12,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.ui.components.isLandscapeWindow
@@ -34,26 +31,24 @@ fun PendingSection(
     title: String,
     cardStyle: CustomSectionCardStyle,
     onVisible: () -> Unit,
+    onHidden: () -> Unit,
     modifier: Modifier = Modifier,
     showText: Boolean = true,
 ) {
-    var hasBeenVisible by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        if (!hasBeenVisible) {
-            onVisible()
-            hasBeenVisible = true
-        }
+    DisposableEffect(Unit) {
+        onVisible()
+        onDispose { onHidden() }
     }
 
-    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
-        HomeSectionHeader(title = title)
-
-        if (cardStyle == CustomSectionCardStyle.SPOTLIGHT) {
-            val isLandscape = isLandscapeWindow()
-            val containerWidth = windowWidthDp()
-            val containerHeight = windowHeightDp()
-            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+    if (cardStyle == CustomSectionCardStyle.SPOTLIGHT) {
+        val isLandscape = isLandscapeWindow()
+        val containerWidth = windowWidthDp()
+        val containerHeight = windowHeightDp()
+        Column(modifier = modifier) {
+            HomeSectionHeader(title = title, startPadding = CardDimensions.RowGutter)
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = CardDimensions.RowGutter)
+            ) {
                 val itemSize =
                     CardDimensions.carouselItemSize(
                         availableWidth = maxWidth,
@@ -80,24 +75,42 @@ fun PendingSection(
                     }
                 }
             }
-        } else {
-            val cardWidth = CardDimensions.cardWidthFor(cardStyle)
-            val aspectRatio = CardDimensions.aspectRatioFor(cardStyle)
-
-            MediaRowSkeleton(
-                cardWidth = cardWidth,
-                height =
-                    if (showText) CardDimensions.rowHeight(cardWidth, aspectRatio)
-                    else
-                        CardDimensions.rowHeight(
-                            cardWidth,
-                            aspectRatio,
-                            titleHeight = 0.dp,
-                            metadataHeight = 0.dp,
-                        ),
-                aspectRatio = aspectRatio,
-                showText = showText,
-            )
         }
+    } else {
+        RowSkeleton(
+            title = title,
+            cardWidth = CardDimensions.cardWidthFor(cardStyle),
+            aspectRatio = CardDimensions.aspectRatioFor(cardStyle),
+            showText = showText,
+            modifier = modifier,
+        )
+    }
+}
+
+@Composable
+fun RowSkeleton(
+    title: String,
+    cardWidth: Dp,
+    aspectRatio: Float,
+    modifier: Modifier = Modifier,
+    showText: Boolean = true,
+) {
+    Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
+        HomeSectionHeader(title = title)
+
+        MediaRowSkeleton(
+            cardWidth = cardWidth,
+            height =
+                if (showText) CardDimensions.rowHeight(cardWidth, aspectRatio)
+                else
+                    CardDimensions.rowHeight(
+                        cardWidth,
+                        aspectRatio,
+                        titleHeight = 0.dp,
+                        metadataHeight = 0.dp,
+                    ),
+            aspectRatio = aspectRatio,
+            showText = showText,
+        )
     }
 }

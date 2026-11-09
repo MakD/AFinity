@@ -6,11 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.makd.afinity.R
@@ -27,17 +23,14 @@ fun GenreSection(
     movies: List<AfinityMovie>,
     loaded: Boolean,
     onVisible: () -> Unit,
+    onHidden: () -> Unit,
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
 ) {
-    var hasBeenVisible by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        if (!hasBeenVisible) {
-            onVisible()
-            hasBeenVisible = true
-        }
+    DisposableEffect(Unit) {
+        onVisible()
+        onDispose { onHidden() }
     }
 
     if (loaded && movies.isEmpty()) return

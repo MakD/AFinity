@@ -40,6 +40,7 @@ import com.makd.afinity.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
@@ -56,15 +57,21 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
@@ -138,6 +145,25 @@ constructor(
 
     private val _franchises = MutableStateFlow<List<FranchiseCard>>(emptyList())
     val franchises: StateFlow<List<FranchiseCard>> = _franchises.asStateFlow()
+
+    private val _franchisesLoaded = MutableStateFlow(false)
+    val franchisesLoaded: StateFlow<Boolean> = _franchisesLoaded.asStateFlow()
+
+    private data class FilledRowsRecord(val sessionKey: String?, val rows: Set<HomeRow>)
+
+    private val filledRowsRecord = MutableStateFlow(FilledRowsRecord(null, emptySet()))
+
+    val filledRows: StateFlow<Set<HomeRow>> =
+        combine(filledRowsRecord, sessionManager.currentSession) { record, session ->
+                val current =
+                    session
+                        ?.takeIf { it.serverId.isNotBlank() }
+                        ?.let { "${it.serverId}_${it.userId}" }
+                if (current != null && record.sessionKey == current) record.rows else emptySet()
+            }
+            .stateIn(scope, SharingStarted.Eagerly, emptySet())
+
+    private val filledRowsMutex = Mutex()
 
     private var franchisesJob: Job? = null
 
@@ -226,8 +252,56 @@ constructor(
                     } else {
                         franchisesJob?.cancel()
                         _franchises.value = emptyList()
+                        _franchisesLoaded.value = true
+                        recordRowFilled(HomeRow.FRANCHISES, filled = false)
                     }
                 }
+        }
+
+        scope.launch(Dispatchers.IO) {
+            sessionManager.currentSession
+                .map { session ->
+                    session
+                        ?.takeIf { it.serverId.isNotBlank() }
+                        ?.let { "${it.serverId}_${it.userId}" }
+                }
+                .distinctUntilChanged()
+                .collect { sk ->
+                    if (sk != null) filledRowsMutex.withLock { restoreFilledRowsLocked(sk) }
+                }
+        }
+    }
+
+    private fun filledRowsCacheKey(sessionKey: String) = "home_filled_rows_$sessionKey"
+
+    private suspend fun restoreFilledRowsLocked(sk: String) {
+        if (filledRowsRecord.value.sessionKey == sk) return
+        val keys =
+            homeCacheRepository
+                .getRaw(filledRowsCacheKey(sk))
+                ?.let { raw ->
+                    runCatching { json.decodeFromString<List<String>>(raw) }.getOrNull()
+                }
+                .orEmpty()
+                .toSet()
+        filledRowsRecord.value =
+            FilledRowsRecord(sk, HomeRow.entries.filter { it.key in keys }.toSet())
+    }
+
+    fun recordRowFilled(row: HomeRow, filled: Boolean) {
+        val sk = sessionKey() ?: return
+        scope.launch(Dispatchers.IO) {
+            filledRowsMutex.withLock {
+                if (sessionKey() != sk) return@withLock
+                restoreFilledRowsLocked(sk)
+                val current = filledRowsRecord.value.rows
+                val next = if (filled) current + row else current - row
+                if (next != current) filledRowsRecord.value = FilledRowsRecord(sk, next)
+                homeCacheRepository.putRaw(
+                    filledRowsCacheKey(sk),
+                    json.encodeToString(next.map { it.key }),
+                )
+            }
         }
     }
 
@@ -288,6 +362,7 @@ constructor(
             .joinToString(";")
 
     private val hydrationMutex = Mutex()
+    private val visibleSectionKeys: MutableSet<String> = ConcurrentHashMap.newKeySet()
     private val hydrationQueue = LinkedHashSet<String>()
     private val hydrationRefreshKeys = mutableSetOf<String>()
     private var isHydrating = false
@@ -562,6 +637,7 @@ constructor(
                     }
                     _criticsChoice.value = items
                     _criticsChoiceLoaded.value = true
+                    recordRowFilled(HomeRow.CRITICS_CHOICE, items.isNotEmpty())
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -595,6 +671,7 @@ constructor(
                     }
                     _watchAgain.value = items
                     _watchAgainLoaded.value = true
+                    recordRowFilled(HomeRow.WATCH_AGAIN, items.isNotEmpty())
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -618,10 +695,12 @@ constructor(
                         return@launch
                     }
                     val studios = studiosPool(force).take(POPULAR_STUDIOS_POOL)
-                    _popularStudios.value =
+                    val shown =
                         if (studios.size < MIN_POPULAR_STUDIOS) emptyList()
                         else presentationOrder(POPULAR_STUDIOS_KEY, studios)
+                    _popularStudios.value = shown
                     _popularStudiosLoaded.value = true
+                    recordRowFilled(HomeRow.POPULAR_STUDIOS, shown.isNotEmpty())
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -640,16 +719,30 @@ constructor(
         franchisesJob =
             scope.launch(Dispatchers.IO) {
                 try {
-                    if (isRowHidden(HomeRow.FRANCHISES)) return@launch
-                    val all = franchiseRepository.franchisesOrNull() ?: return@launch
+                    if (isRowHidden(HomeRow.FRANCHISES)) {
+                        _franchisesLoaded.value = true
+                        return@launch
+                    }
+                    val all = franchiseRepository.franchisesOrNull()
+                    if (all == null) {
+                        _franchisesLoaded.value = true
+                        if (!isWikidataEnabled()) {
+                            recordRowFilled(HomeRow.FRANCHISES, filled = false)
+                        }
+                        return@launch
+                    }
                     val picked = presentationSample(FRANCHISES_KEY, all, FRANCHISES_ROW_SIZE)
-                    _franchises.value =
+                    val cards =
                         if (picked.isEmpty()) emptyList()
                         else franchiseRepository.cards(picked, presentationSeed)
+                    _franchises.value = cards
+                    _franchisesLoaded.value = true
+                    recordRowFilled(HomeRow.FRANCHISES, cards.isNotEmpty())
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load franchises")
+                    _franchisesLoaded.value = true
                 }
             }
     }
@@ -718,7 +811,21 @@ constructor(
     private suspend fun isRowHidden(row: HomeRow): Boolean =
         row in homeLayoutPreferencesRepository.getHiddenRows()
 
-    fun hydrate(descriptorKey: String) {
+    private suspend fun isWikidataEnabled(): Boolean {
+        val session = sessionManager.currentSession.value ?: return false
+        return preferencesRepository.getWikidataEnabled(session.serverId, session.userId.toString())
+    }
+
+    fun onSectionVisible(descriptorKey: String) {
+        visibleSectionKeys.add(descriptorKey)
+        hydrate(descriptorKey)
+    }
+
+    fun onSectionHidden(descriptorKey: String) {
+        visibleSectionKeys.remove(descriptorKey)
+    }
+
+    private fun hydrate(descriptorKey: String) {
         val layout = _layout.value
         val list = if (layout.any { it.key == descriptorKey }) layout else _pinnedLayout.value
         val index = list.indexOfFirst { it.key == descriptorKey }
@@ -738,7 +845,7 @@ constructor(
                     hydrationRefreshKeys.addAll(keys)
                     hydrationQueue.addAll(keys)
                 } else {
-                    hydrationQueue.addAll(keys.filterNot { _content.value.containsKey(it) })
+                    hydrationQueue.addAll(keys.filterNot(::isHydrated))
                 }
                 if (isHydrating || hydrationQueue.isEmpty()) {
                     false
@@ -755,7 +862,9 @@ constructor(
         while (true) {
             val next =
                 hydrationMutex.withLock {
-                    val key = hydrationQueue.firstOrNull()
+                    val key =
+                        hydrationQueue.firstOrNull { it in visibleSectionKeys }
+                            ?: hydrationQueue.firstOrNull()
                     if (key == null) {
                         isHydrating = false
                         null
@@ -766,14 +875,66 @@ constructor(
                 } ?: break
             val (descriptorKey, isRefresh) = next
 
-            if (!isRefresh && _content.value.containsKey(descriptorKey)) continue
-
             val descriptor =
                 _layout.value.firstOrNull { it.key == descriptorKey }
                     ?: _pinnedLayout.value.firstOrNull { it.key == descriptorKey }
                     ?: continue
 
+            if (descriptor.isGenre()) {
+                hydrateGenre(descriptor)
+                continue
+            }
+
+            if (!isRefresh && _content.value.containsKey(descriptorKey)) continue
+
             hydrateAndPublish(descriptor, isRefresh)
+        }
+    }
+
+    private fun HomeSectionDescriptor.isGenre(): Boolean =
+        type == HomeSectionType.GENRE_MOVIE || type == HomeSectionType.GENRE_SHOW
+
+    private fun HomeSectionDescriptor.genreKey(): String = genreName ?: title
+
+    private fun genreRows(descriptor: HomeSectionDescriptor): StateFlow<Map<String, List<Any>>> =
+        if (descriptor.type == HomeSectionType.GENRE_MOVIE) genreRepository.genreMovies
+        else genreRepository.genreShows
+
+    private fun isHydrated(descriptorKey: String): Boolean {
+        if (_content.value.containsKey(descriptorKey)) return true
+        val descriptor =
+            _layout.value.firstOrNull { it.key == descriptorKey }?.takeIf { it.isGenre() }
+                ?: return false
+        return genreRows(descriptor).value.containsKey(descriptor.genreKey())
+    }
+
+    private suspend fun hydrateGenre(descriptor: HomeSectionDescriptor) {
+        val genre = descriptor.genreKey()
+        val rows = genreRows(descriptor)
+        try {
+            if (!rows.value.containsKey(genre)) {
+                val loader =
+                    scope.launch(Dispatchers.IO) {
+                        if (descriptor.type == HomeSectionType.GENRE_MOVIE) {
+                            genreRepository.loadMoviesForGenre(genre, GENRE_POOL)
+                        } else {
+                            genreRepository.loadShowsForGenre(genre, GENRE_POOL)
+                        }
+                    }
+                merge(
+                        rows.filter { it.containsKey(genre) }.map {},
+                        flow {
+                            loader.join()
+                            emit(Unit)
+                        },
+                    )
+                    .first()
+            }
+            if (rows.value[genre]?.isEmpty() == true) pruneEmptyDescriptor(descriptor.key)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to hydrate genre section ${descriptor.key}")
         }
     }
 
@@ -859,7 +1020,7 @@ constructor(
     }
 
     private fun refreshDiscoverySections(reason: String) {
-        val keys = _layout.value.map { it.key }
+        val keys = _layout.value.filterNot { it.isGenre() }.map { it.key }
         if (keys.isEmpty()) return
         val (rendered, offScreen) = keys.partition { _content.value.containsKey(it) }
         Timber.d(
@@ -993,6 +1154,10 @@ constructor(
             renderedItemIds.clear()
             spotlightSeenIds.clear()
         }
+        filledRowsMutex.withLock {
+            filledRowsRecord.value = FilledRowsRecord(null, emptySet())
+            sessionKey()?.let { restoreFilledRowsLocked(it) }
+        }
         _layout.value = emptyList()
         _content.value = emptyMap()
         _pinnedLayout.value = emptyList()
@@ -1022,6 +1187,7 @@ constructor(
         _popularStudiosLoaded.value = false
         franchisesJob?.cancel()
         _franchises.value = emptyList()
+        _franchisesLoaded.value = false
         franchiseRepository.clear()
     }
 
@@ -2275,6 +2441,7 @@ private const val MIN_CRITICS_RATING = 6.5f
 private const val CRITICS_CHOICE_KEY = "critics_choice"
 
 private const val HYDRATE_AHEAD = 4
+private const val GENRE_POOL = 50
 
 private const val ROW_SIZE = 20
 private const val SPOTLIGHT_ROW_SIZE = 10
