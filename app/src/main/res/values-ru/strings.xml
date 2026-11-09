@@ -1284,7 +1284,7 @@
     <string name="services_hub_status_ratings_count">%1$d из %2$d</string>
     <string name="services_hub_more_servers">Добавить еще серверы или аккаунты</string>
     <string name="services_hub_editor_empty">Выберите сервис для управления.</string>
-    <string name="services_hub_editor_title_seerr">Адреса Seerr</string>
+    <string name="services_hub_editor_title_seerr">Seerr</string>
     <string name="services_hub_editor_title_abs">Адреса Audiobookshelf</string>
     <string name="services_hub_editor_title_jellyfin">Адреса сервера</string>
     <string name="services_hub_editor_title_ratings">Ключи API</string>
@@ -3678,4 +3678,8 @@
     <string name="wikidata_scope_note">Эта настройка применяется только к серверу и профилю, в которые вы вошли. У другие профилей на этом устройстве остаются свои настройки.</string>
     <string name="wikidata_disconnect_message">История наград и раздел «Вселенные и саги» перестанут загружаться для этого профиля. Сохраненные данные не будут удалены.</string>
     <string name="franchise_load_failed">Не удалось загрузить франшизу. Проверьте ваше соединение и попробуйте еще раз.</string>
+    <string name="seerr_watchlist_sync_summary">Добавление и удаление фильма или сериала в список запланинированных в AFinity также обновляет список в Seerr, и наоборот. Работает только для этого профиля.</string>
+    <string name="seerr_watchlist_sync_title">Синхронизация списков</string>
+    <string name="section_seerr_watchlist_not_in_library">Еще нет в вашей библиотеке</string>
+    <string name="section_seerr_watchlist">Ваши запланированные</string>
 </resources>
