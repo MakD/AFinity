@@ -22,6 +22,7 @@ import com.makd.afinity.data.models.jellyseerr.TmdbKeywordSearchResponse
 import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import com.makd.afinity.data.models.jellyseerr.WatchProviderDetails
 import com.makd.afinity.data.models.jellyseerr.WatchProviderRegion
+import com.makd.afinity.data.models.jellyseerr.WatchlistEvent
 import com.makd.afinity.data.models.server.AddressCheck
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
@@ -165,6 +166,14 @@ interface JellyseerrRepository {
     suspend fun getMovieDetails(movieId: Int): Result<MediaDetails>
 
     suspend fun getTvDetails(tvId: Int): Result<MediaDetails>
+
+    val watchlistEvents: SharedFlow<WatchlistEvent>
+
+    suspend fun getWatchlist(page: Int = 1, limit: Int? = null): Result<JellyseerrSearchResult>
+
+    suspend fun addToWatchlist(tmdbId: Int, mediaType: MediaType, title: String): Result<Unit>
+
+    suspend fun removeFromWatchlist(tmdbId: Int, mediaType: MediaType): Result<Unit>
 
     suspend fun getRatings(mediaType: MediaType, tmdbId: Int): Result<RatingsCombined>
 

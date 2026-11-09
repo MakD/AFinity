@@ -55,6 +55,7 @@ enum class FilterType {
     POPULAR_TV,
     UPCOMING_TV,
     PERSON,
+    WATCHLIST,
 }
 
 data class FilterParams(val type: FilterType, val id: Int, val name: String)

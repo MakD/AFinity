@@ -16,8 +16,15 @@ data class JellyseerrUser(
     @SerialName("movieQuotaDays") val movieQuotaDays: Int? = null,
     @SerialName("tvQuotaLimit") val tvQuotaLimit: Int? = null,
     @SerialName("tvQuotaDays") val tvQuotaDays: Int? = null,
+    @SerialName("userType") val userType: Int? = null,
 ) {
     fun displayLabel(): String = displayName ?: username ?: email ?: "User $id"
+
+    fun isPlexUser(): Boolean = userType == USER_TYPE_PLEX
+
+    companion object {
+        const val USER_TYPE_PLEX = 1
+    }
 }
 
 @Serializable

@@ -46,9 +46,51 @@ constructor(
     private val _uiState = MutableStateFlow(SeerrMediaDetailUiState(isLoading = true))
     val uiState: StateFlow<SeerrMediaDetailUiState> = _uiState.asStateFlow()
 
+    private var watchlistWriteInFlight = false
+
     init {
         load()
         observeRequestEvents()
+        observeWatchlistEvents()
+    }
+
+    fun toggleWatchlist() {
+        val details = _uiState.value.details ?: return
+        if (watchlistWriteInFlight) return
+        val target = !_uiState.value.isOnWatchlist
+        watchlistWriteInFlight = true
+        _uiState.update { it.copy(isOnWatchlist = target) }
+        viewModelScope.launch {
+            val result =
+                if (target) {
+                    jellyseerrRepository.addToWatchlist(
+                        tmdbId = tmdbId,
+                        mediaType = mediaType,
+                        title = details.title ?: details.name ?: "",
+                    )
+                } else {
+                    jellyseerrRepository.removeFromWatchlist(tmdbId, mediaType)
+                }
+            watchlistWriteInFlight = false
+            result.onFailure { error ->
+                Timber.w(error, "Failed to update Seerr watchlist for $tmdbId, reverted UI")
+                _uiState.update { it.copy(isOnWatchlist = !target) }
+            }
+        }
+    }
+
+    private fun observeWatchlistEvents() {
+        viewModelScope.launch {
+            jellyseerrRepository.watchlistEvents.collect { event ->
+                if (
+                    !watchlistWriteInFlight &&
+                        event.tmdbId == tmdbId &&
+                        event.mediaType == mediaType
+                ) {
+                    _uiState.update { it.copy(isOnWatchlist = event.onWatchlist) }
+                }
+            }
+        }
     }
 
     fun load() {
@@ -60,7 +102,15 @@ constructor(
                 else jellyseerrRepository.getMovieDetails(tmdbId)
             result.fold(
                 onSuccess = { details ->
-                    _uiState.update { it.copy(details = details, isLoading = false) }
+                    _uiState.update {
+                        it.copy(
+                            details = details,
+                            isLoading = false,
+                            isOnWatchlist =
+                                if (watchlistWriteInFlight) it.isOnWatchlist
+                                else details.onUserWatchlist == true,
+                        )
+                    }
                     details.collection?.let { collection ->
                         launch {
                             jellyseerrRepository.getCollection(collection.id).onSuccess { full ->
@@ -163,6 +213,7 @@ data class SeerrMediaDetailUiState(
     val similar: List<SearchResultItem> = emptyList(),
     val ratings: RatingsCombined? = null,
     val logoUrl: String? = null,
+    val isOnWatchlist: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null,
 )

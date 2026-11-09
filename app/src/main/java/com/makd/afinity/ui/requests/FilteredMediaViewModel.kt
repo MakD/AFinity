@@ -71,6 +71,12 @@ constructor(
         }
 
         viewModelScope.launch {
+            jellyseerrRepository.watchlistEvents.collect {
+                if (currentFilterParams?.type == FilterType.WATCHLIST) reloadCurrentContent()
+            }
+        }
+
+        viewModelScope.launch {
             jellyseerrRepository.currentSessionId.collect { sessionId ->
                 if (sessionId != null && currentFilterParams != null) {
                     Timber.d("Session switched to $sessionId. Reloading filtered media...")
@@ -340,6 +346,7 @@ constructor(
                             jellyseerrRepository.getTvByNetwork(params.id, currentPage)
 
                         FilterType.TRENDING -> jellyseerrRepository.getTrending(currentPage)
+                        FilterType.WATCHLIST -> jellyseerrRepository.getWatchlist(currentPage)
                         FilterType.PERSON ->
                             jellyseerrRepository.getPersonCombinedCredits(params.id).map { credits
                                 ->
@@ -380,6 +387,7 @@ constructor(
 
                         val hideAvailable =
                             params.type != FilterType.PERSON &&
+                                params.type != FilterType.WATCHLIST &&
                                 jellyseerrRepository
                                     .getPublicSettings()
                                     .getOrNull()

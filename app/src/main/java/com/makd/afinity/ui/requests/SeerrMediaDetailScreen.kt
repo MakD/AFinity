@@ -76,6 +76,7 @@ import com.makd.afinity.ui.components.PortraitDetailLayout
 import com.makd.afinity.ui.components.PortraitHero
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.SeparatedFlowRow
+import com.makd.afinity.ui.components.WatchlistToggleButton
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.backdropChainOf
 import com.makd.afinity.ui.components.formatRuntime
@@ -124,6 +125,7 @@ fun SeerrMediaDetailScreen(
                     onNavigateToFilteredMedia = onNavigateToFilteredMedia,
                     onNavigateToSeerrMedia = onNavigateToSeerrMedia,
                     onNavigateHome = onNavigateHome,
+                    onToggleWatchlist = viewModel::toggleWatchlist,
                     requestsViewModel = requestsViewModel,
                     widthSizeClass = widthSizeClass,
                 )
@@ -143,6 +145,7 @@ private fun SeerrDetailContent(
     onNavigateToFilteredMedia: (FilterParams) -> Unit,
     onNavigateToSeerrMedia: (SearchResultItem) -> Unit,
     onNavigateHome: () -> Unit,
+    onToggleWatchlist: () -> Unit,
     requestsViewModel: RequestsViewModel,
     widthSizeClass: WindowWidthSizeClass,
 ) {
@@ -169,6 +172,7 @@ private fun SeerrDetailContent(
                 onItemClick = onItemClick,
                 onNavigateToFilteredMedia = onNavigateToFilteredMedia,
                 onNavigateToSeerrMedia = onNavigateToSeerrMedia,
+                onToggleWatchlist = onToggleWatchlist,
                 requestsViewModel = requestsViewModel,
                 widthSizeClass = widthSizeClass,
                 lazyListState = lazyListState,
@@ -181,6 +185,7 @@ private fun SeerrDetailContent(
                 onItemClick = onItemClick,
                 onNavigateToFilteredMedia = onNavigateToFilteredMedia,
                 onNavigateToSeerrMedia = onNavigateToSeerrMedia,
+                onToggleWatchlist = onToggleWatchlist,
                 requestsViewModel = requestsViewModel,
                 widthSizeClass = widthSizeClass,
                 lazyListState = lazyListState,
@@ -196,6 +201,8 @@ private fun SeerrRequestActionButton(
     tmdbId: Int,
     onItemClick: (String, String?) -> Unit,
     requestsViewModel: RequestsViewModel,
+    isOnWatchlist: Boolean,
+    onToggleWatchlist: () -> Unit,
 ) {
     val requestsUiState by requestsViewModel.uiState.collectAsStateWithLifecycle()
     val currentUser by requestsViewModel.currentUser.collectAsStateWithLifecycle()
@@ -259,16 +266,28 @@ private fun SeerrRequestActionButton(
         )
     }
 
+    val showWatchlistToggle = status != MediaStatus.BLOCKLISTED && currentUser?.isPlexUser() != true
+
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SeerrPrimaryActionButton(
-            status = status,
-            mediaType = mediaType,
-            jellyfinId = jellyfinId,
-            mappedType = mappedType,
-            onItemClick = onItemClick,
-            onRequest = { openRequestDialog(false) },
-            requestEnabled = canRequest,
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Box(modifier = Modifier.weight(1f)) {
+                SeerrPrimaryActionButton(
+                    status = status,
+                    mediaType = mediaType,
+                    jellyfinId = jellyfinId,
+                    mappedType = mappedType,
+                    onItemClick = onItemClick,
+                    onRequest = { openRequestDialog(false) },
+                    requestEnabled = canRequest,
+                )
+            }
+            if (showWatchlistToggle) {
+                WatchlistToggleButton(isInWatchlist = isOnWatchlist, onClick = onToggleWatchlist)
+            }
+        }
         if (jellyfinId4k != null) {
             OutlinedButton(
                 onClick = { onItemClick(jellyfinId4k, mappedType) },
@@ -324,7 +343,10 @@ private fun SeerrPrimaryActionButton(
                 onClick = { onItemClick(jellyfinId, mappedType) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
             ) {
-                Text(stringResource(R.string.seerr_detail_open_library))
+                Text(
+                    text = stringResource(R.string.seerr_detail_open_library),
+                    textAlign = TextAlign.Center,
+                )
             }
         }
         status == MediaStatus.BLOCKLISTED -> {
@@ -333,7 +355,7 @@ private fun SeerrPrimaryActionButton(
                 enabled = false,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
             ) {
-                Text(MediaStatus.getDisplayName(status))
+                Text(text = MediaStatus.getDisplayName(status), textAlign = TextAlign.Center)
             }
         }
         mediaType == MediaType.MOVIE &&
@@ -345,7 +367,7 @@ private fun SeerrPrimaryActionButton(
                 enabled = false,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
             ) {
-                Text(MediaStatus.getDisplayName(status))
+                Text(text = MediaStatus.getDisplayName(status), textAlign = TextAlign.Center)
             }
         }
         else -> {
@@ -363,7 +385,11 @@ private fun SeerrPrimaryActionButton(
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
                     )
-                    Text(stringResource(R.string.seerr_detail_request))
+                    Text(
+                        text = stringResource(R.string.seerr_detail_request),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
                 }
             }
         }
@@ -598,6 +624,7 @@ private fun SeerrPortraitContent(
     onItemClick: (String, String?) -> Unit,
     onNavigateToFilteredMedia: (FilterParams) -> Unit,
     onNavigateToSeerrMedia: (SearchResultItem) -> Unit,
+    onToggleWatchlist: () -> Unit,
     requestsViewModel: RequestsViewModel,
     widthSizeClass: WindowWidthSizeClass,
     lazyListState: LazyListState,
@@ -626,6 +653,8 @@ private fun SeerrPortraitContent(
                 tmdbId = tmdbId,
                 onItemClick = onItemClick,
                 requestsViewModel = requestsViewModel,
+                isOnWatchlist = uiState.isOnWatchlist,
+                onToggleWatchlist = onToggleWatchlist,
             )
 
             SeerrOverviewBlock(details = details, mediaType = mediaType)
@@ -650,6 +679,7 @@ private fun SeerrLandscapeContent(
     onItemClick: (String, String?) -> Unit,
     onNavigateToFilteredMedia: (FilterParams) -> Unit,
     onNavigateToSeerrMedia: (SearchResultItem) -> Unit,
+    onToggleWatchlist: () -> Unit,
     requestsViewModel: RequestsViewModel,
     widthSizeClass: WindowWidthSizeClass,
     lazyListState: LazyListState,
@@ -672,13 +702,15 @@ private fun SeerrLandscapeContent(
 
                     SeerrMetadataRow(details = details, mediaType = mediaType, centered = false)
 
-                    Box(modifier = Modifier.widthIn(max = 240.dp)) {
+                    Box(modifier = Modifier.widthIn(max = 296.dp)) {
                         SeerrRequestActionButton(
                             details = details,
                             mediaType = mediaType,
                             tmdbId = tmdbId,
                             onItemClick = onItemClick,
                             requestsViewModel = requestsViewModel,
+                            isOnWatchlist = uiState.isOnWatchlist,
+                            onToggleWatchlist = onToggleWatchlist,
                         )
                     }
 

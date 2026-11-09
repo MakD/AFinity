@@ -508,6 +508,7 @@ fun RequestsScreen(
 
 private fun builtInSectionTitleRes(sliderType: Int): Int? =
     when (sliderType) {
+        DiscoverSlider.Type.PLEX_WATCHLIST -> R.string.section_seerr_watchlist
         DiscoverSlider.Type.TRENDING -> R.string.section_trending
         DiscoverSlider.Type.POPULAR_MOVIES -> R.string.section_popular_movies
         DiscoverSlider.Type.UPCOMING_MOVIES -> R.string.section_upcoming_movies

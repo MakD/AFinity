@@ -90,6 +90,8 @@ constructor(
     private val prefetchSemaphore = kotlinx.coroutines.sync.Semaphore(4)
 
     private var discoverJob: Job? = null
+    private var watchlistJob: Job? = null
+    private var watchlistSlider: DiscoverSlider? = null
     private var lastServiceDetails: ServiceDetailsResponse? = null
     private val sectionResults = LinkedHashMap<String, DiscoverSectionContent>()
     private var sectionOrder: List<String> = emptyList()
@@ -170,6 +172,8 @@ constructor(
                         _currentUser.value = null
                         requestsJob?.cancel()
                         discoverJob?.cancel()
+                        watchlistJob?.cancel()
+                        watchlistSlider = null
                         sectionResults.clear()
                         sectionOrder = emptyList()
                         _uiState.update {
@@ -186,6 +190,7 @@ constructor(
                 }
         }
         observeRequestEvents()
+        observeWatchlistEvents()
         viewModelScope.launch {
             adminChangeBroadcaster.itemDeleted.collect {
                 jellyfinIdCache.clear()
@@ -1018,6 +1023,8 @@ constructor(
 
     fun loadDiscoverContent() {
         discoverJob?.cancel()
+        watchlistJob?.cancel()
+        watchlistSlider = null
         sectionResults.clear()
         sectionOrder = emptyList()
         _uiState.update { it.copy(isLoadingDiscover = true, discoverSections = emptyList()) }
@@ -1047,6 +1054,7 @@ constructor(
 
     private val defaultSliders =
         listOf(
+            DiscoverSlider(id = -10, type = DiscoverSlider.Type.PLEX_WATCHLIST),
             DiscoverSlider(id = -1, type = DiscoverSlider.Type.TRENDING),
             DiscoverSlider(id = -2, type = DiscoverSlider.Type.POPULAR_MOVIES),
             DiscoverSlider(id = -3, type = DiscoverSlider.Type.MOVIE_GENRES),
@@ -1060,6 +1068,7 @@ constructor(
 
     private fun isSupportedSlider(slider: DiscoverSlider): Boolean =
         when (slider.type) {
+            DiscoverSlider.Type.PLEX_WATCHLIST,
             DiscoverSlider.Type.TRENDING,
             DiscoverSlider.Type.POPULAR_MOVIES,
             DiscoverSlider.Type.MOVIE_GENRES,
@@ -1091,6 +1100,10 @@ constructor(
     private suspend fun loadSliderContent(slider: DiscoverSlider) {
         val key = sliderKey(slider)
         when (slider.type) {
+            DiscoverSlider.Type.PLEX_WATCHLIST -> {
+                watchlistSlider = slider
+                loadWatchlistRow(slider)
+            }
             DiscoverSlider.Type.TRENDING ->
                 publishMediaRow(key, slider, FilterType.TRENDING) {
                     jellyseerrRepository.getTrending(limit = SLIDER_ITEM_LIMIT)
@@ -1204,15 +1217,41 @@ constructor(
         }
     }
 
+    private suspend fun loadWatchlistRow(slider: DiscoverSlider) {
+        publishMediaRow(
+            key = sliderKey(slider),
+            slider = slider,
+            viewAllType = FilterType.WATCHLIST,
+            applyHideAvailable = false,
+            removeWhenEmpty = true,
+        ) {
+            jellyseerrRepository.getWatchlist(limit = SLIDER_ITEM_LIMIT)
+        }
+    }
+
+    private fun observeWatchlistEvents() {
+        viewModelScope.launch {
+            jellyseerrRepository.watchlistEvents.collect {
+                val slider = watchlistSlider ?: return@collect
+                if (sliderKey(slider) !in sectionOrder) return@collect
+                watchlistJob?.cancel()
+                watchlistJob = launch { loadWatchlistRow(slider) }
+            }
+        }
+    }
+
     private suspend fun publishMediaRow(
         key: String,
         slider: DiscoverSlider,
         viewAllType: FilterType?,
         viewAllId: Int = 0,
+        applyHideAvailable: Boolean = true,
+        removeWhenEmpty: Boolean = false,
         fetch: suspend () -> Result<JellyseerrSearchResult>,
     ) {
         fetch().onSuccess { result ->
-            val hideAvailable = _uiState.value.publicSettings?.hideAvailable == true
+            val hideAvailable =
+                applyHideAvailable && _uiState.value.publicSettings?.hideAvailable == true
             val items =
                 result.results
                     .filter { it.getMediaType() != null }
@@ -1231,12 +1270,20 @@ constructor(
                         viewAllId = viewAllId,
                     )
                 )
+            } else if (removeWhenEmpty) {
+                removeSection(key)
             }
         }
     }
 
     private fun publishSection(section: DiscoverSectionContent) {
         sectionResults[section.key] = section
+        val ordered = sectionOrder.mapNotNull { sectionResults[it] }
+        _uiState.update { it.copy(discoverSections = ordered) }
+    }
+
+    private fun removeSection(key: String) {
+        if (sectionResults.remove(key) == null) return
         val ordered = sectionOrder.mapNotNull { sectionResults[it] }
         _uiState.update { it.copy(discoverSections = ordered) }
     }

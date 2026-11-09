@@ -37,6 +37,9 @@ import com.makd.afinity.data.models.jellyseerr.TmdbKeywordSearchResponse
 import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import com.makd.afinity.data.models.jellyseerr.WatchProviderDetails
 import com.makd.afinity.data.models.jellyseerr.WatchProviderRegion
+import com.makd.afinity.data.models.jellyseerr.WatchlistAddBody
+import com.makd.afinity.data.models.jellyseerr.WatchlistEvent
+import com.makd.afinity.data.models.jellyseerr.WatchlistItem
 import com.makd.afinity.data.models.server.AddressCheck
 import com.makd.afinity.data.network.JellyseerrApiService
 import com.makd.afinity.data.network.SeerrCookieJar
@@ -55,6 +58,9 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -108,6 +114,9 @@ constructor(
 
     private val _requestEvents = MutableSharedFlow<RequestEvent>()
     override val requestEvents: SharedFlow<RequestEvent> = _requestEvents.asSharedFlow()
+
+    private val _watchlistEvents = MutableSharedFlow<WatchlistEvent>(extraBufferCapacity = 8)
+    override val watchlistEvents: SharedFlow<WatchlistEvent> = _watchlistEvents.asSharedFlow()
 
     private var activeContext: Pair<String, UUID>? = null
 
@@ -1479,6 +1488,86 @@ constructor(
     override suspend fun getTvDetails(tvId: Int): Result<MediaDetails> {
         return seerrResult("Failed to get TV details") { api -> api.getTvDetails(tvId) }
     }
+
+    override suspend fun getWatchlist(page: Int, limit: Int?): Result<JellyseerrSearchResult> =
+        seerrResult("Failed to get watchlist") { api -> api.getWatchlist(page) }
+            .map { response ->
+                val entries =
+                    response.results
+                        .mapNotNull { entry -> entry.mediaTypeOrNull()?.let { entry to it } }
+                        .distinctBy { (entry, type) -> type to entry.tmdbId }
+                        .let { if (limit != null) it.take(limit) else it }
+                val items = coroutineScope {
+                    entries
+                        .map { (entry, type) -> async { hydrateWatchlistEntry(entry, type) } }
+                        .awaitAll()
+                }
+                JellyseerrSearchResult(
+                    page = response.page,
+                    totalPages = response.totalPages,
+                    totalResults = response.totalResults,
+                    results = items,
+                )
+            }
+
+    override suspend fun addToWatchlist(
+        tmdbId: Int,
+        mediaType: MediaType,
+        title: String,
+    ): Result<Unit> =
+        watchlistWrite("Failed to add to watchlist", alreadyDoneCode = 409) { api ->
+                api.addToWatchlist(WatchlistAddBody(tmdbId, mediaType.toApiString(), title))
+            }
+            .onSuccess { _watchlistEvents.emit(WatchlistEvent(tmdbId, mediaType, true)) }
+
+    override suspend fun removeFromWatchlist(tmdbId: Int, mediaType: MediaType): Result<Unit> =
+        watchlistWrite("Failed to remove from watchlist", alreadyDoneCode = 404) { api ->
+                api.removeFromWatchlist(tmdbId, mediaType.toApiString())
+            }
+            .onSuccess { _watchlistEvents.emit(WatchlistEvent(tmdbId, mediaType, false)) }
+
+    private fun WatchlistItem.mediaTypeOrNull(): MediaType? = runCatching {
+        MediaType.fromApiString(mediaType)
+    }
+        .getOrNull()
+
+    private suspend fun hydrateWatchlistEntry(
+        entry: WatchlistItem,
+        type: MediaType,
+    ): SearchResultItem {
+        val details =
+            if (type == MediaType.TV) getTvDetails(entry.tmdbId) else getMovieDetails(entry.tmdbId)
+        return details.getOrNull()?.toSearchResultItem(type)
+            ?: SearchResultItem(
+                id = entry.tmdbId,
+                mediaType = type.toApiString(),
+                title = entry.title,
+            )
+    }
+
+    private suspend fun watchlistWrite(
+        errorMessage: String,
+        alreadyDoneCode: Int,
+        call: suspend (JellyseerrApiService) -> Response<*>,
+    ): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+                val response = call(apiService.get())
+                if (response.isSuccessful || response.code() == alreadyDoneCode) {
+                    Result.success(Unit)
+                } else {
+                    Result.failure(Exception("$errorMessage: ${seerrErrorMessage(response)}"))
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, errorMessage)
+                Result.failure(e)
+            }
+        }
 
     override suspend fun getRatings(mediaType: MediaType, tmdbId: Int): Result<RatingsCombined> {
         return withContext(Dispatchers.IO) {

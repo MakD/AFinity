@@ -25,6 +25,8 @@ import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import com.makd.afinity.data.models.jellyseerr.UserResultsResponse
 import com.makd.afinity.data.models.jellyseerr.WatchProviderDetails
 import com.makd.afinity.data.models.jellyseerr.WatchProviderRegion
+import com.makd.afinity.data.models.jellyseerr.WatchlistAddBody
+import com.makd.afinity.data.models.jellyseerr.WatchlistResponse
 import kotlinx.serialization.json.JsonObject
 import retrofit2.Response
 import retrofit2.http.Body
@@ -119,6 +121,18 @@ interface JellyseerrApiService {
         @Query("query") query: String,
         @Query("page") page: Int = 1,
     ): Response<JellyseerrSearchResult>
+
+    @GET("api/v1/discover/watchlist")
+    suspend fun getWatchlist(@Query("page") page: Int = 1): Response<WatchlistResponse>
+
+    @POST("api/v1/watchlist")
+    suspend fun addToWatchlist(@Body body: WatchlistAddBody): Response<JsonObject>
+
+    @DELETE("api/v1/watchlist/{tmdbId}")
+    suspend fun removeFromWatchlist(
+        @Path("tmdbId") tmdbId: Int,
+        @Query("mediaType") mediaType: String,
+    ): Response<Unit>
 
     @GET("api/v1/movie/{movieId}")
     suspend fun getMovieDetails(@Path("movieId") movieId: Int): Response<MediaDetails>

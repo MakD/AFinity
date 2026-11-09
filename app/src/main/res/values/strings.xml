@@ -1138,6 +1138,7 @@
     <string name="section_upcoming_movies">Upcoming Movies</string>
     <string name="section_popular_tv">Popular TV Shows</string>
     <string name="section_upcoming_tv">Upcoming TV Shows</string>
+    <string name="section_seerr_watchlist">Your Watchlist</string>
 
     <string name="section_recent_requests">Recent Requests</string>
     <string name="section_available_requests">Available Requests</string>

@@ -46,8 +46,30 @@ data class MediaDetails(
     @SerialName("productionCountries") val productionCountries: List<ProductionCountry>? = null,
     @SerialName("spokenLanguages") val spokenLanguages: List<SpokenLanguage>? = null,
     @SerialName("keywords") val keywords: List<TmdbKeyword>? = null,
+    @SerialName("onUserWatchlist") val onUserWatchlist: Boolean? = null,
 ) {
     fun isAnime(): Boolean = keywords?.any { it.id == ANIME_KEYWORD_ID } == true
+
+    fun toSearchResultItem(mediaType: MediaType): SearchResultItem =
+        SearchResultItem(
+            id = id,
+            mediaType = mediaType.toApiString(),
+            title = title,
+            name = name,
+            originalTitle = originalTitle,
+            originalName = originalName,
+            overview = overview,
+            posterPath = posterPath,
+            backdropPath = backdropPath,
+            releaseDate = releaseDate,
+            firstAirDate = firstAirDate,
+            voteAverage = voteAverage,
+            voteCount = voteCount,
+            popularity = popularity,
+            genreIds = genres?.map { it.id },
+            originalLanguage = originalLanguage,
+            mediaInfo = mediaInfo,
+        )
 
     fun getSeasonCount(): Int {
         return seasons?.filter { (it.seasonNumber ?: 0) > 0 }?.size ?: numberOfSeason ?: 0
