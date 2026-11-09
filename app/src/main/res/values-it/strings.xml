@@ -518,4 +518,14 @@
     <string name="hero_content_title">Contenuto del carosello in evidenza</string>
     <string name="hero_content_settings_cd">Scegli cosa mostrare nel carosello in evidenza</string>
     <string name="hero_content_random">Casuale</string>
+    <string name="discovery_section_top_imdb_movies">I più grandi di sempre</string>
+    <string name="discovery_section_top_imdb_movies_summary">Film della Top 250 di IMDb presenti nella tua libreria</string>
+    <string name="discovery_section_top_imdb_shows">Serie leggendaria</string>
+    <string name="discovery_section_top_imdb_shows_summary">Serie della Top 250 di IMDb nella tua libreria</string>
+    <string name="discovery_section_trending_movies">Di tendenza al momento</string>
+    <string name="discovery_section_trending_movies_summary">Film di tendenza a livello globale su Cinemeta presenti nella tua libreria</string>
+    <string name="discovery_section_trending_shows">Ciò che tutti stanno guardando tutto d\'un fiato</string>
+    <string name="discovery_section_trending_shows_summary">Serie di tendenza a livello mondiale su Cinemeta presenti nella tua libreria</string>
+    <string name="hero_content_random_desc">Un insieme casuale di film e serie non ancora visti.</string>
+    <string name="hero_content_recommended">Consigliato per te</string>
 </resources>
