@@ -196,7 +196,9 @@ All optional. Turn any of them on under **Settings > Connect Services**:
 - **[Wikidata](https://www.wikidata.org/):** award history, Universes & Sagas
 - **[TheSubtitleDB](https://thesubtitledb.org/):** online subtitle search
 
-AFinity also uses these Jellyfin features when your server has them: media segments, trickplay, subtitle and lyrics plugins, SyncPlay, Live TV recording, and the KefinTweaks watchlist.
+AFinity also uses these Jellyfin features when your server has them: media segments, trickplay, subtitle and lyrics plugins, SyncPlay and Live TV recording.
+
+AFinity's watchlist follows the one [KefinTweaks](https://github.com/ranaldsgift/KefinTweaks) introduced: it uses the same Jellyfin "Likes" flag, so if KefinTweaks is installed, your watchlist is the same in AFinity and the Jellyfin web app.
 
 **Libraries:** movies, shows, music, Live TV, collections, playlists, mixed movie & show libraries, plus audiobooks and podcasts through Audiobookshelf. *Not yet:* home videos & photos, books, music videos.
 
