@@ -1,5 +1,7 @@
 package com.makd.afinity.ui.components
 
+import android.content.Context
+import android.graphics.Bitmap
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -43,8 +45,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,10 +57,14 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -68,9 +76,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.get
+import androidx.core.graphics.drawable.toBitmap
+import coil3.asDrawable
 import coil3.imageLoader
 import coil3.request.ImageRequest
+import coil3.request.SuccessResult
+import coil3.request.allowHardware
 import com.makd.afinity.R
 import com.makd.afinity.data.models.HeroContentSource
 import com.makd.afinity.data.models.HeroIndicator
@@ -88,13 +99,10 @@ import com.makd.afinity.navigation.LocalHeroStyle
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.utils.bottomOverlap
-import com.vanniktech.blurhash.BlurHash
 import java.util.Locale
 import kotlin.math.max
 import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 private val HeroMaxHeight = 560.dp
@@ -109,17 +117,11 @@ private const val HeroLogoLandscapeWidthFraction = 0.4f
 private const val HeroLandscapeLogoHeightFraction = 0.25f
 private const val LIGHT_BACKGROUND_LUMINANCE = 0.5f
 
-private val HeroCenteredTextInset = 24.dp
-private val HeroCenteredTextBottom = 104.dp
-private val HeroCenteredTextHeight = 212.dp
-private val HeroRichTextStart = 14.dp
-private val HeroRichTextEndInset = 62.dp
-private const val HeroRichTextWidthFraction = 0.75f
-private val HeroRichTextTop = 48.dp
-private val HeroRichTextBottom = 100.dp
-private val HeroRichTextHeight = 276.dp
-private const val HeroToneSamples = 12
-private const val HeroDarkTextMinLuminance = 0.25f
+private const val HeroToneSampleWidth = 160
+private const val HeroCenteredToneWidthFraction = 0.7f
+private val HeroDarkText = Color(0xFF111111)
+private val HeroTextShadowBlur = 6.dp
+private const val HeroTextShadowAlpha = 0.45f
 
 private val HeroPeekTopGap = 8.dp
 private const val HeroPeekPortraitFraction = 0.6f
@@ -183,7 +185,38 @@ private val HeroPeekLandscapeBottomScrim =
 
 private val LocalHeroIndicator = staticCompositionLocalOf { HeroIndicator.DOTS }
 
+private val HeroFadeStopAlphas = FloatArray(HeroFadeStops.size) { HeroFadeStops[it].alpha }
+
 private val LocalHeroPageColorScheme = staticCompositionLocalOf<ColorScheme?> { null }
+
+private val LocalHeroTextShadow = staticCompositionLocalOf<Shadow?> { null }
+
+private class HeroTextRegionTracker {
+    var container: LayoutCoordinates? = null
+    var column: LayoutCoordinates? = null
+    var logo: LayoutCoordinates? = null
+    var region by mutableStateOf<HeroTextRegion?>(null)
+        private set
+
+    fun update() {
+        val container = container?.takeIf { it.isAttached } ?: return
+        val column = column?.takeIf { it.isAttached } ?: return
+        val bounds = container.localBoundingBoxOf(column, clipBounds = false)
+        val top =
+            logo
+                ?.takeIf { it.isAttached }
+                ?.let { container.localBoundingBoxOf(it, clipBounds = false).bottom } ?: bounds.top
+        region =
+            HeroTextRegion(
+                left = bounds.left,
+                top = top,
+                right = bounds.right,
+                bottom = bounds.bottom,
+                heroWidth = container.size.width.toFloat(),
+                heroHeight = container.size.height.toFloat(),
+            )
+    }
+}
 
 private data class HeroPeekMetrics(val top: Dp, val cardHeight: Dp, val indicatorHeight: Dp) {
     val total: Dp
@@ -202,84 +235,55 @@ private fun heroGenres(item: AfinityItem): List<String> =
 private fun PagerState.offsetFrom(page: Int): Float =
     (currentPage - page) + currentPageOffsetFraction
 
-private fun heroFadeAlphaAt(y: Float, fadeStart: Float, height: Float): Float {
-    if (y <= fadeStart) return 1f
-    val last = HeroFadeStops.size - 1
-    val position = ((y - fadeStart) / (height - fadeStart)).coerceIn(0f, 1f) * last
-    val index = position.toInt().coerceAtMost(last - 1)
-    val start = HeroFadeStops[index].alpha
-    return start + (HeroFadeStops[index + 1].alpha - start) * (position - index)
+private fun heroBackdropUrl(item: AfinityItem): String? =
+    item.images.backdropImageUrl ?: item.images.primaryImageUrl
+
+private suspend fun loadHeroBackdropSample(context: Context, url: String): HeroBackdropSample? {
+    val request =
+        ImageRequest.Builder(context)
+            .data(optimizedImageUrl(url, HeroToneSampleWidth))
+            .size(HeroToneSampleWidth, HeroToneSampleWidth)
+            .allowHardware(false)
+            .build()
+    val result = context.imageLoader.execute(request) as? SuccessResult ?: return null
+    val decoded = result.image.asDrawable(context.resources).toBitmap()
+    val bitmap =
+        if (decoded.config == Bitmap.Config.HARDWARE) {
+            decoded.copy(Bitmap.Config.ARGB_8888, false) ?: return null
+        } else {
+            decoded
+        }
+    if (bitmap.width <= 0 || bitmap.height <= 0) return null
+    val pixels = IntArray(bitmap.width * bitmap.height)
+    bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+    return HeroBackdropSample(bitmap.width, bitmap.height, pixels)
 }
 
-private fun heroPrefersLightText(
-    item: AfinityItem,
-    heroWidth: Float,
-    heroHeight: Float,
+private fun heroTextTone(
+    sample: HeroBackdropSample?,
+    region: HeroTextRegion?,
     isLandscape: Boolean,
+    fadeHeight: Float,
     pageColor: Color,
-): Boolean? {
-    val images = item.images
-    val blurHash =
-        if (images.backdropImageUrl != null) images.backdropBlurHash else images.primaryBlurHash
-    if (blurHash.isNullOrBlank()) return null
-    val decodeWidth = if (images.backdropImageUrl != null) 32 else 20
-    val decodeHeight = if (images.backdropImageUrl != null) 18 else 30
-    val bitmap =
-        try {
-            BlurHash.decode(blurHash = blurHash, width = decodeWidth, height = decodeHeight)
-        } catch (e: IllegalArgumentException) {
-            null
-        } ?: return null
-
-    val scale = max(heroWidth / decodeWidth, heroHeight / decodeHeight)
-    val offsetX = (heroWidth - decodeWidth * scale) / 2f
-    val offsetY = (heroHeight - decodeHeight * scale) / 2f
-    val fadeStart = max(heroHeight - HeroFadeHeight.value, heroHeight * 0.35f)
-
-    val left: Float
-    val right: Float
-    val bottom: Float
-    val top: Float
-    if (isLandscape) {
-        left = HeroRichTextStart.value
-        right = left + (heroWidth - HeroRichTextEndInset.value) * HeroRichTextWidthFraction
-        bottom = heroHeight - HeroRichTextBottom.value
-        top = max(HeroRichTextTop.value, bottom - HeroRichTextHeight.value)
-    } else {
-        left = HeroCenteredTextInset.value
-        right = heroWidth - HeroCenteredTextInset.value
-        bottom = heroHeight - HeroCenteredTextBottom.value
-        top = max(0f, bottom - HeroCenteredTextHeight.value)
-    }
-
-    var red = 0f
-    var green = 0f
-    var blue = 0f
-    for (row in 0 until HeroToneSamples) {
-        val y = top + (bottom - top) * (row + 0.5f) / HeroToneSamples
-        val imageAlpha = heroFadeAlphaAt(y, fadeStart, heroHeight)
-        val imageWeight = imageAlpha * (1f - HeroDimAlpha)
-        val pixelY = ((y - offsetY) / scale).toInt().coerceIn(0, decodeHeight - 1)
-        for (column in 0 until HeroToneSamples) {
-            val x = left + (right - left) * (column + 0.5f) / HeroToneSamples
-            val pixelX = ((x - offsetX) / scale).toInt().coerceIn(0, decodeWidth - 1)
-            val pixel = Color(bitmap[pixelX, pixelY])
-            red += pixel.red * imageWeight + pageColor.red * (1f - imageAlpha)
-            green += pixel.green * imageWeight + pageColor.green * (1f - imageAlpha)
-            blue += pixel.blue * imageWeight + pageColor.blue * (1f - imageAlpha)
+): HeroTextTone? {
+    if (sample == null || region == null) return null
+    val sampled =
+        if (isLandscape) {
+            region
+        } else {
+            val inset = (region.right - region.left) * (1f - HeroCenteredToneWidthFraction) / 2f
+            region.copy(left = region.left + inset, right = region.right - inset)
         }
-    }
-    bitmap.recycle()
-
-    val samples = (HeroToneSamples * HeroToneSamples).toFloat()
-    val backgroundLuminance =
-        Color(
-                red = (red / samples).coerceIn(0f, 1f),
-                green = (green / samples).coerceIn(0f, 1f),
-                blue = (blue / samples).coerceIn(0f, 1f),
-            )
-            .luminance()
-    return backgroundLuminance < HeroDarkTextMinLuminance
+    return measureHeroTextTone(
+            sample = sample,
+            region = sampled,
+            fadeStart = max(region.heroHeight - fadeHeight, region.heroHeight * 0.35f),
+            fadeStops = HeroFadeStopAlphas,
+            dimAlpha = HeroDimAlpha,
+            pageArgb = pageColor.toArgb(),
+            darkTextArgb = HeroDarkText.toArgb(),
+        )
+        ?.tone
 }
 
 @Composable
@@ -455,39 +459,41 @@ private fun HeroFullBleed(
     val colorScheme = MaterialTheme.colorScheme
     val isLightTheme = colorScheme.background.luminance() > LIGHT_BACKGROUND_LUMINANCE
     val pageColor = colorScheme.surface
-    val lightTextItems by
-        produceState(
-            emptySet(),
-            items,
-            isLightTheme,
-            screenWidthDp,
-            heroHeight,
-            isLandscape,
-            pageColor,
-        ) {
-            value =
-                if (!isLightTheme) {
-                    emptySet()
-                } else {
-                    withContext(Dispatchers.Default) {
-                        items
-                            .filter { item ->
-                                heroPrefersLightText(
-                                    item = item,
-                                    heroWidth = screenWidthDp.value,
-                                    heroHeight = heroHeight.value,
-                                    isLandscape = isLandscape,
-                                    pageColor = pageColor,
-                                ) == true
-                            }
-                            .mapTo(mutableSetOf()) { it.id }
-                    }
-                }
+    val context = LocalContext.current
+    val urlRewriter = LocalImageUrlRewriter.current
+    val backdropUrls = remember(items) { items.mapNotNull(::heroBackdropUrl).distinct() }
+    val backdropSamples by
+        produceState(emptyMap<String, HeroBackdropSample>(), backdropUrls, urlRewriter) {
+            value = value.filterKeys { it in backdropUrls }
+            for (url in backdropUrls) {
+                if (url in value) continue
+                val rewritten = urlRewriter?.invoke(url) ?: url
+                val sample =
+                    loadHeroBackdropSample(context, rewritten)
+                        ?: if (rewritten != url) loadHeroBackdropSample(context, url) else null
+                if (sample != null) value = value + (url to sample)
+            }
         }
+
+    val toneTracker = remember(isLandscape) { HeroTextRegionTracker() }
+    val fadeHeightPx = with(LocalDensity.current) { HeroFadeHeight.toPx() }
+    val currentSample = heroBackdropUrl(currentItem)?.let { backdropSamples[it] }
+    val textRegion = toneTracker.region
+    val measuredTone =
+        remember(currentSample, textRegion, isLandscape, fadeHeightPx, pageColor) {
+            heroTextTone(currentSample, textRegion, isLandscape, fadeHeightPx, pageColor)
+        }
+    val textTone = measuredTone ?: if (isLightTheme) HeroTextTone.DARK else HeroTextTone.LIGHT
 
     val overlap = if (isLandscape) HeroBottomOverlap else 0.dp
 
-    Box(modifier = modifier.bottomOverlap(overlap).fillMaxWidth().height(heroHeight)) {
+    Box(
+        modifier =
+            modifier.bottomOverlap(overlap).fillMaxWidth().height(heroHeight).onGloballyPositioned {
+                toneTracker.container = it
+                toneTracker.update()
+            }
+    ) {
         HeroBackdrop(
             pagerState = pagerState,
             items = items,
@@ -495,13 +501,14 @@ private fun HeroFullBleed(
             height = heroHeight,
         )
 
-        HeroOnDarkColors(enabled = currentItem.id in lightTextItems) {
+        HeroTextColors(tone = textTone, shadow = true) {
             if (isLandscape) {
                 HeroContentRich(
                     currentItem = currentItem,
                     items = items,
                     pagerState = pagerState,
                     contentAlpha = contentAlpha,
+                    toneTracker = toneTracker,
                     screenWidthDp = screenWidthDp,
                     logoHeight = logoHeight,
                     onWatchNowClick = onWatchNowClick,
@@ -514,6 +521,7 @@ private fun HeroFullBleed(
                     items = items,
                     pagerState = pagerState,
                     contentAlpha = contentAlpha,
+                    toneTracker = toneTracker,
                     screenWidthDp = screenWidthDp,
                     logoHeight = logoHeight,
                     onWatchNowClick = onWatchNowClick,
@@ -526,21 +534,42 @@ private fun HeroFullBleed(
 }
 
 @Composable
-private fun HeroOnDarkColors(enabled: Boolean = true, content: @Composable () -> Unit) {
+private fun HeroTextColors(
+    tone: HeroTextTone = HeroTextTone.LIGHT,
+    shadow: Boolean = false,
+    content: @Composable () -> Unit,
+) {
     val base = MaterialTheme.colorScheme
     val scheme =
-        remember(base, enabled) {
-            if (enabled) {
-                base.copy(
-                    onSurface = Color.White,
-                    onSurfaceVariant = Color.White.copy(alpha = 0.8f),
-                    surface = Color.Black,
-                )
-            } else {
-                base
+        remember(base, tone) {
+            when (tone) {
+                HeroTextTone.LIGHT ->
+                    base.copy(
+                        onSurface = Color.White,
+                        onSurfaceVariant = Color.White.copy(alpha = 0.8f),
+                        surface = Color.Black,
+                    )
+                HeroTextTone.DARK ->
+                    base.copy(
+                        onSurface = HeroDarkText,
+                        onSurfaceVariant = HeroDarkText.copy(alpha = 0.8f),
+                    )
             }
         }
-    CompositionLocalProvider(LocalHeroPageColorScheme provides base) {
+    val shadowBlur = with(LocalDensity.current) { HeroTextShadowBlur.toPx() }
+    val textShadow =
+        remember(tone, shadow, shadowBlur) {
+            if (shadow) {
+                val halo = if (tone == HeroTextTone.LIGHT) Color.Black else Color.White
+                Shadow(color = halo.copy(alpha = HeroTextShadowAlpha), blurRadius = shadowBlur)
+            } else {
+                null
+            }
+        }
+    CompositionLocalProvider(
+        LocalHeroPageColorScheme provides base,
+        LocalHeroTextShadow provides textShadow,
+    ) {
         MaterialTheme(colorScheme = scheme, content = content)
     }
 }
@@ -548,7 +577,7 @@ private fun HeroOnDarkColors(enabled: Boolean = true, content: @Composable () ->
 @Composable
 @ReadOnlyComposable
 private fun heroButtonColors(): Pair<Color, Color> {
-    val scheme = MaterialTheme.colorScheme
+    val scheme = LocalHeroPageColorScheme.current ?: MaterialTheme.colorScheme
     return if (scheme.background.luminance() > LIGHT_BACKGROUND_LUMINANCE) {
         Color.Black to Color.White
     } else {
@@ -728,7 +757,7 @@ private fun HeroCardCarousel(
                             },
                     )
 
-                    HeroOnDarkColors {
+                    HeroTextColors {
                         val contentModifier = Modifier.graphicsLayer {
                             alpha =
                                 1f -
@@ -764,7 +793,7 @@ private fun HeroCardCarousel(
             }
 
             if (isLandscape && items.size > 1) {
-                HeroOnDarkColors {
+                HeroTextColors {
                     Box(
                         modifier =
                             Modifier.align(Alignment.BottomEnd)
@@ -1067,6 +1096,7 @@ private fun BoxScope.HeroContentCentered(
     items: List<AfinityItem>,
     pagerState: PagerState,
     contentAlpha: Float,
+    toneTracker: HeroTextRegionTracker,
     screenWidthDp: Dp,
     logoHeight: Dp,
     onWatchNowClick: (AfinityItem) -> Unit,
@@ -1076,6 +1106,7 @@ private fun BoxScope.HeroContentCentered(
     val buttonScale = heroButtonScale(HeroButtonSize)
     val (buttonContainer, buttonContent) = heroButtonColors()
     val bottomPad = if (logoHeight < 120.dp) 64.dp else 80.dp
+    val textShadow = LocalHeroTextShadow.current
 
     Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
         Column(
@@ -1083,12 +1114,22 @@ private fun BoxScope.HeroContentCentered(
                 Modifier.align(Alignment.BottomCenter)
                     .padding(bottom = bottomPad)
                     .fillMaxWidth()
-                    .graphicsLayer { alpha = contentAlpha },
+                    .graphicsLayer { alpha = contentAlpha }
+                    .onGloballyPositioned {
+                        toneTracker.column = it
+                        toneTracker.update()
+                    },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Box(
-                modifier = Modifier.fillMaxWidth(HeroLogoPortraitWidthFraction).height(logoHeight),
+                modifier =
+                    Modifier.fillMaxWidth(HeroLogoPortraitWidthFraction)
+                        .height(logoHeight)
+                        .onGloballyPositioned {
+                            toneTracker.logo = it
+                            toneTracker.update()
+                        },
                 contentAlignment = Alignment.Center,
             ) {
                 currentItem.images.logo?.let { _ ->
@@ -1109,7 +1150,7 @@ private fun BoxScope.HeroContentCentered(
                             style =
                                 (if (logoHeight < 110.dp) MaterialTheme.typography.headlineLarge
                                     else MaterialTheme.typography.displaySmall)
-                                    .copy(fontWeight = FontWeight.Bold),
+                                    .copy(fontWeight = FontWeight.Bold, shadow = textShadow),
                             color = MaterialTheme.colorScheme.onSurface,
                             textAlign = TextAlign.Center,
                             maxLines = 2,
@@ -1125,7 +1166,11 @@ private fun BoxScope.HeroContentCentered(
             if (genres.isNotEmpty()) {
                 Text(
                     text = genres.take(3).joinToString(" • "),
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                    style =
+                        MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = FontWeight.Medium,
+                            shadow = textShadow,
+                        ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
@@ -1204,6 +1249,7 @@ private fun HeroContentRich(
     items: List<AfinityItem>,
     pagerState: PagerState,
     contentAlpha: Float,
+    toneTracker: HeroTextRegionTracker,
     screenWidthDp: Dp,
     logoHeight: Dp,
     onWatchNowClick: (AfinityItem) -> Unit,
@@ -1212,6 +1258,7 @@ private fun HeroContentRich(
 ) {
     val buttonScale = heroButtonScale(HeroRichButtonSize)
     val (buttonContainer, buttonContent) = heroButtonColors()
+    val textShadow = LocalHeroTextShadow.current
 
     BoxWithConstraints(
         modifier =
@@ -1234,13 +1281,23 @@ private fun HeroContentRich(
         ) {
             Column(
                 modifier =
-                    Modifier.weight(1f, fill = false).fillMaxWidth(0.75f).graphicsLayer {
-                        alpha = contentAlpha
-                    },
+                    Modifier.weight(1f, fill = false)
+                        .fillMaxWidth(0.75f)
+                        .graphicsLayer { alpha = contentAlpha }
+                        .onGloballyPositioned {
+                            toneTracker.column = it
+                            toneTracker.update()
+                        },
                 verticalArrangement = Arrangement.spacedBy(contentSpacing),
             ) {
                 Box(
-                    modifier = Modifier.fillMaxWidth(0.5f).heightIn(max = clampedLogoHeight),
+                    modifier =
+                        Modifier.fillMaxWidth(0.5f)
+                            .heightIn(max = clampedLogoHeight)
+                            .onGloballyPositioned {
+                                toneTracker.logo = it
+                                toneTracker.update()
+                            },
                     contentAlignment = Alignment.CenterStart,
                 ) {
                     Box(
@@ -1265,7 +1322,8 @@ private fun HeroContentRich(
                                     text = currentItem.name,
                                     style =
                                         MaterialTheme.typography.displayMedium.copy(
-                                            fontWeight = FontWeight.Bold
+                                            fontWeight = FontWeight.Bold,
+                                            shadow = textShadow,
                                         ),
                                     color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 2,
@@ -1282,7 +1340,10 @@ private fun HeroContentRich(
                     Text(
                         text = genres.take(3).joinToString(" • "),
                         style =
-                            MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                            MaterialTheme.typography.bodyLarge.copy(
+                                fontWeight = FontWeight.Medium,
+                                shadow = textShadow,
+                            ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -1292,7 +1353,7 @@ private fun HeroContentRich(
                 if (currentItem.overview.isNotBlank()) {
                     Text(
                         text = currentItem.overview,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyMedium.copy(shadow = textShadow),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = if (isCompactHeight) 1 else 2,
                         overflow = TextOverflow.Ellipsis,
@@ -1368,6 +1429,11 @@ private fun HeroMetadata(
             else -> null
         }
     val ratingScale = rememberRatingMetadataScale()
+    val textStyle =
+        MaterialTheme.typography.bodyLarge.copy(
+            fontWeight = FontWeight.Medium,
+            shadow = LocalHeroTextShadow.current,
+        )
 
     val items =
         buildList<@Composable () -> Unit> {
@@ -1386,10 +1452,7 @@ private fun HeroMetadata(
                             )
                             Text(
                                 text = String.format(Locale.US, "%.1f", rating),
-                                style =
-                                    MaterialTheme.typography.bodyLarge.copy(
-                                        fontWeight = FontWeight.Medium
-                                    ),
+                                style = textStyle,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -1416,10 +1479,7 @@ private fun HeroMetadata(
                                 )
                                 Text(
                                     text = "${rtRating.toInt()}%",
-                                    style =
-                                        MaterialTheme.typography.bodyLarge.copy(
-                                            fontWeight = FontWeight.Medium
-                                        ),
+                                    style = textStyle,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
@@ -1433,10 +1493,7 @@ private fun HeroMetadata(
                     add {
                         Text(
                             text = date.year.toString(),
-                            style =
-                                MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
+                            style = textStyle,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -1454,8 +1511,7 @@ private fun HeroMetadata(
                 add {
                     Text(
                         text = rating,
-                        style =
-                            MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                        style = textStyle,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier =
                             Modifier.background(
@@ -1472,10 +1528,7 @@ private fun HeroMetadata(
                     add {
                         Text(
                             text = pluralStringResource(R.plurals.hero_season_plural, count, count),
-                            style =
-                                MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
+                            style = textStyle,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
