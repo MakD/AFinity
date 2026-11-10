@@ -313,6 +313,7 @@ Tap a section to expand it.
 - Where to Watch in your region
 - Starring..., More in..., similar items, special features, additional parts and collection membership
 - Not in your library rows for collections and people
+- Theme music on detail pages from your server's theme songs (Themerr and similar plugins): crossfades between titles, volume control, Wi-Fi only by default; off unless you turn it on
 - Play, shuffle and download whole collections
 - Unified search across Jellyfin, Seerr and Audiobookshelf with type filters and library scoping
 - Genre, studio, network and collection browsing; full filmographies
