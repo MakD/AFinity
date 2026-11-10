@@ -3621,9 +3621,9 @@
     <string name="subtitle_search_title">Найти субтитры</string>
     <string name="subtitle_search_from_server">на вашем сервере</string>
     <string name="subtitle_search_from_subtitledb">на TheSubtitleDB</string>
-    <string name="subtitle_search_footer_server">Сохранены на ваш сервер, так они доступны любому приложению Jellyfin.</string>
-    <string name="subtitle_search_footer_device">Сохранены только на этом устройстве. Администратор сервера может разрешить управление субтитрами вашему аккаунту, чтобы сделать их доступными любому приложению.</string>
-    <string name="subtitle_search_footer_downloaded">Сохранены только на этом устройстве, для этой загрузки.</string>
+    <string name="subtitle_search_footer_server">Субтитры сохранятся на ваш сервер, так они доступны любому приложению Jellyfin.</string>
+    <string name="subtitle_search_footer_device">Субтитры сохранятся только на этом устройстве. Администратор сервера может разрешить управление субтитрами вашему аккаунту, чтобы сделать их доступными любому приложению.</string>
+    <string name="subtitle_search_footer_downloaded">Субтитпы сохранятся только на этом устройстве, для этой загрузки.</string>
     <string name="subtitle_search_add_failed">Не удалось добавить субтитры, попробуйте еще раз.</string>
     <string name="subtitle_search_downloading">Скачивание…</string>
     <string name="subtitle_search_empty_title_fmt">%1$s язык: субтитры не найдены</string>
@@ -3671,7 +3671,7 @@
     <string name="subtitledb_disconnect_message">Для этого профиля перестанет работать поиск субтитров в сети. Сохраненные файлы субтитров продолжат работать, пока вы их не удалите.</string>
     <string name="cd_cancel_auto_skip">Отменить авто-пропуск</string>
     <string name="skip_tap_to_cancel">Нажмите для отмены</string>
-    <string name="undo_skip">Отменить пропуск</string>
+    <string name="undo_skip">Откатить пропуск</string>
     <string name="wikidata_connect_blurb">Награды и номинации для фильмов, сериалов и персон, а также раздел «Вселенные и саги» на Главной. Бесплатно и открыто для всех — без регистраций и ключей API.</string>
     <string name="wikidata_connect_sends_body">TMDB-идентификатор элемента при открытии страницы с подробностями, IMDb-идентификаторы фильмов и сериалов из вашей библиотеки для их группировки по франшизам, и ваш IP-адрес, в общедоступный сервис запросов Викимедиа. Логотипы франшиз загружаются из Wikimedia Commons.</string>
     <string name="wikidata_connect_never_body">Информация об аккаунте, токене, адресе сервера или истории просмотра с вашего сервера Jellyfin.</string>
@@ -3679,7 +3679,7 @@
     <string name="wikidata_disconnect_message">История наград и раздел «Вселенные и саги» перестанут загружаться для этого профиля. Сохраненные данные не будут удалены.</string>
     <string name="franchise_load_failed">Не удалось загрузить франшизу. Проверьте ваше соединение и попробуйте еще раз.</string>
     <string name="seerr_watchlist_sync_summary">Добавление и удаление фильма или сериала в список запланинированных в AFinity также обновляет список в Seerr, и наоборот. Работает только для этого профиля.</string>
-    <string name="seerr_watchlist_sync_title">Синхронизация списков</string>
+    <string name="seerr_watchlist_sync_title">Синхронизировать запланированные просмотры</string>
     <string name="section_seerr_watchlist_not_in_library">Еще нет в вашей библиотеке</string>
     <string name="section_seerr_watchlist">Ваши запланированные</string>
 </resources>
