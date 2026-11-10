@@ -494,6 +494,22 @@ interface PreferencesRepository {
 
     fun getShowAwardsFlow(): Flow<Boolean>
 
+    suspend fun setThemeMusicEnabled(enabled: Boolean)
+
+    suspend fun getThemeMusicEnabled(): Boolean
+
+    fun getThemeMusicEnabledFlow(): Flow<Boolean>
+
+    suspend fun setThemeMusicVolume(percent: Int)
+
+    fun getThemeMusicVolumeFlow(): Flow<Int>
+
+    suspend fun setThemeMusicOnMobileData(enabled: Boolean)
+
+    suspend fun getThemeMusicOnMobileData(): Boolean
+
+    fun getThemeMusicOnMobileDataFlow(): Flow<Boolean>
+
     suspend fun setWikidataEnabled(serverId: String, userId: String, enabled: Boolean)
 
     suspend fun getWikidataEnabled(serverId: String, userId: String): Boolean

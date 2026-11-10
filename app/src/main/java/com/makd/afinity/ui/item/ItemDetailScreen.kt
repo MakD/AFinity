@@ -85,6 +85,7 @@ import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.ImageHeroKind
 import com.makd.afinity.ui.components.LandscapeDetailArrangement
 import com.makd.afinity.ui.components.LandscapeDetailLayout
+import com.makd.afinity.ui.components.LocalHeroImageLoaded
 import com.makd.afinity.ui.components.PortraitDetailLayout
 import com.makd.afinity.ui.components.PortraitHero
 import com.makd.afinity.ui.components.isLandscapeWindow
@@ -180,6 +181,15 @@ fun ItemDetailScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
+    var heroLoaded by remember { mutableStateOf(false) }
+    val onHeroLoaded = remember { { heroLoaded = true } }
+    ThemeMusicEffect(
+        player = viewModel.themeMusicPlayer,
+        resolved = uiState.themeResolved,
+        song = uiState.themeSong,
+        heroLoaded = heroLoaded,
+    )
+
     var pendingPlayItem by remember { mutableStateOf<AfinityItem?>(null) }
     var pendingPlaySelection by remember { mutableStateOf<PlaybackSelection?>(null) }
     var showVersionPickerForPlay by remember { mutableStateOf(false) }
@@ -264,73 +274,75 @@ fun ItemDetailScreen(
                 )
             }
             uiState.item != null && resolvedLayout != null -> {
-                ItemDetailContent(
-                    detailLayout = resolvedLayout,
-                    item = uiState.item!!,
-                    hasPlayableItems = uiState.hasPlayableItems,
-                    seasons = uiState.seasons,
-                    boxSetItems = uiState.boxSetItems,
-                    containingBoxSets = uiState.containingBoxSets,
-                    similarItems = uiState.similarItems,
-                    relatedRows = relatedRows,
-                    missingCollectionParts = missingCollectionParts,
-                    nextEpisode = nextEpisode,
-                    baseUrl = viewModel.getBaseUrl(),
-                    specialFeatures = uiState.specialFeatures,
-                    isInWatchlist = uiState.item?.liked == true,
-                    episodesPagingData = uiState.episodesPagingData,
-                    downloadInfo = uiState.downloadInfo,
-                    tmdbReviews = uiState.tmdbReviews,
-                    mdbRatings = uiState.mdbRatings,
-                    mdbRatingBadges = uiState.mdbRatingBadges,
-                    omdbAwards = uiState.omdbAwards,
-                    wikidataAwards = uiState.wikidataAwards,
-                    isRatingsFromCache = uiState.isRatingsFromCache,
-                    movieParts = uiState.movieParts,
-                    onPlayClick = { item, selection -> interceptPlayClick(item, selection) },
-                    onBoxSetItemClick = { item ->
-                        if (item is AfinityEpisode) {
-                            viewModel.selectEpisode(item)
-                        } else {
-                            onItemClick(item)
-                        }
-                    },
-                    onSpecialFeatureClick = { specialFeature ->
-                        val mediaSourceId = specialFeature.sources.firstOrNull()?.id
-                        if (mediaSourceId != null) {
-                            val startPos =
-                                if (specialFeature.playbackPositionTicks > 0)
-                                    specialFeature.playbackPositionTicks / 10000
-                                else 0L
-                            PlayerLauncher.launch(
-                                context = context,
-                                itemId = specialFeature.id,
-                                mediaSourceId = mediaSourceId,
-                                audioStreamIndex = null,
-                                subtitleStreamIndex = null,
-                                startPositionMs = startPos,
-                            )
-                        } else {
-                            Timber.w(
-                                "Special feature has no playable source: name=${specialFeature.name}, type=${specialFeature::class.simpleName}"
-                            )
-                        }
-                    },
-                    onItemClick = onItemClick,
-                    onSeriesClick = onSeriesClick,
-                    onSeasonClick = onSeasonClick,
-                    onPersonClick = onPersonClick,
-                    onNavigateToSeerrMedia = onNavigateToSeerrMedia,
-                    onEditMetadataClick = onEditMetadataClick,
-                    onEditImagesClick = onEditImagesClick,
-                    onIdentifyClick = onIdentifyClick,
-                    onItemDeleted = onItemDeleted,
-                    onHomeClick = onHomeClick,
-                    onShowSnackbar = onShowSnackbar,
-                    onCollectionCreated = onCollectionCreated,
-                    viewModel = viewModel,
-                    widthSizeClass = widthSizeClass,
-                )
+                CompositionLocalProvider(LocalHeroImageLoaded provides onHeroLoaded) {
+                    ItemDetailContent(
+                        detailLayout = resolvedLayout,
+                        item = uiState.item!!,
+                        hasPlayableItems = uiState.hasPlayableItems,
+                        seasons = uiState.seasons,
+                        boxSetItems = uiState.boxSetItems,
+                        containingBoxSets = uiState.containingBoxSets,
+                        similarItems = uiState.similarItems,
+                        relatedRows = relatedRows,
+                        missingCollectionParts = missingCollectionParts,
+                        nextEpisode = nextEpisode,
+                        baseUrl = viewModel.getBaseUrl(),
+                        specialFeatures = uiState.specialFeatures,
+                        isInWatchlist = uiState.item?.liked == true,
+                        episodesPagingData = uiState.episodesPagingData,
+                        downloadInfo = uiState.downloadInfo,
+                        tmdbReviews = uiState.tmdbReviews,
+                        mdbRatings = uiState.mdbRatings,
+                        mdbRatingBadges = uiState.mdbRatingBadges,
+                        omdbAwards = uiState.omdbAwards,
+                        wikidataAwards = uiState.wikidataAwards,
+                        isRatingsFromCache = uiState.isRatingsFromCache,
+                        movieParts = uiState.movieParts,
+                        onPlayClick = { item, selection -> interceptPlayClick(item, selection) },
+                        onBoxSetItemClick = { item ->
+                            if (item is AfinityEpisode) {
+                                viewModel.selectEpisode(item)
+                            } else {
+                                onItemClick(item)
+                            }
+                        },
+                        onSpecialFeatureClick = { specialFeature ->
+                            val mediaSourceId = specialFeature.sources.firstOrNull()?.id
+                            if (mediaSourceId != null) {
+                                val startPos =
+                                    if (specialFeature.playbackPositionTicks > 0)
+                                        specialFeature.playbackPositionTicks / 10000
+                                    else 0L
+                                PlayerLauncher.launch(
+                                    context = context,
+                                    itemId = specialFeature.id,
+                                    mediaSourceId = mediaSourceId,
+                                    audioStreamIndex = null,
+                                    subtitleStreamIndex = null,
+                                    startPositionMs = startPos,
+                                )
+                            } else {
+                                Timber.w(
+                                    "Special feature has no playable source: name=${specialFeature.name}, type=${specialFeature::class.simpleName}"
+                                )
+                            }
+                        },
+                        onItemClick = onItemClick,
+                        onSeriesClick = onSeriesClick,
+                        onSeasonClick = onSeasonClick,
+                        onPersonClick = onPersonClick,
+                        onNavigateToSeerrMedia = onNavigateToSeerrMedia,
+                        onEditMetadataClick = onEditMetadataClick,
+                        onEditImagesClick = onEditImagesClick,
+                        onIdentifyClick = onIdentifyClick,
+                        onItemDeleted = onItemDeleted,
+                        onHomeClick = onHomeClick,
+                        onShowSnackbar = onShowSnackbar,
+                        onCollectionCreated = onCollectionCreated,
+                        viewModel = viewModel,
+                        widthSizeClass = widthSizeClass,
+                    )
+                }
             }
         }
 

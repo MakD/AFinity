@@ -1759,6 +1759,12 @@
     <string name="wikidata_disconnect_action">Disconnect</string>
     <string name="pref_show_awards_title">Show awards</string>
     <string name="pref_show_awards_summary">Award banner and win history on detail screens</string>
+    <string name="settings_group_theme_music">Theme Music</string>
+    <string name="pref_theme_music_title">Play on detail pages</string>
+    <string name="pref_theme_music_summary">Theme songs on movies, shows and collections</string>
+    <string name="pref_theme_music_volume_title">Volume</string>
+    <string name="pref_theme_music_mobile_data_title">Also on mobile data</string>
+    <string name="pref_theme_music_mobile_data_summary">Up to ~3 MB per title. Off plays on Wi-Fi only</string>
     <string name="awards_headline_won_fmt">Won %1$s</string>
     <string name="awards_headline_nominated_fmt">Nominated for %1$s</string>
     <plurals name="awards_body_oscar_fmt">

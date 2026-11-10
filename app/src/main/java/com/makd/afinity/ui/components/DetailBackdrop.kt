@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -28,6 +29,8 @@ enum class BackdropStyle {
     BlurredCover,
     BlurredPhoto,
 }
+
+val LocalHeroImageLoaded = staticCompositionLocalOf<(() -> Unit)?> { null }
 
 fun backdropChainOf(imageUrl: String?, blurHash: String? = null): List<Pair<String, String?>> =
     listOfNotNull(imageUrl?.let { it to blurHash })
@@ -80,6 +83,7 @@ private fun CinematicBackdrop(
             targetWidth = screenWidthDp,
             targetHeight = screenHeightDp,
             useLowResPlaceholder = true,
+            onSuccess = LocalHeroImageLoaded.current,
             onError = onError,
             modifier = Modifier.fillMaxSize().blur(0.dp),
             contentScale = ContentScale.Crop,
@@ -109,6 +113,7 @@ private fun BlurredCoverBackdrop(
             AsyncImage(
                 imageUrl = backdrop.first,
                 contentDescription = contentDescription,
+                onSuccess = LocalHeroImageLoaded.current,
                 onError = onError,
                 modifier = Modifier.fillMaxSize().blur(radius = 30.dp).background(Color.Black),
                 alpha = 0.6f,
@@ -153,6 +158,7 @@ private fun BlurredPhotoBackdrop(
                 imageUrl = backdrop.first,
                 contentDescription = contentDescription,
                 blurHash = backdrop.second,
+                onSuccess = LocalHeroImageLoaded.current,
                 onError = onError,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize().blur(radius = 20.dp).alpha(0.6f),

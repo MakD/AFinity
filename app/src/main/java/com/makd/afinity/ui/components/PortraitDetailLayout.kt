@@ -115,6 +115,7 @@ private fun ImageHero(hero: PortraitHero.Image) {
             targetWidth = screenWidth,
             targetHeight = heroHeight,
             useLowResPlaceholder = true,
+            onSuccess = LocalHeroImageLoaded.current,
             onError = {
                 if (urlIndex < hero.backdrop.lastIndex) {
                     urlIndex++

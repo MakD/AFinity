@@ -192,6 +192,9 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
         val SHOW_RATINGS = booleanPreferencesKey("show_ratings")
         val SHOW_AWARDS = booleanPreferencesKey("show_awards")
+        val THEME_MUSIC_ENABLED = booleanPreferencesKey("theme_music_enabled")
+        val THEME_MUSIC_VOLUME = intPreferencesKey("theme_music_volume")
+        val THEME_MUSIC_ON_MOBILE_DATA = booleanPreferencesKey("theme_music_on_mobile_data")
         val WIKIDATA_ENABLED = booleanPreferencesKey("wikidata_enabled")
     }
 
@@ -1368,6 +1371,42 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
     override fun getShowAwardsFlow(): Flow<Boolean> {
         return dataStore.data.map { preferences -> preferences[Keys.SHOW_AWARDS] ?: true }
+    }
+
+    override suspend fun setThemeMusicEnabled(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.THEME_MUSIC_ENABLED] = enabled }
+    }
+
+    override suspend fun getThemeMusicEnabled(): Boolean {
+        return dataStore.data.first()[Keys.THEME_MUSIC_ENABLED] ?: false
+    }
+
+    override fun getThemeMusicEnabledFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences -> preferences[Keys.THEME_MUSIC_ENABLED] ?: false }
+    }
+
+    override suspend fun setThemeMusicVolume(percent: Int) {
+        dataStore.edit { preferences ->
+            preferences[Keys.THEME_MUSIC_VOLUME] = percent.coerceIn(0, 100)
+        }
+    }
+
+    override fun getThemeMusicVolumeFlow(): Flow<Int> {
+        return dataStore.data.map { preferences -> preferences[Keys.THEME_MUSIC_VOLUME] ?: 50 }
+    }
+
+    override suspend fun setThemeMusicOnMobileData(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.THEME_MUSIC_ON_MOBILE_DATA] = enabled }
+    }
+
+    override suspend fun getThemeMusicOnMobileData(): Boolean {
+        return dataStore.data.first()[Keys.THEME_MUSIC_ON_MOBILE_DATA] ?: false
+    }
+
+    override fun getThemeMusicOnMobileDataFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.THEME_MUSIC_ON_MOBILE_DATA] ?: false
+        }
     }
 
     private fun wikidataEnabledKey(serverId: String, userId: String) =

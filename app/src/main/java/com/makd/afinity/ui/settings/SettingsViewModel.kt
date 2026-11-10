@@ -333,6 +333,33 @@ constructor(
                 initialValue = true,
             )
 
+    val themeMusicEnabled: StateFlow<Boolean> =
+        preferencesRepository
+            .getThemeMusicEnabledFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = false,
+            )
+
+    val themeMusicVolume: StateFlow<Int> =
+        preferencesRepository
+            .getThemeMusicVolumeFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = 50,
+            )
+
+    val themeMusicOnMobileData: StateFlow<Boolean> =
+        preferencesRepository
+            .getThemeMusicOnMobileDataFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = false,
+            )
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val wikidataEnabled: StateFlow<Boolean> =
         sessionManager.currentSession
@@ -1756,6 +1783,18 @@ constructor(
 
     fun toggleShowAwards(enabled: Boolean) {
         viewModelScope.launch { preferencesRepository.setShowAwards(enabled) }
+    }
+
+    fun toggleThemeMusic(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setThemeMusicEnabled(enabled) }
+    }
+
+    fun setThemeMusicVolume(percent: Int) {
+        viewModelScope.launch { preferencesRepository.setThemeMusicVolume(percent) }
+    }
+
+    fun toggleThemeMusicOnMobileData(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setThemeMusicOnMobileData(enabled) }
     }
 
     fun setWikidataEnabled(enabled: Boolean) {

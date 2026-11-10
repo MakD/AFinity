@@ -21,6 +21,7 @@ import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.models.media.LibraryFilterOptions
 import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.data.models.media.LibraryIndexEntry
+import com.makd.afinity.data.models.media.ThemeSongLookup
 import com.makd.afinity.data.models.music.AfinityPlaylistContents
 import com.makd.afinity.data.models.omdb.OmdbApiResult
 import java.io.File
@@ -291,6 +292,8 @@ interface MediaRepository {
     ): List<AfinityEpisode>
 
     suspend fun getSpecialFeatures(itemId: UUID, userId: UUID): List<AfinityItem>
+
+    suspend fun getThemeSong(itemId: UUID): ThemeSongLookup?
 
     suspend fun getTrickplayLocalDir(itemId: UUID, mediaSourceId: String?): File?
 

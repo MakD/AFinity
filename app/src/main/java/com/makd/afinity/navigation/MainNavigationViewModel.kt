@@ -24,6 +24,7 @@ import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.player.music.MusicPlaybackManager
+import com.makd.afinity.player.theme.ThemeMusicPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
@@ -50,6 +51,7 @@ constructor(
     val audiobookshelfPlayer: AudiobookshelfPlayer,
     val audiobookshelfPlaybackManager: AudiobookshelfPlaybackManager,
     val musicPlaybackManager: MusicPlaybackManager,
+    val themeMusicPlayer: ThemeMusicPlayer,
     val castManager: CastManager,
     private val liveTvRepository: LiveTvRepository,
     private val offlineModeManager: OfflineModeManager,

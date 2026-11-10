@@ -45,6 +45,7 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityVideo
+import com.makd.afinity.data.models.media.ThemeSong
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.media.toAfinityMovie
 import com.makd.afinity.data.models.media.toAfinityShow
@@ -76,6 +77,7 @@ import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.data.store.QueryInvalidator
 import com.makd.afinity.data.store.QueryKey
 import com.makd.afinity.data.store.withUserDataOverlay
+import com.makd.afinity.player.theme.ThemeMusicPlayer
 import com.makd.afinity.ui.components.DownloadConfirm
 import com.makd.afinity.ui.components.DownloadConfirmKind
 import com.makd.afinity.ui.components.EpisodeSelection
@@ -156,6 +158,7 @@ constructor(
     private val queryInvalidator: QueryInvalidator,
     private val wikidataAwardsRepository: WikidataAwardsRepository,
     private val externalTitlesRepository: ExternalTitlesRepository,
+    val themeMusicPlayer: ThemeMusicPlayer,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -187,6 +190,7 @@ constructor(
     private var bulkDownloadJob: Job? = null
     private var itemLastLoadedAt = System.currentTimeMillis()
     private var itemLastServerFetchAt = 0L
+    private var themeLookupStarted = false
 
     private companion object {
         const val SERVER_SYNC_FRESHNESS_MS = 3_000L
@@ -914,6 +918,7 @@ constructor(
                     _uiState.value =
                         _uiState.value.copy(
                             isLoading = false,
+                            themeResolved = true,
                             error =
                                 when {
                                     offlineModeManager.connectivity.value
@@ -932,6 +937,25 @@ constructor(
                 _uiState.value = _uiState.value.copy(item = item, isLoading = false)
                 itemLastLoadedAt = System.currentTimeMillis()
                 freshUserData?.let { launch { mediaChangeManager.reconcileUserData(it) } }
+                if (!themeLookupStarted) {
+                    themeLookupStarted = true
+                    launch {
+                        val song =
+                            if (isOffline) {
+                                null
+                            } else {
+                                try {
+                                    themeMusicPlayer.resolve(item)
+                                } catch (e: CancellationException) {
+                                    throw e
+                                } catch (e: Exception) {
+                                    Timber.w(e, "Theme song lookup failed")
+                                    null
+                                }
+                            }
+                        _uiState.update { it.copy(themeSong = song, themeResolved = true) }
+                    }
+                }
 
                 if (!isOffline) {
                     launchParallelFetches(item, specialFeatureCount)
@@ -1042,6 +1066,7 @@ constructor(
                 _uiState.value =
                     _uiState.value.copy(
                         isLoading = false,
+                        themeResolved = true,
                         error =
                             context.getString(R.string.error_failed_load_item_fmt, e.message ?: ""),
                     )
@@ -2086,6 +2111,8 @@ data class ItemDetailUiState(
     val isLoadingWikidataAwards: Boolean = false,
     val isRatingsFromCache: Boolean = false,
     val movieParts: List<AfinityItem> = emptyList(),
+    val themeSong: ThemeSong? = null,
+    val themeResolved: Boolean = false,
 ) {
     val hasPlayableItems: Boolean
         get() =

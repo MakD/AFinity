@@ -44,6 +44,7 @@ import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.navigation.LocalShowAwards
 import com.makd.afinity.navigation.LocalShowRatings
+import com.makd.afinity.player.theme.ThemeMusicPlayer
 import com.makd.afinity.ui.theme.AFinityTheme
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.UUID
@@ -60,6 +61,8 @@ class PlayerActivity : AppCompatActivity() {
     private val syncPlayViewModel: SyncPlayViewModel by viewModels()
 
     @Inject lateinit var preferencesRepository: PreferencesRepository
+
+    @Inject lateinit var themeMusicPlayer: ThemeMusicPlayer
 
     private var wasPip: Boolean = false
 
@@ -169,6 +172,7 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        themeMusicPlayer.stop()
 
         val filter =
             IntentFilter().apply {

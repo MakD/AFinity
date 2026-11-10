@@ -36,6 +36,7 @@ import androidx.compose.material3.rememberWideNavigationRailState
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
@@ -194,6 +195,18 @@ fun MainNavigation(
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
     val railState = rememberWideNavigationRailState()
     val navController = rememberNavController()
+    DisposableEffect(navController) {
+        val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
+            if (
+                destination.route != Destination.ITEM_DETAIL_ROUTE &&
+                    destination.route != Destination.EPISODE_LIST_ROUTE
+            ) {
+                viewModel.themeMusicPlayer.stop()
+            }
+        }
+        navController.addOnDestinationChangedListener(listener)
+        onDispose { navController.removeOnDestinationChangedListener(listener) }
+    }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val currentRoute = currentDestination?.route

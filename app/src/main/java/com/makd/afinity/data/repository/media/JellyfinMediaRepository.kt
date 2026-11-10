@@ -39,6 +39,8 @@ import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.data.models.media.LibraryIndexEntry
 import com.makd.afinity.data.models.media.LibraryLanguageOption
 import com.makd.afinity.data.models.media.PlaylistEntry
+import com.makd.afinity.data.models.media.ThemeSong
+import com.makd.afinity.data.models.media.ThemeSongLookup
 import com.makd.afinity.data.models.media.toAfinityCollection
 import com.makd.afinity.data.models.media.withPatchedImages
 import com.makd.afinity.data.models.music.AfinityPlaylistContents
@@ -1791,6 +1793,18 @@ constructor(
                 .distinctBy { episode ->
                     "${episode.seriesName}_${episode.parentIndexNumber}_${episode.indexNumber}"
                 }
+        }
+
+    override suspend fun getThemeSong(itemId: UUID): ThemeSongLookup? =
+        apiCall(null, "Failed to get theme song for item: $itemId") { apiClient, userId ->
+            val result =
+                LibraryApi(apiClient)
+                    .getThemeSongs(itemId = itemId, userId = userId, inheritFromParent = true)
+                    .content
+            ThemeSongLookup(
+                song = result.items.randomOrNull()?.let { ThemeSong(it.id, result.ownerId) },
+                ownerId = result.ownerId,
+            )
         }
 
     override suspend fun getSpecialFeatures(itemId: UUID, userId: UUID): List<AfinityItem> =
