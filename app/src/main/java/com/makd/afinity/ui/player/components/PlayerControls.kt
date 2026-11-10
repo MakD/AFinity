@@ -281,8 +281,7 @@ fun PlayerControls(
                     player.currentTracks.groups
                         .filter { it.type == C.TRACK_TYPE_AUDIO }
                         .sortedBy { group ->
-                            val formatId = group.mediaTrackGroup.getFormat(0).id
-                            formatId?.toIntOrNull()?.let { id -> "%05d".format(id) } ?: formatId
+                            TrackMapping.audioSortKey(group.mediaTrackGroup.getFormat(0).id)
                         }
                         .mapIndexedNotNull { ordinal, group ->
                             if (!group.isSupported) return@mapIndexedNotNull null
@@ -2940,9 +2939,6 @@ private fun prettySubtitleCodec(codec: String?): String? =
             value.substringAfterLast('/').removePrefix("x-").takeIf { it.isNotBlank() }?.uppercase()
     }
 
-private fun subtitleFileName(path: String?): String? =
-    path?.substringAfterLast('/')?.substringAfterLast('\\')?.takeIf { it.isNotBlank() }
-
 private data class TrackTagLabels(
     val forced: String,
     val hearingImpaired: String,
@@ -3020,7 +3016,7 @@ private fun assertSubtitleOptions(
     val disambiguated = options.map { opt ->
         if (opt.isNone || opt.displayName !in duplicates) return@map opt
         if (!opt.secondaryName.isNullOrBlank()) return@map opt
-        val fallback = subtitleFileName(opt.stream?.path) ?: String.format(trackFmt, opt.index + 1)
+        val fallback = opt.stream?.fileName ?: String.format(trackFmt, opt.index + 1)
         opt.copy(secondaryName = fallback)
     }
 

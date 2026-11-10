@@ -100,7 +100,6 @@ import com.makd.afinity.data.repository.subtitles.DeviceSubtitleStore
 import com.makd.afinity.data.repository.subtitles.SubtitleLanguageCodes
 import com.makd.afinity.data.repository.subtitles.SubtitleScope
 import com.makd.afinity.data.repository.subtitles.SubtitleSearchRepository
-import com.makd.afinity.data.repository.subtitles.externalSubtitleFileName
 import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.player.common.TrackMapping
@@ -2262,8 +2261,7 @@ constructor(
                 .filter { it.isExternal }
                 .mapNotNull { stream ->
                     val fileName =
-                        externalSubtitleFileName(stream.path)?.takeIf { it in serverAddedFiles }
-                            ?: return@mapNotNull null
+                        stream.fileName?.takeIf { it in serverAddedFiles } ?: return@mapNotNull null
                     stream.index to
                         LocalSubtitleTrack(
                             fileName = fileName,
@@ -2377,9 +2375,7 @@ constructor(
             fileName?.let { name ->
                 newStreams
                     .firstOrNull {
-                        it.type == MediaStreamType.SUBTITLE &&
-                            it.isExternal &&
-                            externalSubtitleFileName(it.path) == name
+                        it.type == MediaStreamType.SUBTITLE && it.isExternal && it.fileName == name
                     }
                     ?.index
             }
@@ -2404,10 +2400,8 @@ constructor(
             oldStreams.firstOrNull { it.index == index && it.type == type } ?: return index
         val newOfType = newStreams.filter { it.type == type }
         if (oldStream.isExternal) {
-            val name = externalSubtitleFileName(oldStream.path) ?: return index
-            return newOfType
-                .firstOrNull { it.isExternal && externalSubtitleFileName(it.path) == name }
-                ?.index ?: index
+            val name = oldStream.fileName ?: return index
+            return newOfType.firstOrNull { it.isExternal && it.fileName == name }?.index ?: index
         }
         val ordinal =
             oldStreams
@@ -3250,13 +3244,12 @@ constructor(
     }
 
     private fun subtitleGroupForStreamIndex(streamIndex: Int): Tracks.Group? {
-        val sideLoadedId = TrackMapping.sideLoadedId(streamIndex)
         val sideLoadedUri = sideLoadedSubtitleUris[streamIndex]
         val groups = textGroups()
         groups
             .firstOrNull { group ->
                 val format = group.mediaTrackGroup.getFormat(0)
-                format.id == sideLoadedId ||
+                TrackMapping.streamIndexFromSideLoadedId(format.id) == streamIndex ||
                     (sideLoadedUri != null && format.customData == sideLoadedUri)
             }
             ?.let {

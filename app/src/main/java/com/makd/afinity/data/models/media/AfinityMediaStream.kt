@@ -1,6 +1,7 @@
 package com.makd.afinity.data.models.media
 
 import com.makd.afinity.data.database.entities.AfinityMediaStreamDto
+import com.makd.afinity.data.repository.subtitles.externalSubtitleFileName
 import org.jellyfin.sdk.model.api.MediaStream
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.VideoRangeType
@@ -51,6 +52,7 @@ data class AfinityMediaStream(
     val elPresentFlag: Int? = null,
     val blPresentFlag: Int? = null,
     val dvBlSignalCompatibilityId: Int? = null,
+    val fileName: String? = null,
 )
 
 private val DOLBY_VISION_RANGES =
@@ -133,6 +135,7 @@ fun MediaStream.toAfinityMediaStream(baseUrl: String): AfinityMediaStream {
         elPresentFlag = elPresentFlag,
         blPresentFlag = blPresentFlag,
         dvBlSignalCompatibilityId = dvBlSignalCompatibilityId,
+        fileName = if (isExternal) externalSubtitleFileName(path) else null,
     )
 }
 
