@@ -3,6 +3,7 @@ package com.makd.afinity.ui.admin.config
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -41,6 +43,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -559,7 +563,9 @@ private fun ProviderList(
     onEdit: (field: ProviderListField, edit: ProviderEdit) -> Unit,
 ) {
     val rows = state.providerRows(field)
-    val canMove = enabled && field.orderKey != null && rows.size > 1
+    val canToggle = field.selection != ProviderSelection.NONE
+    val inUse = rows.filter { it.enabled != false }
+    val notUsed = rows.filter { it.enabled == false }
     Column(modifier = Modifier.padding(bottom = 8.dp)) {
         Text(
             text = field.labelText ?: stringResource(field.label),
@@ -567,32 +573,52 @@ private fun ProviderList(
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
         )
-        ReorderableColumn(
-            list = rows,
-            onSettle = { from, to ->
-                rows.getOrNull(from)?.let { row ->
-                    onEdit(field, ProviderEdit.Move(row.name, to - from))
-                }
-            },
-        ) { index, row, isDragging ->
-            ReorderableItem {
-                val elevation by
-                    animateDpAsState(if (isDragging) 8.dp else 0.dp, label = "drag_elev")
-                ProviderRowItem(
-                    row = row,
+        if (canToggle) {
+            ProviderSubheader(text = stringResource(R.string.library_provider_in_use))
+        }
+        when {
+            inUse.isEmpty() ->
+                Text(
+                    text = stringResource(R.string.library_provider_none_in_use),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+            field.orderKey != null ->
+                RankedProviders(
+                    field = field,
+                    rows = inUse,
                     enabled = enabled,
-                    elevation = elevation,
-                    showHandle = field.orderKey != null && rows.size > 1,
-                    handleModifier = Modifier.draggableHandle(enabled = canMove),
-                    onToggle = { onEdit(field, ProviderEdit.Toggle(row.name, it)) },
-                    onMoveUp =
-                        if (canMove && index > 0) {
-                            { onEdit(field, ProviderEdit.Move(row.name, -1)) }
-                        } else null,
-                    onMoveDown =
-                        if (canMove && index < rows.lastIndex) {
-                            { onEdit(field, ProviderEdit.Move(row.name, 1)) }
-                        } else null,
+                    canRemove = canToggle,
+                    onEdit = onEdit,
+                )
+            else ->
+                inUse.forEachIndexed { index, row ->
+                    if (index > 0) SettingsDivider(startPadding = 16.dp)
+                    InUseProviderRow(
+                        name = row.name,
+                        rank = null,
+                        enabled = enabled,
+                        elevation = 0.dp,
+                        showHandle = false,
+                        handleModifier = Modifier,
+                        onRemove =
+                            if (canToggle) {
+                                { onEdit(field, ProviderEdit.Toggle(row.name, false)) }
+                            } else null,
+                        onMoveUp = null,
+                        onMoveDown = null,
+                    )
+                }
+        }
+        if (canToggle && notUsed.isNotEmpty()) {
+            ProviderSubheader(text = stringResource(R.string.library_provider_not_used))
+            notUsed.forEachIndexed { index, row ->
+                if (index > 0) SettingsDivider(startPadding = 16.dp)
+                NotUsedProviderRow(
+                    name = row.name,
+                    enabled = enabled,
+                    onAdd = { onEdit(field, ProviderEdit.Add(row.name)) },
                 )
             }
         }
@@ -603,20 +629,132 @@ private fun ProviderList(
 }
 
 @Composable
-private fun ProviderRowItem(
-    row: ProviderRow,
+private fun RankedProviders(
+    field: ProviderListField,
+    rows: List<ProviderRow>,
+    enabled: Boolean,
+    canRemove: Boolean,
+    onEdit: (field: ProviderListField, edit: ProviderEdit) -> Unit,
+) {
+    val canMove = enabled && rows.size > 1
+    ReorderableColumn(
+        list = rows,
+        onSettle = { from, to ->
+            val moved = rows.getOrNull(from)
+            val target = rows.getOrNull(to)
+            if (moved != null && target != null && from != to) {
+                onEdit(field, ProviderEdit.MoveTo(moved.name, target.name))
+            }
+        },
+    ) { index, row, isDragging ->
+        ReorderableItem {
+            val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp, label = "drag_elev")
+            Column {
+                if (index > 0) {
+                    Box(modifier = Modifier.alpha(if (isDragging) 0f else 1f)) {
+                        SettingsDivider(startPadding = 16.dp)
+                    }
+                }
+                InUseProviderRow(
+                    name = row.name,
+                    rank = index + 1,
+                    enabled = enabled,
+                    elevation = elevation,
+                    showHandle = rows.size > 1,
+                    handleModifier = Modifier.draggableHandle(enabled = canMove),
+                    onRemove =
+                        if (canRemove) {
+                            { onEdit(field, ProviderEdit.Toggle(row.name, false)) }
+                        } else null,
+                    onMoveUp =
+                        if (canMove && index > 0) {
+                            { onEdit(field, ProviderEdit.MoveTo(row.name, rows[index - 1].name)) }
+                        } else null,
+                    onMoveDown =
+                        if (canMove && index < rows.lastIndex) {
+                            { onEdit(field, ProviderEdit.MoveTo(row.name, rows[index + 1].name)) }
+                        } else null,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProviderSubheader(text: String) {
+    Text(
+        text = text.uppercase(),
+        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp),
+    )
+}
+
+@Composable
+private fun RankPill(rank: Int) {
+    Box(
+        modifier =
+            Modifier.size(24.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.primaryContainer),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = rank.toString(),
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
+    }
+}
+
+@Composable
+private fun NotUsedProviderRow(name: String, enabled: Boolean, onAdd: () -> Unit) {
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clickable(
+                    enabled = enabled,
+                    onClickLabel = stringResource(R.string.cd_provider_add, name),
+                    role = Role.Button,
+                    onClick = onAdd,
+                )
+                .heightIn(min = 56.dp)
+                .padding(start = 16.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = name,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            modifier = Modifier.weight(1f).padding(vertical = 12.dp),
+        )
+        Icon(
+            painter = painterResource(id = R.drawable.ic_circle_plus),
+            contentDescription = null,
+            tint =
+                if (enabled) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+            modifier = Modifier.padding(12.dp).size(24.dp),
+        )
+    }
+}
+
+@Composable
+private fun InUseProviderRow(
+    name: String,
+    rank: Int?,
     enabled: Boolean,
     elevation: Dp,
     showHandle: Boolean,
     handleModifier: Modifier,
-    onToggle: (Boolean) -> Unit,
+    onRemove: (() -> Unit)?,
     onMoveUp: (() -> Unit)?,
     onMoveDown: (() -> Unit)?,
 ) {
-    val checked = row.enabled
-    val moveUpLabel = stringResource(R.string.cd_provider_move_up, row.name)
-    val moveDownLabel = stringResource(R.string.cd_provider_move_down, row.name)
+    val moveUpLabel = stringResource(R.string.cd_provider_move_up, name)
+    val moveDownLabel = stringResource(R.string.cd_provider_move_down, name)
     Surface(
+        shape = RoundedCornerShape(16.dp),
         color =
             if (elevation > 0.dp) MaterialTheme.colorScheme.surfaceContainerHigh
             else MaterialTheme.colorScheme.surfaceContainerLow,
@@ -644,37 +782,35 @@ private fun ProviderRowItem(
         Row(
             modifier =
                 Modifier.fillMaxWidth()
-                    .then(
-                        if (checked != null) {
-                            Modifier.toggleable(
-                                value = checked,
-                                enabled = enabled,
-                                role = Role.Checkbox,
-                                onValueChange = onToggle,
-                            )
-                        } else {
-                            Modifier
-                        }
-                    )
-                    .padding(start = if (checked != null) 4.dp else 16.dp, end = 4.dp),
+                    .heightIn(min = 56.dp)
+                    .padding(
+                        start = 16.dp,
+                        end = if (showHandle || onRemove != null) 4.dp else 16.dp,
+                    ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (checked != null) {
-                Checkbox(checked = checked, onCheckedChange = null, enabled = enabled)
-                Spacer(modifier = Modifier.width(4.dp))
+            if (rank != null) {
+                RankPill(rank = rank)
+                Spacer(modifier = Modifier.width(12.dp))
             }
             Text(
-                text = row.name,
+                text = name,
                 style = MaterialTheme.typography.bodyLarge,
-                color =
-                    MaterialTheme.colorScheme.onSurface.copy(
-                        alpha = if (enabled && checked != false) 1f else 0.6f
-                    ),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else 0.6f),
                 modifier = Modifier.weight(1f).padding(vertical = 12.dp),
             )
+            if (onRemove != null) {
+                IconButton(onClick = onRemove, enabled = enabled) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_circle_minus),
+                        contentDescription = stringResource(R.string.cd_provider_remove, name),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
             if (showHandle) {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_arrows_sort),
+                    painter = painterResource(id = R.drawable.ic_swap_vert),
                     contentDescription = stringResource(R.string.cd_provider_drag_reorder),
                     tint =
                         MaterialTheme.colorScheme.onSurfaceVariant.copy(

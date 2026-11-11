@@ -510,7 +510,7 @@ private fun CustomSectionRow(
             )
 
             Icon(
-                painter = painterResource(id = R.drawable.ic_arrows_sort),
+                painter = painterResource(id = R.drawable.ic_swap_vert),
                 contentDescription = stringResource(R.string.custom_sections_reorder),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 modifier = dragHandleModifier.padding(start = 4.dp).size(24.dp),

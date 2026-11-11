@@ -146,7 +146,9 @@ data class ImageOptionsField(
 sealed interface ProviderEdit {
     data class Toggle(val name: String, val enabled: Boolean) : ProviderEdit
 
-    data class Move(val name: String, val offset: Int) : ProviderEdit
+    data class Add(val name: String) : ProviderEdit
+
+    data class MoveTo(val name: String, val target: String) : ProviderEdit
 }
 
 data class ConfigSection(

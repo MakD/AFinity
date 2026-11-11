@@ -357,7 +357,7 @@ private fun QueueTrackRow(
 
             if (!isCurrentTrack) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_arrows_sort),
+                    painter = painterResource(R.drawable.ic_swap_vert),
                     contentDescription = stringResource(R.string.cd_music_drag_reorder),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     modifier =

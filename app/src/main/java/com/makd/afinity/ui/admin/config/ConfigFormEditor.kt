@@ -198,7 +198,8 @@ private fun List<ProviderRow>.applyEdit(edit: ProviderEdit): List<ProviderRow> {
     val name =
         when (edit) {
             is ProviderEdit.Toggle -> edit.name
-            is ProviderEdit.Move -> edit.name
+            is ProviderEdit.Add -> edit.name
+            is ProviderEdit.MoveTo -> edit.name
         }
     val index = indexOfFirst { it.name == name }
     if (index < 0) return this
@@ -206,9 +207,16 @@ private fun List<ProviderRow>.applyEdit(edit: ProviderEdit): List<ProviderRow> {
         is ProviderEdit.Toggle ->
             if (this[index].enabled == null) this
             else toMutableList().apply { set(index, this[index].copy(enabled = edit.enabled)) }
-        is ProviderEdit.Move -> {
-            val target = index + edit.offset
-            if (target !in indices) this else toMutableList().apply { add(target, removeAt(index)) }
+        is ProviderEdit.Add -> {
+            if (this[index].enabled != false) return this
+            val rest = toMutableList().apply { removeAt(index) }
+            val insertAt = rest.indexOfLast { it.enabled == true } + 1
+            rest.apply { add(insertAt, this@applyEdit[index].copy(enabled = true)) }
+        }
+        is ProviderEdit.MoveTo -> {
+            val target = indexOfFirst { it.name == edit.target }
+            if (target < 0 || target == index) this
+            else toMutableList().apply { add(target, removeAt(index)) }
         }
     }
 }

@@ -2470,6 +2470,11 @@
     <string name="cd_provider_move_up">Move %1$s up</string>
     <string name="cd_provider_move_down">Move %1$s down</string>
     <string name="cd_provider_drag_reorder">Drag to reorder</string>
+    <string name="library_provider_in_use">In use</string>
+    <string name="library_provider_not_used">Not used</string>
+    <string name="library_provider_none_in_use">None in use</string>
+    <string name="cd_provider_remove">Stop using %1$s</string>
+    <string name="cd_provider_add">Use %1$s</string>
     <string name="library_image_settings">Image settings</string>
     <string name="library_image_settings_none">No images</string>
     <string name="library_image_settings_no_backdrops">No backdrops</string>
