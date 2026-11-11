@@ -3,6 +3,9 @@ package com.makd.afinity.ui.admin.libraries
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.admin.GhostLibrary
+import com.makd.afinity.data.models.admin.LibraryRemoval
+import com.makd.afinity.data.models.admin.LibraryRemovalOutcome
 import com.makd.afinity.data.repository.NoActiveSessionException
 import com.makd.afinity.data.repository.admin.ServerAdminRepository
 import com.makd.afinity.util.JellyfinImageUrlBuilder
@@ -43,6 +46,11 @@ enum class LibraryScanState {
 enum class LibrariesMessage {
     REFRESH_QUEUED,
     COMMAND_FAILED,
+    LIBRARY_REMOVED,
+    LEFTOVER_CLEANED,
+    LEFTOVER_REMAINS,
+    REMOVAL_CANCELLED,
+    REMOVAL_BUSY,
 }
 
 data class AdminLibraryRow(
@@ -58,6 +66,7 @@ data class AdminLibraryRow(
 
 data class LibrariesUiState(
     val libraries: List<AdminLibraryRow>? = null,
+    val ghosts: List<GhostLibrary> = emptyList(),
     val failed: Boolean = false,
     val isBusy: Boolean = false,
 ) {
@@ -91,7 +100,31 @@ constructor(
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), false)
 
+    val removal: StateFlow<LibraryRemoval?> = adminRepository.libraryRemoval
+
     private var imageTags: Map<UUID, String> = emptyMap()
+
+    init {
+        viewModelScope.launch {
+            adminRepository.libraryRemovalResults.collect { result ->
+                _messages.tryEmit(
+                    when (result.outcome) {
+                        LibraryRemovalOutcome.REMOVED -> LibrariesMessage.LIBRARY_REMOVED
+                        LibraryRemovalOutcome.CLEANED_UP -> LibrariesMessage.LEFTOVER_CLEANED
+                        LibraryRemovalOutcome.LEFTOVER_REMAINS -> LibrariesMessage.LEFTOVER_REMAINS
+                        LibraryRemovalOutcome.CANCELLED -> LibrariesMessage.REMOVAL_CANCELLED
+                        LibraryRemovalOutcome.FAILED -> LibrariesMessage.COMMAND_FAILED
+                    }
+                )
+                fetch(refreshImages = true)
+            }
+        }
+        viewModelScope.launch {
+            adminRepository.libraryRemoval.collect { removal ->
+                if (removal != null) fetch(refreshImages = false)
+            }
+        }
+    }
 
     fun load() {
         _state.update { it.copy(failed = false) }
@@ -131,7 +164,17 @@ constructor(
     }
 
     fun remove(name: String) {
-        runCommand { adminRepository.removeLibrary(name) }
+        if (!adminRepository.removeLibrary(name)) _messages.tryEmit(LibrariesMessage.REMOVAL_BUSY)
+    }
+
+    fun cleanUp(ghost: GhostLibrary) {
+        if (!adminRepository.cleanUpGhostLibrary(ghost)) {
+            _messages.tryEmit(LibrariesMessage.REMOVAL_BUSY)
+        }
+    }
+
+    fun cancelRemoval() {
+        adminRepository.cancelLibraryRemoval()
     }
 
     private fun runCommand(block: suspend () -> Result<Unit>) {
@@ -199,7 +242,10 @@ constructor(
                             },
                     )
                 }
-                _state.update { it.copy(libraries = rows, failed = false) }
+                val ghosts = adminRepository.getGhostLibraries().getOrNull()
+                _state.update {
+                    it.copy(libraries = rows, ghosts = ghosts ?: it.ghosts, failed = false)
+                }
             }
             .onFailure { e ->
                 if (e !is NoActiveSessionException) Timber.w(e, "Failed to load libraries")

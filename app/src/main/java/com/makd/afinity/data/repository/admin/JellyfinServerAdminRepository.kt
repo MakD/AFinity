@@ -10,9 +10,15 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.admin.ActivityEntry
 import com.makd.afinity.data.models.admin.ActivityFilter
 import com.makd.afinity.data.models.admin.ActivityToday
+import com.makd.afinity.data.models.admin.GhostLibrary
+import com.makd.afinity.data.models.admin.LibraryImageOption
 import com.makd.afinity.data.models.admin.LibraryOptionsDocument
 import com.makd.afinity.data.models.admin.LibraryProvider
 import com.makd.afinity.data.models.admin.LibraryProviders
+import com.makd.afinity.data.models.admin.LibraryRemoval
+import com.makd.afinity.data.models.admin.LibraryRemovalOutcome
+import com.makd.afinity.data.models.admin.LibraryRemovalResult
+import com.makd.afinity.data.models.admin.LibraryRemovalStage
 import com.makd.afinity.data.models.admin.LibraryTypeProviders
 import com.makd.afinity.data.models.admin.ServerConfigSource
 import com.makd.afinity.data.models.admin.ServerFolder
@@ -39,8 +45,10 @@ import javax.inject.Singleton
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
@@ -109,6 +117,7 @@ import org.jellyfin.sdk.model.api.ActivityLogEntryMessage
 import org.jellyfin.sdk.model.api.AuthenticationInfo
 import org.jellyfin.sdk.model.api.BackupManifestDto
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.CollectionType
 import org.jellyfin.sdk.model.api.CollectionTypeOptions
 import org.jellyfin.sdk.model.api.CountryInfo
 import org.jellyfin.sdk.model.api.CreateUserByName
@@ -135,6 +144,7 @@ import org.jellyfin.sdk.model.api.TaskTriggerInfo
 import org.jellyfin.sdk.model.api.UpdateUserPassword
 import org.jellyfin.sdk.model.api.UserDto
 import org.jellyfin.sdk.model.api.VirtualFolderInfo
+import org.jellyfin.sdk.model.serializer.toUUIDOrNull
 import timber.log.Timber
 
 private const val STOP_TIMEOUT_MS = 5_000L
@@ -173,6 +183,14 @@ private val SECRET_CONFIG_KEYS = setOf("CertificatePassword")
 private const val LIBRARIES_PATH = "/Library/VirtualFolders"
 private const val LIBRARY_OPTIONS_PATH = "/Library/VirtualFolders/LibraryOptions"
 private const val LIBRARY_AVAILABLE_OPTIONS_PATH = "/Libraries/AvailableOptions"
+private const val LIBRARY_SCAN_TASK_KEY = "RefreshLibrary"
+private const val LIBRARY_IDLE_STATUS = "Idle"
+private const val MAX_GHOST_REPAIRS = 2
+private const val ITEM_ID_POLLS = 60
+private const val REMOVAL_RESULT_BUFFER = 4
+private val REMOVAL_POLL_INTERVAL = 3000.milliseconds
+private val ITEM_ID_POLL_INTERVAL = 1000.milliseconds
+private val GHOST_REPAIR_SETTLE = 10_000.milliseconds
 private const val LIBRARY_NAME_KEY = "Name"
 private const val LIBRARY_TYPE_KEY = "CollectionType"
 private const val LIBRARY_ITEM_ID_KEY = "ItemId"
@@ -218,6 +236,16 @@ constructor(
 
     private val _isCreatingBackup = MutableStateFlow(false)
     override val isCreatingBackup: StateFlow<Boolean> = _isCreatingBackup.asStateFlow()
+
+    private val _libraryRemoval = MutableStateFlow<LibraryRemoval?>(null)
+    override val libraryRemoval: StateFlow<LibraryRemoval?> = _libraryRemoval.asStateFlow()
+
+    private val _libraryRemovalResults =
+        MutableSharedFlow<LibraryRemovalResult>(extraBufferCapacity = REMOVAL_RESULT_BUFFER)
+    override val libraryRemovalResults: Flow<LibraryRemovalResult> =
+        _libraryRemovalResults.asSharedFlow()
+
+    private val removalJob = AtomicReference<Job?>(null)
 
     private val _userCountUpdates = MutableSharedFlow<Int>(extraBufferCapacity = 1)
     override val userCountUpdates: Flow<Int> = _userCountUpdates.asSharedFlow()
@@ -785,10 +813,169 @@ constructor(
                 .renameVirtualFolder(name = name, newName = newName.trim(), refreshLibrary = true)
         }
 
-    override suspend fun removeLibrary(name: String): Result<Unit> =
-        execute("remove library $name") { api, _ ->
-            LibraryStructureApi(api).removeVirtualFolder(name = name, refreshLibrary = true)
+    override fun removeLibrary(name: String): Boolean =
+        startLibraryRemoval(name, LibraryRemovalStage.WAITING_FOR_SCAN, removeFirst = true)
+
+    override fun cleanUpGhostLibrary(ghost: GhostLibrary): Boolean =
+        startLibraryRemoval(ghost.name, LibraryRemovalStage.CHECKING, removeFirst = false)
+
+    override fun cancelLibraryRemoval() {
+        if (_libraryRemoval.value?.stage == LibraryRemovalStage.WAITING_FOR_SCAN) {
+            removalJob.get()?.cancel()
         }
+    }
+
+    override suspend fun getGhostLibraries(): Result<List<GhostLibrary>> =
+        apiInvoker.apiResult { api, _ ->
+            findGhostLibraries(api)
+        }
+
+    private suspend fun findGhostLibraries(api: ApiClient): List<GhostLibrary> {
+        val folders = LibraryStructureApi(api).getVirtualFolders().content
+        val ids = folders.mapNotNull { it.itemId?.toUUIDOrNull() }.toSet()
+        val names = folders.mapNotNull { it.name?.lowercase() }.toSet()
+        return LibraryApi(api)
+            .getMediaFolders()
+            .content
+            .items
+            .filter { item ->
+                item.collectionType != CollectionType.PLAYLISTS &&
+                    item.id !in ids &&
+                    item.name?.lowercase() !in names
+            }
+            .mapNotNull { item -> item.name?.takeIf { it.isNotBlank() }?.let(::GhostLibrary) }
+    }
+
+    private fun startLibraryRemoval(
+        name: String,
+        firstStage: LibraryRemovalStage,
+        removeFirst: Boolean,
+    ): Boolean {
+        if (!_libraryRemoval.compareAndSet(null, LibraryRemoval(name, firstStage))) return false
+        val sessionKey = removalSessionKey()
+        val job =
+            scope.launch(Dispatchers.IO, start = CoroutineStart.LAZY) {
+                val outcome =
+                    try {
+                        removeAndCleanUp(name, removeFirst, sessionKey)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        if (e !is NoActiveSessionException) {
+                            Timber.e(e, "Failed to remove library $name")
+                        }
+                        LibraryRemovalOutcome.FAILED
+                    }
+                _libraryRemovalResults.tryEmit(LibraryRemovalResult(name, outcome))
+            }
+        job.invokeOnCompletion { cause ->
+            _libraryRemoval.value = null
+            if (cause is CancellationException) {
+                _libraryRemovalResults.tryEmit(
+                    LibraryRemovalResult(name, LibraryRemovalOutcome.CANCELLED)
+                )
+            }
+        }
+        removalJob.set(job)
+        job.start()
+        return true
+    }
+
+    private suspend fun removeAndCleanUp(
+        name: String,
+        removeFirst: Boolean,
+        sessionKey: String?,
+    ): LibraryRemovalOutcome {
+        if (removeFirst) {
+            awaitServerIdle(sessionKey)
+            setRemovalStage(name, LibraryRemovalStage.REMOVING)
+            removeVirtualFolder(name)
+            setRemovalStage(name, LibraryRemovalStage.CHECKING)
+        }
+        awaitServerIdle(sessionKey)
+        if (!isGhostLibrary(name)) {
+            return if (removeFirst) LibraryRemovalOutcome.REMOVED
+            else LibraryRemovalOutcome.CLEANED_UP
+        }
+        repeat(MAX_GHOST_REPAIRS) {
+            setRemovalStage(name, LibraryRemovalStage.CLEANING_UP)
+            createLibrary(name, null, emptyList(), JsonObject(emptyMap())).getOrThrow()
+            awaitLibraryItemId(name, sessionKey)
+            awaitServerIdle(sessionKey)
+            delay(GHOST_REPAIR_SETTLE)
+            awaitServerIdle(sessionKey)
+            removeVirtualFolder(name)
+            setRemovalStage(name, LibraryRemovalStage.CHECKING)
+            awaitServerIdle(sessionKey)
+            if (!isGhostLibrary(name)) return LibraryRemovalOutcome.CLEANED_UP
+        }
+        return LibraryRemovalOutcome.LEFTOVER_REMAINS
+    }
+
+    private fun setRemovalStage(name: String, stage: LibraryRemovalStage) {
+        _libraryRemoval.value = LibraryRemoval(name, stage)
+    }
+
+    private fun removalSessionKey(): String? =
+        sessionManager.currentSession.value?.let { "${it.serverId}|${it.userId}" }
+
+    private fun ensureSameSession(sessionKey: String?) {
+        if (sessionKey == null || removalSessionKey() != sessionKey) {
+            throw IllegalStateException("The session changed during a library removal")
+        }
+    }
+
+    private suspend fun removeVirtualFolder(name: String) {
+        apiInvoker
+            .apiResult { api, _ ->
+                LibraryStructureApi(api).removeVirtualFolder(name = name, refreshLibrary = true)
+            }
+            .getOrThrow()
+    }
+
+    private suspend fun isGhostLibrary(name: String): Boolean =
+        apiInvoker
+            .apiResult { api, _ -> findGhostLibraries(api) }
+            .getOrThrow()
+            .any { it.name.equals(name, ignoreCase = true) }
+
+    private suspend fun awaitServerIdle(sessionKey: String?) {
+        while (true) {
+            ensureSameSession(sessionKey)
+            val idle =
+                apiInvoker
+                    .apiResult { api, _ ->
+                        val folders = LibraryStructureApi(api).getVirtualFolders().content
+                        val tasks = ScheduledTaskApi(api).getTasks(isHidden = false).content
+                        folders.all { folder ->
+                            folder.refreshStatus == null ||
+                                folder.refreshStatus.equals(LIBRARY_IDLE_STATUS, ignoreCase = true)
+                        } &&
+                            tasks.none { task ->
+                                task.key == LIBRARY_SCAN_TASK_KEY && task.state != TaskState.IDLE
+                            }
+                    }
+                    .getOrThrow()
+            if (idle) return
+            delay(REMOVAL_POLL_INTERVAL)
+        }
+    }
+
+    private suspend fun awaitLibraryItemId(name: String, sessionKey: String?) {
+        repeat(ITEM_ID_POLLS) {
+            ensureSameSession(sessionKey)
+            val hasId =
+                apiInvoker
+                    .apiResult { api, _ ->
+                        LibraryStructureApi(api).getVirtualFolders().content.any {
+                            it.name == name && !it.itemId.isNullOrEmpty()
+                        }
+                    }
+                    .getOrThrow()
+            if (hasId) return
+            delay(ITEM_ID_POLL_INTERVAL)
+        }
+    }
 
     override suspend fun getLibraryOptions(name: String): Result<LibraryOptionsDocument> =
         apiInvoker.apiResult { api, _ ->
@@ -850,10 +1037,27 @@ constructor(
                         metadataFetchers = entry.providerList("MetadataFetchers"),
                         imageFetchers = entry.providerList("ImageFetchers"),
                         similarItemProviders = entry.providerList("SimilarItemProviders"),
+                        supportedImageTypes =
+                            (entry["SupportedImageTypes"] as? JsonArray).orEmpty().mapNotNull {
+                                (it as? JsonPrimitive)?.contentOrNull
+                            },
+                        defaultImageOptions = entry.imageOptionList("DefaultImageOptions"),
                     )
                 },
         )
     }
+
+    private fun JsonObject.imageOptionList(key: String): List<LibraryImageOption> =
+        (this[key] as? JsonArray).orEmpty().mapNotNull { element ->
+            val option = element as? JsonObject ?: return@mapNotNull null
+            val type = (option["Type"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
+            LibraryImageOption(
+                type = type,
+                limit = (option["Limit"] as? JsonPrimitive)?.contentOrNull?.toIntOrNull() ?: 1,
+                minWidth =
+                    (option["MinWidth"] as? JsonPrimitive)?.contentOrNull?.toIntOrNull() ?: 0,
+            )
+        }
 
     private fun JsonObject.providerList(key: String): List<LibraryProvider> =
         (this[key] as? JsonArray)

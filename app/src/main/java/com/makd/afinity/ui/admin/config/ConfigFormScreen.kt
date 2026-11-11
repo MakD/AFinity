@@ -107,6 +107,7 @@ fun ConfigFormEditorScreen(
         onSetSelected = editor::setSelected,
         onSetText = editor::setText,
         onEditProvider = editor::editProvider,
+        onSetImageOptions = editor::setImageOptions,
         onSave = editor::save,
         modifier = modifier,
     )
@@ -123,6 +124,7 @@ private fun ConfigFormContent(
     onSetSelected: (key: String, value: String, selected: Boolean) -> Unit,
     onSetText: (field: ConfigField, text: String) -> Unit,
     onEditProvider: (field: ProviderListField, edit: ProviderEdit) -> Unit,
+    onSetImageOptions: (field: ImageOptionsField, values: List<ImageOptionValue>) -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -181,6 +183,7 @@ private fun ConfigFormContent(
                     onSetSelected = onSetSelected,
                     onSetText = onSetText,
                     onEditProvider = onEditProvider,
+                    onSetImageOptions = onSetImageOptions,
                 )
                 if (spec?.hasAdvancedSections == true) {
                     SettingsGroup {
@@ -206,6 +209,9 @@ fun ConfigFormSections(
     onSetSelected: (key: String, value: String, selected: Boolean) -> Unit,
     onSetText: (field: ConfigField, text: String) -> Unit,
     onEditProvider: (field: ProviderListField, edit: ProviderEdit) -> Unit = { _, _ -> },
+    onSetImageOptions: (field: ImageOptionsField, values: List<ImageOptionValue>) -> Unit =
+        { _, _ ->
+        },
     sections: List<ConfigSection> = state.spec?.sections.orEmpty(),
 ) {
     sections.forEach { section ->
@@ -229,6 +235,7 @@ fun ConfigFormSections(
                         onSetSelected = onSetSelected,
                         onSetText = onSetText,
                         onEditProvider = onEditProvider,
+                        onSetImageOptions = onSetImageOptions,
                     )
                 }
             }
@@ -273,11 +280,19 @@ private fun ConfigFieldRow(
     onSetSelected: (key: String, value: String, selected: Boolean) -> Unit,
     onSetText: (field: ConfigField, text: String) -> Unit,
     onEditProvider: (field: ProviderListField, edit: ProviderEdit) -> Unit,
+    onSetImageOptions: (field: ImageOptionsField, values: List<ImageOptionValue>) -> Unit,
 ) {
     val summary = field.summary?.let { stringResource(it) }
     when (field) {
         is ProviderListField ->
             ProviderList(field = field, state = state, enabled = enabled, onEdit = onEditProvider)
+        is ImageOptionsField ->
+            ImageOptionsRow(
+                field = field,
+                state = state,
+                enabled = enabled,
+                onSet = onSetImageOptions,
+            )
         is ReadOnlyField ->
             Column {
                 SettingsItem(
@@ -670,6 +685,188 @@ private fun ProviderRowItem(
             }
         }
     }
+}
+
+@Composable
+private fun ImageOptionsRow(
+    field: ImageOptionsField,
+    state: ConfigFormUiState,
+    enabled: Boolean,
+    onSet: (field: ImageOptionsField, values: List<ImageOptionValue>) -> Unit,
+) {
+    var editing by rememberSaveable(field.key) { mutableStateOf(false) }
+    val options = state.imageOptions(field)
+    val labels = field.types.associate { choice -> choice.type to choice.displayName() }
+    val counted = options.firstOrNull { it.type == field.countedType }
+    val downloaded =
+        options
+            .filter { it.type != field.countedType && it.limit > 0 }
+            .map { labels[it.type] ?: it.type }
+    val imagesText =
+        if (downloaded.isEmpty()) stringResource(R.string.library_image_settings_none)
+        else downloaded.joinToString(", ")
+    val backdropText =
+        when {
+            counted == null -> null
+            counted.limit == 0 -> stringResource(R.string.library_image_settings_no_backdrops)
+            counted.minWidth > 0 ->
+                stringResource(
+                    R.string.library_image_settings_backdrops_width_fmt,
+                    counted.limit,
+                    counted.minWidth,
+                )
+            else -> stringResource(R.string.library_image_settings_backdrops_fmt, counted.limit)
+        }
+    val title = field.labelText ?: stringResource(field.label)
+
+    SettingsItem(
+        title = stringResource(R.string.library_image_settings),
+        subtitle = listOfNotNull(imagesText, backdropText).joinToString(" · "),
+        onClick = { editing = true },
+        enabled = enabled,
+        subtitleMaxLines = Int.MAX_VALUE,
+    )
+
+    if (editing) {
+        ImageOptionsDialog(
+            typeLabel = title,
+            options = options,
+            labels = labels,
+            countedType = field.countedType,
+            onConfirm = { values ->
+                onSet(field, values)
+                editing = false
+            },
+            onDismiss = { editing = false },
+        )
+    }
+}
+
+@Composable
+private fun ImageTypeChoice.displayName(): String = label?.let { stringResource(it) } ?: type
+
+@Composable
+private fun ImageOptionsDialog(
+    typeLabel: String,
+    options: List<ImageOptionValue>,
+    labels: Map<String, String>,
+    countedType: String?,
+    onConfirm: (List<ImageOptionValue>) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val counted = options.firstOrNull { it.type == countedType }
+    val toggled = options.filter { it.type != countedType }
+    var checked by rememberSaveable {
+        mutableStateOf(toggled.filter { it.limit > 0 }.map { it.type })
+    }
+    var countText by rememberSaveable { mutableStateOf(counted?.limit?.toString().orEmpty()) }
+    var widthText by rememberSaveable { mutableStateOf(counted?.minWidth?.toString().orEmpty()) }
+    val count = countText.trim().toIntOrNull()?.takeIf { it >= 0 }
+    val width = widthText.trim().toIntOrNull()?.takeIf { it >= 0 }
+    val isValid = counted == null || (count != null && width != null)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = stringResource(R.string.library_image_settings),
+                    style =
+                        MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                )
+                Text(
+                    text = typeLabel,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                if (toggled.isNotEmpty()) {
+                    Text(
+                        text = stringResource(R.string.library_image_settings_download),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    toggled.forEach { option ->
+                        val isChecked = option.type in checked
+                        Row(
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .toggleable(
+                                        value = isChecked,
+                                        role = Role.Checkbox,
+                                        onValueChange = { on ->
+                                            checked =
+                                                if (on) checked + option.type
+                                                else checked - option.type
+                                        },
+                                    )
+                                    .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Checkbox(checked = isChecked, onCheckedChange = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = labels[option.type] ?: option.type,
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                        }
+                    }
+                }
+                if (counted != null) {
+                    AfinityTextField(
+                        value = countText,
+                        onValueChange = { countText = it },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        label = stringResource(R.string.library_image_settings_max_backdrops),
+                        isError = count == null,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    )
+                    AfinityTextField(
+                        value = widthText,
+                        onValueChange = { widthText = it },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        label = stringResource(R.string.library_image_settings_min_width),
+                        isError = width == null,
+                        supportingText =
+                            stringResource(R.string.library_image_settings_min_width_help),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onConfirm(
+                        options.map { option ->
+                            when {
+                                option.type == countedType && count != null && width != null ->
+                                    option.copy(limit = count, minWidth = width)
+                                option.type == countedType -> option
+                                option.type in checked ->
+                                    option.copy(limit = maxOf(option.limit, 1))
+                                else -> option.copy(limit = 0)
+                            }
+                        }
+                    )
+                },
+                enabled = isValid,
+            ) {
+                Text(stringResource(R.string.action_done))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+    )
 }
 
 @Composable

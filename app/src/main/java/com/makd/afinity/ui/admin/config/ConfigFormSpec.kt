@@ -126,6 +126,23 @@ data class ProviderListField(
 
 data class ProviderRow(val name: String, val enabled: Boolean?)
 
+data class ImageOptionValue(val type: String, val limit: Int, val minWidth: Int)
+
+data class ImageTypeChoice(val type: String, @param:StringRes val label: Int?)
+
+data class ImageOptionsField(
+    override val key: String,
+    @param:StringRes override val label: Int,
+    val entry: ProviderEntry,
+    val optionsKey: String,
+    val types: List<ImageTypeChoice>,
+    val defaults: List<ImageOptionValue>,
+    val countedType: String?,
+    val labelText: String? = null,
+    @param:StringRes override val summary: Int? = null,
+    override val visibleWhen: FieldCondition? = null,
+) : ConfigField
+
 sealed interface ProviderEdit {
     data class Toggle(val name: String, val enabled: Boolean) : ProviderEdit
 

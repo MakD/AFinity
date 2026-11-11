@@ -4,8 +4,11 @@ import androidx.paging.PagingData
 import com.makd.afinity.data.models.admin.ActivityEntry
 import com.makd.afinity.data.models.admin.ActivityFilter
 import com.makd.afinity.data.models.admin.ActivityToday
+import com.makd.afinity.data.models.admin.GhostLibrary
 import com.makd.afinity.data.models.admin.LibraryOptionsDocument
 import com.makd.afinity.data.models.admin.LibraryProviders
+import com.makd.afinity.data.models.admin.LibraryRemoval
+import com.makd.afinity.data.models.admin.LibraryRemovalResult
 import com.makd.afinity.data.models.admin.ServerConfigSource
 import com.makd.afinity.data.models.admin.ServerFolder
 import com.makd.afinity.data.models.admin.UserPolicyDocument
@@ -50,6 +53,10 @@ interface ServerAdminRepository {
     val scheduledTasks: StateFlow<Result<List<TaskInfo>>?>
 
     val isCreatingBackup: StateFlow<Boolean>
+
+    val libraryRemoval: StateFlow<LibraryRemoval?>
+
+    val libraryRemovalResults: Flow<LibraryRemovalResult>
 
     val userCountUpdates: Flow<Int>
 
@@ -133,7 +140,13 @@ interface ServerAdminRepository {
 
     suspend fun renameLibrary(name: String, newName: String): Result<Unit>
 
-    suspend fun removeLibrary(name: String): Result<Unit>
+    fun removeLibrary(name: String): Boolean
+
+    fun cleanUpGhostLibrary(ghost: GhostLibrary): Boolean
+
+    fun cancelLibraryRemoval()
+
+    suspend fun getGhostLibraries(): Result<List<GhostLibrary>>
 
     suspend fun getLibraryOptions(name: String): Result<LibraryOptionsDocument>
 

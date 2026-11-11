@@ -5,7 +5,11 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.admin.LibraryProvider
 import com.makd.afinity.data.models.admin.LibraryProviders
 import com.makd.afinity.data.models.admin.LibraryTypeProviders
+import com.makd.afinity.ui.admin.config.ConfigField
 import com.makd.afinity.ui.admin.config.ConfigSection
+import com.makd.afinity.ui.admin.config.ImageOptionValue
+import com.makd.afinity.ui.admin.config.ImageOptionsField
+import com.makd.afinity.ui.admin.config.ImageTypeChoice
 import com.makd.afinity.ui.admin.config.ProviderEntry
 import com.makd.afinity.ui.admin.config.ProviderListField
 import com.makd.afinity.ui.admin.config.ProviderSelection
@@ -21,6 +25,20 @@ private const val TYPE_KEY = "Type"
 private const val METADATA_SAVERS_KEY = "MetadataSavers"
 private const val READER_ORDER_KEY = "LocalMetadataReaderOrder"
 private const val MIN_ORDERABLE_READERS = 2
+private const val IMAGE_OPTIONS_KEY = "ImageOptions"
+private const val PRIMARY_IMAGE_TYPE = "Primary"
+private const val BACKDROP_IMAGE_TYPE = "Backdrop"
+
+private val IMAGE_TYPE_LABELS =
+    mapOf(
+        "primary" to R.string.admin_image_type_primary,
+        "backdrop" to R.string.admin_image_type_backdrop,
+        "logo" to R.string.admin_image_type_logo,
+        "thumb" to R.string.admin_image_type_thumb,
+        "banner" to R.string.admin_image_type_banner,
+        "art" to R.string.admin_image_type_art,
+        "disc" to R.string.admin_image_type_disc,
+    )
 
 private class DisabledList(
     val disabledKey: String,
@@ -235,27 +253,61 @@ internal fun lyricFetchersField(providers: LibraryProviders): ProviderListField?
 internal fun segmentProvidersField(providers: LibraryProviders): ProviderListField? =
     disabledListField(SEGMENT_LIST, providers)
 
+private fun hasImageSettings(type: LibraryTypeProviders): Boolean {
+    val supported = type.supportedImageTypes
+    return supported.size > 1 ||
+        (supported.size == 1 && !supported.first().equals(PRIMARY_IMAGE_TYPE, ignoreCase = true))
+}
+
+private fun imageOptionsField(type: LibraryTypeProviders, @StringRes fallback: Int): ConfigField {
+    val label = TYPE_LABELS[type.type.lowercase()]
+    return ImageOptionsField(
+        key = "$TYPE_OPTIONS_KEY/${type.type}/$IMAGE_OPTIONS_KEY",
+        label = label ?: fallback,
+        entry = ProviderEntry(TYPE_OPTIONS_KEY, TYPE_KEY, type.type),
+        optionsKey = IMAGE_OPTIONS_KEY,
+        types =
+            type.supportedImageTypes.map { imageType ->
+                ImageTypeChoice(imageType, IMAGE_TYPE_LABELS[imageType.lowercase()])
+            },
+        defaults =
+            type.defaultImageOptions.map { ImageOptionValue(it.type, it.limit, it.minWidth) },
+        countedType =
+            type.supportedImageTypes.firstOrNull {
+                it.equals(BACKDROP_IMAGE_TYPE, ignoreCase = true)
+            },
+        labelText = if (label == null) type.type else null,
+    )
+}
+
 private fun typedSection(
     providers: LibraryProviders,
     list: TypedList,
     @StringRes title: Int,
     @StringRes help: Int,
+    withImageSettings: Boolean = false,
 ): ConfigSection? {
-    val fields =
-        providers.types.mapNotNull { type ->
+    val fields: List<ConfigField> =
+        providers.types.flatMap { type ->
             val available = list.providers(type)
-            if (available.isEmpty()) return@mapNotNull null
+            if (available.isEmpty()) return@flatMap emptyList()
             val label = TYPE_LABELS[type.type.lowercase()]
-            ProviderListField(
-                key = "$TYPE_OPTIONS_KEY/${type.type}/${list.enabledKey}",
-                label = label ?: title,
-                providers = available.names(),
-                selection = ProviderSelection.ENABLED_LIST,
-                selectionKey = list.enabledKey,
-                orderKey = list.orderKey,
-                entry = ProviderEntry(TYPE_OPTIONS_KEY, TYPE_KEY, type.type),
-                labelText = if (label == null) type.type else null,
-            )
+            val listField =
+                ProviderListField(
+                    key = "$TYPE_OPTIONS_KEY/${type.type}/${list.enabledKey}",
+                    label = label ?: title,
+                    providers = available.names(),
+                    selection = ProviderSelection.ENABLED_LIST,
+                    selectionKey = list.enabledKey,
+                    orderKey = list.orderKey,
+                    entry = ProviderEntry(TYPE_OPTIONS_KEY, TYPE_KEY, type.type),
+                    labelText = if (label == null) type.type else null,
+                )
+            if (withImageSettings && hasImageSettings(type)) {
+                listOf(listField, imageOptionsField(type, title))
+            } else {
+                listOf(listField)
+            }
         }
     return if (fields.isEmpty()) null else ConfigSection(title, fields, note = help)
 }
@@ -273,6 +325,7 @@ internal fun providerSections(providers: LibraryProviders): List<ConfigSection> 
             IMAGE_FETCHERS,
             R.string.library_opt_section_image_fetchers,
             R.string.library_opt_image_fetchers_help,
+            withImageSettings = true,
         ),
         typedSection(
             providers,

@@ -31,7 +31,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -56,6 +58,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.data.models.admin.GhostLibrary
+import com.makd.afinity.data.models.admin.LibraryRemoval
+import com.makd.afinity.data.models.admin.LibraryRemovalStage
 import com.makd.afinity.ui.admin.components.AdminLoadContent
 import com.makd.afinity.ui.admin.components.AdminPill
 import com.makd.afinity.ui.admin.components.AdminScaffold
@@ -85,8 +90,14 @@ fun LibrariesScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val isScanningAll by viewModel.isScanningAll.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val removal by viewModel.removal.collectAsStateWithLifecycle()
     val refreshQueuedMessage = stringResource(R.string.admin_refresh_queued)
     val commandFailedMessage = stringResource(R.string.session_command_failed)
+    val removedMessage = stringResource(R.string.library_removed)
+    val leftoverCleanedMessage = stringResource(R.string.library_removed_cleaned)
+    val leftoverRemainsMessage = stringResource(R.string.library_removal_leftover)
+    val removalCancelledMessage = stringResource(R.string.library_removal_cancelled)
+    val removalBusyMessage = stringResource(R.string.library_removal_busy)
     val lifecycleOwner = LocalLifecycleOwner.current
     val isScanActive = isScanningAll || state.scanningCount > 0
 
@@ -111,6 +122,11 @@ fun LibrariesScreen(
                 when (message) {
                     LibrariesMessage.REFRESH_QUEUED -> refreshQueuedMessage
                     LibrariesMessage.COMMAND_FAILED -> commandFailedMessage
+                    LibrariesMessage.LIBRARY_REMOVED -> removedMessage
+                    LibrariesMessage.LEFTOVER_CLEANED -> leftoverCleanedMessage
+                    LibrariesMessage.LEFTOVER_REMAINS -> leftoverRemainsMessage
+                    LibrariesMessage.REMOVAL_CANCELLED -> removalCancelledMessage
+                    LibrariesMessage.REMOVAL_BUSY -> removalBusyMessage
                 }
             )
         }
@@ -118,6 +134,7 @@ fun LibrariesScreen(
 
     LibrariesContent(
         state = state,
+        removal = removal,
         isScanningAll = isScanningAll,
         snackbarHostState = snackbarHostState,
         onBackClick = onBackClick,
@@ -129,6 +146,8 @@ fun LibrariesScreen(
         onScanQueued = viewModel::onScanQueued,
         onRename = viewModel::rename,
         onRemove = viewModel::remove,
+        onCancelRemoval = viewModel::cancelRemoval,
+        onCleanUp = viewModel::cleanUp,
         modifier = modifier,
     )
 }
@@ -136,6 +155,7 @@ fun LibrariesScreen(
 @Composable
 private fun LibrariesContent(
     state: LibrariesUiState,
+    removal: LibraryRemoval?,
     isScanningAll: Boolean,
     snackbarHostState: SnackbarHostState,
     onBackClick: () -> Unit,
@@ -147,6 +167,8 @@ private fun LibrariesContent(
     onScanQueued: () -> Unit,
     onRename: (name: String, newName: String) -> Unit,
     onRemove: (name: String) -> Unit,
+    onCancelRemoval: () -> Unit,
+    onCleanUp: (GhostLibrary) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var renameTarget by rememberSaveable { mutableStateOf<String?>(null) }
@@ -246,6 +268,22 @@ private fun LibrariesContent(
                         onScanAll = onScanAll,
                     )
                 }
+                removal?.let { current ->
+                    item(key = "removal", span = { GridItemSpan(maxLineSpan) }) {
+                        RemovalBanner(removal = current, onCancel = onCancelRemoval)
+                    }
+                }
+                state.ghosts
+                    .filterNot { it.name.equals(removal?.name, ignoreCase = true) }
+                    .forEach { ghost ->
+                        item(key = "ghost_${ghost.name}", span = { GridItemSpan(maxLineSpan) }) {
+                            GhostLibraryCard(
+                                ghost = ghost,
+                                enabled = removal == null,
+                                onCleanUp = { onCleanUp(ghost) },
+                            )
+                        }
+                    }
                 if (libraries.isEmpty()) {
                     item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
                         Text(
@@ -259,7 +297,7 @@ private fun LibrariesContent(
                 items(items = libraries, key = { it.key }) { library ->
                     AdminLibraryCard(
                         library = library,
-                        enabled = !state.isBusy,
+                        enabled = !state.isBusy && removal == null,
                         onClick = { onOpenLibrary(library.name) },
                         onScan = { if (library.itemId != null) scanTarget = library.name },
                         onEditImage = { library.itemId?.let(onEditImage) },
@@ -315,6 +353,79 @@ private fun LibrariesHeader(
                     if (isScanningAll) stringResource(R.string.library_scanning)
                     else stringResource(R.string.libraries_scan_all)
             )
+        }
+    }
+}
+
+@Composable
+private fun RemovalBanner(removal: LibraryRemoval, onCancel: () -> Unit) {
+    val text =
+        when (removal.stage) {
+            LibraryRemovalStage.WAITING_FOR_SCAN ->
+                stringResource(R.string.library_removal_waiting, removal.name)
+            LibraryRemovalStage.REMOVING ->
+                stringResource(R.string.library_removal_removing, removal.name)
+            LibraryRemovalStage.CHECKING ->
+                stringResource(R.string.library_removal_checking, removal.name)
+            LibraryRemovalStage.CLEANING_UP ->
+                stringResource(R.string.library_removal_cleaning, removal.name)
+        }
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
+                )
+                if (removal.stage == LibraryRemovalStage.WAITING_FOR_SCAN) {
+                    TextButton(onClick = onCancel) { Text(stringResource(R.string.action_cancel)) }
+                }
+            }
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
+        }
+    }
+}
+
+@Composable
+private fun GhostLibraryCard(ghost: GhostLibrary, enabled: Boolean, onCleanUp: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.errorContainer,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.library_ghost_title, ghost.name),
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                )
+                Text(
+                    text = stringResource(R.string.library_ghost_summary),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                )
+            }
+            TextButton(onClick = onCleanUp, enabled = enabled) {
+                Text(
+                    text = stringResource(R.string.library_ghost_clean_up),
+                    color =
+                        if (enabled) MaterialTheme.colorScheme.onErrorContainer
+                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                )
+            }
         }
     }
 }

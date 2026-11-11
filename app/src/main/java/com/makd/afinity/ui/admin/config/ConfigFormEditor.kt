@@ -104,12 +104,27 @@ data class ConfigFormUiState(
 
     internal fun value(key: String): JsonElement? = changes[key] ?: document?.valueAt(key)
 
+    fun imageOptions(field: ImageOptionsField): List<ImageOptionValue> {
+        val saved = imageOptionValues(entryValue(field.entry, field.optionsKey))
+        return field.types.map { choice ->
+            val type = choice.type
+            saved.firstOrNull { it.type.equals(type, ignoreCase = true) }?.copy(type = type)
+                ?: field.defaults
+                    .firstOrNull { it.type.equals(type, ignoreCase = true) }
+                    ?.copy(type = type)
+                ?: ImageOptionValue(type = type, limit = 1, minWidth = 0)
+        }
+    }
+
+    internal fun entryValue(entry: ProviderEntry, key: String): JsonElement? =
+        (value(entry.listKey) as? JsonArray)
+            ?.firstOrNull { it.isEntry(entry) }
+            ?.let { (it as JsonObject)[key] }
+
     private fun providerValue(field: ProviderListField, key: String?): JsonElement? {
         if (key == null) return null
         val entry = field.entry ?: return value(key)
-        return (value(entry.listKey) as? JsonArray)
-            ?.firstOrNull { it.isEntry(entry) }
-            ?.let { (it as JsonObject)[key] }
+        return entryValue(entry, key)
     }
 
     private fun number(key: String): Double? =
@@ -120,6 +135,30 @@ private fun stringList(element: JsonElement?): List<String> =
     (element as? JsonArray).orEmpty().mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
 
 private fun names(values: List<String>): JsonArray = JsonArray(values.map { JsonPrimitive(it) })
+
+private fun imageOptionValues(element: JsonElement?): List<ImageOptionValue> =
+    (element as? JsonArray).orEmpty().mapNotNull { item ->
+        val option = item as? JsonObject ?: return@mapNotNull null
+        val type = (option["Type"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
+        ImageOptionValue(
+            type = type,
+            limit = (option["Limit"] as? JsonPrimitive)?.contentOrNull?.toIntOrNull() ?: 1,
+            minWidth = (option["MinWidth"] as? JsonPrimitive)?.contentOrNull?.toIntOrNull() ?: 0,
+        )
+    }
+
+private fun imageOptionsJson(values: List<ImageOptionValue>): JsonArray =
+    JsonArray(
+        values.map { option ->
+            JsonObject(
+                mapOf(
+                    "Type" to JsonPrimitive(option.type),
+                    "Limit" to JsonPrimitive(option.limit),
+                    "MinWidth" to JsonPrimitive(option.minWidth),
+                )
+            )
+        }
+    )
 
 private fun JsonElement.isEntry(entry: ProviderEntry): Boolean {
     val id = ((this as? JsonObject)?.get(entry.idKey) as? JsonPrimitive)?.contentOrNull
@@ -141,6 +180,7 @@ private fun ConfigFormUiState.withChange(key: String, value: JsonElement): Confi
 private fun ConfigFormUiState.withEntryValues(
     entry: ProviderEntry,
     values: Map<String, JsonElement>,
+    removed: Set<String> = emptySet(),
 ): JsonArray {
     val current = (value(entry.listKey) as? JsonArray).orEmpty()
     val index = current.indexOfFirst { it.isEntry(entry) }
@@ -150,7 +190,8 @@ private fun ConfigFormUiState.withEntryValues(
         )
     }
     val existing = current[index] as JsonObject
-    return JsonArray(current.toMutableList().apply { set(index, JsonObject(existing + values)) })
+    val merged = JsonObject(existing + values - removed)
+    return JsonArray(current.toMutableList().apply { set(index, merged) })
 }
 
 private fun List<ProviderRow>.applyEdit(edit: ProviderEdit): List<ProviderRow> {
@@ -218,6 +259,7 @@ private fun ConfigField.initialText(document: JsonObject): String? {
         is ChoiceField,
         is MultiChoiceField,
         is ProviderListField,
+        is ImageOptionsField,
         is ReadOnlyField -> null
     }
 }
@@ -261,6 +303,7 @@ private fun ConfigField.parse(text: String): JsonElement? =
         is ChoiceField,
         is MultiChoiceField,
         is ProviderListField,
+        is ImageOptionsField,
         is ReadOnlyField -> null
     }
 
@@ -375,6 +418,31 @@ class ConfigFormEditor(
             } else {
                 state.withChange(entry.listKey, state.withEntryValues(entry, values))
             }
+        }
+    }
+
+    fun setImageOptions(field: ImageOptionsField, values: List<ImageOptionValue>) {
+        _state.update { state ->
+            if (values == state.imageOptions(field)) return@update state
+            val pristine = state.copy(changes = emptyMap())
+            val original = pristine.entryValue(field.entry, field.optionsKey)
+            val updated =
+                when {
+                    values != pristine.imageOptions(field) ->
+                        state.withEntryValues(
+                            field.entry,
+                            mapOf(field.optionsKey to imageOptionsJson(values)),
+                        )
+                    original != null ->
+                        state.withEntryValues(field.entry, mapOf(field.optionsKey to original))
+                    else ->
+                        state.withEntryValues(
+                            field.entry,
+                            emptyMap(),
+                            removed = setOf(field.optionsKey),
+                        )
+                }
+            state.withChange(field.entry.listKey, updated)
         }
     }
 
