@@ -2525,7 +2525,6 @@
     <string name="libraries_scanning_fmt">Сканирование: %1$d</string>
     <string name="libraries_scan_all">Сканировать все</string>
     <string name="library_scan">Сканировать библиотеку</string>
-    <string name="library_scan_started">Сканирование запущено</string>
     <string name="library_scanning_progress_fmt">Сканирование · %1$d%%</string>
     <string name="library_edit_image">Редактировать изображение</string>
     <string name="library_type_folders_fmt">%1$s · Папки: %2$d</string>

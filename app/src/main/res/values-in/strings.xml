@@ -2065,7 +2065,6 @@
     <string name="libraries_scanning_fmt">Memindai: %1$d</string>
     <string name="libraries_scan_all">Pindai semua</string>
     <string name="library_scan">Pindai perpustakaan</string>
-    <string name="library_scan_started">Pemindaian dimulai</string>
     <string name="library_scanning_progress_fmt">Memindai · %1$d%%</string>
     <string name="library_edit_image">Edit gambar</string>
     <string name="library_type_folders_fmt">%1$s · Folder: %2$d</string>

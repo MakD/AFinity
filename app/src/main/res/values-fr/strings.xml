@@ -1741,7 +1741,6 @@
     <string name="libraries_scanning_fmt">Analyse en cours : %1$d</string>
     <string name="libraries_scan_all">Tout analyser</string>
     <string name="library_scan">Analyser la bibliothèque</string>
-    <string name="library_scan_started">Analyse lancée</string>
     <string name="library_scanning_progress_fmt">Analyse · %1$d%%</string>
     <string name="library_edit_image">Modifier l\'image</string>
     <string name="library_type_folders_fmt">%1$s · Dossiers : %2$d</string>
