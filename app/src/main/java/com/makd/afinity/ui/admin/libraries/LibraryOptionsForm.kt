@@ -1,6 +1,7 @@
 package com.makd.afinity.ui.admin.libraries
 
 import com.makd.afinity.R
+import com.makd.afinity.data.models.admin.LibraryProviders
 import com.makd.afinity.ui.admin.config.ChoiceField
 import com.makd.afinity.ui.admin.config.ChoiceOption
 import com.makd.afinity.ui.admin.config.ChoiceOptionsSource
@@ -57,12 +58,16 @@ private val CHAPTER_TYPES = setOf(TYPE_HOME_VIDEOS, TYPE_MOVIES, TYPE_MUSIC_VIDE
 private val SUBTITLE_TYPES = setOf(TYPE_SHOWS, TYPE_MOVIES, TYPE_MUSIC_VIDEOS, TYPE_MIXED)
 private val NO_EMBEDDED_TITLE_TYPES = setOf("books", "boxsets", "playlists", TYPE_MUSIC)
 
-internal fun libraryOptionsForm(collectionType: String?): ConfigFormSpec {
+internal fun libraryOptionsForm(
+    collectionType: String?,
+    providers: LibraryProviders,
+): ConfigFormSpec {
     val type = collectionType?.lowercase()
     val isMixed = type == null || type == TYPE_MIXED
     val hasChapters = type == null || type in CHAPTER_TYPES
     val hasSubtitles = type == null || type in SUBTITLE_TYPES
     val hasEmbeddedTitles = type !in NO_EMBEDDED_TITLE_TYPES
+    val hasMetadataFetchers = providers.hasMetadataFetchers()
 
     val library = buildList {
         add(
@@ -88,46 +93,53 @@ internal fun libraryOptionsForm(collectionType: String?): ConfigFormSpec {
                 )
             )
         }
-        add(
-            ChoiceField(
-                "AutomaticRefreshIntervalDays",
-                R.string.library_opt_refresh_interval,
-                listOf(
-                    ChoiceOption("0", R.string.library_opt_refresh_never),
-                    ChoiceOption("30", R.string.library_opt_refresh_30),
-                    ChoiceOption("60", R.string.library_opt_refresh_60),
-                    ChoiceOption("90", R.string.library_opt_refresh_90),
-                ),
-                R.string.library_opt_refresh_interval_summary,
-                numeric = true,
+        if (hasMetadataFetchers) {
+            add(
+                ChoiceField(
+                    "AutomaticRefreshIntervalDays",
+                    R.string.library_opt_refresh_interval,
+                    listOf(
+                        ChoiceOption("0", R.string.library_opt_refresh_never),
+                        ChoiceOption("30", R.string.library_opt_refresh_30),
+                        ChoiceOption("60", R.string.library_opt_refresh_60),
+                        ChoiceOption("90", R.string.library_opt_refresh_90),
+                    ),
+                    R.string.library_opt_refresh_interval_summary,
+                    numeric = true,
+                )
             )
-        )
-        add(
-            SwitchField(
-                "SaveLocalMetadata",
-                R.string.library_opt_save_local,
-                R.string.library_opt_save_local_summary,
+        }
+        if (providers.hasImageFetchers()) {
+            add(
+                SwitchField(
+                    "SaveLocalMetadata",
+                    R.string.library_opt_save_local,
+                    R.string.library_opt_save_local_summary,
+                )
             )
-        )
+        }
+        segmentProvidersField(providers)?.let { add(it) }
     }
 
     val metadata = buildList {
-        add(
-            ChoiceField(
-                "PreferredMetadataLanguage",
-                R.string.library_opt_language,
-                listOf(ChoiceOption("", R.string.library_opt_server_default)),
-                optionsSource = ChoiceOptionsSource.CULTURES,
+        if (hasMetadataFetchers) {
+            add(
+                ChoiceField(
+                    "PreferredMetadataLanguage",
+                    R.string.library_opt_language,
+                    listOf(ChoiceOption("", R.string.library_opt_server_default)),
+                    optionsSource = ChoiceOptionsSource.CULTURES,
+                )
             )
-        )
-        add(
-            ChoiceField(
-                "MetadataCountryCode",
-                R.string.library_opt_country,
-                listOf(ChoiceOption("", R.string.library_opt_server_default)),
-                optionsSource = ChoiceOptionsSource.COUNTRIES,
+            add(
+                ChoiceField(
+                    "MetadataCountryCode",
+                    R.string.library_opt_country,
+                    listOf(ChoiceOption("", R.string.library_opt_server_default)),
+                    optionsSource = ChoiceOptionsSource.COUNTRIES,
+                )
             )
-        )
+        }
         if (type == TYPE_SHOWS) {
             add(
                 TextInputField(
@@ -177,6 +189,8 @@ internal fun libraryOptionsForm(collectionType: String?): ConfigFormSpec {
                 )
             )
         }
+        metadataReadersField(providers)?.let { add(it) }
+        metadataSaversField(providers)?.let { add(it) }
     }
 
     val trickplay =
@@ -245,7 +259,7 @@ internal fun libraryOptionsForm(collectionType: String?): ConfigFormSpec {
                 R.string.library_opt_subtitles_with_media,
                 R.string.library_opt_subtitles_with_media_summary,
             ),
-        )
+        ) + listOfNotNull(subtitleFetchersField(providers))
 
     val music =
         listOf<ConfigField>(
@@ -269,11 +283,12 @@ internal fun libraryOptionsForm(collectionType: String?): ConfigFormSpec {
                 R.string.library_opt_tag_delimiters,
                 R.string.library_opt_tag_delimiters_summary,
             ),
-        )
+        ) + listOfNotNull(lyricFetchersField(providers))
 
     val sections = buildList {
         add(ConfigSection(R.string.library_opt_section_library, library))
         add(ConfigSection(R.string.library_opt_section_metadata, metadata))
+        addAll(providerSections(providers))
         if (hasChapters) {
             add(ConfigSection(R.string.library_opt_section_trickplay, trickplay))
             add(ConfigSection(R.string.library_opt_section_chapters, chapters))

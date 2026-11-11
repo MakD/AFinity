@@ -20,7 +20,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.ui.admin.refresh.RefreshMetadataDialog
 import com.makd.afinity.ui.components.AfinityTextField
+import java.util.UUID
+import org.jellyfin.sdk.model.api.CollectionTypeOptions
+
+private val TRICKPLAY_LIBRARY_TYPES =
+    setOf(
+        CollectionTypeOptions.MOVIES,
+        CollectionTypeOptions.TVSHOWS,
+        CollectionTypeOptions.HOMEVIDEOS,
+        CollectionTypeOptions.MUSICVIDEOS,
+        CollectionTypeOptions.MIXED,
+    )
 
 @Composable
 internal fun RenameLibraryDialog(
@@ -102,6 +114,24 @@ internal fun RemoveLibraryDialog(name: String, onConfirm: () -> Unit, onDismiss:
         },
         shape = RoundedCornerShape(28.dp),
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+    )
+}
+
+@Composable
+internal fun ScanLibraryDialog(
+    itemId: UUID,
+    name: String,
+    type: CollectionTypeOptions?,
+    onQueued: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    RefreshMetadataDialog(
+        itemId = itemId.toString(),
+        itemName = name,
+        onDismiss = onDismiss,
+        includesChildren = true,
+        showTrickplay = type == null || type in TRICKPLAY_LIBRARY_TYPES,
+        onQueued = onQueued,
     )
 }
 

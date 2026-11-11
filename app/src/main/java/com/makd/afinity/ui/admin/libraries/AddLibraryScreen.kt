@@ -47,6 +47,8 @@ import com.makd.afinity.ui.admin.config.ChoiceField
 import com.makd.afinity.ui.admin.config.ConfigField
 import com.makd.afinity.ui.admin.config.ConfigFormSections
 import com.makd.afinity.ui.admin.config.ConfigFormUiState
+import com.makd.afinity.ui.admin.config.ProviderEdit
+import com.makd.afinity.ui.admin.config.ProviderListField
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
@@ -85,6 +87,8 @@ fun AddLibraryScreen(
         onSetChoice = editor::setChoice,
         onSetSelected = editor::setSelected,
         onSetText = editor::setText,
+        onEditProvider = editor::editProvider,
+        onRetryOptions = editor::load,
         onCreate = viewModel::create,
         modifier = modifier,
     )
@@ -105,6 +109,8 @@ private fun AddLibraryContent(
     onSetChoice: (field: ChoiceField, value: String) -> Unit,
     onSetSelected: (key: String, value: String, selected: Boolean) -> Unit,
     onSetText: (field: ConfigField, text: String) -> Unit,
+    onEditProvider: (field: ProviderListField, edit: ProviderEdit) -> Unit,
+    onRetryOptions: () -> Unit,
     onCreate: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -205,15 +211,27 @@ private fun AddLibraryContent(
                 }
             }
 
-            ConfigFormSections(
-                state = formState,
-                enabled = editable,
-                showAdvanced = true,
-                onSetFlag = onSetFlag,
-                onSetChoice = onSetChoice,
-                onSetSelected = onSetSelected,
-                onSetText = onSetText,
-            )
+            if (formState.failed) {
+                SettingsGroup(title = stringResource(R.string.library_options_title)) {
+                    SettingsItem(
+                        icon = painterResource(id = R.drawable.ic_refresh),
+                        title = stringResource(R.string.library_options_load_failed),
+                        subtitle = stringResource(R.string.action_retry),
+                        onClick = onRetryOptions,
+                    )
+                }
+            } else {
+                ConfigFormSections(
+                    state = formState,
+                    enabled = editable,
+                    showAdvanced = true,
+                    onSetFlag = onSetFlag,
+                    onSetChoice = onSetChoice,
+                    onSetSelected = onSetSelected,
+                    onSetText = onSetText,
+                    onEditProvider = onEditProvider,
+                )
+            }
         }
     }
 }

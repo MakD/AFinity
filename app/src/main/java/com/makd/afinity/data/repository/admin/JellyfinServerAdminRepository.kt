@@ -11,6 +11,9 @@ import com.makd.afinity.data.models.admin.ActivityEntry
 import com.makd.afinity.data.models.admin.ActivityFilter
 import com.makd.afinity.data.models.admin.ActivityToday
 import com.makd.afinity.data.models.admin.LibraryOptionsDocument
+import com.makd.afinity.data.models.admin.LibraryProvider
+import com.makd.afinity.data.models.admin.LibraryProviders
+import com.makd.afinity.data.models.admin.LibraryTypeProviders
 import com.makd.afinity.data.models.admin.ServerConfigSource
 import com.makd.afinity.data.models.admin.ServerFolder
 import com.makd.afinity.data.models.admin.UserPolicyDocument
@@ -72,6 +75,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
@@ -118,7 +122,6 @@ import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.LogFile
 import org.jellyfin.sdk.model.api.MediaPathDto
 import org.jellyfin.sdk.model.api.MessageCommand
-import org.jellyfin.sdk.model.api.MetadataRefreshMode
 import org.jellyfin.sdk.model.api.PackageInfo
 import org.jellyfin.sdk.model.api.ParentalRating
 import org.jellyfin.sdk.model.api.PlaystateCommand
@@ -169,6 +172,7 @@ private const val CONFIG_PATH_SEPARATOR = '.'
 private val SECRET_CONFIG_KEYS = setOf("CertificatePassword")
 private const val LIBRARIES_PATH = "/Library/VirtualFolders"
 private const val LIBRARY_OPTIONS_PATH = "/Library/VirtualFolders/LibraryOptions"
+private const val LIBRARY_AVAILABLE_OPTIONS_PATH = "/Libraries/AvailableOptions"
 private const val LIBRARY_NAME_KEY = "Name"
 private const val LIBRARY_TYPE_KEY = "CollectionType"
 private const val LIBRARY_ITEM_ID_KEY = "ItemId"
@@ -816,6 +820,53 @@ constructor(
             )
         }
 
+    override suspend fun getLibraryProviders(
+        collectionType: String?,
+        isNewLibrary: Boolean,
+    ): Result<LibraryProviders> = apiInvoker.apiResult { api, _ ->
+        val response =
+            api.request(
+                pathTemplate = LIBRARY_AVAILABLE_OPTIONS_PATH,
+                queryParameters =
+                    buildMap<String, Any?> {
+                        collectionType?.let { put("libraryContentType", it) }
+                        put("isNewLibrary", isNewLibrary)
+                    },
+            )
+        val root = Json.parseToJsonElement(response.body.decodeToString()).jsonObject
+        LibraryProviders(
+            metadataSavers = root.providerList("MetadataSavers"),
+            metadataReaders = root.providerList("MetadataReaders"),
+            subtitleFetchers = root.providerList("SubtitleFetchers"),
+            lyricFetchers = root.providerList("LyricFetchers"),
+            mediaSegmentProviders = root.providerList("MediaSegmentProviders"),
+            types =
+                (root["TypeOptions"] as? JsonArray).orEmpty().mapNotNull { element ->
+                    val entry = element as? JsonObject ?: return@mapNotNull null
+                    val type =
+                        (entry["Type"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
+                    LibraryTypeProviders(
+                        type = type,
+                        metadataFetchers = entry.providerList("MetadataFetchers"),
+                        imageFetchers = entry.providerList("ImageFetchers"),
+                        similarItemProviders = entry.providerList("SimilarItemProviders"),
+                    )
+                },
+        )
+    }
+
+    private fun JsonObject.providerList(key: String): List<LibraryProvider> =
+        (this[key] as? JsonArray)
+            .orEmpty()
+            .mapNotNull { element ->
+                val entry = element as? JsonObject ?: return@mapNotNull null
+                val name = (entry["Name"] as? JsonPrimitive)?.contentOrNull
+                if (name.isNullOrBlank()) return@mapNotNull null
+                val defaultEnabled = (entry["DefaultEnabled"] as? JsonPrimitive)?.booleanOrNull
+                LibraryProvider(name = name, defaultEnabled = defaultEnabled == true)
+            }
+            .distinctBy { it.name.lowercase() }
+
     private suspend fun readLibrary(api: ApiClient, name: String): JsonObject {
         val response = api.request(pathTemplate = LIBRARIES_PATH)
         return Json.parseToJsonElement(response.body.decodeToString())
@@ -978,19 +1029,6 @@ constructor(
 
     override suspend fun scanAllLibraries(): Result<Unit> =
         execute("scan libraries") { api, _ -> LibraryApi(api).refreshLibrary() }
-
-    override suspend fun scanLibrary(itemId: UUID): Result<Unit> =
-        execute("scan library $itemId") { api, _ ->
-            LibraryApi(api)
-                .refreshItem(
-                    itemId = itemId,
-                    metadataRefreshMode = MetadataRefreshMode.DEFAULT,
-                    imageRefreshMode = MetadataRefreshMode.DEFAULT,
-                    replaceAllMetadata = false,
-                    replaceAllImages = false,
-                    regenerateTrickplay = false,
-                )
-        }
 
     override suspend fun getLibraryImageTags(itemIds: List<UUID>): Result<Map<UUID, String>> =
         if (itemIds.isEmpty()) {

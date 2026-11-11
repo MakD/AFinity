@@ -82,7 +82,35 @@ data class ConfigFormUiState(
     fun isVisible(condition: FieldCondition?): Boolean =
         condition == null || choice(condition.key) in condition.values
 
-    private fun value(key: String): JsonElement? = changes[key] ?: document?.valueAt(key)
+    fun providerRows(field: ProviderListField): List<ProviderRow> {
+        val order =
+            if (field.orderKey == null) field.providers
+            else providerOrder(field.providers, stringList(providerValue(field, field.orderKey)))
+        val listed =
+            stringList(providerValue(field, field.selectionKey)).map { it.lowercase() }.toSet()
+        return order.map { name ->
+            val isListed = name.lowercase() in listed
+            ProviderRow(
+                name = name,
+                enabled =
+                    when (field.selection) {
+                        ProviderSelection.ENABLED_LIST -> isListed
+                        ProviderSelection.DISABLED_LIST -> !isListed
+                        ProviderSelection.NONE -> null
+                    },
+            )
+        }
+    }
+
+    internal fun value(key: String): JsonElement? = changes[key] ?: document?.valueAt(key)
+
+    private fun providerValue(field: ProviderListField, key: String?): JsonElement? {
+        if (key == null) return null
+        val entry = field.entry ?: return value(key)
+        return (value(entry.listKey) as? JsonArray)
+            ?.firstOrNull { it.isEntry(entry) }
+            ?.let { (it as JsonObject)[key] }
+    }
 
     private fun number(key: String): Double? =
         (value(key) as? JsonPrimitive)?.takeIf { !it.isString }?.doubleOrNull
@@ -90,6 +118,59 @@ data class ConfigFormUiState(
 
 private fun stringList(element: JsonElement?): List<String> =
     (element as? JsonArray).orEmpty().mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
+
+private fun names(values: List<String>): JsonArray = JsonArray(values.map { JsonPrimitive(it) })
+
+private fun JsonElement.isEntry(entry: ProviderEntry): Boolean {
+    val id = ((this as? JsonObject)?.get(entry.idKey) as? JsonPrimitive)?.contentOrNull
+    return id.equals(entry.id, ignoreCase = true)
+}
+
+internal fun providerOrder(available: List<String>, saved: List<String>): List<String> {
+    val byKey = available.associateBy { it.lowercase() }
+    val known = saved.mapNotNull { byKey[it.lowercase()] }.distinct()
+    return known + available.filter { it !in known }
+}
+
+private fun ConfigFormUiState.withChange(key: String, value: JsonElement): ConfigFormUiState {
+    val changes =
+        if (sameValue(document?.valueAt(key), value)) changes - key else changes + (key to value)
+    return copy(changes = changes)
+}
+
+private fun ConfigFormUiState.withEntryValues(
+    entry: ProviderEntry,
+    values: Map<String, JsonElement>,
+): JsonArray {
+    val current = (value(entry.listKey) as? JsonArray).orEmpty()
+    val index = current.indexOfFirst { it.isEntry(entry) }
+    if (index < 0) {
+        return JsonArray(
+            current + JsonObject(mapOf(entry.idKey to JsonPrimitive(entry.id)) + values)
+        )
+    }
+    val existing = current[index] as JsonObject
+    return JsonArray(current.toMutableList().apply { set(index, JsonObject(existing + values)) })
+}
+
+private fun List<ProviderRow>.applyEdit(edit: ProviderEdit): List<ProviderRow> {
+    val name =
+        when (edit) {
+            is ProviderEdit.Toggle -> edit.name
+            is ProviderEdit.Move -> edit.name
+        }
+    val index = indexOfFirst { it.name == name }
+    if (index < 0) return this
+    return when (edit) {
+        is ProviderEdit.Toggle ->
+            if (this[index].enabled == null) this
+            else toMutableList().apply { set(index, this[index].copy(enabled = edit.enabled)) }
+        is ProviderEdit.Move -> {
+            val target = index + edit.offset
+            if (target !in indices) this else toMutableList().apply { add(target, removeAt(index)) }
+        }
+    }
+}
 
 private fun JsonObject.valueAt(path: String): JsonElement? =
     if (PATH_SEPARATOR in path) {
@@ -136,6 +217,7 @@ private fun ConfigField.initialText(document: JsonObject): String? {
         is SwitchField,
         is ChoiceField,
         is MultiChoiceField,
+        is ProviderListField,
         is ReadOnlyField -> null
     }
 }
@@ -178,6 +260,7 @@ private fun ConfigField.parse(text: String): JsonElement? =
         is SwitchField,
         is ChoiceField,
         is MultiChoiceField,
+        is ProviderListField,
         is ReadOnlyField -> null
     }
 
@@ -266,13 +349,37 @@ class ConfigFormEditor(
         }
     }
 
-    private fun change(key: String, value: JsonElement) {
+    fun editProvider(field: ProviderListField, edit: ProviderEdit) {
         _state.update { state ->
-            val changes =
-                if (sameValue(state.document?.valueAt(key), value)) state.changes - key
-                else state.changes + (key to value)
-            state.copy(changes = changes)
+            val rows = state.providerRows(field)
+            val updated = rows.applyEdit(edit)
+            if (updated == rows) return@update state
+            val listedWhen =
+                when (field.selection) {
+                    ProviderSelection.ENABLED_LIST -> true
+                    ProviderSelection.DISABLED_LIST -> false
+                    ProviderSelection.NONE -> null
+                }
+            val values =
+                buildMap<String, JsonElement> {
+                    field.orderKey?.let { put(it, names(updated.map { row -> row.name })) }
+                    val selectionKey = field.selectionKey
+                    if (selectionKey != null && listedWhen != null) {
+                        val listed = updated.filter { it.enabled == listedWhen }.map { it.name }
+                        put(selectionKey, names(listed))
+                    }
+                }
+            val entry = field.entry
+            if (entry == null) {
+                values.entries.fold(state) { acc, (key, value) -> acc.withChange(key, value) }
+            } else {
+                state.withChange(entry.listKey, state.withEntryValues(entry, values))
+            }
         }
+    }
+
+    private fun change(key: String, value: JsonElement) {
+        _state.update { it.withChange(key, value) }
     }
 
     private suspend fun fetch() {

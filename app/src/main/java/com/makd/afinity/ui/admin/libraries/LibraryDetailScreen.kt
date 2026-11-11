@@ -3,7 +3,6 @@ package com.makd.afinity.ui.admin.libraries
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -29,8 +28,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.admin.ServerFolder
 import com.makd.afinity.ui.admin.components.AdminDiscardDialog
@@ -45,10 +47,13 @@ import com.makd.afinity.ui.admin.config.ConfigField
 import com.makd.afinity.ui.admin.config.ConfigFormSections
 import com.makd.afinity.ui.admin.config.ConfigFormUiState
 import com.makd.afinity.ui.admin.config.ConfigSaveButton
+import com.makd.afinity.ui.admin.config.ProviderEdit
+import com.makd.afinity.ui.admin.config.ProviderListField
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
+import kotlinx.coroutines.delay
 
 private const val LEADING_OPTION_SECTIONS = 1
 
@@ -63,14 +68,31 @@ fun LibraryDetailScreen(
     val formState by editor.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val commandFailedMessage = stringResource(R.string.session_command_failed)
+    val refreshQueuedMessage = stringResource(R.string.admin_refresh_queued)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val isScanActive = state.library?.scanState.let { it != null && it != LibraryScanState.IDLE }
 
     LifecycleResumeEffect(Unit) {
         viewModel.load()
         onPauseOrDispose {}
     }
 
+    LaunchedEffect(isScanActive, lifecycleOwner) {
+        if (!isScanActive) return@LaunchedEffect
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (true) {
+                delay(SCAN_POLL_INTERVAL)
+                viewModel.pollScanStatus()
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.commandError.collect { snackbarHostState.showSnackbar(commandFailedMessage) }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.refreshQueued.collect { snackbarHostState.showSnackbar(refreshQueuedMessage) }
     }
 
     LaunchedEffect(editor) {
@@ -88,10 +110,12 @@ fun LibraryDetailScreen(
         isFolderInLibrary = viewModel::isFolderInLibrary,
         onAddFolder = viewModel::addFolder,
         onRemoveFolder = viewModel::removeFolder,
+        onScanQueued = viewModel::onScanQueued,
         onSetFlag = editor::setFlag,
         onSetChoice = editor::setChoice,
         onSetSelected = editor::setSelected,
         onSetText = editor::setText,
+        onEditProvider = editor::editProvider,
         onSave = editor::save,
         modifier = modifier,
     )
@@ -109,15 +133,18 @@ private fun LibraryDetailContent(
     isFolderInLibrary: (String) -> Boolean,
     onAddFolder: (String) -> Unit,
     onRemoveFolder: (String) -> Unit,
+    onScanQueued: () -> Unit,
     onSetFlag: (key: String, enabled: Boolean) -> Unit,
     onSetChoice: (field: ChoiceField, value: String) -> Unit,
     onSetSelected: (key: String, value: String, selected: Boolean) -> Unit,
     onSetText: (field: ConfigField, text: String) -> Unit,
+    onEditProvider: (field: ProviderListField, edit: ProviderEdit) -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showAddFolder by rememberSaveable { mutableStateOf(false) }
     var showDiscard by rememberSaveable { mutableStateOf(false) }
+    var showScan by rememberSaveable { mutableStateOf(false) }
     var folderToRemove by rememberSaveable { mutableStateOf<String?>(null) }
     val library = state.library
     val requestClose: () -> Unit = { if (formState.isDirty) showDiscard = true else onBackClick() }
@@ -137,6 +164,17 @@ private fun LibraryDetailContent(
     }
 
     if (library != null) {
+        val itemId = library.itemId
+        if (showScan && itemId != null) {
+            ScanLibraryDialog(
+                itemId = itemId,
+                name = library.name,
+                type = library.type,
+                onQueued = onScanQueued,
+                onDismiss = { showScan = false },
+            )
+        }
+
         if (showAddFolder) {
             ServerFolderPickerDialog(
                 loadFolders = loadFolders,
@@ -206,7 +244,11 @@ private fun LibraryDetailContent(
                             ),
                     verticalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
-                    ScanStatus(scanState = loaded.scanState)
+                    ScanRow(
+                        scanState = loaded.scanState,
+                        enabled = loaded.itemId != null,
+                        onClick = { showScan = true },
+                    )
 
                     if (optionsReady) {
                         ConfigFormSections(
@@ -217,6 +259,7 @@ private fun LibraryDetailContent(
                             onSetChoice = onSetChoice,
                             onSetSelected = onSetSelected,
                             onSetText = onSetText,
+                            onEditProvider = onEditProvider,
                             sections = sections.take(LEADING_OPTION_SECTIONS),
                         )
                     }
@@ -237,6 +280,7 @@ private fun LibraryDetailContent(
                             onSetChoice = onSetChoice,
                             onSetSelected = onSetSelected,
                             onSetText = onSetText,
+                            onEditProvider = onEditProvider,
                             sections = sections.drop(LEADING_OPTION_SECTIONS),
                         )
                     } else if (formState.failed) {
@@ -288,15 +332,26 @@ private fun LibraryFolders(
 }
 
 @Composable
-private fun ScanStatus(scanState: LibraryScanState) {
-    val label =
+private fun ScanRow(scanState: LibraryScanState, enabled: Boolean, onClick: () -> Unit) {
+    val status =
         when (scanState) {
             LibraryScanState.ACTIVE -> stringResource(R.string.library_scanning)
             LibraryScanState.QUEUED -> stringResource(R.string.library_scan_queued)
-            LibraryScanState.IDLE -> return
+            LibraryScanState.IDLE -> null
         }
-    Row(modifier = Modifier.padding(horizontal = 16.dp)) {
-        AdminPill(text = label, emphasised = scanState == LibraryScanState.ACTIVE)
+    SettingsGroup {
+        SettingsItem(
+            icon = painterResource(id = R.drawable.ic_refresh),
+            title = stringResource(R.string.library_scan),
+            onClick = onClick,
+            enabled = enabled,
+            trailing =
+                if (status != null) {
+                    { AdminPill(text = status, emphasised = scanState == LibraryScanState.ACTIVE) }
+                } else {
+                    null
+                },
+        )
     }
 }
 

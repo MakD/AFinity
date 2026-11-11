@@ -103,6 +103,35 @@ data class ReadOnlyField(
     override val visibleWhen: FieldCondition? = null,
 ) : ConfigField
 
+enum class ProviderSelection {
+    ENABLED_LIST,
+    DISABLED_LIST,
+    NONE,
+}
+
+data class ProviderEntry(val listKey: String, val idKey: String, val id: String)
+
+data class ProviderListField(
+    override val key: String,
+    @param:StringRes override val label: Int,
+    val providers: List<String>,
+    val selection: ProviderSelection,
+    val selectionKey: String?,
+    val orderKey: String?,
+    val entry: ProviderEntry? = null,
+    val labelText: String? = null,
+    @param:StringRes override val summary: Int? = null,
+    override val visibleWhen: FieldCondition? = null,
+) : ConfigField
+
+data class ProviderRow(val name: String, val enabled: Boolean?)
+
+sealed interface ProviderEdit {
+    data class Toggle(val name: String, val enabled: Boolean) : ProviderEdit
+
+    data class Move(val name: String, val offset: Int) : ProviderEdit
+}
+
 data class ConfigSection(
     @param:StringRes val title: Int,
     val fields: List<ConfigField>,

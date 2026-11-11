@@ -10,7 +10,10 @@ import com.makd.afinity.ui.admin.config.ChoiceOptionsLoader
 import com.makd.afinity.ui.admin.config.ConfigFormEditor
 import com.makd.afinity.ui.admin.config.LoadedConfigForm
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -20,9 +23,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.CollectionTypeOptions
+import org.jellyfin.sdk.model.serializer.toUUIDOrNull
 import timber.log.Timber
 
+private const val SCAN_FOLLOW_UP_CHECKS = 3
+private val SCAN_FOLLOW_UP_DELAY = 1500.milliseconds
+
 data class AdminLibraryDetail(
+    val itemId: UUID?,
     val name: String,
     val type: CollectionTypeOptions?,
     val locations: List<String>,
@@ -55,26 +63,51 @@ constructor(
     private val _commandError = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val commandError: SharedFlow<Unit> = _commandError.asSharedFlow()
 
+    private val _refreshQueued = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val refreshQueued: SharedFlow<Unit> = _refreshQueued.asSharedFlow()
+
     private val optionsLoader = ChoiceOptionsLoader(adminRepository)
 
     val optionsEditor =
         ConfigFormEditor(
             scope = viewModelScope,
-            loadForm = {
-                adminRepository.getLibraryOptions(libraryName).map { document ->
-                    LoadedConfigForm(
-                        spec = optionsLoader.resolve(libraryOptionsForm(document.collectionType)),
-                        document = document.options,
-                        title = libraryName,
-                    )
-                }
-            },
+            loadForm = ::loadOptionsForm,
             saveChanges = { changes -> adminRepository.updateLibraryOptions(libraryName, changes) },
         )
 
     fun load() {
         _state.update { it.copy(failed = false) }
         viewModelScope.launch { fetch() }
+    }
+
+    fun pollScanStatus() {
+        viewModelScope.launch { fetch() }
+    }
+
+    fun onScanQueued() {
+        _refreshQueued.tryEmit(Unit)
+        viewModelScope.launch {
+            repeat(SCAN_FOLLOW_UP_CHECKS) {
+                delay(SCAN_FOLLOW_UP_DELAY)
+                fetch()
+                if (_state.value.library?.scanState != LibraryScanState.IDLE) return@launch
+            }
+        }
+    }
+
+    private suspend fun loadOptionsForm(): Result<LoadedConfigForm> {
+        val document =
+            adminRepository.getLibraryOptions(libraryName).getOrElse {
+                return Result.failure(it)
+            }
+        val type = document.collectionType
+        return adminRepository.getLibraryProviders(type, isNewLibrary = false).map { providers ->
+            LoadedConfigForm(
+                spec = optionsLoader.resolve(libraryOptionsForm(type, providers)),
+                document = normalizeProviders(document.options, providers),
+                title = libraryName,
+            )
+        }
     }
 
     suspend fun browseFolders(path: String?): Result<List<ServerFolder>> =
@@ -118,6 +151,7 @@ constructor(
                         .firstOrNull { it.name == libraryName }
                         ?.let { folder ->
                             AdminLibraryDetail(
+                                itemId = folder.itemId?.toUUIDOrNull(),
                                 name = folder.name.orEmpty(),
                                 type = folder.collectionType,
                                 locations = folder.locations.orEmpty(),

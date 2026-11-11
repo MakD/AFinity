@@ -1,22 +1,27 @@
 package com.makd.afinity.ui.admin.config
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -38,8 +43,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -56,6 +66,7 @@ import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
+import sh.calvin.reorderable.ReorderableColumn
 
 private const val SEARCHABLE_CHOICE_MIN_OPTIONS = 12
 
@@ -95,6 +106,7 @@ fun ConfigFormEditorScreen(
         onSetChoice = editor::setChoice,
         onSetSelected = editor::setSelected,
         onSetText = editor::setText,
+        onEditProvider = editor::editProvider,
         onSave = editor::save,
         modifier = modifier,
     )
@@ -110,6 +122,7 @@ private fun ConfigFormContent(
     onSetChoice: (field: ChoiceField, value: String) -> Unit,
     onSetSelected: (key: String, value: String, selected: Boolean) -> Unit,
     onSetText: (field: ConfigField, text: String) -> Unit,
+    onEditProvider: (field: ProviderListField, edit: ProviderEdit) -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -167,6 +180,7 @@ private fun ConfigFormContent(
                     onSetChoice = onSetChoice,
                     onSetSelected = onSetSelected,
                     onSetText = onSetText,
+                    onEditProvider = onEditProvider,
                 )
                 if (spec?.hasAdvancedSections == true) {
                     SettingsGroup {
@@ -191,6 +205,7 @@ fun ConfigFormSections(
     onSetChoice: (field: ChoiceField, value: String) -> Unit,
     onSetSelected: (key: String, value: String, selected: Boolean) -> Unit,
     onSetText: (field: ConfigField, text: String) -> Unit,
+    onEditProvider: (field: ProviderListField, edit: ProviderEdit) -> Unit = { _, _ -> },
     sections: List<ConfigSection> = state.spec?.sections.orEmpty(),
 ) {
     sections.forEach { section ->
@@ -213,6 +228,7 @@ fun ConfigFormSections(
                         onSetChoice = onSetChoice,
                         onSetSelected = onSetSelected,
                         onSetText = onSetText,
+                        onEditProvider = onEditProvider,
                     )
                 }
             }
@@ -256,9 +272,12 @@ private fun ConfigFieldRow(
     onSetChoice: (field: ChoiceField, value: String) -> Unit,
     onSetSelected: (key: String, value: String, selected: Boolean) -> Unit,
     onSetText: (field: ConfigField, text: String) -> Unit,
+    onEditProvider: (field: ProviderListField, edit: ProviderEdit) -> Unit,
 ) {
     val summary = field.summary?.let { stringResource(it) }
     when (field) {
+        is ProviderListField ->
+            ProviderList(field = field, state = state, enabled = enabled, onEdit = onEditProvider)
         is ReadOnlyField ->
             Column {
                 SettingsItem(
@@ -513,6 +532,142 @@ private fun MultiChoiceChips(
         }
         field.summary?.let { summary ->
             FieldHelp(text = stringResource(summary), modifier = Modifier.padding(bottom = 16.dp))
+        }
+    }
+}
+
+@Composable
+private fun ProviderList(
+    field: ProviderListField,
+    state: ConfigFormUiState,
+    enabled: Boolean,
+    onEdit: (field: ProviderListField, edit: ProviderEdit) -> Unit,
+) {
+    val rows = state.providerRows(field)
+    val canMove = enabled && field.orderKey != null && rows.size > 1
+    Column(modifier = Modifier.padding(bottom = 8.dp)) {
+        Text(
+            text = field.labelText ?: stringResource(field.label),
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+        )
+        ReorderableColumn(
+            list = rows,
+            onSettle = { from, to ->
+                rows.getOrNull(from)?.let { row ->
+                    onEdit(field, ProviderEdit.Move(row.name, to - from))
+                }
+            },
+        ) { index, row, isDragging ->
+            ReorderableItem {
+                val elevation by
+                    animateDpAsState(if (isDragging) 8.dp else 0.dp, label = "drag_elev")
+                ProviderRowItem(
+                    row = row,
+                    enabled = enabled,
+                    elevation = elevation,
+                    showHandle = field.orderKey != null && rows.size > 1,
+                    handleModifier = Modifier.draggableHandle(enabled = canMove),
+                    onToggle = { onEdit(field, ProviderEdit.Toggle(row.name, it)) },
+                    onMoveUp =
+                        if (canMove && index > 0) {
+                            { onEdit(field, ProviderEdit.Move(row.name, -1)) }
+                        } else null,
+                    onMoveDown =
+                        if (canMove && index < rows.lastIndex) {
+                            { onEdit(field, ProviderEdit.Move(row.name, 1)) }
+                        } else null,
+                )
+            }
+        }
+        field.summary?.let { summary ->
+            FieldHelp(text = stringResource(summary), modifier = Modifier.padding(top = 4.dp))
+        }
+    }
+}
+
+@Composable
+private fun ProviderRowItem(
+    row: ProviderRow,
+    enabled: Boolean,
+    elevation: Dp,
+    showHandle: Boolean,
+    handleModifier: Modifier,
+    onToggle: (Boolean) -> Unit,
+    onMoveUp: (() -> Unit)?,
+    onMoveDown: (() -> Unit)?,
+) {
+    val checked = row.enabled
+    val moveUpLabel = stringResource(R.string.cd_provider_move_up, row.name)
+    val moveDownLabel = stringResource(R.string.cd_provider_move_down, row.name)
+    Surface(
+        color =
+            if (elevation > 0.dp) MaterialTheme.colorScheme.surfaceContainerHigh
+            else MaterialTheme.colorScheme.surfaceContainerLow,
+        tonalElevation = elevation,
+        shadowElevation = elevation,
+        modifier =
+            Modifier.fillMaxWidth().semantics {
+                customActions =
+                    listOfNotNull(
+                        onMoveUp?.let { move ->
+                            CustomAccessibilityAction(moveUpLabel) {
+                                move()
+                                true
+                            }
+                        },
+                        onMoveDown?.let { move ->
+                            CustomAccessibilityAction(moveDownLabel) {
+                                move()
+                                true
+                            }
+                        },
+                    )
+            },
+    ) {
+        Row(
+            modifier =
+                Modifier.fillMaxWidth()
+                    .then(
+                        if (checked != null) {
+                            Modifier.toggleable(
+                                value = checked,
+                                enabled = enabled,
+                                role = Role.Checkbox,
+                                onValueChange = onToggle,
+                            )
+                        } else {
+                            Modifier
+                        }
+                    )
+                    .padding(start = if (checked != null) 4.dp else 16.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (checked != null) {
+                Checkbox(checked = checked, onCheckedChange = null, enabled = enabled)
+                Spacer(modifier = Modifier.width(4.dp))
+            }
+            Text(
+                text = row.name,
+                style = MaterialTheme.typography.bodyLarge,
+                color =
+                    MaterialTheme.colorScheme.onSurface.copy(
+                        alpha = if (enabled && checked != false) 1f else 0.6f
+                    ),
+                modifier = Modifier.weight(1f).padding(vertical = 12.dp),
+            )
+            if (showHandle) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_arrows_sort),
+                    contentDescription = stringResource(R.string.cd_provider_drag_reorder),
+                    tint =
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                            alpha = if (enabled) 0.5f else 0.25f
+                        ),
+                    modifier = handleModifier.padding(12.dp).size(24.dp),
+                )
+            }
         }
     }
 }

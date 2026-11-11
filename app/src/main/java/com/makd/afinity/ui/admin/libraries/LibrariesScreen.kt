@@ -70,7 +70,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.CollectionTypeOptions
 
-private val SCAN_POLL_INTERVAL = 3.seconds
+internal val SCAN_POLL_INTERVAL = 3.seconds
 private const val PERCENT = 100
 
 @Composable
@@ -85,7 +85,7 @@ fun LibrariesScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val isScanningAll by viewModel.isScanningAll.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val scanStartedMessage = stringResource(R.string.library_scan_started)
+    val refreshQueuedMessage = stringResource(R.string.admin_refresh_queued)
     val commandFailedMessage = stringResource(R.string.session_command_failed)
     val lifecycleOwner = LocalLifecycleOwner.current
     val isScanActive = isScanningAll || state.scanningCount > 0
@@ -109,7 +109,7 @@ fun LibrariesScreen(
         viewModel.messages.collect { message ->
             snackbarHostState.showSnackbar(
                 when (message) {
-                    LibrariesMessage.SCAN_STARTED -> scanStartedMessage
+                    LibrariesMessage.REFRESH_QUEUED -> refreshQueuedMessage
                     LibrariesMessage.COMMAND_FAILED -> commandFailedMessage
                 }
             )
@@ -126,7 +126,7 @@ fun LibrariesScreen(
         onAddLibrary = onAddLibrary,
         onEditImage = onEditImage,
         onScanAll = viewModel::scanAll,
-        onScanLibrary = viewModel::scanLibrary,
+        onScanQueued = viewModel::onScanQueued,
         onRename = viewModel::rename,
         onRemove = viewModel::remove,
         modifier = modifier,
@@ -144,14 +144,29 @@ private fun LibrariesContent(
     onAddLibrary: () -> Unit,
     onEditImage: (itemId: UUID) -> Unit,
     onScanAll: () -> Unit,
-    onScanLibrary: (itemId: UUID) -> Unit,
+    onScanQueued: () -> Unit,
     onRename: (name: String, newName: String) -> Unit,
     onRemove: (name: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var renameTarget by rememberSaveable { mutableStateOf<String?>(null) }
     var removeTarget by rememberSaveable { mutableStateOf<String?>(null) }
+    var scanTarget by rememberSaveable { mutableStateOf<String?>(null) }
     val libraryNames = state.libraries.orEmpty().map { it.name }
+
+    scanTarget
+        ?.let { name -> state.libraries.orEmpty().firstOrNull { it.name == name } }
+        ?.let { library ->
+            library.itemId?.let { itemId ->
+                ScanLibraryDialog(
+                    itemId = itemId,
+                    name = library.name,
+                    type = library.type,
+                    onQueued = onScanQueued,
+                    onDismiss = { scanTarget = null },
+                )
+            }
+        }
 
     renameTarget
         ?.takeIf { it in libraryNames }
@@ -246,7 +261,7 @@ private fun LibrariesContent(
                         library = library,
                         enabled = !state.isBusy,
                         onClick = { onOpenLibrary(library.name) },
-                        onScan = { library.itemId?.let(onScanLibrary) },
+                        onScan = { if (library.itemId != null) scanTarget = library.name },
                         onEditImage = { library.itemId?.let(onEditImage) },
                         onRename = { renameTarget = library.name },
                         onRemove = { removeTarget = library.name },

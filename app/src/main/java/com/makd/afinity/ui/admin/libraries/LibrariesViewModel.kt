@@ -41,7 +41,7 @@ enum class LibraryScanState {
 }
 
 enum class LibrariesMessage {
-    SCAN_STARTED,
+    REFRESH_QUEUED,
     COMMAND_FAILED,
 }
 
@@ -119,15 +119,9 @@ constructor(
         }
     }
 
-    fun scanLibrary(itemId: UUID) {
-        viewModelScope.launch {
-            if (adminRepository.scanLibrary(itemId).isSuccess) {
-                _messages.tryEmit(LibrariesMessage.SCAN_STARTED)
-                followScan()
-            } else {
-                _messages.tryEmit(LibrariesMessage.COMMAND_FAILED)
-            }
-        }
+    fun onScanQueued() {
+        _messages.tryEmit(LibrariesMessage.REFRESH_QUEUED)
+        viewModelScope.launch { followScan() }
     }
 
     fun rename(name: String, newName: String) {

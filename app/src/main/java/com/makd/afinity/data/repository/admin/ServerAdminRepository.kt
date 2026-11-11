@@ -5,6 +5,7 @@ import com.makd.afinity.data.models.admin.ActivityEntry
 import com.makd.afinity.data.models.admin.ActivityFilter
 import com.makd.afinity.data.models.admin.ActivityToday
 import com.makd.afinity.data.models.admin.LibraryOptionsDocument
+import com.makd.afinity.data.models.admin.LibraryProviders
 import com.makd.afinity.data.models.admin.ServerConfigSource
 import com.makd.afinity.data.models.admin.ServerFolder
 import com.makd.afinity.data.models.admin.UserPolicyDocument
@@ -138,6 +139,11 @@ interface ServerAdminRepository {
 
     suspend fun updateLibraryOptions(name: String, changes: Map<String, JsonElement>): Result<Unit>
 
+    suspend fun getLibraryProviders(
+        collectionType: String?,
+        isNewLibrary: Boolean,
+    ): Result<LibraryProviders>
+
     suspend fun getPluginSettingsPages(): Result<Map<UUID, String>>
 
     suspend fun setPluginEnabled(id: UUID, version: String, enabled: Boolean): Result<Unit>
@@ -197,8 +203,6 @@ interface ServerAdminRepository {
     suspend fun shutdownServer(): Result<Unit>
 
     suspend fun scanAllLibraries(): Result<Unit>
-
-    suspend fun scanLibrary(itemId: UUID): Result<Unit>
 
     suspend fun getLibraryImageTags(itemIds: List<UUID>): Result<Map<UUID, String>>
 

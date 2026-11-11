@@ -131,13 +131,14 @@ class AddLibraryViewModel @Inject constructor(private val adminRepository: Serve
         ConfigFormEditor(
             scope = viewModelScope,
             loadForm = {
-                val spec = libraryOptionsForm(type.collectionType?.serialName)
-                Result.success(
+                val collectionType = type.collectionType?.serialName
+                adminRepository.getLibraryProviders(collectionType, isNewLibrary = true).map {
+                    providers ->
                     LoadedConfigForm(
-                        spec = optionsLoader.resolve(spec),
-                        document = newLibraryDefaults(),
+                        spec = optionsLoader.resolve(libraryOptionsForm(collectionType, providers)),
+                        document = normalizeProviders(newLibraryDefaults(), providers),
                     )
-                )
+                }
             },
             saveChanges = { Result.success(Unit) },
         )
