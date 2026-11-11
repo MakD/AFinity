@@ -265,10 +265,7 @@ fun LibraryContentScreen(
                                             is AfinityVideo -> playVideo(item)
                                             is AfinityFolder -> onFolderClick(item)
 
-                                            else -> {
-                                                viewModel.onItemClick(item)
-                                                onItemClick(item)
-                                            }
+                                            else -> onItemClick(item)
                                         }
                                     },
                                 )

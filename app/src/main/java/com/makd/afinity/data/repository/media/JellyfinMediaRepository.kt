@@ -903,9 +903,6 @@ constructor(
                         )
                             true
                         else if (searchTerm != null) true else null,
-                collapseBoxSetItems =
-                    if (includeItemTypes.size == 1 && includeItemTypes.contains("SERIES")) false
-                    else null,
                 genres = criteria.genres,
                 years = criteria.years,
                 isFavorite = criteria.isFavorite,

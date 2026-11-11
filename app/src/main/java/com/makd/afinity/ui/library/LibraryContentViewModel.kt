@@ -523,11 +523,6 @@ constructor(
         }
     }
 
-    fun onItemClick(item: AfinityItem) {
-        Timber.d("Item clicked: ${item.name} (${item.id})")
-        // TODO: Navigate to item detail screen
-    }
-
     fun resolveVideoPlayback(video: AfinityVideo, onResolved: (String, Long) -> Unit) {
         viewModelScope.launch {
             val detailed =
