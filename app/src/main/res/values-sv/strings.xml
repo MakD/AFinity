@@ -2375,7 +2375,6 @@
     <string name="libraries_scanning_fmt">Skannar: %1$d</string>
     <string name="libraries_scan_all">Skanna alla</string>
     <string name="library_scan">Skanna bibliotek</string>
-    <string name="library_scan_started">Skanningen har startat</string>
     <string name="library_scanning_progress_fmt">Skannar · %1$d %%</string>
     <string name="library_edit_image">Redigera bild</string>
     <string name="library_type_folders_fmt">%1$s · Mappar: %2$d</string>
