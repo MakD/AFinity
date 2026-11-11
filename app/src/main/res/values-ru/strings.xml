@@ -2654,8 +2654,8 @@
     <string name="perm_shared_devices_summary">DLNA-устройства считаются совместно используемыми, пока какой-либо пользователь не начнет ими управлять.</string>
     <string name="section_perm_limits">Ограничения</string>
     <string name="perm_max_sessions_label">Максимум одновременных сессий пользователя</string>
-    <string name="perm_max_sessions_hint">Задайте максмальное количество одновременных сессий пользователя. Значение 0 отключит эту функцию.</string>
-    <string name="perm_lockout_label">Неудачные попытки входа до блокировки польщователя</string>
+    <string name="perm_max_sessions_hint">Задайте максимальное количество одновременных сессий пользователя. Значение 0 отключит эту функцию.</string>
+    <string name="perm_lockout_label">Неудачные попытки входа до блокировки пользователя</string>
     <string name="perm_lockout_hint">Определите, сколько неудачных попыток входа можно сделать до блокировки. Значение 0 означает наследование стандартных значений в 3 попытки для обычных пользователей, и 5 для администраторов. Значение -1 отключит эту функцию.</string>
     <string name="section_perm_devices">Доступ устройств</string>
     <string name="perm_all_devices">Разрешить доступ со всех устройств</string>
@@ -2874,11 +2874,11 @@
     <string name="config_throttling">Ограничить перекодировки</string>
     <string name="config_throttling_summary">Когда перекодировка или ремуксинг достаточно опережают текущую позицию воспроизведения, процесс приостанавливается для снижения потребления ресурсов. Это особенно полезно при просмотре без частых перемоток. Отключите параметр, если возникают проблемы с воспроизведением.</string>
     <string name="config_throttle_delay">Ограничить после</string>
-    <string name="config_throttle_delay_summary">Время в секундах, после которого приостанавливается перекодирование. Оно должно быть достаточно большим, чтобы клиентмог поддерживать достаточный буфер. Работает только при включенном ограничении.</string>
+    <string name="config_throttle_delay_summary">Время в секундах, после которого приостанавливается перекодирование. Оно должно быть достаточно большим, чтобы клиент мог поддерживать достаточный буфер. Работает только при включенном ограничении.</string>
     <string name="config_segment_deletion">Удалять сегменты</string>
     <string name="config_segment_deletion_summary">Удалять старые сегменты после их получения клиентом. Это позволяет избежать необходимости хранить весь перекодированный файл на диске. Отключите параметр, если возникают проблемы с воспроизведением.</string>
     <string name="config_segment_keep">Время хранения сегментов</string>
-    <string name="config_segment_keep_summary">Время в секундах, в течение которого сегментыдолжны храниться после получения клиентом. Работает только при включенном удалении сегментов.</string>
+    <string name="config_segment_keep_summary">Время в секундах, в течение которого сегменты должны храниться после получения клиентом. Работает только при включенном удалении сегментов.</string>
     <string name="config_section_tone_mapping">Тон-маппниг</string>
     <string name="config_tonemapping">Включить тонмаппинг</string>
     <string name="config_tonemapping_summary">Тонмаппинг может преобразовать динамический диапазон видео из HDR в SDR, сохраняя детали изображения и цвета, которые являются очень важной информацией для представления исходной картины. На данный момент работает только с 10-битными HDR10, HLG, и DoVi. Требуется соответствующая среда выполнения GPGPU.</string>
@@ -2916,7 +2916,7 @@
     <string name="config_downmix_boost">Усиление звука при понижающем микшировании</string>
     <string name="config_downmix_boost_summary">Коэффициент усиления звука при понижающем до стерео микшировании. Значение 1 сохраняет исходную громкость.</string>
     <string name="config_downmix_algorithm">Алгоритм смешивания стерео</string>
-    <string name="config_downmix_algorithm_summary">Алгоритм, используемый для смпшивания многоканального аудио в стерео.</string>
+    <string name="config_downmix_algorithm_summary">Алгоритм, используемый для смешивания многоканального аудио в стерео.</string>
     <string name="config_hls_audio_seek">Стратегия перемотки аудио</string>
     <string name="config_hls_audio_seek_summary">Стратегия, используемая для перемотки HLS-потоков.</string>
     <string name="config_section_subtitles">Субтитры и шрифты</string>
@@ -2967,7 +2967,7 @@
     <string name="library_opt_refresh_30">Каждые 30 дней</string>
     <string name="library_opt_refresh_60">Каждые 60 дней</string>
     <string name="library_opt_refresh_90">Каждые 90 дней</string>
-    <string name="library_opt_save_local">Схоранять иллюстрации внутри медиапапок</string>
+    <string name="library_opt_save_local">Сохранять иллюстрации внутри медиапапок</string>
     <string name="library_opt_save_local_summary">Сохранение иллюстрации внутри медиапапкок позволит легко их редактировать.</string>
     <string name="library_opt_section_metadata">Метаданные</string>
     <string name="library_opt_language">Предпочитаемый язык для загрузки</string>
@@ -3050,7 +3050,7 @@
     <string name="config_net_bind_addresses">Привязка к адресу в локальной сети</string>
     <string name="config_net_bind_addresses_summary">Переопределение локального IP-адреса для HTTP-сервера. Если поле пустое, то сервер будет привязан ко всем доступным адресам. При изменении этого значения потребуется перезапуск.</string>
     <string name="config_net_lan_subnets">Домашние сети</string>
-    <string name="config_net_lan_subnets_summary">Список разделенных запятыми IP-адресов или записей IP/маска подсети для сетей, которые будут считаться находящимися в локальной, когда принудительно ограничивается пропусаная способность и удаленный доступ. Если поле пустое, то все адреса из RFC1918 считаются локальными.</string>
+    <string name="config_net_lan_subnets_summary">Список разделенных запятыми IP-адресов или записей IP/маска подсети для сетей, которые будут считаться находящимися в локальной, когда принудительно ограничивается пропускная способность и удаленный доступ. Если поле пустое, то все адреса из RFC1918 считаются локальными.</string>
     <string name="config_section_net_https">Настройки HTTPS</string>
     <string name="config_net_enable_https">Включить HTTPS</string>
     <string name="config_net_enable_https_summary">Прослушивать указанный HTTPS-порт. Чтобы параметр вступил в силу, необходимо предоставить действительный сертификат.</string>
@@ -3447,13 +3447,13 @@
         <item quantity="many">Будет удалено %1$d загрузок и освобождено %2$s пространства. Вы сможете повторно скачать их позже.</item>
         <item quantity="other">Будет удалено %1$d загрузок и освобождено %2$s пространства. Вы сможете повторно скачать их позже.</item>
     </plurals>
-    <string name="download_confirm_cancel_one">Останавливает скачивание.</string>
-    <string name="download_confirm_cancel_one_fmt">Останавливает скачивание и удаляет уже загруженные %1$s.</string>
+    <string name="download_confirm_cancel_one">Скачивание будет остановлено.</string>
+    <string name="download_confirm_cancel_one_fmt">Скачивание будет остановлено и уже загруженные %1$s будут удалены.</string>
     <plurals name="download_confirm_cancel_many_fmt">
-        <item quantity="one">Останаваливает %1$d скачивание. Завершенные загрузки остаются.</item>
-        <item quantity="few">Останаваливает %1$d скачивания. Завершенные загрузки остаются.</item>
-        <item quantity="many">Останаваливает %1$d скачиваний. Завершенные загрузки остаются.</item>
-        <item quantity="other">Останаваливает %1$d скачиваний. Завершенные загрузки остаются.</item>
+        <item quantity="one">%1$d скачивание будет остановлено. Завершенные загрузки остаются.</item>
+        <item quantity="few">%1$d скачивания будут остановлены. Завершенные загрузки остаются.</item>
+        <item quantity="many">%1$d скачиваний будет остановлено. Завершенные загрузки остаются.</item>
+        <item quantity="other">%1$d скачиваний будет остановлено. Завершенные загрузки остаются.</item>
     </plurals>
     <string name="action_stop_download">Остановить скачивание</string>
     <string name="action_keep_downloading">Продолжить скачивание</string>
@@ -3682,4 +3682,10 @@
     <string name="seerr_watchlist_sync_title">Синхронизировать запланированные просмотры</string>
     <string name="section_seerr_watchlist_not_in_library">Еще нет в вашей библиотеке</string>
     <string name="section_seerr_watchlist">Ваши запланированные</string>
+    <string name="settings_group_theme_music">Тематическая музыка</string>
+    <string name="pref_theme_music_title">Включать на страницах с подробностями</string>
+    <string name="pref_theme_music_summary">Тематическая музыка для фильмов, сериалов и коллекций</string>
+    <string name="pref_theme_music_volume_title">Громкость</string>
+    <string name="pref_theme_music_mobile_data_title">Запускать, находясь в мобильной сети</string>
+    <string name="pref_theme_music_mobile_data_summary">До ~3МБ на трек. При выключении работает только по Wi-Fi</string>
 </resources>
