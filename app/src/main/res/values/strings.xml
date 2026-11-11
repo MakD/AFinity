@@ -2353,6 +2353,7 @@
     <string name="cd_library_folder_remove">Remove folder</string>
     <string name="library_options_title">Options</string>
     <string name="library_options_load_failed">Couldn\'t load the options</string>
+    <string name="library_options_new_content_note">Changes to metadata or artwork downloading settings will only apply to new content added to your library. To apply the changes to existing titles, you\'ll need to refresh their metadata manually.</string>
     <string name="library_rename_title">Rename library</string>
     <string name="library_rename_summary">The library is scanned afterwards</string>
     <string name="library_name_label">Name</string>

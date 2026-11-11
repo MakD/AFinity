@@ -237,7 +237,7 @@ fun ConfigFormSections(
 }
 
 @Composable
-private fun FormNote(text: String) {
+internal fun FormNote(text: String) {
     Surface(
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLow,

@@ -47,6 +47,7 @@ import com.makd.afinity.ui.admin.config.ConfigField
 import com.makd.afinity.ui.admin.config.ConfigFormSections
 import com.makd.afinity.ui.admin.config.ConfigFormUiState
 import com.makd.afinity.ui.admin.config.ConfigSaveButton
+import com.makd.afinity.ui.admin.config.FormNote
 import com.makd.afinity.ui.admin.config.ProviderEdit
 import com.makd.afinity.ui.admin.config.ProviderListField
 import com.makd.afinity.ui.components.FullScreenEmpty
@@ -54,6 +55,7 @@ import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import kotlinx.coroutines.delay
+import org.jellyfin.sdk.model.api.CollectionTypeOptions
 
 private const val LEADING_OPTION_SECTIONS = 1
 
@@ -251,6 +253,7 @@ private fun LibraryDetailContent(
                     )
 
                     if (optionsReady) {
+                        FormNote(text = stringResource(R.string.library_options_new_content_note))
                         ConfigFormSections(
                             state = formState,
                             enabled = optionsEditable,
@@ -264,12 +267,14 @@ private fun LibraryDetailContent(
                         )
                     }
 
-                    LibraryFolders(
-                        locations = loaded.locations,
-                        enabled = !state.isBusy,
-                        onAdd = { showAddFolder = true },
-                        onRemove = { path -> folderToRemove = path },
-                    )
+                    if (loaded.type != CollectionTypeOptions.BOXSETS) {
+                        LibraryFolders(
+                            locations = loaded.locations,
+                            enabled = !state.isBusy,
+                            onAdd = { showAddFolder = true },
+                            onRemove = { path -> folderToRemove = path },
+                        )
+                    }
 
                     if (optionsReady) {
                         ConfigFormSections(

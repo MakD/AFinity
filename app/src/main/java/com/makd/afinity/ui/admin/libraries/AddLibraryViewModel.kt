@@ -37,6 +37,7 @@ enum class NewLibraryType(
 
 data class AddLibraryUiState(
     val name: String = "",
+    val nameEdited: Boolean = false,
     val type: NewLibraryType = NewLibraryType.MOVIES,
     val paths: List<String> = emptyList(),
     val existingNames: Set<String> = emptySet(),
@@ -46,7 +47,7 @@ data class AddLibraryUiState(
         get() = name.trim().lowercase() in existingNames
 
     val hasInput: Boolean
-        get() = name.isNotBlank() || paths.isNotEmpty()
+        get() = nameEdited || paths.isNotEmpty()
 
     val isComplete: Boolean
         get() = name.isNotBlank() && !isDuplicateName && paths.isNotEmpty()
@@ -83,7 +84,11 @@ class AddLibraryViewModel @Inject constructor(private val adminRepository: Serve
         adminRepository.getServerFolders(path)
 
     fun setName(name: String) {
-        _state.update { it.copy(name = name) }
+        _state.update { it.copy(name = name, nameEdited = name.isNotBlank()) }
+    }
+
+    fun applySuggestedName(suggested: String) {
+        _state.update { if (it.nameEdited) it else it.copy(name = suggested) }
     }
 
     fun setType(type: NewLibraryType) {

@@ -66,6 +66,10 @@ fun AddLibraryScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val commandFailedMessage = stringResource(R.string.session_command_failed)
     val currentOnBackClick by rememberUpdatedState(onBackClick)
+    val suggestedName =
+        if (state.type == NewLibraryType.MIXED) "" else stringResource(state.type.label)
+
+    LaunchedEffect(suggestedName) { viewModel.applySuggestedName(suggestedName) }
 
     LaunchedEffect(Unit) {
         viewModel.commandError.collect { snackbarHostState.showSnackbar(commandFailedMessage) }
