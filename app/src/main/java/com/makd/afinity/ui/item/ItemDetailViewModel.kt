@@ -1323,10 +1323,18 @@ constructor(
         return try {
             val userId = authRepository.currentUser.value?.id ?: return null
             val item =
-                databaseRepository.getMovie(itemId, userId)
-                    ?: databaseRepository.getShow(itemId, userId)
-                    ?: databaseRepository.getSeason(itemId, userId)
-                    ?: databaseRepository.getEpisode(itemId, userId)
+                when (itemType?.uppercase()) {
+                    "MOVIE" -> databaseRepository.getMovie(itemId, userId)
+                    "SERIES",
+                    "SHOW" -> databaseRepository.getShow(itemId, userId)
+                    "SEASON" -> databaseRepository.getSeason(itemId, userId)
+                    "EPISODE" -> databaseRepository.getEpisode(itemId, userId)
+                    else ->
+                        databaseRepository.getMovie(itemId, userId)
+                            ?: databaseRepository.getShow(itemId, userId)
+                            ?: databaseRepository.getSeason(itemId, userId)
+                            ?: databaseRepository.getEpisode(itemId, userId)
+                }
                     ?: return null
             if (item is AfinitySeason && item.runtimeTicks == 0L) {
                 val seriesRuntime =

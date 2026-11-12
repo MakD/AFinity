@@ -74,6 +74,7 @@ import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.common.DrawerLibrariesMode
 import com.makd.afinity.data.models.common.HeroStyle
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
@@ -2632,6 +2633,7 @@ private fun NavController.navigateToItem(item: AfinityItem) {
                 when (item) {
                     is AfinityShow -> "Series"
                     is AfinitySeason -> "Season"
+                    is AfinityEpisode -> "Episode"
                     else -> null
                 },
             seriesId = (item as? AfinitySeason)?.seriesId?.toString(),
