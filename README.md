@@ -481,30 +481,14 @@ Run `bash setup-git.sh` once after cloning, then:
 
 ![Alt](https://repobeats.axiom.co/api/embed/c0c6ab47b71fd258c83ab3175cb7df5845ff835d.svg "Repobeats analytics image")
 
-<table>
-  <tr>
-    <td width="50%" align="center">
-      <b> </b><br>
-      <a href="https://star-history.com/#MakD/AFinity&Date">
-        <picture>
-          <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=MakD/AFinity&type=Date&legend=top-left&theme=dark" />
-          <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=MakD/AFinity&type=Date&legend=top-left" />
-          <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=MakD/AFinity&type=Date&legend=top-left" width="100%" />
-        </picture>
-      </a>
-    </td>
-    <td width="50%" align="center">
-      <b> </b><br>
-      <a href="https://afinity-downloads.vercel.app/#MakD/AFinity&type=date&legend=top-left">
-        <picture>
-          <source media="(prefers-color-scheme: dark)" srcset="https://afinity-downloads.vercel.app/svg?repos=MakD/AFinity&type=date&theme=dark&legend=top-left" />
-          <source media="(prefers-color-scheme: light)" srcset="https://afinity-downloads.vercel.app/svg?repos=MakD/AFinity&type=date&legend=top-left" />
-          <img alt="Download History Chart" src="https://afinity-downloads.vercel.app/svg?repos=MakD/AFinity&type=date&legend=top-left" width="100%" />
-        </picture>
-      </a>
-    </td>
-  </tr>
-</table>
+<a href="https://star-history.com/#MakD/AFinity&Date"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=MakD/AFinity&type=Date&legend=top-left&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=MakD/AFinity&type=Date&legend=top-left" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=MakD/AFinity&type=Date&legend=top-left" width="49%" /></picture></a>
+<a href="https://afinity-downloads.vercel.app/#MakD/AFinity&type=date&legend=top-left"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://afinity-downloads.vercel.app/svg?repos=MakD/AFinity&type=date&theme=dark&legend=top-left" />
+    <source media="(prefers-color-scheme: light)" srcset="https://afinity-downloads.vercel.app/svg?repos=MakD/AFinity&type=date&legend=top-left" />
+    <img alt="Download History Chart" src="https://afinity-downloads.vercel.app/svg?repos=MakD/AFinity&type=date&legend=top-left" width="49%" /></picture></a>
 
 &nbsp;
 
