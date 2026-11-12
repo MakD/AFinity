@@ -57,6 +57,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -101,6 +102,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicSearchResults
+import com.makd.afinity.navigation.LocalBlurUnwatchedEpisodes
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
@@ -936,6 +938,8 @@ private fun GenreCard(genre: String, onClick: () -> Unit, isAudiobookshelf: Bool
 @Composable
 private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
     val ratingScale = rememberRatingMetadataScale()
+    val shouldBlurEpisode =
+        item is AfinityEpisode && LocalBlurUnwatchedEpisodes.current && !item.played
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -960,7 +964,8 @@ private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
                         imageUrl = item.images.primaryImageUrl,
                         contentDescription = item.name,
                         blurHash = item.images.primaryBlurHash,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier =
+                            Modifier.fillMaxSize().blur(if (shouldBlurEpisode) 12.dp else 0.dp),
                         contentScale = ContentScale.Crop,
                         targetWidth = imgTargetW,
                         targetHeight = imgTargetH,

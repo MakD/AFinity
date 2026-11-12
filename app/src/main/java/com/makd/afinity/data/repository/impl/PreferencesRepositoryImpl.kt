@@ -191,6 +191,7 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val BUFFER_SIZE_MB = intPreferencesKey("buffer_size_mb")
 
         val SHOW_RATINGS = booleanPreferencesKey("show_ratings")
+        val BLUR_UNWATCHED_EPISODES = booleanPreferencesKey("blur_unwatched_episodes")
         val SHOW_AWARDS = booleanPreferencesKey("show_awards")
         val THEME_MUSIC_ENABLED = booleanPreferencesKey("theme_music_enabled")
         val THEME_MUSIC_VOLUME = intPreferencesKey("theme_music_volume")
@@ -1361,6 +1362,14 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         return dataStore.data.first()[Keys.SHOW_RATINGS] ?: true
     }
 
+    override suspend fun setBlurUnwatchedEpisodes(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.BLUR_UNWATCHED_EPISODES] = enabled }
+    }
+
+    override suspend fun getBlurUnwatchedEpisodes(): Boolean {
+        return dataStore.data.first()[Keys.BLUR_UNWATCHED_EPISODES] ?: false
+    }
+
     override suspend fun setShowAwards(enabled: Boolean) {
         dataStore.edit { preferences -> preferences[Keys.SHOW_AWARDS] = enabled }
     }
@@ -1453,6 +1462,12 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
     override fun getShowRatingsFlow(): Flow<Boolean> {
         return dataStore.data.map { preferences -> preferences[Keys.SHOW_RATINGS] ?: true }
+    }
+
+    override fun getBlurUnwatchedEpisodesFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.BLUR_UNWATCHED_EPISODES] ?: false
+        }
     }
 
     override suspend fun setImageCacheEnabled(enabled: Boolean) {

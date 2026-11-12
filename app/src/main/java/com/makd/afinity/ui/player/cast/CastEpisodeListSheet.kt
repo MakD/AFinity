@@ -33,6 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
@@ -58,6 +59,7 @@ import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.navigation.LocalBlurUnwatchedEpisodes
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AsyncImage
@@ -157,10 +159,12 @@ private fun CastEpisodeCard(
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest)
         ) {
+            val shouldBlur =
+                LocalBlurUnwatchedEpisodes.current && !episode.played && !isCurrentlyPlaying
             AsyncImage(
                 imageUrl = episode.images.primaryImageUrl,
                 contentDescription = episode.name,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().blur(if (shouldBlur) 12.dp else 0.dp),
                 contentScale = ContentScale.Crop,
                 blurHash = episode.images.primaryBlurHash,
                 targetWidth = 140.dp,
