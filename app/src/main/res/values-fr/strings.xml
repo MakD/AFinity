@@ -1764,15 +1764,12 @@
     <string name="task_result_label">Résultat</string>
     <string name="task_finished_label">Terminée</string>
     <string name="task_took_label">Durée</string>
-    <string name="task_duration_under_second">Moins d\'une seconde</string>
     <string name="task_not_found">Cette tâche n\'est plus sur le serveur</string>
     <string name="task_schedule_title">Planification</string>
     <string name="task_triggers_hint">Les heures utilisent l\'horloge du serveur, pas celle de cet appareil.</string>
     <string name="task_schedule_empty">Aucune planification. Cette tâche ne s\'exécute que lorsque vous la lancez.</string>
     <string name="task_schedule_add">Ajouter une planification</string>
     <string name="task_schedule_edit">Modifier la planification</string>
-    <string name="task_schedule_manual">Manuel</string>
-    <string name="task_schedule_more_fmt">%1$s +%2$d</string>
     <string name="task_trigger_daily_fmt">Quotidiennement à %1$s</string>
     <string name="task_trigger_weekly_fmt">Chaque %1$s à %2$s</string>
     <string name="task_trigger_interval_fmt">Toutes les %1$s</string>
@@ -2365,10 +2362,6 @@
     <string name="task_minutes_ago">il y a environ %1$d min</string>
     <string name="task_hours_ago">il y a environ %1$d h</string>
     <string name="task_days_ago">il y a %1$d j</string>
-    <string name="task_duration_less_than_minute">, en moins d\'une minute</string>
-    <string name="task_duration_minutes">, en %1$d min</string>
-    <string name="task_duration_hours_minutes">, en %1$d h %2$d min</string>
-    <string name="task_last_ran_fmt">Dernière exécution %1$s%2$s</string>
     <string name="task_stopping">Arrêt en cours…</string>
     <string name="task_status_failed">Échec</string>
     <string name="task_status_failed_reason">Échec · %1$s</string>

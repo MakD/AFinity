@@ -26,7 +26,6 @@ private const val MIN_LIMIT_HALF_HOURS = 2.0
 private const val MAX_LIMIT_HALF_HOURS = 2.0 * 24 * 365
 private const val NANOS_PER_TICK = 100L
 private const val SECONDS_PER_MINUTE = 60L
-private const val SECONDS_PER_HOUR = 60 * SECONDS_PER_MINUTE
 
 @Composable
 internal fun formatTimeOfDay(hour: Int, minute: Int): String =
@@ -79,19 +78,11 @@ private fun formatDurationMinutes(totalMinutes: Long, width: MeasureFormat.Forma
 internal fun formatDurationTicks(ticks: Long): String =
     formatDurationMinutes(ticks / TICKS_PER_MINUTE)
 
-internal fun formatRunDuration(start: LocalDateTime, end: LocalDateTime): String? {
-    val totalSeconds = ChronoUnit.SECONDS.between(start, end)
-    if (totalSeconds < 1) return null
-    val hours = totalSeconds / SECONDS_PER_HOUR
-    val minutes = totalSeconds % SECONDS_PER_HOUR / SECONDS_PER_MINUTE
-    val seconds = totalSeconds % SECONDS_PER_MINUTE
-    val measures = buildList {
-        if (hours > 0) add(Measure(hours, MeasureUnit.HOUR))
-        if (minutes > 0) add(Measure(minutes, MeasureUnit.MINUTE))
-        if (hours == 0L && seconds > 0) add(Measure(seconds, MeasureUnit.SECOND))
-    }
-    return MeasureFormat.getInstance(Locale.getDefault(), MeasureFormat.FormatWidth.WIDE)
-        .formatMeasures(*measures.toTypedArray())
+@Composable
+internal fun formatRunDuration(start: LocalDateTime, end: LocalDateTime): String {
+    val seconds = ChronoUnit.SECONDS.between(start, end)
+    return if (seconds < SECONDS_PER_MINUTE) stringResource(R.string.task_duration_under_minute)
+    else formatDurationCompact(seconds / SECONDS_PER_MINUTE)
 }
 
 @Composable
@@ -104,13 +95,6 @@ internal fun formatFinishTime(end: LocalDateTime): String {
         today.minusDays(1) -> stringResource(R.string.task_finished_yesterday_fmt, time)
         else -> dateAndTime
     }
-}
-
-@Composable
-internal fun List<TaskTriggerInfo>.scheduleSummary(): String {
-    val first = firstOrNull() ?: return stringResource(R.string.task_schedule_manual)
-    return if (size == 1) first.label()
-    else stringResource(R.string.task_schedule_more_fmt, first.label(), size - 1)
 }
 
 internal fun DayOfWeek.displayName(): String =

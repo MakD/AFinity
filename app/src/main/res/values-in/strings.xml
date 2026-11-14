@@ -804,10 +804,6 @@
     <string name="task_minutes_ago">sekitar %1$dm yang lalu</string>
     <string name="task_hours_ago">sekitar %1$dh yang lalu</string>
     <string name="task_days_ago">%1$dd yang lalu</string>
-    <string name="task_duration_less_than_minute">, memakan waktu kurang dari satu menit</string>
-    <string name="task_duration_minutes">, memakan waktu %1$dm</string>
-    <string name="task_duration_hours_minutes">, memakan waktu %1$dh %2$dm</string>
-    <string name="task_last_ran_fmt">Terakhir dijalankan %1$s%2$s</string>
     <string name="section_administration">Administrasi</string>
     <string name="cd_control_panel">Panel Kontrol</string>
     <string name="action_open_control_panel">Buka Panel Kontrol</string>
@@ -2088,15 +2084,12 @@
     <string name="task_result_label">Hasil</string>
     <string name="task_finished_label">Selesai</string>
     <string name="task_took_label">Membutuhkan waktu</string>
-    <string name="task_duration_under_second">Kurang dari satu detik</string>
     <string name="task_not_found">Tugas ini tidak ada lagi di server</string>
     <string name="task_schedule_title">Jadwal</string>
     <string name="task_triggers_hint">Waktu menggunakan jam server, bukan perangkat ini.</string>
     <string name="task_schedule_empty">Tidak ada jadwal. Tugas ini hanya berjalan saat Anda memulainya.</string>
     <string name="task_schedule_add">Tambah jadwal</string>
     <string name="task_schedule_edit">Edit jadwal</string>
-    <string name="task_schedule_manual">Manual</string>
-    <string name="task_schedule_more_fmt">%1$s +%2$d</string>
     <string name="task_trigger_daily_fmt">Setiap hari pukul %1$s</string>
     <string name="task_trigger_weekly_fmt">Setiap %1$s pukul %2$s</string>
     <string name="task_trigger_interval_fmt">Setiap %1$s</string>

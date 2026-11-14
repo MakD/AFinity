@@ -257,11 +257,7 @@ private fun LastRunGroup(task: TaskInfo) {
                 icon = painterResource(id = R.drawable.ic_timer),
                 title = stringResource(R.string.task_took_label),
                 trailing = {
-                    FactValue(
-                        text =
-                            formatRunDuration(result.startTimeUtc, result.endTimeUtc)
-                                ?: stringResource(R.string.task_duration_under_second)
-                    )
+                    FactValue(text = formatRunDuration(result.startTimeUtc, result.endTimeUtc))
                 },
             )
         }

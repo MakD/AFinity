@@ -629,10 +629,6 @@
     <string name="task_minutes_ago">hace %1$dm</string>
     <string name="task_hours_ago">hace %1$dh</string>
     <string name="task_days_ago">hace %1$dd</string>
-    <string name="task_duration_less_than_minute">, tomando menos de un minuto</string>
-    <string name="task_duration_minutes">, tomando %1$dm</string>
-    <string name="task_duration_hours_minutes">, tomando %1$dh %2$dm</string>
-    <string name="task_last_ran_fmt">Ultima ejecucion %1$s%2$s</string>
     <string name="section_administration">Administración</string>
     <string name="cd_control_panel">Panel de control</string>
     <string name="action_open_control_panel">Abrir panel de control</string>

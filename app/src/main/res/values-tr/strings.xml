@@ -620,10 +620,6 @@
     <string name="task_minutes_ago">%1$ddk önce</string>
     <string name="task_hours_ago">%1$dsaat önce</string>
     <string name="task_days_ago">%1$dgün önce</string>
-    <string name="task_duration_less_than_minute">Hemen hazır olacak</string>
-    <string name="task_duration_minutes">%1$ddakika sürecek</string>
-    <string name="task_duration_hours_minutes">%1$dsaat %2$ddk sürecek</string>
-    <string name="task_last_ran_fmt">En son çalıştırılma: %1$s%2$s</string>
     <string name="section_administration">Yönetim</string>
     <string name="cd_control_panel">Kontrol paneli</string>
     <string name="action_open_control_panel">Kontrol panelini aç</string>

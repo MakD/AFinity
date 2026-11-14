@@ -816,10 +816,6 @@
     <string name="task_minutes_ago">för ungefär %1$dm sedan</string>
     <string name="task_hours_ago">för ungefär %1$dh sedan</string>
     <string name="task_days_ago">för %1$dd sedan</string>
-    <string name="task_duration_less_than_minute">, tar mindre än en minut</string>
-    <string name="task_duration_minutes">, tar %1$dm</string>
-    <string name="task_duration_hours_minutes">, tar %1$dh %2$dm</string>
-    <string name="task_last_ran_fmt">Kördes senast %1$s%2$s</string>
     <string name="section_administration">Administration</string>
     <string name="cd_control_panel">Kontrollpanel</string>
     <string name="action_open_control_panel">Öppna kontrollpanelen</string>
@@ -2398,14 +2394,12 @@
     <string name="task_result_label">Resultat</string>
     <string name="task_finished_label">Slutförd</string>
     <string name="task_took_label">Tog</string>
-    <string name="task_duration_under_second">Mindre än en sekund</string>
     <string name="task_not_found">Den här uppgiften finns inte längre på servern</string>
     <string name="task_schedule_title">Schema</string>
     <string name="task_triggers_hint">Tider använder serverns klocka, inte den här enhetens.</string>
     <string name="task_schedule_empty">Inget schema. Uppgiften körs bara när du startar den.</string>
     <string name="task_schedule_add">Lägg till schema</string>
     <string name="task_schedule_edit">Redigera schema</string>
-    <string name="task_schedule_manual">Manuellt</string>
     <string name="task_trigger_daily_fmt">Dagligen kl. %1$s</string>
     <string name="task_trigger_weekly_fmt">Varje %1$s kl. %2$s</string>
     <string name="task_trigger_interval_fmt">Varje %1$s</string>
@@ -3098,7 +3092,6 @@
     <string name="activity_tile_at_least_fmt">%1$d+</string>
     <string name="plugin_update_versions_fmt">%1$s → %2$s</string>
     <string name="plugin_catalog_version_fmt">%1$s · %2$s</string>
-    <string name="task_schedule_more_fmt">%1$s +%2$d</string>
     <string name="task_schedule_summary_fmt">%1$s.</string>
     <string name="parental_schedule_fmt">%1$s – %2$s</string>
     <string name="config_hevc_10bit">HEVC 10bit</string>

@@ -876,12 +876,10 @@
     <string name="pref_video_caching_summary">Legutóbb lejátszott videókat tárolja, így a pozícióváltás és az ismételt lejátszás során nem kell újra letölteni</string>
     <string name="cd_decrease_limit">Korlát csökkentése</string>
     <string name="cd_increase_limit">Korlát növelése</string>
-    <string name="task_last_ran_fmt">%1$s%2$s futott utoljára</string>
     <string name="task_just_now">éppen most</string>
     <string name="task_minutes_ago">%1$d perce</string>
     <string name="task_hours_ago">%1$d órája</string>
     <string name="task_days_ago">%1$d napja</string>
-    <string name="task_duration_less_than_minute">, kevesebb mint egy percet vesz igénybe</string>
     <string name="zoom_fit">Illesztés</string>
     <string name="zoom_zoom">Nagyítás</string>
     <string name="zoom_stretch">Nyújtás</string>
@@ -1091,8 +1089,6 @@
     <string name="server_section_saved">Mentett szerverek</string>
     <string name="error_address_already_exists">A cím már létezik</string>
     <string name="task_never_run">Soha se fusson</string>
-    <string name="task_duration_minutes">, %1$d vesz igénybe</string>
-    <string name="task_duration_hours_minutes">, %1$d óra %2$d percet vesz igénybe</string>
     <string name="section_administration">Adminisztráció</string>
     <string name="action_open_control_panel">Vezérlőpult megnyitása</string>
     <string name="control_panel_active_only">Csak az aktív szerverhez érhető el</string>

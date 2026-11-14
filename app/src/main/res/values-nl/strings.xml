@@ -611,9 +611,6 @@
     <string name="task_minutes_ago">ongeveer %1$d m geleden</string>
     <string name="task_hours_ago">ongeveer %1$d u geleden</string>
     <string name="task_days_ago">%1$d d geleden</string>
-    <string name="task_duration_less_than_minute">, duurde minder dan een minuut</string>
-    <string name="task_duration_minutes">, duurde %1$d m</string>
-    <string name="task_duration_hours_minutes">, duurde %1$d u %2$d m</string>
     <string name="section_administration">Beheer</string>
     <string name="cd_manage_addresses">Adressen beheren</string>
     <string name="cd_add_address">Adres toevoegen</string>
@@ -1013,7 +1010,6 @@
     <string name="tab_abs">ABS</string>
     <string name="task_never_run">Nooit uitgevoerd</string>
     <string name="task_just_now">zojuist</string>
-    <string name="task_last_ran_fmt">Laatst uitgevoerd op %1$s%2$s</string>
     <string name="cd_control_panel">Controlepaneel</string>
     <string name="action_open_control_panel">Controlepaneel openen</string>
     <string name="control_panel_active_only">Alleen beschikbaar voor de actieve server</string>

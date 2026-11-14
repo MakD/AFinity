@@ -647,10 +647,6 @@
     <string name="task_minutes_ago">około %1$dm temu</string>
     <string name="task_hours_ago">około %1$dh temu</string>
     <string name="task_days_ago">%1$dd temu</string>
-    <string name="task_duration_less_than_minute">, trwało mniej niż minutę</string>
-    <string name="task_duration_minutes">, trwało %1$dm</string>
-    <string name="task_duration_hours_minutes">, trwało %1$dh %2$dm</string>
-    <string name="task_last_ran_fmt">Ostatnio uruchamiane %1$s%2$s</string>
     <string name="section_administration">Administracja</string>
     <string name="cd_control_panel">Panel sterowania</string>
     <string name="action_open_control_panel">Otwórz panel sterowania</string>

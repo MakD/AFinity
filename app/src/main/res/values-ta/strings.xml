@@ -645,10 +645,6 @@
     <string name="task_minutes_ago">சுமார் %1$dm முன்பு</string>
     <string name="task_hours_ago">சுமார் %1$dh முன்பு</string>
     <string name="task_days_ago">%1$dd முன்பு</string>
-    <string name="task_duration_less_than_minute">, ஒரு நிமிடத்திற்கும் குறைவான நேரம் எடுக்கும்</string>
-    <string name="task_duration_minutes">, %1$dm எடுக்கிறது</string>
-    <string name="task_duration_hours_minutes">, %1$dh %2$dm எடுக்கிறது</string>
-    <string name="task_last_ran_fmt">கடைசியாக ஓடியது %1$s%2$s</string>
     <string name="section_administration">நிர்வாகம்</string>
     <string name="cd_control_panel">கண்ட்ரோல் பேனல்</string>
     <string name="action_open_control_panel">கண்ட்ரோல் பேனலைத் திறக்கவும்</string>

@@ -41,9 +41,9 @@ import com.makd.afinity.ui.admin.components.AdminPill
 import com.makd.afinity.ui.admin.components.AdminScaffold
 import com.makd.afinity.ui.admin.tasks.TaskTile
 import com.makd.afinity.ui.admin.tasks.TaskTone
+import com.makd.afinity.ui.admin.tasks.formatRunDuration
 import com.makd.afinity.ui.admin.tasks.formatTaskProgress
 import com.makd.afinity.ui.admin.tasks.labelRes
-import com.makd.afinity.ui.admin.tasks.scheduleSummary
 import com.makd.afinity.ui.admin.tasks.taskIconRes
 import com.makd.afinity.ui.components.SETTINGS_EXPANDED_START_PADDING
 import com.makd.afinity.ui.components.SettingsGroup
@@ -51,6 +51,7 @@ import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.settings.servers.utils.formatRelativeTime
 import org.jellyfin.sdk.model.api.TaskCompletionStatus
 import org.jellyfin.sdk.model.api.TaskInfo
+import org.jellyfin.sdk.model.api.TaskResult
 import org.jellyfin.sdk.model.api.TaskState
 
 private val TASK_ACTION_SIZE = 40.dp
@@ -202,6 +203,13 @@ internal fun TaskDivider() {
 }
 
 @Composable
+private fun runDurationText(result: TaskResult): String =
+    stringResource(
+        R.string.task_took_fmt,
+        formatRunDuration(result.startTimeUtc, result.endTimeUtc),
+    )
+
+@Composable
 internal fun TaskRow(
     task: TaskInfo,
     isPending: Boolean,
@@ -224,19 +232,16 @@ internal fun TaskRow(
                 progress?.let { formatTaskProgress(it) }
                     ?: stringResource(R.string.category_running)
             badResult != null ->
-                listOfNotNull(
+                listOf(
                         stringResource(badResult.status.labelRes()),
                         formatRelativeTime(context, badResult.endTimeUtc),
-                        badResult.errorMessage?.trim()?.ifEmpty { null },
+                        runDurationText(badResult),
                     )
                     .joinToString(" · ")
-            else ->
-                listOf(
-                        task.triggers.orEmpty().scheduleSummary(),
-                        result?.let { formatRelativeTime(context, it.endTimeUtc) }
-                            ?: stringResource(R.string.task_never_run),
-                    )
+            result != null ->
+                listOf(formatRelativeTime(context, result.endTimeUtc), runDurationText(result))
                     .joinToString(" · ")
+            else -> stringResource(R.string.task_never_run)
         }
 
     SettingsItem(
