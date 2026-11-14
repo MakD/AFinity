@@ -55,6 +55,7 @@ internal object PortablePreferences {
             spec("libraries_in_drawer", PrefType.BOOLEAN, SettingsSection.APPEARANCE),
             spec("individual_libraries_in_drawer", PrefType.BOOLEAN, SettingsSection.APPEARANCE),
             spec("show_ratings", PrefType.BOOLEAN, SettingsSection.APPEARANCE),
+            spec("blur_unwatched_episodes", PrefType.BOOLEAN, SettingsSection.APPEARANCE),
             spec("combine_library_sections", PrefType.BOOLEAN, SettingsSection.APPEARANCE),
             spec("home_sort_by_date_added", PrefType.BOOLEAN, SettingsSection.APPEARANCE),
             spec("merge_continue_watching_next_up", PrefType.BOOLEAN, SettingsSection.APPEARANCE),

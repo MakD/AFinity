@@ -153,6 +153,7 @@ import timber.log.Timber
 val LocalPlayerOffset = compositionLocalOf { 0.dp }
 val LocalSideSheetEnabled = compositionLocalOf { true }
 val LocalShowRatings = compositionLocalOf { true }
+val LocalBlurUnwatchedEpisodes = compositionLocalOf { false }
 
 val LocalShowAwards = compositionLocalOf { true }
 
@@ -184,6 +185,7 @@ fun MainNavigation(
         viewModel.audiobookshelfPlaybackManager.playbackState.collectAsStateWithLifecycle()
     val musicPlaybackState by viewModel.musicPlaybackManager.state.collectAsStateWithLifecycle()
     val showRatings by viewModel.showRatings.collectAsStateWithLifecycle()
+    val blurUnwatchedEpisodes by viewModel.blurUnwatchedEpisodes.collectAsStateWithLifecycle()
     val showAwards by viewModel.showAwards.collectAsStateWithLifecycle()
     val cardSize by viewModel.cardSize.collectAsStateWithLifecycle()
     val heroStyle by viewModel.heroStyle.collectAsStateWithLifecycle()
@@ -468,6 +470,7 @@ fun MainNavigation(
                     LocalPlayerOffset provides globalPlayerOffset,
                     LocalSideSheetEnabled provides sideSheetEnabled,
                     LocalShowRatings provides showRatings,
+                    LocalBlurUnwatchedEpisodes provides blurUnwatchedEpisodes,
                     LocalShowAwards provides showAwards,
                     LocalCardSize provides cardSize,
                     LocalHeroStyle provides heroStyle,

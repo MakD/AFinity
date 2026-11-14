@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -50,6 +51,7 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.navigation.LocalBlurUnwatchedEpisodes
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.preview.CardSizePreviewProvider
 import com.makd.afinity.ui.preview.FontScalePreviews
@@ -114,12 +116,17 @@ fun ContinueWatchingCard(
                 val isUpcoming =
                     isMissing && item.premiereDate?.isAfter(java.time.LocalDateTime.now()) == true
                 val isMissingAndAired = isMissing && !isUpcoming
+                val shouldBlurEpisode =
+                    LocalBlurUnwatchedEpisodes.current && item is AfinityEpisode && !item.played
 
                 AsyncImage(
                     imageUrl = imageUrl,
                     blurHash = blurHash,
                     contentDescription = item.name,
-                    modifier = Modifier.fillMaxSize().alpha(if (isMissingAndAired) 0.5f else 1f),
+                    modifier =
+                        Modifier.fillMaxSize()
+                            .blur(if (shouldBlurEpisode) 12.dp else 0.dp)
+                            .alpha(if (isMissingAndAired) 0.5f else 1f),
                     contentScale = ContentScale.Crop,
                     targetWidth = cardWidth,
                     targetHeight = cardWidth / CardDimensions.ASPECT_RATIO_LANDSCAPE,

@@ -315,6 +315,15 @@ constructor(
                 initialValue = true,
             )
 
+    val blurUnwatchedEpisodes: StateFlow<Boolean> =
+        preferencesRepository
+            .getBlurUnwatchedEpisodesFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = false,
+            )
+
     val lastFmPopularSort: StateFlow<Boolean> =
         preferencesRepository
             .getLastFmPopularSortFlow()
@@ -1864,6 +1873,10 @@ constructor(
 
     fun toggleShowRatings(enabled: Boolean) {
         viewModelScope.launch { preferencesRepository.setShowRatings(enabled) }
+    }
+
+    fun toggleBlurUnwatchedEpisodes(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setBlurUnwatchedEpisodes(enabled) }
     }
 
     fun authorizeQuickConnect(code: String) {

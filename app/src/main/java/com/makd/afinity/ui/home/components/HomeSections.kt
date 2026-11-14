@@ -27,6 +27,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -52,6 +53,7 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityTrack
+import com.makd.afinity.navigation.LocalBlurUnwatchedEpisodes
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.ContinueWatchingCard
@@ -276,7 +278,12 @@ fun UpcomingEpisodeCard(
                     imageUrl = imageUrl,
                     blurHash = blurHash,
                     contentDescription = episode.name,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier =
+                        Modifier.fillMaxSize()
+                            .blur(
+                                if (LocalBlurUnwatchedEpisodes.current && !episode.played) 12.dp
+                                else 0.dp
+                            ),
                     contentScale = ContentScale.Crop,
                     targetWidth = cardWidth,
                     targetHeight = cardWidth / CardDimensions.ASPECT_RATIO_LANDSCAPE,

@@ -90,6 +90,15 @@ constructor(
                 initialValue = true,
             )
 
+    val blurUnwatchedEpisodes =
+        preferencesRepository
+            .getBlurUnwatchedEpisodesFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = false,
+            )
+
     val showAwards =
         preferencesRepository
             .getShowAwardsFlow()

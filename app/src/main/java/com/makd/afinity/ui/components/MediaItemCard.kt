@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -36,11 +37,13 @@ import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityBoxSet
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideoPlaylist
+import com.makd.afinity.navigation.LocalBlurUnwatchedEpisodes
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.preview.CardSizePreviewProvider
 import com.makd.afinity.ui.preview.FontScalePreviews
@@ -81,6 +84,8 @@ fun MediaItemCard(
     aspectRatio: Float = CardDimensions.ASPECT_RATIO_PORTRAIT,
 ) {
     val ratingScale = rememberRatingMetadataScale()
+    val shouldBlurEpisode =
+        item is AfinityEpisode && LocalBlurUnwatchedEpisodes.current && !item.played
     val effectiveAspectRatio =
         if (item is AfinityVideoPlaylist) CardDimensions.ASPECT_RATIO_SQUARE else aspectRatio
 
@@ -100,7 +105,10 @@ fun MediaItemCard(
                     targetWidth = cardWidth,
                     targetHeight = cardWidth / effectiveAspectRatio,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().alpha(if (isUnavailable) 0.4f else 1f),
+                    modifier =
+                        Modifier.fillMaxSize()
+                            .blur(if (shouldBlurEpisode) 12.dp else 0.dp)
+                            .alpha(if (isUnavailable) 0.4f else 1f),
                 )
 
                 if (isUnavailable) {

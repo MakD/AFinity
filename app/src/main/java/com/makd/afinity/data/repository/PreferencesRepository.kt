@@ -488,6 +488,12 @@ interface PreferencesRepository {
 
     fun getShowRatingsFlow(): Flow<Boolean>
 
+    suspend fun setBlurUnwatchedEpisodes(enabled: Boolean)
+
+    suspend fun getBlurUnwatchedEpisodes(): Boolean
+
+    fun getBlurUnwatchedEpisodesFlow(): Flow<Boolean>
+
     suspend fun setShowAwards(enabled: Boolean)
 
     suspend fun getShowAwards(): Boolean

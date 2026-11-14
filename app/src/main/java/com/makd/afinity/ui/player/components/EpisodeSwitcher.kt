@@ -40,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
@@ -68,6 +69,7 @@ import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.navigation.LocalBlurUnwatchedEpisodes
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.formatRuntimeTicks
@@ -318,10 +320,18 @@ private fun EpisodeSwitcherCard(
                 } else {
                     episode.images.primaryBlurHash
                 }
+            val watched =
+                episode.played || (liveProgress != null && liveProgress >= PLAYED_FRACTION)
+            val shouldBlur =
+                LocalBlurUnwatchedEpisodes.current &&
+                    episode is AfinityEpisode &&
+                    !watched &&
+                    !isCurrentlyPlaying
+
             AsyncImage(
                 imageUrl = cardImageUrl.toString(),
                 contentDescription = displayItem.name,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().blur(if (shouldBlur) 12.dp else 0.dp),
                 contentScale = ContentScale.Crop,
                 blurHash = cardBlurHash,
                 targetWidth = 140.dp,
@@ -340,9 +350,6 @@ private fun EpisodeSwitcherCard(
                         onDrawBehind { drawRect(gradient) }
                     }
             )
-
-            val watched =
-                episode.played || (liveProgress != null && liveProgress >= PLAYED_FRACTION)
 
             if (watched) {
                 Box(

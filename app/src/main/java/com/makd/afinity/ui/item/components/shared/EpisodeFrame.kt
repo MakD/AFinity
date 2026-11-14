@@ -2,6 +2,7 @@ package com.makd.afinity.ui.item.components.shared
 
 import android.content.Context
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -10,19 +11,31 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,6 +52,7 @@ import com.makd.afinity.data.models.extensions.showThumbImageUrl
 import com.makd.afinity.data.models.extensions.thumbBlurHash
 import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.navigation.LocalBlurUnwatchedEpisodes
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.formatClockTicks
 
@@ -94,16 +108,68 @@ fun EpisodeFrame(
             }
         }
 
-    Box(modifier = modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(12.dp))) {
+    val isUnwatched = LocalBlurUnwatchedEpisodes.current && !episode.played
+    var isRevealed by rememberSaveable(episode.id) { mutableStateOf(false) }
+    val shouldBlur = isUnwatched && !isRevealed
+
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .clip(RoundedCornerShape(12.dp))
+                .then(
+                    if (isUnwatched) {
+                        Modifier.clickable(
+                            role = Role.Button,
+                            onClickLabel =
+                                stringResource(
+                                    if (isRevealed) R.string.cd_blur_thumbnail
+                                    else R.string.cd_reveal_thumbnail
+                                ),
+                        ) {
+                            isRevealed = !isRevealed
+                        }
+                    } else {
+                        Modifier
+                    }
+                )
+    ) {
         AsyncImage(
             imageUrl = imageUrl,
             contentDescription = episode.name,
             blurHash = blurHash,
             targetWidth = 400.dp,
             targetHeight = 225.dp,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().blur(if (shouldBlur) 12.dp else 0.dp),
             contentScale = ContentScale.Crop,
         )
+
+        if (shouldBlur) {
+            Surface(
+                shape = CircleShape,
+                color = Color.Black.copy(alpha = 0.65f),
+                contentColor = Color.White,
+                modifier = Modifier.align(Alignment.Center),
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_visibility),
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Text(
+                        text = stringResource(R.string.unblur_thumbnail),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
+            }
+        }
 
         Box(
             modifier =

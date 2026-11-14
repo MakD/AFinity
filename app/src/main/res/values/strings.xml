@@ -1220,6 +1220,11 @@
 
     <string name="settings_group_content_layout">Content Layout</string>
     <string name="pref_episode_layout_title">Episode Layout</string>
+    <string name="pref_blur_unwatched_episodes_title">Blur Unwatched Episodes</string>
+    <string name="pref_blur_unwatched_episodes_summary">Blur thumbnails for episodes you haven’t watched</string>
+    <string name="unblur_thumbnail">Reveal</string>
+    <string name="cd_reveal_thumbnail">Reveal thumbnail</string>
+    <string name="cd_blur_thumbnail">Hide thumbnail</string>
     <string name="pref_detail_layout_title">Detail Page Layout</string>
     <string name="detail_layout_classic">Classic</string>
     <string name="detail_layout_modern">Modern</string>
