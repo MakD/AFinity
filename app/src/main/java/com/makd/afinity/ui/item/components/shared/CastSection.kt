@@ -58,7 +58,7 @@ fun AfinityItem.peopleOfKind(kind: PersonKind): List<AfinityPerson> =
 @Composable
 fun CastSection(
     item: AfinityItem,
-    onPersonClick: (UUID) -> Unit = {},
+    onPersonClick: ((UUID) -> Unit)? = {},
     widthSizeClass: WindowWidthSizeClass,
 ) {
     PeopleRow(
@@ -72,7 +72,7 @@ fun CastSection(
 @Composable
 fun GuestStarSection(
     item: AfinityItem,
-    onPersonClick: (UUID) -> Unit = {},
+    onPersonClick: ((UUID) -> Unit)? = {},
     widthSizeClass: WindowWidthSizeClass,
 ) {
     PeopleRow(
@@ -87,7 +87,7 @@ fun GuestStarSection(
 private fun PeopleRow(
     title: String,
     people: List<AfinityPerson>,
-    onPersonClick: (UUID) -> Unit,
+    onPersonClick: ((UUID) -> Unit)?,
     widthSizeClass: WindowWidthSizeClass,
 ) {
     if (people.isEmpty()) return
@@ -112,18 +112,26 @@ private fun PeopleRow(
 @Composable
 private fun CastMemberCard(
     person: AfinityPerson,
-    onPersonClick: (UUID) -> Unit = {},
+    onPersonClick: ((UUID) -> Unit)? = {},
     cardWidth: Dp,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
     Column(
         modifier =
-            Modifier.width(cardWidth).clickable(
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() },
-                role = Role.Button,
-            ) {
-                onPersonClick(person.id)
-            },
+            Modifier.width(cardWidth)
+                .then(
+                    if (onPersonClick != null) {
+                        Modifier.clickable(
+                            indication = null,
+                            interactionSource = interactionSource,
+                            role = Role.Button,
+                        ) {
+                            onPersonClick(person.id)
+                        }
+                    } else {
+                        Modifier
+                    }
+                ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {

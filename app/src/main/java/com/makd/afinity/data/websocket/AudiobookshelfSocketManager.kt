@@ -7,6 +7,7 @@ import com.makd.afinity.data.models.audiobookshelf.Bookmark
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.repository.AudiobookshelfRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
@@ -67,6 +68,7 @@ constructor(
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val playbackManager: AudiobookshelfPlaybackManager,
     private val networkMonitor: NetworkConnectivityMonitor,
+    private val preferencesRepository: PreferencesRepository,
     @ApplicationScope private val scope: CoroutineScope,
 ) : DefaultLifecycleObserver {
 
@@ -79,6 +81,7 @@ constructor(
     private var socket: Socket? = null
     private var isForeground = false
     private var idleJob: Job? = null
+    @Volatile private var offlineMode: Boolean? = null
 
     private val _connectionState = MutableStateFlow(WebSocketState.DISCONNECTED)
     val connectionState: StateFlow<WebSocketState> = _connectionState.asStateFlow()
@@ -94,6 +97,17 @@ constructor(
                 if (it.connected()) {
                     Timber.d("AbsSocket: re-authenticating with refreshed token")
                     it.emit("auth", newToken)
+                }
+            }
+        }
+
+        scope.launch {
+            preferencesRepository.getOfflineModeFlow().distinctUntilChanged().collect { offline ->
+                offlineMode = offline
+                if (offline) {
+                    disconnect()
+                } else if (isForeground && socket == null) {
+                    maybeConnect()
                 }
             }
         }
@@ -170,7 +184,7 @@ constructor(
 
     @Synchronized
     private fun connect(serverUrl: String) {
-        if (socket != null) return
+        if (socket != null || offlineMode != false) return
         val token = securePreferencesRepository.getCachedAudiobookshelfToken()
         if (token == null) {
             Timber.w("AbsSocket: no token available, skipping connect")

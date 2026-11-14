@@ -3,6 +3,7 @@ package com.makd.afinity.data.database.entities
 import android.net.Uri
 import androidx.room.Entity
 import androidx.room.Index
+import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.music.AfinityAlbum
 import java.util.UUID
@@ -24,6 +25,9 @@ data class MusicAlbumEntity(
     val runtimeTicks: Long,
     val images: AfinityImages?,
     val localImagePath: String? = null,
+    val overview: String? = null,
+    val externalUrls: List<AfinityExternalUrl>? = null,
+    val artistImagePath: String? = null,
 )
 
 fun AfinityAlbum.toMusicAlbumEntity(serverId: String, userId: String) =
@@ -38,6 +42,8 @@ fun AfinityAlbum.toMusicAlbumEntity(serverId: String, userId: String) =
         songCount = songCount,
         runtimeTicks = runtimeTicks,
         images = images,
+        overview = overview,
+        externalUrls = externalUrls,
     )
 
 fun MusicAlbumEntity.toAfinityAlbum(): AfinityAlbum {
@@ -57,7 +63,8 @@ fun MusicAlbumEntity.toAfinityAlbum(): AfinityAlbum {
         songCount = songCount,
         runtimeTicks = runtimeTicks,
         genres = emptyList(),
-        overview = null,
+        overview = overview,
+        externalUrls = externalUrls,
         favorite = false,
         played = false,
         playCount = null,

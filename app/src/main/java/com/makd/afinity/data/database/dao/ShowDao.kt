@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.makd.afinity.data.database.entities.AfinityShowDto
+import com.makd.afinity.data.models.media.AfinityExternalUrl
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 
@@ -21,6 +22,18 @@ interface ShowDao {
     @Update suspend fun updateShow(show: AfinityShowDto)
 
     @Delete suspend fun deleteShow(show: AfinityShowDto)
+
+    @Query(
+        "UPDATE shows SET providerIds = :providerIds, externalUrls = :externalUrls, " +
+            "tagline = :tagline WHERE id = :showId AND serverId = :serverId"
+    )
+    suspend fun updateExternalIds(
+        showId: UUID,
+        serverId: String,
+        providerIds: Map<String, String>?,
+        externalUrls: List<AfinityExternalUrl>?,
+        tagline: String?,
+    )
 
     @Query("DELETE FROM shows WHERE id = :showId") suspend fun deleteShowById(showId: UUID)
 

@@ -1024,6 +1024,7 @@ fun HomeScreen(
             onToggleWatched = { episode -> viewModel.toggleEpisodeWatched(episode) },
             onNavigateToSeries = onSeriesClick,
             onNavigateToPerson = onPersonClick,
+            isOffline = uiState.isOffline,
         )
     }
 }

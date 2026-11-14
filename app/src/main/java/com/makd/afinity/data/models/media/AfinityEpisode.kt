@@ -134,7 +134,7 @@ suspend fun AfinityEpisodeDto.toAfinityEpisode(
         seriesLogo = null,
         seriesLogoBlurHash = null,
         communityRating = communityRating,
-        people = emptyList(),
+        people = people ?: emptyList(),
         images = AfinityImages(),
         chapters = chapters ?: emptyList(),
         trickplayInfo = trickplayInfos,

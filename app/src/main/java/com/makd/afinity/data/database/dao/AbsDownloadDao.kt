@@ -156,6 +156,15 @@ interface AbsDownloadDao {
     )
     suspend fun updateStatus(id: UUID, status: AbsDownloadStatus, error: String?, updatedAt: Long)
 
+    @Query(
+        """UPDATE abs_downloads
+           SET authorDescription = :description,
+               authorImagePath = :imagePath,
+               authorTitleCount = :titleCount
+           WHERE id = :id"""
+    )
+    suspend fun updateAuthor(id: UUID, description: String?, imagePath: String?, titleCount: Int?)
+
     @Query("DELETE FROM abs_downloads WHERE id = :id") suspend fun deleteById(id: UUID)
 
     @Query(

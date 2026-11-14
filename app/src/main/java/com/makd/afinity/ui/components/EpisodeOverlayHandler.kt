@@ -38,6 +38,7 @@ fun EpisodeOverlayHandler(
     onToggleWatched: (AfinityEpisode) -> Unit,
     onNavigateToSeries: (seriesId: String) -> Unit,
     onNavigateToPerson: ((personId: String) -> Unit)? = null,
+    isOffline: Boolean = false,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -116,13 +117,16 @@ fun EpisodeOverlayHandler(
                 onClearSelection()
                 pendingNavigationSeriesId = episode.seriesId.toString()
             },
+            showUserDataToggles = !isOffline,
             onPersonClick =
-                onNavigateToPerson?.let {
-                    { personId: UUID ->
-                        onClearSelection()
-                        pendingNavigationPersonId = personId.toString()
-                    }
-                },
+                onNavigateToPerson
+                    ?.takeIf { !isOffline }
+                    ?.let {
+                        { personId: UUID ->
+                            onClearSelection()
+                            pendingNavigationPersonId = personId.toString()
+                        }
+                    },
         )
     }
 

@@ -21,8 +21,12 @@ import com.makd.afinity.data.manager.DownloadSemaphoreManager
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.audiobookshelf.AudioFile
 import com.makd.afinity.data.models.audiobookshelf.AudioTrack
+import com.makd.afinity.data.models.audiobookshelf.Author
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
+import com.makd.afinity.data.models.audiobookshelf.imageUrl
 import com.makd.afinity.data.network.AudiobookshelfApiService
+import com.makd.afinity.data.repository.AbsItemFilter
+import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsDownloadRepositoryImpl
@@ -58,11 +62,13 @@ constructor(
     private val downloadSemaphoreManager: DownloadSemaphoreManager,
     private val downloadNotificationManager: DownloadNotificationManager,
     @param:DownloadClient private val okHttpClient: OkHttpClient,
+    private val audiobookshelfRepository: AudiobookshelfRepository,
 ) : CoroutineWorker(appContext, workerParams) {
 
     companion object {
         const val BUFFER_SIZE = 256 * 1024
         private const val NOTIFICATION_CHANNEL_ID = "abs_downloads"
+        private const val AUTHOR_IMAGE_WIDTH = 400
     }
 
     private val json = Json {
@@ -536,6 +542,19 @@ constructor(
 
                 val serializedSession = json.encodeToString(localSession)
 
+                if (episodeId == null) {
+                    item.media?.metadata?.authors?.firstOrNull()?.let { author ->
+                        saveAuthor(
+                            downloadId,
+                            item.libraryId ?: "",
+                            author,
+                            baseUrl,
+                            token,
+                            localDir,
+                        )
+                    }
+                }
+
                 absDownloadDao.updateProgress(
                     id = downloadId,
                     status = AbsDownloadStatus.COMPLETED,
@@ -568,33 +587,71 @@ constructor(
         baseUrl: String,
         token: String?,
         localDir: File,
-    ): String? {
-        val coverFile = File(localDir, "cover.jpg")
-        if (coverFile.exists() && coverFile.length() > 0) {
-            return "file://${coverFile.absolutePath}"
+    ): String? =
+        downloadImage(
+            "$baseUrl/api/items/$libraryItemId/cover?format=jpeg",
+            token,
+            File(localDir, "cover.jpg"),
+        )
+
+    private fun downloadImage(url: String, token: String?, target: File): String? {
+        if (target.exists() && target.length() > 0) {
+            return "file://${target.absolutePath}"
         }
         return try {
             val request =
                 Request.Builder()
-                    .url("$baseUrl/api/items/$libraryItemId/cover?format=jpeg")
+                    .url(url)
                     .apply { if (token != null) header("Authorization", "Bearer $token") }
                     .build()
             okHttpClient.newCall(request).execute().use { response ->
                 if (response.isSuccessful) {
                     response.body.byteStream().use { input ->
-                        FileOutputStream(coverFile).use { output -> input.copyTo(output) }
+                        FileOutputStream(target).use { output -> input.copyTo(output) }
                     }
-                    "file://${coverFile.absolutePath}"
+                    "file://${target.absolutePath}"
                 } else {
-                    Timber.w("Cover download failed: ${response.code}")
+                    Timber.w("Image download failed for ${target.name}: ${response.code}")
                     null
                 }
             }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Timber.w(e, "Failed to download cover")
+            Timber.w(e, "Failed to download ${target.name}")
             null
+        }
+    }
+
+    private suspend fun saveAuthor(
+        downloadId: UUID,
+        libraryId: String,
+        author: Author,
+        baseUrl: String,
+        token: String?,
+        localDir: File,
+    ) {
+        try {
+            val details = audiobookshelfRepository.getAuthor(author.id).getOrNull() ?: author
+            val titleCount =
+                audiobookshelfRepository
+                    .getFilteredLibraryItems(
+                        libraryId,
+                        AbsItemFilter.ByAuthor(author.id),
+                        limit = 1,
+                    )
+                    .getOrNull()
+                    ?.total
+            val imageFile = File(localDir, "author.jpg")
+            val imagePath =
+                details.imageUrl(baseUrl, AUTHOR_IMAGE_WIDTH)?.let { url ->
+                    downloadImage(url, token, imageFile)?.let { imageFile.absolutePath }
+                }
+            absDownloadDao.updateAuthor(downloadId, details.description, imagePath, titleCount)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "AbsDownload: failed to save author ${author.id}")
         }
     }
 

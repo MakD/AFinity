@@ -62,6 +62,7 @@ fun ActionButtonsRow(
     isAdmin: Boolean = false,
     canIdentify: Boolean = true,
     canDelete: Boolean = false,
+    showUserDataToggles: Boolean = true,
     onAdminAction: (AdminAction) -> Unit = {},
     onDownloadLongClick: (() -> Unit)? = null,
     onAddToPlaylist: (() -> Unit)? = null,
@@ -103,17 +104,19 @@ fun ActionButtonsRow(
             }
         }
 
-        WatchlistToggleButton(isInWatchlist = isInWatchlist, onClick = onToggleWatchlist)
+        if (showUserDataToggles) {
+            WatchlistToggleButton(isInWatchlist = isInWatchlist, onClick = onToggleWatchlist)
 
-        FavoriteToggleButton(isFavorite = item.favorite, onClick = onToggleFavorite)
+            FavoriteToggleButton(isFavorite = item.favorite, onClick = onToggleFavorite)
 
-        val visuallyPlayed = item.played && hasPlayableItems
+            val visuallyPlayed = item.played && hasPlayableItems
 
-        WatchedToggleButton(
-            isPlayed = visuallyPlayed,
-            onClick = onToggleWatched,
-            enabled = hasPlayableItems,
-        )
+            WatchedToggleButton(
+                isPlayed = visuallyPlayed,
+                onClick = onToggleWatched,
+                enabled = hasPlayableItems,
+            )
+        }
 
         if (isDownloadAllowedByServer) {
             DownloadProgressIndicator(

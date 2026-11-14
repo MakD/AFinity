@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.media.AfinityChapter
+import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPerson
@@ -34,6 +35,8 @@ data class AfinityMovieDto(
     val people: List<AfinityPerson>? = null,
     val tmdbReviews: List<TmdbReview>? = null,
     val mdbRatings: List<MdbListRating>? = null,
+    val providerIds: Map<String, String>? = null,
+    val externalUrls: List<AfinityExternalUrl>? = null,
 )
 
 fun AfinityMovie.toAfinityMovieDto(
@@ -63,5 +66,7 @@ fun AfinityMovie.toAfinityMovieDto(
         people = people,
         tmdbReviews = tmdbReviews ?: this.tmdbReviews,
         mdbRatings = mdbRatings ?: this.mdbRatings,
+        providerIds = providerIds,
+        externalUrls = externalUrls,
     )
 }

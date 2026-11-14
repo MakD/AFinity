@@ -374,10 +374,12 @@ constructor(
         download: DownloadDto,
     ): Boolean {
         return try {
+            val itemDir = downloadRepository.getItemDownloadDirectory(download)
+            saveArtistImage(apiClient, track, itemDir, serverId, userId)
+
             val primaryUrl = track.images.primary?.toString() ?: return true
             if (primaryUrl.startsWith("file://")) return true
 
-            val itemDir = downloadRepository.getItemDownloadDirectory(download)
             val imagesDir = File(itemDir, "images")
             if (!imagesDir.exists() && !imagesDir.mkdirs()) return false
 
@@ -404,6 +406,44 @@ constructor(
         } catch (e: Exception) {
             Timber.e(e, "Failed to download music track images")
             false
+        }
+    }
+
+    private suspend fun saveArtistImage(
+        apiClient: ApiClient,
+        track: AfinityTrack,
+        itemDir: File,
+        serverId: String,
+        userId: String,
+    ) {
+        val albumId = track.albumId ?: return
+        try {
+            val album = databaseRepository.getMusicAlbum(albumId, serverId, userId) ?: return
+            val artistId = album.artistId ?: return
+            val existing =
+                databaseRepository.getMusicArtistImagePath(artistId, serverId, userId)?.takeIf {
+                    path ->
+                    android.net.Uri.parse(path).path?.let { File(it).exists() } == true
+                }
+            val path =
+                existing
+                    ?: run {
+                        val baseUrl = apiClient.baseUrl?.trimEnd('/') ?: return
+                        val artistDir = File(itemDir.parentFile ?: itemDir, "artist")
+                        if (!artistDir.exists() && !artistDir.mkdirs()) return
+                        downloadImage(
+                                apiClient,
+                                "$baseUrl/Items/$artistId/Images/Primary",
+                                artistDir,
+                                "primary",
+                            )
+                            ?.toString() ?: return
+                    }
+            databaseRepository.updateMusicAlbumArtistImagePath(albumId, serverId, userId, path)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "No artist image saved for album $albumId")
         }
     }
 

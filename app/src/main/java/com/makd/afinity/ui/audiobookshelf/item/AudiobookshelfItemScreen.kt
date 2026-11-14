@@ -137,6 +137,14 @@ fun AudiobookshelfItemScreen(
 
     val isPodcast = item?.mediaType?.lowercase() == "podcast"
     val isLandscape = isLandscapeWindow()
+    val localEpisodeCover =
+        remember(episodeDownloadMap) {
+            episodeDownloadMap.values.firstNotNullOfOrNull { info ->
+                info.coverUrl?.takeIf {
+                    info.status == AbsDownloadStatus.COMPLETED && it.startsWith("file://")
+                }
+            }
+        }
 
     var showAllChapters by rememberSaveable { mutableStateOf(false) }
     var showListenedChapters by rememberSaveable { mutableStateOf(false) }
@@ -153,10 +161,11 @@ fun AudiobookshelfItemScreen(
             item = mediaInfoItem,
             episode = shownEpisode,
             imageUrl =
-                config
-                    ?.serverUrl
-                    ?.takeIf { mediaInfoItem.media.coverPath != null }
-                    ?.let { mediaInfoItem.coverUrl(it, 200) },
+                localEpisodeCover
+                    ?: config
+                        ?.serverUrl
+                        ?.takeIf { mediaInfoItem.media.coverPath != null }
+                        ?.let { mediaInfoItem.coverUrl(it, 200) },
             onDismiss = { mediaInfoEpisode = null },
         )
     }
@@ -265,7 +274,7 @@ fun AudiobookshelfItemScreen(
                             }
                         }
 
-                        if (uiState.seriesDetails.isNotEmpty()) {
+                        if (!isOffline && uiState.seriesDetails.isNotEmpty()) {
                             detailItem("series", DetailGutter) {
                                 IncludedInSeriesSection(
                                     seriesList = uiState.seriesDetails,
@@ -287,7 +296,7 @@ fun AudiobookshelfItemScreen(
                             }
                         }
 
-                        if (showNetworkSections && authorName != null) {
+                        if (!isPodcast && authorName != null) {
                             detailItem("author", DetailGutter) {
                                 LaunchedEffect(Unit) { viewModel.ensureAuthor() }
                                 AuthorCard(
@@ -405,6 +414,8 @@ fun AudiobookshelfItemScreen(
                                 downloadInfo?.localDirPath != null
                         ) {
                             "file://${downloadInfo?.localDirPath}/cover.jpg"
+                        } else if (localEpisodeCover != null) {
+                            localEpisodeCover
                         } else if (
                             config?.serverUrl != null && currentItem.media.coverPath != null
                         ) {

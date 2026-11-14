@@ -80,6 +80,7 @@ interface PlaybackRepository {
         playMethod: String = "DirectPlay",
         liveStreamId: String? = null,
         repeatMode: String = "RepeatNone",
+        isMusic: Boolean = false,
     ): Boolean
 
     suspend fun reportPlaybackStop(
@@ -92,6 +93,8 @@ interface PlaybackRepository {
         playlistItemId: String? = null,
         runtimeTicks: Long = 0L,
         isEnded: Boolean = false,
+        isMusic: Boolean = false,
+        playCountedOnServer: Boolean = false,
     ): Boolean
 
     suspend fun savePlaybackStopOffline(

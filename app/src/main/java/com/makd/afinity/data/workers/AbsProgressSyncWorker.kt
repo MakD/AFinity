@@ -6,6 +6,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.makd.afinity.data.repository.AudiobookshelfRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsProgressSyncScheduler
 import dagger.Lazy
 import dagger.assisted.Assisted
@@ -22,6 +23,7 @@ constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
     private val audiobookshelfRepository: Lazy<AudiobookshelfRepository>,
+    private val preferencesRepository: PreferencesRepository,
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result =
@@ -41,6 +43,11 @@ constructor(
                     Timber.w("AbsProgressSync: invalid userId '$userIdStr'")
                     return@withContext Result.failure(workDataOf("error" to "invalid userId"))
                 }
+
+            if (preferencesRepository.getOfflineMode()) {
+                Timber.d("AbsProgressSync: offline mode on, leaving changes queued")
+                return@withContext Result.success()
+            }
 
             Timber.d("AbsProgressSync: syncing pending progress for serverId=$serverId")
             val syncedBookmarks = audiobookshelfRepository.get().syncPendingBookmarks()

@@ -211,6 +211,7 @@ interface AudiobookshelfRepository {
         asin: String?,
         title: String,
         authorName: String?,
+        allowNetwork: Boolean = true,
     ): Result<AudibleRating?>
 }
 

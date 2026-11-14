@@ -2,6 +2,7 @@ package com.makd.afinity.data.sync
 
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.di.ApplicationScope
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -11,6 +12,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -22,6 +24,7 @@ constructor(
     private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
     private val syncScheduler: UserDataSyncScheduler,
+    private val preferencesRepository: PreferencesRepository,
     @param:ApplicationScope private val scope: CoroutineScope,
 ) {
 
@@ -41,6 +44,15 @@ constructor(
                 .distinctUntilChanged()
                 .filter { (account, reachable) -> account != null && reachable }
                 .collect { ifPending("session reachable") }
+        }
+
+        scope.launch(Dispatchers.IO) {
+            preferencesRepository
+                .getOfflineModeFlow()
+                .distinctUntilChanged()
+                .drop(1)
+                .filter { offline -> !offline }
+                .collect { ifPending("offline mode off") }
         }
     }
 

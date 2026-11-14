@@ -30,11 +30,17 @@ constructor(
     private val inFlightLock = Mutex()
     private val seriesTmdbIds = ConcurrentHashMap<UUID, String>()
 
-    suspend fun resolveSeriesTmdbId(seriesId: UUID, resolve: suspend () -> String?): String? {
+    suspend fun resolveSeriesTmdbId(
+        seriesId: UUID,
+        resolve: suspend () -> Result<String?>,
+    ): String? {
         seriesTmdbIds[seriesId]?.let { cached ->
             return cached.takeIf { it != NO_TMDB_ID }
         }
-        val resolved = resolve()
+        val resolved =
+            resolve().getOrElse {
+                return null
+            }
         seriesTmdbIds[seriesId] = resolved ?: NO_TMDB_ID
         return resolved
     }

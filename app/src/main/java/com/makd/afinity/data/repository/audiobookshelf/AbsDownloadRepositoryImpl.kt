@@ -272,4 +272,11 @@ fun AbsDownloadEntity.toAbsDownloadInfo(): AbsDownloadInfo =
         localDirPath = localDirPath,
         episodeDescription = episodeDescription,
         publishedAt = publishedAt,
+        authorDescription = authorDescription,
+        authorImageUrl =
+            authorImagePath
+                ?.let(::File)
+                ?.takeIf { it.exists() && it.length() > 0 }
+                ?.let { "file://${it.absolutePath}" },
+        authorTitleCount = authorTitleCount,
     )

@@ -203,8 +203,8 @@ fun MusicAlbumScreen(
                         ),
                     ) +
                         musicAdminMenuActions(
-                            isAdmin = isAdmin,
-                            canDelete = album.id in deletableIds,
+                            isAdmin = isAdmin && !isOffline,
+                            canDelete = !isOffline && album.id in deletableIds,
                             deleteLabel = R.string.music_admin_delete_album,
                             onEditMetadata = { onEditMetadataClick(album.id.toString()) },
                             onEditImages = { onEditImagesClick(album.id.toString()) },
@@ -223,21 +223,23 @@ fun MusicAlbumScreen(
                         )
                 } ?: emptyList(),
         ) {
-            IconButton(onClick = { viewModel.toggleFavorite() }) {
-                Icon(
-                    painter =
-                        if (uiState.album?.favorite == true)
-                            painterResource(R.drawable.ic_favorite_filled)
-                        else painterResource(R.drawable.ic_favorite),
-                    contentDescription =
-                        if (uiState.album?.favorite == true)
-                            stringResource(R.string.cd_favorite_remove)
-                        else stringResource(R.string.cd_favorite_add),
-                    tint =
-                        if (uiState.album?.favorite == true) Color.Red
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(26.dp),
-                )
+            if (!isOffline) {
+                IconButton(onClick = { viewModel.toggleFavorite() }) {
+                    Icon(
+                        painter =
+                            if (uiState.album?.favorite == true)
+                                painterResource(R.drawable.ic_favorite_filled)
+                            else painterResource(R.drawable.ic_favorite),
+                        contentDescription =
+                            if (uiState.album?.favorite == true)
+                                stringResource(R.string.cd_favorite_remove)
+                            else stringResource(R.string.cd_favorite_add),
+                        tint =
+                            if (uiState.album?.favorite == true) Color.Red
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(26.dp),
+                    )
+                }
             }
             if (isDownloadAllowedByServer) {
                 var showDownloadQualityDialog by remember { mutableStateOf(false) }
@@ -280,7 +282,7 @@ fun MusicAlbumScreen(
     val albumInfoContent: @Composable () -> Unit = {
         val album = uiState.album
         val overview = album?.overview.orEmpty()
-        val externalUrls = album?.externalUrls
+        val externalUrls = album?.externalUrls?.takeIf { !isOffline || uiState.hasInternet }
         if (overview.isNotEmpty() || !externalUrls.isNullOrEmpty()) {
             Column(modifier = Modifier.padding(horizontal = DetailGutter, vertical = 4.dp)) {
                 OverviewSection(overview = overview)
@@ -428,7 +430,8 @@ fun MusicAlbumScreen(
                             }),
                     onAddNext = { playerViewModel.addNext(listOf(track)) },
                     onAddLast = { playerViewModel.addLast(listOf(track)) },
-                    onFavorite = { viewModel.toggleTrackFavorite(track.id) },
+                    onFavorite =
+                        if (isOffline) null else ({ viewModel.toggleTrackFavorite(track.id) }),
                     onAddToPlaylist =
                         if (isOffline) null
                         else
@@ -443,7 +446,7 @@ fun MusicAlbumScreen(
                     isDownloadEnabled = canDownloadOnNetwork,
                     onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
                     downloadInfo = uiState.trackDownloadInfos[track.id],
-                    adminActions = trackAdminActions,
+                    adminActions = if (isOffline) null else trackAdminActions,
                 )
             }
         }

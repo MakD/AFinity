@@ -412,7 +412,9 @@ constructor(
 
         val progressMap = audiobookshelfRepository.getEpisodeProgressMapFlow(itemId).first()
         val localTracks = audiobookshelfRepository.getDownloadedEpisodeTracks(itemId)
-        val isOnline = networkConnectivityMonitor.isCurrentlyConnected()
+        val isOnline =
+            !preferencesRepository.getOfflineMode() &&
+                networkConnectivityMonitor.isCurrentlyConnected()
 
         val entries =
             PodcastEpisodeOrder.sorted(allEpisodes, order).mapNotNull { episode ->

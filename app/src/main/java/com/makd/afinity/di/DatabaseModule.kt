@@ -19,6 +19,7 @@ import com.makd.afinity.data.database.dao.MusicAlbumDao
 import com.makd.afinity.data.database.dao.MusicLyricsDao
 import com.makd.afinity.data.database.dao.MusicQueueDao
 import com.makd.afinity.data.database.dao.MusicTrackDao
+import com.makd.afinity.data.database.dao.OfflinePlayDao
 import com.makd.afinity.data.database.dao.PersonSectionDao
 import com.makd.afinity.data.database.dao.SeasonDao
 import com.makd.afinity.data.database.dao.ServerAddressDao
@@ -179,6 +180,11 @@ object DatabaseModule {
     @Provides
     fun provideMusicLyricsDao(database: AfinityDatabase): MusicLyricsDao {
         return database.musicLyricsDao()
+    }
+
+    @Provides
+    fun provideOfflinePlayDao(database: AfinityDatabase): OfflinePlayDao {
+        return database.offlinePlayDao()
     }
 
     @Provides

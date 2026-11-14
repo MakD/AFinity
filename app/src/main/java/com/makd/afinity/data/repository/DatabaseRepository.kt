@@ -5,9 +5,11 @@ import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
 import com.makd.afinity.data.database.entities.LastFmArtistCacheEntity
 import com.makd.afinity.data.database.entities.LastFmPopularCacheEntity
+import com.makd.afinity.data.database.entities.OfflinePlayEntity
 import com.makd.afinity.data.database.entities.WikidataAwardsCacheEntity
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.media.AfinityMovie
@@ -24,6 +26,7 @@ import com.makd.afinity.data.models.server.ServerWithAddresses
 import com.makd.afinity.data.models.server.ServerWithAddressesAndUsers
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.models.user.User
+import java.time.LocalDateTime
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.UserItemDataDto
@@ -74,6 +77,13 @@ interface DatabaseRepository {
 
     suspend fun updateMovie(movie: AfinityMovie)
 
+    suspend fun updateMovieExternalIds(
+        movieId: UUID,
+        serverId: String,
+        providerIds: Map<String, String>?,
+        externalUrls: List<AfinityExternalUrl>?,
+    )
+
     suspend fun deleteMovie(movieId: UUID)
 
     suspend fun getMovie(movieId: UUID, userId: UUID): AfinityMovie?
@@ -88,6 +98,14 @@ interface DatabaseRepository {
 
     suspend fun updateShow(show: AfinityShow)
 
+    suspend fun updateShowExternalIds(
+        showId: UUID,
+        serverId: String,
+        providerIds: Map<String, String>?,
+        externalUrls: List<AfinityExternalUrl>?,
+        tagline: String?,
+    )
+
     suspend fun deleteShow(showId: UUID)
 
     suspend fun getShow(showId: UUID, userId: UUID): AfinityShow?
@@ -101,6 +119,13 @@ interface DatabaseRepository {
     suspend fun insertSeason(season: AfinitySeason, serverId: String? = null)
 
     suspend fun updateSeason(season: AfinitySeason)
+
+    suspend fun updateSeasonDates(
+        seasonId: UUID,
+        serverId: String,
+        productionYear: Int?,
+        premiereDate: LocalDateTime?,
+    )
 
     suspend fun deleteSeason(seasonId: UUID)
 
@@ -176,6 +201,12 @@ interface DatabaseRepository {
     suspend fun getAllUserDataToSync(userId: UUID, serverId: String): List<AfinityUserDataDto>
 
     suspend fun countUserDataToSync(): Int
+
+    suspend fun insertOfflinePlay(itemId: UUID, userId: UUID, serverId: String, playedAt: Long)
+
+    suspend fun getOfflinePlays(userId: UUID, serverId: String): List<OfflinePlayEntity>
+
+    suspend fun deleteOfflinePlay(id: Long)
 
     fun getAllUserDataFlow(userId: UUID): Flow<List<AfinityUserDataDto>>
 
@@ -331,6 +362,25 @@ interface DatabaseRepository {
         userId: String,
         path: String,
     )
+
+    suspend fun updateMusicAlbumDetails(
+        id: UUID,
+        serverId: String,
+        userId: String,
+        overview: String?,
+        externalUrls: List<AfinityExternalUrl>?,
+    )
+
+    suspend fun updateMusicAlbumArtistImagePath(
+        id: UUID,
+        serverId: String,
+        userId: String,
+        path: String,
+    )
+
+    suspend fun getMusicArtistImagePath(artistId: UUID, serverId: String, userId: String): String?
+
+    suspend fun getMusicAlbum(id: UUID, serverId: String, userId: String): AfinityAlbum?
 
     suspend fun insertMusicLyrics(
         trackId: UUID,

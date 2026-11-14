@@ -146,7 +146,12 @@ private fun RatingChip(
 }
 
 @Composable
-fun DetailFactsPanel(item: AfinityItem, selectedSourceId: String?, modifier: Modifier = Modifier) {
+fun DetailFactsPanel(
+    item: AfinityItem,
+    selectedSourceId: String?,
+    modifier: Modifier = Modifier,
+    showExternalLinks: Boolean = true,
+) {
     val directors = remember(item) { item.peopleOfKind(PersonKind.DIRECTOR).distinctBy { it.id } }
     val writers = remember(item) { item.peopleOfKind(PersonKind.WRITER).distinctBy { it.id } }
     val producers = remember(item) { item.peopleOfKind(PersonKind.PRODUCER).distinctBy { it.id } }
@@ -158,7 +163,8 @@ fun DetailFactsPanel(item: AfinityItem, selectedSourceId: String?, modifier: Mod
         remember(item, selectedSourceId) {
             hasLanguageChips(item, MediaStreamType.SUBTITLE, selectedSourceId)
         }
-    val hasLinks = remember(item) { item.externalUrls.orEmpty().any { it.url != null } }
+    val hasLinks =
+        remember(item) { item.externalUrls.orEmpty().any { it.url != null } } && showExternalLinks
 
     if (
         directors.isEmpty() &&

@@ -74,12 +74,13 @@ fun LazyListScope.baseMediaDetailItems(
     isRatingsFromCache: Boolean = false,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     onBoxSetClick: (AfinityBoxSet) -> Unit,
-    onPersonClick: (UUID) -> Unit,
+    onPersonClick: ((UUID) -> Unit)?,
     widthSizeClass: WindowWidthSizeClass,
     horizontalPadding: Dp,
     detailLayout: DetailLayout,
     selectedSourceId: String? = null,
     watchProviders: TmdbRegionProviders? = null,
+    showExternalLinks: Boolean = true,
     typeSpecificItems: LazyListScope.() -> Unit,
 ) {
     detailItem("tagline", horizontalPadding) { TaglineSection(item = item) }
@@ -87,7 +88,11 @@ fun LazyListScope.baseMediaDetailItems(
 
     when (detailLayout) {
         DetailLayout.CLASSIC -> {
-            detailItem("external_links", horizontalPadding) { ExternalLinksSection(item = item) }
+            if (showExternalLinks) {
+                detailItem("external_links", horizontalPadding) {
+                    ExternalLinksSection(item = item)
+                }
+            }
 
             detailItem("director", horizontalPadding) { DirectorSection(item = item) }
             detailItem("writer", horizontalPadding) { WriterSection(item = item) }
@@ -104,7 +109,11 @@ fun LazyListScope.baseMediaDetailItems(
             typeSpecificItems()
 
             detailItem("facts", horizontalPadding) {
-                DetailFactsPanel(item = item, selectedSourceId = selectedSourceId)
+                DetailFactsPanel(
+                    item = item,
+                    selectedSourceId = selectedSourceId,
+                    showExternalLinks = showExternalLinks,
+                )
             }
         }
     }

@@ -23,4 +23,7 @@ data class AbsDownloadInfo(
     val localDirPath: String?,
     val episodeDescription: String? = null,
     val publishedAt: Long? = null,
+    val authorDescription: String? = null,
+    val authorImageUrl: String? = null,
+    val authorTitleCount: Int? = null,
 )

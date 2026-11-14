@@ -41,4 +41,7 @@ data class AbsDownloadEntity(
     val episodeDescription: String? = null,
     val publishedAt: Long? = null,
     val storageVolumeId: String = "primary",
+    val authorDescription: String? = null,
+    val authorImagePath: String? = null,
+    val authorTitleCount: Int? = null,
 )

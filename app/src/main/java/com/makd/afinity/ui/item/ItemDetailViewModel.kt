@@ -9,7 +9,6 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.makd.afinity.R
-import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.AdminChangeKind
 import com.makd.afinity.data.manager.Connectivity
@@ -55,19 +54,17 @@ import com.makd.afinity.data.models.tmdb.TmdbRegionProviders
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.data.models.wikidata.WikidataSubjectType
-import com.makd.afinity.data.network.TmdbApiService
 import com.makd.afinity.data.paging.EpisodesPagingSource
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.ExternalTitlesRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.PreferencesRepository
-import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.admin.AdminRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
-import com.makd.afinity.data.repository.metadata.ItemRatingsLoader
+import com.makd.afinity.data.repository.metadata.ItemMetadataFetcher
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.wikidata.WikidataAwardsRepository
@@ -89,7 +86,6 @@ import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
@@ -123,9 +119,6 @@ import org.jellyfin.sdk.model.api.PersonKind
 import org.jellyfin.sdk.model.api.UserItemDataDto
 import timber.log.Timber
 
-private const val POPULATED_METADATA_TTL_MS = 48L * 60L * 60L * 1000L
-private const val EMPTY_METADATA_TTL_MS = 6L * 60L * 60L * 1000L
-
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class ItemDetailViewModel
@@ -136,7 +129,7 @@ constructor(
     private val userDataRepository: UserDataRepository,
     private val mediaRepository: MediaRepository,
     private val sessionManager: SessionManager,
-    private val itemRatingsLoader: ItemRatingsLoader,
+    private val itemMetadataFetcher: ItemMetadataFetcher,
     private val downloadRepository: DownloadRepository,
     private val databaseRepository: DatabaseRepository,
     private val offlineModeManager: OfflineModeManager,
@@ -146,8 +139,6 @@ constructor(
     private val adminRepository: AdminRepository,
     private val mediaChangeManager: MediaChangeManager,
     private val serverRepository: ServerRepository,
-    private val securePreferencesRepository: SecurePreferencesRepository,
-    private val tmdbApiService: TmdbApiService,
     private val itemDownloadDelegate: ItemDownloadDelegate,
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val preferencesRepository: PreferencesRepository,
@@ -239,6 +230,8 @@ constructor(
             .map { it?.isAdmin == true }
             .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    val isOffline: StateFlow<Boolean> = offlineModeManager.isOffline
+
     val canManageCollections: StateFlow<Boolean> =
         sessionManager.currentSession
             .map { it?.canManageCollections == true || it?.isAdmin == true }
@@ -297,6 +290,7 @@ constructor(
                 .drop(1)
                 .collect {
                     val item = _uiState.value.item ?: return@collect
+                    _uiState.update { it.copy(hasInternet = true) }
                     if (
                         (item is AfinityShow || item is AfinitySeason) &&
                             _uiState.value.nextEpisode == null
@@ -934,9 +928,13 @@ constructor(
                     return@launch
                 }
 
-                _uiState.value = _uiState.value.copy(item = item, isLoading = false)
+                _uiState.value =
+                    _uiState.value.copy(item = item, isLoading = false, hasInternet = hasInternet)
                 itemLastLoadedAt = System.currentTimeMillis()
                 freshUserData?.let { launch { mediaChangeManager.reconcileUserData(it) } }
+                if (!isOffline) {
+                    launch { backfillOfflineFields(item) }
+                }
                 if (!themeLookupStarted) {
                     themeLookupStarted = true
                     launch {
@@ -1276,13 +1274,65 @@ constructor(
         }
     }
 
+    private suspend fun backfillOfflineFields(item: AfinityItem) {
+        val serverId = sessionManager.currentSession.value?.serverId ?: return
+        try {
+            when (item) {
+                is AfinityMovie -> {
+                    if (item.providerIds.isNullOrEmpty() && item.externalUrls.isNullOrEmpty()) {
+                        return
+                    }
+                    databaseRepository.updateMovieExternalIds(
+                        movieId = item.id,
+                        serverId = serverId,
+                        providerIds = item.providerIds,
+                        externalUrls = item.externalUrls,
+                    )
+                }
+                is AfinityShow -> {
+                    if (item.providerIds.isNullOrEmpty() && item.externalUrls.isNullOrEmpty()) {
+                        return
+                    }
+                    databaseRepository.updateShowExternalIds(
+                        showId = item.id,
+                        serverId = serverId,
+                        providerIds = item.providerIds,
+                        externalUrls = item.externalUrls,
+                        tagline = item.tagline,
+                    )
+                }
+                is AfinitySeason -> {
+                    if (item.productionYear == null && item.premiereDate == null) return
+                    databaseRepository.updateSeasonDates(
+                        seasonId = item.id,
+                        serverId = serverId,
+                        productionYear = item.productionYear,
+                        premiereDate = item.premiereDate,
+                    )
+                }
+                else -> Unit
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to backfill offline fields for ${item.id}")
+        }
+    }
+
     private suspend fun loadItemFromDatabase(): AfinityItem? {
         return try {
             val userId = authRepository.currentUser.value?.id ?: return null
-            databaseRepository.getMovie(itemId, userId)
-                ?: databaseRepository.getShow(itemId, userId)
-                ?: databaseRepository.getSeason(itemId, userId)
-                ?: databaseRepository.getEpisode(itemId, userId)
+            val item =
+                databaseRepository.getMovie(itemId, userId)
+                    ?: databaseRepository.getShow(itemId, userId)
+                    ?: databaseRepository.getSeason(itemId, userId)
+                    ?: databaseRepository.getEpisode(itemId, userId)
+                    ?: return null
+            if (item is AfinitySeason && item.runtimeTicks == 0L) {
+                val seriesRuntime =
+                    databaseRepository.getShow(item.seriesId, userId)?.runtimeTicks ?: 0L
+                if (seriesRuntime > 0L) item.copy(runtimeTicks = seriesRuntime) else item
+            } else item
         } catch (_: Exception) {
             null
         }
@@ -1333,48 +1383,39 @@ constructor(
             else -> null
         }
 
-    private suspend fun seriesTmdbId(seriesId: UUID): String? =
-        wikidataAwardsRepository.resolveSeriesTmdbId(seriesId) {
-            runCatching {
-                mediaRepository
-                    .getItem(seriesId, listOf(ItemFields.PROVIDER_IDS))
-                    ?.providerIds
-                    ?.get("Tmdb")
-            }
-                .getOrNull()
+    private suspend fun seriesTmdbId(seriesId: UUID): String? {
+        storedSeriesTmdbId(seriesId)?.let {
+            return it
         }
+        return wikidataAwardsRepository.resolveSeriesTmdbId(seriesId) {
+            mediaRepository.getItemResult(seriesId, listOf(ItemFields.PROVIDER_IDS)).map {
+                it?.providerIds?.get("Tmdb")
+            }
+        }
+    }
 
-    private fun watchRegion(): String = Locale.getDefault().country.ifBlank { "US" }
+    private suspend fun storedSeriesTmdbId(seriesId: UUID): String? {
+        val userId = sessionManager.currentSession.value?.userId ?: return null
+        return try {
+            databaseRepository.getShow(seriesId, userId)?.providerIds?.get("Tmdb")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to read stored series $seriesId")
+            null
+        }
+    }
 
     private suspend fun loadReviewsAndRatings(item: AfinityItem) {
-        val userId = sessionManager.currentSession.value?.userId
         try {
             _uiState.update { it.copy(isLoadingReviews = true) }
             val session = sessionManager.currentSession.value
-            val cachedMetadata =
-                if (session != null) {
-                    databaseRepository.getItemMetadata(
-                        item.id,
-                        session.serverId,
-                        session.userId.toString(),
-                    )
-                } else null
+            val cachedMetadata = session?.let {
+                itemMetadataFetcher.cached(item.id, it.serverId, it.userId)
+            }
+            val region = itemMetadataFetcher.watchRegion()
 
-            val region = watchRegion()
-            val cacheAgeMs = System.currentTimeMillis() - (cachedMetadata?.lastUpdated ?: 0L)
-            val cachedHasData =
-                cachedMetadata != null &&
-                    (cachedMetadata.tmdbReviews.isNotEmpty() ||
-                        cachedMetadata.mdbRatings.isNotEmpty() ||
-                        cachedMetadata.mdbRatingBadges.hasAny ||
-                        !cachedMetadata.omdbAwards.isNullOrBlank() ||
-                        cachedMetadata.watchProviders?.hasAny == true)
-            val cacheTtlMs = if (cachedHasData) POPULATED_METADATA_TTL_MS else EMPTY_METADATA_TTL_MS
-            val cachedRegionMatches =
-                cachedMetadata?.watchProviders.let { it == null || it.region == region }
-            val isCacheValid = cacheAgeMs < cacheTtlMs && cachedRegionMatches
-
-            if (cachedMetadata != null && isCacheValid) {
+            if (cachedMetadata != null && itemMetadataFetcher.isFresh(cachedMetadata, region)) {
                 _uiState.update {
                     it.copy(
                         tmdbReviews = cachedMetadata.tmdbReviews,
@@ -1387,90 +1428,32 @@ constructor(
                     )
                 }
             } else {
-                val tmdbId = item.providerIds?.get("Tmdb")
-                val imdbId = item.providerIds?.get("Imdb")
-                var fetchedReviews = emptyList<TmdbReview>()
-                var fetchedRatings = emptyList<MdbListRating>()
-                var fetchedRatingBadges = MdbListRatingBadges()
-                var fetchedOmdbAwards: String? = null
-                var fetchedWatchProviders: TmdbRegionProviders? = null
-
-                if ((tmdbId != null || imdbId != null) && userId != null) {
-                    val serverId = session?.serverId ?: serverRepository.currentServer.value?.id
-                    val tmdbKey = serverId?.let {
-                        securePreferencesRepository.getTmdbApiKey(it, userId.toString())
-                    }
-                    coroutineScope {
-                        val tmdbDeferred = async {
-                            try {
-                                if (tmdbId != null && !tmdbKey.isNullOrBlank()) {
-                                    when (item) {
-                                        is AfinityMovie ->
-                                            tmdbApiService.getMovieDetails(tmdbId, tmdbKey)
-                                        is AfinityShow ->
-                                            tmdbApiService.getSeriesDetails(tmdbId, tmdbKey)
-
-                                        else -> null
-                                    }
-                                } else {
-                                    null
-                                }
-                            } catch (e: CancellationException) {
-                                throw e
-                            } catch (e: Exception) {
-                                Timber.w(e, "TMDB details fetch failed")
-                                null
-                            }
-                        }
-
-                        val ratingsDeferred = async { itemRatingsLoader.fetch(item) }
-
-                        val ratingsResult = ratingsDeferred.await()
-                        fetchedRatings = ratingsResult.mdbRatings
-                        fetchedRatingBadges = ratingsResult.badges
-                        fetchedOmdbAwards = ratingsResult.omdbAwards
+                val fetched =
+                    itemMetadataFetcher.fetchAndStore(
+                        item = item,
+                        serverId = session?.serverId ?: serverRepository.currentServer.value?.id,
+                        userId = session?.userId,
+                        region = region,
+                    ) { ratings ->
                         _uiState.update {
                             it.copy(
-                                mdbRatings = fetchedRatings,
-                                mdbRatingBadges = fetchedRatingBadges,
-                                omdbAwards = fetchedOmdbAwards,
+                                mdbRatings = ratings.mdbRatings,
+                                mdbRatingBadges = ratings.badges,
+                                omdbAwards = ratings.omdbAwards,
                                 isLoadingReviews = true,
                             )
                         }
-
-                        tmdbDeferred.await()?.let { details ->
-                            fetchedReviews = details.reviews?.results.orEmpty()
-                            fetchedWatchProviders =
-                                details.watchProviders?.forRegion(region)
-                                    ?: TmdbRegionProviders(region = region)
-                        }
                     }
-                }
 
                 _uiState.update {
                     it.copy(
-                        tmdbReviews = fetchedReviews,
-                        mdbRatings = fetchedRatings,
-                        mdbRatingBadges = fetchedRatingBadges,
-                        omdbAwards = fetchedOmdbAwards,
-                        watchProviders = fetchedWatchProviders,
+                        tmdbReviews = fetched.tmdbReviews,
+                        mdbRatings = fetched.mdbRatings,
+                        mdbRatingBadges = fetched.mdbRatingBadges,
+                        omdbAwards = fetched.omdbAwards,
+                        watchProviders = fetched.watchProviders,
                         isRatingsFromCache = false,
                         isLoadingReviews = false,
-                    )
-                }
-
-                if (session != null) {
-                    databaseRepository.insertItemMetadata(
-                        ItemMetadataCacheEntity(
-                            itemId = item.id,
-                            serverId = session.serverId,
-                            userId = session.userId.toString(),
-                            tmdbReviews = fetchedReviews,
-                            mdbRatings = fetchedRatings,
-                            mdbRatingBadges = fetchedRatingBadges,
-                            omdbAwards = fetchedOmdbAwards,
-                            watchProviders = fetchedWatchProviders,
-                        )
                     )
                 }
             }
@@ -2090,6 +2073,7 @@ data class ItemDetailUiState(
     val specialFeatures: List<AfinityItem> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
+    val hasInternet: Boolean = true,
     val nextEpisode: AfinityEpisode? = null,
     val isStartingCollectionPlayback: Boolean = false,
     val downloadConfirm: DownloadConfirm? = null,

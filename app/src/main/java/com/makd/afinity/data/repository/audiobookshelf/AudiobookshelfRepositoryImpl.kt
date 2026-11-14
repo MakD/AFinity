@@ -48,6 +48,7 @@ import com.makd.afinity.data.repository.AudiobookshelfConfig
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.FilteredItemsResult
 import com.makd.afinity.data.repository.ItemWithProgress
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.SeriesItemsResult
 import com.makd.afinity.di.ApplicationScope
@@ -70,6 +71,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -95,8 +99,12 @@ constructor(
     private val absSyncScheduler: AbsProgressSyncScheduler,
     private val audnexusApiService: AudnexusApiService,
     private val audibleRatingDao: AudibleRatingDao,
+    private val preferencesRepository: PreferencesRepository,
     @ApplicationScope private val repositoryScope: CoroutineScope,
 ) : AudiobookshelfRepository {
+
+    private suspend fun canReachServer(): Boolean =
+        !preferencesRepository.getOfflineMode() && networkConnectivityMonitor.isCurrentlyConnected()
 
     private val audiobookshelfDao = database.audiobookshelfDao()
     private val json = Json {
@@ -111,7 +119,7 @@ constructor(
     ): Result<T> =
         withContext(Dispatchers.IO) {
             try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                if (!canReachServer()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
                 val response = call(apiService.get())
@@ -170,8 +178,21 @@ constructor(
         }
 
         repositoryScope.launch {
+            preferencesRepository
+                .getOfflineModeFlow()
+                .distinctUntilChanged()
+                .drop(1)
+                .filter { offline -> !offline }
+                .collect {
+                    val (serverId, userId) = activeContext ?: return@collect
+                    if (!_isAuthenticated.value) return@collect
+                    absSyncScheduler.scheduleSync(serverId, userId)
+                }
+        }
+
+        repositoryScope.launch {
             networkConnectivityMonitor.isNetworkAvailable.collect { isAvailable ->
-                if (!isAvailable) return@collect
+                if (!isAvailable || preferencesRepository.getOfflineMode()) return@collect
                 val (serverId, userId) = activeContext ?: return@collect
                 if (!_isAuthenticated.value) return@collect
 
@@ -332,7 +353,7 @@ constructor(
 
         if (hasAuth && config?.isLoggedIn == true) {
             var activeUrl = config.serverUrl
-            if (networkConnectivityMonitor.isCurrentlyConnected()) {
+            if (canReachServer()) {
                 try {
                     val result =
                         addressResolver.resolveAddress(
@@ -568,7 +589,7 @@ constructor(
     override suspend fun validateToken(): Result<Boolean> {
         return withContext(Dispatchers.IO) {
             try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                if (!canReachServer()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
@@ -616,7 +637,7 @@ constructor(
                 activeContext ?: return@withContext Result.failure(Exception("No active session"))
 
             try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                if (!canReachServer()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
@@ -660,7 +681,7 @@ constructor(
     override suspend fun getLibrary(libraryId: String): Result<Library> {
         return withContext(Dispatchers.IO) {
             try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                if (!canReachServer()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
@@ -683,7 +704,7 @@ constructor(
     override suspend fun getLibraryStats(libraryId: String): Result<LibraryStats> {
         return withContext(Dispatchers.IO) {
             try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                if (!canReachServer()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
@@ -727,7 +748,7 @@ constructor(
                 activeContext ?: return@withContext Result.failure(Exception("No active session"))
 
             try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                if (!canReachServer()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
@@ -1007,7 +1028,7 @@ constructor(
             }
 
             try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                if (!canReachServer()) {
                     return@withContext cachedResult("No network connection")
                 }
 
@@ -1064,7 +1085,7 @@ constructor(
         libraryId: String,
         limit: Int,
     ): Flow<List<AudiobookshelfSeries>> = flow {
-        if (!networkConnectivityMonitor.isCurrentlyConnected()) return@flow
+        if (!canReachServer()) return@flow
 
         var currentPage = 0
         var totalFetched = 0
@@ -1105,7 +1126,7 @@ constructor(
     ): Result<SeriesItemsResult> {
         return withContext(Dispatchers.IO) {
             try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                if (!canReachServer()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
@@ -1153,7 +1174,7 @@ constructor(
     ): Result<List<PersonalizedView>> {
         return withContext(Dispatchers.IO) {
             try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                if (!canReachServer()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
@@ -1275,7 +1296,7 @@ constructor(
     override suspend fun refreshBookmarks(): Result<List<Bookmark>> {
         return withContext(Dispatchers.IO) {
             try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                if (!canReachServer()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
                 val response = apiService.get().getMe()
@@ -1317,7 +1338,8 @@ constructor(
                     updatedAt = now,
                 )
             )
-            if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+            if (!canReachServer()) {
+                absSyncScheduler.scheduleSync(serverId, userId)
                 return@withContext Result.success(Unit)
             }
             try {
@@ -1326,12 +1348,15 @@ constructor(
                 val body = response.body()
                 if (response.isSuccessful && body != null) {
                     audiobookshelfDao.insertBookmark(body.toEntity(serverId, userId.toString()))
+                } else {
+                    absSyncScheduler.scheduleSync(serverId, userId)
                 }
                 Result.success(Unit)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Timber.w(e, "Bookmark create queued for later sync")
+                absSyncScheduler.scheduleSync(serverId, userId)
                 Result.success(Unit)
             }
         }
@@ -1356,7 +1381,8 @@ constructor(
                     updatedAt = now,
                 )
             )
-            if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+            if (!canReachServer()) {
+                absSyncScheduler.scheduleSync(serverId, userId)
                 return@withContext Result.success(Unit)
             }
             try {
@@ -1368,12 +1394,15 @@ constructor(
                         serverId,
                         userId.toString(),
                     )
+                } else {
+                    absSyncScheduler.scheduleSync(serverId, userId)
                 }
                 Result.success(Unit)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Timber.w(e, "Bookmark delete queued for later sync")
+                absSyncScheduler.scheduleSync(serverId, userId)
                 Result.success(Unit)
             }
         }
@@ -1381,7 +1410,7 @@ constructor(
 
     override suspend fun syncPendingBookmarks(): Int {
         val (serverId, userId) = activeContext ?: return 0
-        if (!networkConnectivityMonitor.isCurrentlyConnected()) return 0
+        if (!canReachServer()) return 0
         return withContext(Dispatchers.IO) {
             var synced = 0
             val pending = audiobookshelfDao.getPendingSyncBookmarks(serverId, userId.toString())
@@ -1434,7 +1463,7 @@ constructor(
                 activeContext ?: return@withContext Result.failure(Exception("No active session"))
 
             try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                if (!canReachServer()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
@@ -1564,7 +1593,7 @@ constructor(
                     )
 
                 val synced =
-                    if (timeListened <= 0.0 && networkConnectivityMonitor.isCurrentlyConnected()) {
+                    if (timeListened <= 0.0 && canReachServer()) {
                         val response =
                             if (episodeId != null) {
                                 apiService.get().updateEpisodeProgress(itemId, episodeId, request)
@@ -1577,6 +1606,8 @@ constructor(
 
                 if (fullySynced) {
                     audiobookshelfDao.insertProgress(localProgress.copy(pendingSync = false))
+                } else if (timeListened <= 0.0) {
+                    absSyncScheduler.scheduleSync(currentServerId, currentUserId)
                 }
 
                 Result.success(localProgress.copy(pendingSync = !fullySynced).toMediaProgress())
@@ -1679,7 +1710,7 @@ constructor(
                 Timber.d(
                     "startPlaybackSession: itemId=$itemId episodeId=$episodeId serverId=$currentServerId userId=$currentUserId downloadEntity=${downloadEntity?.id} status=${downloadEntity?.status} hasSession=${downloadEntity?.serializedSession != null}"
                 )
-                if (downloadEntity == null && !networkConnectivityMonitor.isCurrentlyConnected()) {
+                if (downloadEntity == null && !canReachServer()) {
                     downloadEntity =
                         database
                             .absDownloadDao()
@@ -1730,7 +1761,7 @@ constructor(
                     return@withContext Result.success(session)
                 }
 
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                if (!canReachServer()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
@@ -1799,7 +1830,7 @@ constructor(
                     return@withContext Result.success(Unit)
                 }
 
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                if (!canReachServer()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
@@ -1839,7 +1870,7 @@ constructor(
                     return@withContext Result.success(Unit)
                 }
 
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                if (!canReachServer()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
@@ -1870,7 +1901,7 @@ constructor(
     override suspend fun getGenres(libraryIds: List<String>): Result<List<String>> {
         return withContext(Dispatchers.IO) {
             try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                if (!canReachServer()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
@@ -1910,7 +1941,7 @@ constructor(
     ): Result<List<LibraryItem>> {
         return withContext(Dispatchers.IO) {
             try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                if (!canReachServer()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
@@ -1975,7 +2006,7 @@ constructor(
     ): Result<List<LibraryItem>> {
         return withContext(Dispatchers.IO) {
             try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                if (!canReachServer()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
@@ -2021,7 +2052,7 @@ constructor(
 
     override suspend fun syncPendingProgress(serverId: String, userId: UUID): Result<Int> {
         return withContext(Dispatchers.IO) {
-            if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+            if (!canReachServer()) {
                 return@withContext Result.failure(Exception("No network connection"))
             }
 
@@ -2418,6 +2449,9 @@ constructor(
     override suspend fun getListeningStats(): Result<ListeningStats> {
         return withContext(Dispatchers.IO) {
             try {
+                if (!canReachServer()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
                 val response = apiService.get().getListeningStats()
                 if (response.isSuccessful) {
                     Result.success(response.body() ?: ListeningStats())
@@ -2438,6 +2472,9 @@ constructor(
     ): Result<ListeningSessionsResponse> {
         return withContext(Dispatchers.IO) {
             try {
+                if (!canReachServer()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
                 val response = apiService.get().getListeningSessions(itemsPerPage = itemsPerPage)
                 if (response.isSuccessful) {
                     Result.success(response.body() ?: ListeningSessionsResponse())
@@ -2461,7 +2498,7 @@ constructor(
     ): Result<ListeningSessionsResponse> =
         withContext(Dispatchers.IO) {
             try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                if (!canReachServer()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
                 val response =
@@ -2483,7 +2520,7 @@ constructor(
         withContext(Dispatchers.IO) {
             cachedEnrichment("author_$authorId") {
                 try {
-                    if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    if (!canReachServer()) {
                         return@cachedEnrichment Result.failure(Exception("No network connection"))
                     }
                     val response = apiService.get().getAuthor(authorId)
@@ -2513,7 +2550,7 @@ constructor(
                 "items_${libraryId}_${filter.group}_${filter.value}_${limit}_$collapseSeries"
             cachedEnrichment(cacheKey) {
                 try {
-                    if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    if (!canReachServer()) {
                         return@cachedEnrichment Result.failure(Exception("No network connection"))
                     }
                     val encodedFilter =
@@ -2586,8 +2623,10 @@ constructor(
         asin: String?,
         title: String,
         authorName: String?,
+        allowNetwork: Boolean,
     ): Result<AudibleRating?> =
         withContext(Dispatchers.IO) {
+            var cachedRating: AudibleRating? = null
             try {
                 val context = currentActiveContext
                 Timber.d(
@@ -2597,22 +2636,22 @@ constructor(
 
                 val sevenDaysMs = 7 * 24 * 60 * 60 * 1000L
                 val cached = audibleRatingDao.getRating(itemId, serverId, userId.toString())
+                cachedRating = cached?.let {
+                    AudibleRating(rating = it.rating, numRatings = it.numRatings, asin = it.asin)
+                }
                 if (
                     cached != null && (System.currentTimeMillis() - cached.fetchedAt) < sevenDaysMs
                 ) {
                     Timber.d("AudibleRating: cache hit rating=${cached.rating}")
-                    return@withContext Result.success(
-                        AudibleRating(
-                            rating = cached.rating,
-                            numRatings = cached.numRatings,
-                            asin = cached.asin,
-                        )
-                    )
+                    return@withContext Result.success(cachedRating)
+                }
+                if (!allowNetwork || !canReachServer()) {
+                    return@withContext Result.success(cachedRating)
                 }
 
                 val resolvedAsin = asin ?: searchAsinFallback(title, authorName)
                 Timber.d("AudibleRating: resolvedAsin=$resolvedAsin")
-                resolvedAsin ?: return@withContext Result.success(null)
+                resolvedAsin ?: return@withContext Result.success(cachedRating)
 
                 val region =
                     Locale.getDefault().country.lowercase().let { if (it == "gb") "uk" else it }
@@ -2630,12 +2669,12 @@ constructor(
                 Timber.d(
                     "AudibleRating: Audnexus response code=${response.code()} body=${response.body()}"
                 )
-                if (!response.isSuccessful) return@withContext Result.success(null)
+                if (!response.isSuccessful) return@withContext Result.success(cachedRating)
 
-                val body = response.body() ?: return@withContext Result.success(null)
+                val body = response.body() ?: return@withContext Result.success(cachedRating)
                 val rating = body.rating?.toDoubleOrNull()?.takeIf { it > 0 }
                 Timber.d("AudibleRating: rawRating=${body.rating} parsedRating=$rating")
-                rating ?: return@withContext Result.success(null)
+                rating ?: return@withContext Result.success(cachedRating)
 
                 audibleRatingDao.insertRating(
                     AudibleRatingEntity(
@@ -2657,7 +2696,7 @@ constructor(
                 throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to fetch Audible rating for $itemId")
-                Result.success(null)
+                Result.success(cachedRating)
             }
         }
 

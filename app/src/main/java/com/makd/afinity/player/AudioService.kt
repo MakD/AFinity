@@ -547,7 +547,8 @@ class AudioService : MediaLibraryService() {
                                 musicPlaybackManager.updatePlayingState(false)
                                 stopPositionUpdates()
                                 musicProgressReporter.onPlaybackStopped(
-                                    exoPlayer?.currentPosition ?: 0L
+                                    exoPlayer?.currentPosition ?: 0L,
+                                    isEnded = true,
                                 )
                                 musicPlaybackManager.stop()
                                 startService(
@@ -575,6 +576,12 @@ class AudioService : MediaLibraryService() {
                     }
                     return
                 }
+                musicProgressReporter.onTrackTransition(
+                    previousPositionMs = musicPlaybackManager.state.value.positionMs,
+                    previousEnded =
+                        reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
+                            reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT,
+                )
                 val newIndex = exoPlayer?.currentMediaItemIndex ?: 0
                 musicQueueManager.onTrackChanged(newIndex)
                 lastPlaybackStore.recordMusicPosition(exoPlayer?.currentPosition ?: 0L)
@@ -587,7 +594,6 @@ class AudioService : MediaLibraryService() {
                     applyNormalizationGain(track)
                     musicProgressReporter.onPlaybackStarted(
                         trackId = track.id,
-                        startPositionMs = 0L,
                         playSessionId = musicQueueManager.playSessionIdFor(track.id),
                         playMethod = musicQueueManager.playMethodFor(track.id),
                     )

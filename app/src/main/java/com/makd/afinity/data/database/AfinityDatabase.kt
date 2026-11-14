@@ -22,6 +22,7 @@ import com.makd.afinity.data.database.dao.MusicAlbumDao
 import com.makd.afinity.data.database.dao.MusicLyricsDao
 import com.makd.afinity.data.database.dao.MusicQueueDao
 import com.makd.afinity.data.database.dao.MusicTrackDao
+import com.makd.afinity.data.database.dao.OfflinePlayDao
 import com.makd.afinity.data.database.dao.PersonSectionDao
 import com.makd.afinity.data.database.dao.SeasonDao
 import com.makd.afinity.data.database.dao.ServerAddressDao
@@ -73,6 +74,7 @@ import com.makd.afinity.data.database.entities.MusicAlbumEntity
 import com.makd.afinity.data.database.entities.MusicLyricsEntity
 import com.makd.afinity.data.database.entities.MusicQueueEntity
 import com.makd.afinity.data.database.entities.MusicTrackEntity
+import com.makd.afinity.data.database.entities.OfflinePlayEntity
 import com.makd.afinity.data.database.entities.PersonSectionCacheEntity
 import com.makd.afinity.data.database.entities.SeerrArtworkEntity
 import com.makd.afinity.data.database.entities.ServerStorageCacheEntity
@@ -87,7 +89,7 @@ import com.makd.afinity.data.models.server.ServerAddressMemory
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.models.user.User
 
-const val AFINITY_DB_VERSION = 89
+const val AFINITY_DB_VERSION = 90
 
 @Database(
     entities =
@@ -142,6 +144,7 @@ const val AFINITY_DB_VERSION = 89
             LastFmArtistCacheEntity::class,
             LastFmPopularCacheEntity::class,
             SeerrArtworkEntity::class,
+            OfflinePlayEntity::class,
         ],
     version = AFINITY_DB_VERSION,
     exportSchema = true,
@@ -214,4 +217,6 @@ abstract class AfinityDatabase : RoomDatabase() {
     abstract fun lastFmArtistDao(): LastFmArtistDao
 
     abstract fun deletedItemDao(): DeletedItemDao
+
+    abstract fun offlinePlayDao(): OfflinePlayDao
 }

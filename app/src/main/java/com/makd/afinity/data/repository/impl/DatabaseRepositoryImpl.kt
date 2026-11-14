@@ -8,6 +8,7 @@ import com.makd.afinity.data.database.dao.MovieDao
 import com.makd.afinity.data.database.dao.MusicAlbumDao
 import com.makd.afinity.data.database.dao.MusicLyricsDao
 import com.makd.afinity.data.database.dao.MusicTrackDao
+import com.makd.afinity.data.database.dao.OfflinePlayDao
 import com.makd.afinity.data.database.dao.SeasonDao
 import com.makd.afinity.data.database.dao.ServerAddressDao
 import com.makd.afinity.data.database.dao.ServerDao
@@ -27,6 +28,7 @@ import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
 import com.makd.afinity.data.database.entities.LastFmArtistCacheEntity
 import com.makd.afinity.data.database.entities.LastFmPopularCacheEntity
 import com.makd.afinity.data.database.entities.MusicLyricsEntity
+import com.makd.afinity.data.database.entities.OfflinePlayEntity
 import com.makd.afinity.data.database.entities.WikidataAwardsCacheEntity
 import com.makd.afinity.data.database.entities.toAfinityAlbum
 import com.makd.afinity.data.database.entities.toAfinityEpisodeDto
@@ -43,6 +45,7 @@ import com.makd.afinity.data.database.entities.toMusicTrackEntity
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMediaStream
@@ -65,6 +68,7 @@ import com.makd.afinity.data.models.server.ServerWithAddressesAndUsers
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.DatabaseRepository
+import java.time.LocalDateTime
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Provider
@@ -99,6 +103,7 @@ constructor(
     private val musicTrackDao: MusicTrackDao,
     private val musicAlbumDao: MusicAlbumDao,
     private val musicLyricsDao: MusicLyricsDao,
+    private val offlinePlayDao: OfflinePlayDao,
 ) : DatabaseRepository {
 
     private val sessionManager: SessionManager
@@ -196,6 +201,15 @@ constructor(
         movieDao.updateMovie(movie.toAfinityMovieDto(serverId))
     }
 
+    override suspend fun updateMovieExternalIds(
+        movieId: UUID,
+        serverId: String,
+        providerIds: Map<String, String>?,
+        externalUrls: List<AfinityExternalUrl>?,
+    ) {
+        movieDao.updateExternalIds(movieId, serverId, providerIds, externalUrls)
+    }
+
     override suspend fun deleteMovie(movieId: UUID) {
         movieDao.deleteMovieById(movieId)
     }
@@ -239,6 +253,16 @@ constructor(
         showDao.updateShow(show.toAfinityShowDto(serverId))
     }
 
+    override suspend fun updateShowExternalIds(
+        showId: UUID,
+        serverId: String,
+        providerIds: Map<String, String>?,
+        externalUrls: List<AfinityExternalUrl>?,
+        tagline: String?,
+    ) {
+        showDao.updateExternalIds(showId, serverId, providerIds, externalUrls, tagline)
+    }
+
     override suspend fun deleteShow(showId: UUID) {
         showDao.deleteShowById(showId)
     }
@@ -278,6 +302,15 @@ constructor(
     override suspend fun updateSeason(season: AfinitySeason) {
         val serverId = sessionManager.currentSession.value?.serverId ?: return
         seasonDao.updateSeason(season.toAfinitySeasonDto(serverId))
+    }
+
+    override suspend fun updateSeasonDates(
+        seasonId: UUID,
+        serverId: String,
+        productionYear: Int?,
+        premiereDate: LocalDateTime?,
+    ) {
+        seasonDao.updateDates(seasonId, serverId, productionYear, premiereDate)
     }
 
     override suspend fun deleteSeason(seasonId: UUID) {
@@ -476,7 +509,30 @@ constructor(
     }
 
     override suspend fun countUserDataToSync(): Int {
-        return userDataDao.countUserDataToSync()
+        return userDataDao.countUserDataToSync() + offlinePlayDao.countAll()
+    }
+
+    override suspend fun insertOfflinePlay(
+        itemId: UUID,
+        userId: UUID,
+        serverId: String,
+        playedAt: Long,
+    ) {
+        offlinePlayDao.insert(
+            OfflinePlayEntity(
+                itemId = itemId,
+                userId = userId,
+                serverId = serverId,
+                playedAt = playedAt,
+            )
+        )
+    }
+
+    override suspend fun getOfflinePlays(userId: UUID, serverId: String): List<OfflinePlayEntity> =
+        offlinePlayDao.getForAccount(userId, serverId)
+
+    override suspend fun deleteOfflinePlay(id: Long) {
+        offlinePlayDao.deleteById(id)
     }
 
     override fun getAllUserDataFlow(userId: UUID): Flow<List<AfinityUserDataDto>> {
@@ -585,6 +641,7 @@ constructor(
     override suspend fun clearUserData(userId: UUID) {
         val serverId = sessionManager.currentSession.value?.serverId ?: return
         userDataDao.deleteUserDataByUserId(userId, serverId)
+        offlinePlayDao.deleteForAccount(userId, serverId)
     }
 
     private suspend fun AfinityMovieDto.toAfinityMovie(
@@ -626,8 +683,8 @@ constructor(
             chapters = chapters ?: emptyList(),
             trickplayInfo = trickplayInfos,
             tagline = tagline,
-            providerIds = null,
-            externalUrls = null,
+            providerIds = providerIds,
+            externalUrls = externalUrls,
             liked = false,
             tmdbReviews = this.tmdbReviews ?: emptyList(),
             mdbRatings = this.mdbRatings ?: emptyList(),
@@ -669,9 +726,9 @@ constructor(
             images = images ?: AfinityImages(),
             seasonCount = seasonCount,
             episodeCount = null,
-            tagline = null,
-            providerIds = null,
-            externalUrls = null,
+            tagline = tagline,
+            providerIds = providerIds,
+            externalUrls = externalUrls,
             liked = false,
             tmdbReviews = this.tmdbReviews ?: emptyList(),
             mdbRatings = this.mdbRatings ?: emptyList(),
@@ -703,8 +760,8 @@ constructor(
             seriesName = seriesName,
             images = images ?: AfinityImages(),
             episodeCount = episodeCount,
-            productionYear = null,
-            premiereDate = null,
+            productionYear = productionYear,
+            premiereDate = premiereDate,
             people = emptyList(),
             providerIds = null,
             externalUrls = null,
@@ -746,7 +803,7 @@ constructor(
             seriesLogoBlurHash = null,
             seasonId = seasonId,
             communityRating = communityRating,
-            people = emptyList(),
+            people = people ?: emptyList(),
             images = images ?: AfinityImages(),
             chapters = chapters ?: emptyList(),
             trickplayInfo = trickplayInfos,
@@ -967,6 +1024,34 @@ constructor(
     ) {
         musicAlbumDao.updateLocalImagePath(id.toString(), serverId, userId, path)
     }
+
+    override suspend fun updateMusicAlbumDetails(
+        id: UUID,
+        serverId: String,
+        userId: String,
+        overview: String?,
+        externalUrls: List<AfinityExternalUrl>?,
+    ) {
+        musicAlbumDao.updateDetails(id.toString(), serverId, userId, overview, externalUrls)
+    }
+
+    override suspend fun updateMusicAlbumArtistImagePath(
+        id: UUID,
+        serverId: String,
+        userId: String,
+        path: String,
+    ) {
+        musicAlbumDao.updateArtistImagePath(id.toString(), serverId, userId, path)
+    }
+
+    override suspend fun getMusicArtistImagePath(
+        artistId: UUID,
+        serverId: String,
+        userId: String,
+    ): String? = musicAlbumDao.getArtistImagePath(artistId.toString(), serverId, userId)
+
+    override suspend fun getMusicAlbum(id: UUID, serverId: String, userId: String): AfinityAlbum? =
+        musicAlbumDao.getById(id.toString(), serverId, userId)?.toAfinityAlbum()
 
     override suspend fun insertMusicLyrics(
         trackId: UUID,

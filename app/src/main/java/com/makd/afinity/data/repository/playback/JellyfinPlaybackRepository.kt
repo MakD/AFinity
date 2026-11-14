@@ -371,6 +371,7 @@ constructor(
     ): Boolean {
         return withContext(Dispatchers.IO) {
             try {
+                if (preferencesRepository.getOfflineMode()) return@withContext false
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 val sessionApi = SessionApi(apiClient)
 
@@ -415,9 +416,20 @@ constructor(
         playMethod: String,
         liveStreamId: String?,
         repeatMode: String,
+        isMusic: Boolean,
     ): Boolean {
         return withContext(Dispatchers.IO) {
             try {
+                if (preferencesRepository.getOfflineMode()) {
+                    savePlaybackProgressLocally(
+                        itemId,
+                        positionTicks,
+                        audioStreamIndex,
+                        subtitleStreamIndex,
+                        isMusic = isMusic,
+                    )
+                    return@withContext false
+                }
                 val apiClient =
                     sessionManager.getCurrentApiClient()
                         ?: run {
@@ -429,6 +441,7 @@ constructor(
                                 positionTicks,
                                 audioStreamIndex,
                                 subtitleStreamIndex,
+                                isMusic = isMusic,
                             )
                             return@withContext false
                         }
@@ -458,6 +471,7 @@ constructor(
                     positionTicks,
                     audioStreamIndex,
                     subtitleStreamIndex,
+                    isMusic = isMusic,
                 )
                 false
             } catch (e: CancellationException) {
@@ -472,6 +486,7 @@ constructor(
                     positionTicks,
                     audioStreamIndex,
                     subtitleStreamIndex,
+                    isMusic = isMusic,
                 )
                 false
             }
@@ -488,9 +503,23 @@ constructor(
         playlistItemId: String?,
         runtimeTicks: Long,
         isEnded: Boolean,
+        isMusic: Boolean,
+        playCountedOnServer: Boolean,
     ): Boolean {
         return withContext(Dispatchers.IO) {
             try {
+                if (preferencesRepository.getOfflineMode()) {
+                    savePlaybackProgressLocally(
+                        itemId = itemId,
+                        positionTicks = positionTicks,
+                        isStop = true,
+                        runtimeTicks = runtimeTicks,
+                        isEnded = isEnded,
+                        isMusic = isMusic,
+                        playCountedOnServer = playCountedOnServer,
+                    )
+                    return@withContext false
+                }
                 val apiClient =
                     sessionManager.getCurrentApiClient()
                         ?: run {
@@ -503,6 +532,8 @@ constructor(
                                 isStop = true,
                                 runtimeTicks = runtimeTicks,
                                 isEnded = isEnded,
+                                isMusic = isMusic,
+                                playCountedOnServer = playCountedOnServer,
                             )
                             return@withContext false
                         }
@@ -520,7 +551,7 @@ constructor(
                         failed = false,
                     )
                 )
-                clearPendingSync(itemId)
+                if (!isMusic) clearPendingSync(itemId)
                 true
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to report playback stop for item: $itemId, saving locally")
@@ -530,6 +561,8 @@ constructor(
                     isStop = true,
                     runtimeTicks = runtimeTicks,
                     isEnded = isEnded,
+                    isMusic = isMusic,
+                    playCountedOnServer = playCountedOnServer,
                 )
                 false
             } catch (e: CancellationException) {
@@ -545,6 +578,8 @@ constructor(
                     isStop = true,
                     runtimeTicks = runtimeTicks,
                     isEnded = isEnded,
+                    isMusic = isMusic,
+                    playCountedOnServer = playCountedOnServer,
                 )
                 false
             }
@@ -576,7 +611,10 @@ constructor(
         isStop: Boolean = false,
         runtimeTicks: Long = 0L,
         isEnded: Boolean = false,
+        isMusic: Boolean = false,
+        playCountedOnServer: Boolean = false,
     ) {
+        if (isMusic && (!isStop || playCountedOnServer)) return
         try {
             val userId =
                 getCurrentUserId()
@@ -587,6 +625,19 @@ constructor(
             val serverId = sessionManager.currentSession.value?.serverId
             if (serverId == null) {
                 Timber.w("Cannot save playback progress locally: no active server session")
+                return
+            }
+
+            if (isMusic) {
+                if (isEnded || positionTicks > 0L) {
+                    databaseRepository.insertOfflinePlay(
+                        itemId = itemId,
+                        userId = userId,
+                        serverId = serverId,
+                        playedAt = System.currentTimeMillis(),
+                    )
+                    Timber.i("Saved offline play for track $itemId")
+                }
                 return
             }
 
@@ -657,6 +708,7 @@ constructor(
     override suspend fun pingSession(sessionId: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
+                if (preferencesRepository.getOfflineMode()) return@withContext false
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 val sessionApi = SessionApi(apiClient)
                 sessionApi.pingPlaybackSession(playSessionId = sessionId)

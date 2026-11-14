@@ -187,18 +187,23 @@ fun SharedTransitionScope.MusicPlayerScreen(
                         ?.takeIf { album != null }
                         ?.let { id -> { onNavigateToAlbum(id.toString()) } },
                 trailing = {
-                    IconButton(onClick = viewModel::toggleCurrentTrackFavorite) {
-                        Icon(
-                            painter =
-                                painterResource(
-                                    if (track?.favorite == true) R.drawable.ic_favorite_filled
-                                    else R.drawable.ic_favorite
-                                ),
-                            contentDescription = stringResource(R.string.cd_favorite),
-                            tint =
-                                if (track?.favorite == true) Color.Red
-                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                        )
+                    if (!isOffline) {
+                        IconButton(onClick = viewModel::toggleCurrentTrackFavorite) {
+                            Icon(
+                                painter =
+                                    painterResource(
+                                        if (track?.favorite == true) R.drawable.ic_favorite_filled
+                                        else R.drawable.ic_favorite
+                                    ),
+                                contentDescription = stringResource(R.string.cd_favorite),
+                                tint =
+                                    if (track?.favorite == true) Color.Red
+                                    else
+                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                            alpha = 0.8f
+                                        ),
+                            )
+                        }
                     }
                 },
             )

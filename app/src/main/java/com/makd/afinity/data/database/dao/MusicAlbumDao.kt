@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.makd.afinity.data.database.entities.MusicAlbumEntity
+import com.makd.afinity.data.models.media.AfinityExternalUrl
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -34,6 +35,30 @@ interface MusicAlbumDao {
         "UPDATE music_albums SET localImagePath = :path WHERE id = :id AND serverId = :serverId AND userId = :userId"
     )
     suspend fun updateLocalImagePath(id: String, serverId: String, userId: String, path: String)
+
+    @Query(
+        "UPDATE music_albums SET overview = :overview, externalUrls = :externalUrls " +
+            "WHERE id = :id AND serverId = :serverId AND userId = :userId"
+    )
+    suspend fun updateDetails(
+        id: String,
+        serverId: String,
+        userId: String,
+        overview: String?,
+        externalUrls: List<AfinityExternalUrl>?,
+    )
+
+    @Query(
+        "UPDATE music_albums SET artistImagePath = :path " +
+            "WHERE id = :id AND serverId = :serverId AND userId = :userId"
+    )
+    suspend fun updateArtistImagePath(id: String, serverId: String, userId: String, path: String)
+
+    @Query(
+        "SELECT artistImagePath FROM music_albums WHERE artistId = :artistId " +
+            "AND serverId = :serverId AND userId = :userId AND artistImagePath IS NOT NULL LIMIT 1"
+    )
+    suspend fun getArtistImagePath(artistId: String, serverId: String, userId: String): String?
 
     @Query("DELETE FROM music_albums WHERE id = :id AND serverId = :serverId AND userId = :userId")
     suspend fun delete(id: String, serverId: String, userId: String)

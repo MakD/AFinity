@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.makd.afinity.data.database.entities.AfinitySeasonDto
+import java.time.LocalDateTime
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 
@@ -22,6 +23,17 @@ interface SeasonDao {
     @Update suspend fun updateSeason(season: AfinitySeasonDto)
 
     @Delete suspend fun deleteSeason(season: AfinitySeasonDto)
+
+    @Query(
+        "UPDATE seasons SET productionYear = :productionYear, premiereDate = :premiereDate " +
+            "WHERE id = :seasonId AND serverId = :serverId"
+    )
+    suspend fun updateDates(
+        seasonId: UUID,
+        serverId: String,
+        productionYear: Int?,
+        premiereDate: LocalDateTime?,
+    )
 
     @Query("DELETE FROM seasons WHERE id = :seasonId") suspend fun deleteSeasonById(seasonId: UUID)
 

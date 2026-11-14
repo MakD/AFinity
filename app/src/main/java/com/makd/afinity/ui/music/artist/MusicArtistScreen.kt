@@ -214,8 +214,8 @@ fun MusicArtistScreen(
                         ),
                     ) +
                         musicAdminMenuActions(
-                            isAdmin = isAdmin,
-                            canDelete = artist.id in deletableIds,
+                            isAdmin = isAdmin && !isOffline,
+                            canDelete = !isOffline && artist.id in deletableIds,
                             deleteLabel = R.string.music_admin_delete_artist,
                             onEditMetadata = { onEditMetadataClick(artist.id.toString()) },
                             onEditImages = { onEditImagesClick(artist.id.toString()) },
@@ -234,21 +234,23 @@ fun MusicArtistScreen(
                         )
                 } ?: emptyList(),
         ) {
-            IconButton(onClick = { viewModel.toggleFavorite() }) {
-                Icon(
-                    painter =
-                        if (uiState.artist?.favorite == true)
-                            painterResource(R.drawable.ic_favorite_filled)
-                        else painterResource(R.drawable.ic_favorite),
-                    contentDescription =
-                        if (uiState.artist?.favorite == true)
-                            stringResource(R.string.cd_favorite_remove)
-                        else stringResource(R.string.cd_favorite_add),
-                    tint =
-                        if (uiState.artist?.favorite == true) Color.Red
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(26.dp),
-                )
+            if (!isOffline) {
+                IconButton(onClick = { viewModel.toggleFavorite() }) {
+                    Icon(
+                        painter =
+                            if (uiState.artist?.favorite == true)
+                                painterResource(R.drawable.ic_favorite_filled)
+                            else painterResource(R.drawable.ic_favorite),
+                        contentDescription =
+                            if (uiState.artist?.favorite == true)
+                                stringResource(R.string.cd_favorite_remove)
+                            else stringResource(R.string.cd_favorite_add),
+                        tint =
+                            if (uiState.artist?.favorite == true) Color.Red
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(26.dp),
+                    )
+                }
             }
         }
     }
@@ -384,7 +386,8 @@ fun MusicArtistScreen(
                                 }),
                         onAddNext = { playerViewModel.addNext(listOf(track)) },
                         onAddLast = { playerViewModel.addLast(listOf(track)) },
-                        onFavorite = { viewModel.toggleTrackFavorite(track.id) },
+                        onFavorite =
+                            if (isOffline) null else ({ viewModel.toggleTrackFavorite(track.id) }),
                         onAddToPlaylist =
                             if (isOffline) null
                             else
@@ -399,7 +402,7 @@ fun MusicArtistScreen(
                         isDownloadEnabled = canDownloadOnNetwork,
                         onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
                         downloadInfo = uiState.trackDownloadInfos[track.id],
-                        adminActions = trackAdminActions,
+                        adminActions = if (isOffline) null else trackAdminActions,
                     )
                 }
             }
@@ -445,7 +448,9 @@ fun MusicArtistScreen(
                                             }),
                                     onAddNext = { playerViewModel.addNext(listOf(track)) },
                                     onAddLast = { playerViewModel.addLast(listOf(track)) },
-                                    onFavorite = { viewModel.toggleTrackFavorite(track.id) },
+                                    onFavorite =
+                                        if (isOffline) null
+                                        else ({ viewModel.toggleTrackFavorite(track.id) }),
                                     onAddToPlaylist =
                                         if (isOffline) null
                                         else
@@ -461,7 +466,7 @@ fun MusicArtistScreen(
                                     isDownloadEnabled = canDownloadOnNetwork,
                                     onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
                                     downloadInfo = uiState.trackDownloadInfos[track.id],
-                                    adminActions = trackAdminActions,
+                                    adminActions = if (isOffline) null else trackAdminActions,
                                 )
                             }
                         }

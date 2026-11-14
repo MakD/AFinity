@@ -243,7 +243,14 @@ constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-            val result = audiobookshelfRepository.getItemDetails(itemId)
+            val offline = offlineModeManager.isOffline.value
+            val result =
+                if (offline) {
+                    audiobookshelfRepository.getCachedItem(itemId)?.let { Result.success(it) }
+                        ?: Result.failure(Exception("No network connection"))
+                } else {
+                    audiobookshelfRepository.getItemDetails(itemId)
+                }
 
             result.fold(
                 onSuccess = { item ->
@@ -257,15 +264,18 @@ constructor(
                     Timber.d("Loaded item: ${item.media.metadata.title}")
 
                     if (item.mediaType.lowercase() == "podcast") {
-                        if (socketManager.connectionState.value != WebSocketState.CONNECTED) {
+                        if (
+                            !offline &&
+                                socketManager.connectionState.value != WebSocketState.CONNECTED
+                        ) {
                             audiobookshelfRepository.refreshProgress()
                         }
                     } else {
-                        loadAudibleRating(item)
+                        loadAudibleRating(item, allowNetwork = !offline)
                     }
 
                     item.media.metadata.series?.let { seriesList ->
-                        if (seriesList.isNotEmpty()) {
+                        if (!offline && seriesList.isNotEmpty()) {
                             loadSeriesDetails(item.libraryId, seriesList)
                         }
                     }
@@ -278,7 +288,7 @@ constructor(
         }
     }
 
-    private fun loadAudibleRating(item: LibraryItem) {
+    private fun loadAudibleRating(item: LibraryItem, allowNetwork: Boolean) {
         viewModelScope.launch {
             audiobookshelfRepository
                 .getAudibleRating(
@@ -286,6 +296,7 @@ constructor(
                     asin = item.media.metadata.asin,
                     title = item.media.metadata.title ?: return@launch,
                     authorName = item.media.metadata.authorName,
+                    allowNetwork = allowNetwork,
                 )
                 .onSuccess { rating -> _audibleRating.value = rating }
                 .onFailure { e -> Timber.w(e, "Audible rating fetch failed") }
@@ -333,6 +344,17 @@ constructor(
         val author = current.media.metadata.authors?.firstOrNull() ?: return
         authorRequested = true
         viewModelScope.launch {
+            if (offlineModeManager.isOffline.value) {
+                val stored = absDownloadRepository.getDownload(current.id, null)
+                _authorDetails.value =
+                    AuthorDetails(
+                        author = author.copy(description = stored?.authorDescription),
+                        titleCount = stored?.authorTitleCount,
+                        localImageUrl = stored?.authorImageUrl,
+                    )
+                authorRequested = false
+                return@launch
+            }
             val (authorResult, countResult) =
                 coroutineScope {
                     val details = async { audiobookshelfRepository.getAuthor(author.id) }
@@ -546,7 +568,11 @@ constructor(
 fun LibraryItem?.isSerialPodcast(): Boolean =
     this?.media?.metadata?.type.equals("serial", ignoreCase = true)
 
-data class AuthorDetails(val author: Author, val titleCount: Int?)
+data class AuthorDetails(
+    val author: Author,
+    val titleCount: Int?,
+    val localImageUrl: String? = null,
+)
 
 data class ListeningSummary(
     val totalListened: Double,

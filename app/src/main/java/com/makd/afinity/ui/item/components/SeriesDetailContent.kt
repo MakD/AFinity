@@ -51,6 +51,7 @@ import com.makd.afinity.ui.item.components.shared.baseMediaDetailItems
 import com.makd.afinity.ui.item.components.shared.detailItem
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
+import java.util.UUID
 
 fun LazyListScope.seriesDetailItems(
     item: AfinityShow,
@@ -69,15 +70,17 @@ fun LazyListScope.seriesDetailItems(
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     onItemClick: (AfinityItem) -> Unit,
     onSeasonClick: (AfinitySeason) -> Unit,
-    onPersonClick: (String) -> Unit,
+    onPersonClick: ((String) -> Unit)?,
     widthSizeClass: WindowWidthSizeClass,
     horizontalPadding: Dp,
     detailLayout: DetailLayout,
     watchProviders: TmdbRegionProviders? = null,
+    showExternalLinks: Boolean = true,
 ) {
     baseMediaDetailItems(
         item = item,
         watchProviders = watchProviders,
+        showExternalLinks = showExternalLinks,
         specialFeatures = specialFeatures,
         containingBoxSets = containingBoxSets,
         tmdbReviews = tmdbReviews,
@@ -88,7 +91,8 @@ fun LazyListScope.seriesDetailItems(
         isRatingsFromCache = isRatingsFromCache,
         onSpecialFeatureClick = onSpecialFeatureClick,
         onBoxSetClick = onItemClick,
-        onPersonClick = { personId -> onPersonClick(personId.toString()) },
+        onPersonClick =
+            onPersonClick?.let { click -> { personId: UUID -> click(personId.toString()) } },
         widthSizeClass = widthSizeClass,
         horizontalPadding = horizontalPadding,
         detailLayout = detailLayout,

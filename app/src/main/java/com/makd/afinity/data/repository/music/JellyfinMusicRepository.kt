@@ -2,6 +2,7 @@ package com.makd.afinity.data.repository.music
 
 import androidx.core.net.toUri
 import com.makd.afinity.data.manager.MediaChangeManager
+import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.extensions.toAfinityAlbum
@@ -41,6 +42,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -72,9 +74,62 @@ constructor(
     private val apiInvoker: JellyfinApiInvoker,
     private val mediaChangeManager: MediaChangeManager,
     private val queryInvalidator: QueryInvalidator,
+    private val offlineModeManager: OfflineModeManager,
 ) : MusicRepository {
 
     private val playlistsRefreshTrigger = MutableStateFlow(0)
+
+    private fun isOffline(): Boolean = offlineModeManager.isOffline.value
+
+    private suspend fun storedAlbums(): List<AfinityAlbum> {
+        val session = sessionManager.currentSession.value ?: return emptyList()
+        return databaseRepository
+            .getAllMusicAlbumsFlow(session.serverId, session.userId.toString())
+            .first()
+    }
+
+    private suspend fun storedTracks(): List<AfinityTrack> {
+        val session = sessionManager.currentSession.value ?: return emptyList()
+        return databaseRepository
+            .getAllMusicTracksFlow(session.serverId, session.userId.toString())
+            .first()
+            .filter { it.localFilePath != null }
+    }
+
+    private suspend fun storedArtistTracks(artistId: UUID): List<AfinityTrack> {
+        val albumIds = storedAlbums().filter { it.artistId == artistId }.map { it.id }.toSet()
+        return storedTracks()
+            .filter { it.artistId == artistId || it.albumId in albumIds }
+            .sortedWith(
+                compareBy<AfinityTrack> { it.album.orEmpty() }
+                    .thenBy { it.discNumber ?: 1 }
+                    .thenBy { it.indexNumber ?: 0 }
+            )
+    }
+
+    private suspend fun storedArtist(artistId: UUID): AfinityArtist? {
+        val session = sessionManager.currentSession.value ?: return null
+        val albums = storedAlbums().filter { it.artistId == artistId }
+        val name =
+            albums.firstNotNullOfOrNull { it.artist }
+                ?: storedTracks().firstOrNull { it.artistId == artistId }?.artist
+                ?: return null
+        val photo =
+            databaseRepository.getMusicArtistImagePath(
+                artistId,
+                session.serverId,
+                session.userId.toString(),
+            )
+        return AfinityArtist(
+            id = artistId,
+            name = name,
+            overview = null,
+            albumCount = albums.size,
+            genres = emptyList(),
+            favorite = false,
+            images = AfinityImages(primary = photo?.toUri()),
+        )
+    }
 
     override fun invalidatePlaylistsCache() {
         playlistsRefreshTrigger.update { it + 1 }
@@ -318,19 +373,41 @@ constructor(
                 it.id == albumId
             }
         }
-        return apiInvoker
-            .apiResult { apiClient, userId ->
-                val baseUrl = getBaseUrlInternal()
-                LibraryApi(apiClient).getItem(itemId = albumId, userId = userId).content.let {
-                    runCatching { it.toAfinityAlbum(baseUrl) }.getOrNull()
+        if (isOffline()) return fromDb()
+        val fetched =
+            apiInvoker
+                .apiResult { apiClient, userId ->
+                    val baseUrl = getBaseUrlInternal()
+                    LibraryApi(apiClient).getItem(itemId = albumId, userId = userId).content.let {
+                        runCatching { it.toAfinityAlbum(baseUrl) }.getOrNull()
+                    }
                 }
-            }
-            .getOrElse { e ->
-                if (e !is NoActiveSessionException) {
-                    Timber.e(e, "Failed to fetch album: $albumId — trying DB cache")
-                }
-                null
-            } ?: fromDb()
+                .getOrElse { e ->
+                    if (e !is NoActiveSessionException) {
+                        Timber.e(e, "Failed to fetch album: $albumId — trying DB cache")
+                    }
+                    null
+                } ?: return fromDb()
+        backfillStoredAlbum(fetched)
+        return fetched
+    }
+
+    private suspend fun backfillStoredAlbum(album: AfinityAlbum) {
+        if (album.overview.isNullOrBlank() && album.externalUrls.isNullOrEmpty()) return
+        val session = sessionManager.currentSession.value ?: return
+        try {
+            databaseRepository.updateMusicAlbumDetails(
+                id = album.id,
+                serverId = session.serverId,
+                userId = session.userId.toString(),
+                overview = album.overview,
+                externalUrls = album.externalUrls,
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to backfill stored album ${album.id}")
+        }
     }
 
     override suspend fun getAlbumTracks(albumId: UUID): List<AfinityTrack> {
@@ -395,6 +472,7 @@ constructor(
             return patched.ifEmpty { tracksFromDownloads() }
         }
 
+        if (isOffline()) return dbFallback()
         return apiInvoker
             .apiResult { apiClient, apiUserId ->
                 val baseUrl = getBaseUrlInternal()
@@ -432,148 +510,170 @@ constructor(
     }
 
     override suspend fun getArtistById(artistId: UUID): AfinityArtist? =
-        apiCall(null, "Failed to fetch artist: $artistId") { apiClient, userId ->
-            val baseUrl = getBaseUrlInternal()
-            LibraryApi(apiClient).getItem(itemId = artistId, userId = userId).content.let {
-                runCatching { it.toAfinityArtist(baseUrl) }.getOrNull()
+        if (isOffline()) storedArtist(artistId)
+        else
+            apiCall(null, "Failed to fetch artist: $artistId") { apiClient, userId ->
+                val baseUrl = getBaseUrlInternal()
+                LibraryApi(apiClient).getItem(itemId = artistId, userId = userId).content.let {
+                    runCatching { it.toAfinityArtist(baseUrl) }.getOrNull()
+                }
             }
-        }
 
     override suspend fun getArtistsByIds(
         artistIds: List<UUID>,
         fields: List<ItemFields>,
     ): List<AfinityArtist> =
-        apiCall(emptyList(), "Failed to fetch artists by ids") { apiClient, userId ->
-            if (artistIds.isEmpty()) return@apiCall emptyList()
-            val baseUrl = getBaseUrlInternal()
-            LibraryApi(apiClient)
-                .getItems(
-                    userId = userId,
-                    ids = artistIds,
-                    fields = fields,
-                    enableUserData = true,
-                    enableTotalRecordCount = false,
-                )
-                .content
-                .items
-                .mapNotNull { runCatching { it.toAfinityArtist(baseUrl) }.getOrNull() }
-        }
+        if (isOffline()) artistIds.mapNotNull { storedArtist(it) }
+        else
+            apiCall(emptyList(), "Failed to fetch artists by ids") { apiClient, userId ->
+                if (artistIds.isEmpty()) return@apiCall emptyList()
+                val baseUrl = getBaseUrlInternal()
+                LibraryApi(apiClient)
+                    .getItems(
+                        userId = userId,
+                        ids = artistIds,
+                        fields = fields,
+                        enableUserData = true,
+                        enableTotalRecordCount = false,
+                    )
+                    .content
+                    .items
+                    .mapNotNull { runCatching { it.toAfinityArtist(baseUrl) }.getOrNull() }
+            }
 
     override suspend fun getArtistAlbums(
         artistId: UUID,
         libraryId: UUID?,
         excludeAlbumId: UUID?,
     ): List<AfinityAlbum> =
-        apiCall(emptyList(), "Failed to fetch albums for artist: $artistId") { apiClient, userId ->
-            val baseUrl = getBaseUrlInternal()
+        if (isOffline()) {
+            storedAlbums()
+                .filter { it.artistId == artistId && it.id != excludeAlbumId }
+                .sortedByDescending { it.productionYear ?: 0 }
+        } else
+            apiCall(emptyList(), "Failed to fetch albums for artist: $artistId") { apiClient, userId
+                ->
+                val baseUrl = getBaseUrlInternal()
 
-            val response =
-                LibraryApi(apiClient)
-                    .getItems(
-                        userId = userId,
-                        parentId = libraryId,
-                        excludeItemIds = listOfNotNull(excludeAlbumId),
-                        albumArtistIds = listOf(artistId),
-                        includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
-                        sortBy = listOf(ItemSortBy.PREMIERE_DATE, ItemSortBy.SORT_NAME),
-                        sortOrder = listOf(SortOrder.DESCENDING),
-                        fields = FieldSets.MUSIC_ALBUM,
-                        enableUserData = true,
-                        recursive = true,
-                        enableTotalRecordCount = false,
-                    )
-            response.content.items.mapNotNull { dto ->
-                runCatching { dto.toAfinityAlbum(baseUrl) }.getOrNull()
+                val response =
+                    LibraryApi(apiClient)
+                        .getItems(
+                            userId = userId,
+                            parentId = libraryId,
+                            excludeItemIds = listOfNotNull(excludeAlbumId),
+                            albumArtistIds = listOf(artistId),
+                            includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
+                            sortBy = listOf(ItemSortBy.PREMIERE_DATE, ItemSortBy.SORT_NAME),
+                            sortOrder = listOf(SortOrder.DESCENDING),
+                            fields = FieldSets.MUSIC_ALBUM,
+                            enableUserData = true,
+                            recursive = true,
+                            enableTotalRecordCount = false,
+                        )
+                response.content.items.mapNotNull { dto ->
+                    runCatching { dto.toAfinityAlbum(baseUrl) }.getOrNull()
+                }
             }
-        }
 
     override suspend fun getArtistTopTracks(
         artistId: UUID,
         libraryId: UUID?,
         limit: Int,
     ): List<AfinityTrack> =
-        apiCall(emptyList(), "Failed to fetch top tracks for artist: $artistId") { apiClient, userId
-            ->
-            val baseUrl = getBaseUrlInternal()
+        if (isOffline()) storedArtistTracks(artistId).take(limit)
+        else
+            apiCall(emptyList(), "Failed to fetch top tracks for artist: $artistId") {
+                apiClient,
+                userId ->
+                val baseUrl = getBaseUrlInternal()
 
-            val response =
-                LibraryApi(apiClient)
-                    .getItems(
-                        userId = userId,
-                        parentId = libraryId,
-                        artistIds = listOf(artistId),
-                        includeItemTypes = listOf(BaseItemKind.AUDIO),
-                        sortBy = listOf(ItemSortBy.PLAY_COUNT, ItemSortBy.SORT_NAME),
-                        sortOrder = listOf(SortOrder.DESCENDING, SortOrder.ASCENDING),
-                        limit = limit,
-                        fields = FieldSets.MUSIC_TRACK,
-                        enableUserData = true,
-                        recursive = true,
-                        enableTotalRecordCount = false,
-                    )
-            response.content.items.mapNotNull { dto ->
-                runCatching { dto.toAfinityTrack(baseUrl) }.getOrNull()
+                val response =
+                    LibraryApi(apiClient)
+                        .getItems(
+                            userId = userId,
+                            parentId = libraryId,
+                            artistIds = listOf(artistId),
+                            includeItemTypes = listOf(BaseItemKind.AUDIO),
+                            sortBy = listOf(ItemSortBy.PLAY_COUNT, ItemSortBy.SORT_NAME),
+                            sortOrder = listOf(SortOrder.DESCENDING, SortOrder.ASCENDING),
+                            limit = limit,
+                            fields = FieldSets.MUSIC_TRACK,
+                            enableUserData = true,
+                            recursive = true,
+                            enableTotalRecordCount = false,
+                        )
+                response.content.items.mapNotNull { dto ->
+                    runCatching { dto.toAfinityTrack(baseUrl) }.getOrNull()
+                }
             }
-        }
 
     override suspend fun getArtistTrackCount(artistId: UUID): Int? =
-        apiCall(null, "Failed to fetch track count for artist: $artistId") { apiClient, userId ->
-            LibraryApi(apiClient)
-                .getItems(
-                    userId = userId,
-                    artistIds = listOf(artistId),
-                    includeItemTypes = listOf(BaseItemKind.AUDIO),
-                    limit = 0,
-                    recursive = true,
-                    enableUserData = false,
-                    enableImages = false,
-                    enableTotalRecordCount = true,
-                )
-                .content
-                .totalRecordCount
-        }
-
-    override suspend fun getTracksByIds(trackIds: List<UUID>): List<AfinityTrack> =
-        apiCall(emptyList(), "Failed to fetch tracks by ids") { apiClient, userId ->
-            if (trackIds.isEmpty()) return@apiCall emptyList()
-            val baseUrl = getBaseUrlInternal()
-            LibraryApi(apiClient)
-                .getItems(
-                    userId = userId,
-                    ids = trackIds,
-                    fields = FieldSets.MUSIC_TRACK,
-                    enableUserData = true,
-                    enableTotalRecordCount = false,
-                )
-                .content
-                .items
-                .mapNotNull { dto -> runCatching { dto.toAfinityTrack(baseUrl) }.getOrNull() }
-        }
-
-    override suspend fun getArtistAppearsOn(artistId: UUID, libraryId: UUID?): List<AfinityAlbum> =
-        apiCall(emptyList(), "Failed to fetch 'appears on' albums for artist: $artistId") {
-            apiClient,
-            userId ->
-            val baseUrl = getBaseUrlInternal()
-
-            val response =
+        if (isOffline()) null
+        else
+            apiCall(null, "Failed to fetch track count for artist: $artistId") { apiClient, userId
+                ->
                 LibraryApi(apiClient)
                     .getItems(
                         userId = userId,
-                        parentId = libraryId,
-                        contributingArtistIds = listOf(artistId),
-                        includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
-                        sortBy = listOf(ItemSortBy.PREMIERE_DATE, ItemSortBy.SORT_NAME),
-                        sortOrder = listOf(SortOrder.DESCENDING),
-                        fields = FieldSets.MUSIC_ALBUM,
-                        enableUserData = true,
+                        artistIds = listOf(artistId),
+                        includeItemTypes = listOf(BaseItemKind.AUDIO),
+                        limit = 0,
                         recursive = true,
+                        enableUserData = false,
+                        enableImages = false,
+                        enableTotalRecordCount = true,
+                    )
+                    .content
+                    .totalRecordCount
+            }
+
+    override suspend fun getTracksByIds(trackIds: List<UUID>): List<AfinityTrack> =
+        if (isOffline()) {
+            val wanted = trackIds.toSet()
+            storedTracks().filter { it.id in wanted }
+        } else
+            apiCall(emptyList(), "Failed to fetch tracks by ids") { apiClient, userId ->
+                if (trackIds.isEmpty()) return@apiCall emptyList()
+                val baseUrl = getBaseUrlInternal()
+                LibraryApi(apiClient)
+                    .getItems(
+                        userId = userId,
+                        ids = trackIds,
+                        fields = FieldSets.MUSIC_TRACK,
+                        enableUserData = true,
                         enableTotalRecordCount = false,
                     )
-            response.content.items.mapNotNull { dto ->
-                runCatching { dto.toAfinityAlbum(baseUrl) }.getOrNull()
+                    .content
+                    .items
+                    .mapNotNull { dto -> runCatching { dto.toAfinityTrack(baseUrl) }.getOrNull() }
             }
-        }
+
+    override suspend fun getArtistAppearsOn(artistId: UUID, libraryId: UUID?): List<AfinityAlbum> =
+        if (isOffline()) emptyList()
+        else
+            apiCall(emptyList(), "Failed to fetch 'appears on' albums for artist: $artistId") {
+                apiClient,
+                userId ->
+                val baseUrl = getBaseUrlInternal()
+
+                val response =
+                    LibraryApi(apiClient)
+                        .getItems(
+                            userId = userId,
+                            parentId = libraryId,
+                            contributingArtistIds = listOf(artistId),
+                            includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
+                            sortBy = listOf(ItemSortBy.PREMIERE_DATE, ItemSortBy.SORT_NAME),
+                            sortOrder = listOf(SortOrder.DESCENDING),
+                            fields = FieldSets.MUSIC_ALBUM,
+                            enableUserData = true,
+                            recursive = true,
+                            enableTotalRecordCount = false,
+                        )
+                response.content.items.mapNotNull { dto ->
+                    runCatching { dto.toAfinityAlbum(baseUrl) }.getOrNull()
+                }
+            }
 
     override suspend fun getPlaylists(libraryId: UUID?): List<AfinityPlaylist> =
         apiCall(emptyList(), "Failed to fetch playlists") { apiClient, userId ->
@@ -831,22 +931,25 @@ constructor(
         limit: Int,
         excludeArtistId: UUID?,
     ): List<AfinityAlbum> =
-        apiCall(emptyList(), "Failed to get similar albums for item: $itemId") { apiClient, userId
-            ->
-            val baseUrl = getBaseUrlInternal()
-            val response =
-                LibraryApi(apiClient)
-                    .getSimilarItems(
-                        itemId = itemId,
-                        userId = userId,
-                        excludeArtistIds = listOfNotNull(excludeArtistId),
-                        limit = limit,
-                        fields = FieldSets.MUSIC_ALBUM,
-                    )
-            response.content.items
-                .filter { it.type == BaseItemKind.MUSIC_ALBUM }
-                .mapNotNull { runCatching { it.toAfinityAlbum(baseUrl) }.getOrNull() }
-        }
+        if (isOffline()) emptyList()
+        else
+            apiCall(emptyList(), "Failed to get similar albums for item: $itemId") {
+                apiClient,
+                userId ->
+                val baseUrl = getBaseUrlInternal()
+                val response =
+                    LibraryApi(apiClient)
+                        .getSimilarItems(
+                            itemId = itemId,
+                            userId = userId,
+                            excludeArtistIds = listOfNotNull(excludeArtistId),
+                            limit = limit,
+                            fields = FieldSets.MUSIC_ALBUM,
+                        )
+                response.content.items
+                    .filter { it.type == BaseItemKind.MUSIC_ALBUM }
+                    .mapNotNull { runCatching { it.toAfinityAlbum(baseUrl) }.getOrNull() }
+            }
 
     override suspend fun getLyrics(trackId: UUID): List<AfinityLyricLine> =
         withContext(Dispatchers.IO) {

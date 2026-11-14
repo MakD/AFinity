@@ -219,7 +219,8 @@ fun AuthorCard(
     val photoPx = with(LocalDensity.current) { 56.dp.roundToPx() }
     val photoUrl =
         remember(details, serverUrl, photoPx) {
-            serverUrl?.let { url -> details?.author?.imageUrl(url, photoPx * 2) }
+            details?.localImageUrl
+                ?: serverUrl?.let { url -> details?.author?.imageUrl(url, photoPx * 2) }
         }
     val bio = details?.author?.description?.takeIf { it.isNotBlank() }
 

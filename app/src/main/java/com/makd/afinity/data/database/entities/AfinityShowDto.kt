@@ -3,6 +3,7 @@ package com.makd.afinity.data.database.entities
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.makd.afinity.data.models.mdblist.MdbListRating
+import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityShow
@@ -31,6 +32,9 @@ data class AfinityShowDto(
     val people: List<AfinityPerson>? = null,
     val tmdbReviews: List<TmdbReview>? = null,
     val mdbRatings: List<MdbListRating>? = null,
+    val providerIds: Map<String, String>? = null,
+    val externalUrls: List<AfinityExternalUrl>? = null,
+    val tagline: String? = null,
 )
 
 fun AfinityShow.toAfinityShowDto(
@@ -58,5 +62,8 @@ fun AfinityShow.toAfinityShowDto(
         people = people,
         tmdbReviews = tmdbReviews ?: this.tmdbReviews,
         mdbRatings = mdbRatings ?: this.mdbRatings,
+        providerIds = providerIds,
+        externalUrls = externalUrls,
+        tagline = tagline,
     )
 }

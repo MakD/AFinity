@@ -6,6 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinitySeason
+import java.time.LocalDateTime
 import java.util.UUID
 
 @Entity(
@@ -30,6 +31,8 @@ data class AfinitySeasonDto(
     val overview: String,
     val indexNumber: Int,
     val images: AfinityImages? = null,
+    val productionYear: Int? = null,
+    val premiereDate: LocalDateTime? = null,
 )
 
 fun AfinitySeason.toAfinitySeasonDto(serverId: String): AfinitySeasonDto {
@@ -42,5 +45,7 @@ fun AfinitySeason.toAfinitySeasonDto(serverId: String): AfinitySeasonDto {
         overview = overview,
         indexNumber = indexNumber,
         images = images,
+        productionYear = productionYear,
+        premiereDate = premiereDate,
     )
 }

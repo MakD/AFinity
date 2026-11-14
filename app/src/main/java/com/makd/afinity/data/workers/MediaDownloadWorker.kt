@@ -30,18 +30,23 @@ import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityPersonImage
+import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.toAfinityMediaStream
 import com.makd.afinity.data.models.player.MusicQuality
 import com.makd.afinity.data.models.player.VideoQuality
+import com.makd.afinity.data.models.wikidata.WikidataSubjectType
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadTranscodePlan
 import com.makd.afinity.data.repository.download.DownloadTranscodePlanner
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
+import com.makd.afinity.data.repository.metadata.ItemMetadataFetcher
 import com.makd.afinity.data.repository.segments.SegmentsRepository
+import com.makd.afinity.data.repository.wikidata.WikidataAwardsRepository
 import com.makd.afinity.di.DownloadClient
 import com.makd.afinity.util.LocalNetworkPermission
 import com.makd.afinity.util.Mp4FragmentProbe
@@ -92,6 +97,8 @@ constructor(
     private val downloadNotificationManager: DownloadNotificationManager,
     @param:DownloadClient private val okHttpClient: OkHttpClient,
     private val localNetworkPermission: LocalNetworkPermission,
+    private val itemMetadataFetcher: ItemMetadataFetcher,
+    private val wikidataAwardsRepository: WikidataAwardsRepository,
 ) : CoroutineWorker(appContext, workerParams) {
 
     private var allowPause = true
@@ -271,6 +278,8 @@ constructor(
                                                 ItemFields.TAGLINES,
                                                 ItemFields.CHAPTERS,
                                                 ItemFields.TRICKPLAY,
+                                                ItemFields.PROVIDER_IDS,
+                                                ItemFields.EXTERNAL_URLS,
                                             ),
                                         enableImages = true,
                                         enableUserData = true,
@@ -614,6 +623,16 @@ constructor(
                         } else {
                             if (itemType.uppercase() == "MOVIE") {
                                 downloadPersonImages(apiClient, download.serverId, itemId, userId)
+                                (item as? AfinityMovie)?.let {
+                                    cacheItemMetadata(it, download.serverId, userId)
+                                }
+                            } else if (itemType.uppercase() == "EPISODE") {
+                                downloadEpisodePersonImages(
+                                    apiClient,
+                                    download.serverId,
+                                    itemId,
+                                    userId,
+                                )
                             }
                             downloadSegments(itemId, sourceId)
                         }
@@ -835,6 +854,9 @@ constructor(
                                                             ItemFields.OVERVIEW,
                                                             ItemFields.GENRES,
                                                             ItemFields.PEOPLE,
+                                                            ItemFields.PROVIDER_IDS,
+                                                            ItemFields.EXTERNAL_URLS,
+                                                            ItemFields.TAGLINES,
                                                         ),
                                                     enableImages = true,
                                                     enableUserData = true,
@@ -874,6 +896,14 @@ constructor(
                         seriesDeferred?.await()?.toAfinityShow(baseUrl)?.let { show ->
                             databaseRepository.insertShow(show, serverId)
                             downloadShowImages(apiClient, serverId, seriesId, userId, volumeId)
+                            downloadShowPersonImages(
+                                apiClient,
+                                serverId,
+                                seriesId,
+                                userId,
+                                volumeId,
+                            )
+                            cacheItemMetadata(show, serverId, userId)
                         }
 
                         seasonDeferred?.await()?.toAfinitySeason(baseUrl)?.let { season ->
@@ -998,6 +1028,32 @@ constructor(
         }
     }
 
+    private suspend fun cacheItemMetadata(item: AfinityItem, serverId: String, userId: UUID) {
+        val subjectType =
+            when (item) {
+                is AfinityMovie -> WikidataSubjectType.MOVIE
+                is AfinityShow -> WikidataSubjectType.TV
+                else -> return
+            }
+        try {
+            val region = itemMetadataFetcher.watchRegion()
+            val cached = itemMetadataFetcher.cached(item.id, serverId, userId)
+            if (cached == null || !itemMetadataFetcher.isFresh(cached, region)) {
+                itemMetadataFetcher.fetchAndStore(item, serverId, userId, region)
+            }
+            if (
+                preferencesRepository.getShowAwards() &&
+                    preferencesRepository.getWikidataEnabled(serverId, userId.toString())
+            ) {
+                wikidataAwardsRepository.getAwards(subjectType, item.providerIds?.get("Tmdb"))
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to cache metadata for ${item.id}")
+        }
+    }
+
     private suspend fun downloadPersonImages(
         apiClient: ApiClient,
         serverId: String,
@@ -1007,40 +1063,78 @@ constructor(
         try {
             val movie = databaseRepository.getMovie(itemId, userId) ?: return
             if (movie.people.isEmpty()) return
-
-            val movieDir = downloadRepository.getItemDownloadDirectory(itemId)
-            val peopleImagesDir = File(movieDir, "people")
-            if (!peopleImagesDir.exists() && !peopleImagesDir.mkdirs()) {
-                Timber.w("Failed to create people images directory for item $itemId")
-                return
-            }
-
-            val updatedPeople =
-                movie.people.map { person ->
-                    person.image.uri?.let { uri ->
-                        val localPath =
-                            downloadImage(
-                                apiClient,
-                                uri.toString(),
-                                peopleImagesDir,
-                                person.id.toString(),
-                            )
-                        if (localPath != null) {
-                            person.copy(
-                                image =
-                                    AfinityPersonImage(
-                                        uri = localPath,
-                                        blurHash = person.image.blurHash,
-                                    )
-                            )
-                        } else person
-                    } ?: person
-                }
+            val peopleImagesDir =
+                File(downloadRepository.getItemDownloadDirectory(itemId), "people")
+            val updatedPeople = localizePeopleImages(apiClient, movie.people, peopleImagesDir)
             databaseRepository.insertMovie(movie.copy(people = updatedPeople), serverId)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to download person images")
+        }
+    }
+
+    private suspend fun downloadEpisodePersonImages(
+        apiClient: ApiClient,
+        serverId: String,
+        itemId: UUID,
+        userId: UUID,
+    ) {
+        try {
+            val episode = databaseRepository.getEpisode(itemId, userId) ?: return
+            if (episode.people.isEmpty()) return
+            val peopleImagesDir =
+                File(downloadRepository.getItemDownloadDirectory(itemId), "people")
+            val updatedPeople = localizePeopleImages(apiClient, episode.people, peopleImagesDir)
+            databaseRepository.insertEpisode(episode.copy(people = updatedPeople), serverId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to download episode person images")
+        }
+    }
+
+    private suspend fun downloadShowPersonImages(
+        apiClient: ApiClient,
+        serverId: String,
+        showId: UUID,
+        userId: UUID,
+        volumeId: String,
+    ) {
+        try {
+            val show = databaseRepository.getShow(showId, userId) ?: return
+            if (show.people.isEmpty()) return
+            val peopleImagesDir =
+                File(downloadRepository.getShowDirectory(serverId, showId, volumeId), "people")
+            val updatedPeople = localizePeopleImages(apiClient, show.people, peopleImagesDir)
+            databaseRepository.insertShow(show.copy(people = updatedPeople), serverId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to download show person images")
+        }
+    }
+
+    private fun localizePeopleImages(
+        apiClient: ApiClient,
+        people: List<AfinityPerson>,
+        peopleImagesDir: File,
+    ): List<AfinityPerson> {
+        if (!peopleImagesDir.exists() && !peopleImagesDir.mkdirs()) {
+            Timber.w("Failed to create people images directory ${peopleImagesDir.absolutePath}")
+            return people
+        }
+        return people.map { person ->
+            person.image.uri?.let { uri ->
+                val localPath =
+                    downloadImage(apiClient, uri.toString(), peopleImagesDir, person.id.toString())
+                if (localPath != null) {
+                    person.copy(
+                        image =
+                            AfinityPersonImage(uri = localPath, blurHash = person.image.blurHash)
+                    )
+                } else person
+            } ?: person
         }
     }
 

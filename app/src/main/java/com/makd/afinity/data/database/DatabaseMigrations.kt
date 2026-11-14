@@ -1838,6 +1838,32 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_89_90 =
+        object : Migration(89, 90) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `movies` ADD COLUMN `providerIds` TEXT")
+                db.execSQL("ALTER TABLE `movies` ADD COLUMN `externalUrls` TEXT")
+                db.execSQL("ALTER TABLE `shows` ADD COLUMN `providerIds` TEXT")
+                db.execSQL("ALTER TABLE `shows` ADD COLUMN `externalUrls` TEXT")
+                db.execSQL("ALTER TABLE `shows` ADD COLUMN `tagline` TEXT")
+                db.execSQL("ALTER TABLE `seasons` ADD COLUMN `productionYear` INTEGER")
+                db.execSQL("ALTER TABLE `seasons` ADD COLUMN `premiereDate` TEXT")
+                db.execSQL("ALTER TABLE `episodes` ADD COLUMN `people` TEXT")
+                db.execSQL("ALTER TABLE `music_albums` ADD COLUMN `overview` TEXT")
+                db.execSQL("ALTER TABLE `music_albums` ADD COLUMN `externalUrls` TEXT")
+                db.execSQL("ALTER TABLE `music_albums` ADD COLUMN `artistImagePath` TEXT")
+                db.execSQL("ALTER TABLE `abs_downloads` ADD COLUMN `authorDescription` TEXT")
+                db.execSQL("ALTER TABLE `abs_downloads` ADD COLUMN `authorImagePath` TEXT")
+                db.execSQL("ALTER TABLE `abs_downloads` ADD COLUMN `authorTitleCount` INTEGER")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `offline_plays` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `itemId` TEXT NOT NULL, `userId` TEXT NOT NULL, `serverId` TEXT NOT NULL, `playedAt` INTEGER NOT NULL)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_offline_plays_userId_serverId` ON `offline_plays` (`userId`, `serverId`)"
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1928,5 +1954,6 @@ object DatabaseMigrations {
             MIGRATION_86_87,
             MIGRATION_87_88,
             MIGRATION_88_89,
+            MIGRATION_89_90,
         )
 }

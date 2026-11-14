@@ -9,6 +9,7 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.network.userDataUtc
 import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -33,11 +34,17 @@ constructor(
     private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
     private val securePreferencesRepository: SecurePreferencesRepository,
+    private val preferencesRepository: PreferencesRepository,
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result =
         withContext(Dispatchers.IO) {
             try {
+                if (preferencesRepository.getOfflineMode()) {
+                    Timber.d("Offline mode on, leaving user data queued")
+                    return@withContext Result.success()
+                }
+
                 Timber.d("Starting user data sync (attempt ${runAttemptCount + 1})")
 
                 val accounts = securePreferencesRepository.getAllServerUserTokens()
@@ -54,12 +61,16 @@ constructor(
                 accounts
                     .distinctBy { it.serverId to it.userId }
                     .forEach { account ->
-                        val pending =
+                        val (pending, plays) =
                             try {
                                 databaseRepository.getAllUserDataToSync(
                                     account.userId,
                                     account.serverId,
-                                )
+                                ) to
+                                    databaseRepository.getOfflinePlays(
+                                        account.userId,
+                                        account.serverId,
+                                    )
                             } catch (e: CancellationException) {
                                 throw e
                             } catch (e: Exception) {
@@ -71,10 +82,10 @@ constructor(
                                 return@forEach
                             }
 
-                        if (pending.isEmpty()) return@forEach
+                        if (pending.isEmpty() && plays.isEmpty()) return@forEach
 
                         Timber.i(
-                            "Found ${pending.size} items to sync for user ${account.userId} on server ${account.serverId}"
+                            "Found ${pending.size} items and ${plays.size} offline plays to sync for user ${account.userId} on server ${account.serverId}"
                         )
 
                         val apiClient =
@@ -99,6 +110,7 @@ constructor(
                         }
 
                         val userDataApi = UserDataApi(apiClient)
+                        var accountStopped = false
 
                         for (userData in pending) {
                             when (
@@ -127,8 +139,45 @@ constructor(
                                 }
                                 UploadResult.UNAUTHORIZED -> {
                                     totalFailure++
+                                    accountStopped = true
                                     Timber.w(
                                         "Token rejected for server ${account.serverId}, aborting its sync"
+                                    )
+                                    break
+                                }
+                                UploadResult.RETRY -> {
+                                    totalFailure++
+                                    retryNeeded = true
+                                    accountStopped = true
+                                    break
+                                }
+                            }
+                        }
+
+                        if (accountStopped) return@forEach
+
+                        for (play in plays) {
+                            val result =
+                                upload(play.itemId) {
+                                    userDataApi.markPlayedItem(
+                                        itemId = play.itemId,
+                                        userId = account.userId,
+                                        datePlayed = play.playedAt.toDateTime(),
+                                    )
+                                }
+                            when (result) {
+                                UploadResult.SYNCED -> {
+                                    databaseRepository.deleteOfflinePlay(play.id)
+                                    totalSuccess++
+                                }
+                                UploadResult.DISCARD -> {
+                                    databaseRepository.deleteOfflinePlay(play.id)
+                                    totalFailure++
+                                }
+                                UploadResult.UNAUTHORIZED -> {
+                                    totalFailure++
+                                    Timber.w(
+                                        "Token rejected for server ${account.serverId}, aborting its play sync"
                                     )
                                     break
                                 }
@@ -183,8 +232,8 @@ constructor(
         userDataApi: UserDataApi,
         userId: UUID,
         userData: AfinityUserDataDto,
-    ): UploadResult {
-        return try {
+    ): UploadResult =
+        upload(userData.itemId) {
             if (userData.played) {
                 userDataApi.markPlayedItem(
                     itemId = userData.itemId,
@@ -200,6 +249,11 @@ constructor(
                 )
             }
             Timber.d("Synced item ${userData.itemId} (played=${userData.played})")
+        }
+
+    private suspend fun upload(itemId: UUID, action: suspend () -> Unit): UploadResult {
+        return try {
+            action()
             UploadResult.SYNCED
         } catch (e: InvalidStatusException) {
             when (e.status) {
@@ -207,20 +261,18 @@ constructor(
                 403 -> UploadResult.UNAUTHORIZED
                 400,
                 404 -> {
-                    Timber.w(
-                        "Server rejected item ${userData.itemId} with ${e.status}, dropping pending row"
-                    )
+                    Timber.w("Server rejected item $itemId with ${e.status}, dropping pending row")
                     UploadResult.DISCARD
                 }
                 else -> {
-                    Timber.w(e, "Failed to sync item ${userData.itemId}")
+                    Timber.w(e, "Failed to sync item $itemId")
                     UploadResult.RETRY
                 }
             }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Timber.w(e, "Failed to sync item ${userData.itemId}")
+            Timber.w(e, "Failed to sync item $itemId")
             UploadResult.RETRY
         }
     }

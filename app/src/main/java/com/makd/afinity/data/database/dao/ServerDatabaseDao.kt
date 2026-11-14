@@ -369,6 +369,7 @@ abstract class ServerDatabaseDao {
         deleteSeasonsByServerId(serverId)
         deleteEpisodesByServerId(serverId)
         deleteUserDataByServerId(serverId)
+        deleteOfflinePlaysByServerId(serverId)
         deleteDownloadsByServerId(serverId)
         deleteOrphanedSources()
         deleteOrphanedMediaStreams()
@@ -490,6 +491,7 @@ abstract class ServerDatabaseDao {
         deleteAllTrickplayInfos()
         deleteAllSegments()
         deleteAllUserData()
+        deleteAllOfflinePlays()
         deleteAllDownloads()
     }
 
@@ -510,6 +512,11 @@ abstract class ServerDatabaseDao {
     @Query("DELETE FROM segments") abstract suspend fun deleteAllSegments()
 
     @Query("DELETE FROM userdata") abstract suspend fun deleteAllUserData()
+
+    @Query("DELETE FROM offline_plays") abstract suspend fun deleteAllOfflinePlays()
+
+    @Query("DELETE FROM offline_plays WHERE serverId = :serverId")
+    abstract suspend fun deleteOfflinePlaysByServerId(serverId: String)
 
     @Query("DELETE FROM downloads") abstract suspend fun deleteAllDownloads()
 }

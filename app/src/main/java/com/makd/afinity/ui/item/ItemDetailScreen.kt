@@ -160,6 +160,7 @@ fun ItemDetailScreen(
         viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
     val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
+    val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
     val mayDeleteMedia by viewModel.mayDeleteMedia.collectAsStateWithLifecycle()
     val deletableItemIds by viewModel.deletableItemIds.collectAsStateWithLifecycle()
     var showEpisodeRefreshDialog by remember { mutableStateOf(false) }
@@ -377,8 +378,9 @@ fun ItemDetailScreen(
                             pendingNavigationSeriesId = episode.seriesId.toString()
                         }
                     } else null,
-                isAdmin = isAdmin,
-                canDelete = episode.id in deletableItemIds,
+                isAdmin = isAdmin && !isOffline,
+                canDelete = !isOffline && episode.id in deletableItemIds,
+                showUserDataToggles = !isOffline,
                 onAdminAction = { action ->
                     when (action) {
                         AdminAction.EditMetadata -> onEditMetadataClick(episode.id.toString())
@@ -388,10 +390,13 @@ fun ItemDetailScreen(
                         AdminAction.Delete -> showEpisodeDeleteDialog = true
                     }
                 },
-                onPersonClick = { personId ->
-                    viewModel.clearSelectedEpisode()
-                    pendingNavigationPersonId = personId.toString()
-                },
+                onPersonClick =
+                    if (isOffline) null
+                    else
+                        { personId ->
+                            viewModel.clearSelectedEpisode()
+                            pendingNavigationPersonId = personId.toString()
+                        },
             )
 
             if (showEpisodeRefreshDialog) {
@@ -711,6 +716,7 @@ private fun LandscapeItemDetailContent(
         viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
     val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
+    val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
     val mayDeleteMedia by viewModel.mayDeleteMedia.collectAsStateWithLifecycle()
     val deletableItemIds by viewModel.deletableItemIds.collectAsStateWithLifecycle()
     LaunchedEffect(item.id, mayDeleteMedia) {
@@ -722,7 +728,7 @@ private fun LandscapeItemDetailContent(
     val canManageCollections by viewModel.canManageCollections.collectAsStateWithLifecycle()
     var collectionDialog by remember { mutableStateOf<CollectionDialog?>(null) }
     val collectionActions =
-        collectionMenuActions(item, containingBoxSets, canManageCollections) {
+        collectionMenuActions(item, containingBoxSets, canManageCollections && !isOffline) {
             collectionDialog = it
         }
     val mediaSourceOptions = rememberMediaSourceOptions(item)
@@ -833,17 +839,19 @@ private fun LandscapeItemDetailContent(
                             canDownloadOnNetwork = canDownloadOnNetwork,
                             isLandscape = true,
                             downloadUnavailable = uiState.downloadUnavailable,
-                            isAdmin = isAdmin,
+                            isAdmin = isAdmin && !isOffline,
                             canIdentify = identifyItemType(item) != null,
-                            canDelete = item.id in deletableItemIds,
+                            canDelete = !isOffline && item.id in deletableItemIds,
+                            showUserDataToggles = !isOffline,
                             selectedSourceId = selectedMediaSource?.id,
                             onDownloadLongClick = { viewModel.onDownloadLongClick() },
                             onAddToPlaylist =
                                 if (
-                                    item is AfinityMovie ||
-                                        item is AfinityEpisode ||
-                                        item is AfinityShow ||
-                                        item is AfinitySeason
+                                    !isOffline &&
+                                        (item is AfinityMovie ||
+                                            item is AfinityEpisode ||
+                                            item is AfinityShow ||
+                                            item is AfinitySeason)
                                 )
                                     ({ showAddToPlaylist = true })
                                 else null,
@@ -950,7 +958,7 @@ private fun LandscapeItemDetailContent(
                 onSpecialFeatureClick = onSpecialFeatureClick,
                 onItemClick = onItemClick,
                 onSeasonClick = onSeasonClick,
-                onPersonClick = onPersonClick,
+                onPersonClick = if (isOffline) null else onPersonClick,
                 onNavigateToSeerrMedia = onNavigateToSeerrMedia,
                 viewModel = viewModel,
                 context = context,
@@ -958,6 +966,7 @@ private fun LandscapeItemDetailContent(
                 horizontalPadding = 0.dp,
                 detailLayout = detailLayout,
                 watchProviders = uiState.watchProviders,
+                showExternalLinks = !isOffline || uiState.hasInternet,
             )
         },
     )
@@ -1012,6 +1021,7 @@ private fun PortraitItemDetailContent(
         viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
     val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
+    val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
     val mayDeleteMedia by viewModel.mayDeleteMedia.collectAsStateWithLifecycle()
     val deletableItemIds by viewModel.deletableItemIds.collectAsStateWithLifecycle()
     LaunchedEffect(item.id, mayDeleteMedia) {
@@ -1023,7 +1033,7 @@ private fun PortraitItemDetailContent(
     val canManageCollections by viewModel.canManageCollections.collectAsStateWithLifecycle()
     var collectionDialog by remember { mutableStateOf<CollectionDialog?>(null) }
     val collectionActions =
-        collectionMenuActions(item, containingBoxSets, canManageCollections) {
+        collectionMenuActions(item, containingBoxSets, canManageCollections && !isOffline) {
             collectionDialog = it
         }
     val mediaSourceOptions = rememberMediaSourceOptions(item)
@@ -1114,17 +1124,19 @@ private fun PortraitItemDetailContent(
                 canDownloadOnNetwork = canDownloadOnNetwork,
                 isLandscape = false,
                 downloadUnavailable = uiState.downloadUnavailable,
-                isAdmin = isAdmin,
+                isAdmin = isAdmin && !isOffline,
                 canIdentify = identifyItemType(item) != null,
-                canDelete = item.id in deletableItemIds,
+                canDelete = !isOffline && item.id in deletableItemIds,
+                showUserDataToggles = !isOffline,
                 selectedSourceId = selectedMediaSource?.id,
                 onDownloadLongClick = { viewModel.onDownloadLongClick() },
                 onAddToPlaylist =
                     if (
-                        item is AfinityMovie ||
-                            item is AfinityEpisode ||
-                            item is AfinityShow ||
-                            item is AfinitySeason
+                        !isOffline &&
+                            (item is AfinityMovie ||
+                                item is AfinityEpisode ||
+                                item is AfinityShow ||
+                                item is AfinitySeason)
                     )
                         ({ showAddToPlaylist = true })
                     else null,
@@ -1227,7 +1239,7 @@ private fun PortraitItemDetailContent(
                 onSpecialFeatureClick = onSpecialFeatureClick,
                 onItemClick = onItemClick,
                 onSeasonClick = onSeasonClick,
-                onPersonClick = onPersonClick,
+                onPersonClick = if (isOffline) null else onPersonClick,
                 onNavigateToSeerrMedia = onNavigateToSeerrMedia,
                 viewModel = viewModel,
                 context = context,
@@ -1235,6 +1247,7 @@ private fun PortraitItemDetailContent(
                 horizontalPadding = DetailGutter,
                 detailLayout = detailLayout,
                 watchProviders = uiState.watchProviders,
+                showExternalLinks = !isOffline || uiState.hasInternet,
             )
         },
     )
@@ -1308,7 +1321,7 @@ private fun LazyListScope.typeSpecificItems(
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     onItemClick: (AfinityItem) -> Unit,
     onSeasonClick: (AfinitySeason) -> Unit,
-    onPersonClick: (String) -> Unit,
+    onPersonClick: ((String) -> Unit)?,
     onNavigateToSeerrMedia: (SearchResultItem) -> Unit,
     viewModel: ItemDetailViewModel,
     context: Context,
@@ -1316,6 +1329,7 @@ private fun LazyListScope.typeSpecificItems(
     horizontalPadding: Dp,
     detailLayout: DetailLayout,
     watchProviders: TmdbRegionProviders?,
+    showExternalLinks: Boolean,
 ) {
     when (item) {
         is AfinityShow ->
@@ -1372,6 +1386,7 @@ private fun LazyListScope.typeSpecificItems(
                 widthSizeClass = widthSizeClass,
                 horizontalPadding = horizontalPadding,
                 detailLayout = detailLayout,
+                showExternalLinks = showExternalLinks,
             )
         is AfinitySeason ->
             seasonDetailItems(
@@ -1392,6 +1407,7 @@ private fun LazyListScope.typeSpecificItems(
                 widthSizeClass = widthSizeClass,
                 horizontalPadding = horizontalPadding,
                 detailLayout = detailLayout,
+                showExternalLinks = showExternalLinks,
             )
         is AfinityMovie ->
             movieDetailItems(
@@ -1416,6 +1432,7 @@ private fun LazyListScope.typeSpecificItems(
                 horizontalPadding = horizontalPadding,
                 detailLayout = detailLayout,
                 selectedSourceId = selectedSourceId,
+                showExternalLinks = showExternalLinks,
             )
         is AfinityBoxSet ->
             boxSetDetailItems(

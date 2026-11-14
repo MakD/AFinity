@@ -40,6 +40,7 @@ import com.makd.afinity.ui.item.components.shared.detailItem
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.scaledLandscapeWidth
+import java.util.UUID
 
 fun LazyListScope.seasonDetailItems(
     season: AfinitySeason,
@@ -55,13 +56,15 @@ fun LazyListScope.seasonDetailItems(
     onEpisodeClick: (AfinityEpisode) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     onItemClick: (AfinityItem) -> Unit,
-    onPersonClick: (String) -> Unit,
+    onPersonClick: ((String) -> Unit)?,
     widthSizeClass: WindowWidthSizeClass,
     horizontalPadding: Dp,
     detailLayout: DetailLayout,
+    showExternalLinks: Boolean = true,
 ) {
     baseMediaDetailItems(
         item = season,
+        showExternalLinks = showExternalLinks,
         specialFeatures = specialFeatures,
         containingBoxSets = containingBoxSets,
         tmdbReviews = tmdbReviews,
@@ -71,7 +74,8 @@ fun LazyListScope.seasonDetailItems(
         isRatingsFromCache = isRatingsFromCache,
         onSpecialFeatureClick = onSpecialFeatureClick,
         onBoxSetClick = onItemClick,
-        onPersonClick = { personId -> onPersonClick(personId.toString()) },
+        onPersonClick =
+            onPersonClick?.let { click -> { personId: UUID -> click(personId.toString()) } },
         widthSizeClass = widthSizeClass,
         horizontalPadding = horizontalPadding,
         detailLayout = detailLayout,

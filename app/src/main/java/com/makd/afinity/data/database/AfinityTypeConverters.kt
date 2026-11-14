@@ -6,6 +6,7 @@ import com.makd.afinity.data.models.lastfm.LastFmTrackPopularity
 import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.mdblist.MdbListRatingBadges
 import com.makd.afinity.data.models.media.AfinityChapter
+import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
@@ -64,6 +65,34 @@ class AfinityTypeConverters {
     fun toStringList(stringsString: String?): List<String>? = stringsString?.let {
         try {
             json.decodeFromString<List<String>>(it)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    @TypeConverter
+    fun fromStringMap(map: Map<String, String>?): String? = map?.let { json.encodeToString(it) }
+
+    @TypeConverter
+    fun toStringMap(mapString: String?): Map<String, String>? = mapString?.let {
+        try {
+            json.decodeFromString<Map<String, String>>(it)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    @TypeConverter
+    fun fromExternalUrlList(urls: List<AfinityExternalUrl>?): String? = urls?.let { list ->
+        json.encodeToString(list.map { SerializableExternalUrl(name = it.name, url = it.url) })
+    }
+
+    @TypeConverter
+    fun toExternalUrlList(urlsString: String?): List<AfinityExternalUrl>? = urlsString?.let {
+        try {
+            json.decodeFromString<List<SerializableExternalUrl>>(it).map { url ->
+                AfinityExternalUrl(name = url.name, url = url.url)
+            }
         } catch (e: Exception) {
             null
         }
@@ -543,6 +572,9 @@ class AfinityTypeConverters {
             }
         }
 }
+
+@Serializable
+private data class SerializableExternalUrl(val name: String? = null, val url: String? = null)
 
 @Serializable
 private data class SerializableAfinityStudio(

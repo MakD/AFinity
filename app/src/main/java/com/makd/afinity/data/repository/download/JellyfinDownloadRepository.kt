@@ -25,6 +25,7 @@ import com.makd.afinity.data.models.media.PlaylistEntry
 import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.repository.lastfm.LastFmRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
@@ -34,18 +35,21 @@ import com.makd.afinity.data.workers.LyricsDownloadWorker
 import com.makd.afinity.data.workers.MediaDownloadWorker
 import com.makd.afinity.data.workers.SubtitleDownloadWorker
 import com.makd.afinity.data.workers.TrickplayDownloadWorker
+import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.util.requireServerNetwork
 import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
@@ -63,6 +67,8 @@ constructor(
     private val storageLocationProvider: StorageLocationProvider,
     private val downloadNotificationManager: DownloadNotificationManager,
     private val workManager: WorkManager,
+    private val lastFmRepository: LastFmRepository,
+    @param:ApplicationScope private val applicationScope: CoroutineScope,
 ) : DownloadRepository {
 
     companion object {
@@ -861,6 +867,25 @@ constructor(
             }
         }
 
+    private fun warmLastFmPopularity(artist: String?, productionYear: Int?) {
+        if (artist.isNullOrBlank()) return
+        applicationScope.launch(Dispatchers.IO) {
+            try {
+                lastFmRepository
+                    .popularity(
+                        artist,
+                        allowNetwork = true,
+                        freshForMs = LastFmRepository.freshnessFor(listOf(productionYear)),
+                    )
+                    .collect {}
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to warm Last.fm popularity for $artist")
+            }
+        }
+    }
+
     override suspend fun startAlbumDownload(
         albumId: UUID,
         volumeId: String?,
@@ -893,6 +918,7 @@ constructor(
                         }
                 }
                 Timber.i("Album download queued $started/${tracks.size} tracks for album $albumId")
+                album?.let { warmLastFmPopularity(it.artist, it.productionYear) }
                 Result.success(started)
             } catch (e: CancellationException) {
                 throw e

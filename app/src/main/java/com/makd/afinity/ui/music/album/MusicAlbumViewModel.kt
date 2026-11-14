@@ -23,6 +23,7 @@ import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.ui.components.DownloadConfirm
 import com.makd.afinity.ui.components.DownloadConfirmKind
+import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
 import javax.inject.Inject
@@ -52,6 +53,7 @@ data class MusicAlbumUiState(
     val moreFromArtist: List<AfinityAlbum> = emptyList(),
     val similarAlbums: List<AfinityAlbum> = emptyList(),
     val hotTrackIds: Set<UUID> = emptySet(),
+    val hasInternet: Boolean = true,
 )
 
 @HiltViewModel
@@ -66,6 +68,7 @@ constructor(
     private val itemStore: ItemStore,
     private val lastFmRepository: LastFmRepository,
     private val offlineModeManager: OfflineModeManager,
+    private val networkMonitor: NetworkConnectivityMonitor,
     preferencesRepository: PreferencesRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -134,6 +137,13 @@ constructor(
                     loadHotTracks(state.album, state.tracks)
                 }
         }
+
+        viewModelScope.launch {
+            networkMonitor.isNetworkAvailable
+                .filter { it }
+                .drop(1)
+                .collect { _uiState.update { it.copy(hasInternet = true) } }
+        }
     }
 
     fun removeTrack(trackId: UUID): Int {
@@ -157,12 +167,14 @@ constructor(
                 }
                 val tracks = tracksDeferred.await()
                 val artistImageUrl = artistDeferred.await()?.images?.primary?.toString()
+                val hasInternet = offlineModeManager.isInternetAvailable()
                 _uiState.update {
                     it.copy(
                         album = album,
                         tracks = tracks,
                         artistImageUrl = artistImageUrl,
                         isLoading = false,
+                        hasInternet = hasInternet,
                     )
                 }
                 updateDownloadState(lastAllDownloads)

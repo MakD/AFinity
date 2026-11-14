@@ -102,6 +102,7 @@ fun EpisodeDetailOverlay(
     onGoToSeries: (() -> Unit)? = null,
     isAdmin: Boolean = false,
     canDelete: Boolean = false,
+    showUserDataToggles: Boolean = true,
     onAdminAction: (AdminAction) -> Unit = {},
     onPersonClick: ((UUID) -> Unit)? = null,
 ) {
@@ -387,21 +388,23 @@ fun EpisodeDetailOverlay(
                             }
                         }
 
-                        WatchlistToggleButton(
-                            isInWatchlist = isInWatchlist,
-                            onClick = onToggleWatchlist,
-                        )
-
-                        FavoriteToggleButton(
-                            isFavorite = episode.favorite,
-                            onClick = onToggleFavorite,
-                        )
-
-                        if (!episode.missing) {
-                            WatchedToggleButton(
-                                isPlayed = episode.played,
-                                onClick = onToggleWatched,
+                        if (showUserDataToggles) {
+                            WatchlistToggleButton(
+                                isInWatchlist = isInWatchlist,
+                                onClick = onToggleWatchlist,
                             )
+
+                            FavoriteToggleButton(
+                                isFavorite = episode.favorite,
+                                onClick = onToggleFavorite,
+                            )
+
+                            if (!episode.missing) {
+                                WatchedToggleButton(
+                                    isPlayed = episode.played,
+                                    onClick = onToggleWatched,
+                                )
+                            }
                         }
 
                         if (!episode.missing && isDownloadAllowedByServer) {

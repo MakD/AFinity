@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.makd.afinity.data.database.entities.AfinityMovieDto
+import com.makd.afinity.data.models.media.AfinityExternalUrl
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 
@@ -21,6 +22,17 @@ interface MovieDao {
     @Update suspend fun updateMovie(movie: AfinityMovieDto)
 
     @Delete suspend fun deleteMovie(movie: AfinityMovieDto)
+
+    @Query(
+        "UPDATE movies SET providerIds = :providerIds, externalUrls = :externalUrls " +
+            "WHERE id = :movieId AND serverId = :serverId"
+    )
+    suspend fun updateExternalIds(
+        movieId: UUID,
+        serverId: String,
+        providerIds: Map<String, String>?,
+        externalUrls: List<AfinityExternalUrl>?,
+    )
 
     @Query("DELETE FROM movies WHERE id = :movieId") suspend fun deleteMovieById(movieId: UUID)
 
