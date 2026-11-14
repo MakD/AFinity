@@ -862,8 +862,7 @@ constructor(
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-                val isOffline = offlineModeManager.isCurrentlyOffline()
-                val hasInternet = offlineModeManager.isInternetAvailable()
+                val isOffline = offlineModeManager.isOffline.value
 
                 if (!isOffline && itemType?.uppercase() in setOf("SERIES", "SEASON")) {
                     fetchNextUp()
@@ -926,7 +925,7 @@ constructor(
                                         ?.reason == UnreachableReason.NO_ROUTE ->
                                         context.getString(R.string.item_error_no_route)
                                     isOffline -> context.getString(R.string.item_error_offline)
-                                    !hasInternet ->
+                                    !offlineModeManager.isInternetAvailable() ->
                                         context.getString(R.string.item_error_connection)
                                     else -> context.getString(R.string.item_error_not_found)
                                 },
@@ -937,6 +936,13 @@ constructor(
                 _uiState.value = _uiState.value.copy(item = item, isLoading = false)
                 itemLastLoadedAt = System.currentTimeMillis()
                 freshUserData?.let { launch { mediaChangeManager.reconcileUserData(it) } }
+                val hasInternet =
+                    when (item) {
+                        is AfinityMovie,
+                        is AfinityShow,
+                        is AfinitySeason -> offlineModeManager.isInternetAvailable()
+                        else -> false
+                    }
                 if (!themeLookupStarted) {
                     themeLookupStarted = true
                     launch {
@@ -1279,10 +1285,18 @@ constructor(
     private suspend fun loadItemFromDatabase(): AfinityItem? {
         return try {
             val userId = authRepository.currentUser.value?.id ?: return null
-            databaseRepository.getMovie(itemId, userId)
-                ?: databaseRepository.getShow(itemId, userId)
-                ?: databaseRepository.getSeason(itemId, userId)
-                ?: databaseRepository.getEpisode(itemId, userId)
+            when (itemType?.uppercase()) {
+                "MOVIE" -> databaseRepository.getMovie(itemId, userId)
+                "SERIES",
+                "SHOW" -> databaseRepository.getShow(itemId, userId)
+                "SEASON" -> databaseRepository.getSeason(itemId, userId)
+                "EPISODE" -> databaseRepository.getEpisode(itemId, userId)
+                else ->
+                    databaseRepository.getMovie(itemId, userId)
+                        ?: databaseRepository.getShow(itemId, userId)
+                        ?: databaseRepository.getSeason(itemId, userId)
+                        ?: databaseRepository.getEpisode(itemId, userId)
+            }
         } catch (_: Exception) {
             null
         }
