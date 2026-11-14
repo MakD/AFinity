@@ -107,7 +107,9 @@ fun MediaItemCard(
                     contentScale = ContentScale.Crop,
                     modifier =
                         Modifier.fillMaxSize()
-                            .blur(if (shouldBlurEpisode) 12.dp else 0.dp)
+                            .then(
+                                if (shouldBlurEpisode) Modifier.blur(12.dp) else Modifier
+                            )
                             .alpha(if (isUnavailable) 0.4f else 1f),
                 )
 

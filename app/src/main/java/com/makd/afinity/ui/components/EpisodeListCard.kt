@@ -117,9 +117,12 @@ fun EpisodeListCard(
                     contentDescription = item.name,
                     modifier =
                         Modifier.fillMaxSize()
-                            .blur(
-                                if (LocalBlurUnwatchedEpisodes.current && !item.played) 12.dp
-                                else 0.dp
+                            .then(
+                                if (LocalBlurUnwatchedEpisodes.current && !item.played) {
+                                    Modifier.blur(12.dp)
+                                } else {
+                                    Modifier
+                                }
                             ),
                     contentScale = ContentScale.Crop,
                     targetWidth = thumbnailWidth,

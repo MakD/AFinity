@@ -112,12 +112,22 @@ fun ContinueWatchingCard(
                             ?: item.images.showBackdropImageUrl
                     }
 
+                val isEpisodeImage =
+                    item is AfinityEpisode &&
+                        imageUrl != null &&
+                        (imageUrl == item.images.primaryImageUrl ||
+                            imageUrl == item.images.thumbImageUrl ||
+                            imageUrl == item.images.backdropImageUrl)
                 val isMissing = item is AfinityEpisode && item.missing
                 val isUpcoming =
                     isMissing && item.premiereDate?.isAfter(java.time.LocalDateTime.now()) == true
                 val isMissingAndAired = isMissing && !isUpcoming
                 val shouldBlurEpisode =
-                    LocalBlurUnwatchedEpisodes.current && item is AfinityEpisode && !item.played
+                    LocalBlurUnwatchedEpisodes.current &&
+                        item is AfinityEpisode &&
+                        !item.played &&
+                        item.playbackPositionTicks <= 0L &&
+                        isEpisodeImage
 
                 AsyncImage(
                     imageUrl = imageUrl,
@@ -125,7 +135,7 @@ fun ContinueWatchingCard(
                     contentDescription = item.name,
                     modifier =
                         Modifier.fillMaxSize()
-                            .blur(if (shouldBlurEpisode) 12.dp else 0.dp)
+                            .then(if (shouldBlurEpisode) Modifier.blur(12.dp) else Modifier)
                             .alpha(if (isMissingAndAired) 0.5f else 1f),
                     contentScale = ContentScale.Crop,
                     targetWidth = cardWidth,

@@ -965,7 +965,10 @@ private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
                         contentDescription = item.name,
                         blurHash = item.images.primaryBlurHash,
                         modifier =
-                            Modifier.fillMaxSize().blur(if (shouldBlurEpisode) 12.dp else 0.dp),
+                            Modifier.fillMaxSize()
+                                .then(
+                                    if (shouldBlurEpisode) Modifier.blur(12.dp) else Modifier
+                                ),
                         contentScale = ContentScale.Crop,
                         targetWidth = imgTargetW,
                         targetHeight = imgTargetH,

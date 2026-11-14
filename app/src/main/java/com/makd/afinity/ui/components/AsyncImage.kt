@@ -47,14 +47,6 @@ private const val BLUR_HASH_MIN_SIZE = 25
 private const val BLUR_HASH_CACHE_ENTRIES = 256
 
 private val blurHashBitmapCache = LruCache<String, ImageBitmap>(BLUR_HASH_CACHE_ENTRIES)
-private val blurHashBitmapCacheLock = Any()
-
-private fun getBlurHashBitmapFromCache(key: String): ImageBitmap? =
-    synchronized(blurHashBitmapCacheLock) { blurHashBitmapCache.get(key) }
-
-private fun putBlurHashBitmapInCache(key: String, bitmap: ImageBitmap) {
-    synchronized(blurHashBitmapCacheLock) { blurHashBitmapCache.put(key, bitmap) }
-}
 
 private val blurHashDispatcher =
     Executors.newSingleThreadExecutor { runnable ->
@@ -156,7 +148,9 @@ private fun rememberBlurHashPainter(
         }
 
     val painter =
-        remember(cacheKey) { cacheKey?.let { BlurHashPainter(getBlurHashBitmapFromCache(it)) } }
+        remember(cacheKey) {
+            cacheKey?.let { BlurHashPainter(blurHashBitmapCache.get(it)) }
+        }
 
     LaunchedEffect(cacheKey) {
         if (cacheKey == null || blurHash == null || painter == null) return@LaunchedEffect
@@ -167,7 +161,7 @@ private fun rememberBlurHashPainter(
                 decodeBlurHashBitmap(blurHash, decodeSize.first, decodeSize.second)
             }
         if (bitmap != null) {
-            putBlurHashBitmapInCache(cacheKey, bitmap)
+            blurHashBitmapCache.put(cacheKey, bitmap)
             painter.bitmap = bitmap
         }
     }

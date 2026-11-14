@@ -273,6 +273,12 @@ fun UpcomingEpisodeCard(
                         ?: episode.images.showBackdropImageUrl
                         ?: episode.images.showPrimaryImageUrl
                         ?: episode.images.primaryImageUrl
+                val isEpisodeImage =
+                    imageUrl != null &&
+                        (imageUrl == episode.images.thumbImageUrl ||
+                            imageUrl == episode.images.primaryImageUrl)
+                val shouldBlurEpisode =
+                    LocalBlurUnwatchedEpisodes.current && !episode.played && isEpisodeImage
 
                 AsyncImage(
                     imageUrl = imageUrl,
@@ -280,9 +286,8 @@ fun UpcomingEpisodeCard(
                     contentDescription = episode.name,
                     modifier =
                         Modifier.fillMaxSize()
-                            .blur(
-                                if (LocalBlurUnwatchedEpisodes.current && !episode.played) 12.dp
-                                else 0.dp
+                            .then(
+                                if (shouldBlurEpisode) Modifier.blur(12.dp) else Modifier
                             ),
                     contentScale = ContentScale.Crop,
                     targetWidth = cardWidth,

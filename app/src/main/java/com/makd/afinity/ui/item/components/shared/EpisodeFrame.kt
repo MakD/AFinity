@@ -108,7 +108,10 @@ fun EpisodeFrame(
             }
         }
 
-    val isUnwatched = LocalBlurUnwatchedEpisodes.current && !episode.played
+    val hasEpisodeImage =
+        imageUrl != null &&
+            (imageUrl == episode.images.thumbImageUrl || imageUrl == episode.images.primaryImageUrl)
+    val isUnwatched = LocalBlurUnwatchedEpisodes.current && !episode.played && hasEpisodeImage
     var isRevealed by rememberSaveable(episode.id) { mutableStateOf(false) }
     val shouldBlur = isUnwatched && !isRevealed
 
@@ -141,7 +144,9 @@ fun EpisodeFrame(
             blurHash = blurHash,
             targetWidth = 400.dp,
             targetHeight = 225.dp,
-            modifier = Modifier.fillMaxSize().blur(if (shouldBlur) 12.dp else 0.dp),
+            modifier =
+                Modifier.fillMaxSize()
+                    .then(if (shouldBlur) Modifier.blur(12.dp) else Modifier),
             contentScale = ContentScale.Crop,
         )
 

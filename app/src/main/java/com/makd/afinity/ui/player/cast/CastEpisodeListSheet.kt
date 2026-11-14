@@ -164,7 +164,9 @@ private fun CastEpisodeCard(
             AsyncImage(
                 imageUrl = episode.images.primaryImageUrl,
                 contentDescription = episode.name,
-                modifier = Modifier.fillMaxSize().blur(if (shouldBlur) 12.dp else 0.dp),
+                modifier =
+                    Modifier.fillMaxSize()
+                        .then(if (shouldBlur) Modifier.blur(12.dp) else Modifier),
                 contentScale = ContentScale.Crop,
                 blurHash = episode.images.primaryBlurHash,
                 targetWidth = 140.dp,

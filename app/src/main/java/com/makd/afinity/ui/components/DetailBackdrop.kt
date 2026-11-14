@@ -85,7 +85,7 @@ private fun CinematicBackdrop(
             useLowResPlaceholder = true,
             onSuccess = LocalHeroImageLoaded.current,
             onError = onError,
-            modifier = Modifier.fillMaxSize().blur(0.dp),
+            modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
             alignment = Alignment.Center,
         )

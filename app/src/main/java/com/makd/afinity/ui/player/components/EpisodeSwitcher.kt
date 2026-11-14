@@ -331,7 +331,9 @@ private fun EpisodeSwitcherCard(
             AsyncImage(
                 imageUrl = cardImageUrl.toString(),
                 contentDescription = displayItem.name,
-                modifier = Modifier.fillMaxSize().blur(if (shouldBlur) 12.dp else 0.dp),
+                modifier =
+                    Modifier.fillMaxSize()
+                        .then(if (shouldBlur) Modifier.blur(12.dp) else Modifier),
                 contentScale = ContentScale.Crop,
                 blurHash = cardBlurHash,
                 targetWidth = 140.dp,
