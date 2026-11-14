@@ -106,7 +106,7 @@
     <string name="extra_type_sample">Сэмпл</string>
     <string name="extra_type_featurette">Среднеметражный фильм</string>
     <string name="extra_type_short">Короткометражный фильм</string>
-    <string name="episode_season_episode_fmt">Сезон %1$d, эпизод %2$s • %3$s</string>
+    <string name="episode_season_episode_fmt">S%1$d:E%2$s • %3$s</string>
     <string name="episode_play">Воспроизвести</string>
     <string name="episode_resume">Продолжить</string>
     <string name="cd_air_date">Дата выхода в эфир</string>
@@ -2878,16 +2878,16 @@
     <string name="config_segment_deletion_summary">Удалять старые сегменты после их получения клиентом. Это позволяет избежать необходимости хранить весь перекодированный файл на диске. Отключите параметр, если возникают проблемы с воспроизведением.</string>
     <string name="config_segment_keep">Время хранения сегментов</string>
     <string name="config_segment_keep_summary">Время в секундах, в течение которого сегменты должны храниться после получения клиентом. Работает только при включенном удалении сегментов.</string>
-    <string name="config_section_tone_mapping">Тон-маппниг</string>
+    <string name="config_section_tone_mapping">Тонмаппинг</string>
     <string name="config_tonemapping">Включить тонмаппинг</string>
     <string name="config_tonemapping_summary">Тонмаппинг может преобразовать динамический диапазон видео из HDR в SDR, сохраняя детали изображения и цвета, которые являются очень важной информацией для представления исходной картины. На данный момент работает только с 10-битными HDR10, HLG, и DoVi. Требуется соответствующая среда выполнения GPGPU.</string>
     <string name="config_vpp_tonemapping">Включить VPP-тонмаппинг</string>
-    <string name="config_vpp_tonemapping_summary">Полный тонмаппниг на основе драйверов Intel. На данный момент работает только на определенном оборудовании с видео HDR10. Имеет более высокий приоритет по сравнению с другой реализацией OpenCL.</string>
+    <string name="config_vpp_tonemapping_summary">Полный тонмаппинг на основе драйверов Intel. На данный момент работает только на определенном оборудовании с видео HDR10. Имеет более высокий приоритет по сравнению с другой реализацией OpenCL.</string>
     <string name="config_vpp_brightness">Усиление яркости VPP-тонмаппинга</string>
     <string name="config_vpp_brightness_summary">Применить усиление яркости при VPP-тонмаппинге. Рекомендуемое значение - 16.</string>
     <string name="config_vpp_contrast">Усиление контрастности VPP-тонмаппинга</string>
     <string name="config_vpp_contrast_summary">Применить усиление контрастности при VPP-тонмаппинге. Рекомендуемое значение - 1.</string>
-    <string name="config_videotoolbox_tonemapping">Включить тонмаппниг VideoToolbox</string>
+    <string name="config_videotoolbox_tonemapping">Включить тонмаппинг VideoToolbox</string>
     <string name="config_videotoolbox_tonemapping_summary">Аппаратно ускоренный тонмаппинг от VideoToolbox. Работает с большинством форматов HDR, включая HDR10, HDR10+, и HLG, но не работает с Dolby Vision Profile 5. Имеет более высокий приоритет по сравнению с другой реализацией Metal.</string>
     <string name="config_tonemapping_algorithm">Выбрать используемый алгоритм тонмаппинга</string>
     <string name="config_tonemapping_algorithm_summary">Тонмаппинг можно подстроить. Если вы не знакомы с этими параметрами, оставьте стандартные настройки. Рекомендуемое значение - «BT.2390».</string>
@@ -3354,7 +3354,7 @@
     <string name="media_info_bit_depth_fmt">%1$d бит</string>
     <string name="media_info_sample_rate_fmt">%1$s кГц</string>
     <string name="media_info_bit_depth_sample_rate_fmt">%1$d бит / %2$s кГц</string>
-    <string name="media_info_channels_fmt">%1$s· %2$d кан.</string>
+    <string name="media_info_channels_fmt">%1$s · %2$d кан.</string>
     <plurals name="media_info_files">
         <item quantity="one">%1$d файл</item>
         <item quantity="few">%1$d файла</item>
