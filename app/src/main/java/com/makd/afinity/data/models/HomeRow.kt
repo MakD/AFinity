@@ -13,8 +13,12 @@ enum class HomeRow(
     LIBRARIES("libraries_section", R.string.home_row_libraries, mandatory = true),
     CONTINUE_WATCHING("continue_watching", R.string.home_row_continue_watching, mandatory = true),
     NEXT_UP("next_up", R.string.home_row_next_up),
+    CONTINUE_READING("continue_reading", R.string.home_row_continue_reading),
+    CONTINUE_LISTENING("continue_listening", R.string.home_row_continue_listening),
     LATEST_MOVIES("latest_movies", R.string.home_row_latest_movies),
     LATEST_TV("latest_tv", R.string.home_row_latest_tv),
+    LATEST_BOOKS("latest_books", R.string.home_row_latest_books),
+    LATEST_AUDIOBOOKS("latest_audiobooks", R.string.home_row_latest_audiobooks),
     UPCOMING_EPISODES("upcoming_episodes", R.string.home_row_upcoming),
     CRITICS_CHOICE("critics_choice", R.string.home_row_critics_choice),
     FRANCHISES(

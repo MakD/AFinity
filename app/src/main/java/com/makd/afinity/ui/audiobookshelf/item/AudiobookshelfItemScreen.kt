@@ -84,6 +84,8 @@ import com.makd.afinity.ui.components.backdropChainOf
 import com.makd.afinity.ui.components.formatRuntimeSeconds
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.components.mediainfo.PodcastEpisodeMediaInfoSheet
+import com.makd.afinity.ui.components.rememberDownloadVolumes
+import com.makd.afinity.ui.item.components.StorageLocationDialog
 import com.makd.afinity.ui.item.components.shared.DetailSectionGap
 import com.makd.afinity.ui.item.components.shared.LocalDetailLayout
 import com.makd.afinity.ui.item.components.shared.OverviewSection
@@ -153,6 +155,43 @@ fun AudiobookshelfItemScreen(
 
     var expandedEpisodeId by remember { mutableStateOf<String?>(null) }
     var mediaInfoEpisode by remember { mutableStateOf<PodcastEpisode?>(null) }
+
+    val downloadVolumes = rememberDownloadVolumes()
+    var showLocationDialog by remember { mutableStateOf(false) }
+    var selectedVolumeId by remember { mutableStateOf<String?>(null) }
+    var locationEpisodeId by remember { mutableStateOf<String?>(null) }
+    if (showLocationDialog) {
+        StorageLocationDialog(
+            volumes = downloadVolumes.volumes,
+            selectedVolumeId = selectedVolumeId,
+            onVolumeSelected = { selectedVolumeId = it },
+            onConfirm = {
+                viewModel.startDownload(episodeId = locationEpisodeId, volumeId = selectedVolumeId)
+            },
+            onDismiss = { showLocationDialog = false },
+            showQuality = false,
+        )
+    }
+    val onEpisodeDownloadLongClick: ((String) -> Unit)? =
+        if (isPodcast && canDownload && downloadVolumes.hasChoice) {
+            { episodeId ->
+                locationEpisodeId = episodeId
+                selectedVolumeId = downloadVolumes.defaultSelection
+                showLocationDialog = true
+            }
+        } else null
+    val onDownloadLongClick: (() -> Unit)? =
+        if (!isPodcast && canDownload) {
+            {
+                if (downloadVolumes.hasChoice) {
+                    locationEpisodeId = null
+                    selectedVolumeId = downloadVolumes.defaultSelection
+                    showLocationDialog = true
+                } else {
+                    viewModel.startDownload()
+                }
+            }
+        } else null
 
     val mediaInfoItem = item
     val shownEpisode = mediaInfoEpisode
@@ -360,6 +399,7 @@ fun AudiobookshelfItemScreen(
                                 episodeDownloadMap = episodeDownloadMap,
                                 onEpisodeDownload =
                                     if (canDownload) ({ viewModel.startDownload(it) }) else null,
+                                onEpisodeDownloadLongClick = onEpisodeDownloadLongClick,
                                 onEpisodeCancelDownload = { viewModel.cancelDownload(it) },
                                 onEpisodeDeleteDownload = { viewModel.deleteDownload(it) },
                                 onEpisodeToggleFinished = { viewModel.toggleEpisodeFinished(it) },
@@ -482,6 +522,7 @@ fun AudiobookshelfItemScreen(
                                                 else null,
                                             onToggleFinished = headerOnToggleFinished,
                                             toggleFinishedEnabled = !isThisItemPlaying,
+                                            onDownloadLongClick = onDownloadLongClick,
                                         )
                                     }
                                 }
@@ -512,6 +553,7 @@ fun AudiobookshelfItemScreen(
                                         if (!isPodcast) ({ viewModel.toggleItemFinished() })
                                         else null,
                                     toggleFinishedEnabled = !isThisItemPlaying,
+                                    onDownloadLongClick = onDownloadLongClick,
                                 )
                             },
                         ) {

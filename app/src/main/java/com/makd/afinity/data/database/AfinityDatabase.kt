@@ -6,6 +6,7 @@ import androidx.room.TypeConverters
 import com.makd.afinity.data.database.dao.AbsDownloadDao
 import com.makd.afinity.data.database.dao.AudibleRatingDao
 import com.makd.afinity.data.database.dao.AudiobookshelfDao
+import com.makd.afinity.data.database.dao.BookAnnotationDao
 import com.makd.afinity.data.database.dao.CustomHomeSectionDao
 import com.makd.afinity.data.database.dao.DeletedItemDao
 import com.makd.afinity.data.database.dao.EpisodeDao
@@ -54,6 +55,7 @@ import com.makd.afinity.data.database.entities.AudiobookshelfEpisodeEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfItemEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfLibraryEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfProgressEntity
+import com.makd.afinity.data.database.entities.BookAnnotationEntity
 import com.makd.afinity.data.database.entities.CustomHomeSectionEntity
 import com.makd.afinity.data.database.entities.DeletedItemEntity
 import com.makd.afinity.data.database.entities.DownloadDto
@@ -89,7 +91,7 @@ import com.makd.afinity.data.models.server.ServerAddressMemory
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.models.user.User
 
-const val AFINITY_DB_VERSION = 90
+const val AFINITY_DB_VERSION = 91
 
 @Database(
     entities =
@@ -145,6 +147,7 @@ const val AFINITY_DB_VERSION = 90
             LastFmPopularCacheEntity::class,
             SeerrArtworkEntity::class,
             OfflinePlayEntity::class,
+            BookAnnotationEntity::class,
         ],
     version = AFINITY_DB_VERSION,
     exportSchema = true,
@@ -219,4 +222,6 @@ abstract class AfinityDatabase : RoomDatabase() {
     abstract fun deletedItemDao(): DeletedItemDao
 
     abstract fun offlinePlayDao(): OfflinePlayDao
+
+    abstract fun bookAnnotationDao(): BookAnnotationDao
 }

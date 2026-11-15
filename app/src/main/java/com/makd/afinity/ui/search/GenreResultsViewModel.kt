@@ -12,9 +12,13 @@ import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.putFrom
 import com.makd.afinity.data.manager.resolveChangedItems
+import com.makd.afinity.data.models.common.CollectionType
+import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.BookLibraryComposition
 import com.makd.afinity.data.models.media.ItemFilterCriteria
+import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.store.ItemStore
@@ -25,9 +29,12 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -51,6 +58,14 @@ constructor(
 
     private val _showsPagingData = MutableStateFlow<Flow<PagingData<AfinityItem>>>(emptyFlow())
     val showsPagingData: StateFlow<Flow<PagingData<AfinityItem>>> = _showsPagingData.asStateFlow()
+
+    private val _booksPagingData = MutableStateFlow<Flow<PagingData<AfinityItem>>>(emptyFlow())
+    val booksPagingData: StateFlow<Flow<PagingData<AfinityItem>>> = _booksPagingData.asStateFlow()
+
+    val hasBooksLibrary: StateFlow<Boolean> =
+        appDataRepository.libraries
+            .map { libraries -> libraries.any { it.type == CollectionType.Books } }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     private var currentGenre: String? = null
     private var lastLoadedAt = 0L
@@ -101,6 +116,15 @@ constructor(
                 }
                 .flow
         _showsPagingData.value = applyUpdatesToPagingFlow(showsBaseFlow)
+        val booksBaseFlow =
+            mediaRepository.getBookLibraryPaging(
+                parentId = null,
+                composition = BookLibraryComposition.MIXED,
+                sortBy = SortBy.NAME,
+                sortDescending = false,
+                filters = LibraryFilters(genres = setOf(genre)),
+            )
+        _booksPagingData.value = applyUpdatesToPagingFlow(booksBaseFlow)
         lastLoadedAt = System.currentTimeMillis()
     }
 

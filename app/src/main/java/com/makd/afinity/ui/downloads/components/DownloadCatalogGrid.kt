@@ -53,14 +53,18 @@ import com.makd.afinity.ui.theme.CardDimensions
 fun downloadCategoryLabel(category: DownloadCategory): String =
     when (category) {
         DownloadCategory.VIDEO -> stringResource(R.string.section_videos)
+        DownloadCategory.BOOK -> stringResource(R.string.section_download_books)
         DownloadCategory.MUSIC -> stringResource(R.string.section_download_music)
         DownloadCategory.AUDIOBOOK -> stringResource(R.string.section_download_audiobooks)
         DownloadCategory.PODCAST -> stringResource(R.string.section_download_podcasts)
     }
 
 private fun aspectRatioFor(category: DownloadCategory): Float =
-    if (category == DownloadCategory.VIDEO) CardDimensions.ASPECT_RATIO_PORTRAIT
-    else CardDimensions.ASPECT_RATIO_SQUARE
+    if (category == DownloadCategory.VIDEO || category == DownloadCategory.BOOK) {
+        CardDimensions.ASPECT_RATIO_PORTRAIT
+    } else {
+        CardDimensions.ASPECT_RATIO_SQUARE
+    }
 
 fun LazyGridScope.downloadCatalogSections(
     catalog: List<DownloadCatalogEntry>,
@@ -260,6 +264,7 @@ private val PillScrim = Color.Black.copy(alpha = 0.7f)
 fun downloadCategoryColor(category: DownloadCategory): Color =
     when (category) {
         DownloadCategory.VIDEO -> MaterialTheme.colorScheme.primary
+        DownloadCategory.BOOK -> MaterialTheme.colorScheme.secondaryContainer
         DownloadCategory.MUSIC -> MaterialTheme.colorScheme.tertiary
         DownloadCategory.AUDIOBOOK -> MaterialTheme.colorScheme.secondary
         DownloadCategory.PODCAST -> MaterialTheme.colorScheme.primaryContainer

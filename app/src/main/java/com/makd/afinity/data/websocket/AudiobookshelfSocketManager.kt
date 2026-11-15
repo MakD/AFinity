@@ -10,6 +10,7 @@ import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.di.ApplicationScope
+import com.makd.afinity.player.audiobookshelf.AudiobookSource
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import io.socket.client.IO
@@ -130,7 +131,7 @@ constructor(
 
         scope.launch {
             playbackManager.playbackState
-                .map { it.sessionId != null && it.isPlaying }
+                .map { it.sessionId != null && it.isPlaying && it.source == AudiobookSource.ABS }
                 .distinctUntilChanged()
                 .collect { playing ->
                     if (playing) {
@@ -158,7 +159,8 @@ constructor(
         idleJob = scope.launch {
             delay(IDLE_TIMEOUT_MS.milliseconds)
             val state = playbackManager.playbackState.value
-            val playing = state.sessionId != null && state.isPlaying
+            val playing =
+                state.sessionId != null && state.isPlaying && state.source == AudiobookSource.ABS
             if (!playing) {
                 Timber.d("AbsSocket: idle timeout without playback — disconnecting")
                 disconnect()

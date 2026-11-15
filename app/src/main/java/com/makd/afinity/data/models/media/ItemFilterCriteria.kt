@@ -42,7 +42,7 @@ fun LibraryFilters.toItemFilterCriteria(studios: List<String> = emptyList()): It
             },
         isLiked = if (watchlist) true else null,
         isResumable = if (resumable) true else null,
-        studios = studios,
+        studios = (studios + this.studios).distinct(),
         officialRatings = officialRatings.toList(),
         tags = tags.toList(),
         audioLanguages = audioLanguages.toList(),

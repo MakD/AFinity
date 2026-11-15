@@ -81,7 +81,7 @@ fun AudioPlayerScaffold(
     accentColor: Color,
     snackbarHostState: SnackbarHostState,
     onMinimize: () -> Unit,
-    onCastClick: () -> Unit,
+    onCastClick: (() -> Unit)?,
     onMoreClick: () -> Unit,
     castRemote: @Composable () -> Unit,
     cover: @Composable (AudioCoverStyle) -> Unit,
@@ -204,7 +204,7 @@ private fun AudioPlayerTopRow(
     isCasting: Boolean,
     accentColor: Color,
     onMinimize: () -> Unit,
-    onCastClick: () -> Unit,
+    onCastClick: (() -> Unit)?,
     onMoreClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -230,20 +230,23 @@ private fun AudioPlayerTopRow(
             modifier = Modifier.align(Alignment.CenterEnd),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onCastClick) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_cast_devices),
-                        contentDescription = stringResource(R.string.cd_cast),
-                        tint = if (isCasting) accentColor else MaterialTheme.colorScheme.onSurface,
-                    )
-                    Box(
-                        modifier =
-                            Modifier.size(4.dp)
-                                .align(Alignment.BottomCenter)
-                                .alpha(if (isCasting) 1f else 0f)
-                                .background(accentColor, CircleShape)
-                    )
+            if (onCastClick != null) {
+                IconButton(onClick = onCastClick) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_cast_devices),
+                            contentDescription = stringResource(R.string.cd_cast),
+                            tint =
+                                if (isCasting) accentColor else MaterialTheme.colorScheme.onSurface,
+                        )
+                        Box(
+                            modifier =
+                                Modifier.size(4.dp)
+                                    .align(Alignment.BottomCenter)
+                                    .alpha(if (isCasting) 1f else 0f)
+                                    .background(accentColor, CircleShape)
+                        )
+                    }
                 }
             }
             IconButton(onClick = onMoreClick) {

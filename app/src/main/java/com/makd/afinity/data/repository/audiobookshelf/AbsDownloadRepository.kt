@@ -13,7 +13,11 @@ interface AbsDownloadRepository {
 
     suspend fun getDownload(libraryItemId: String, episodeId: String? = null): AbsDownloadInfo?
 
-    suspend fun startDownload(libraryItemId: String, episodeId: String? = null): Result<UUID>
+    suspend fun startDownload(
+        libraryItemId: String,
+        episodeId: String? = null,
+        volumeId: String? = null,
+    ): Result<UUID>
 
     suspend fun cancelDownload(downloadId: UUID): Result<Unit>
 

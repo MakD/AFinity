@@ -171,6 +171,9 @@ enum class Destination(
 
         const val MUSIC_LIBRARY_ROUTE = "music/library/{libraryId}/{libraryName}"
         const val MUSIC_BROWSE_ROUTE = "music/library/{libraryId}/{libraryName}/browse/{tab}"
+        const val BOOK_DETAIL_ROUTE = "book/{itemId}"
+        const val BOOK_READER_ROUTE = "book/{itemId}/read"
+        const val AUDIOBOOK_DETAIL_ROUTE = "audiobook/{itemId}"
         const val MUSIC_ALBUM_ROUTE = "music/album/{albumId}"
         const val MUSIC_ARTIST_ROUTE = "music/artist/{artistId}"
         const val PLAYLIST_ROUTE = "playlist/{playlistId}?audioOnly={audioOnly}"
@@ -200,6 +203,12 @@ enum class Destination(
         fun createMusicBrowseRoute(libraryId: String, libraryName: String, tab: String): String =
             "music/library/$libraryId/${libraryName.replace("/", "%2F")}/browse/$tab"
 
+        fun createBookDetailRoute(itemId: String): String = "book/$itemId"
+
+        fun createBookReaderRoute(itemId: String): String = "book/$itemId/read"
+
+        fun createAudiobookDetailRoute(itemId: String): String = "audiobook/$itemId"
+
         fun createMusicAlbumRoute(albumId: String): String = "music/album/$albumId"
 
         fun createMusicArtistRoute(artistId: String): String = "music/artist/$artistId"
@@ -217,7 +226,9 @@ enum class Destination(
             "audiobookshelf/series/{seriesId}/{libraryId}/{seriesName}"
         const val AUDIOBOOKSHELF_GENRE_RESULTS_ROUTE = "audiobookshelf/genre/{genre}"
         const val AUDIOBOOKSHELF_PLAYER_ROUTE =
-            "audiobookshelf/player/{itemId}?episodeId={episodeId}&startPosition={startPosition}&episodeSort={episodeSort}&includePlayed={includePlayed}"
+            "audiobookshelf/player/{itemId}?episodeId={episodeId}&startPosition={startPosition}&episodeSort={episodeSort}&includePlayed={includePlayed}&source={source}"
+
+        const val AUDIOBOOK_SOURCE_JELLYFIN = "jellyfin"
 
         fun createAudiobookshelfLoginRoute(): String {
             return AUDIOBOOKSHELF_LOGIN_ROUTE
@@ -257,12 +268,14 @@ enum class Destination(
             startPosition: Double? = null,
             episodeSort: String? = null,
             includePlayed: Boolean = false,
+            source: String? = null,
         ): String {
             val params = buildList {
                 if (episodeId != null) add("episodeId=$episodeId")
                 if (startPosition != null) add("startPosition=$startPosition")
                 if (episodeSort != null) add("episodeSort=$episodeSort")
                 if (includePlayed) add("includePlayed=true")
+                if (source != null) add("source=$source")
             }
             return if (params.isNotEmpty()) {
                 "audiobookshelf/player/$itemId?${params.joinToString("&")}"

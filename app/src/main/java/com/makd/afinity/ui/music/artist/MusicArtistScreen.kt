@@ -399,6 +399,10 @@ fun MusicArtistScreen(
                         onDownload =
                             if (isDownloadAllowedByServer) ({ viewModel.downloadTrack(track.id) })
                             else null,
+                        onDownloadTo =
+                            if (isDownloadAllowedByServer) {
+                                { volumeId -> viewModel.downloadTrack(track.id, volumeId) }
+                            } else null,
                         isDownloadEnabled = canDownloadOnNetwork,
                         onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
                         downloadInfo = uiState.trackDownloadInfos[track.id],
@@ -463,6 +467,12 @@ fun MusicArtistScreen(
                                         if (isDownloadAllowedByServer)
                                             ({ viewModel.downloadTrack(track.id) })
                                         else null,
+                                    onDownloadTo =
+                                        if (isDownloadAllowedByServer) {
+                                            { volumeId ->
+                                                viewModel.downloadTrack(track.id, volumeId)
+                                            }
+                                        } else null,
                                     isDownloadEnabled = canDownloadOnNetwork,
                                     onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
                                     downloadInfo = uiState.trackDownloadInfos[track.id],

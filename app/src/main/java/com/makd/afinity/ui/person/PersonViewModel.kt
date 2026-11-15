@@ -11,10 +11,13 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.manager.putFrom
 import com.makd.afinity.data.manager.resolveChangedItems
 import com.makd.afinity.data.models.external.ExternalTitles
+import com.makd.afinity.data.models.media.AfinityAudiobook
+import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.groupedIntoBooks
 import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.data.models.wikidata.WikidataSubjectType
 import com.makd.afinity.data.repository.AppDataRepository
@@ -80,8 +83,18 @@ constructor(
         itemStore.project(viewModelScope, _uiState) { state ->
             val movies = live(state.movies)
             val shows = live(state.shows)
-            if (movies === state.movies && shows === state.shows) state
-            else state.copy(movies = movies, shows = shows)
+            val books = live(state.books)
+            val audiobooks = live(state.audiobooks)
+            if (
+                movies === state.movies &&
+                    shows === state.shows &&
+                    books === state.books &&
+                    audiobooks === state.audiobooks
+            ) {
+                state
+            } else {
+                state.copy(movies = movies, shows = shows, books = books, audiobooks = audiobooks)
+            }
         }
 
     private var lastLoadedAt = System.currentTimeMillis()
@@ -119,6 +132,7 @@ constructor(
                 val displayedIds = buildSet {
                     uiState.value.movies.forEach { add(it.id) }
                     uiState.value.shows.forEach { add(it.id) }
+                    uiState.value.books.forEach { add(it.id) }
                 }
 
                 val resolved =
@@ -128,6 +142,7 @@ constructor(
                         heldItem = { id ->
                             uiState.value.movies.firstOrNull { it.id == id }
                                 ?: uiState.value.shows.firstOrNull { it.id == id }
+                                ?: uiState.value.books.firstOrNull { it.id == id }
                                 ?: itemStore.get(id) as? AfinityItem
                         },
                     )
@@ -165,8 +180,11 @@ constructor(
                     val itemsDeferred = async {
                         mediaRepository.getPersonItems(
                             personId = personId,
-                            includeItemTypes = listOf("Movie", "Series"),
-                            fields = FieldSets.MEDIA_ITEM_CARDS + ItemFields.PROVIDER_IDS,
+                            includeItemTypes = listOf("Movie", "Series", "Book", "Audio_Book"),
+                            fields =
+                                FieldSets.MEDIA_ITEM_CARDS +
+                                    ItemFields.PROVIDER_IDS +
+                                    ItemFields.PATH,
                         )
                     }
                     val refreshedDeferred = async { mediaRepository.getPersonResult(personId) }
@@ -186,6 +204,21 @@ constructor(
                         currentState.copy(
                             movies = personItems.filterIsInstance<AfinityMovie>(),
                             shows = personItems.filterIsInstance<AfinityShow>(),
+                            books =
+                                personItems
+                                    .filterIsInstance<AfinityBook>()
+                                    .sortedWith(
+                                        compareBy<AfinityBook>(
+                                            { it.seriesName?.lowercase() ?: it.name.lowercase() },
+                                            { it.seriesIndex ?: Int.MAX_VALUE },
+                                            { it.premiereDate },
+                                        )
+                                    ),
+                            audiobooks =
+                                personItems
+                                    .filterIsInstance<AfinityAudiobook>()
+                                    .groupedIntoBooks()
+                                    .sortedBy { it.name.lowercase() },
                         )
                     }
 
@@ -357,6 +390,8 @@ data class PersonUiState(
     val person: AfinityPersonDetail? = null,
     val movies: List<AfinityMovie> = emptyList(),
     val shows: List<AfinityShow> = emptyList(),
+    val books: List<AfinityBook> = emptyList(),
+    val audiobooks: List<AfinityAudiobook> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val awards: WikidataAwards? = null,

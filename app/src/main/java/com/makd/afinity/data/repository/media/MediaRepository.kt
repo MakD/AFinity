@@ -6,6 +6,8 @@ import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.mdblist.MdbListRatingsResult
+import com.makd.afinity.data.models.media.AfinityAudiobook
+import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -16,6 +18,7 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.AfinityUserDataOwner
+import com.makd.afinity.data.models.media.BookLibraryComposition
 import com.makd.afinity.data.models.media.ContinueWatchingOrder
 import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.models.media.LibraryFilterOptions
@@ -24,6 +27,7 @@ import com.makd.afinity.data.models.media.LibraryIndexEntry
 import com.makd.afinity.data.models.media.ThemeSongLookup
 import com.makd.afinity.data.models.music.AfinityPlaylistContents
 import com.makd.afinity.data.models.omdb.OmdbApiResult
+import com.makd.afinity.data.repository.FieldSets
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
@@ -41,6 +45,7 @@ interface MediaRepository {
     val libraries: Flow<List<AfinityCollection>>
     val hasLiveTvLibrary: Flow<Boolean?>
     val continueWatching: Flow<List<AfinityItem>>
+    val continueReading: Flow<List<AfinityBook>>
     val nextUp: Flow<List<AfinityEpisode>>
     val continueWatchingOrder: Flow<ContinueWatchingOrder>
 
@@ -49,6 +54,12 @@ interface MediaRepository {
     fun getNextUpFlow(): Flow<List<AfinityEpisode>>
 
     suspend fun invalidateContinueWatchingCache()
+
+    suspend fun invalidateContinueReadingCache()
+
+    val continueListening: Flow<List<AfinityAudiobook>>
+
+    suspend fun invalidateContinueListeningCache()
 
     suspend fun invalidateNextUpCache()
 
@@ -76,6 +87,14 @@ interface MediaRepository {
         groupItems: Boolean = true,
         includeItemTypes: List<BaseItemKind>? = null,
     ): List<AfinityItem>
+
+    suspend fun getLatestDtos(
+        parentId: UUID? = null,
+        limit: Int = 16,
+        fields: List<ItemFields>? = null,
+        groupItems: Boolean = true,
+        includeItemTypes: List<BaseItemKind>? = null,
+    ): List<BaseItemDto>
 
     suspend fun getContinueWatching(
         limit: Int = 16,
@@ -117,6 +136,12 @@ interface MediaRepository {
         enableTotalRecordCount: Boolean = false,
         enableImageTypes: List<String> = emptyList(),
     ): Result<BaseItemDtoQueryResult>
+
+    suspend fun getAudiobooksResult(
+        parentId: UUID?,
+        fields: List<ItemFields>? = FieldSets.AUDIOBOOK_GRID,
+        criteria: ItemFilterCriteria = ItemFilterCriteria(),
+    ): Result<List<AfinityAudiobook>>
 
     suspend fun getItem(itemId: UUID, fields: List<ItemFields>? = null): BaseItemDto?
 
@@ -367,6 +392,18 @@ interface MediaRepository {
         recursive: Boolean = true,
         onSourceCreated: ((PagingSource<Int, AfinityItem>) -> Unit)? = null,
     ): Flow<PagingData<AfinityItem>>
+
+    fun getBookLibraryPaging(
+        parentId: UUID?,
+        composition: BookLibraryComposition,
+        sortBy: SortBy,
+        sortDescending: Boolean,
+        filters: LibraryFilters,
+        nameStartsWith: String? = null,
+        onSourceCreated: ((PagingSource<*, AfinityItem>) -> Unit)? = null,
+    ): Flow<PagingData<AfinityItem>>
+
+    suspend fun getBookLibraryCompositionResult(parentId: UUID?): Result<BookLibraryComposition>
 
     suspend fun getFilterOptions(
         parentId: UUID?,

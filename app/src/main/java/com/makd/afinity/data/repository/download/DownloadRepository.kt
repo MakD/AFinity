@@ -56,6 +56,8 @@ interface DownloadRepository {
 
     suspend fun getStorageUsedPerVolumeAllServers(): Map<String, Long>
 
+    suspend fun startAudiobookDownload(itemId: UUID, volumeId: String? = null): Result<Int>
+
     suspend fun startSeasonDownload(
         seasonId: UUID,
         seriesId: UUID? = null,

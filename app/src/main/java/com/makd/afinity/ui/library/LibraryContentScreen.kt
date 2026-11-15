@@ -56,17 +56,20 @@ import androidx.media3.common.util.UnstableApi
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.makd.afinity.R
+import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityFolder
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityVideo
+import com.makd.afinity.data.models.media.BookLibraryComposition
 import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AlphabetScroller
 import com.makd.afinity.ui.components.AppBarProfile
+import com.makd.afinity.ui.components.AudiobookCardFrame
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FAB_CONTENT_BOTTOM_PADDING
 import com.makd.afinity.ui.components.FilterFab
@@ -259,6 +262,10 @@ fun LibraryContentScreen(
                             ) { item ->
                                 MediaItemGridCard(
                                     item = item,
+                                    audiobookFrame =
+                                        if (uiState.bookComposition == BookLibraryComposition.MIXED)
+                                            AudiobookCardFrame.LETTERBOX
+                                        else AudiobookCardFrame.SQUARE,
                                     onClick = {
                                         when (item) {
                                             is AfinityEpisode -> viewModel.selectEpisode(item)
@@ -315,6 +322,7 @@ fun LibraryContentScreen(
 
     if (showSortDialog) {
         SortDialog(
+            options = librarySortOptions(uiState.libraryType, uiState.bookComposition),
             currentSortBy = uiState.currentSortBy,
             currentSortDescending = uiState.currentSortDescending,
             onDismiss = { showSortDialog = false },
@@ -329,7 +337,7 @@ fun LibraryContentScreen(
         LibraryFilterBottomSheet(
             filters = uiState.currentFilters,
             options = uiState.filterOptions,
-            capabilities = libraryFilterCapabilities(uiState.libraryType),
+            capabilities = libraryFilterCapabilities(uiState.libraryType, uiState.bookComposition),
             isLoadingOptions = uiState.isLoadingFilterOptions,
             onApply = { viewModel.updateFilters(it) },
             onDismiss = { showFilterSheet = false },
@@ -351,8 +359,42 @@ fun LibraryContentScreen(
     )
 }
 
+private fun librarySortOptions(
+    type: CollectionType?,
+    composition: BookLibraryComposition?,
+): List<SortBy> =
+    when {
+        composition == BookLibraryComposition.AUDIOBOOKS ->
+            listOf(
+                SortBy.NAME,
+                SortBy.RANDOM,
+                SortBy.RELEASE_DATE,
+                SortBy.DATE_ADDED,
+                SortBy.DATE_PLAYED,
+            )
+        type == CollectionType.Books ->
+            listOf(
+                SortBy.NAME,
+                SortBy.RANDOM,
+                SortBy.RELEASE_DATE,
+                SortBy.DATE_ADDED,
+                SortBy.DATE_PLAYED,
+                SortBy.SERIES_NUMBER,
+            )
+        else ->
+            listOf(
+                SortBy.NAME,
+                SortBy.IMDB_RATING,
+                SortBy.PARENTAL_RATING,
+                SortBy.DATE_ADDED,
+                SortBy.DATE_PLAYED,
+                SortBy.RELEASE_DATE,
+            )
+    }
+
 @Composable
 private fun SortDialog(
+    options: List<SortBy>,
     currentSortBy: SortBy,
     currentSortDescending: Boolean,
     onDismiss: () -> Unit,
@@ -416,21 +458,13 @@ private fun SortDialog(
                     Spacer(Modifier.height(16.dp))
 
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        listOf(
-                                SortBy.NAME to R.string.sort_option_title,
-                                SortBy.IMDB_RATING to R.string.sort_option_imdb,
-                                SortBy.PARENTAL_RATING to R.string.sort_option_parental,
-                                SortBy.DATE_ADDED to R.string.sort_option_date_added,
-                                SortBy.DATE_PLAYED to R.string.sort_option_date_played,
-                                SortBy.RELEASE_DATE to R.string.sort_option_release_date,
+                        options.forEach { sortBy ->
+                            RadioOptionRow(
+                                label = stringResource(sortBy.labelRes),
+                                selected = selectedSort == sortBy,
+                                onClick = { selectedSort = sortBy },
                             )
-                            .forEach { (sortBy, labelRes) ->
-                                RadioOptionRow(
-                                    label = stringResource(labelRes),
-                                    selected = selectedSort == sortBy,
-                                    onClick = { selectedSort = sortBy },
-                                )
-                            }
+                        }
                     }
                 }
 

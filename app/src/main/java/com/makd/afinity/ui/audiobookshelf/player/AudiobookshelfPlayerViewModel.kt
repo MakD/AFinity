@@ -11,13 +11,20 @@ import com.makd.afinity.cast.CastEvent
 import com.makd.afinity.cast.CastManager
 import com.makd.afinity.cast.MAX_CAST_SPEED
 import com.makd.afinity.cast.MIN_CAST_SPEED
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.audiobookshelf.Bookmark
 import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
+import com.makd.afinity.navigation.Destination
+import com.makd.afinity.player.LastPlayback
+import com.makd.afinity.player.LastPlaybackStore
+import com.makd.afinity.player.audiobook.AudiobookNotFoundException
+import com.makd.afinity.player.audiobook.JellyfinAudiobookStarter
 import com.makd.afinity.player.audiobookshelf.AbsPlaybackStarter
 import com.makd.afinity.player.audiobookshelf.AbsServerUrlUnavailableException
+import com.makd.afinity.player.audiobookshelf.AudiobookSource
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfEqualizerManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
@@ -25,6 +32,7 @@ import com.makd.afinity.player.audiobookshelf.AudiobookshelfSkipSilenceManager
 import com.makd.afinity.player.common.EqualizerPreset
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
@@ -52,6 +60,9 @@ constructor(
     val castManager: CastManager,
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val absPlaybackStarter: AbsPlaybackStarter,
+    private val jellyfinAudiobookStarter: JellyfinAudiobookStarter,
+    private val lastPlaybackStore: LastPlaybackStore,
+    private val sessionManager: SessionManager,
     preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
 
@@ -62,6 +73,8 @@ constructor(
     private val episodeSort: String? = savedStateHandle.get<String>("episodeSort")
     private val includePlayed: Boolean =
         savedStateHandle.get<String>("includePlayed")?.toBooleanStrictOrNull() == true
+    private val sourceArg: String? = savedStateHandle.get<String>("source")
+    private val isJellyfinRoute: Boolean = sourceArg == Destination.AUDIOBOOK_SOURCE_JELLYFIN
 
     private val _uiState = MutableStateFlow(AudiobookshelfPlayerUiState())
     val uiState: StateFlow<AudiobookshelfPlayerUiState> = _uiState.asStateFlow()
@@ -128,8 +141,14 @@ constructor(
         if (sessionId.startsWith("local_")) return
         val tracks = state.audioTracks
         if (tracks.isEmpty()) return
-        val baseUrl = currentConfig.value?.serverUrl ?: return
-        val token = securePreferencesRepository.getCachedAudiobookshelfToken() ?: return
+        val isJellyfin = state.source == AudiobookSource.JELLYFIN
+        val baseUrl = if (isJellyfin) "" else currentConfig.value?.serverUrl ?: return
+        val token =
+            if (isJellyfin) {
+                sessionManager.getCurrentApiClient()?.accessToken ?: return
+            } else {
+                securePreferencesRepository.getCachedAudiobookshelfToken() ?: return
+            }
 
         castManager.loadAbsSession(
             tracks = tracks,
@@ -140,6 +159,7 @@ constructor(
             baseUrl = baseUrl,
             token = token,
             playbackSpeed = state.playbackSpeed,
+            tokenParam = if (isJellyfin) "api_key" else "token",
         )
         playbackManager.updatePlaybackSpeed(
             state.playbackSpeed.coerceIn(MIN_CAST_SPEED, MAX_CAST_SPEED)
@@ -162,23 +182,44 @@ constructor(
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            absPlaybackStarter
-                .start(itemId, episodeId, startPosition, episodeSort, includePlayed)
-                .fold(
-                    onSuccess = {
-                        _uiState.value = _uiState.value.copy(isLoading = false)
-                        Timber.d("Started playback session for item: $itemId")
-                    },
-                    onFailure = { error ->
-                        val message =
-                            if (error is AbsServerUrlUnavailableException)
+            val result =
+                if (isJellyfinItem()) {
+                    jellyfinAudiobookStarter.start(UUID.fromString(itemId), startPosition)
+                } else {
+                    absPlaybackStarter.start(
+                        itemId,
+                        episodeId,
+                        startPosition,
+                        episodeSort,
+                        includePlayed,
+                    )
+                }
+            result.fold(
+                onSuccess = {
+                    _uiState.value = _uiState.value.copy(isLoading = false)
+                    Timber.d("Started playback session for item: $itemId")
+                },
+                onFailure = { error ->
+                    val message =
+                        when (error) {
+                            is AbsServerUrlUnavailableException ->
                                 context.getString(R.string.error_server_url_not_available)
-                            else error.message
-                        _uiState.value = _uiState.value.copy(isLoading = false, error = message)
-                        Timber.e(error, "Failed to start playback session")
-                    },
-                )
+                            is AudiobookNotFoundException ->
+                                context.getString(R.string.item_error_not_found)
+                            else -> error.message
+                        }
+                    _uiState.value = _uiState.value.copy(isLoading = false, error = message)
+                    Timber.e(error, "Failed to start playback session")
+                },
+            )
         }
+    }
+
+    private suspend fun isJellyfinItem(): Boolean {
+        if (isJellyfinRoute) return true
+        if (sourceArg != null) return false
+        val last = lastPlaybackStore.read()
+        return last is LastPlayback.JellyfinAudiobook && last.itemId == itemId
     }
 
     fun togglePlayPause() {
@@ -252,10 +293,11 @@ constructor(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     init {
-        if (itemId.isNotEmpty()) refreshBookmarks(showLoading = false)
+        if (itemId.isNotEmpty() && !isJellyfinRoute) refreshBookmarks(showLoading = false)
     }
 
     fun refreshBookmarks(showLoading: Boolean = true) {
+        if (playbackManager.playbackState.value.source == AudiobookSource.JELLYFIN) return
         viewModelScope.launch {
             if (showLoading) _uiState.value = _uiState.value.copy(bookmarksLoading = true)
             audiobookshelfRepository.syncPendingBookmarks()

@@ -21,9 +21,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.common.CollectionType
+import com.makd.afinity.data.models.media.BookLibraryComposition
 import com.makd.afinity.data.models.media.LibraryFeature
 import com.makd.afinity.data.models.media.LibraryFilterOptions
 import com.makd.afinity.data.models.media.LibraryFilters
+import com.makd.afinity.data.models.media.LibraryFormatFilter
 import com.makd.afinity.data.models.media.LibraryLanguageOption
 import com.makd.afinity.data.models.media.SeriesStatusFilter
 import com.makd.afinity.data.models.media.VideoTypeFilter
@@ -41,6 +43,11 @@ data class LibraryFilterCapabilities(
     val seriesStatus: Boolean,
     val features: Boolean = true,
     val languages: Boolean = true,
+    val studios: Boolean = false,
+    val watchlist: Boolean = true,
+    val readingStatus: Boolean = false,
+    val listeningStatus: Boolean = false,
+    val formats: Boolean = false,
 )
 
 @Composable
@@ -88,7 +95,20 @@ private fun LanguageFilterSection(
     }
 }
 
-fun libraryFilterCapabilities(type: CollectionType?): LibraryFilterCapabilities =
+fun libraryFilterCapabilities(
+    type: CollectionType?,
+    composition: BookLibraryComposition? = null,
+): LibraryFilterCapabilities {
+    val base = typeFilterCapabilities(type)
+    return when (composition) {
+        BookLibraryComposition.AUDIOBOOKS ->
+            base.copy(ratings = false, readingStatus = false, listeningStatus = true)
+        BookLibraryComposition.MIXED -> base.copy(readingStatus = false, formats = true)
+        else -> base
+    }
+}
+
+private fun typeFilterCapabilities(type: CollectionType?): LibraryFilterCapabilities =
     when (type) {
         CollectionType.Movies ->
             LibraryFilterCapabilities(
@@ -107,6 +127,20 @@ fun libraryFilterCapabilities(type: CollectionType?): LibraryFilterCapabilities 
                 years = true,
                 videoType = false,
                 seriesStatus = true,
+            )
+        CollectionType.Books ->
+            LibraryFilterCapabilities(
+                genres = true,
+                ratings = true,
+                tags = true,
+                years = true,
+                videoType = false,
+                seriesStatus = false,
+                features = false,
+                languages = false,
+                studios = true,
+                watchlist = false,
+                readingStatus = true,
             )
         CollectionType.BoxSets ->
             LibraryFilterCapabilities(
@@ -145,11 +179,21 @@ fun LibraryFilterBottomSheet(
     var yearQuery by remember { mutableStateOf("") }
     var audioLanguageQuery by remember { mutableStateOf("") }
     var subtitleLanguageQuery by remember { mutableStateOf("") }
+    var studioQuery by remember { mutableStateOf("") }
+    val resumableLabel =
+        stringResource(
+            when {
+                capabilities.readingStatus -> R.string.filter_continue_reading
+                capabilities.listeningStatus -> R.string.filter_continue_listening
+                else -> R.string.filter_resumable
+            }
+        )
 
     var expandedSections by remember {
         mutableStateOf(
             buildSet {
                 add("status")
+                if (working.formats.isNotEmpty()) add("formats")
                 if (working.seriesStatuses.isNotEmpty()) add("series_status")
                 if (working.features.isNotEmpty()) add("features")
                 if (working.genres.isNotEmpty()) add("genres")
@@ -157,6 +201,7 @@ fun LibraryFilterBottomSheet(
                 if (working.tags.isNotEmpty()) add("tags")
                 if (working.videoTypes.isNotEmpty()) add("video_type")
                 if (working.years.isNotEmpty()) add("years")
+                if (working.studios.isNotEmpty()) add("studios")
             }
         )
     }
@@ -197,7 +242,7 @@ fun LibraryFilterBottomSheet(
         val statusSummary = buildList {
             if (working.played) add(stringResource(R.string.filter_played))
             if (working.unplayed) add(stringResource(R.string.filter_unplayed))
-            if (working.resumable) add(stringResource(R.string.filter_resumable))
+            if (working.resumable) add(resumableLabel)
             if (working.favorites) add(stringResource(R.string.filter_favorites))
             if (working.watchlist) add(stringResource(R.string.filter_watchlist))
         }
@@ -225,7 +270,7 @@ fun LibraryFilterBottomSheet(
                     onSelectedChange = { working = working.copy(unplayed = it, played = false) },
                 )
                 AfinityToggleChip(
-                    label = stringResource(R.string.filter_resumable),
+                    label = resumableLabel,
                     selected = working.resumable,
                     onSelectedChange = { working = working.copy(resumable = it) },
                 )
@@ -234,11 +279,53 @@ fun LibraryFilterBottomSheet(
                     selected = working.favorites,
                     onSelectedChange = { working = working.copy(favorites = it) },
                 )
-                AfinityToggleChip(
-                    label = stringResource(R.string.filter_watchlist),
-                    selected = working.watchlist,
-                    onSelectedChange = { working = working.copy(watchlist = it) },
+                if (capabilities.watchlist) {
+                    AfinityToggleChip(
+                        label = stringResource(R.string.filter_watchlist),
+                        selected = working.watchlist,
+                        onSelectedChange = { working = working.copy(watchlist = it) },
+                    )
+                }
+            }
+        }
+
+        if (capabilities.formats) {
+            val formatLabels =
+                listOf(
+                    LibraryFormatFilter.BOOKS to stringResource(R.string.filter_format_books),
+                    LibraryFormatFilter.AUDIOBOOKS to
+                        stringResource(R.string.filter_format_audiobooks),
                 )
+            val formatSummary =
+                formatLabels
+                    .filter { working.formats.contains(it.first) }
+                    .joinToString(", ") { it.second }
+                    .ifEmpty { anyLabel }
+
+            FilterAccordionSection(
+                title = stringResource(R.string.library_filter_format),
+                summary = formatSummary,
+                expanded = expandedSections.contains("formats"),
+                onToggle = { toggleSection("formats") },
+            ) {
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    formatLabels.forEach { (format, label) ->
+                        AfinityToggleChip(
+                            label = label,
+                            selected = working.formats.contains(format),
+                            onSelectedChange = { selected ->
+                                working =
+                                    working.copy(
+                                        formats = if (selected) setOf(format) else emptySet()
+                                    )
+                            },
+                        )
+                    }
+                }
             }
         }
 
@@ -362,6 +449,42 @@ fun LibraryFilterBottomSheet(
                         working = working.copy(genres = working.genres - genre)
                     },
                     onClearAll = { working = working.copy(genres = emptySet()) },
+                )
+            }
+        }
+
+        if (capabilities.studios && options.studios.isNotEmpty()) {
+            val selectedStudios = working.studios.toList()
+            val studioSuggestions =
+                options.studios.filter {
+                    !working.studios.contains(it) &&
+                        (studioQuery.isBlank() || it.contains(studioQuery, ignoreCase = true))
+                }
+
+            FilterAccordionSection(
+                title = stringResource(R.string.library_filter_publishers),
+                summary =
+                    if (selectedStudios.isEmpty()) anyLabel else selectedStudios.joinToString(", "),
+                expanded = expandedSections.contains("studios"),
+                onToggle = { toggleSection("studios") },
+            ) {
+                SearchableChipMultiSelect(
+                    label = null,
+                    placeholder = stringResource(R.string.library_filter_publishers_hint),
+                    query = studioQuery,
+                    onQueryChange = { studioQuery = it },
+                    suggestions = studioSuggestions,
+                    suggestionLabel = { it },
+                    onSuggestionSelected = { studio ->
+                        working = working.copy(studios = working.studios + studio)
+                        studioQuery = ""
+                    },
+                    selected = selectedStudios,
+                    selectedLabel = { it },
+                    onRemoveSelected = { studio ->
+                        working = working.copy(studios = working.studios - studio)
+                    },
+                    onClearAll = { working = working.copy(studios = emptySet()) },
                 )
             }
         }

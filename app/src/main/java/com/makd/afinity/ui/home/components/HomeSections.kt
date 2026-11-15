@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
@@ -47,6 +48,8 @@ import com.makd.afinity.data.models.extensions.showThumbBlurHash
 import com.makd.afinity.data.models.extensions.showThumbImageUrl
 import com.makd.afinity.data.models.extensions.thumbBlurHash
 import com.makd.afinity.data.models.extensions.thumbImageUrl
+import com.makd.afinity.data.models.media.AfinityAudiobook
+import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -57,10 +60,12 @@ import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.LibraryCard
 import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.ui.components.formatTimeLeftTicks
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
+import kotlin.math.roundToInt
 
 @Composable
 fun OptimizedContinueWatchingSection(
@@ -86,6 +91,220 @@ fun OptimizedContinueWatchingSection(
                 )
             }
         }
+    }
+}
+
+@Composable
+fun ContinueReadingSection(
+    books: List<AfinityBook>,
+    onBookClick: (AfinityBook) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
+) {
+    val cardWidth = widthSizeClass.portraitWidth
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
+
+    Column(modifier = Modifier.padding(horizontal = CardDimensions.RowGutter)) {
+        HomeSectionHeader(title = stringResource(R.string.home_continue_reading))
+
+        val uniqueBooks = books.distinctBy { it.id }
+        val firstBookId = uniqueBooks.firstOrNull()?.id
+        val scrollState = rememberLazyListState()
+        val lastKnownFirstBookId = remember { mutableStateOf<Any?>(null) }
+
+        LaunchedEffect(firstBookId) {
+            val previous = lastKnownFirstBookId.value
+            if (firstBookId != null && previous != null && firstBookId != previous) {
+                scrollState.scrollToItem(0)
+            }
+            if (firstBookId != null) {
+                lastKnownFirstBookId.value = firstBookId
+            }
+        }
+
+        CardRow(state = scrollState, modifier = Modifier.height(fixedRowHeight)) {
+            items(items = uniqueBooks, key = { book -> "continue_reading_${book.id}" }) { book ->
+                ContinueReadingCard(
+                    book = book,
+                    onClick = { onBookClick(book) },
+                    cardWidth = cardWidth,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContinueReadingCard(book: AfinityBook, onClick: () -> Unit, cardWidth: Dp) {
+    Column(modifier = Modifier.width(cardWidth)) {
+        Card(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
+            colors =
+                CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                AsyncImage(
+                    imageUrl = book.images.primaryImageUrl,
+                    blurHash = book.images.primaryBlurHash,
+                    contentDescription = book.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    targetWidth = cardWidth,
+                    targetHeight = cardWidth / CardDimensions.ASPECT_RATIO_PORTRAIT,
+                )
+                val progress = book.readingProgress ?: 0f
+                if (progress > 0f) {
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier =
+                            Modifier.fillMaxWidth().height(4.dp).align(Alignment.BottomCenter),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = Color.Black.copy(alpha = 0.3f),
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(CardDimensions.CardTextSpacing))
+
+        Text(
+            text = book.name,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = continueReadingSubtitle(book),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+fun AudiobookRowSection(
+    title: String,
+    books: List<AfinityAudiobook>,
+    onBookClick: (AfinityAudiobook) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
+    showProgress: Boolean,
+    onViewAllClick: (() -> Unit)? = null,
+) {
+    val cardWidth = widthSizeClass.portraitWidth
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_SQUARE)
+
+    Column(modifier = Modifier.padding(horizontal = CardDimensions.RowGutter)) {
+        HomeSectionHeader(title = title, onViewAllClick = onViewAllClick)
+
+        val uniqueBooks = books.distinctBy { it.id }
+        val firstBookId = uniqueBooks.firstOrNull()?.id
+        val scrollState = rememberLazyListState()
+        val lastKnownFirstBookId = remember { mutableStateOf<Any?>(null) }
+
+        LaunchedEffect(firstBookId) {
+            val previous = lastKnownFirstBookId.value
+            if (firstBookId != null && previous != null && firstBookId != previous) {
+                scrollState.scrollToItem(0)
+            }
+            if (firstBookId != null) {
+                lastKnownFirstBookId.value = firstBookId
+            }
+        }
+
+        CardRow(state = scrollState, modifier = Modifier.height(fixedRowHeight)) {
+            items(items = uniqueBooks, key = { book -> "audiobook_${book.id}" }) { book ->
+                AudiobookCard(
+                    book = book,
+                    onClick = { onBookClick(book) },
+                    cardWidth = cardWidth,
+                    showProgress = showProgress,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AudiobookCard(
+    book: AfinityAudiobook,
+    onClick: () -> Unit,
+    cardWidth: Dp,
+    showProgress: Boolean,
+) {
+    Column(modifier = Modifier.width(cardWidth)) {
+        Card(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_SQUARE),
+            colors =
+                CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                AsyncImage(
+                    imageUrl = book.images.primaryImageUrl,
+                    blurHash = book.images.primaryBlurHash,
+                    contentDescription = book.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    targetWidth = cardWidth,
+                    targetHeight = cardWidth,
+                )
+                val progress = book.listeningProgress ?: 0f
+                if (showProgress && progress > 0f) {
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier =
+                            Modifier.fillMaxWidth().height(4.dp).align(Alignment.BottomCenter),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = Color.Black.copy(alpha = 0.3f),
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(CardDimensions.CardTextSpacing))
+
+        Text(
+            text = book.name,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        val ticksLeft = book.runtimeTicks - book.playbackPositionTicks
+        val subtitle =
+            if (showProgress && book.playbackPositionTicks > 0 && ticksLeft > 0) {
+                formatTimeLeftTicks(ticksLeft)
+            } else {
+                book.authors.map { it.name }.distinct().joinToString(", ")
+            }
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun continueReadingSubtitle(book: AfinityBook): String {
+    val pages = book.pageCount
+    return if (pages != null) {
+        val page =
+            (book.playbackPositionTicks / AfinityBook.TICKS_PER_PAGE)
+                .toInt()
+                .plus(1)
+                .coerceIn(1, pages)
+        stringResource(R.string.book_progress_page_fmt, page, pages)
+    } else {
+        val percent = ((book.readingProgress ?: 0f) * 100).roundToInt().coerceIn(1, 100)
+        stringResource(R.string.book_progress_percent_fmt, percent)
     }
 }
 

@@ -149,6 +149,26 @@ fun AfinityItem.applying(values: UserDataValues): AfinityItem {
                 playbackPositionTicks = t,
                 unplayedItemCount = unplayed,
             )
+        is AfinityBook ->
+            copy(
+                played = p,
+                favorite = f,
+                liked = l,
+                playbackPositionTicks = t,
+                unplayedItemCount = unplayed,
+            )
+        is AfinityAudiobook ->
+            if (isGrouped) {
+                this
+            } else {
+                copy(
+                    played = p,
+                    favorite = f,
+                    liked = l,
+                    playbackPositionTicks = t,
+                    unplayedItemCount = unplayed,
+                )
+            }
         else -> this
     }
 }

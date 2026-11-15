@@ -1,5 +1,7 @@
 package com.makd.afinity.ui.audiobookshelf.item.components
 
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +20,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,10 +31,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
@@ -71,6 +76,7 @@ fun ItemHeaderContent(
     onToggleFinished: (() -> Unit)? = null,
     toggleFinishedEnabled: Boolean = true,
     showActions: Boolean = true,
+    onDownloadLongClick: (() -> Unit)? = null,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -273,6 +279,7 @@ fun ItemHeaderContent(
                 onDeleteDownload = onDeleteDownload,
                 onToggleFinished = onToggleFinished,
                 toggleFinishedEnabled = toggleFinishedEnabled,
+                onDownloadLongClick = onDownloadLongClick,
             )
         }
     }
@@ -302,6 +309,7 @@ internal fun ItemActionRow(
     onDeleteDownload: (() -> Unit)? = null,
     onToggleFinished: (() -> Unit)? = null,
     toggleFinishedEnabled: Boolean = true,
+    onDownloadLongClick: (() -> Unit)? = null,
 ) {
     val hasMediaInfo = item.mediaType.equals("book", ignoreCase = true)
     var showMediaInfo by remember { mutableStateOf(false) }
@@ -358,18 +366,22 @@ internal fun ItemActionRow(
                     onDismiss = { pendingDownloadConfirm = null },
                 )
             }
-            IconButton(
-                onClick = {
-                    when (downloadInfo?.status) {
-                        AbsDownloadStatus.QUEUED -> onCancelDownload?.invoke()
-                        AbsDownloadStatus.DOWNLOADING,
-                        AbsDownloadStatus.COMPLETED -> pendingDownloadConfirm = downloadInfo.let {
-                                it.singleDownloadConfirm(it.title)
-                            }
-                        else -> onDownload.invoke()
-                    }
+            val onDownloadButtonClick: () -> Unit = {
+                when (downloadInfo?.status) {
+                    AbsDownloadStatus.QUEUED -> onCancelDownload?.invoke()
+                    AbsDownloadStatus.DOWNLOADING,
+                    AbsDownloadStatus.COMPLETED -> pendingDownloadConfirm = downloadInfo.let {
+                            it.singleDownloadConfirm(it.title)
+                        }
+                    else -> onDownload.invoke()
                 }
-            ) {
+            }
+            val isStartState =
+                downloadInfo?.status != AbsDownloadStatus.QUEUED &&
+                    downloadInfo?.status != AbsDownloadStatus.DOWNLOADING &&
+                    downloadInfo?.status != AbsDownloadStatus.COMPLETED
+            val longClick = onDownloadLongClick?.takeIf { isStartState }
+            DownloadButtonFrame(onClick = onDownloadButtonClick, onLongClick = longClick) {
                 when (downloadInfo?.status) {
                     AbsDownloadStatus.DOWNLOADING -> {
                         Box(contentAlignment = Alignment.Center) {
@@ -423,6 +435,34 @@ internal fun ItemActionRow(
                 )
             }
         }
+    }
+}
+
+@Composable
+internal fun DownloadButtonFrame(
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)?,
+    size: Dp = 48.dp,
+    content: @Composable () -> Unit,
+) {
+    if (onLongClick == null) {
+        IconButton(onClick = onClick, modifier = Modifier.size(size)) { content() }
+        return
+    }
+    val interactionSource = remember { MutableInteractionSource() }
+    Box(
+        modifier =
+            Modifier.size(size)
+                .combinedClickable(
+                    interactionSource = interactionSource,
+                    indication = ripple(bounded = false, radius = size / 2),
+                    role = Role.Button,
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                ),
+        contentAlignment = Alignment.Center,
+    ) {
+        content()
     }
 }
 

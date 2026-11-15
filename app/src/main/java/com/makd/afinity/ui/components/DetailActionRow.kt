@@ -51,6 +51,8 @@ fun DetailActionRow(
     onShuffle: (() -> Unit)? = null,
     playbackEnabled: Boolean = true,
     moreActions: List<DetailMenuAction> = emptyList(),
+    @DrawableRes playIconRes: Int = R.drawable.ic_player_play_filled,
+    playContentDescription: String? = null,
     leadingActions: @Composable RowScope.() -> Unit,
 ) {
     Row(
@@ -98,8 +100,8 @@ fun DetailActionRow(
                 modifier = Modifier.size(56.dp),
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_player_play_filled),
-                    contentDescription = stringResource(R.string.cd_play),
+                    painter = painterResource(playIconRes),
+                    contentDescription = playContentDescription ?: stringResource(R.string.cd_play),
                     modifier = Modifier.size(26.dp),
                 )
             }

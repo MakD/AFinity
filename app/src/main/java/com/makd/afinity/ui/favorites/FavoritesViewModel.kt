@@ -9,6 +9,8 @@ import com.makd.afinity.data.manager.AdminChangeKind
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.livetv.AfinityChannel
+import com.makd.afinity.data.models.media.AfinityAudiobook
+import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -71,6 +73,8 @@ constructor(
             val seasons = live(state.seasons)
             val episodes = live(state.episodes)
             val boxSets = live(state.boxSets)
+            val books = live(state.books)
+            val audiobooks = live(state.audiobooks)
             val albums = liveOwners(state.favoriteAlbums)
             val artists = liveOwners(state.favoriteArtists)
             val tracks = liveOwners(state.favoriteTracks)
@@ -80,6 +84,8 @@ constructor(
                     seasons === state.seasons &&
                     episodes === state.episodes &&
                     boxSets === state.boxSets &&
+                    books === state.books &&
+                    audiobooks === state.audiobooks &&
                     albums === state.favoriteAlbums &&
                     artists === state.favoriteArtists &&
                     tracks === state.favoriteTracks
@@ -92,6 +98,8 @@ constructor(
                     seasons = seasons,
                     episodes = episodes,
                     boxSets = boxSets,
+                    books = books,
+                    audiobooks = audiobooks,
                     favoriteAlbums = albums,
                     favoriteArtists = artists,
                     favoriteTracks = tracks,
@@ -131,6 +139,8 @@ constructor(
                             seasons = data.seasons,
                             episodes = data.episodes,
                             boxSets = data.boxSets,
+                            books = data.books,
+                            audiobooks = data.audiobooks,
                             channels = data.channels,
                             people = data.people,
                             favoriteAlbums = data.favoriteAlbums,
@@ -233,6 +243,8 @@ data class FavoritesUiState(
     val seasons: List<AfinitySeason> = emptyList(),
     val episodes: List<AfinityEpisode> = emptyList(),
     val boxSets: List<AfinityBoxSet> = emptyList(),
+    val books: List<AfinityBook> = emptyList(),
+    val audiobooks: List<AfinityAudiobook> = emptyList(),
     val people: List<AfinityPersonDetail> = emptyList(),
     val channels: List<AfinityChannel> = emptyList(),
     val favoriteAlbums: List<AfinityAlbum> = emptyList(),

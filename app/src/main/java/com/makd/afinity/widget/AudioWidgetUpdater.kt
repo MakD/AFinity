@@ -342,14 +342,16 @@ constructor(
             )
         }
         val abs = last as? LastPlayback.Abs
+        val jellyfinBook = last as? LastPlayback.JellyfinAudiobook
+        val isAudiobook = abs != null || jellyfinBook != null
         return AudioWidgetState(
             status = AudioWidgetStatus.PAUSED,
-            engine = if (abs != null) AudioWidgetEngine.ABS else AudioWidgetEngine.MUSIC,
+            engine = if (isAudiobook) AudioWidgetEngine.ABS else AudioWidgetEngine.MUSIC,
             title = display.title,
             subtitle = display.subtitle?.let(::byLine),
             isSignedIn = true,
             isLoaded = false,
-            absItemId = abs?.itemId,
+            absItemId = abs?.itemId ?: jellyfinBook?.itemId,
             absEpisodeId = abs?.episodeId,
             coverUrl = display.artworkUri,
         )

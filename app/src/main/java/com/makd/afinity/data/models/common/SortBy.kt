@@ -12,6 +12,7 @@ enum class SortBy(val sortString: String, @param:StringRes val labelRes: Int) {
     RELEASE_DATE("PremiereDate", R.string.sort_option_release_date),
     SERIES_DATE_PLAYED("SeriesDatePlayed", R.string.sort_option_series_date_played),
     DATE_LAST_CONTENT_ADDED("DateLastContentAdded", R.string.sort_option_date_last_content_added),
+    SERIES_NUMBER("IndexNumber", R.string.sort_option_series_number),
     RANDOM("Random", R.string.sort_option_random);
 
     companion object {

@@ -95,7 +95,11 @@ constructor(
         return entity?.toAbsDownloadInfo()
     }
 
-    override suspend fun startDownload(libraryItemId: String, episodeId: String?): Result<UUID> {
+    override suspend fun startDownload(
+        libraryItemId: String,
+        episodeId: String?,
+        volumeId: String?,
+    ): Result<UUID> {
         val session =
             sessionManager.currentSession.value
                 ?: return Result.failure(Exception("No active session"))
@@ -118,8 +122,11 @@ constructor(
         }
 
         val downloadId = UUID.randomUUID()
-        val volumeId = preferencesRepository.getDownloadStorageVolumeId()
-        val localDirPath = buildLocalDirPath(volumeId, serverId, libraryItemId, episodeId)
+        val requestedVolumeId = volumeId ?: preferencesRepository.getDownloadStorageVolumeId()
+        val resolvedVolumeId =
+            if (storageLocationProvider.isVolumeAvailable(requestedVolumeId)) requestedVolumeId
+            else StorageLocationProvider.PRIMARY_VOLUME_ID
+        val localDirPath = buildLocalDirPath(resolvedVolumeId, serverId, libraryItemId, episodeId)
 
         val entity =
             AbsDownloadEntity(
@@ -144,7 +151,7 @@ constructor(
                 updatedAt = System.currentTimeMillis(),
                 localDirPath = localDirPath,
                 serializedSession = null,
-                storageVolumeId = volumeId,
+                storageVolumeId = resolvedVolumeId,
             )
         absDownloadDao.upsert(entity)
 

@@ -33,6 +33,8 @@ import androidx.paging.PagingData
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
+import com.makd.afinity.data.models.media.AfinityAudiobook
+import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
@@ -48,6 +50,7 @@ import com.makd.afinity.ui.components.FAB_CONTENT_BOTTOM_PADDING
 import com.makd.afinity.ui.components.FilterFab
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.ui.components.MediaItemGridCard
 import com.makd.afinity.ui.components.SortFab
 import com.makd.afinity.ui.components.formatRuntimeTicks
 import com.makd.afinity.ui.components.playerClearance
@@ -99,10 +102,31 @@ enum class DownloadedCategory(
         ),
         true,
     ),
+    BOOKS(
+        R.string.home_downloaded_books,
+        listOf(
+            MusicSortField.Name,
+            MusicSortField.Artist,
+            MusicSortField.ReleaseDate,
+            MusicSortField.DateAdded,
+        ),
+        true,
+    ),
     AUDIOBOOKS(
         R.string.home_downloaded_audiobooks,
         listOf(MusicSortField.Name, MusicSortField.DateAdded, MusicSortField.Runtime),
         false,
+    ),
+    JELLYFIN_AUDIOBOOKS(
+        R.string.home_downloaded_audiobooks,
+        listOf(
+            MusicSortField.Name,
+            MusicSortField.Artist,
+            MusicSortField.ReleaseDate,
+            MusicSortField.DateAdded,
+            MusicSortField.Runtime,
+        ),
+        true,
     ),
     PODCASTS(
         R.string.home_downloaded_episodes,
@@ -239,6 +263,30 @@ private fun AfinityShow.sortKeys() =
 private fun AfinityShow.filterKeys() =
     FilterKeys(favorite = favorite, played = played, genres = genres, year = productionYear)
 
+private fun AfinityBook.sortKeys() =
+    SortKeys(
+        name = name,
+        creator = authors.firstOrNull()?.name,
+        released = premiereDate?.toLocalDate()?.toEpochDay() ?: releasedFrom(productionYear),
+        added = dateCreated?.toEpochSecond(ZoneOffset.UTC),
+        runtime = runtimeTicks,
+    )
+
+private fun AfinityBook.filterKeys() =
+    FilterKeys(favorite = favorite, played = played, genres = genres, year = productionYear)
+
+private fun AfinityAudiobook.sortKeys() =
+    SortKeys(
+        name = name,
+        creator = authors.firstOrNull()?.name,
+        released = premiereDate?.toLocalDate()?.toEpochDay() ?: releasedFrom(productionYear),
+        added = dateCreated?.toEpochSecond(ZoneOffset.UTC),
+        runtime = runtimeTicks,
+    )
+
+private fun AfinityAudiobook.filterKeys() =
+    FilterKeys(favorite = favorite, played = played, genres = genres, year = productionYear)
+
 private fun AbsDownloadInfo.sortKeys() =
     SortKeys(
         name = title,
@@ -317,6 +365,16 @@ fun DownloadedCategoryScreen(
                 AfinityShow::filterKeys,
             )
         }
+    val books =
+        remember(uiState.downloadedBooks, sortField, sortDescending, filters) {
+            uiState.downloadedBooks.sortedAndFiltered(
+                sortField,
+                sortDescending,
+                filters,
+                AfinityBook::sortKeys,
+                AfinityBook::filterKeys,
+            )
+        }
     val audiobooks =
         remember(uiState.downloadedAudiobooks, sortField, sortDescending) {
             uiState.downloadedAudiobooks.sortedAndFiltered(
@@ -325,6 +383,16 @@ fun DownloadedCategoryScreen(
                 filters,
                 AbsDownloadInfo::sortKeys,
                 null,
+            )
+        }
+    val jellyfinAudiobooks =
+        remember(uiState.downloadedJellyfinAudiobooks, sortField, sortDescending, filters) {
+            uiState.downloadedJellyfinAudiobooks.sortedAndFiltered(
+                sortField,
+                sortDescending,
+                filters,
+                AfinityAudiobook::sortKeys,
+                AfinityAudiobook::filterKeys,
             )
         }
     val podcastEpisodes =
@@ -363,12 +431,19 @@ fun DownloadedCategoryScreen(
             category,
             uiState.downloadedMovies,
             uiState.downloadedShows,
+            uiState.downloadedBooks,
             uiState.downloadedMusicAlbums,
             uiState.downloadedMusicTracks,
         ) {
             when (category) {
                 DownloadedCategory.MOVIES ->
                     uiState.downloadedMovies.filterOptions(AfinityMovie::filterKeys)
+
+                DownloadedCategory.BOOKS ->
+                    uiState.downloadedBooks.filterOptions(AfinityBook::filterKeys)
+
+                DownloadedCategory.JELLYFIN_AUDIOBOOKS ->
+                    uiState.downloadedJellyfinAudiobooks.filterOptions(AfinityAudiobook::filterKeys)
 
                 DownloadedCategory.SHOWS ->
                     uiState.downloadedShows.filterOptions(AfinityShow::filterKeys)
@@ -387,7 +462,9 @@ fun DownloadedCategoryScreen(
         when (category) {
             DownloadedCategory.MOVIES -> uiState.downloadedMovies.size
             DownloadedCategory.SHOWS -> uiState.downloadedShows.size
+            DownloadedCategory.BOOKS -> uiState.downloadedBooks.size
             DownloadedCategory.AUDIOBOOKS -> uiState.downloadedAudiobooks.size
+            DownloadedCategory.JELLYFIN_AUDIOBOOKS -> uiState.downloadedJellyfinAudiobooks.size
             DownloadedCategory.PODCASTS -> uiState.downloadedPodcastEpisodes.size
             DownloadedCategory.ALBUMS -> uiState.downloadedMusicAlbums.size
             DownloadedCategory.TRACKS -> uiState.downloadedMusicTracks.size
@@ -396,7 +473,9 @@ fun DownloadedCategoryScreen(
         when (category) {
             DownloadedCategory.MOVIES -> movies.size
             DownloadedCategory.SHOWS -> shows.size
+            DownloadedCategory.BOOKS -> books.size
             DownloadedCategory.AUDIOBOOKS -> audiobooks.size
+            DownloadedCategory.JELLYFIN_AUDIOBOOKS -> jellyfinAudiobooks.size
             DownloadedCategory.PODCASTS -> podcastEpisodes.size
             DownloadedCategory.ALBUMS -> albums.size
             DownloadedCategory.TRACKS -> tracks.size
@@ -461,9 +540,15 @@ fun DownloadedCategoryScreen(
                     modifier = Modifier.padding(innerPadding),
                 )
 
-            category == DownloadedCategory.MOVIES || category == DownloadedCategory.SHOWS -> {
+            category == DownloadedCategory.MOVIES ||
+                category == DownloadedCategory.SHOWS ||
+                category == DownloadedCategory.BOOKS -> {
                 val items: List<AfinityItem> =
-                    if (category == DownloadedCategory.MOVIES) movies else shows
+                    when (category) {
+                        DownloadedCategory.MOVIES -> movies
+                        DownloadedCategory.SHOWS -> shows
+                        else -> books
+                    }
                 DownloadedGrid(
                     columns = CardDimensions.gridCells(),
                     contentPadding = gridPadding,
@@ -480,6 +565,17 @@ fun DownloadedCategoryScreen(
                     )
                 }
             }
+
+            category == DownloadedCategory.JELLYFIN_AUDIOBOOKS ->
+                DownloadedGrid(
+                    columns = CardDimensions.gridCells(),
+                    contentPadding = gridPadding,
+                    items = jellyfinAudiobooks,
+                    key = { it.id },
+                    modifier = contentModifier,
+                ) { book ->
+                    MediaItemGridCard(item = book, onClick = { onItemClick(book) })
+                }
 
             category == DownloadedCategory.AUDIOBOOKS ||
                 category == DownloadedCategory.PODCASTS -> {

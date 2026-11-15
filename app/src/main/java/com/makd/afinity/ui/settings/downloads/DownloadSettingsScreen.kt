@@ -609,7 +609,12 @@ private fun DownloadGroupSheet(
                     modifier =
                         Modifier.width(84.dp)
                             .aspectRatio(
-                                if (entry.category == DownloadCategory.VIDEO) 2f / 3f else 1f
+                                if (
+                                    entry.category == DownloadCategory.VIDEO ||
+                                        entry.category == DownloadCategory.BOOK
+                                )
+                                    2f / 3f
+                                else 1f
                             )
                             .clip(RoundedCornerShape(12.dp)),
                 )

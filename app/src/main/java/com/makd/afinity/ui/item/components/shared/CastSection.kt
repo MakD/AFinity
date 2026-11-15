@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -49,6 +50,7 @@ fun AfinityItem.displayPeople(): List<AfinityPerson> =
         is AfinityEpisode -> people
         is AfinityVideo -> people
         is AfinityBoxSet -> people
+        is AfinityBook -> people
         else -> emptyList()
     }
 
@@ -84,11 +86,31 @@ fun GuestStarSection(
 }
 
 @Composable
+fun CreditsSection(
+    title: String,
+    people: List<AfinityPerson>,
+    onPersonClick: ((UUID) -> Unit)?,
+    widthSizeClass: WindowWidthSizeClass,
+    roleText: @Composable (AfinityPerson) -> String,
+) {
+    PeopleRow(
+        title = title,
+        people = people,
+        onPersonClick = onPersonClick,
+        widthSizeClass = widthSizeClass,
+        roleText = roleText,
+    )
+}
+
+@Composable
 private fun PeopleRow(
     title: String,
     people: List<AfinityPerson>,
     onPersonClick: ((UUID) -> Unit)?,
     widthSizeClass: WindowWidthSizeClass,
+    roleText: @Composable (AfinityPerson) -> String = { person ->
+        if (person.role.isNotEmpty()) stringResource(R.string.cast_role_format, person.role) else ""
+    },
 ) {
     if (people.isEmpty()) return
 
@@ -98,11 +120,12 @@ private fun PeopleRow(
         DetailSectionTitle(text = title)
 
         CardRow {
-            items(people, key = { "${it.id}|${it.role}" }) { person ->
+            items(people, key = { "${it.id}|${it.type}|${it.role}" }) { person ->
                 CastMemberCard(
                     person = person,
                     onPersonClick = onPersonClick,
                     cardWidth = cardWidth,
+                    roleText = roleText(person),
                 )
             }
         }
@@ -114,6 +137,7 @@ private fun CastMemberCard(
     person: AfinityPerson,
     onPersonClick: ((UUID) -> Unit)? = {},
     cardWidth: Dp,
+    roleText: String,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     Column(
@@ -157,9 +181,7 @@ private fun CastMemberCard(
         )
 
         Text(
-            text =
-                if (person.role.isNotEmpty()) stringResource(R.string.cast_role_format, person.role)
-                else "",
+            text = roleText,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,

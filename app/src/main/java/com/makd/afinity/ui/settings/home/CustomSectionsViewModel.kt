@@ -334,7 +334,9 @@ constructor(
                             Timber.w(it, "Failed to load libraries for custom sections")
                             return@withContext null
                         }
-                        .filterNot { it.type == CollectionType.Music }
+                        .filterNot {
+                            it.type == CollectionType.Music || it.type == CollectionType.Books
+                        }
                         .map { library: AfinityCollection ->
                             SourceOption(
                                 value = library.id.toString(),
@@ -361,7 +363,9 @@ constructor(
                         Timber.w(it, "Failed to load libraries for custom section filters")
                         return@withContext null
                     }
-                    .filterNot { it.type == CollectionType.Music }
+                    .filterNot {
+                        it.type == CollectionType.Music || it.type == CollectionType.Books
+                    }
             if (libraries.isEmpty()) return@withContext LibraryFilterOptions()
 
             val results = coroutineScope {
@@ -404,7 +408,9 @@ constructor(
                         Timber.w(it, "Failed to load libraries for custom section sources")
                         return@withContext null
                     }
-                    .filterNot { it.type == CollectionType.Music }
+                    .filterNot {
+                        it.type == CollectionType.Music || it.type == CollectionType.Books
+                    }
             if (libraries.isEmpty()) return@withContext emptyList()
 
             val results = coroutineScope { libraries.map { async { fetch(it) } }.awaitAll() }

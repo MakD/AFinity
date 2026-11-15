@@ -48,6 +48,7 @@ class JellyfinItemsPagingSource(
                         CollectionType.Movies -> listOf("MOVIE")
                         CollectionType.BoxSets -> listOf("BOX_SET")
                         CollectionType.Playlists -> listOf("PLAYLIST")
+                        CollectionType.Books -> listOf("BOOK")
                         else -> listOf("MOVIE", "SERIES", "BOX_SET", "FOLDER")
                     }
 
@@ -64,8 +65,11 @@ class JellyfinItemsPagingSource(
                         recursive = recursive,
                         criteria = filters.toItemFilterCriteria(studioNames),
                         fields =
-                            if (libraryType == CollectionType.Playlists) FieldSets.PLAYLIST_GRID
-                            else null,
+                            when (libraryType) {
+                                CollectionType.Playlists -> FieldSets.PLAYLIST_GRID
+                                CollectionType.Books -> FieldSets.BOOK_GRID
+                                else -> null
+                            },
                     )
                     .getOrThrow()
 

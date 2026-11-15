@@ -202,9 +202,9 @@ constructor(
 
     private fun episodeSortPreferenceKey() = "abs_episode_sort_$itemId"
 
-    fun startDownload(episodeId: String? = null) {
+    fun startDownload(episodeId: String? = null, volumeId: String? = null) {
         viewModelScope.launch {
-            absDownloadRepository.startDownload(itemId, episodeId).onFailure {
+            absDownloadRepository.startDownload(itemId, episodeId, volumeId).onFailure {
                 Timber.e(it, "Failed to start download")
             }
         }

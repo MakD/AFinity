@@ -29,6 +29,8 @@ import com.makd.afinity.data.models.jellyseerr.ServiceTag
 import com.makd.afinity.data.models.jellyseerr.SonarrSeries
 import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import com.makd.afinity.data.models.jellyseerr.hasPermission
+import com.makd.afinity.data.models.media.AfinityAudiobook
+import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -36,6 +38,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.UserDataPatch
+import com.makd.afinity.data.models.media.groupedIntoBooks
 import com.makd.afinity.data.models.music.MusicSearchResults
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.AudiobookshelfRepository
@@ -265,6 +268,7 @@ constructor(
                             it.type == CollectionType.Movies ||
                                 it.type == CollectionType.TvShows ||
                                 it.type == CollectionType.BoxSets ||
+                                it.type == CollectionType.Books ||
                                 it.type == CollectionType.Mixed
                         }
                     }
@@ -402,12 +406,14 @@ constructor(
                 SearchFilter.MOVIES -> listOf("MOVIE")
                 SearchFilter.TV_SHOWS -> listOf("SERIES")
                 SearchFilter.BOX_SETS -> listOf("BOX_SET")
+                SearchFilter.BOOKS -> listOf("BOOK", "AUDIO_BOOK")
                 else ->
                     when (selectedLibrary?.type) {
                         CollectionType.Movies -> listOf("MOVIE", "BOX_SET")
                         CollectionType.TvShows -> listOf("SERIES")
                         CollectionType.BoxSets -> listOf("BOX_SET")
-                        else -> listOf("MOVIE", "SERIES", "BOX_SET")
+                        CollectionType.Books -> listOf("BOOK", "AUDIO_BOOK")
+                        else -> listOf("MOVIE", "SERIES", "BOX_SET", "BOOK", "AUDIO_BOOK")
                     }
             }
 
@@ -456,7 +462,9 @@ constructor(
                                         when (item) {
                                             is AfinityMovie,
                                             is AfinityShow,
-                                            is AfinityBoxSet -> item
+                                            is AfinityBoxSet,
+                                            is AfinityBook,
+                                            is AfinityAudiobook -> item
                                             else -> null
                                         }
                                     } catch (e: CancellationException) {
@@ -469,7 +477,10 @@ constructor(
 
                         yield()
 
-                        mappedItems.sortedByRelevance(query)
+                        val audiobooks =
+                            mappedItems.filterIsInstance<AfinityAudiobook>().groupedIntoBooks()
+                        (mappedItems.filterNot { it is AfinityAudiobook } + audiobooks)
+                            .sortedByRelevance(query)
                     }
 
                 _uiState.value =
@@ -567,6 +578,7 @@ constructor(
                 CollectionType.TvShows ->
                     listOf(SearchFilter.ALL, SearchFilter.TV_SHOWS, SearchFilter.EPISODES)
                 CollectionType.BoxSets -> listOf(SearchFilter.ALL, SearchFilter.BOX_SETS)
+                CollectionType.Books -> listOf(SearchFilter.ALL, SearchFilter.BOOKS)
                 CollectionType.Music -> listOf(SearchFilter.MUSIC)
                 CollectionType.Mixed ->
                     listOf(
@@ -586,6 +598,7 @@ constructor(
             CollectionType.Movies -> listOf("MOVIE", "BOX_SET")
             CollectionType.TvShows -> listOf("SERIES")
             CollectionType.BoxSets -> listOf("BOX_SET")
+            CollectionType.Books -> listOf("BOOK")
             else -> listOf("MOVIE", "SERIES", "BOX_SET")
         }
 
@@ -769,7 +782,8 @@ constructor(
             SearchFilter.EPISODES -> performEpisodeSearch()
             SearchFilter.MOVIES,
             SearchFilter.TV_SHOWS,
-            SearchFilter.BOX_SETS -> performSearch()
+            SearchFilter.BOX_SETS,
+            SearchFilter.BOOKS -> performSearch()
             SearchFilter.ALL -> {
                 performSearch()
                 searchJob?.join()
@@ -1438,6 +1452,7 @@ enum class SearchFilter {
     TV_SHOWS,
     EPISODES,
     BOX_SETS,
+    BOOKS,
     MUSIC,
     REQUEST,
     AUDIOBOOKS,

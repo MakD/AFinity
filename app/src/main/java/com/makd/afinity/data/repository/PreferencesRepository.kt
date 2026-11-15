@@ -52,6 +52,14 @@ interface PreferencesRepository {
 
     suspend fun getSortDescending(): Boolean
 
+    suspend fun setReaderVerticalScroll(enabled: Boolean)
+
+    suspend fun getReaderVerticalScroll(): Boolean
+
+    suspend fun setReaderRightToLeft(enabled: Boolean)
+
+    suspend fun getReaderRightToLeft(): Boolean
+
     suspend fun setItemsPerPage(count: Int)
 
     suspend fun getItemsPerPage(): Int

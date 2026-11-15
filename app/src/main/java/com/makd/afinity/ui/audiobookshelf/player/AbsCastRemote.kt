@@ -36,6 +36,7 @@ fun AbsCastRemote(
     playbackState: AudiobookshelfPlaybackState,
     accentColor: Color,
     hasBookmarks: Boolean,
+    showBookmarks: Boolean,
     onNavigateBack: () -> Unit,
     onOpenMore: () -> Unit,
     onOpenChapters: () -> Unit,
@@ -129,16 +130,19 @@ fun AbsCastRemote(
                 onClick = onOpenChapters,
                 accentColor = accentColor,
             )
-            CastRemoteAction(
-                painter =
-                    painterResource(
-                        if (hasBookmarks) R.drawable.ic_bookmark_filled else R.drawable.ic_bookmark
-                    ),
-                label = stringResource(R.string.cd_abs_bookmarks),
-                onClick = onOpenBookmarks,
-                accentColor = accentColor,
-                active = hasBookmarks,
-            )
+            if (showBookmarks) {
+                CastRemoteAction(
+                    painter =
+                        painterResource(
+                            if (hasBookmarks) R.drawable.ic_bookmark_filled
+                            else R.drawable.ic_bookmark
+                        ),
+                    label = stringResource(R.string.cd_abs_bookmarks),
+                    onClick = onOpenBookmarks,
+                    accentColor = accentColor,
+                    active = hasBookmarks,
+                )
+            }
             CastRemoteAction(
                 painter =
                     painterResource(

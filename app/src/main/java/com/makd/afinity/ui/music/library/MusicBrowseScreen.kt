@@ -315,6 +315,10 @@ fun MusicBrowseScreen(
                         if (isDownloadAllowedByServer)
                             ({ track -> viewModel.downloadTrack(track.id) })
                         else null,
+                    onDownloadTo =
+                        if (isDownloadAllowedByServer) {
+                            { track, volumeId -> viewModel.downloadTrack(track.id, volumeId) }
+                        } else null,
                     onCancelDownload = { track -> viewModel.cancelTrackDownload(track.id) },
                     isDownloadEnabled = canDownloadOnNetwork,
                     trackDownloadInfos =

@@ -54,6 +54,8 @@ import com.makd.afinity.data.models.external.ExternalTitles
 import com.makd.afinity.data.models.external.ExternalTitlesSource
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
+import com.makd.afinity.data.models.media.AfinityAudiobook
+import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
@@ -80,6 +82,7 @@ import com.makd.afinity.ui.item.components.shared.AwardsSectionStyle
 import com.makd.afinity.ui.item.components.shared.ExternalTitlesSection
 import com.makd.afinity.ui.item.components.shared.OverviewSection
 import com.makd.afinity.ui.item.components.shared.WikidataAwardsSection
+import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import com.makd.afinity.ui.utils.IntentUtils
 
@@ -90,6 +93,8 @@ fun PersonDetailContent(
     person: AfinityPersonDetail,
     movies: List<AfinityMovie>,
     shows: List<AfinityShow>,
+    books: List<AfinityBook>,
+    audiobooks: List<AfinityAudiobook>,
     onItemClick: (AfinityItem) -> Unit,
     onToggleFavorite: () -> Unit,
     awards: WikidataAwards?,
@@ -133,6 +138,8 @@ fun PersonDetailContent(
             person = person,
             movies = movies,
             shows = shows,
+            books = books,
+            audiobooks = audiobooks,
             onItemClick = onItemClick,
             onToggleFavorite = onToggleFavorite,
             awards = awards,
@@ -148,6 +155,8 @@ fun PersonDetailContent(
             person = person,
             movies = movies,
             shows = shows,
+            books = books,
+            audiobooks = audiobooks,
             onItemClick = onItemClick,
             onToggleFavorite = onToggleFavorite,
             awards = awards,
@@ -167,6 +176,8 @@ private fun LandscapePersonDetailContent(
     person: AfinityPersonDetail,
     movies: List<AfinityMovie>,
     shows: List<AfinityShow>,
+    books: List<AfinityBook>,
+    audiobooks: List<AfinityAudiobook>,
     onItemClick: (AfinityItem) -> Unit,
     onToggleFavorite: () -> Unit,
     awards: WikidataAwards?,
@@ -228,6 +239,8 @@ private fun LandscapePersonDetailContent(
                         person = person,
                         movies = movies,
                         shows = shows,
+                        books = books,
+                        audiobooks = audiobooks,
                         onItemClick = onItemClick,
                         cardWidth = WindowWidthSizeClass.Compact.portraitWidth,
                         awards = awards,
@@ -247,6 +260,8 @@ private fun PortraitPersonDetailContent(
     person: AfinityPersonDetail,
     movies: List<AfinityMovie>,
     shows: List<AfinityShow>,
+    books: List<AfinityBook>,
+    audiobooks: List<AfinityAudiobook>,
     onItemClick: (AfinityItem) -> Unit,
     onToggleFavorite: () -> Unit,
     awards: WikidataAwards?,
@@ -294,6 +309,8 @@ private fun PortraitPersonDetailContent(
                 person = person,
                 movies = movies,
                 shows = shows,
+                books = books,
+                audiobooks = audiobooks,
                 onItemClick = onItemClick,
                 cardWidth = cardWidth,
                 awards = awards,
@@ -311,6 +328,8 @@ private fun PersonSharedContentBlocks(
     person: AfinityPersonDetail,
     movies: List<AfinityMovie>,
     shows: List<AfinityShow>,
+    books: List<AfinityBook>,
+    audiobooks: List<AfinityAudiobook>,
     onItemClick: (AfinityItem) -> Unit,
     cardWidth: Dp,
     awards: WikidataAwards?,
@@ -351,6 +370,25 @@ private fun PersonSharedContentBlocks(
         )
     }
 
+    if (books.isNotEmpty()) {
+        PersonFilmographySection(
+            title = stringResource(R.string.section_books),
+            items = books,
+            onItemClick = onItemClick,
+            cardWidth = cardWidth,
+        )
+    }
+
+    if (audiobooks.isNotEmpty()) {
+        PersonFilmographySection(
+            title = stringResource(R.string.section_audiobooks),
+            items = audiobooks,
+            onItemClick = onItemClick,
+            cardWidth = cardWidth,
+            aspectRatio = CardDimensions.ASPECT_RATIO_SQUARE,
+        )
+    }
+
     if (missingCredits != null) {
         ExternalTitlesSection(
             title = stringResource(R.string.not_in_library_title),
@@ -369,6 +407,7 @@ private fun PersonFilmographySection(
     onItemClick: (AfinityItem) -> Unit,
     cardWidth: Dp,
     modifier: Modifier = Modifier,
+    aspectRatio: Float = CardDimensions.ASPECT_RATIO_PORTRAIT,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
@@ -383,6 +422,7 @@ private fun PersonFilmographySection(
                     item = item,
                     onClick = { onItemClick(item) },
                     cardWidth = cardWidth,
+                    aspectRatio = aspectRatio,
                 )
             }
         }
@@ -395,8 +435,15 @@ private fun FilmographyItemCard(
     onClick: () -> Unit,
     cardWidth: Dp,
     modifier: Modifier = Modifier,
+    aspectRatio: Float = CardDimensions.ASPECT_RATIO_PORTRAIT,
 ) {
-    MediaItemCard(item = item, onClick = onClick, modifier = modifier, cardWidth = cardWidth)
+    MediaItemCard(
+        item = item,
+        onClick = onClick,
+        modifier = modifier,
+        cardWidth = cardWidth,
+        aspectRatio = aspectRatio,
+    )
 }
 
 @Composable
@@ -525,6 +572,7 @@ private fun PersonActionsRow(
             val iconRes =
                 when {
                     "anidb" in lowerUrl -> R.drawable.ic_anidb
+                    "comicvine" in lowerUrl -> R.drawable.ic_comicvine
                     "imdb" in lowerUrl -> R.drawable.ic_imdb_logo
                     "themoviedb.org" in lowerUrl -> R.drawable.ic_tmdb
                     "tvdb" in lowerUrl -> R.drawable.ic_tvdb

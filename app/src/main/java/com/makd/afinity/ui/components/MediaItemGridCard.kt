@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -35,6 +37,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
+import com.makd.afinity.data.models.media.AfinityAudiobook
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityFolder
 import com.makd.afinity.data.models.media.AfinityItem
@@ -52,12 +55,27 @@ import com.makd.afinity.ui.preview.WidthPreviews
 import com.makd.afinity.ui.theme.CardDimensions
 import java.util.Locale
 
+enum class AudiobookCardFrame {
+    SQUARE,
+    LETTERBOX,
+}
+
 @Composable
-fun MediaItemGridCard(item: AfinityItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun MediaItemGridCard(
+    item: AfinityItem,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    audiobookFrame: AudiobookCardFrame = AudiobookCardFrame.SQUARE,
+) {
     val ratingScale = rememberRatingMetadataScale()
+    val letterboxed = item is AfinityAudiobook && audiobookFrame == AudiobookCardFrame.LETTERBOX
     val aspectRatio =
-        if (item is AfinityVideoPlaylist || item is AfinityVideo) CardDimensions.ASPECT_RATIO_SQUARE
-        else CardDimensions.ASPECT_RATIO_PORTRAIT
+        when {
+            item is AfinityVideoPlaylist || item is AfinityVideo ->
+                CardDimensions.ASPECT_RATIO_SQUARE
+            item is AfinityAudiobook && !letterboxed -> CardDimensions.ASPECT_RATIO_SQUARE
+            else -> CardDimensions.ASPECT_RATIO_PORTRAIT
+        }
 
     Column(modifier = modifier.fillMaxWidth()) {
         Card(
@@ -67,15 +85,20 @@ fun MediaItemGridCard(item: AfinityItem, onClick: () -> Unit, modifier: Modifier
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
             Box {
-                AsyncImage(
-                    imageUrl = item.images.primaryImageUrl,
-                    contentDescription = item.name,
-                    blurHash = item.images.primaryBlurHash,
-                    targetWidth = 160.dp,
-                    targetHeight = 160.dp / aspectRatio,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
+                if (letterboxed) {
+                    LetterboxedCover(item = item, modifier = Modifier.fillMaxSize())
+                    AudiobookBadge(modifier = Modifier.align(Alignment.TopStart))
+                } else {
+                    AsyncImage(
+                        imageUrl = item.images.primaryImageUrl,
+                        contentDescription = item.name,
+                        blurHash = item.images.primaryBlurHash,
+                        targetWidth = 160.dp,
+                        targetHeight = 160.dp / aspectRatio,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                }
 
                 if (item is AfinityFolder && item.images.primaryImageUrl == null) {
                     Icon(
@@ -256,6 +279,31 @@ fun MediaItemGridCard(item: AfinityItem, onClick: () -> Unit, modifier: Modifier
         }
 
         MetadataOverflowRow(items = metadataItems, spacing = 6.dp, showSeparators = false)
+    }
+}
+
+@Composable
+private fun LetterboxedCover(item: AfinityItem, modifier: Modifier = Modifier) {
+    Box(modifier = modifier) {
+        AsyncImage(
+            imageUrl = item.images.primaryImageUrl,
+            contentDescription = null,
+            blurHash = item.images.primaryBlurHash,
+            targetWidth = 160.dp,
+            targetHeight = 160.dp,
+            modifier = Modifier.fillMaxSize().blur(24.dp),
+            contentScale = ContentScale.Crop,
+        )
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)))
+        AsyncImage(
+            imageUrl = item.images.primaryImageUrl,
+            contentDescription = item.name,
+            blurHash = item.images.primaryBlurHash,
+            targetWidth = 160.dp,
+            targetHeight = 160.dp,
+            modifier = Modifier.fillMaxWidth().aspectRatio(1f).align(Alignment.Center),
+            contentScale = ContentScale.Crop,
+        )
     }
 }
 

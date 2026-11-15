@@ -31,6 +31,7 @@ import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsProgressSyncScheduler
+import com.makd.afinity.player.audiobook.JellyfinAudiobookReporter
 import com.makd.afinity.player.music.MusicPlaybackManager
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -72,6 +73,7 @@ constructor(
     private val preferencesRepository: PreferencesRepository,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
     private val castManager: dagger.Lazy<CastManager>,
+    private val jellyfinReporter: JellyfinAudiobookReporter,
 ) {
     private var mediaController: MediaController? = null
     private var controllerFuture: ListenableFuture<MediaController>? = null
@@ -238,6 +240,66 @@ constructor(
             controller.prepare()
             controller.play()
         }
+    }
+
+    @UnstableApi
+    fun loadJellyfinSession(session: JellyfinAudiobookSession, startPosition: Double) {
+        scope.launch {
+            if (playbackManager.playbackState.value.sessionId != null) {
+                closeSession(stopService = false)
+            }
+            musicPlaybackManager.updateTrack(null)
+            context.startService(
+                Intent(context, com.makd.afinity.player.AudioService::class.java)
+                    .setAction(com.makd.afinity.player.AudioService.ACTION_ENGINE_ABS)
+            )
+            val controller = getConnectedController() ?: return@launch
+            controller.stop()
+            controller.clearMediaItems()
+            val prepared = prepareJellyfinSession(session, startPosition)
+            controller.setMediaItems(
+                prepared.mediaItems,
+                prepared.startIndex,
+                prepared.startPositionMs,
+            )
+            controller.prepare()
+            controller.play()
+        }
+    }
+
+    fun prepareJellyfinSession(
+        session: JellyfinAudiobookSession,
+        startPosition: Double,
+    ): PreparedSession {
+        playbackManager.setJellyfinSession(session)
+        val artUri = session.coverUrl?.toUri()
+        val mediaItems =
+            session.tracks.mapIndexed { index, track ->
+                MediaItem.Builder()
+                    .setUri(session.localUris.getOrNull(index) ?: track.contentUrl)
+                    .setMediaId(index.toString())
+                    .setMediaMetadata(
+                        MediaMetadata.Builder()
+                            .setTitle(session.title)
+                            .setArtist(session.author ?: "")
+                            .setArtworkUri(artUri)
+                            .build()
+                    )
+                    .build()
+            }
+        val (startIndex, startOffsetMs) =
+            if (startPosition > 0) {
+                playbackManager.updatePosition(startPosition)
+                locate(session.tracks, startPosition)
+            } else {
+                0 to 0L
+            }
+        jellyfinReporter.begin(session, startIndex)
+        return PreparedSession(mediaItems, startIndex, startOffsetMs)
+    }
+
+    fun releaseIfAbs() {
+        if (playbackManager.playbackState.value.source == AudiobookSource.ABS) release()
     }
 
     @UnstableApi suspend fun connectController(): Boolean = getConnectedController() != null
@@ -637,7 +699,9 @@ constructor(
         cancelSleepTimer()
         val state = playbackManager.playbackState.value
         val sessionId = state.sessionId
-        val listened = if (sessionId != null) progressSyncer.takeListenedSeconds() else 0.0
+        val isJellyfin = state.source == AudiobookSource.JELLYFIN
+        val listened =
+            if (sessionId != null && !isJellyfin) progressSyncer.takeListenedSeconds() else 0.0
         Timber.d(
             "closeSession: sessionId=$sessionId itemId=${state.itemId} episodeId=${state.episodeId} currentTime=${state.currentTime} listened=$listened isLocal=${
                 sessionId?.startsWith(
@@ -645,7 +709,9 @@ constructor(
                 )
             }"
         )
-        if (sessionId != null) {
+        if (sessionId != null && isJellyfin) {
+            jellyfinReporter.end(state.currentTime)
+        } else if (sessionId != null) {
             scope.launch {
                 withContext(NonCancellable) {
                     try {

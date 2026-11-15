@@ -59,6 +59,12 @@
             android:supportsPictureInPicture="true"
             android:theme="@style/Theme.AFinity.Player" />
 
+        <activity
+            android:name=".ui.reader.epub.EpubReaderActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|uiMode|keyboard|keyboardHidden|navigation|density|fontScale|locale|layoutDirection"
+            android:exported="false"
+            android:theme="@style/Theme.AFinity" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

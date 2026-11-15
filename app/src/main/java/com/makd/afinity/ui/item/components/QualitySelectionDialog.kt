@@ -261,6 +261,7 @@ fun StorageLocationDialog(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     initialQualityBitrate: Int = VideoQuality.ORIGINAL_BITRATE,
+    showQuality: Boolean = true,
 ) {
     val showVolumePicker = volumes.size > 1
     var qualityBitrate by remember(initialQualityBitrate) { mutableStateOf(initialQualityBitrate) }
@@ -284,15 +285,17 @@ fun StorageLocationDialog(
                 ) {
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    PickerDropdown(
-                        label = stringResource(R.string.download_quality_title),
-                        selected = qualityBitrate,
-                        options = qualityOptions,
-                        optionLabel = { bitrate ->
-                            settingsQualityLabel(VideoQuality.fromBitrate(bitrate))
-                        },
-                        onSelected = { qualityBitrate = it },
-                    )
+                    if (showQuality) {
+                        PickerDropdown(
+                            label = stringResource(R.string.download_quality_title),
+                            selected = qualityBitrate,
+                            options = qualityOptions,
+                            optionLabel = { bitrate ->
+                                settingsQualityLabel(VideoQuality.fromBitrate(bitrate))
+                            },
+                            onSelected = { qualityBitrate = it },
+                        )
+                    }
 
                     if (showVolumePicker) {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -338,11 +341,15 @@ fun StorageLocationDialog(
 @Composable
 fun MusicDownloadQualityDialog(
     initialBitrate: Int,
-    onConfirm: (DownloadQuality) -> Unit,
+    onConfirm: (DownloadQuality, String?) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    volumes: List<StorageVolumeInfo> = emptyList(),
+    initialVolumeId: String? = null,
 ) {
     var selectedBitrate by remember(initialBitrate) { mutableStateOf(initialBitrate) }
+    var selectedVolumeId by remember(initialVolumeId) { mutableStateOf(initialVolumeId) }
+    val showVolumePicker = volumes.size > 1
     val options = remember { MusicQuality.options() }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -367,6 +374,23 @@ fun MusicDownloadQualityDialog(
                             onSelect = { selectedBitrate = option.maxBitrate },
                         )
                     }
+                    if (showVolumePicker) {
+                        item(key = "location_header") {
+                            Text(
+                                text = stringResource(R.string.download_location_section),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(top = 8.dp),
+                            )
+                        }
+                        items(volumes, key = { "volume_${it.id}" }) { volume ->
+                            VolumeOption(
+                                volume = volume,
+                                isSelected = selectedVolumeId == volume.id,
+                                onSelect = { selectedVolumeId = volume.id },
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -378,9 +402,13 @@ fun MusicDownloadQualityDialog(
 
                     TextButton(
                         onClick = {
-                            onConfirm(DownloadQuality(bitrate = selectedBitrate))
+                            onConfirm(
+                                DownloadQuality(bitrate = selectedBitrate),
+                                selectedVolumeId.takeIf { showVolumePicker },
+                            )
                             onDismiss()
-                        }
+                        },
+                        enabled = !showVolumePicker || selectedVolumeId != null,
                     ) {
                         Text(stringResource(R.string.action_download))
                     }

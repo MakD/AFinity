@@ -66,6 +66,8 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val DEFAULT_SORT_BY = stringPreferencesKey("default_sort_by")
         val SORT_DESCENDING = booleanPreferencesKey("sort_descending")
         val ITEMS_PER_PAGE = intPreferencesKey("items_per_page")
+        val READER_VERTICAL_SCROLL = booleanPreferencesKey("reader_vertical_scroll")
+        val READER_RIGHT_TO_LEFT = booleanPreferencesKey("reader_right_to_left")
 
         val AUTO_PLAY = booleanPreferencesKey("auto_play")
         val MAX_BITRATE = intPreferencesKey("max_bitrate")
@@ -272,6 +274,22 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
     override suspend fun getSortDescending(): Boolean {
         return dataStore.data.first()[Keys.SORT_DESCENDING] ?: false
+    }
+
+    override suspend fun setReaderVerticalScroll(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.READER_VERTICAL_SCROLL] = enabled }
+    }
+
+    override suspend fun getReaderVerticalScroll(): Boolean {
+        return dataStore.data.first()[Keys.READER_VERTICAL_SCROLL] ?: false
+    }
+
+    override suspend fun setReaderRightToLeft(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.READER_RIGHT_TO_LEFT] = enabled }
+    }
+
+    override suspend fun getReaderRightToLeft(): Boolean {
+        return dataStore.data.first()[Keys.READER_RIGHT_TO_LEFT] ?: false
     }
 
     override suspend fun setItemsPerPage(count: Int) {

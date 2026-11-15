@@ -5,6 +5,8 @@ import androidx.core.net.toUri
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.AfinityProgram
 import com.makd.afinity.data.models.livetv.ChannelType
+import com.makd.afinity.data.models.media.AfinityAudiobook
+import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -22,6 +24,7 @@ import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.AfinityVideoPlaylist
+import com.makd.afinity.data.models.media.BookFormat
 import com.makd.afinity.data.models.media.toAfinityExternalUrl
 import com.makd.afinity.data.models.media.toAfinityMediaStream
 import com.makd.afinity.data.models.media.toAfinityTrickplayInfoMap
@@ -49,6 +52,8 @@ fun BaseItemDto.toAfinityItem(baseUrl: String): AfinityItem? {
         BaseItemKind.PLAYLIST -> toAfinityVideoPlaylist(baseUrl)
         BaseItemKind.FOLDER -> toAfinityFolder(baseUrl)
         BaseItemKind.VIDEO -> toAfinityVideo(baseUrl)
+        BaseItemKind.BOOK -> toAfinityBook(baseUrl)
+        BaseItemKind.AUDIO_BOOK -> toAfinityAudiobook(baseUrl)
         else -> null
     }
 }
@@ -316,16 +321,32 @@ fun BaseItemDto.toAfinityImages(baseUrl: String, imageFormat: ImageFormat? = nul
 
     val hasSeriesImages = seriesId != null && seriesPrimaryImageTag != null
 
+    val ownPrimaryTag = imageTags?.get(ImageType.PRIMARY)
+    val viewPrimaryOwner = parentPrimaryImageItemId
+    val viewPrimaryTag = parentPrimaryImageTag.takeIf {
+        ownPrimaryTag == null &&
+            viewPrimaryOwner != null &&
+            (type == BaseItemKind.USER_VIEW || type == BaseItemKind.COLLECTION_FOLDER)
+    }
+
     return AfinityImages(
         primary =
-            imageTags?.get(ImageType.PRIMARY)?.let { tag ->
+            ownPrimaryTag?.let { tag ->
                 baseUri
                     .buildUpon()
                     .appendEncodedPath("Items/$id/Images/Primary")
                     .appendQueryParameter("tag", tag)
                     .withFormat()
                     .build()
-            },
+            }
+                ?: viewPrimaryTag?.let { tag ->
+                    baseUri
+                        .buildUpon()
+                        .appendEncodedPath("Items/$viewPrimaryOwner/Images/Primary")
+                        .appendQueryParameter("tag", tag)
+                        .withFormat()
+                        .build()
+                },
         thumb =
             imageTags?.get(ImageType.THUMB)?.let { tag ->
                 baseUri
@@ -397,7 +418,11 @@ fun BaseItemDto.toAfinityImages(baseUrl: String, imageFormat: ImageFormat? = nul
                     else -> null
                 }
             },
-        primaryImageBlurHash = imageBlurHashes?.get(ImageType.PRIMARY)?.values?.firstOrNull(),
+        primaryImageBlurHash =
+            imageBlurHashes?.get(ImageType.PRIMARY)?.let { hashes ->
+                if (viewPrimaryTag != null) hashes[viewPrimaryTag]
+                else ownPrimaryTag?.let { hashes[it] } ?: hashes.values.firstOrNull()
+            },
         backdropImageBlurHash = imageBlurHashes?.get(ImageType.BACKDROP)?.values?.firstOrNull(),
         thumbImageBlurHash = imageBlurHashes?.get(ImageType.THUMB)?.values?.firstOrNull(),
         logoImageBlurHash = imageBlurHashes?.get(ImageType.LOGO)?.values?.firstOrNull(),
@@ -447,6 +472,73 @@ fun BaseItemDto.toAfinityVideo(baseUrl: String): AfinityVideo {
         externalUrls = toAfinityExternalUrls(),
         liked = userData?.likes == true,
         extraType = extraType,
+    )
+}
+
+fun BaseItemDto.toAfinityBook(baseUrl: String): AfinityBook {
+    return AfinityBook(
+        id = id,
+        name = name.orEmpty(),
+        originalTitle = originalTitle,
+        overview = overview.orEmpty(),
+        played = userData?.played == true,
+        favorite = userData?.isFavorite == true,
+        liked = userData?.likes == true,
+        canPlay = playAccess != PlayAccess.NONE,
+        canDownload = canDownload == true,
+        runtimeTicks = runTimeTicks ?: 0,
+        playbackPositionTicks = userData?.playbackPositionTicks ?: 0,
+        unplayedItemCount = userData?.unplayedItemCount,
+        images = toAfinityImages(baseUrl),
+        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
+        externalUrls = toAfinityExternalUrls()?.distinctBy { it.url },
+        seriesName = seriesName?.takeIf { it.isNotBlank() },
+        seriesIndex = indexNumber,
+        people = people?.map { it.toAfinityPerson(baseUrl) } ?: emptyList(),
+        publisher = studios?.firstOrNull()?.name,
+        premiereDate = premiereDate,
+        productionYear = productionYear,
+        genres = genres ?: emptyList(),
+        tags = tags ?: emptyList(),
+        communityRating = communityRating,
+        dateCreated = dateCreated,
+        format = BookFormat.fromPath(path),
+        parentId = parentId,
+        lastPlayedDate = userData?.lastPlayedDate,
+    )
+}
+
+fun BaseItemDto.toAfinityAudiobook(baseUrl: String): AfinityAudiobook {
+    return AfinityAudiobook(
+        id = id,
+        name = name.orEmpty(),
+        originalTitle = originalTitle,
+        overview = overview.orEmpty(),
+        played = userData?.played == true,
+        favorite = userData?.isFavorite == true,
+        liked = userData?.likes == true,
+        canPlay = playAccess != PlayAccess.NONE,
+        canDownload = canDownload == true,
+        runtimeTicks = runTimeTicks ?: 0,
+        playbackPositionTicks = userData?.playbackPositionTicks ?: 0,
+        unplayedItemCount = userData?.unplayedItemCount,
+        images = toAfinityImages(baseUrl),
+        chapters = toAfinityChapters(),
+        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
+        externalUrls = toAfinityExternalUrls()?.distinctBy { it.url },
+        album = album?.takeIf { it.isNotBlank() },
+        people = people?.map { it.toAfinityPerson(baseUrl) } ?: emptyList(),
+        publisher = studios?.firstOrNull()?.name,
+        premiereDate = premiereDate,
+        productionYear = productionYear,
+        genres = genres ?: emptyList(),
+        communityRating = communityRating,
+        dateCreated = dateCreated,
+        parentId = parentId,
+        trackNumber = indexNumber,
+        discNumber = parentIndexNumber,
+        container = container,
+        lastPlayedDate = userData?.lastPlayedDate,
     )
 }
 

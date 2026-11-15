@@ -1,11 +1,15 @@
 package com.makd.afinity.ui.downloads
 
+import com.makd.afinity.data.audiobooks.AUDIOBOOK_DOWNLOAD_TYPE
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.download.DownloadInfo
 import java.util.UUID
 
+private const val BOOK_DOWNLOAD_TYPE = "Book"
+
 enum class DownloadCategory {
     VIDEO,
+    BOOK,
     MUSIC,
     AUDIOBOOK,
     PODCAST,
@@ -59,7 +63,51 @@ fun buildDownloadCatalog(
 ): List<DownloadCatalogEntry> {
     val entries = mutableListOf<DownloadCatalogEntry>()
 
-    val (audio, video) = jellyfinDownloads.partition { it.itemType == "Audio" }
+    val (jellyfinAudiobookParts, jellyfinOther) =
+        jellyfinDownloads.partition { it.itemType == AUDIOBOOK_DOWNLOAD_TYPE }
+
+    jellyfinAudiobookParts
+        .groupBy { it.seriesId ?: it.itemId.toString() }
+        .forEach { (bookKey, group) ->
+            val first = group.minByOrNull { it.episodeNumber ?: Int.MAX_VALUE } ?: return@forEach
+            entries +=
+                DownloadCatalogEntry(
+                    key = "jf_audiobook_$bookKey",
+                    ref =
+                        if (group.size == 1) DownloadCatalogRef.JellyfinItem(first.id)
+                        else DownloadCatalogRef.JellyfinSeries(bookKey),
+                    category = DownloadCategory.AUDIOBOOK,
+                    title = first.seriesName?.takeIf { it.isNotBlank() } ?: first.itemName,
+                    subtitle = first.releaseYear,
+                    imageUrl = first.imageUrl,
+                    sizeBytes = group.sumOf { it.totalBytes },
+                    childCount = if (group.size == 1) 0 else group.size,
+                    isAvailable = group.none { it.storageVolumeId in unavailableVolumeIds },
+                    createdAt = group.maxOf { it.createdAt },
+                    childIds = group.map { it.id },
+                )
+        }
+
+    val (jellyfinBooks, media) = jellyfinOther.partition { it.itemType == BOOK_DOWNLOAD_TYPE }
+
+    jellyfinBooks.forEach { download ->
+        entries +=
+            DownloadCatalogEntry(
+                key = "jf_${download.id}",
+                ref = DownloadCatalogRef.JellyfinItem(download.id),
+                category = DownloadCategory.BOOK,
+                title = download.itemName,
+                subtitle = download.seriesName ?: download.releaseYear,
+                imageUrl = download.imageUrl,
+                sizeBytes = download.totalBytes,
+                childCount = 0,
+                isAvailable = download.storageVolumeId !in unavailableVolumeIds,
+                createdAt = download.createdAt,
+                childIds = listOf(download.id),
+            )
+    }
+
+    val (audio, video) = media.partition { it.itemType == "Audio" }
 
     val (episodes, standaloneVideo) = video.partition { !it.seriesId.isNullOrBlank() }
 

@@ -182,6 +182,17 @@ class AndroidDeviceProfileFactory @Inject constructor() {
             }
         }
 
+        val mp4AudioCodecs = capabilities.audioCodecsFor(DeviceCodecs.CONTAINERS.indexOf("mp4"))
+        if (mp4AudioCodecs.isNotEmpty()) {
+            directPlayProfiles.add(
+                DirectPlayProfile(
+                    type = DlnaProfileType.AUDIO,
+                    container = MP4_AUDIO_CONTAINERS,
+                    audioCodec = mp4AudioCodecs.joinToString(","),
+                )
+            )
+        }
+
         return DeviceProfile(
             name = MUSIC_PROFILE_NAME,
             maxStreamingBitrate = maxStreamingBitrate ?: MAX_STREAMING_BITRATE,
@@ -286,6 +297,7 @@ class AndroidDeviceProfileFactory @Inject constructor() {
         private const val PROFILE_NAME = "AFinity Android"
         private const val MPV_PROFILE_NAME = "AFinity Android (MPV)"
         private const val MUSIC_PROFILE_NAME = "AFinity Android (Music)"
+        private const val MP4_AUDIO_CONTAINERS = "m4a,m4b"
         private const val DOWNLOAD_PROFILE_NAME = "AFinity Android (Download)"
 
         private const val MAX_STREAMING_BITRATE = 120_000_000

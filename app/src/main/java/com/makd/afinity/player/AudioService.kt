@@ -61,7 +61,10 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.music.MusicRepository
+import com.makd.afinity.player.audiobook.JellyfinAudiobookReporter
+import com.makd.afinity.player.audiobook.JellyfinAudiobookStarter
 import com.makd.afinity.player.audiobookshelf.AbsPlaybackStarter
+import com.makd.afinity.player.audiobookshelf.AudiobookSource
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfEqualizerManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
@@ -158,6 +161,8 @@ class AudioService : MediaLibraryService() {
     @Inject lateinit var authRepository: AuthRepository
     @Inject lateinit var lastPlaybackStore: LastPlaybackStore
     @Inject lateinit var absPlaybackStarter: AbsPlaybackStarter
+    @Inject lateinit var jellyfinAudiobookStarter: JellyfinAudiobookStarter
+    @Inject lateinit var jellyfinAudiobookReporter: JellyfinAudiobookReporter
     @Inject lateinit var musicRepository: MusicRepository
     @Inject lateinit var audioWidgetUpdater: AudioWidgetUpdater
     @Inject lateinit var castManager: CastManager
@@ -276,6 +281,7 @@ class AudioService : MediaLibraryService() {
                                 sessionManager,
                                 securePreferencesRepository,
                                 activeEngineRef,
+                                audiobookSource = { absPlaybackManager.playbackState.value.source },
                             )
                         )
                         .setLoadErrorHandlingPolicy(retryPolicy)
@@ -381,6 +387,7 @@ class AudioService : MediaLibraryService() {
             ?.takeIf { it != C.AUDIO_SESSION_ID_UNSET }
             ?.let { musicEqualizerManager.attachToSession(it) }
         absProgressSyncer.stopSyncing()
+        endJellyfinAudiobook()
         absPlaybackManager.clearSession()
         stopPositionUpdates()
         exoPlayer?.stop()
@@ -406,6 +413,7 @@ class AudioService : MediaLibraryService() {
         if (activeEngine == ActiveEngine.MUSIC) {
             musicProgressReporter.onPlaybackStopped(exoPlayer?.currentPosition ?: 0L)
         }
+        endJellyfinAudiobook()
         absPlaybackManager.clearSession()
         musicPlaybackManager.clearPlayer()
         musicPlaybackManager.updateTrack(null)
@@ -426,11 +434,13 @@ class AudioService : MediaLibraryService() {
         private val sessionManager: SessionManager,
         private val securePreferencesRepository: SecurePreferencesRepository,
         private val activeEngineRef: AtomicReference<ActiveEngine>,
+        private val audiobookSource: () -> AudiobookSource,
     ) : DataSource.Factory {
         override fun createDataSource(): DataSource {
+            val engine = activeEngineRef.get()
             val headers =
-                when (activeEngineRef.get()) {
-                    ActiveEngine.ABS -> {
+                when {
+                    engine == ActiveEngine.ABS && audiobookSource() == AudiobookSource.ABS -> {
                         val token = securePreferencesRepository.getCachedAudiobookshelfToken()
                         if (token != null) mapOf("Authorization" to "Bearer $token") else emptyMap()
                     }
@@ -458,7 +468,20 @@ class AudioService : MediaLibraryService() {
             ) {
                 val player = exoPlayer ?: return
                 when (activeEngine) {
-                    ActiveEngine.ABS -> updateAbsPosition(player)
+                    ActiveEngine.ABS -> {
+                        if (
+                            isJellyfinAudiobook() &&
+                                oldPosition.mediaItemIndex != newPosition.mediaItemIndex
+                        ) {
+                            jellyfinAudiobookReporter.onPartChanged(
+                                oldIndex = oldPosition.mediaItemIndex,
+                                oldPositionMs = oldPosition.positionMs,
+                                newIndex = newPosition.mediaItemIndex,
+                                ended = reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION,
+                            )
+                        }
+                        updateAbsPosition(player)
+                    }
                     ActiveEngine.MUSIC -> {
                         musicPlaybackManager.updatePosition(
                             positionMs = player.currentPosition,
@@ -490,7 +513,10 @@ class AudioService : MediaLibraryService() {
                     ActiveEngine.ABS -> {
                         absPlaybackManager.updatePlayingState(isPlaying)
                         recordAbsPlayback()
-                        if (isPlaying) {
+                        if (isJellyfinAudiobook()) {
+                            if (isPlaying) startPositionUpdates() else stopPositionUpdates()
+                            jellyfinAudiobookReporter.onLocalPlayingChanged(isPlaying)
+                        } else if (isPlaying) {
                             startPositionUpdates()
                             absProgressSyncer.startSyncing()
                         } else {
@@ -910,7 +936,7 @@ class AudioService : MediaLibraryService() {
                                 SessionResult(SessionError.ERROR_BAD_VALUE)
                             )
                     val episodeId = args.getString(ARG_EPISODE_ID)
-                    serviceScope.launch { playResolved { resumeAbs(itemId, episodeId) } }
+                    serviceScope.launch { playResolved { resumeAudiobookItem(itemId, episodeId) } }
                     return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
                 }
                 COMMAND_REWIND -> {
@@ -1005,6 +1031,43 @@ class AudioService : MediaLibraryService() {
         return when (last) {
             is LastPlayback.Music -> resumeMusic(last.positionMs)
             is LastPlayback.Abs -> resumeAbs(last.itemId, last.episodeId)
+            is LastPlayback.JellyfinAudiobook -> resumeJellyfinAudiobook(last.itemId)
+        }
+    }
+
+    private suspend fun resumeAudiobookItem(
+        itemId: String,
+        episodeId: String?,
+    ): MediaSession.MediaItemsWithStartPosition? {
+        val last = lastPlaybackStore.read()
+        return if (last is LastPlayback.JellyfinAudiobook && last.itemId == itemId) {
+            resumeJellyfinAudiobook(itemId)
+        } else {
+            resumeAbs(itemId, episodeId)
+        }
+    }
+
+    private suspend fun resumeJellyfinAudiobook(
+        itemId: String
+    ): MediaSession.MediaItemsWithStartPosition? {
+        musicPlaybackManager.updateTrack(null)
+        switchToAbs()
+        val prepared = jellyfinAudiobookStarter.prepareForResumption(itemId) ?: return null
+        return MediaSession.MediaItemsWithStartPosition(
+            prepared.mediaItems,
+            prepared.startIndex,
+            prepared.startPositionMs,
+        )
+    }
+
+    private fun isJellyfinAudiobook(): Boolean =
+        activeEngine == ActiveEngine.ABS &&
+            absPlaybackManager.playbackState.value.source == AudiobookSource.JELLYFIN
+
+    private fun endJellyfinAudiobook() {
+        val state = absPlaybackManager.playbackState.value
+        if (state.source == AudiobookSource.JELLYFIN && state.sessionId != null) {
+            jellyfinAudiobookReporter.end(state.currentTime)
         }
     }
 
@@ -1125,7 +1188,11 @@ class AudioService : MediaLibraryService() {
         val state = absPlaybackManager.playbackState.value
         val itemId = state.itemId ?: return
         val sessionKey = currentSessionKey() ?: return
-        lastPlaybackStore.recordAbs(sessionKey, itemId, state.episodeId)
+        if (state.source == AudiobookSource.JELLYFIN) {
+            lastPlaybackStore.recordJellyfinAudiobook(sessionKey, itemId)
+        } else {
+            lastPlaybackStore.recordAbs(sessionKey, itemId, state.episodeId)
+        }
     }
 
     override fun onDestroy() {
@@ -1134,6 +1201,7 @@ class AudioService : MediaLibraryService() {
         if (activeEngine == ActiveEngine.MUSIC) {
             musicProgressReporter.onPlaybackStopped(exoPlayer?.currentPosition ?: 0L)
         }
+        endJellyfinAudiobook()
         absPlaybackManager.clearSession()
         musicPlaybackManager.clearPlayer()
         musicPlaybackManager.updateTrack(null)

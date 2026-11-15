@@ -505,6 +505,7 @@ constructor(
         isEnded: Boolean,
         isMusic: Boolean,
         playCountedOnServer: Boolean,
+        isAudiobook: Boolean,
     ): Boolean {
         return withContext(Dispatchers.IO) {
             try {
@@ -517,6 +518,7 @@ constructor(
                         isEnded = isEnded,
                         isMusic = isMusic,
                         playCountedOnServer = playCountedOnServer,
+                        isAudiobook = isAudiobook,
                     )
                     return@withContext false
                 }
@@ -534,6 +536,7 @@ constructor(
                                 isEnded = isEnded,
                                 isMusic = isMusic,
                                 playCountedOnServer = playCountedOnServer,
+                                isAudiobook = isAudiobook,
                             )
                             return@withContext false
                         }
@@ -563,6 +566,7 @@ constructor(
                     isEnded = isEnded,
                     isMusic = isMusic,
                     playCountedOnServer = playCountedOnServer,
+                    isAudiobook = isAudiobook,
                 )
                 false
             } catch (e: CancellationException) {
@@ -580,6 +584,7 @@ constructor(
                     isEnded = isEnded,
                     isMusic = isMusic,
                     playCountedOnServer = playCountedOnServer,
+                    isAudiobook = isAudiobook,
                 )
                 false
             }
@@ -613,6 +618,7 @@ constructor(
         isEnded: Boolean = false,
         isMusic: Boolean = false,
         playCountedOnServer: Boolean = false,
+        isAudiobook: Boolean = false,
     ) {
         if (isMusic && (!isStop || playCountedOnServer)) return
         try {
@@ -645,11 +651,19 @@ constructor(
                 if (isStop) {
                     val resolvedRuntimeTicks =
                         if (runtimeTicks > 0L) runtimeTicks else resolveRuntimeTicks(itemId, userId)
-                    PlaybackCompletion.playbackCompletionResolved(
-                        positionTicks,
-                        resolvedRuntimeTicks,
-                        isEnded,
-                    )
+                    if (isAudiobook) {
+                        PlaybackCompletion.audiobookCompletionResolved(
+                            positionTicks,
+                            resolvedRuntimeTicks,
+                            isEnded,
+                        )
+                    } else {
+                        PlaybackCompletion.playbackCompletionResolved(
+                            positionTicks,
+                            resolvedRuntimeTicks,
+                            isEnded,
+                        )
+                    }
                 } else {
                     PlaybackCompletion.Resolved(positionTicks.coerceAtLeast(0L), false)
                 }
