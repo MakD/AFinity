@@ -381,58 +381,100 @@ fun HomeScreen(
                             }
                         }
 
-                        if (
-                            continueWatchingItems.isNotEmpty() &&
-                                HomeRow.CONTINUE_WATCHING !in uiState.hiddenRows
-                        ) {
+                        val showContinueWatching =
+                            if (uiState.isOffline) {
+                                continueWatchingItems.isNotEmpty() &&
+                                    HomeRow.CONTINUE_WATCHING !in uiState.hiddenRows
+                            } else {
+                                uiState.showsFixedRow(
+                                    HomeRow.CONTINUE_WATCHING,
+                                    hasItems = continueWatchingItems.isNotEmpty(),
+                                    loaded =
+                                        HomeRow.CONTINUE_WATCHING in uiState.loadedPlaybackRows,
+                                )
+                            }
+                        if (showContinueWatching) {
                             item(key = "continue_watching") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
-                                    OptimizedContinueWatchingSection(
-                                        items = continueWatchingItems,
-                                        onItemClick = { item ->
-                                            if (item is AfinityEpisode) {
-                                                viewModel.selectEpisode(item)
-                                            } else {
-                                                onItemClick(item)
-                                            }
-                                        },
-                                        widthSizeClass = widthSizeClass,
-                                        scrollState = continueWatchingScrollState,
-                                    )
+                                    if (continueWatchingItems.isNotEmpty()) {
+                                        OptimizedContinueWatchingSection(
+                                            items = continueWatchingItems,
+                                            onItemClick = { item ->
+                                                if (item is AfinityEpisode) {
+                                                    viewModel.selectEpisode(item)
+                                                } else {
+                                                    onItemClick(item)
+                                                }
+                                            },
+                                            widthSizeClass = widthSizeClass,
+                                            scrollState = continueWatchingScrollState,
+                                        )
+                                    } else {
+                                        RowSkeleton(
+                                            title = stringResource(R.string.home_continue_watching),
+                                            cardWidth = widthSizeClass.landscapeWidth,
+                                            aspectRatio = CardDimensions.ASPECT_RATIO_LANDSCAPE,
+                                        )
+                                    }
                                 }
                             }
                         }
 
                         if (
                             !uiState.isOffline &&
-                                uiState.continueReading.isNotEmpty() &&
-                                HomeRow.CONTINUE_READING !in uiState.hiddenRows
+                                uiState.showsFixedRow(
+                                    HomeRow.CONTINUE_READING,
+                                    hasItems = uiState.continueReading.isNotEmpty(),
+                                    loaded = HomeRow.CONTINUE_READING in uiState.loadedPlaybackRows,
+                                )
                         ) {
                             item(key = "continue_reading") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
-                                    ContinueReadingSection(
-                                        books = uiState.continueReading,
-                                        onBookClick = onItemClick,
-                                        widthSizeClass = widthSizeClass,
-                                    )
+                                    if (uiState.continueReading.isNotEmpty()) {
+                                        ContinueReadingSection(
+                                            books = uiState.continueReading,
+                                            onBookClick = onItemClick,
+                                            widthSizeClass = widthSizeClass,
+                                        )
+                                    } else {
+                                        RowSkeleton(
+                                            title = stringResource(R.string.home_continue_reading),
+                                            cardWidth = widthSizeClass.portraitWidth,
+                                            aspectRatio = CardDimensions.ASPECT_RATIO_PORTRAIT,
+                                        )
+                                    }
                                 }
                             }
                         }
 
                         if (
                             !uiState.isOffline &&
-                                uiState.continueListening.isNotEmpty() &&
-                                HomeRow.CONTINUE_LISTENING !in uiState.hiddenRows
+                                uiState.showsFixedRow(
+                                    HomeRow.CONTINUE_LISTENING,
+                                    hasItems = uiState.continueListening.isNotEmpty(),
+                                    loaded =
+                                        HomeRow.CONTINUE_LISTENING in uiState.loadedPlaybackRows,
+                                )
                         ) {
                             item(key = "continue_listening") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
-                                    AudiobookRowSection(
-                                        title = stringResource(R.string.home_continue_listening),
-                                        books = uiState.continueListening,
-                                        onBookClick = onItemClick,
-                                        widthSizeClass = widthSizeClass,
-                                        showProgress = true,
-                                    )
+                                    if (uiState.continueListening.isNotEmpty()) {
+                                        AudiobookRowSection(
+                                            title =
+                                                stringResource(R.string.home_continue_listening),
+                                            books = uiState.continueListening,
+                                            onBookClick = onItemClick,
+                                            widthSizeClass = widthSizeClass,
+                                            showProgress = true,
+                                        )
+                                    } else {
+                                        RowSkeleton(
+                                            title =
+                                                stringResource(R.string.home_continue_listening),
+                                            cardWidth = widthSizeClass.portraitWidth,
+                                            aspectRatio = CardDimensions.ASPECT_RATIO_SQUARE,
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -598,18 +640,29 @@ fun HomeScreen(
                         if (
                             !uiState.isOffline &&
                                 !nextUpMerged &&
-                                uiState.nextUp.isNotEmpty() &&
-                                HomeRow.NEXT_UP !in uiState.hiddenRows
+                                uiState.showsFixedRow(
+                                    HomeRow.NEXT_UP,
+                                    hasItems = uiState.nextUp.isNotEmpty(),
+                                    loaded = HomeRow.NEXT_UP in uiState.loadedPlaybackRows,
+                                )
                         ) {
                             item(key = "next_up") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
-                                    NextUpSection(
-                                        episodes = uiState.nextUp,
-                                        onEpisodeClick = { episode ->
-                                            viewModel.selectEpisode(episode)
-                                        },
-                                        widthSizeClass = widthSizeClass,
-                                    )
+                                    if (uiState.nextUp.isNotEmpty()) {
+                                        NextUpSection(
+                                            episodes = uiState.nextUp,
+                                            onEpisodeClick = { episode ->
+                                                viewModel.selectEpisode(episode)
+                                            },
+                                            widthSizeClass = widthSizeClass,
+                                        )
+                                    } else {
+                                        RowSkeleton(
+                                            title = stringResource(R.string.home_next_up),
+                                            cardWidth = widthSizeClass.landscapeWidth,
+                                            aspectRatio = CardDimensions.ASPECT_RATIO_LANDSCAPE,
+                                        )
+                                    }
                                 }
                             }
                         }

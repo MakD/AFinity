@@ -80,6 +80,8 @@ interface MediaRepository {
     suspend fun getLibrariesResult(): Result<List<AfinityCollection>> =
         Result.success(getLibraries())
 
+    suspend fun restoreCachedLibraries(): List<AfinityCollection>? = null
+
     suspend fun getLatestMedia(
         parentId: UUID? = null,
         limit: Int = 16,

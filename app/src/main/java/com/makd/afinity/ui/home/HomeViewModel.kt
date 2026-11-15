@@ -212,6 +212,12 @@ constructor(
         }
 
         viewModelScope.launch {
+            appDataRepository.loadedPlaybackRows.collect { rows ->
+                _uiState.update { it.copy(loadedPlaybackRows = rows) }
+            }
+        }
+
+        viewModelScope.launch {
             appDataRepository.latestBookSections.collect { sections ->
                 _uiState.update { it.copy(latestBookSections = sections) }
             }
@@ -995,6 +1001,7 @@ data class HomeUiState(
     val popularStudios: List<AfinityStudio> = emptyList(),
     val popularStudiosLoaded: Boolean = false,
     val nextUpLoaded: Boolean = false,
+    val loadedPlaybackRows: Set<HomeRow> = emptySet(),
     val upcomingLoaded: Boolean = false,
     val hiddenRows: Set<HomeRow> = emptySet(),
     val genreMovies: Map<String, List<AfinityMovie>> = emptyMap(),

@@ -61,6 +61,7 @@ import com.makd.afinity.data.repository.JellyfinApiInvoker
 import com.makd.afinity.data.repository.NoActiveSessionException
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
+import com.makd.afinity.data.repository.home.HomeCacheRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.di.ApplicationScope
 import java.io.File
@@ -88,6 +89,8 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.operations.ArtistApi
@@ -155,6 +158,7 @@ constructor(
     private val databaseRepository: DatabaseRepository,
     private val storageLocationProvider: StorageLocationProvider,
     private val apiInvoker: JellyfinApiInvoker,
+    private val homeCacheRepository: HomeCacheRepository,
     @ApplicationScope private val scope: CoroutineScope,
 ) : MediaRepository {
 
@@ -990,26 +994,74 @@ constructor(
                 rememberHasLiveTvLibrary(sessionAtStart.serverId, userId, hasLiveTv)
             }
 
-            val libraries =
-                views
-                    .filter {
-                        it.collectionType != org.jellyfin.sdk.model.api.CollectionType.LIVETV
-                    }
-                    .mapNotNull { baseItemDto ->
-                        try {
-                            baseItemDto.toAfinityCollection(getBaseUrl())
-                        } catch (e: CancellationException) {
-                            throw e
-                        } catch (e: Exception) {
-                            Timber.w(e, "Failed to convert item to collection: ${baseItemDto.name}")
-                            null
-                        }
-                    }
+            val libraryViews = views.filter {
+                it.collectionType != org.jellyfin.sdk.model.api.CollectionType.LIVETV
+            }
+            val libraries = libraryViews.toLibraries()
 
             _libraries.value = libraries
             Timber.d("Successfully retrieved ${libraries.size} libraries via UserViews API")
+            val sessionKey = currentSessionKey()
+            if (
+                sessionKey != null &&
+                    sessionAtStart?.userId == userId &&
+                    sessionKey == "${sessionAtStart.serverId}_${sessionAtStart.userId}"
+            ) {
+                cacheLibraryViews(sessionKey, libraryViews)
+            }
             libraries
         }
+
+    private fun List<BaseItemDto>.toLibraries(): List<AfinityCollection> {
+        val baseUrl = getBaseUrl()
+        return mapNotNull { baseItemDto ->
+            try {
+                baseItemDto.toAfinityCollection(baseUrl)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to convert item to collection: ${baseItemDto.name}")
+                null
+            }
+        }
+    }
+
+    private suspend fun cacheLibraryViews(sessionKey: String, views: List<BaseItemDto>) {
+        if (views.isEmpty()) return
+        try {
+            homeCacheRepository.putRaw(
+                "libraries_$sessionKey",
+                libraryCacheJson.encodeToString(ListSerializer(BaseItemDto.serializer()), views),
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to cache libraries")
+        }
+    }
+
+    override suspend fun restoreCachedLibraries(): List<AfinityCollection>? {
+        val sessionKey = currentSessionKey() ?: return null
+        val raw = homeCacheRepository.getRaw("libraries_$sessionKey") ?: return null
+        val views =
+            try {
+                libraryCacheJson.decodeFromString(ListSerializer(BaseItemDto.serializer()), raw)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Unreadable cached libraries")
+                return null
+            }
+        val libraries = views.toLibraries().takeIf { it.isNotEmpty() } ?: return null
+        if (currentSessionKey() != sessionKey) return null
+        if (_libraries.value.isEmpty()) _libraries.value = libraries
+        return libraries
+    }
+
+    private val libraryCacheJson = Json {
+        ignoreUnknownKeys = true
+        explicitNulls = false
+    }
 
     override suspend fun getLatestMedia(
         parentId: UUID?,

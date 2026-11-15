@@ -83,6 +83,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -407,6 +408,9 @@ constructor(
     private val _isInitialDataLoaded = MutableStateFlow(false)
     val isInitialDataLoaded: StateFlow<Boolean> = _isInitialDataLoaded.asStateFlow()
 
+    private val _loadedPlaybackRows = MutableStateFlow<Set<HomeRow>>(emptySet())
+    val loadedPlaybackRows: StateFlow<Set<HomeRow>> = _loadedPlaybackRows.asStateFlow()
+
     private val _homeEssentialsReady = MutableStateFlow(false)
     val homeEssentialsReady: StateFlow<Boolean> = _homeEssentialsReady.asStateFlow()
 
@@ -633,12 +637,39 @@ constructor(
         val hidden = homeLayoutPreferencesRepository.getHiddenRows()
         coroutineScope {
             if (HomeRow.CONTINUE_READING !in hidden) {
-                launch { mediaRepository.invalidateContinueReadingCache() }
+                launch {
+                    refreshPlaybackRow(HomeRow.CONTINUE_READING) {
+                        mediaRepository.invalidateContinueReadingCache()
+                    }
+                }
+            } else {
+                _loadedPlaybackRows.update { it + HomeRow.CONTINUE_READING }
             }
             if (HomeRow.CONTINUE_LISTENING !in hidden) {
-                launch { mediaRepository.invalidateContinueListeningCache() }
+                launch {
+                    refreshPlaybackRow(HomeRow.CONTINUE_LISTENING) {
+                        mediaRepository.invalidateContinueListeningCache()
+                    }
+                }
+            } else {
+                _loadedPlaybackRows.update { it + HomeRow.CONTINUE_LISTENING }
             }
         }
+    }
+
+    private suspend fun refreshPlaybackRow(row: HomeRow, refresh: suspend () -> Unit) {
+        refresh()
+        val filled =
+            when (row) {
+                HomeRow.CONTINUE_WATCHING ->
+                    mediaRepository.getContinueWatchingFlow().first().isNotEmpty()
+                HomeRow.NEXT_UP -> mediaRepository.getNextUpFlow().first().isNotEmpty()
+                HomeRow.CONTINUE_READING -> mediaRepository.continueReading.first().isNotEmpty()
+                HomeRow.CONTINUE_LISTENING -> mediaRepository.continueListening.first().isNotEmpty()
+                else -> return
+            }
+        _loadedPlaybackRows.update { it + row }
+        homeSectionsRepository.recordRowFilled(row, filled)
     }
 
     private fun currentCacheKey(): String? =
@@ -648,6 +679,7 @@ constructor(
         Timber.d("Skipping initial data load for offline mode")
         _loadingProgress.value = 1f
         _loadingPhase.value = context.getString(R.string.loading_phase_offline)
+        _loadedPlaybackRows.value = PLAYBACK_ROWS
         _isInitialDataLoaded.value = true
         _homeEssentialsReady.value = true
     }
@@ -703,6 +735,7 @@ constructor(
                 _latestTvSeries.value =
                     homeCacheRepository.getLatestShows("latest_shows_$cacheKey", currentBaseUrl)
                         ?: emptyList()
+                mediaRepository.restoreCachedLibraries()?.let { _libraries.value = it }
                 restoreBookShelves(cacheKey)
 
                 startLiveDataCollectors()
@@ -742,9 +775,13 @@ constructor(
                 updateProgress(0.1f, context.getString(R.string.loading_phase_connecting))
 
                 val continueWatchingDeferred = async {
-                    mediaRepository.invalidateContinueWatchingCache()
+                    refreshPlaybackRow(HomeRow.CONTINUE_WATCHING) {
+                        mediaRepository.invalidateContinueWatchingCache()
+                    }
                 }
-                val nextUpDeferred = async { mediaRepository.invalidateNextUpCache() }
+                val nextUpDeferred = async {
+                    refreshPlaybackRow(HomeRow.NEXT_UP) { mediaRepository.invalidateNextUpCache() }
+                }
                 val continueBookRowsDeferred = async { refreshContinueBookRows() }
                 val heroCarouselDeferred = async { loadHeroCarousel() }
                 val librariesDeferred = async { loadLibraries(reportFailure = true) }
@@ -800,14 +837,25 @@ constructor(
         try {
             Timber.d("Background network refresh starting")
             coroutineScope {
-                val librariesDeferred = async { loadLibraries() }
+                val librariesDeferred = async { mediaRepository.getLibrariesResult() }
                 val continueWatchingDeferred = async {
-                    mediaRepository.invalidateContinueWatchingCache()
+                    refreshPlaybackRow(HomeRow.CONTINUE_WATCHING) {
+                        mediaRepository.invalidateContinueWatchingCache()
+                    }
                 }
-                val nextUpDeferred = async { mediaRepository.invalidateNextUpCache() }
+                val nextUpDeferred = async {
+                    refreshPlaybackRow(HomeRow.NEXT_UP) { mediaRepository.invalidateNextUpCache() }
+                }
                 val continueBookRowsDeferred = async { refreshContinueBookRows() }
 
-                val libraries = librariesDeferred.await()
+                val libraries =
+                    librariesDeferred.await().getOrElse { e ->
+                        if (e is CancellationException) throw e
+                        if (e !is NoActiveSessionException) {
+                            Timber.e(e, "Failed to refresh libraries — keeping the cached list")
+                        }
+                        _libraries.value
+                    }
                 _libraries.value = libraries
                 tick(0.65f, context.getString(R.string.loading_phase_processing))
 
@@ -1534,21 +1582,37 @@ constructor(
             }
             try {
                 coroutineScope {
-                    launch { mediaRepository.invalidateContinueWatchingCache() }
-                    launch { mediaRepository.invalidateNextUpCache() }
+                    launch {
+                        refreshPlaybackRow(HomeRow.CONTINUE_WATCHING) {
+                            mediaRepository.invalidateContinueWatchingCache()
+                        }
+                    }
+                    launch {
+                        refreshPlaybackRow(HomeRow.NEXT_UP) {
+                            mediaRepository.invalidateNextUpCache()
+                        }
+                    }
                     if (
                         _libraries.value.any { it.type == CollectionType.Books } &&
                             HomeRow.CONTINUE_READING !in
                                 homeLayoutPreferencesRepository.getHiddenRows()
                     ) {
-                        launch { mediaRepository.invalidateContinueReadingCache() }
+                        launch {
+                            refreshPlaybackRow(HomeRow.CONTINUE_READING) {
+                                mediaRepository.invalidateContinueReadingCache()
+                            }
+                        }
                     }
                     if (
                         _libraries.value.any { it.type == CollectionType.Books } &&
                             HomeRow.CONTINUE_LISTENING !in
                                 homeLayoutPreferencesRepository.getHiddenRows()
                     ) {
-                        launch { mediaRepository.invalidateContinueListeningCache() }
+                        launch {
+                            refreshPlaybackRow(HomeRow.CONTINUE_LISTENING) {
+                                mediaRepository.invalidateContinueListeningCache()
+                            }
+                        }
                     }
                 }
                 Timber.d("Refreshed playback sections (continue watching + next up)")
@@ -2128,6 +2192,7 @@ constructor(
         _latestTvSeries.value = emptyList()
         _latestBookSections.value = emptyList()
         _latestAudiobookSections.value = emptyList()
+        _loadedPlaybackRows.value = emptySet()
         _isInitialDataLoaded.value = false
         _homeEssentialsReady.value = false
         _initialLoadFailed.value = false
@@ -2169,6 +2234,13 @@ constructor(
         private const val FAVORITES_RECOUNT_DEBOUNCE_MS = 2_000L
         private val LATEST_ROWS = setOf(HomeRow.LATEST_MOVIES, HomeRow.LATEST_TV)
         private val LATEST_BOOK_ROWS = setOf(HomeRow.LATEST_BOOKS, HomeRow.LATEST_AUDIOBOOKS)
+        private val PLAYBACK_ROWS =
+            setOf(
+                HomeRow.CONTINUE_WATCHING,
+                HomeRow.NEXT_UP,
+                HomeRow.CONTINUE_READING,
+                HomeRow.CONTINUE_LISTENING,
+            )
         private const val LATEST_BOOKS_LIMIT = 16
         private const val LATEST_AUDIOBOOK_PARTS_LIMIT = 100
     }
