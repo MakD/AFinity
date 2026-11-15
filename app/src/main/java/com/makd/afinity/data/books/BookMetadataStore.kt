@@ -10,6 +10,7 @@ import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -51,6 +52,8 @@ constructor(
         val dto =
             try {
                 json.decodeFromString(BaseItemDto.serializer(), metadata.readText())
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Unreadable book metadata in ${dir.name}")
                 return null

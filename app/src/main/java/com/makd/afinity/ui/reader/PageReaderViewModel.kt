@@ -276,12 +276,12 @@ constructor(
                     (pageSource as? PdfPageSource)?.let {
                         runCatching { it.hasText() }.getOrDefault(false)
                     } ?: false
-            } catch (e: CancellationException) {
-                throw e
             } catch (e: BookOpenException) {
                 fail(e.error.toReaderError())
             } catch (e: ReaderDownloadNotAllowed) {
                 fail(ReaderError.DOWNLOAD_NOT_ALLOWED)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to open book $itemId")
                 fail(ReaderError.CORRUPT)

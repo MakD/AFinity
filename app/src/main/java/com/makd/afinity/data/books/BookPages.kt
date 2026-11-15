@@ -7,6 +7,7 @@ import android.os.ParcelFileDescriptor
 import java.io.Closeable
 import java.io.File
 import java.io.FileOutputStream
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
@@ -227,6 +228,8 @@ private constructor(
             val descriptor =
                 try {
                     ParcelFileDescriptor.open(source, ParcelFileDescriptor.MODE_READ_ONLY)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     throw BookOpenException(BookOpenError.CORRUPT, e)
                 }
@@ -236,6 +239,8 @@ private constructor(
                 } catch (e: SecurityException) {
                     descriptor.close()
                     throw BookOpenException(BookOpenError.PASSWORD_PROTECTED, e)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     descriptor.close()
                     throw BookOpenException(BookOpenError.CORRUPT, e)

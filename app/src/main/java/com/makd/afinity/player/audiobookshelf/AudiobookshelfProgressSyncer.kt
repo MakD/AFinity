@@ -181,6 +181,7 @@ constructor(
         }
 
         val listened = takeListenedSeconds()
+        var settled = false
         try {
             val result =
                 audiobookshelfRepository.syncPlaybackSession(
@@ -189,6 +190,7 @@ constructor(
                     currentTime = currentTime,
                     duration = state.duration,
                 )
+            settled = true
 
             result.fold(
                 onSuccess = { Timber.d("Progress synced: ${currentTime}s / ${state.duration}s") },
@@ -198,11 +200,11 @@ constructor(
                 },
             )
         } catch (e: CancellationException) {
-            returnListenedSeconds(listened)
             throw e
         } catch (e: Exception) {
-            returnListenedSeconds(listened)
             Timber.e(e, "Exception syncing progress")
+        } finally {
+            if (!settled) returnListenedSeconds(listened)
         }
     }
 
@@ -262,6 +264,7 @@ constructor(
         }
 
         val listened = takeListenedSeconds()
+        var settled = false
         try {
             val result =
                 audiobookshelfRepository.syncPlaybackSession(
@@ -270,6 +273,7 @@ constructor(
                     currentTime = episodeCurrentTime,
                     duration = episodeDuration,
                 )
+            settled = true
 
             result.fold(
                 onSuccess = {
@@ -284,11 +288,11 @@ constructor(
                 },
             )
         } catch (e: CancellationException) {
-            returnListenedSeconds(listened)
             throw e
         } catch (e: Exception) {
-            returnListenedSeconds(listened)
             Timber.e(e, "Exception syncing playlist progress")
+        } finally {
+            if (!settled) returnListenedSeconds(listened)
         }
     }
 

@@ -433,8 +433,6 @@ constructor(
                         }
                 }
                 loadContents(opened)
-            } catch (e: CancellationException) {
-                throw e
             } catch (e: BookOpenException) {
                 fail(
                     when (e.error) {
@@ -446,6 +444,8 @@ constructor(
                         BookOpenError.CORRUPT -> ReaderError.CORRUPT
                     }
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to open EPUB $itemId")
                 fail(ReaderError.CORRUPT)
