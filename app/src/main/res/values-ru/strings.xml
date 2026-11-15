@@ -3740,4 +3740,6 @@
     <string name="library_image_settings_max_backdrops">Максимальное число задников на элемент</string>
     <string name="library_image_settings_min_width">Минимальная ширина загружаемого задника</string>
     <string name="library_image_settings_min_width_help">В пикселях. Значение «0» разрешает любую ширину.</string>
+    <string name="task_duration_under_minute">&lt;1 мин</string>
+    <string name="task_took_fmt">заняло %1$s</string>
 </resources>
