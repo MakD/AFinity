@@ -29,6 +29,7 @@ import com.makd.afinity.data.models.jellyseerr.ServiceTag
 import com.makd.afinity.data.models.jellyseerr.SonarrSeries
 import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import com.makd.afinity.data.models.jellyseerr.hasPermission
+import com.makd.afinity.data.models.media.AfinityAudiobook
 import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityCollection
@@ -37,6 +38,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.UserDataPatch
+import com.makd.afinity.data.models.media.groupedIntoBooks
 import com.makd.afinity.data.models.music.MusicSearchResults
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.AudiobookshelfRepository
@@ -404,14 +406,14 @@ constructor(
                 SearchFilter.MOVIES -> listOf("MOVIE")
                 SearchFilter.TV_SHOWS -> listOf("SERIES")
                 SearchFilter.BOX_SETS -> listOf("BOX_SET")
-                SearchFilter.BOOKS -> listOf("BOOK")
+                SearchFilter.BOOKS -> listOf("BOOK", "AUDIO_BOOK")
                 else ->
                     when (selectedLibrary?.type) {
                         CollectionType.Movies -> listOf("MOVIE", "BOX_SET")
                         CollectionType.TvShows -> listOf("SERIES")
                         CollectionType.BoxSets -> listOf("BOX_SET")
-                        CollectionType.Books -> listOf("BOOK")
-                        else -> listOf("MOVIE", "SERIES", "BOX_SET", "BOOK")
+                        CollectionType.Books -> listOf("BOOK", "AUDIO_BOOK")
+                        else -> listOf("MOVIE", "SERIES", "BOX_SET", "BOOK", "AUDIO_BOOK")
                     }
             }
 
@@ -461,7 +463,8 @@ constructor(
                                             is AfinityMovie,
                                             is AfinityShow,
                                             is AfinityBoxSet,
-                                            is AfinityBook -> item
+                                            is AfinityBook,
+                                            is AfinityAudiobook -> item
                                             else -> null
                                         }
                                     } catch (e: CancellationException) {
@@ -474,7 +477,10 @@ constructor(
 
                         yield()
 
-                        mappedItems.sortedByRelevance(query)
+                        val audiobooks =
+                            mappedItems.filterIsInstance<AfinityAudiobook>().groupedIntoBooks()
+                        (mappedItems.filterNot { it is AfinityAudiobook } + audiobooks)
+                            .sortedByRelevance(query)
                     }
 
                 _uiState.value =

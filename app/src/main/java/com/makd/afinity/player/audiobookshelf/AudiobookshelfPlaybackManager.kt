@@ -45,6 +45,7 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
 
         _playbackState.value =
             _playbackState.value.copy(
+                source = AudiobookSource.ABS,
                 sessionId = session.id,
                 itemId = session.libraryItemId,
                 episodeId = session.episodeId,
@@ -57,6 +58,30 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
                 coverUrl = coverUrl,
                 isPodcastPlaylist = false,
                 playlistEpisodeIds = emptyList(),
+            )
+    }
+
+    fun setJellyfinSession(session: JellyfinAudiobookSession) {
+        _currentSession.value = null
+        _playbackState.value =
+            _playbackState.value.copy(
+                source = AudiobookSource.JELLYFIN,
+                sessionId = session.sessionId,
+                itemId = session.bookId,
+                episodeId = null,
+                duration = session.tracks.sumOf { it.duration },
+                currentTime = 0.0,
+                bufferedPosition = 0.0,
+                chapters = session.chapters,
+                currentChapter = null,
+                audioTracks = session.tracks,
+                playMethod = 0,
+                displayTitle = session.title,
+                displayAuthor = session.author,
+                coverUrl = session.coverUrl,
+                isPodcastPlaylist = false,
+                playlistEpisodeIds = emptyList(),
+                playerError = null,
             )
     }
 
@@ -127,6 +152,7 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
         _currentSession.value = null
         _playbackState.update { current ->
             AudiobookshelfPlaybackState(
+                source = current.source,
                 itemId = current.itemId,
                 displayTitle = current.displayTitle,
                 displayAuthor = current.displayAuthor,
@@ -139,6 +165,7 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
         _playbackState.update { current ->
             if (current.sessionId != null && current.itemId == itemId) return@update current
             current.copy(
+                source = AudiobookSource.ABS,
                 itemId = itemId,
                 displayTitle = title,
                 displayAuthor = author,
@@ -154,7 +181,26 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
     }
 }
 
+enum class AudiobookSource {
+    ABS,
+    JELLYFIN,
+}
+
+data class JellyfinAudiobookSession(
+    val sessionId: String,
+    val bookId: String,
+    val title: String,
+    val author: String?,
+    val coverUrl: String?,
+    val tracks: List<AudioTrack>,
+    val chapters: List<BookChapter>,
+    val partIds: List<java.util.UUID>,
+    val partRuntimeTicks: List<Long>,
+    val localUris: List<String?> = emptyList(),
+)
+
 data class AudiobookshelfPlaybackState(
+    val source: AudiobookSource = AudiobookSource.ABS,
     val sessionId: String? = null,
     val itemId: String? = null,
     val episodeId: String? = null,

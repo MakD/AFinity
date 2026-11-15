@@ -84,6 +84,7 @@ import com.makd.afinity.ui.components.HeroCarousel
 import com.makd.afinity.ui.components.afinityTopAppBarHeight
 import com.makd.afinity.ui.components.heroCarouselLayoutHeight
 import com.makd.afinity.ui.downloads.DownloadedCategory
+import com.makd.afinity.ui.home.components.AudiobookRowSection
 import com.makd.afinity.ui.home.components.ContinueReadingSection
 import com.makd.afinity.ui.home.components.DownloadedAudiobooksSection
 import com.makd.afinity.ui.home.components.DownloadedMusicAlbumsSection
@@ -273,6 +274,8 @@ fun HomeScreen(
                 uiState.offlineNextUp.isEmpty() &&
                 uiState.downloadedMovies.isEmpty() &&
                 uiState.downloadedShows.isEmpty() &&
+                uiState.downloadedBooks.isEmpty() &&
+                uiState.downloadedJellyfinAudiobooks.isEmpty() &&
                 uiState.downloadedAudiobooks.isEmpty() &&
                 uiState.downloadedPodcastEpisodes.isEmpty() &&
                 uiState.downloadedMusicAlbums.isEmpty() &&
@@ -416,6 +419,24 @@ fun HomeScreen(
                             }
                         }
 
+                        if (
+                            !uiState.isOffline &&
+                                uiState.continueListening.isNotEmpty() &&
+                                HomeRow.CONTINUE_LISTENING !in uiState.hiddenRows
+                        ) {
+                            item(key = "continue_listening") {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                    AudiobookRowSection(
+                                        title = stringResource(R.string.home_continue_listening),
+                                        books = uiState.continueListening,
+                                        onBookClick = onItemClick,
+                                        widthSizeClass = widthSizeClass,
+                                        showProgress = true,
+                                    )
+                                }
+                            }
+                        }
+
                         if (uiState.isOffline && uiState.offlineNextUp.isNotEmpty()) {
                             item(key = "offline_next_up") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
@@ -474,6 +495,32 @@ fun HomeScreen(
                                         widthSizeClass = widthSizeClass,
                                         onViewAllClick = {
                                             onDownloadedCategoryClick(DownloadedCategory.BOOKS)
+                                        },
+                                    )
+                                }
+                            }
+                        }
+
+                        if (
+                            uiState.isOffline && uiState.downloadedJellyfinAudiobooks.isNotEmpty()
+                        ) {
+                            item(key = "downloaded_jellyfin_audiobooks") {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                    AudiobookRowSection(
+                                        title =
+                                            stringResource(
+                                                if (uiState.downloadedAudiobooks.isNotEmpty())
+                                                    R.string.home_downloaded_jellyfin_audiobooks
+                                                else R.string.home_downloaded_audiobooks
+                                            ),
+                                        books = uiState.downloadedJellyfinAudiobooks,
+                                        onBookClick = onItemClick,
+                                        widthSizeClass = widthSizeClass,
+                                        showProgress = true,
+                                        onViewAllClick = {
+                                            onDownloadedCategoryClick(
+                                                DownloadedCategory.JELLYFIN_AUDIOBOOKS
+                                            )
                                         },
                                     )
                                 }
@@ -655,6 +702,33 @@ fun HomeScreen(
                                         items = books,
                                         onItemClick = onItemClick,
                                         widthSizeClass = widthSizeClass,
+                                    )
+                                }
+                            }
+                        }
+
+                        if (
+                            !uiState.isOffline && HomeRow.LATEST_AUDIOBOOKS !in uiState.hiddenRows
+                        ) {
+                            items(
+                                items = uiState.latestAudiobookSections,
+                                key = { (library, _) -> "audiobook_lib_${library.id}" },
+                            ) { (library, books) ->
+                                val alsoHasBooks =
+                                    uiState.latestBookSections.any { it.first.id == library.id }
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                    AudiobookRowSection(
+                                        title =
+                                            if (alsoHasBooks)
+                                                stringResource(
+                                                    R.string.home_latest_audiobooks_in_fmt,
+                                                    library.name,
+                                                )
+                                            else library.name,
+                                        books = books,
+                                        onBookClick = onItemClick,
+                                        widthSizeClass = widthSizeClass,
+                                        showProgress = false,
                                     )
                                 }
                             }

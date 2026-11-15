@@ -1,5 +1,7 @@
 package com.makd.afinity.cast
 
+import com.makd.afinity.player.audiobook.JellyfinAudiobookReporter
+import com.makd.afinity.player.audiobookshelf.AudiobookSource
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
 import com.makd.afinity.player.music.MusicPlaybackManager
 import com.makd.afinity.player.music.MusicQueueManager
@@ -19,6 +21,7 @@ constructor(
     private val musicPlaybackManager: Lazy<MusicPlaybackManager>,
     private val musicQueueManager: Lazy<MusicQueueManager>,
     private val audiobookshelfPlaybackManager: Lazy<AudiobookshelfPlaybackManager>,
+    private val jellyfinAudiobookReporter: Lazy<JellyfinAudiobookReporter>,
 ) {
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var started = false
@@ -57,8 +60,12 @@ constructor(
 
     private fun syncAbs(state: CastSessionState) {
         val playbackManager = audiobookshelfPlaybackManager.get()
-        playbackManager.updatePosition(state.currentPosition / 1000.0)
+        val seconds = state.currentPosition / 1000.0
+        playbackManager.updatePosition(seconds)
         playbackManager.updatePlayingState(state.isPlaying)
         playbackManager.updateBufferingState(state.isBuffering)
+        if (playbackManager.playbackState.value.source == AudiobookSource.JELLYFIN) {
+            jellyfinAudiobookReporter.get().onCastProgress(seconds, state.isPlaying)
+        }
     }
 }

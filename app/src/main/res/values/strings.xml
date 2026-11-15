@@ -519,6 +519,14 @@
     <string name="library_filter_genres_hint">Search genres</string>
     <string name="library_filter_publishers">Publishers</string>
     <string name="library_filter_publishers_hint">Search publishers</string>
+    <string name="library_filter_format">Format</string>
+    <string name="filter_format_books">Books</string>
+    <string name="filter_format_audiobooks">Audiobooks</string>
+    <string name="cd_audiobook">Audiobook</string>
+    <string name="cd_audiobook_cover">Audiobook cover</string>
+    <string name="audiobook_progress_percent_fmt">%1$d%% listened</string>
+    <string name="audiobook_details_length">Length</string>
+    <string name="audiobook_details_parts">Parts</string>
     <string name="library_filter_tags_hint">Search tags</string>
     <string name="library_filter_ratings_hint">Search ratings</string>
     <string name="library_filter_years_hint">Search years</string>
@@ -527,6 +535,7 @@
     <string name="filter_unplayed">Unplayed</string>
     <string name="filter_resumable">Resumable</string>
     <string name="filter_continue_reading">Continue reading</string>
+    <string name="filter_continue_listening">Continue listening</string>
     <string name="feature_subtitles">Subtitles</string>
     <string name="feature_trailer">Trailer</string>
     <string name="feature_special">Special feature</string>
@@ -1722,6 +1731,7 @@
     <string name="section_boxset">Box Sets</string>
     <string name="section_tv_shows">TV Shows</string>
     <string name="section_books">Books</string>
+    <string name="section_audiobooks">Audiobooks</string>
     <string name="section_seasons">Seasons</string>
     <string name="section_episodes">Episodes</string>
     <string name="section_tv_channels">Live TV Channels</string>
@@ -2926,6 +2936,7 @@
 
     <!--Home Screen-->
     <string name="home_downloaded_audiobooks">Downloaded Audiobooks</string>
+    <string name="home_downloaded_jellyfin_audiobooks">Downloaded Audiobooks (Jellyfin)</string>
     <string name="home_downloaded_episodes">Downloaded Episodes</string>
     <string name="home_genre_top_movies_fmt">Top %1$s Movies</string>
     <string name="home_genre_top_series_fmt">Top %1$s Series</string>
@@ -3852,6 +3863,10 @@
     <string name="home_row_continue_reading">Continue Reading</string>
     <string name="home_row_latest_books">Latest Books</string>
     <string name="home_continue_reading">Continue Reading</string>
+    <string name="home_row_continue_listening">Continue Listening</string>
+    <string name="home_row_latest_audiobooks">Latest Audiobooks</string>
+    <string name="home_continue_listening">Continue Listening</string>
+    <string name="home_latest_audiobooks_in_fmt">Audiobooks in %1$s</string>
     <string name="home_downloaded_books">Downloaded Books</string>
     <string name="reader_downloading">Downloading…</string>
     <string name="reader_downloading_fmt">Downloading… %1$s of %2$s</string>
@@ -3945,6 +3960,7 @@
     <string name="book_mark_read">Mark as read</string>
     <string name="book_mark_unread">Mark as unread</string>
     <string name="person_kind_author">Author</string>
+    <string name="person_kind_narrator">Narrator</string>
     <string name="person_kind_writer">Writer</string>
     <string name="person_kind_illustrator">Illustrator</string>
     <string name="person_kind_penciller">Penciller</string>

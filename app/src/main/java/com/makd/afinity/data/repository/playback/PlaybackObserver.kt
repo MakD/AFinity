@@ -29,4 +29,22 @@ object PlaybackCompletion {
             else -> Resolved(position, false)
         }
     }
+
+    fun audiobookCompletionResolved(
+        positionTicks: Long,
+        runtimeTicks: Long,
+        isEnded: Boolean,
+    ): Resolved {
+        if (isEnded) return Resolved(0L, true)
+        val position = positionTicks.coerceAtLeast(0L)
+        if (runtimeTicks <= 0L || position == 0L) return Resolved(position, false)
+        return when {
+            position < AUDIOBOOK_RESUME_WINDOW_TICKS -> Resolved(0L, false)
+            runtimeTicks - position < AUDIOBOOK_RESUME_WINDOW_TICKS || position >= runtimeTicks ->
+                Resolved(0L, true)
+            else -> Resolved(position, false)
+        }
+    }
+
+    private const val AUDIOBOOK_RESUME_WINDOW_TICKS = 5L * 60L * TICKS_PER_SECOND
 }

@@ -31,6 +31,7 @@ fun AfinityItem.withImages(newImages: AfinityImages): AfinityItem =
         is AfinityBoxSet -> copy(images = newImages)
         is AfinityVideo -> copy(images = newImages)
         is AfinityBook -> copy(images = newImages)
+        is AfinityAudiobook -> if (isGrouped) this else copy(images = newImages)
         else -> this
     }
 

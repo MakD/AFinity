@@ -105,6 +105,19 @@ fun PlayedBadge(
 }
 
 @Composable
+fun AudiobookBadge(modifier: Modifier = Modifier) {
+    CardBadgeSlot(modifier = modifier) { metrics ->
+        CardIconBadge(
+            painter = painterResource(id = R.drawable.ic_headphones),
+            contentDescription = stringResource(R.string.cd_audiobook),
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            metrics = metrics,
+        )
+    }
+}
+
+@Composable
 fun FourKBadge(modifier: Modifier = Modifier) {
     CardBadgeSlot(modifier = modifier) { metrics ->
         CardIconBadge(

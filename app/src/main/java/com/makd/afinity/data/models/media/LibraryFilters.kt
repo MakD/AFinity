@@ -25,6 +25,29 @@ enum class SeriesStatusFilter(val serialName: String) {
     UNRELEASED("Unreleased"),
 }
 
+enum class LibraryFormatFilter {
+    BOOKS,
+    AUDIOBOOKS,
+}
+
+enum class BookLibraryComposition {
+    BOOKS,
+    AUDIOBOOKS,
+    MIXED;
+
+    fun includesBooks(filters: LibraryFilters): Boolean =
+        this != AUDIOBOOKS &&
+            (this == BOOKS ||
+                filters.formats.isEmpty() ||
+                LibraryFormatFilter.BOOKS in filters.formats)
+
+    fun includesAudiobooks(filters: LibraryFilters): Boolean =
+        this != BOOKS &&
+            (this == AUDIOBOOKS ||
+                filters.formats.isEmpty() ||
+                LibraryFormatFilter.AUDIOBOOKS in filters.formats)
+}
+
 @Serializable
 data class LibraryFilters(
     val played: Boolean = false,
@@ -42,6 +65,7 @@ data class LibraryFilters(
     val audioLanguages: Set<String> = emptySet(),
     val subtitleLanguages: Set<String> = emptySet(),
     val studios: Set<String> = emptySet(),
+    val formats: Set<LibraryFormatFilter> = emptySet(),
 ) {
     val activeCount: Int
         get() =
@@ -55,7 +79,8 @@ data class LibraryFilters(
                 years.size +
                 audioLanguages.size +
                 subtitleLanguages.size +
-                studios.size
+                studios.size +
+                formats.size
 
     val isEmpty: Boolean
         get() = activeCount == 0

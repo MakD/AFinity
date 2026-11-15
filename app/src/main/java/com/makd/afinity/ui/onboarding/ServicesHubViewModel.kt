@@ -92,7 +92,7 @@ constructor(
     fun disconnectAudiobookshelf() {
         viewModelScope.launch {
             runCatching {
-                audiobookshelfPlayer.release()
+                audiobookshelfPlayer.releaseIfAbs()
                 audiobookshelfRepository.logout()
             }
                 .onFailure { Timber.e(it, "Failed to disconnect Audiobookshelf") }

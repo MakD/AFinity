@@ -123,6 +123,7 @@ fun PersonScreen(
                     movies = uiState.movies,
                     shows = uiState.shows,
                     books = uiState.books,
+                    audiobooks = uiState.audiobooks,
                     awards = uiState.awards,
                     externalCredits = uiState.externalCredits,
                     onExternalItemClick = onNavigateToSeerrMedia,

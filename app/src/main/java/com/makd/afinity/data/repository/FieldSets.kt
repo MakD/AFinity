@@ -17,6 +17,7 @@ object FieldSets {
             ItemFields.CHILD_COUNT,
             ItemFields.RECURSIVE_ITEM_COUNT,
             ItemFields.DATE_CREATED,
+            ItemFields.PARENT_ID,
         )
 
     val CONTINUE_WATCHING = emptyList<ItemFields>()
@@ -29,10 +30,17 @@ object FieldSets {
 
     val PLAYLIST_GRID = listOf(ItemFields.CHILD_COUNT)
 
-    val BOOK_GRID = listOf(ItemFields.PATH, ItemFields.CAN_DOWNLOAD, ItemFields.DATE_CREATED)
+    val BOOK_GRID =
+        listOf(
+            ItemFields.PATH,
+            ItemFields.CAN_DOWNLOAD,
+            ItemFields.DATE_CREATED,
+            ItemFields.PARENT_ID,
+        )
 
     val BOOK_DETAIL =
         listOf(
+            ItemFields.PARENT_ID,
             ItemFields.OVERVIEW,
             ItemFields.GENRES,
             ItemFields.PEOPLE,
@@ -45,10 +53,34 @@ object FieldSets {
             ItemFields.DATE_CREATED,
         )
 
+    val AUDIOBOOK_GRID =
+        listOf(
+            ItemFields.PARENT_ID,
+            ItemFields.PEOPLE,
+            ItemFields.CAN_DOWNLOAD,
+            ItemFields.DATE_CREATED,
+        )
+
+    val AUDIOBOOK_DETAIL =
+        listOf(
+            ItemFields.PARENT_ID,
+            ItemFields.OVERVIEW,
+            ItemFields.GENRES,
+            ItemFields.PEOPLE,
+            ItemFields.CHAPTERS,
+            ItemFields.CAN_DOWNLOAD,
+            ItemFields.STUDIOS,
+            ItemFields.EXTERNAL_URLS,
+            ItemFields.PROVIDER_IDS,
+            ItemFields.DATE_CREATED,
+            ItemFields.MEDIA_SOURCES,
+        )
+
     val SEARCH_RESULTS =
         listOf(
             ItemFields.OVERVIEW,
             ItemFields.RECURSIVE_ITEM_COUNT,
+            ItemFields.PARENT_ID,
         )
 
     val PLAYABLE_EPISODE = listOf(ItemFields.MEDIA_SOURCES, ItemFields.MEDIA_STREAMS)

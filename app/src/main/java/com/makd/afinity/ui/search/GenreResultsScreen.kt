@@ -39,15 +39,18 @@ import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.makd.afinity.R
+import com.makd.afinity.data.models.media.AfinityAudiobook
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.ui.components.AfinityBackButton
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AfinityTopBar
+import com.makd.afinity.ui.components.AudiobookCardFrame
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.ui.components.MediaItemGridCard
 import com.makd.afinity.ui.components.PaginatedMediaGrid
 import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
@@ -233,12 +236,20 @@ private fun GenreResultsContent(
                         bottom = customPadding.calculateBottomPadding() + 16.dp,
                     ),
             ) { item ->
-                MediaItemCard(
-                    item = item,
-                    onClick = { onItemClick(item) },
-                    cardWidth = widthSizeClass.gridMinSize,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                if (item is AfinityAudiobook) {
+                    MediaItemGridCard(
+                        item = item,
+                        onClick = { onItemClick(item) },
+                        audiobookFrame = AudiobookCardFrame.LETTERBOX,
+                    )
+                } else {
+                    MediaItemCard(
+                        item = item,
+                        onClick = { onItemClick(item) },
+                        cardWidth = widthSizeClass.gridMinSize,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         }
     }

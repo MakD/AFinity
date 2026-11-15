@@ -93,6 +93,7 @@ import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.Permissions
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.hasPermission
+import com.makd.afinity.data.models.media.AfinityAudiobook
 import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityCollection
@@ -951,15 +952,13 @@ private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            val imageModifier =
-                if (item is AfinityEpisode) {
-                    Modifier.width(142.dp).height(80.dp)
-                } else {
-                    Modifier.width(80.dp).height(120.dp)
-                }
-
             val (imgTargetW, imgTargetH) =
-                if (item is AfinityEpisode) 142.dp to 80.dp else 80.dp to 120.dp
+                when (item) {
+                    is AfinityEpisode -> 142.dp to 80.dp
+                    is AfinityAudiobook -> 80.dp to 80.dp
+                    else -> 80.dp to 120.dp
+                }
+            val imageModifier = Modifier.width(imgTargetW).height(imgTargetH)
             Box(modifier = imageModifier) {
                 Card(modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(8.dp)) {
                     AsyncImage(
@@ -1024,6 +1023,20 @@ private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
                         }
                     }
                 }
+                if (item is AfinityAudiobook) {
+                    val authors = item.authors.map { it.name }.distinct()
+                    if (authors.isNotEmpty()) {
+                        elements.add {
+                            Text(
+                                text = authors.joinToString(", "),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
                 if (item is AfinityEpisode) {
                     val season = item.parentIndexNumber.toString().padStart(2, '0')
                     val episode = item.indexNumber.toString().padStart(2, '0')
@@ -1046,6 +1059,7 @@ private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
                             )
                         is AfinityBoxSet -> item.productionYear?.toString()
                         is AfinityBook -> item.productionYear?.toString()
+                        is AfinityAudiobook -> item.productionYear?.toString()
                         else -> null
                     }
                 yearOrDate?.let { date ->
@@ -1590,6 +1604,8 @@ private fun CombinedSearchResultsContent(
     val movies = remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityMovie>() }
     val shows = remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityShow>() }
     val books = remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityBook>() }
+    val audiobooks =
+        remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityAudiobook>() }
     val playerClearance = playerClearance()
 
     LazyColumn(
@@ -1639,6 +1655,13 @@ private fun CombinedSearchResultsContent(
         if (books.isNotEmpty()) {
             item { SearchSectionHeader(stringResource(R.string.section_books)) }
             items(books, key = { "book_${it.id}" }) { item ->
+                SearchResultItem(item = item, onClick = { onItemClick(item) })
+            }
+        }
+
+        if (audiobooks.isNotEmpty()) {
+            item { SearchSectionHeader(stringResource(R.string.section_audiobooks)) }
+            items(audiobooks, key = { "audiobook_${it.id}" }) { item ->
                 SearchResultItem(item = item, onClick = { onItemClick(item) })
             }
         }

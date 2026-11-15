@@ -23,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.player.audiobookshelf.AudiobookSource
 import com.makd.afinity.ui.audiobookshelf.player.components.BookmarksSheet
 import com.makd.afinity.ui.audiobookshelf.player.components.ChapterSelector
 import com.makd.afinity.ui.audiobookshelf.player.components.PlaybackSpeedSelector
@@ -102,7 +103,8 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
     }
 
     val isLandscape = isLandscapeWindow()
-    val hasBookmarks = bookmarks.isNotEmpty()
+    val isAbsSource = playbackState.source == AudiobookSource.ABS
+    val hasBookmarks = isAbsSource && bookmarks.isNotEmpty()
     val chapters = playbackState.chapters
     val chapterIndex = playbackState.currentChapterIndex
 
@@ -120,6 +122,7 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
                 playbackState = playbackState,
                 accentColor = animatedColor,
                 hasBookmarks = hasBookmarks,
+                showBookmarks = isAbsSource,
                 onNavigateBack = onNavigateBack,
                 onOpenMore = { showMoreSheet = true },
                 onOpenChapters = { showChapters = true },
@@ -198,18 +201,20 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
                 active = playbackState.hasSleepTimer,
                 activeColor = animatedColor,
             )
-            AudioPlayerControlSlot(
-                painter =
-                    painterResource(
-                        id =
-                            if (hasBookmarks) R.drawable.ic_bookmark_filled
-                            else R.drawable.ic_bookmark
-                    ),
-                contentDescription = stringResource(R.string.cd_abs_bookmarks),
-                onClick = openBookmarks,
-                active = hasBookmarks,
-                activeColor = animatedColor,
-            )
+            if (isAbsSource) {
+                AudioPlayerControlSlot(
+                    painter =
+                        painterResource(
+                            id =
+                                if (hasBookmarks) R.drawable.ic_bookmark_filled
+                                else R.drawable.ic_bookmark
+                        ),
+                    contentDescription = stringResource(R.string.cd_abs_bookmarks),
+                    onClick = openBookmarks,
+                    active = hasBookmarks,
+                    activeColor = animatedColor,
+                )
+            }
         },
     ) {
         if (uiState.showPlaybackStats) {

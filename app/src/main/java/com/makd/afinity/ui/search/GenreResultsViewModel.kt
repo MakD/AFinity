@@ -13,9 +13,12 @@ import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.putFrom
 import com.makd.afinity.data.manager.resolveChangedItems
 import com.makd.afinity.data.models.common.CollectionType
+import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.BookLibraryComposition
 import com.makd.afinity.data.models.media.ItemFilterCriteria
+import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.store.ItemStore
@@ -114,8 +117,13 @@ constructor(
                 .flow
         _showsPagingData.value = applyUpdatesToPagingFlow(showsBaseFlow)
         val booksBaseFlow =
-            Pager(PagingConfig(pageSize = 50)) { GenrePagingSource(mediaRepository, genre, "BOOK") }
-                .flow
+            mediaRepository.getBookLibraryPaging(
+                parentId = null,
+                composition = BookLibraryComposition.MIXED,
+                sortBy = SortBy.NAME,
+                sortDescending = false,
+                filters = LibraryFilters(genres = setOf(genre)),
+            )
         _booksPagingData.value = applyUpdatesToPagingFlow(booksBaseFlow)
         lastLoadedAt = System.currentTimeMillis()
     }

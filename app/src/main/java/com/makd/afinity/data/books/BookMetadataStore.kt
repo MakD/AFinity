@@ -73,7 +73,7 @@ constructor(
     }
 
     companion object {
-        private const val METADATA_FILE = "book.json"
+        const val METADATA_FILE = "book.json"
     }
 }
 

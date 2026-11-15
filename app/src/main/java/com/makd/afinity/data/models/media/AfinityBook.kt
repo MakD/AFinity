@@ -58,6 +58,7 @@ data class AfinityBook(
     val dateCreated: LocalDateTime?,
     val format: BookFormat,
     val parentId: UUID?,
+    val lastPlayedDate: LocalDateTime? = null,
 ) : AfinityItem {
     val authors: List<AfinityPerson>
         get() = people.filter { it.type == PersonKind.AUTHOR }

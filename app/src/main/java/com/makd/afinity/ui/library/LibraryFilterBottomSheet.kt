@@ -21,9 +21,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.common.CollectionType
+import com.makd.afinity.data.models.media.BookLibraryComposition
 import com.makd.afinity.data.models.media.LibraryFeature
 import com.makd.afinity.data.models.media.LibraryFilterOptions
 import com.makd.afinity.data.models.media.LibraryFilters
+import com.makd.afinity.data.models.media.LibraryFormatFilter
 import com.makd.afinity.data.models.media.LibraryLanguageOption
 import com.makd.afinity.data.models.media.SeriesStatusFilter
 import com.makd.afinity.data.models.media.VideoTypeFilter
@@ -44,6 +46,8 @@ data class LibraryFilterCapabilities(
     val studios: Boolean = false,
     val watchlist: Boolean = true,
     val readingStatus: Boolean = false,
+    val listeningStatus: Boolean = false,
+    val formats: Boolean = false,
 )
 
 @Composable
@@ -91,7 +95,20 @@ private fun LanguageFilterSection(
     }
 }
 
-fun libraryFilterCapabilities(type: CollectionType?): LibraryFilterCapabilities =
+fun libraryFilterCapabilities(
+    type: CollectionType?,
+    composition: BookLibraryComposition? = null,
+): LibraryFilterCapabilities {
+    val base = typeFilterCapabilities(type)
+    return when (composition) {
+        BookLibraryComposition.AUDIOBOOKS ->
+            base.copy(ratings = false, readingStatus = false, listeningStatus = true)
+        BookLibraryComposition.MIXED -> base.copy(readingStatus = false, formats = true)
+        else -> base
+    }
+}
+
+private fun typeFilterCapabilities(type: CollectionType?): LibraryFilterCapabilities =
     when (type) {
         CollectionType.Movies ->
             LibraryFilterCapabilities(
@@ -165,14 +182,18 @@ fun LibraryFilterBottomSheet(
     var studioQuery by remember { mutableStateOf("") }
     val resumableLabel =
         stringResource(
-            if (capabilities.readingStatus) R.string.filter_continue_reading
-            else R.string.filter_resumable
+            when {
+                capabilities.readingStatus -> R.string.filter_continue_reading
+                capabilities.listeningStatus -> R.string.filter_continue_listening
+                else -> R.string.filter_resumable
+            }
         )
 
     var expandedSections by remember {
         mutableStateOf(
             buildSet {
                 add("status")
+                if (working.formats.isNotEmpty()) add("formats")
                 if (working.seriesStatuses.isNotEmpty()) add("series_status")
                 if (working.features.isNotEmpty()) add("features")
                 if (working.genres.isNotEmpty()) add("genres")
@@ -264,6 +285,46 @@ fun LibraryFilterBottomSheet(
                         selected = working.watchlist,
                         onSelectedChange = { working = working.copy(watchlist = it) },
                     )
+                }
+            }
+        }
+
+        if (capabilities.formats) {
+            val formatLabels =
+                listOf(
+                    LibraryFormatFilter.BOOKS to stringResource(R.string.filter_format_books),
+                    LibraryFormatFilter.AUDIOBOOKS to
+                        stringResource(R.string.filter_format_audiobooks),
+                )
+            val formatSummary =
+                formatLabels
+                    .filter { working.formats.contains(it.first) }
+                    .joinToString(", ") { it.second }
+                    .ifEmpty { anyLabel }
+
+            FilterAccordionSection(
+                title = stringResource(R.string.library_filter_format),
+                summary = formatSummary,
+                expanded = expandedSections.contains("formats"),
+                onToggle = { toggleSection("formats") },
+            ) {
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    formatLabels.forEach { (format, label) ->
+                        AfinityToggleChip(
+                            label = label,
+                            selected = working.formats.contains(format),
+                            onSelectedChange = { selected ->
+                                working =
+                                    working.copy(
+                                        formats = if (selected) setOf(format) else emptySet()
+                                    )
+                            },
+                        )
+                    }
                 }
             }
         }

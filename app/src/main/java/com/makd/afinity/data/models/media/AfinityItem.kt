@@ -1,6 +1,7 @@
 package com.makd.afinity.data.models.media
 
 import com.makd.afinity.data.database.dao.ServerDatabaseDao
+import com.makd.afinity.data.models.extensions.toAfinityAudiobook
 import com.makd.afinity.data.models.extensions.toAfinityBook
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityChannel
@@ -45,6 +46,7 @@ suspend fun BaseItemDto.toAfinityItem(
         BaseItemKind.FOLDER -> toAfinityFolder(baseUrl)
         BaseItemKind.VIDEO -> toAfinityVideo(baseUrl)
         BaseItemKind.BOOK -> toAfinityBook(baseUrl)
+        BaseItemKind.AUDIO_BOOK -> toAfinityAudiobook(baseUrl)
         BaseItemKind.TV_CHANNEL -> toAfinityChannel(baseUrl)
         else -> null
     }

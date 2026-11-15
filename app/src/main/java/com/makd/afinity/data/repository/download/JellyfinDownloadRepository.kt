@@ -5,6 +5,8 @@ import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.makd.afinity.data.audiobooks.AUDIOBOOK_DOWNLOAD_TYPE
+import com.makd.afinity.data.audiobooks.JellyfinAudiobookLoader
 import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.database.entities.toDownloadInfo
 import com.makd.afinity.data.manager.DownloadNotificationManager
@@ -13,6 +15,7 @@ import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadQuality
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.download.PlaylistDownloadFilter
+import com.makd.afinity.data.models.extensions.toAfinityAudiobook
 import com.makd.afinity.data.models.extensions.toAfinityBook
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityMovie
@@ -23,6 +26,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.PlaylistEntry
+import com.makd.afinity.data.models.media.audiobookGroupId
 import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
@@ -71,6 +75,7 @@ constructor(
     private val downloadNotificationManager: DownloadNotificationManager,
     private val workManager: WorkManager,
     private val lastFmRepository: LastFmRepository,
+    private val audiobookLoader: dagger.Lazy<JellyfinAudiobookLoader>,
     @param:ApplicationScope private val applicationScope: CoroutineScope,
 ) : DownloadRepository {
 
@@ -211,6 +216,60 @@ constructor(
                             runtimeTicks = book.runtimeTicks,
                             folderPath = "$serverId/books/$itemId",
                             seriesId = null,
+                            storageVolumeId = resolvedVolumeId,
+                        )
+                    databaseRepository.insertDownload(download)
+                    queueDownloadWork(download)
+                    return@withContext Result.success(download.id)
+                }
+
+                if (baseItemDto.type == BaseItemKind.AUDIO_BOOK) {
+                    val part = baseItemDto.toAfinityAudiobook(baseUrl)
+                    if (!part.canDownload) {
+                        return@withContext Result.failure(Exception("Downloads not allowed"))
+                    }
+                    val mediaSource = baseItemDto.mediaSources?.firstOrNull()
+                    val extension =
+                        (mediaSource?.path ?: baseItemDto.path)
+                            ?.substringAfterLast('.', "")
+                            ?.lowercase()
+                            ?.takeIf { it.isNotBlank() && it.length <= 5 }
+                            ?: mediaSource?.container?.substringBefore(',')?.trim()?.ifBlank {
+                                null
+                            }
+                            ?: "audio"
+                    val album = part.album?.trim()?.takeIf { it.isNotEmpty() }
+                    val parentId = part.parentId
+                    val bookKey =
+                        if (album != null && parentId != null) audiobookGroupId(parentId, album)
+                        else itemId
+                    val download =
+                        DownloadDto(
+                            id = UUID.randomUUID(),
+                            itemId = itemId,
+                            itemName = part.name,
+                            itemType = AUDIOBOOK_DOWNLOAD_TYPE,
+                            sourceId = itemId.toString().replace("-", ""),
+                            sourceName = extension,
+                            status = DownloadStatus.QUEUED,
+                            progress = 0f,
+                            bytesDownloaded = 0L,
+                            totalBytes = mediaSource?.size ?: 0L,
+                            filePath = null,
+                            error = null,
+                            createdAt = System.currentTimeMillis(),
+                            updatedAt = System.currentTimeMillis(),
+                            serverId = serverId,
+                            userId = userId,
+                            imageUrl = part.images.primary?.toString(),
+                            seriesImageUrl = part.images.primary?.toString(),
+                            seriesName = album ?: part.name,
+                            seasonNumber = part.discNumber,
+                            episodeNumber = part.trackNumber,
+                            releaseYear = part.productionYear?.toString(),
+                            runtimeTicks = part.runtimeTicks,
+                            folderPath = "$serverId/audiobooks/$itemId",
+                            seriesId = bookKey.toString(),
                             storageVolumeId = resolvedVolumeId,
                         )
                     databaseRepository.insertDownload(download)
@@ -459,7 +518,7 @@ constructor(
                 .addTag("download_${download.id}")
                 .build()
 
-        if (download.itemType == BOOK_ITEM_TYPE) {
+        if (download.itemType == BOOK_ITEM_TYPE || download.itemType == AUDIOBOOK_DOWNLOAD_TYPE) {
             val bookRequest =
                 OneTimeWorkRequestBuilder<BookDownloadWorker>()
                     .setConstraints(constraints)
@@ -551,6 +610,12 @@ constructor(
                 if (download != null) {
                     try {
                         val itemDir = getItemDownloadDirectory(download)
+                        if (
+                            download.itemType == BOOK_ITEM_TYPE ||
+                                download.itemType == AUDIOBOOK_DOWNLOAD_TYPE
+                        ) {
+                            itemDir.deleteRecursively()
+                        }
                         val mediaDir = File(itemDir, "media")
                         if (mediaDir.exists()) {
                             mediaDir
@@ -842,6 +907,35 @@ constructor(
         if (!dir.exists() && !dir.mkdirs()) Timber.w("Failed to create season directory")
         return dir
     }
+
+    override suspend fun startAudiobookDownload(itemId: UUID, volumeId: String?): Result<Int> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val parts =
+                    audiobookLoader.get().loadParts(itemId).getOrThrow()
+                        ?: return@withContext Result.failure(Exception("Audiobook not found"))
+                var started = 0
+                for (part in parts) {
+                    startDownload(part.id, "", volumeId)
+                        .onSuccess { started++ }
+                        .onFailure { error ->
+                            if (error is VolumeUnavailableException)
+                                return@withContext Result.failure(error)
+                            Timber.w(
+                                error,
+                                "Skipping audiobook part ${part.name}: ${error.message}",
+                            )
+                        }
+                }
+                Timber.i("Audiobook download queued $started/${parts.size} parts for $itemId")
+                Result.success(started)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to start audiobook download")
+                Result.failure(e)
+            }
+        }
 
     override suspend fun startSeasonDownload(
         seasonId: UUID,

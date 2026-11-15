@@ -24,6 +24,7 @@ import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityVideo
+import com.makd.afinity.data.models.media.BookLibraryComposition
 import com.makd.afinity.data.models.media.LibraryFilterOptions
 import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.data.repository.AppDataRepository
@@ -121,7 +122,8 @@ constructor(
     private var sectionParentId: UUID? = null
     private var sectionStudios: List<String> = emptyList()
     private var sectionItemTypes: List<String>? = null
-    private var currentLibraryPagingSource: PagingSource<Int, AfinityItem>? = null
+    private var currentLibraryPagingSource: PagingSource<*, AfinityItem>? = null
+    private var bookComposition: BookLibraryComposition? = null
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -326,22 +328,44 @@ constructor(
 
     private fun loadItems() {
         val type = libraryType ?: return
+        _pagingData.value = applyUpdatesToPagingFlow(itemsFlow(type, nameStartsWith = null))
+    }
 
-        val baseFlow =
-            mediaRepository.getItemsPaging(
-                parentId = sectionParentId ?: browseParentId,
-                libraryType = type,
+    private fun itemsFlow(
+        type: CollectionType,
+        nameStartsWith: String?,
+    ): Flow<PagingData<AfinityItem>> {
+        val composition = bookComposition
+        if (composition != null && composition != BookLibraryComposition.BOOKS) {
+            return mediaRepository.getBookLibraryPaging(
+                parentId = browseParentId,
+                composition = composition,
                 sortBy = currentSortBy,
                 sortDescending = currentSortDescending,
                 filters = currentFilters,
-                nameStartsWith = null,
-                studioNames = sectionStudios.ifEmpty { listOfNotNull(studioName) },
-                includeItemTypes = browseItemTypes(),
-                recursive = !isFolderBrowse(),
+                nameStartsWith = nameStartsWith,
                 onSourceCreated = { source -> currentLibraryPagingSource = source },
             )
-        _pagingData.value = applyUpdatesToPagingFlow(baseFlow)
+        }
+        return mediaRepository.getItemsPaging(
+            parentId = sectionParentId ?: browseParentId,
+            libraryType = type,
+            sortBy = currentSortBy,
+            sortDescending = currentSortDescending,
+            filters = currentFilters,
+            nameStartsWith = nameStartsWith,
+            studioNames = sectionStudios.ifEmpty { listOfNotNull(studioName) },
+            includeItemTypes = browseItemTypes(),
+            recursive = !isFolderBrowse(),
+            onSourceCreated = { source -> currentLibraryPagingSource = source },
+        )
     }
+
+    private suspend fun detectBookComposition(): BookLibraryComposition =
+        mediaRepository.getBookLibraryCompositionResult(browseParentId).getOrElse { e ->
+            Timber.w(e, "Could not detect what $libraryName holds; showing books and audiobooks")
+            BookLibraryComposition.MIXED
+        }
 
     private fun isFolderBrowse(): Boolean = folderId != null || isMixedLibrary
 
@@ -407,6 +431,12 @@ constructor(
 
                 val type = if (section != null) sectionLibraryType() else determineLibraryType()
                 libraryType = type
+                bookComposition =
+                    if (type == CollectionType.Books && section == null && !isFolderBrowse()) {
+                        detectBookComposition()
+                    } else {
+                        null
+                    }
 
                 if (section == null) {
                     val sort = loadPersistedSort()
@@ -414,12 +444,16 @@ constructor(
                     currentSortDescending = sort.descending
                     currentFilters =
                         if (isFolderBrowse()) LibraryFilters() else loadPersistedFilters()
+                    if (bookComposition != BookLibraryComposition.MIXED) {
+                        currentFilters = currentFilters.copy(formats = emptySet())
+                    }
                 }
 
                 _uiState.value =
                     _uiState.value.copy(
                         libraryName = section?.title ?: _uiState.value.libraryName,
                         libraryType = type,
+                        bookComposition = bookComposition,
                         filtersLocked = sectionId != null || isFolderBrowse(),
                         currentSortBy = currentSortBy,
                         currentSortDescending = currentSortDescending,
@@ -467,6 +501,12 @@ constructor(
                     mediaRepository.getFilterOptions(
                         parentId = browseParentId,
                         libraryType = type,
+                        includeItemTypes =
+                            when (bookComposition) {
+                                BookLibraryComposition.AUDIOBOOKS -> listOf("AUDIO_BOOK")
+                                BookLibraryComposition.MIXED -> listOf("BOOK", "AUDIO_BOOK")
+                                else -> emptyList()
+                            },
                     )
                 _uiState.value = _uiState.value.copy(filterOptions = options)
             } catch (e: CancellationException) {
@@ -568,20 +608,8 @@ constructor(
 
                 _uiState.value = _uiState.value.copy(selectedLetter = letter)
 
-                val baseFlow =
-                    mediaRepository.getItemsPaging(
-                        parentId = sectionParentId ?: browseParentId,
-                        libraryType = type,
-                        sortBy = currentSortBy,
-                        sortDescending = currentSortDescending,
-                        filters = currentFilters,
-                        nameStartsWith = letterFilter,
-                        studioNames = sectionStudios.ifEmpty { listOfNotNull(studioName) },
-                        includeItemTypes = browseItemTypes(),
-                        recursive = !isFolderBrowse(),
-                        onSourceCreated = { source -> currentLibraryPagingSource = source },
-                    )
-                _pagingData.value = applyUpdatesToPagingFlow(baseFlow)
+                _pagingData.value =
+                    applyUpdatesToPagingFlow(itemsFlow(type, nameStartsWith = letterFilter))
 
                 Timber.d("Alphabet scroll: Created new paging source for letter '$letter'")
             } catch (e: CancellationException) {
@@ -602,6 +630,7 @@ data class LibraryContentUiState(
     val libraryId: UUID?,
     val libraryName: String,
     val libraryType: CollectionType? = null,
+    val bookComposition: BookLibraryComposition? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
     val userProfileImageUrl: String? = null,

@@ -53,6 +53,7 @@ enum class FavoritesCategory {
     SEASONS,
     EPISODES,
     BOOKS,
+    AUDIOBOOKS,
     CHANNELS,
     PEOPLE,
     ALBUMS,
@@ -116,6 +117,7 @@ fun FavoritesCategoryScreen(
             FavoritesCategory.SEASONS -> uiState.seasons.isEmpty()
             FavoritesCategory.EPISODES -> uiState.episodes.isEmpty()
             FavoritesCategory.BOOKS -> uiState.books.isEmpty()
+            FavoritesCategory.AUDIOBOOKS -> uiState.audiobooks.isEmpty()
             FavoritesCategory.CHANNELS -> uiState.channels.isEmpty()
             FavoritesCategory.PEOPLE -> uiState.people.isEmpty()
             FavoritesCategory.ALBUMS -> uiState.favoriteAlbums.isEmpty()
@@ -153,13 +155,15 @@ fun FavoritesCategoryScreen(
                 FavoritesCategory.MOVIES,
                 FavoritesCategory.SHOWS,
                 FavoritesCategory.SEASONS,
-                FavoritesCategory.BOOKS -> {
+                FavoritesCategory.BOOKS,
+                FavoritesCategory.AUDIOBOOKS -> {
                     val items: List<AfinityItem> =
                         when (category) {
                             FavoritesCategory.BOXSETS -> uiState.boxSets
                             FavoritesCategory.MOVIES -> uiState.movies
                             FavoritesCategory.SHOWS -> uiState.shows
                             FavoritesCategory.BOOKS -> uiState.books
+                            FavoritesCategory.AUDIOBOOKS -> uiState.audiobooks
                             else -> uiState.seasons
                         }
                     MediaCategoryGrid(
@@ -337,6 +341,7 @@ private fun FavoritesCategory.titleRes(): Int =
         FavoritesCategory.SEASONS -> R.string.section_seasons
         FavoritesCategory.EPISODES -> R.string.section_episodes
         FavoritesCategory.BOOKS -> R.string.section_books
+        FavoritesCategory.AUDIOBOOKS -> R.string.section_audiobooks
         FavoritesCategory.CHANNELS -> R.string.section_tv_channels
         FavoritesCategory.PEOPLE -> R.string.section_people
         FavoritesCategory.ALBUMS -> R.string.section_favorite_albums

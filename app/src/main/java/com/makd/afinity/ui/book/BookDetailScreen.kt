@@ -519,7 +519,7 @@ private fun SeriesSection(
     }
 }
 
-private fun plainOverview(raw: String): String {
+internal fun plainOverview(raw: String): String {
     if (raw.isBlank()) return ""
     if ('<' !in raw) return raw.trim()
     return HtmlCompat.fromHtml(raw, HtmlCompat.FROM_HTML_MODE_COMPACT)

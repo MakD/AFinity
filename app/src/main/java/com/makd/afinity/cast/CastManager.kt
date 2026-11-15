@@ -518,6 +518,7 @@ constructor(
         baseUrl: String,
         token: String,
         playbackSpeed: Float = 1.0f,
+        tokenParam: String = "token",
     ) {
         scope.launch {
             try {
@@ -539,7 +540,8 @@ constructor(
                 absTrackStartOffsets = emptyMap()
 
                 val queueItems = tracks.map { track ->
-                    val streamUrl = buildAbsStreamUrl(track.contentUrl ?: "", baseUrl, token)
+                    val streamUrl =
+                        buildAbsStreamUrl(track.contentUrl ?: "", baseUrl, token, tokenParam)
                     val durationMs = (track.duration * 1000).toLong()
                     val contentType = track.mimeType ?: "audio/mpeg"
 
@@ -617,11 +619,18 @@ constructor(
         }
     }
 
-    private fun buildAbsStreamUrl(contentUrl: String, baseUrl: String, token: String): String {
+    private fun buildAbsStreamUrl(
+        contentUrl: String,
+        baseUrl: String,
+        token: String,
+        tokenParam: String,
+    ): String {
         val url =
             if (contentUrl.startsWith("http") || contentUrl.startsWith("file")) contentUrl
             else "$baseUrl$contentUrl"
-        return if (token.isNotEmpty()) "$url?token=$token" else url
+        if (token.isEmpty()) return url
+        val separator = if ('?' in url) "&" else "?"
+        return "$url$separator$tokenParam=$token"
     }
 
     fun play() {

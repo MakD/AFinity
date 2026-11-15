@@ -5,6 +5,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.makd.afinity.data.audiobooks.AUDIOBOOK_DOWNLOAD_TYPE
 import com.makd.afinity.data.books.BookDownloadCover
 import com.makd.afinity.data.books.BookMetadataStore
 import com.makd.afinity.data.manager.SessionManager
@@ -73,7 +74,12 @@ constructor(
                         .getItems(
                             userId = download.userId,
                             ids = listOf(download.itemId),
-                            fields = FieldSets.BOOK_DETAIL,
+                            fields =
+                                if (download.itemType == AUDIOBOOK_DOWNLOAD_TYPE) {
+                                    FieldSets.AUDIOBOOK_DETAIL
+                                } else {
+                                    FieldSets.BOOK_DETAIL
+                                },
                             enableImages = true,
                             enableUserData = true,
                         )

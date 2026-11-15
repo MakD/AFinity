@@ -62,12 +62,14 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityFolder
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityVideo
+import com.makd.afinity.data.models.media.BookLibraryComposition
 import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AlphabetScroller
 import com.makd.afinity.ui.components.AppBarProfile
+import com.makd.afinity.ui.components.AudiobookCardFrame
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FAB_CONTENT_BOTTOM_PADDING
 import com.makd.afinity.ui.components.FilterFab
@@ -260,6 +262,10 @@ fun LibraryContentScreen(
                             ) { item ->
                                 MediaItemGridCard(
                                     item = item,
+                                    audiobookFrame =
+                                        if (uiState.bookComposition == BookLibraryComposition.MIXED)
+                                            AudiobookCardFrame.LETTERBOX
+                                        else AudiobookCardFrame.SQUARE,
                                     onClick = {
                                         when (item) {
                                             is AfinityEpisode -> viewModel.selectEpisode(item)
@@ -316,7 +322,7 @@ fun LibraryContentScreen(
 
     if (showSortDialog) {
         SortDialog(
-            options = librarySortOptions(uiState.libraryType),
+            options = librarySortOptions(uiState.libraryType, uiState.bookComposition),
             currentSortBy = uiState.currentSortBy,
             currentSortDescending = uiState.currentSortDescending,
             onDismiss = { showSortDialog = false },
@@ -331,7 +337,7 @@ fun LibraryContentScreen(
         LibraryFilterBottomSheet(
             filters = uiState.currentFilters,
             options = uiState.filterOptions,
-            capabilities = libraryFilterCapabilities(uiState.libraryType),
+            capabilities = libraryFilterCapabilities(uiState.libraryType, uiState.bookComposition),
             isLoadingOptions = uiState.isLoadingFilterOptions,
             onApply = { viewModel.updateFilters(it) },
             onDismiss = { showFilterSheet = false },
@@ -353,9 +359,20 @@ fun LibraryContentScreen(
     )
 }
 
-private fun librarySortOptions(type: CollectionType?): List<SortBy> =
-    when (type) {
-        CollectionType.Books ->
+private fun librarySortOptions(
+    type: CollectionType?,
+    composition: BookLibraryComposition?,
+): List<SortBy> =
+    when {
+        composition == BookLibraryComposition.AUDIOBOOKS ->
+            listOf(
+                SortBy.NAME,
+                SortBy.RANDOM,
+                SortBy.RELEASE_DATE,
+                SortBy.DATE_ADDED,
+                SortBy.DATE_PLAYED,
+            )
+        type == CollectionType.Books ->
             listOf(
                 SortBy.NAME,
                 SortBy.RANDOM,

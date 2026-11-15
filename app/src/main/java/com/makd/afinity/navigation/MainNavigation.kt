@@ -75,6 +75,7 @@ import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.common.DrawerLibrariesMode
 import com.makd.afinity.data.models.common.HeroStyle
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
+import com.makd.afinity.data.models.media.AfinityAudiobook
 import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
@@ -83,10 +84,12 @@ import com.makd.afinity.data.models.media.AfinityVideoPlaylist
 import com.makd.afinity.data.models.media.BookFormat
 import com.makd.afinity.data.updater.UpdateManager
 import com.makd.afinity.data.websocket.WebSocketState
+import com.makd.afinity.player.audiobookshelf.AudiobookSource
 import com.makd.afinity.ui.admin.identify.IdentifyScreen
 import com.makd.afinity.ui.admin.images.EditImagesScreen
 import com.makd.afinity.ui.admin.lyrics.EditLyricsScreen
 import com.makd.afinity.ui.admin.metadata.EditMetadataScreen
+import com.makd.afinity.ui.audiobook.AudiobookDetailScreen
 import com.makd.afinity.ui.audiobookshelf.genre.AudiobookshelfGenreResultsScreen
 import com.makd.afinity.ui.audiobookshelf.item.AudiobookshelfItemScreen
 import com.makd.afinity.ui.audiobookshelf.item.series.AudiobookshelfSeriesScreen
@@ -1879,6 +1882,30 @@ fun MainNavigation(
                                 }
 
                                 composable(
+                                    route = Destination.AUDIOBOOK_DETAIL_ROUTE,
+                                    arguments =
+                                        listOf(navArgument("itemId") { type = NavType.StringType }),
+                                ) {
+                                    AudiobookDetailScreen(
+                                        onHomeClick = { navController.navigateHome() },
+                                        onPersonClick = { personId ->
+                                            navController.navigateToPerson(personId.toString())
+                                        },
+                                        onPlayClick = { book, startSeconds ->
+                                            navController.navigate(
+                                                Destination.createAudiobookshelfPlayerRoute(
+                                                    itemId =
+                                                        book.playableParts.first().id.toString(),
+                                                    startPosition = startSeconds,
+                                                    source = Destination.AUDIOBOOK_SOURCE_JELLYFIN,
+                                                )
+                                            )
+                                        },
+                                        widthSizeClass = widthSizeClass,
+                                    )
+                                }
+
+                                composable(
                                     route = Destination.BOOK_DETAIL_ROUTE,
                                     arguments =
                                         listOf(navArgument("itemId") { type = NavType.StringType }),
@@ -2244,6 +2271,11 @@ fun MainNavigation(
                                                 nullable = true
                                                 defaultValue = null
                                             },
+                                            navArgument("source") {
+                                                type = NavType.StringType
+                                                nullable = true
+                                                defaultValue = null
+                                            },
                                         ),
                                 ) {
                                     AudiobookshelfPlayerScreen(
@@ -2373,12 +2405,20 @@ fun MainNavigation(
                                                     val itemId = audiobookshelfPlaybackState.itemId
                                                     val episodeId =
                                                         audiobookshelfPlaybackState.episodeId
+                                                    val source =
+                                                        Destination.AUDIOBOOK_SOURCE_JELLYFIN
+                                                            .takeIf {
+                                                                audiobookshelfPlaybackState
+                                                                    .source ==
+                                                                    AudiobookSource.JELLYFIN
+                                                            }
                                                     if (itemId != null) {
                                                         navController.navigate(
                                                             Destination
                                                                 .createAudiobookshelfPlayerRoute(
-                                                                    itemId,
-                                                                    episodeId,
+                                                                    itemId = itemId,
+                                                                    episodeId = episodeId,
+                                                                    source = source,
                                                                 )
                                                         )
                                                     }
@@ -2697,6 +2737,11 @@ private fun NavController.navigateToItem(item: AfinityItem) {
     }
     if (item is AfinityBook) {
         navigate(Destination.createBookDetailRoute(item.id.toString()))
+        return
+    }
+    if (item is AfinityAudiobook) {
+        val partId = item.playableParts.first().id
+        navigate(Destination.createAudiobookDetailRoute(partId.toString()))
         return
     }
     navigate(

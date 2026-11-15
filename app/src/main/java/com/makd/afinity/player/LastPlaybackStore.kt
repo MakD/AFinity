@@ -33,6 +33,8 @@ private val KEY_MUSIC_PLAYED_AT = longPreferencesKey("last_playback_music_played
 
 private const val ENGINE_MUSIC = "MUSIC"
 private const val ENGINE_ABS = "ABS"
+private const val ENGINE_JELLYFIN_AUDIOBOOK = "JELLYFIN_AUDIOBOOK"
+private val KEY_JELLYFIN_AUDIOBOOK_ITEM = stringPreferencesKey("last_playback_jf_audiobook_id")
 
 sealed class LastPlayback {
     abstract val sessionKey: String
@@ -40,6 +42,9 @@ sealed class LastPlayback {
     data class Music(override val sessionKey: String, val positionMs: Long) : LastPlayback()
 
     data class Abs(override val sessionKey: String, val itemId: String, val episodeId: String?) :
+        LastPlayback()
+
+    data class JellyfinAudiobook(override val sessionKey: String, val itemId: String) :
         LastPlayback()
 }
 
@@ -80,6 +85,12 @@ constructor(
         if (episodeId != null) it[KEY_ABS_EPISODE] = episodeId else it.remove(KEY_ABS_EPISODE)
     }
 
+    fun recordJellyfinAudiobook(sessionKey: String, itemId: String) = write {
+        it[KEY_ENGINE] = ENGINE_JELLYFIN_AUDIOBOOK
+        it[KEY_SESSION] = sessionKey
+        it[KEY_JELLYFIN_AUDIOBOOK_ITEM] = itemId
+    }
+
     fun recordDisplay(title: String, subtitle: String?, artworkUri: String?) = write {
         it[KEY_TITLE] = title
         if (subtitle != null) it[KEY_SUBTITLE] = subtitle else it.remove(KEY_SUBTITLE)
@@ -118,6 +129,10 @@ constructor(
             ENGINE_ABS ->
                 prefs[KEY_ABS_ITEM]?.let {
                     LastPlayback.Abs(sessionKey, it, prefs[KEY_ABS_EPISODE])
+                }
+            ENGINE_JELLYFIN_AUDIOBOOK ->
+                prefs[KEY_JELLYFIN_AUDIOBOOK_ITEM]?.let {
+                    LastPlayback.JellyfinAudiobook(sessionKey, it)
                 }
             else -> null
         }

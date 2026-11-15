@@ -173,6 +173,7 @@ fun FavoritesScreen(
                             uiState.episodes.isNotEmpty() ||
                             uiState.boxSets.isNotEmpty() ||
                             uiState.books.isNotEmpty() ||
+                            uiState.audiobooks.isNotEmpty() ||
                             uiState.people.isNotEmpty() ||
                             uiState.channels.isNotEmpty() ||
                             uiState.favoriteAlbums.isNotEmpty() ||
@@ -270,6 +271,19 @@ fun FavoritesScreen(
                                         cardWidth = portraitWidth,
                                         onViewAllClick = {
                                             onViewAllClick(FavoritesCategory.BOOKS)
+                                        },
+                                    )
+                                }
+                            }
+                            if (uiState.audiobooks.isNotEmpty()) {
+                                item {
+                                    MediaRowSection(
+                                        title = stringResource(R.string.section_audiobooks),
+                                        items = uiState.audiobooks,
+                                        onItemClick = onItemClick,
+                                        cardWidth = portraitWidth,
+                                        onViewAllClick = {
+                                            onViewAllClick(FavoritesCategory.AUDIOBOOKS)
                                         },
                                     )
                                 }

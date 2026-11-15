@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.data.models.media.AfinityAudiobook
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.ui.theme.CardDimensions
@@ -25,8 +26,11 @@ fun MediaRowSection(
     if (items.isEmpty()) return
 
     val aspectRatio =
-        if (items.firstOrNull() is AfinityEpisode) CardDimensions.ASPECT_RATIO_LANDSCAPE
-        else CardDimensions.ASPECT_RATIO_PORTRAIT
+        when {
+            items.firstOrNull() is AfinityEpisode -> CardDimensions.ASPECT_RATIO_LANDSCAPE
+            items.all { it is AfinityAudiobook } -> CardDimensions.ASPECT_RATIO_SQUARE
+            else -> CardDimensions.ASPECT_RATIO_PORTRAIT
+        }
     val fixedRowHeight = CardDimensions.rowHeight(cardWidth, aspectRatio)
 
     Column(
@@ -48,6 +52,7 @@ fun MediaRowSection(
                         item = item,
                         onClick = { onItemClick(item) },
                         cardWidth = cardWidth,
+                        aspectRatio = aspectRatio,
                     )
                 }
             }
