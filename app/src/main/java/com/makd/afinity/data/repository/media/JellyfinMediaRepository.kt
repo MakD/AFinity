@@ -11,6 +11,7 @@ import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityAlbum
 import com.makd.afinity.data.models.extensions.toAfinityArtist
+import com.makd.afinity.data.models.extensions.toAfinityBook
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityItem
@@ -22,6 +23,7 @@ import com.makd.afinity.data.models.extensions.toAfinityTrack
 import com.makd.afinity.data.models.extensions.toAfinityVideo
 import com.makd.afinity.data.models.mdblist.MdbListRatingBadges
 import com.makd.afinity.data.models.mdblist.MdbListRatingsResult
+import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -121,6 +123,8 @@ private val CARD_IMAGE_TYPES = listOf(ImageType.PRIMARY, ImageType.BACKDROP, Ima
 
 private const val PLAYED_EPISODES_PAGE_SIZE = 100
 
+private const val CONTINUE_READING_LIMIT = 12
+
 private const val PLAYED_EPISODES_MAX_PAGES = 3
 
 private class PlayedEpisodesPage(
@@ -163,7 +167,9 @@ constructor(
                         .content
                         .toAfinityItem(getBaseUrl())
 
-                if (freshItem != null) {
+                if (freshItem is AfinityBook) {
+                    updateBookInContinueReading(freshItem)
+                } else if (freshItem != null) {
                     updateItemInCache(_continueWatching, freshItem)
 
                     if (freshItem is AfinityEpisode) {
@@ -241,6 +247,51 @@ constructor(
                 }
             }
             newList
+        }
+    }
+
+    private fun updateBookInContinueReading(book: AfinityBook) {
+        _continueReading.update { current ->
+            val without = current.filterNot { it.id == book.id }
+            when {
+                book.played -> without
+                book.playbackPositionTicks > 0 -> listOf(book) + without
+                else -> without
+            }
+        }
+    }
+
+    override suspend fun invalidateContinueReadingCache() {
+        withContext(Dispatchers.IO) {
+            try {
+                val sessionKeyAtStart = currentSessionKey() ?: return@withContext
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext
+                val userId = getCurrentUserId() ?: return@withContext
+                val response =
+                    LibraryApi(apiClient)
+                        .getResumeItems(
+                            userId = userId,
+                            limit = CONTINUE_READING_LIMIT,
+                            fields = FieldSets.BOOK_GRID,
+                            includeItemTypes = listOf(BaseItemKind.BOOK),
+                            enableImages = true,
+                            enableUserData = true,
+                            enableTotalRecordCount = false,
+                            imageTypeLimit = 1,
+                            enableImageTypes = listOf(ImageType.PRIMARY),
+                        )
+                val baseUrl = getBaseUrl()
+                val books =
+                    response.content.items
+                        .filter { it.type == BaseItemKind.BOOK }
+                        .map { it.toAfinityBook(baseUrl) }
+                if (currentSessionKey() != sessionKeyAtStart) return@withContext
+                _continueReading.value = books
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to refresh continue reading cache")
+            }
         }
     }
 
@@ -527,12 +578,14 @@ constructor(
 
     override fun patchItemImages(updatedItem: AfinityItem) {
         _continueWatching.update { it.withPatchedImages(updatedItem) }
+        _continueReading.update { it.withPatchedImages(updatedItem) }
         _nextUp.update { it.withPatchedImages(updatedItem) }
     }
 
     override fun clearPlaybackCaches() {
         Timber.d("Clearing in-memory playback caches")
         _continueWatching.value = emptyList()
+        _continueReading.value = emptyList()
         _nextUp.value = emptyList()
         playedEpisodesCursor = null
         _continueWatchingOrder.value = ContinueWatchingOrder()
@@ -552,11 +605,15 @@ constructor(
         }
 
         _continueWatching.update { list -> list.filterNot { matches(it.id) } }
+        _continueReading.update { list -> list.filterNot { matches(it.id) } }
         _nextUp.update { list -> list.filterNot { matches(it.id) || matches(it.seriesId) } }
     }
 
     private val _continueWatching = MutableStateFlow<List<AfinityItem>>(emptyList())
     override val continueWatching: Flow<List<AfinityItem>> = _continueWatching.asStateFlow()
+
+    private val _continueReading = MutableStateFlow<List<AfinityBook>>(emptyList())
+    override val continueReading: Flow<List<AfinityBook>> = _continueReading.asStateFlow()
 
     private val _nextUp = MutableStateFlow<List<AfinityEpisode>>(emptyList())
     override val nextUp: Flow<List<AfinityEpisode>> = _nextUp.asStateFlow()
@@ -645,6 +702,7 @@ constructor(
                         CollectionType.TvShows -> listOf(BaseItemKind.SERIES)
                         CollectionType.Movies -> listOf(BaseItemKind.MOVIE)
                         CollectionType.BoxSets -> listOf(BaseItemKind.BOX_SET)
+                        CollectionType.Books -> listOf(BaseItemKind.BOOK)
                         else -> emptyList()
                     }
                 }
@@ -652,8 +710,33 @@ constructor(
         val filterApi = FilterApi(apiClient)
         val types = requestedTypes.ifEmpty { null }
 
-        val (legacy, modern) =
+        val (legacy, modern, studioNames) =
             coroutineScope {
+                val studiosDeferred =
+                    if (libraryType == CollectionType.Books) {
+                        async {
+                            try {
+                                StudioApi(apiClient)
+                                    .getStudios(
+                                        userId = userId,
+                                        parentId = parentId,
+                                        includeItemTypes = types,
+                                    )
+                                    .content
+                                    .items
+                                    .mapNotNull { it.name?.takeIf(String::isNotBlank) }
+                                    .distinct()
+                                    .sortedBy { it.lowercase() }
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Exception) {
+                                Timber.w(e, "Publisher filter options unavailable")
+                                emptyList()
+                            }
+                        }
+                    } else {
+                        null
+                    }
                 val legacyDeferred = async {
                     filterApi
                         .getQueryFiltersLegacy(
@@ -679,7 +762,11 @@ constructor(
                         null
                     }
                 }
-                legacyDeferred.await() to modernDeferred.await()
+                Triple(
+                    legacyDeferred.await(),
+                    modernDeferred.await(),
+                    studiosDeferred?.await().orEmpty(),
+                )
             }
 
         val modernGenres =
@@ -692,6 +779,7 @@ constructor(
             years = legacy.years.orEmpty().sortedDescending(),
             audioLanguages = modern?.audioLanguages.toLanguageOptions(),
             subtitleLanguages = modern?.subtitleLanguages.toLanguageOptions(),
+            studios = studioNames,
         )
     }
 
@@ -1652,6 +1740,7 @@ constructor(
                         BaseItemKind.SEASON,
                         BaseItemKind.EPISODE,
                         BaseItemKind.BOX_SET,
+                        BaseItemKind.BOOK,
                     ),
                 isFavorite = true,
                 recursive = true,
@@ -1680,6 +1769,7 @@ constructor(
                                 BaseItemKind.SEASON,
                                 BaseItemKind.EPISODE,
                                 BaseItemKind.BOX_SET,
+                                BaseItemKind.BOOK,
                                 BaseItemKind.MUSIC_ALBUM,
                                 BaseItemKind.AUDIO,
                                 BaseItemKind.PLAYLIST,
@@ -2307,6 +2397,7 @@ constructor(
             SortBy.RELEASE_DATE -> ItemSortBy.PREMIERE_DATE
             SortBy.SERIES_DATE_PLAYED -> ItemSortBy.SERIES_SORT_NAME
             SortBy.DATE_LAST_CONTENT_ADDED -> ItemSortBy.DATE_LAST_CONTENT_ADDED
+            SortBy.SERIES_NUMBER -> ItemSortBy.INDEX_NUMBER
             SortBy.RANDOM -> ItemSortBy.RANDOM
         }
     }

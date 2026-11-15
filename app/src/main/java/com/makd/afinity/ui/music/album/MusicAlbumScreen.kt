@@ -68,6 +68,7 @@ import com.makd.afinity.ui.components.PortraitHero
 import com.makd.afinity.ui.components.backdropChainOf
 import com.makd.afinity.ui.components.detailListBottomPadding
 import com.makd.afinity.ui.components.isLandscapeWindow
+import com.makd.afinity.ui.components.rememberDownloadVolumes
 import com.makd.afinity.ui.item.components.DownloadProgressIndicator
 import com.makd.afinity.ui.item.components.MusicDownloadQualityDialog
 import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
@@ -269,10 +270,15 @@ fun MusicAlbumScreen(
                     iconSize = 26.dp,
                 )
                 if (showDownloadQualityDialog) {
+                    val downloadVolumes = rememberDownloadVolumes()
                     MusicDownloadQualityDialog(
                         initialBitrate = defaultDownloadQuality,
-                        onConfirm = { quality -> viewModel.downloadAlbum(quality) },
+                        onConfirm = { quality, volumeId ->
+                            viewModel.downloadAlbum(quality, volumeId)
+                        },
                         onDismiss = { showDownloadQualityDialog = false },
+                        volumes = downloadVolumes.volumes,
+                        initialVolumeId = downloadVolumes.defaultSelection,
                     )
                 }
             }
@@ -443,6 +449,10 @@ fun MusicAlbumScreen(
                     onDownload =
                         if (isDownloadAllowedByServer) ({ viewModel.downloadTrack(track.id) })
                         else null,
+                    onDownloadTo =
+                        if (isDownloadAllowedByServer) {
+                            { volumeId -> viewModel.downloadTrack(track.id, volumeId) }
+                        } else null,
                     isDownloadEnabled = canDownloadOnNetwork,
                     onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
                     downloadInfo = uiState.trackDownloadInfos[track.id],

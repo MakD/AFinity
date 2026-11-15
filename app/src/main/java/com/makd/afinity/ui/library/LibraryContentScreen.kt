@@ -56,6 +56,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.makd.afinity.R
+import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityFolder
@@ -315,6 +316,7 @@ fun LibraryContentScreen(
 
     if (showSortDialog) {
         SortDialog(
+            options = librarySortOptions(uiState.libraryType),
             currentSortBy = uiState.currentSortBy,
             currentSortDescending = uiState.currentSortDescending,
             onDismiss = { showSortDialog = false },
@@ -351,8 +353,31 @@ fun LibraryContentScreen(
     )
 }
 
+private fun librarySortOptions(type: CollectionType?): List<SortBy> =
+    when (type) {
+        CollectionType.Books ->
+            listOf(
+                SortBy.NAME,
+                SortBy.RANDOM,
+                SortBy.RELEASE_DATE,
+                SortBy.DATE_ADDED,
+                SortBy.DATE_PLAYED,
+                SortBy.SERIES_NUMBER,
+            )
+        else ->
+            listOf(
+                SortBy.NAME,
+                SortBy.IMDB_RATING,
+                SortBy.PARENTAL_RATING,
+                SortBy.DATE_ADDED,
+                SortBy.DATE_PLAYED,
+                SortBy.RELEASE_DATE,
+            )
+    }
+
 @Composable
 private fun SortDialog(
+    options: List<SortBy>,
     currentSortBy: SortBy,
     currentSortDescending: Boolean,
     onDismiss: () -> Unit,
@@ -416,21 +441,13 @@ private fun SortDialog(
                     Spacer(Modifier.height(16.dp))
 
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        listOf(
-                                SortBy.NAME to R.string.sort_option_title,
-                                SortBy.IMDB_RATING to R.string.sort_option_imdb,
-                                SortBy.PARENTAL_RATING to R.string.sort_option_parental,
-                                SortBy.DATE_ADDED to R.string.sort_option_date_added,
-                                SortBy.DATE_PLAYED to R.string.sort_option_date_played,
-                                SortBy.RELEASE_DATE to R.string.sort_option_release_date,
+                        options.forEach { sortBy ->
+                            RadioOptionRow(
+                                label = stringResource(sortBy.labelRes),
+                                selected = selectedSort == sortBy,
+                                onClick = { selectedSort = sortBy },
                             )
-                            .forEach { (sortBy, labelRes) ->
-                                RadioOptionRow(
-                                    label = stringResource(labelRes),
-                                    selected = selectedSort == sortBy,
-                                    onClick = { selectedSort = sortBy },
-                                )
-                            }
+                        }
                     }
                 }
 

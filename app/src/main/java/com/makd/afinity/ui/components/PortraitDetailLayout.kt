@@ -37,6 +37,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.ui.utils.bottomOverlap
 
@@ -149,21 +150,27 @@ private fun ImageHero(hero: PortraitHero.Image) {
 }
 
 @Composable
-fun DetailCoverImage(imageUrl: String?, contentDescription: String?, blurHash: String? = null) {
+fun DetailCoverImage(
+    imageUrl: String?,
+    contentDescription: String?,
+    blurHash: String? = null,
+    width: Dp = DetailCoverSize,
+    height: Dp = DetailCoverSize,
+) {
     val shape = RoundedCornerShape(12.dp)
     if (imageUrl != null) {
         AsyncImage(
             imageUrl = imageUrl,
             contentDescription = contentDescription,
             blurHash = blurHash,
-            targetWidth = DetailCoverSize,
-            targetHeight = DetailCoverSize,
-            modifier = Modifier.size(DetailCoverSize).shadow(12.dp, shape).clip(shape),
+            targetWidth = width,
+            targetHeight = height,
+            modifier = Modifier.size(width, height).shadow(12.dp, shape).clip(shape),
             contentScale = ContentScale.Crop,
         )
     } else {
         Card(
-            modifier = Modifier.size(DetailCoverSize),
+            modifier = Modifier.size(width, height),
             shape = shape,
             colors =
                 CardDefaults.cardColors(

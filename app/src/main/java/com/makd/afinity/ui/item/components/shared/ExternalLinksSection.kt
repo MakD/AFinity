@@ -105,6 +105,7 @@ private fun getExternalLinks(
         val iconRes =
             when {
                 "anidb" in lowerUrl -> R.drawable.ic_anidb
+                "comicvine" in lowerUrl -> R.drawable.ic_comicvine
                 "musicbrainz" in lowerUrl -> R.drawable.ic_musicbrainz_logo
                 "theaudiodb" in lowerUrl -> R.drawable.ic_audiodb
                 "audiodb" in lowerUrl -> R.drawable.ic_audiodb

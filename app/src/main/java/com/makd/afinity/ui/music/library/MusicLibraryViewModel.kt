@@ -574,9 +574,9 @@ constructor(
         }
     }
 
-    fun downloadTrack(trackId: UUID) {
+    fun downloadTrack(trackId: UUID, volumeId: String? = null) {
         viewModelScope.launch {
-            downloadRepository.startDownload(trackId, "").onFailure {
+            downloadRepository.startDownload(trackId, "", volumeId = volumeId).onFailure {
                 Timber.e(it, "Failed to download track $trackId")
             }
         }

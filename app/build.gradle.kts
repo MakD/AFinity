@@ -47,6 +47,7 @@ configure<ComposeCompilerGradlePluginExtension> {
 configure<ApplicationExtension> {
     namespace = "com.makd.afinity"
     compileSdk = 37
+    compileSdkMinor = 2
 
     val keyPropertiesFile = rootProject.file("key.properties")
     val hasReleaseKeystore = keyPropertiesFile.exists()
@@ -203,6 +204,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.fragment.compose)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.hilt.work)
     implementation(libs.androidx.lifecycle.process)
@@ -237,6 +239,7 @@ dependencies {
     implementation(libs.jellyfin.core)
     implementation(libs.kotlin.logging)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.libarchive)
     implementation(libs.libmpv)
     implementation(libs.lottie.compose)
     implementation(libs.media3.ffmpeg.decoder)
@@ -244,6 +247,9 @@ dependencies {
     implementation(libs.okhttp.logging.interceptor)
     implementation(libs.androidx.profileinstaller)
     implementation(libs.play.services.cast.framework)
+    implementation(libs.readium.navigator)
+    implementation(libs.readium.shared)
+    implementation(libs.readium.streamer)
     implementation(libs.reorderable)
     implementation(libs.retrofit)
     implementation(libs.retrofit.kotlinx.serialization)
@@ -252,6 +258,7 @@ dependencies {
     implementation(libs.richtext.ui.material3)
     implementation(libs.slf4j.api)
     implementation(libs.socketio) { exclude(group = "org.json", module = "json") }
+    implementation(libs.telephoto.zoomable.image.coil3)
     implementation(libs.timber)
     implementation(libs.tink.android)
     implementation(platform(libs.androidx.compose.bom))

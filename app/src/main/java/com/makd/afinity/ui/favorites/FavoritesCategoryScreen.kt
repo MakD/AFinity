@@ -52,6 +52,7 @@ enum class FavoritesCategory {
     SHOWS,
     SEASONS,
     EPISODES,
+    BOOKS,
     CHANNELS,
     PEOPLE,
     ALBUMS,
@@ -114,6 +115,7 @@ fun FavoritesCategoryScreen(
             FavoritesCategory.SHOWS -> uiState.shows.isEmpty()
             FavoritesCategory.SEASONS -> uiState.seasons.isEmpty()
             FavoritesCategory.EPISODES -> uiState.episodes.isEmpty()
+            FavoritesCategory.BOOKS -> uiState.books.isEmpty()
             FavoritesCategory.CHANNELS -> uiState.channels.isEmpty()
             FavoritesCategory.PEOPLE -> uiState.people.isEmpty()
             FavoritesCategory.ALBUMS -> uiState.favoriteAlbums.isEmpty()
@@ -150,12 +152,14 @@ fun FavoritesCategoryScreen(
                 FavoritesCategory.BOXSETS,
                 FavoritesCategory.MOVIES,
                 FavoritesCategory.SHOWS,
-                FavoritesCategory.SEASONS -> {
+                FavoritesCategory.SEASONS,
+                FavoritesCategory.BOOKS -> {
                     val items: List<AfinityItem> =
                         when (category) {
                             FavoritesCategory.BOXSETS -> uiState.boxSets
                             FavoritesCategory.MOVIES -> uiState.movies
                             FavoritesCategory.SHOWS -> uiState.shows
+                            FavoritesCategory.BOOKS -> uiState.books
                             else -> uiState.seasons
                         }
                     MediaCategoryGrid(
@@ -332,6 +336,7 @@ private fun FavoritesCategory.titleRes(): Int =
         FavoritesCategory.SHOWS -> R.string.section_tv_shows
         FavoritesCategory.SEASONS -> R.string.section_seasons
         FavoritesCategory.EPISODES -> R.string.section_episodes
+        FavoritesCategory.BOOKS -> R.string.section_books
         FavoritesCategory.CHANNELS -> R.string.section_tv_channels
         FavoritesCategory.PEOPLE -> R.string.section_people
         FavoritesCategory.ALBUMS -> R.string.section_favorite_albums

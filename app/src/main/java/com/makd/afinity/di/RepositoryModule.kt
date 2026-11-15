@@ -11,6 +11,8 @@ import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.auth.JellyfinAuthRepository
+import com.makd.afinity.data.repository.books.BookAnnotationRepository
+import com.makd.afinity.data.repository.books.BookAnnotationRepositoryImpl
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.external.ExternalTitlesRepositoryImpl
@@ -121,6 +123,12 @@ abstract class RepositoryModule {
     abstract fun bindSubtitleSearchRepository(
         subtitleSearchRepositoryImpl: SubtitleSearchRepositoryImpl
     ): SubtitleSearchRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindBookAnnotationRepository(
+        bookAnnotationRepositoryImpl: BookAnnotationRepositoryImpl
+    ): BookAnnotationRepository
 
     companion object {
         @Provides

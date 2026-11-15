@@ -30,6 +30,7 @@ fun AfinityItem.withImages(newImages: AfinityImages): AfinityItem =
         is AfinitySeason -> copy(images = newImages)
         is AfinityBoxSet -> copy(images = newImages)
         is AfinityVideo -> copy(images = newImages)
+        is AfinityBook -> copy(images = newImages)
         else -> this
     }
 

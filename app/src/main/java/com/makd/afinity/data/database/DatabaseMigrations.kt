@@ -1864,6 +1864,18 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_90_91 =
+        object : Migration(90, 91) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `book_annotations` (`id` TEXT NOT NULL, `serverId` TEXT NOT NULL, `userId` TEXT NOT NULL, `itemId` TEXT NOT NULL, `kind` TEXT NOT NULL, `locator` TEXT, `page` INTEGER, `progression` REAL NOT NULL, `label` TEXT, `text` TEXT, `color` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_book_annotations_serverId_userId_itemId` ON `book_annotations` (`serverId`, `userId`, `itemId`)"
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1955,5 +1967,6 @@ object DatabaseMigrations {
             MIGRATION_87_88,
             MIGRATION_88_89,
             MIGRATION_89_90,
+            MIGRATION_90_91,
         )
 }

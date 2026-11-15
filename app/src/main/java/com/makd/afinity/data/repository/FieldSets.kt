@@ -29,6 +29,22 @@ object FieldSets {
 
     val PLAYLIST_GRID = listOf(ItemFields.CHILD_COUNT)
 
+    val BOOK_GRID = listOf(ItemFields.PATH, ItemFields.CAN_DOWNLOAD, ItemFields.DATE_CREATED)
+
+    val BOOK_DETAIL =
+        listOf(
+            ItemFields.OVERVIEW,
+            ItemFields.GENRES,
+            ItemFields.PEOPLE,
+            ItemFields.PATH,
+            ItemFields.CAN_DOWNLOAD,
+            ItemFields.STUDIOS,
+            ItemFields.TAGS,
+            ItemFields.EXTERNAL_URLS,
+            ItemFields.PROVIDER_IDS,
+            ItemFields.DATE_CREATED,
+        )
+
     val SEARCH_RESULTS =
         listOf(
             ItemFields.OVERVIEW,

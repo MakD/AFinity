@@ -21,6 +21,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -65,6 +66,9 @@ fun GenreResultsScreen(
         viewModel.moviesPagingData.collectAsStateWithLifecycle().value.collectAsLazyPagingItems()
     val shows =
         viewModel.showsPagingData.collectAsStateWithLifecycle().value.collectAsLazyPagingItems()
+    val books =
+        viewModel.booksPagingData.collectAsStateWithLifecycle().value.collectAsLazyPagingItems()
+    val hasBooksLibrary by viewModel.hasBooksLibrary.collectAsStateWithLifecycle()
     val playerClearance = playerClearance()
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -105,6 +109,7 @@ fun GenreResultsScreen(
                     GenreResultsContent(
                         movies = movies,
                         shows = shows,
+                        books = if (hasBooksLibrary) books else null,
                         onItemClick = onItemClick,
                         widthSizeClass = widthSizeClass,
                         customPadding = customPadding,
@@ -115,16 +120,38 @@ fun GenreResultsScreen(
     }
 }
 
+private const val BOOKS_TAB = 2
+
 @Composable
 private fun GenreResultsContent(
     movies: LazyPagingItems<AfinityItem>,
     shows: LazyPagingItems<AfinityItem>,
+    books: LazyPagingItems<AfinityItem>?,
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     customPadding: PaddingValues,
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
-    val tabs = listOf(stringResource(R.string.tab_movies), stringResource(R.string.tab_tv_shows))
+    var tabChosen by rememberSaveable { mutableStateOf(false) }
+    val tabs =
+        listOfNotNull(
+            stringResource(R.string.tab_movies),
+            stringResource(R.string.tab_tv_shows),
+            books?.let { stringResource(R.string.section_books) },
+        )
+    val moviesEmpty = movies.loadState.refresh is LoadState.NotLoading && movies.itemCount == 0
+    val showsEmpty = shows.loadState.refresh is LoadState.NotLoading && shows.itemCount == 0
+    val hasBooks = books != null && books.itemCount > 0
+    LaunchedEffect(moviesEmpty, showsEmpty, hasBooks) {
+        if (!tabChosen && moviesEmpty) {
+            selectedTab =
+                when {
+                    shows.itemCount > 0 -> 1
+                    showsEmpty && hasBooks -> BOOKS_TAB
+                    else -> selectedTab
+                }
+        }
+    }
 
     Column {
         Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
@@ -141,7 +168,10 @@ private fun GenreResultsContent(
                     tabs.forEachIndexed { index, title ->
                         val isSelected = selectedTab == index
                         Surface(
-                            onClick = { selectedTab = index },
+                            onClick = {
+                                selectedTab = index
+                                tabChosen = true
+                            },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(8.dp),
                             color =
@@ -173,10 +203,19 @@ private fun GenreResultsContent(
             }
         }
 
-        val activeList = if (selectedTab == 0) movies else shows
+        val activeList =
+            when {
+                selectedTab == BOOKS_TAB && books != null -> books
+                selectedTab == 0 -> movies
+                else -> shows
+            }
         val emptyMessage =
-            if (selectedTab == 0) stringResource(R.string.empty_genre_movies)
-            else stringResource(R.string.empty_genre_tv)
+            when {
+                selectedTab == BOOKS_TAB && books != null ->
+                    stringResource(R.string.empty_genre_books)
+                selectedTab == 0 -> stringResource(R.string.empty_genre_movies)
+                else -> stringResource(R.string.empty_genre_tv)
+            }
         val isEmpty =
             activeList.loadState.refresh is LoadState.NotLoading && activeList.itemCount == 0
 

@@ -54,6 +54,7 @@ import com.makd.afinity.data.models.external.ExternalTitles
 import com.makd.afinity.data.models.external.ExternalTitlesSource
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
+import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
@@ -90,6 +91,7 @@ fun PersonDetailContent(
     person: AfinityPersonDetail,
     movies: List<AfinityMovie>,
     shows: List<AfinityShow>,
+    books: List<AfinityBook>,
     onItemClick: (AfinityItem) -> Unit,
     onToggleFavorite: () -> Unit,
     awards: WikidataAwards?,
@@ -133,6 +135,7 @@ fun PersonDetailContent(
             person = person,
             movies = movies,
             shows = shows,
+            books = books,
             onItemClick = onItemClick,
             onToggleFavorite = onToggleFavorite,
             awards = awards,
@@ -148,6 +151,7 @@ fun PersonDetailContent(
             person = person,
             movies = movies,
             shows = shows,
+            books = books,
             onItemClick = onItemClick,
             onToggleFavorite = onToggleFavorite,
             awards = awards,
@@ -167,6 +171,7 @@ private fun LandscapePersonDetailContent(
     person: AfinityPersonDetail,
     movies: List<AfinityMovie>,
     shows: List<AfinityShow>,
+    books: List<AfinityBook>,
     onItemClick: (AfinityItem) -> Unit,
     onToggleFavorite: () -> Unit,
     awards: WikidataAwards?,
@@ -228,6 +233,7 @@ private fun LandscapePersonDetailContent(
                         person = person,
                         movies = movies,
                         shows = shows,
+                        books = books,
                         onItemClick = onItemClick,
                         cardWidth = WindowWidthSizeClass.Compact.portraitWidth,
                         awards = awards,
@@ -247,6 +253,7 @@ private fun PortraitPersonDetailContent(
     person: AfinityPersonDetail,
     movies: List<AfinityMovie>,
     shows: List<AfinityShow>,
+    books: List<AfinityBook>,
     onItemClick: (AfinityItem) -> Unit,
     onToggleFavorite: () -> Unit,
     awards: WikidataAwards?,
@@ -294,6 +301,7 @@ private fun PortraitPersonDetailContent(
                 person = person,
                 movies = movies,
                 shows = shows,
+                books = books,
                 onItemClick = onItemClick,
                 cardWidth = cardWidth,
                 awards = awards,
@@ -311,6 +319,7 @@ private fun PersonSharedContentBlocks(
     person: AfinityPersonDetail,
     movies: List<AfinityMovie>,
     shows: List<AfinityShow>,
+    books: List<AfinityBook>,
     onItemClick: (AfinityItem) -> Unit,
     cardWidth: Dp,
     awards: WikidataAwards?,
@@ -346,6 +355,15 @@ private fun PersonSharedContentBlocks(
         PersonFilmographySection(
             title = stringResource(R.string.section_tv_shows),
             items = shows,
+            onItemClick = onItemClick,
+            cardWidth = cardWidth,
+        )
+    }
+
+    if (books.isNotEmpty()) {
+        PersonFilmographySection(
+            title = stringResource(R.string.section_books),
+            items = books,
             onItemClick = onItemClick,
             cardWidth = cardWidth,
         )
@@ -525,6 +543,7 @@ private fun PersonActionsRow(
             val iconRes =
                 when {
                     "anidb" in lowerUrl -> R.drawable.ic_anidb
+                    "comicvine" in lowerUrl -> R.drawable.ic_comicvine
                     "imdb" in lowerUrl -> R.drawable.ic_imdb_logo
                     "themoviedb.org" in lowerUrl -> R.drawable.ic_tmdb
                     "tvdb" in lowerUrl -> R.drawable.ic_tvdb

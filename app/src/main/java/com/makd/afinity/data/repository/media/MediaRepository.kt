@@ -6,6 +6,7 @@ import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.mdblist.MdbListRatingsResult
+import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -41,6 +42,7 @@ interface MediaRepository {
     val libraries: Flow<List<AfinityCollection>>
     val hasLiveTvLibrary: Flow<Boolean?>
     val continueWatching: Flow<List<AfinityItem>>
+    val continueReading: Flow<List<AfinityBook>>
     val nextUp: Flow<List<AfinityEpisode>>
     val continueWatchingOrder: Flow<ContinueWatchingOrder>
 
@@ -49,6 +51,8 @@ interface MediaRepository {
     fun getNextUpFlow(): Flow<List<AfinityEpisode>>
 
     suspend fun invalidateContinueWatchingCache()
+
+    suspend fun invalidateContinueReadingCache()
 
     suspend fun invalidateNextUpCache()
 

@@ -295,6 +295,7 @@ constructor(
     fun downloadPlaylist(
         filter: PlaylistDownloadFilter = defaultDownloadFilter(),
         quality: DownloadQuality? = null,
+        volumeId: String? = null,
     ) {
         val expected =
             _uiState.value.let { state ->
@@ -306,7 +307,12 @@ constructor(
             }
         viewModelScope.launch {
             downloadRepository
-                .startPlaylistDownload(playlistId, filter = filter, quality = quality)
+                .startPlaylistDownload(
+                    playlistId,
+                    volumeId = volumeId,
+                    filter = filter,
+                    quality = quality,
+                )
                 .onSuccess { started ->
                     if (started < expected) {
                         _downloadMessages.emit(
@@ -423,9 +429,9 @@ constructor(
         )
     }
 
-    fun downloadTrack(trackId: UUID) {
+    fun downloadTrack(trackId: UUID, volumeId: String? = null) {
         viewModelScope.launch {
-            downloadRepository.startDownload(trackId, "").onFailure {
+            downloadRepository.startDownload(trackId, "", volumeId = volumeId).onFailure {
                 Timber.e(it, "Failed to download track $trackId")
             }
         }

@@ -41,6 +41,7 @@ data class LibraryFilters(
     val years: Set<Int> = emptySet(),
     val audioLanguages: Set<String> = emptySet(),
     val subtitleLanguages: Set<String> = emptySet(),
+    val studios: Set<String> = emptySet(),
 ) {
     val activeCount: Int
         get() =
@@ -53,7 +54,8 @@ data class LibraryFilters(
                 seriesStatuses.size +
                 years.size +
                 audioLanguages.size +
-                subtitleLanguages.size
+                subtitleLanguages.size +
+                studios.size
 
     val isEmpty: Boolean
         get() = activeCount == 0
@@ -68,6 +70,7 @@ data class LibraryFilterOptions(
     val years: List<Int> = emptyList(),
     val audioLanguages: List<LibraryLanguageOption> = emptyList(),
     val subtitleLanguages: List<LibraryLanguageOption> = emptyList(),
+    val studios: List<String> = emptyList(),
 ) {
     val isEmpty: Boolean
         get() =
@@ -76,5 +79,6 @@ data class LibraryFilterOptions(
                 officialRatings.isEmpty() &&
                 years.isEmpty() &&
                 audioLanguages.isEmpty() &&
-                subtitleLanguages.isEmpty()
+                subtitleLanguages.isEmpty() &&
+                studios.isEmpty()
 }

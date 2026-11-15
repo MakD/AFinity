@@ -49,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -74,10 +75,12 @@ import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.common.DrawerLibrariesMode
 import com.makd.afinity.data.models.common.HeroStyle
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
+import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideoPlaylist
+import com.makd.afinity.data.models.media.BookFormat
 import com.makd.afinity.data.updater.UpdateManager
 import com.makd.afinity.data.websocket.WebSocketState
 import com.makd.afinity.ui.admin.identify.IdentifyScreen
@@ -91,6 +94,7 @@ import com.makd.afinity.ui.audiobookshelf.libraries.AudiobookshelfLibrariesScree
 import com.makd.afinity.ui.audiobookshelf.libraries.AudiobookshelfLibraryScreen
 import com.makd.afinity.ui.audiobookshelf.libraries.AudiobookshelfSeriesListScreen
 import com.makd.afinity.ui.audiobookshelf.player.AudiobookshelfPlayerScreen
+import com.makd.afinity.ui.book.BookDetailScreen
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinitySplashScreen
 import com.makd.afinity.ui.components.AppNavigationDrawerContent
@@ -123,6 +127,8 @@ import com.makd.afinity.ui.player.AudioMiniPlayer
 import com.makd.afinity.ui.player.AudioMiniPlayerState
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.playlist.PlaylistScreen
+import com.makd.afinity.ui.reader.PageReaderScreen
+import com.makd.afinity.ui.reader.epub.EpubReaderActivity
 import com.makd.afinity.ui.requests.FilterParams
 import com.makd.afinity.ui.requests.FilterType
 import com.makd.afinity.ui.requests.FilteredMediaScreen
@@ -419,7 +425,8 @@ fun MainNavigation(
             val isOnAudiobookshelfPlayer =
                 currentDestination?.route?.startsWith("audiobookshelf/player/") == true
             val isOnMusicPlayer = currentDestination?.route == Destination.MUSIC_PLAYER_ROUTE
-            val isOnAnyPlayer = isOnAudiobookshelfPlayer || isOnMusicPlayer
+            val isOnBookReader = currentDestination?.route == Destination.BOOK_READER_ROUTE
+            val isOnAnyPlayer = isOnAudiobookshelfPlayer || isOnMusicPlayer || isOnBookReader
             val currentTrack = musicPlaybackState.currentTrack
             val miniPlayerState: AudioMiniPlayerState? =
                 when {
@@ -1872,6 +1879,69 @@ fun MainNavigation(
                                 }
 
                                 composable(
+                                    route = Destination.BOOK_DETAIL_ROUTE,
+                                    arguments =
+                                        listOf(navArgument("itemId") { type = NavType.StringType }),
+                                ) {
+                                    val bookContext = LocalContext.current
+                                    BookDetailScreen(
+                                        onHomeClick = { navController.navigateHome() },
+                                        onPersonClick = { personId ->
+                                            navController.navigateToPerson(personId.toString())
+                                        },
+                                        onBookClick = { book ->
+                                            navController.navigateToItem(book)
+                                        },
+                                        onReadClick = { book ->
+                                            if (book.format == BookFormat.EPUB) {
+                                                bookContext.startActivity(
+                                                    EpubReaderActivity.intent(bookContext, book.id)
+                                                )
+                                            } else {
+                                                navController.navigate(
+                                                    Destination.createBookReaderRoute(
+                                                        book.id.toString()
+                                                    )
+                                                )
+                                            }
+                                        },
+                                        widthSizeClass = widthSizeClass,
+                                    )
+                                }
+
+                                composable(
+                                    route = Destination.BOOK_READER_ROUTE,
+                                    arguments =
+                                        listOf(navArgument("itemId") { type = NavType.StringType }),
+                                ) { backStackEntry ->
+                                    val readerContext = LocalContext.current
+                                    PageReaderScreen(
+                                        onBack = { navController.popIfCurrent(backStackEntry) },
+                                        onOpenBook = { next ->
+                                            if (next.format == BookFormat.EPUB) {
+                                                navController.popIfCurrent(backStackEntry)
+                                                readerContext.startActivity(
+                                                    EpubReaderActivity.intent(
+                                                        readerContext,
+                                                        next.id,
+                                                    )
+                                                )
+                                            } else {
+                                                navController.navigate(
+                                                    Destination.createBookReaderRoute(
+                                                        next.id.toString()
+                                                    )
+                                                ) {
+                                                    popUpTo(Destination.BOOK_READER_ROUTE) {
+                                                        inclusive = true
+                                                    }
+                                                }
+                                            }
+                                        },
+                                    )
+                                }
+
+                                composable(
                                     route = Destination.MUSIC_ALBUM_ROUTE,
                                     arguments =
                                         listOf(
@@ -2623,6 +2693,10 @@ private fun NavController.popIfCurrent(entry: NavBackStackEntry) {
 private fun NavController.navigateToItem(item: AfinityItem) {
     if (item is AfinityVideoPlaylist) {
         navigate(Destination.createPlaylistRoute(item.id.toString()))
+        return
+    }
+    if (item is AfinityBook) {
+        navigate(Destination.createBookDetailRoute(item.id.toString()))
         return
     }
     navigate(

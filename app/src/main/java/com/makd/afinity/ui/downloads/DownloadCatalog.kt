@@ -4,8 +4,11 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.download.DownloadInfo
 import java.util.UUID
 
+private const val BOOK_DOWNLOAD_TYPE = "Book"
+
 enum class DownloadCategory {
     VIDEO,
+    BOOK,
     MUSIC,
     AUDIOBOOK,
     PODCAST,
@@ -59,7 +62,26 @@ fun buildDownloadCatalog(
 ): List<DownloadCatalogEntry> {
     val entries = mutableListOf<DownloadCatalogEntry>()
 
-    val (audio, video) = jellyfinDownloads.partition { it.itemType == "Audio" }
+    val (jellyfinBooks, media) = jellyfinDownloads.partition { it.itemType == BOOK_DOWNLOAD_TYPE }
+
+    jellyfinBooks.forEach { download ->
+        entries +=
+            DownloadCatalogEntry(
+                key = "jf_${download.id}",
+                ref = DownloadCatalogRef.JellyfinItem(download.id),
+                category = DownloadCategory.BOOK,
+                title = download.itemName,
+                subtitle = download.seriesName ?: download.releaseYear,
+                imageUrl = download.imageUrl,
+                sizeBytes = download.totalBytes,
+                childCount = 0,
+                isAvailable = download.storageVolumeId !in unavailableVolumeIds,
+                createdAt = download.createdAt,
+                childIds = listOf(download.id),
+            )
+    }
+
+    val (audio, video) = media.partition { it.itemType == "Audio" }
 
     val (episodes, standaloneVideo) = video.partition { !it.seriesId.isNullOrBlank() }
 

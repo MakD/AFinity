@@ -171,6 +171,8 @@ enum class Destination(
 
         const val MUSIC_LIBRARY_ROUTE = "music/library/{libraryId}/{libraryName}"
         const val MUSIC_BROWSE_ROUTE = "music/library/{libraryId}/{libraryName}/browse/{tab}"
+        const val BOOK_DETAIL_ROUTE = "book/{itemId}"
+        const val BOOK_READER_ROUTE = "book/{itemId}/read"
         const val MUSIC_ALBUM_ROUTE = "music/album/{albumId}"
         const val MUSIC_ARTIST_ROUTE = "music/artist/{artistId}"
         const val PLAYLIST_ROUTE = "playlist/{playlistId}?audioOnly={audioOnly}"
@@ -199,6 +201,10 @@ enum class Destination(
 
         fun createMusicBrowseRoute(libraryId: String, libraryName: String, tab: String): String =
             "music/library/$libraryId/${libraryName.replace("/", "%2F")}/browse/$tab"
+
+        fun createBookDetailRoute(itemId: String): String = "book/$itemId"
+
+        fun createBookReaderRoute(itemId: String): String = "book/$itemId/read"
 
         fun createMusicAlbumRoute(albumId: String): String = "music/album/$albumId"
 

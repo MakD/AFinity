@@ -141,6 +141,7 @@ constructor(
             is AfinityEpisode -> copy(favorite = isFavorite)
             is com.makd.afinity.data.models.media.AfinitySeason -> copy(favorite = isFavorite)
             is com.makd.afinity.data.models.media.AfinityBoxSet -> copy(favorite = isFavorite)
+            is com.makd.afinity.data.models.media.AfinityBook -> copy(favorite = isFavorite)
             else -> this
         }
 
@@ -151,6 +152,7 @@ constructor(
             is AfinityEpisode -> copy(liked = isLiked)
             is com.makd.afinity.data.models.media.AfinitySeason -> copy(liked = isLiked)
             is com.makd.afinity.data.models.media.AfinityBoxSet -> copy(liked = isLiked)
+            is com.makd.afinity.data.models.media.AfinityBook -> copy(liked = isLiked)
             else -> this
         }
 }

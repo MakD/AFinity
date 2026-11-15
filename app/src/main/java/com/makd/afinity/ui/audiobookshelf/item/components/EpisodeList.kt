@@ -63,6 +63,7 @@ fun LazyListScope.episodeListItems(
     episodeProgressMap: Map<String, MediaProgress> = emptyMap(),
     episodeDownloadMap: Map<String, AbsDownloadInfo> = emptyMap(),
     onEpisodeDownload: ((String) -> Unit)? = null,
+    onEpisodeDownloadLongClick: ((String) -> Unit)? = null,
     onEpisodeCancelDownload: ((String) -> Unit)? = null,
     onEpisodeDeleteDownload: ((String) -> Unit)? = null,
     onEpisodeToggleFinished: ((PodcastEpisode) -> Unit)? = null,
@@ -88,6 +89,7 @@ fun LazyListScope.episodeListItems(
                 progress = episodeProgressMap[episode.id],
                 downloadInfo = episodeDownloadMap[episode.id],
                 onDownload = onEpisodeDownload?.let { { it(episode.id) } },
+                onDownloadLongClick = onEpisodeDownloadLongClick?.let { { it(episode.id) } },
                 onCancelDownload = onEpisodeCancelDownload?.let { { it(episode.id) } },
                 onDeleteDownload = onEpisodeDeleteDownload?.let { { it(episode.id) } },
                 onToggleFinished = onEpisodeToggleFinished?.let { { it(episode) } },
@@ -107,6 +109,7 @@ private fun ExpandableEpisodeItem(
     progress: MediaProgress? = null,
     downloadInfo: AbsDownloadInfo? = null,
     onDownload: (() -> Unit)? = null,
+    onDownloadLongClick: (() -> Unit)? = null,
     onCancelDownload: (() -> Unit)? = null,
     onDeleteDownload: (() -> Unit)? = null,
     onToggleFinished: (() -> Unit)? = null,
@@ -279,9 +282,10 @@ private fun ExpandableEpisodeItem(
                         }
 
                         else ->
-                            IconButton(
+                            DownloadButtonFrame(
                                 onClick = { onDownload?.invoke() },
-                                modifier = Modifier.size(32.dp),
+                                onLongClick = onDownloadLongClick,
+                                size = 32.dp,
                             ) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_download),

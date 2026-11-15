@@ -5,6 +5,7 @@ import androidx.core.net.toUri
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.AfinityProgram
 import com.makd.afinity.data.models.livetv.ChannelType
+import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -22,6 +23,7 @@ import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.AfinityVideoPlaylist
+import com.makd.afinity.data.models.media.BookFormat
 import com.makd.afinity.data.models.media.toAfinityExternalUrl
 import com.makd.afinity.data.models.media.toAfinityMediaStream
 import com.makd.afinity.data.models.media.toAfinityTrickplayInfoMap
@@ -49,6 +51,7 @@ fun BaseItemDto.toAfinityItem(baseUrl: String): AfinityItem? {
         BaseItemKind.PLAYLIST -> toAfinityVideoPlaylist(baseUrl)
         BaseItemKind.FOLDER -> toAfinityFolder(baseUrl)
         BaseItemKind.VIDEO -> toAfinityVideo(baseUrl)
+        BaseItemKind.BOOK -> toAfinityBook(baseUrl)
         else -> null
     }
 }
@@ -447,6 +450,38 @@ fun BaseItemDto.toAfinityVideo(baseUrl: String): AfinityVideo {
         externalUrls = toAfinityExternalUrls(),
         liked = userData?.likes == true,
         extraType = extraType,
+    )
+}
+
+fun BaseItemDto.toAfinityBook(baseUrl: String): AfinityBook {
+    return AfinityBook(
+        id = id,
+        name = name.orEmpty(),
+        originalTitle = originalTitle,
+        overview = overview.orEmpty(),
+        played = userData?.played == true,
+        favorite = userData?.isFavorite == true,
+        liked = userData?.likes == true,
+        canPlay = playAccess != PlayAccess.NONE,
+        canDownload = canDownload == true,
+        runtimeTicks = runTimeTicks ?: 0,
+        playbackPositionTicks = userData?.playbackPositionTicks ?: 0,
+        unplayedItemCount = userData?.unplayedItemCount,
+        images = toAfinityImages(baseUrl),
+        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
+        externalUrls = toAfinityExternalUrls()?.distinctBy { it.url },
+        seriesName = seriesName?.takeIf { it.isNotBlank() },
+        seriesIndex = indexNumber,
+        people = people?.map { it.toAfinityPerson(baseUrl) } ?: emptyList(),
+        publisher = studios?.firstOrNull()?.name,
+        premiereDate = premiereDate,
+        productionYear = productionYear,
+        genres = genres ?: emptyList(),
+        tags = tags ?: emptyList(),
+        communityRating = communityRating,
+        dateCreated = dateCreated,
+        format = BookFormat.fromPath(path),
+        parentId = parentId,
     )
 }
 

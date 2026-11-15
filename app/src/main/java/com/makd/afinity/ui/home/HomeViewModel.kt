@@ -9,6 +9,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.makd.afinity.R
+import com.makd.afinity.data.books.BookMetadataStore
 import com.makd.afinity.data.manager.Connectivity
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.MediaChangeManager
@@ -27,10 +28,12 @@ import com.makd.afinity.data.models.MovieSection
 import com.makd.afinity.data.models.PersonFromMovieSection
 import com.makd.afinity.data.models.PersonSection
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
+import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.franchise.FranchiseCard
+import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -45,9 +48,11 @@ import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.audiobookshelf.AbsDownloadRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
+import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.home.HomeLayoutPreferencesRepository
 import com.makd.afinity.data.repository.home.HomeSectionsRepository
 import com.makd.afinity.data.repository.media.MediaRepository
@@ -71,11 +76,14 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -86,6 +94,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import org.jellyfin.sdk.model.api.BaseItemKind
 import timber.log.Timber
 
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
@@ -109,6 +118,7 @@ constructor(
     private val homeLayoutPreferencesRepository: HomeLayoutPreferencesRepository,
     private val downloadPermissions: DownloadPermissions,
     private val itemStore: ItemStore,
+    private val bookMetadataStore: BookMetadataStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -189,6 +199,45 @@ constructor(
                 lastHomeRefreshedAt = System.currentTimeMillis()
                 _uiState.update { it.copy(continueWatching = items) }
             }
+        }
+
+        viewModelScope.launch {
+            mediaRepository.continueReading.collect { books ->
+                _uiState.update { it.copy(continueReading = books) }
+            }
+        }
+
+        viewModelScope.launch {
+            combine(
+                    appDataRepository.libraries,
+                    homeLayoutPreferencesRepository.hiddenRows,
+                    offlineModeManager.isOffline,
+                ) { libraries, hidden, offline ->
+                    Triple(
+                        libraries.filter { it.type == CollectionType.Books },
+                        hidden.filter {
+                            it == HomeRow.CONTINUE_READING || it == HomeRow.LATEST_BOOKS
+                        },
+                        offline,
+                    )
+                }
+                .distinctUntilChanged()
+                .collectLatest { (bookLibraries, hidden, offline) ->
+                    if (offline || bookLibraries.isEmpty()) {
+                        _uiState.update { it.copy(latestBookSections = emptyList()) }
+                        return@collectLatest
+                    }
+                    coroutineScope {
+                        if (HomeRow.CONTINUE_READING !in hidden) {
+                            launch { mediaRepository.invalidateContinueReadingCache() }
+                        }
+                        if (HomeRow.LATEST_BOOKS !in hidden) {
+                            launch { loadLatestBooks(bookLibraries) }
+                        } else {
+                            _uiState.update { it.copy(latestBookSections = emptyList()) }
+                        }
+                    }
+                }
         }
 
         viewModelScope.launch {
@@ -502,6 +551,7 @@ constructor(
                     _uiState.update { state ->
                         state.copy(
                             continueWatching = state.continueWatching.removingItem(idToRemove),
+                            continueReading = state.continueReading.removingItem(idToRemove),
                             nextUp = state.nextUp.removingItem(idToRemove),
                             latestMovies = state.latestMovies.removingItem(idToRemove),
                         )
@@ -531,6 +581,30 @@ constructor(
                 }
             }
         }
+    }
+
+    private suspend fun loadLatestBooks(bookLibraries: List<AfinityCollection>) {
+        val sections = coroutineScope {
+            bookLibraries
+                .map { library ->
+                    async {
+                        val books =
+                            mediaRepository
+                                .getLatestMedia(
+                                    parentId = library.id,
+                                    limit = LATEST_BOOKS_LIMIT,
+                                    fields = FieldSets.BOOK_GRID,
+                                    groupItems = false,
+                                    includeItemTypes = listOf(BaseItemKind.BOOK),
+                                )
+                                .filterIsInstance<AfinityBook>()
+                        if (books.isEmpty()) null else library to books
+                    }
+                }
+                .awaitAll()
+                .filterNotNull()
+        }
+        _uiState.update { it.copy(latestBookSections = sections) }
     }
 
     private fun <T : AfinityItem> List<T>.unplayedForDisplay(): List<T> = filter {
@@ -689,10 +763,17 @@ constructor(
                     it.id in downloadedTrackAlbumIds
                 }
 
+            val downloadedBooks =
+                completedDownloads
+                    .filter { it.itemType == JellyfinDownloadRepository.BOOK_ITEM_TYPE }
+                    .sortedByDescending { it.updatedAt }
+                    .mapNotNull { bookMetadataStore.downloaded(it.itemId, userId)?.book }
+
             _uiState.update {
                 it.copy(
                     downloadedMovies = downloadedMovies,
                     downloadedShows = downloadedShows,
+                    downloadedBooks = downloadedBooks,
                     offlineContinueWatching = sortedOfflineContinueWatching,
                     offlineNextUp = offlineNextUp,
                     downloadedAudiobooks = downloadedAudiobooks,
@@ -828,6 +909,7 @@ constructor(
     companion object {
         private const val WORK_HOME_RELOAD = "home_data_reload"
         private const val ESSENTIALS_WAIT_MS = 15_000L
+        private const val LATEST_BOOKS_LIMIT = 16
     }
 }
 
@@ -920,6 +1002,8 @@ data class HomeUiState(
     val heroLoaded: Boolean = false,
     val heroSettings: HeroContentSource = HeroContentSource(),
     val continueWatching: List<AfinityItem> = emptyList(),
+    val continueReading: List<AfinityBook> = emptyList(),
+    val latestBookSections: List<Pair<AfinityCollection, List<AfinityBook>>> = emptyList(),
     val offlineContinueWatching: List<AfinityItem> = emptyList(),
     val nextUp: List<AfinityEpisode> = emptyList(),
     val offlineNextUp: List<AfinityEpisode> = emptyList(),
@@ -946,6 +1030,7 @@ data class HomeUiState(
     val genreShows: Map<String, List<AfinityShow>> = emptyMap(),
     val downloadedMovies: List<AfinityMovie> = emptyList(),
     val downloadedShows: List<AfinityShow> = emptyList(),
+    val downloadedBooks: List<AfinityBook> = emptyList(),
     val downloadedAudiobooks: List<AbsDownloadInfo> = emptyList(),
     val downloadedPodcastEpisodes: List<AbsDownloadInfo> = emptyList(),
     val downloadedMusicAlbums: List<AfinityAlbum> = emptyList(),
@@ -968,6 +1053,8 @@ data class HomeUiState(
 fun ItemProjection.projectHome(state: HomeUiState): HomeUiState {
     val hero = live(state.heroCarouselItems)
     val continueW = live(state.continueWatching)
+    val continueR = live(state.continueReading)
+    val bookSections = liveNested(state.latestBookSections, { it.second }, { p, l -> p.first to l })
     val next = live(state.nextUp)
     val upcoming = live(state.upcomingEpisodes)
     val movies = live(state.latestMovies)
@@ -990,6 +1077,8 @@ fun ItemProjection.projectHome(state: HomeUiState): HomeUiState {
     val unchanged =
         hero === state.heroCarouselItems &&
             continueW === state.continueWatching &&
+            continueR === state.continueReading &&
+            bookSections === state.latestBookSections &&
             next === state.nextUp &&
             upcoming === state.upcomingEpisodes &&
             movies === state.latestMovies &&
@@ -1008,6 +1097,8 @@ fun ItemProjection.projectHome(state: HomeUiState): HomeUiState {
     return state.copy(
         heroCarouselItems = hero,
         continueWatching = continueW,
+        continueReading = continueR,
+        latestBookSections = bookSections,
         nextUp = next,
         upcomingEpisodes = upcoming,
         latestMovies = movies,

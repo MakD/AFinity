@@ -84,6 +84,7 @@ import com.makd.afinity.ui.components.HeroCarousel
 import com.makd.afinity.ui.components.afinityTopAppBarHeight
 import com.makd.afinity.ui.components.heroCarouselLayoutHeight
 import com.makd.afinity.ui.downloads.DownloadedCategory
+import com.makd.afinity.ui.home.components.ContinueReadingSection
 import com.makd.afinity.ui.home.components.DownloadedAudiobooksSection
 import com.makd.afinity.ui.home.components.DownloadedMusicAlbumsSection
 import com.makd.afinity.ui.home.components.DownloadedMusicTracksSection
@@ -399,6 +400,22 @@ fun HomeScreen(
                             }
                         }
 
+                        if (
+                            !uiState.isOffline &&
+                                uiState.continueReading.isNotEmpty() &&
+                                HomeRow.CONTINUE_READING !in uiState.hiddenRows
+                        ) {
+                            item(key = "continue_reading") {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                    ContinueReadingSection(
+                                        books = uiState.continueReading,
+                                        onBookClick = onItemClick,
+                                        widthSizeClass = widthSizeClass,
+                                    )
+                                }
+                            }
+                        }
+
                         if (uiState.isOffline && uiState.offlineNextUp.isNotEmpty()) {
                             item(key = "offline_next_up") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
@@ -441,6 +458,22 @@ fun HomeScreen(
                                         unavailableItemIds = uiState.unavailableDownloadIds,
                                         onViewAllClick = {
                                             onDownloadedCategoryClick(DownloadedCategory.SHOWS)
+                                        },
+                                    )
+                                }
+                            }
+                        }
+
+                        if (uiState.isOffline && uiState.downloadedBooks.isNotEmpty()) {
+                            item(key = "downloaded_books") {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                    OptimizedLatestTvSeriesSection(
+                                        title = stringResource(R.string.home_downloaded_books),
+                                        items = uiState.downloadedBooks,
+                                        onItemClick = onItemClick,
+                                        widthSizeClass = widthSizeClass,
+                                        onViewAllClick = {
+                                            onDownloadedCategoryClick(DownloadedCategory.BOOKS)
                                         },
                                     )
                                 }
@@ -607,6 +640,22 @@ fun HomeScreen(
                                                 unavailableItemIds = uiState.unavailableDownloadIds,
                                             )
                                     }
+                                }
+                            }
+                        }
+
+                        if (!uiState.isOffline && HomeRow.LATEST_BOOKS !in uiState.hiddenRows) {
+                            items(
+                                items = uiState.latestBookSections,
+                                key = { (library, _) -> "book_lib_${library.id}" },
+                            ) { (library, books) ->
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                    OptimizedLatestTvSeriesSection(
+                                        title = library.name,
+                                        items = books,
+                                        onItemClick = onItemClick,
+                                        widthSizeClass = widthSizeClass,
+                                    )
                                 }
                             }
                         }

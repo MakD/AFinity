@@ -363,6 +363,10 @@ fun MusicGenreScreen(
                         onDownload =
                             if (isDownloadAllowedByServer) ({ viewModel.downloadTrack(track.id) })
                             else null,
+                        onDownloadTo =
+                            if (isDownloadAllowedByServer) {
+                                { volumeId -> viewModel.downloadTrack(track.id, volumeId) }
+                            } else null,
                         onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
                         isDownloadEnabled = canDownloadOnNetwork,
                         downloadInfo = uiState.trackDownloadInfos[track.id],
@@ -407,6 +411,10 @@ fun MusicGenreScreen(
                                 if (isDownloadAllowedByServer)
                                     ({ viewModel.downloadTrack(track.id) })
                                 else null,
+                            onDownloadTo =
+                                if (isDownloadAllowedByServer) {
+                                    { volumeId -> viewModel.downloadTrack(track.id, volumeId) }
+                                } else null,
                             onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
                             isDownloadEnabled = canDownloadOnNetwork,
                             downloadInfo = uiState.trackDownloadInfos[track.id],

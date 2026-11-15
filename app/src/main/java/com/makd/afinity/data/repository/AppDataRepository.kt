@@ -20,6 +20,7 @@ import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.livetv.AfinityChannel
+import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -1345,6 +1346,13 @@ constructor(
                 coroutineScope {
                     launch { mediaRepository.invalidateContinueWatchingCache() }
                     launch { mediaRepository.invalidateNextUpCache() }
+                    if (
+                        _libraries.value.any { it.type == CollectionType.Books } &&
+                            HomeRow.CONTINUE_READING !in
+                                homeLayoutPreferencesRepository.getHiddenRows()
+                    ) {
+                        launch { mediaRepository.invalidateContinueReadingCache() }
+                    }
                 }
                 Timber.d("Refreshed playback sections (continue watching + next up)")
             } catch (e: CancellationException) {
@@ -1458,6 +1466,7 @@ constructor(
                 is AfinitySeason -> data.copy(seasons = data.seasons.replacedWith(updatedItem))
                 is AfinityEpisode -> data.copy(episodes = data.episodes.replacedWith(updatedItem))
                 is AfinityBoxSet -> data.copy(boxSets = data.boxSets.replacedWith(updatedItem))
+                is AfinityBook -> data.copy(books = data.books.replacedWith(updatedItem))
                 else -> data
             }
         }
@@ -1542,6 +1551,7 @@ constructor(
                         seasons = media.filterIsInstance<AfinitySeason>().sortedBy { it.name },
                         episodes = media.filterIsInstance<AfinityEpisode>().sortedBy { it.name },
                         boxSets = media.filterIsInstance<AfinityBoxSet>().sortedBy { it.name },
+                        books = media.filterIsInstance<AfinityBook>().sortedBy { it.name },
                         people = peopleDeferred.await().sortedBy { it.name },
                         channels =
                             channelsDeferred.await().sortedBy { it.channelNumber ?: it.name },
@@ -1672,6 +1682,7 @@ constructor(
                     current.copy(episodes = current.episodes.upserted(item, isFavorite))
                 is AfinityBoxSet ->
                     current.copy(boxSets = current.boxSets.upserted(item, isFavorite))
+                is AfinityBook -> current.copy(books = current.books.upserted(item, isFavorite))
                 is AfinityChannel ->
                     current.copy(
                         channels =
@@ -1952,6 +1963,7 @@ data class FavoritesData(
     val seasons: List<AfinitySeason> = emptyList(),
     val episodes: List<AfinityEpisode> = emptyList(),
     val boxSets: List<AfinityBoxSet> = emptyList(),
+    val books: List<AfinityBook> = emptyList(),
     val people: List<AfinityPersonDetail> = emptyList(),
     val channels: List<AfinityChannel> = emptyList(),
     val favoriteAlbums: List<AfinityAlbum> = emptyList(),
@@ -1966,6 +1978,7 @@ fun FavoritesData.totalCount(): Int =
         seasons.size +
         episodes.size +
         boxSets.size +
+        books.size +
         people.size +
         channels.size +
         favoriteAlbums.size +
@@ -1979,6 +1992,7 @@ fun FavoritesData.itemById(id: UUID): AfinityItem? =
         ?: seasons.firstOrNull { it.id == id }
         ?: episodes.firstOrNull { it.id == id }
         ?: boxSets.firstOrNull { it.id == id }
+        ?: books.firstOrNull { it.id == id }
         ?: channels.firstOrNull { it.id == id }
 
 data class WatchlistData(

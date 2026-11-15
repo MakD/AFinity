@@ -44,11 +44,14 @@ import com.makd.afinity.ui.components.AfinityMenuItem
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.DownloadConfirm
 import com.makd.afinity.ui.components.DownloadConfirmDialog
+import com.makd.afinity.ui.components.DownloadVolumes
 import com.makd.afinity.ui.components.formatClockTicks
 import com.makd.afinity.ui.components.matches
 import com.makd.afinity.ui.components.mediainfo.TrackMediaInfoSheet
+import com.makd.afinity.ui.components.rememberDownloadVolumes
 import com.makd.afinity.ui.components.singleDownloadConfirm
 import com.makd.afinity.ui.item.components.DownloadProgressIndicator
+import com.makd.afinity.ui.item.components.StorageLocationDialog
 
 @Composable
 fun MusicTrackRow(
@@ -67,6 +70,7 @@ fun MusicTrackRow(
     onAddToPlaylist: (() -> Unit)? = null,
     onRemoveFromPlaylist: (() -> Unit)? = null,
     onDownload: (() -> Unit)? = null,
+    onDownloadTo: ((String?) -> Unit)? = null,
     onCancelDownload: (() -> Unit)? = null,
     isDownloadEnabled: Boolean = true,
     downloadInfo: DownloadInfo? = null,
@@ -74,6 +78,19 @@ fun MusicTrackRow(
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showMediaInfo by remember { mutableStateOf(false) }
+    var locationVolumes by remember { mutableStateOf<DownloadVolumes?>(null) }
+    var selectedVolumeId by remember { mutableStateOf<String?>(null) }
+
+    locationVolumes?.let { volumes ->
+        StorageLocationDialog(
+            volumes = volumes.volumes,
+            selectedVolumeId = selectedVolumeId,
+            onVolumeSelected = { selectedVolumeId = it },
+            onConfirm = { onDownloadTo?.invoke(selectedVolumeId) },
+            onDismiss = { locationVolumes = null },
+            showQuality = false,
+        )
+    }
     val downloadStatus = downloadInfo?.status
     val isDownloadIdle =
         downloadStatus == null ||
@@ -369,6 +386,20 @@ fun MusicTrackRow(
                             }
                         },
                     )
+                }
+                if (onDownloadTo != null && isDownloadIdle && isDownloadEnabled) {
+                    val volumes = rememberDownloadVolumes()
+                    if (volumes.hasChoice) {
+                        AfinityMenuItem(
+                            text = stringResource(R.string.action_download_to),
+                            iconRes = R.drawable.ic_sd_card,
+                            onClick = {
+                                showMenu = false
+                                selectedVolumeId = volumes.defaultSelection
+                                locationVolumes = volumes
+                            },
+                        )
+                    }
                 }
                 AfinityMenuItem(
                     text = stringResource(R.string.media_info_title),

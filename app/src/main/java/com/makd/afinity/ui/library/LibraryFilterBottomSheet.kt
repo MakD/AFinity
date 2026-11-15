@@ -41,6 +41,9 @@ data class LibraryFilterCapabilities(
     val seriesStatus: Boolean,
     val features: Boolean = true,
     val languages: Boolean = true,
+    val studios: Boolean = false,
+    val watchlist: Boolean = true,
+    val readingStatus: Boolean = false,
 )
 
 @Composable
@@ -108,6 +111,20 @@ fun libraryFilterCapabilities(type: CollectionType?): LibraryFilterCapabilities 
                 videoType = false,
                 seriesStatus = true,
             )
+        CollectionType.Books ->
+            LibraryFilterCapabilities(
+                genres = true,
+                ratings = true,
+                tags = true,
+                years = true,
+                videoType = false,
+                seriesStatus = false,
+                features = false,
+                languages = false,
+                studios = true,
+                watchlist = false,
+                readingStatus = true,
+            )
         CollectionType.BoxSets ->
             LibraryFilterCapabilities(
                 genres = true,
@@ -145,6 +162,12 @@ fun LibraryFilterBottomSheet(
     var yearQuery by remember { mutableStateOf("") }
     var audioLanguageQuery by remember { mutableStateOf("") }
     var subtitleLanguageQuery by remember { mutableStateOf("") }
+    var studioQuery by remember { mutableStateOf("") }
+    val resumableLabel =
+        stringResource(
+            if (capabilities.readingStatus) R.string.filter_continue_reading
+            else R.string.filter_resumable
+        )
 
     var expandedSections by remember {
         mutableStateOf(
@@ -157,6 +180,7 @@ fun LibraryFilterBottomSheet(
                 if (working.tags.isNotEmpty()) add("tags")
                 if (working.videoTypes.isNotEmpty()) add("video_type")
                 if (working.years.isNotEmpty()) add("years")
+                if (working.studios.isNotEmpty()) add("studios")
             }
         )
     }
@@ -197,7 +221,7 @@ fun LibraryFilterBottomSheet(
         val statusSummary = buildList {
             if (working.played) add(stringResource(R.string.filter_played))
             if (working.unplayed) add(stringResource(R.string.filter_unplayed))
-            if (working.resumable) add(stringResource(R.string.filter_resumable))
+            if (working.resumable) add(resumableLabel)
             if (working.favorites) add(stringResource(R.string.filter_favorites))
             if (working.watchlist) add(stringResource(R.string.filter_watchlist))
         }
@@ -225,7 +249,7 @@ fun LibraryFilterBottomSheet(
                     onSelectedChange = { working = working.copy(unplayed = it, played = false) },
                 )
                 AfinityToggleChip(
-                    label = stringResource(R.string.filter_resumable),
+                    label = resumableLabel,
                     selected = working.resumable,
                     onSelectedChange = { working = working.copy(resumable = it) },
                 )
@@ -234,11 +258,13 @@ fun LibraryFilterBottomSheet(
                     selected = working.favorites,
                     onSelectedChange = { working = working.copy(favorites = it) },
                 )
-                AfinityToggleChip(
-                    label = stringResource(R.string.filter_watchlist),
-                    selected = working.watchlist,
-                    onSelectedChange = { working = working.copy(watchlist = it) },
-                )
+                if (capabilities.watchlist) {
+                    AfinityToggleChip(
+                        label = stringResource(R.string.filter_watchlist),
+                        selected = working.watchlist,
+                        onSelectedChange = { working = working.copy(watchlist = it) },
+                    )
+                }
             }
         }
 
@@ -362,6 +388,42 @@ fun LibraryFilterBottomSheet(
                         working = working.copy(genres = working.genres - genre)
                     },
                     onClearAll = { working = working.copy(genres = emptySet()) },
+                )
+            }
+        }
+
+        if (capabilities.studios && options.studios.isNotEmpty()) {
+            val selectedStudios = working.studios.toList()
+            val studioSuggestions =
+                options.studios.filter {
+                    !working.studios.contains(it) &&
+                        (studioQuery.isBlank() || it.contains(studioQuery, ignoreCase = true))
+                }
+
+            FilterAccordionSection(
+                title = stringResource(R.string.library_filter_publishers),
+                summary =
+                    if (selectedStudios.isEmpty()) anyLabel else selectedStudios.joinToString(", "),
+                expanded = expandedSections.contains("studios"),
+                onToggle = { toggleSection("studios") },
+            ) {
+                SearchableChipMultiSelect(
+                    label = null,
+                    placeholder = stringResource(R.string.library_filter_publishers_hint),
+                    query = studioQuery,
+                    onQueryChange = { studioQuery = it },
+                    suggestions = studioSuggestions,
+                    suggestionLabel = { it },
+                    onSuggestionSelected = { studio ->
+                        working = working.copy(studios = working.studios + studio)
+                        studioQuery = ""
+                    },
+                    selected = selectedStudios,
+                    selectedLabel = { it },
+                    onRemoveSelected = { studio ->
+                        working = working.copy(studios = working.studios - studio)
+                    },
+                    onClearAll = { working = working.copy(studios = emptySet()) },
                 )
             }
         }

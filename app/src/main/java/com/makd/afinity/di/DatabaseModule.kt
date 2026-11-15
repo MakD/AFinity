@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.database.DatabaseMigrations
+import com.makd.afinity.data.database.dao.BookAnnotationDao
 import com.makd.afinity.data.database.dao.CustomHomeSectionDao
 import com.makd.afinity.data.database.dao.DeletedItemDao
 import com.makd.afinity.data.database.dao.EpisodeDao
@@ -185,6 +186,11 @@ object DatabaseModule {
     @Provides
     fun provideOfflinePlayDao(database: AfinityDatabase): OfflinePlayDao {
         return database.offlinePlayDao()
+    }
+
+    @Provides
+    fun provideBookAnnotationDao(database: AfinityDatabase): BookAnnotationDao {
+        return database.bookAnnotationDao()
     }
 
     @Provides

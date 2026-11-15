@@ -632,7 +632,7 @@ private fun ColumnScope.CustomSectionEditor(
                 entries =
                     listOf(stringResource(R.string.custom_sections_sort_random) to null) +
                         SortBy.entries
-                            .filterNot { it == SortBy.RANDOM }
+                            .filterNot { it == SortBy.RANDOM || it == SortBy.SERIES_NUMBER }
                             .map { stringResource(it.labelRes) to it },
                 isSelected = {
                     if (it == null) draft.randomOrder else !draft.randomOrder && it == draft.sortBy

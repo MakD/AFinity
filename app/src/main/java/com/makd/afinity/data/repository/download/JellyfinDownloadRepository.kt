@@ -13,6 +13,7 @@ import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadQuality
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.download.PlaylistDownloadFilter
+import com.makd.afinity.data.models.extensions.toAfinityBook
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityMovie
 import com.makd.afinity.data.models.extensions.toAfinityTrack
@@ -24,12 +25,14 @@ import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.PlaylistEntry
 import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.lastfm.LastFmRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.data.storage.VolumeUnavailableException
+import com.makd.afinity.data.workers.BookDownloadWorker
 import com.makd.afinity.data.workers.ImageDownloadWorker
 import com.makd.afinity.data.workers.LyricsDownloadWorker
 import com.makd.afinity.data.workers.MediaDownloadWorker
@@ -78,6 +81,7 @@ constructor(
         const val KEY_ITEM_NAME = "item_name"
         const val KEY_ITEM_TYPE = "item_type"
         const val MAX_CONCURRENT_DOWNLOADS = 2
+        const val BOOK_ITEM_TYPE = "Book"
     }
 
     /**
@@ -167,6 +171,52 @@ constructor(
                                 ItemFields.OVERVIEW,
                             ),
                     ) ?: return@withContext Result.failure(Exception("Item not found"))
+
+                if (baseItemDto.type == BaseItemKind.BOOK) {
+                    val bookDto =
+                        mediaRepository.getItem(itemId = itemId, fields = FieldSets.BOOK_DETAIL)
+                            ?: baseItemDto
+                    val book = bookDto.toAfinityBook(baseUrl)
+                    if (!book.canDownload) {
+                        return@withContext Result.failure(Exception("Downloads not allowed"))
+                    }
+                    val extension =
+                        bookDto.path?.substringAfterLast('.', "")?.lowercase()?.takeIf {
+                            it.isNotBlank()
+                        } ?: "book"
+                    val download =
+                        DownloadDto(
+                            id = UUID.randomUUID(),
+                            itemId = itemId,
+                            itemName = book.name,
+                            itemType = BOOK_ITEM_TYPE,
+                            sourceId = itemId.toString().replace("-", ""),
+                            sourceName = extension,
+                            status = DownloadStatus.QUEUED,
+                            progress = 0f,
+                            bytesDownloaded = 0L,
+                            totalBytes = 0L,
+                            filePath = null,
+                            error = null,
+                            createdAt = System.currentTimeMillis(),
+                            updatedAt = System.currentTimeMillis(),
+                            serverId = serverId,
+                            userId = userId,
+                            imageUrl = book.images.primary?.toString(),
+                            seriesImageUrl = null,
+                            seriesName = book.seriesName,
+                            seasonNumber = null,
+                            episodeNumber = book.seriesIndex,
+                            releaseYear = book.productionYear?.toString(),
+                            runtimeTicks = book.runtimeTicks,
+                            folderPath = "$serverId/books/$itemId",
+                            seriesId = null,
+                            storageVolumeId = resolvedVolumeId,
+                        )
+                    databaseRepository.insertDownload(download)
+                    queueDownloadWork(download)
+                    return@withContext Result.success(download.id)
+                }
 
                 if (baseItemDto.type == BaseItemKind.AUDIO) {
                     val track = baseItemDto.toAfinityTrack(baseUrl)
@@ -409,7 +459,16 @@ constructor(
                 .addTag("download_${download.id}")
                 .build()
 
-        if (download.itemType == "Audio") {
+        if (download.itemType == BOOK_ITEM_TYPE) {
+            val bookRequest =
+                OneTimeWorkRequestBuilder<BookDownloadWorker>()
+                    .setConstraints(constraints)
+                    .setInputData(inputData)
+                    .addTag("download_${download.id}")
+                    .addTag("download_active")
+                    .build()
+            workManager.beginUniqueWork("download_${download.id}", policy, bookRequest).enqueue()
+        } else if (download.itemType == "Audio") {
             workManager
                 .beginUniqueWork("download_${download.id}", policy, mediaDownloadRequest)
                 .then(listOf(imageDownloadRequest, lyricsDownloadRequest))

@@ -341,11 +341,11 @@ constructor(
         )
     }
 
-    fun downloadAlbum(quality: DownloadQuality? = null) {
+    fun downloadAlbum(quality: DownloadQuality? = null, volumeId: String? = null) {
         viewModelScope.launch {
-            downloadRepository.startAlbumDownload(albumId, quality = quality).onFailure {
-                Timber.e(it, "Failed to start album download")
-            }
+            downloadRepository
+                .startAlbumDownload(albumId, volumeId = volumeId, quality = quality)
+                .onFailure { Timber.e(it, "Failed to start album download") }
         }
     }
 
@@ -374,9 +374,9 @@ constructor(
         }
     }
 
-    fun downloadTrack(trackId: UUID) {
+    fun downloadTrack(trackId: UUID, volumeId: String? = null) {
         viewModelScope.launch {
-            downloadRepository.startDownload(trackId, "").onFailure {
+            downloadRepository.startDownload(trackId, "", volumeId = volumeId).onFailure {
                 Timber.e(it, "Failed to download track $trackId")
             }
         }
