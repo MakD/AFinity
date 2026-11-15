@@ -24,7 +24,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -58,6 +57,7 @@ import com.makd.afinity.data.models.media.HighlightColor
 import com.makd.afinity.ui.components.AfinityMenuItem
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinitySegmentedTabs
+import com.makd.afinity.ui.components.AfinitySlider
 import com.makd.afinity.ui.components.SegmentedTab
 import kotlin.math.roundToInt
 import org.readium.r2.navigator.epub.EpubPreferences
@@ -125,7 +125,7 @@ internal fun EpubDisplaySheet(
                     " · " +
                     stringResource(R.string.reader_progress_percent_fmt, (size * 100).roundToInt())
             )
-            Slider(
+            AfinitySlider(
                 value = size,
                 onValueChange = { value ->
                     onPreferencesChange { it.copy(fontSize = ((value * 10).roundToInt() / 10.0)) }
