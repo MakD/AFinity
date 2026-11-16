@@ -24,7 +24,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -39,11 +38,12 @@ import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
-import com.makd.afinity.navigation.LocalBlurUnwatchedEpisodes
 import com.makd.afinity.ui.components.AfinityActionMenu
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.DetailMenuAction
+import com.makd.afinity.ui.components.episodeBlur
 import com.makd.afinity.ui.components.formatClockTicks
+import com.makd.afinity.ui.components.shouldBlurEpisode
 
 @Composable
 fun PlaylistVideoRow(
@@ -74,10 +74,9 @@ fun PlaylistVideoRow(
                     .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center,
         ) {
-            val shouldBlurEpisode =
-                item is AfinityEpisode && LocalBlurUnwatchedEpisodes.current && !item.played
+            val imageUrl = item.images.primaryImageUrl
             AsyncImage(
-                imageUrl = item.images.primaryImageUrl,
+                imageUrl = imageUrl,
                 contentDescription = item.name,
                 blurHash = item.images.primaryBlurHash,
                 targetWidth = 48.dp,
@@ -85,7 +84,7 @@ fun PlaylistVideoRow(
                 modifier =
                     Modifier.size(48.dp)
                         .aspectRatio(1f)
-                        .then(if (shouldBlurEpisode) Modifier.blur(12.dp) else Modifier),
+                        .episodeBlur(shouldBlurEpisode(item, imageUrl)),
                 contentScale = ContentScale.Crop,
             )
         }

@@ -57,7 +57,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -108,7 +107,6 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicSearchResults
-import com.makd.afinity.navigation.LocalBlurUnwatchedEpisodes
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.book.seriesLine
 import com.makd.afinity.ui.components.AsyncImage
@@ -118,9 +116,11 @@ import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.MetadataOverflowRow
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
+import com.makd.afinity.ui.components.episodeBlur
 import com.makd.afinity.ui.components.formatRuntimeSeconds
 import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
+import com.makd.afinity.ui.components.shouldBlurEpisode
 import com.makd.afinity.ui.music.components.MusicAdminDialogs
 import com.makd.afinity.ui.music.components.MusicAdminRequest
 import com.makd.afinity.ui.music.components.MusicAdminViewModel
@@ -962,8 +962,6 @@ private fun GenreCard(genre: String, onClick: () -> Unit, isAudiobookshelf: Bool
 @Composable
 private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
     val ratingScale = rememberRatingMetadataScale()
-    val shouldBlurEpisode =
-        item is AfinityEpisode && LocalBlurUnwatchedEpisodes.current && !item.played
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -982,15 +980,13 @@ private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
             val imageModifier = Modifier.width(imgTargetW).height(imgTargetH)
             Box(modifier = imageModifier) {
                 Card(modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(8.dp)) {
+                    val imageUrl = item.images.primaryImageUrl
                     AsyncImage(
-                        imageUrl = item.images.primaryImageUrl,
+                        imageUrl = imageUrl,
                         contentDescription = item.name,
                         blurHash = item.images.primaryBlurHash,
                         modifier =
-                            Modifier.fillMaxSize()
-                                .then(
-                                    if (shouldBlurEpisode) Modifier.blur(12.dp) else Modifier
-                                ),
+                            Modifier.fillMaxSize().episodeBlur(shouldBlurEpisode(item, imageUrl)),
                         contentScale = ContentScale.Crop,
                         targetWidth = imgTargetW,
                         targetHeight = imgTargetH,

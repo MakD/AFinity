@@ -20,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -37,13 +36,11 @@ import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityBoxSet
-import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideoPlaylist
-import com.makd.afinity.navigation.LocalBlurUnwatchedEpisodes
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.preview.CardSizePreviewProvider
 import com.makd.afinity.ui.preview.FontScalePreviews
@@ -85,8 +82,6 @@ fun MediaItemCard(
     subtitle: String? = null,
 ) {
     val ratingScale = rememberRatingMetadataScale()
-    val shouldBlurEpisode =
-        item is AfinityEpisode && LocalBlurUnwatchedEpisodes.current && !item.played
     val effectiveAspectRatio =
         if (item is AfinityVideoPlaylist) CardDimensions.ASPECT_RATIO_SQUARE else aspectRatio
 
@@ -99,8 +94,9 @@ fun MediaItemCard(
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
+                val imageUrl = item.images.primaryImageUrl ?: item.images.backdropImageUrl
                 AsyncImage(
-                    imageUrl = item.images.primaryImageUrl ?: item.images.backdropImageUrl,
+                    imageUrl = imageUrl,
                     contentDescription = item.name,
                     blurHash = item.images.primaryBlurHash ?: item.images.backdropBlurHash,
                     targetWidth = cardWidth,
@@ -108,9 +104,7 @@ fun MediaItemCard(
                     contentScale = ContentScale.Crop,
                     modifier =
                         Modifier.fillMaxSize()
-                            .then(
-                                if (shouldBlurEpisode) Modifier.blur(12.dp) else Modifier
-                            )
+                            .episodeBlur(shouldBlurEpisode(item, imageUrl))
                             .alpha(if (isUnavailable) 0.4f else 1f),
                 )
 

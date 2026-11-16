@@ -28,7 +28,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -57,7 +56,6 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityTrack
-import com.makd.afinity.navigation.LocalBlurUnwatchedEpisodes
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.ContinueWatchingCard
@@ -65,8 +63,10 @@ import com.makd.afinity.ui.components.GalleryTile
 import com.makd.afinity.ui.components.LibraryCard
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.components.MusicVideoCardRow
+import com.makd.afinity.ui.components.episodeBlur
 import com.makd.afinity.ui.components.formatTimeLeftTicks
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
+import com.makd.afinity.ui.components.shouldBlurEpisode
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
@@ -565,22 +565,13 @@ fun UpcomingEpisodeCard(
                         ?: episode.images.showBackdropImageUrl
                         ?: episode.images.showPrimaryImageUrl
                         ?: episode.images.primaryImageUrl
-                val isEpisodeImage =
-                    imageUrl != null &&
-                        (imageUrl == episode.images.thumbImageUrl ||
-                            imageUrl == episode.images.primaryImageUrl)
-                val shouldBlurEpisode =
-                    LocalBlurUnwatchedEpisodes.current && !episode.played && isEpisodeImage
 
                 AsyncImage(
                     imageUrl = imageUrl,
                     blurHash = blurHash,
                     contentDescription = episode.name,
                     modifier =
-                        Modifier.fillMaxSize()
-                            .then(
-                                if (shouldBlurEpisode) Modifier.blur(12.dp) else Modifier
-                            ),
+                        Modifier.fillMaxSize().episodeBlur(shouldBlurEpisode(episode, imageUrl)),
                     contentScale = ContentScale.Crop,
                     targetWidth = cardWidth,
                     targetHeight = cardWidth / CardDimensions.ASPECT_RATIO_LANDSCAPE,

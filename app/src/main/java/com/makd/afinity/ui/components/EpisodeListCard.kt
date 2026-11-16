@@ -28,7 +28,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -52,7 +51,6 @@ import com.makd.afinity.data.models.extensions.showThumbImageUrl
 import com.makd.afinity.data.models.extensions.thumbBlurHash
 import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
-import com.makd.afinity.navigation.LocalBlurUnwatchedEpisodes
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.util.DateSkeleton
@@ -116,14 +114,7 @@ fun EpisodeListCard(
                     blurHash = blurHash,
                     contentDescription = item.name,
                     modifier =
-                        Modifier.fillMaxSize()
-                            .then(
-                                if (LocalBlurUnwatchedEpisodes.current && !item.played) {
-                                    Modifier.blur(12.dp)
-                                } else {
-                                    Modifier
-                                }
-                            ),
+                        Modifier.fillMaxSize().episodeBlur(shouldBlurEpisode(item, imageUrl)),
                     contentScale = ContentScale.Crop,
                     targetWidth = thumbnailWidth,
                     targetHeight = thumbnailWidth / CardDimensions.ASPECT_RATIO_LANDSCAPE,

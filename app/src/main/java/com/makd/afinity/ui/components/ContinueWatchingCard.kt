@@ -24,7 +24,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -54,7 +53,6 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.AfinityShow
-import com.makd.afinity.navigation.LocalBlurUnwatchedEpisodes
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.preview.CardSizePreviewProvider
 import com.makd.afinity.ui.preview.FontScalePreviews
@@ -119,22 +117,10 @@ fun ContinueWatchingCard(
                             ?: item.images.showBackdropImageUrl
                     }
 
-                val isEpisodeImage =
-                    item is AfinityEpisode &&
-                        imageUrl != null &&
-                        (imageUrl == item.images.primaryImageUrl ||
-                            imageUrl == item.images.thumbImageUrl ||
-                            imageUrl == item.images.backdropImageUrl)
                 val isMissing = item is AfinityEpisode && item.missing
                 val isUpcoming =
                     isMissing && item.premiereDate?.isAfter(java.time.LocalDateTime.now()) == true
                 val isMissingAndAired = isMissing && !isUpcoming
-                val shouldBlurEpisode =
-                    LocalBlurUnwatchedEpisodes.current &&
-                        item is AfinityEpisode &&
-                        !item.played &&
-                        item.playbackPositionTicks <= 0L &&
-                        isEpisodeImage
 
                 AsyncImage(
                     imageUrl = imageUrl,
@@ -142,7 +128,7 @@ fun ContinueWatchingCard(
                     contentDescription = item.name,
                     modifier =
                         Modifier.fillMaxSize()
-                            .then(if (shouldBlurEpisode) Modifier.blur(12.dp) else Modifier)
+                            .episodeBlur(shouldBlurEpisode(item, imageUrl))
                             .alpha(if (isMissingAndAired) 0.5f else 1f),
                     contentScale = ContentScale.Crop,
                     targetWidth = cardWidth,

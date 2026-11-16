@@ -33,7 +33,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
@@ -59,13 +58,14 @@ import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.navigation.LocalBlurUnwatchedEpisodes
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.episodeBlur
 import com.makd.afinity.ui.components.formatRuntimeTicks
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
+import com.makd.afinity.ui.components.shouldBlurEpisode
 import java.util.Locale
 import java.util.UUID
 
@@ -159,14 +159,12 @@ private fun CastEpisodeCard(
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest)
         ) {
-            val shouldBlur =
-                LocalBlurUnwatchedEpisodes.current && !episode.played && !isCurrentlyPlaying
+            val imageUrl = episode.images.primaryImageUrl
+            val shouldBlur = !isCurrentlyPlaying && shouldBlurEpisode(episode, imageUrl)
             AsyncImage(
-                imageUrl = episode.images.primaryImageUrl,
+                imageUrl = imageUrl,
                 contentDescription = episode.name,
-                modifier =
-                    Modifier.fillMaxSize()
-                        .then(if (shouldBlur) Modifier.blur(12.dp) else Modifier),
+                modifier = Modifier.fillMaxSize().episodeBlur(shouldBlur),
                 contentScale = ContentScale.Crop,
                 blurHash = episode.images.primaryBlurHash,
                 targetWidth = 140.dp,

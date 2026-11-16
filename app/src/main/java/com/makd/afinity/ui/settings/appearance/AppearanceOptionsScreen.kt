@@ -261,7 +261,7 @@ fun AppearanceOptionsScreen(
                         SettingsDivider()
                     }
                     SettingsSwitchItem(
-                        icon = painterResource(id = R.drawable.ic_visibility),
+                        icon = painterResource(id = R.drawable.ic_visibility_off),
                         title = stringResource(R.string.pref_blur_unwatched_episodes_title),
                         subtitle = stringResource(R.string.pref_blur_unwatched_episodes_summary),
                         checked = blurUnwatchedEpisodes,

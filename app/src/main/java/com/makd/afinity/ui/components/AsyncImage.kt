@@ -148,9 +148,7 @@ private fun rememberBlurHashPainter(
         }
 
     val painter =
-        remember(cacheKey) {
-            cacheKey?.let { BlurHashPainter(blurHashBitmapCache.get(it)) }
-        }
+        remember(cacheKey) { cacheKey?.let { BlurHashPainter(blurHashBitmapCache.get(it)) } }
 
     LaunchedEffect(cacheKey) {
         if (cacheKey == null || blurHash == null || painter == null) return@LaunchedEffect

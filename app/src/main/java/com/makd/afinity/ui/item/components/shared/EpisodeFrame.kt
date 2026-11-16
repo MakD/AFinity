@@ -27,7 +27,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -52,9 +51,10 @@ import com.makd.afinity.data.models.extensions.showThumbImageUrl
 import com.makd.afinity.data.models.extensions.thumbBlurHash
 import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
-import com.makd.afinity.navigation.LocalBlurUnwatchedEpisodes
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.episodeBlur
 import com.makd.afinity.ui.components.formatClockTicks
+import com.makd.afinity.ui.components.shouldBlurEpisode
 
 @Composable
 fun EpisodeFrame(
@@ -108,10 +108,7 @@ fun EpisodeFrame(
             }
         }
 
-    val hasEpisodeImage =
-        imageUrl != null &&
-            (imageUrl == episode.images.thumbImageUrl || imageUrl == episode.images.primaryImageUrl)
-    val isUnwatched = LocalBlurUnwatchedEpisodes.current && !episode.played && hasEpisodeImage
+    val isUnwatched = shouldBlurEpisode(episode, imageUrl)
     var isRevealed by rememberSaveable(episode.id) { mutableStateOf(false) }
     val shouldBlur = isUnwatched && !isRevealed
 
@@ -144,9 +141,7 @@ fun EpisodeFrame(
             blurHash = blurHash,
             targetWidth = 400.dp,
             targetHeight = 225.dp,
-            modifier =
-                Modifier.fillMaxSize()
-                    .then(if (shouldBlur) Modifier.blur(12.dp) else Modifier),
+            modifier = Modifier.fillMaxSize().episodeBlur(shouldBlur),
             contentScale = ContentScale.Crop,
         )
 

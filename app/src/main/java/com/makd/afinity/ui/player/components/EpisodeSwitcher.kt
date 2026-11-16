@@ -40,7 +40,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
@@ -69,11 +68,12 @@ import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
-import com.makd.afinity.navigation.LocalBlurUnwatchedEpisodes
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.episodeBlur
 import com.makd.afinity.ui.components.formatRuntimeTicks
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
+import com.makd.afinity.ui.components.shouldBlurEpisode
 import java.util.Locale
 import java.util.UUID
 
@@ -323,17 +323,18 @@ private fun EpisodeSwitcherCard(
             val watched =
                 episode.played || (liveProgress != null && liveProgress >= PLAYED_FRACTION)
             val shouldBlur =
-                LocalBlurUnwatchedEpisodes.current &&
-                    episode is AfinityEpisode &&
-                    !watched &&
-                    !isCurrentlyPlaying
+                !isCurrentlyPlaying &&
+                    shouldBlurEpisode(
+                        item = episode,
+                        imageUrl = cardImageUrl,
+                        watched = watched,
+                        started = episode.playbackPositionTicks > 0L || (liveProgress ?: 0f) > 0f,
+                    )
 
             AsyncImage(
                 imageUrl = cardImageUrl.toString(),
                 contentDescription = displayItem.name,
-                modifier =
-                    Modifier.fillMaxSize()
-                        .then(if (shouldBlur) Modifier.blur(12.dp) else Modifier),
+                modifier = Modifier.fillMaxSize().episodeBlur(shouldBlur),
                 contentScale = ContentScale.Crop,
                 blurHash = cardBlurHash,
                 targetWidth = 140.dp,
