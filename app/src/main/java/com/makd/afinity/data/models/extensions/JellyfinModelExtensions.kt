@@ -589,7 +589,7 @@ fun BaseItemDto.toAfinityPhotoAlbum(baseUrl: String): AfinityPhotoAlbum {
         providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
         externalUrls = toAfinityExternalUrls(),
         parentId = parentId,
-        childCount = childCount,
+        childCount = recursiveItemCount ?: childCount,
         aspectRatio = primaryImageAspectRatio?.takeIf { it > 0.0 }?.toFloat(),
         dateCreated = dateCreated,
     )

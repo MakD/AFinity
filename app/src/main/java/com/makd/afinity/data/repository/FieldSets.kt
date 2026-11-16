@@ -118,6 +118,7 @@ object FieldSets {
             ItemFields.PARENT_ID,
             ItemFields.DATE_CREATED,
             ItemFields.CHILD_COUNT,
+            ItemFields.RECURSIVE_ITEM_COUNT,
             ItemFields.CAN_DOWNLOAD,
         )
 
