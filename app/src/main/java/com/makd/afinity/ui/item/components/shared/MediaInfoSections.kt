@@ -32,6 +32,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.utils.htmlToAnnotatedString
@@ -148,6 +149,7 @@ fun TaglineSection(item: AfinityItem) {
         when (item) {
             is AfinityMovie -> item.tagline
             is AfinityShow -> item.tagline
+            is AfinityMusicVideo -> item.tagline
             else -> null
         }
 

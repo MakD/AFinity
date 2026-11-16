@@ -28,7 +28,18 @@ enum class SeriesStatusFilter(val serialName: String) {
 enum class LibraryFormatFilter {
     BOOKS,
     AUDIOBOOKS,
+    PHOTOS,
+    PHOTO_ALBUMS,
+    VIDEOS,
 }
+
+fun galleryItemTypes(formats: Set<LibraryFormatFilter>): List<String> =
+    when {
+        LibraryFormatFilter.PHOTOS in formats -> listOf("PHOTO")
+        LibraryFormatFilter.PHOTO_ALBUMS in formats -> listOf("PHOTO_ALBUM")
+        LibraryFormatFilter.VIDEOS in formats -> listOf("VIDEO")
+        else -> listOf("PHOTO", "VIDEO")
+    }
 
 enum class BookLibraryComposition {
     BOOKS,

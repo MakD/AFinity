@@ -60,7 +60,7 @@ enum class Destination(
         const val LIBRARY_CONTENT_ROUTE = "library_content/{libraryId}/{libraryName}"
         const val STUDIO_CONTENT_ROUTE = "studio_content/{studioName}"
         const val FRANCHISE_ROUTE = "franchise/{franchiseId}"
-        const val FOLDER_CONTENT_ROUTE = "folder_content/{folderId}/{folderName}"
+        const val FOLDER_CONTENT_ROUTE = "folder_content/{folderId}/{folderName}?gallery={gallery}"
         const val CUSTOM_SECTION_CONTENT_ROUTE = "custom_section_content/{sectionId}"
         const val ITEM_DETAIL_ROUTE = "item_detail/{itemId}?itemType={itemType}&seriesId={seriesId}"
         const val EPISODE_LIST_ROUTE = "episodes/{seasonId}/{seasonName}"
@@ -173,6 +173,8 @@ enum class Destination(
         const val MUSIC_BROWSE_ROUTE = "music/library/{libraryId}/{libraryName}/browse/{tab}"
         const val BOOK_DETAIL_ROUTE = "book/{itemId}"
         const val BOOK_READER_ROUTE = "book/{itemId}/read"
+        const val PHOTO_VIEWER_ROUTE =
+            "photo_viewer/{parentId}/{startId}?sortBy={sortBy}&desc={desc}"
         const val AUDIOBOOK_DETAIL_ROUTE = "audiobook/{itemId}"
         const val MUSIC_ALBUM_ROUTE = "music/album/{albumId}"
         const val MUSIC_ARTIST_ROUTE = "music/artist/{artistId}"
@@ -206,6 +208,13 @@ enum class Destination(
         fun createBookDetailRoute(itemId: String): String = "book/$itemId"
 
         fun createBookReaderRoute(itemId: String): String = "book/$itemId/read"
+
+        fun createPhotoViewerRoute(
+            parentId: String,
+            startId: String,
+            sortBy: String,
+            descending: Boolean,
+        ): String = "photo_viewer/$parentId/$startId?sortBy=$sortBy&desc=$descending"
 
         fun createAudiobookDetailRoute(itemId: String): String = "audiobook/$itemId"
 
@@ -334,8 +343,13 @@ enum class Destination(
             return "franchise/$franchiseId"
         }
 
-        fun createFolderContentRoute(folderId: String, folderName: String): String {
-            return "folder_content/$folderId/${URLEncoder.encode(folderName, "UTF-8")}"
+        fun createFolderContentRoute(
+            folderId: String,
+            folderName: String,
+            gallery: Boolean = false,
+        ): String {
+            val route = "folder_content/$folderId/${URLEncoder.encode(folderName, "UTF-8")}"
+            return if (gallery) "$route?gallery=true" else route
         }
 
         fun createCustomSectionContentRoute(sectionId: String): String {

@@ -74,6 +74,7 @@ import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.ImageHeroKind
 import com.makd.afinity.ui.components.LandscapeDetailArrangement
 import com.makd.afinity.ui.components.LandscapeDetailLayout
+import com.makd.afinity.ui.components.MusicVideoCardRow
 import com.makd.afinity.ui.components.PortraitDetailLayout
 import com.makd.afinity.ui.components.PortraitHero
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
@@ -106,6 +107,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun MusicArtistScreen(
     onMusicAlbumClick: (String) -> Unit,
+    onMusicVideoClick: (String) -> Unit,
     onHomeClick: () -> Unit,
     onEditMetadataClick: (String) -> Unit,
     onEditImagesClick: (String) -> Unit,
@@ -556,6 +558,23 @@ fun MusicArtistScreen(
                             }
                         }
                     }
+                }
+            }
+        }
+
+        if (uiState.musicVideos.isNotEmpty()) {
+            item(key = "music_videos_section") {
+                Column(modifier = Modifier.padding(horizontal = DetailGutter)) {
+                    Text(
+                        text = stringResource(R.string.music_section_music_videos),
+                        style = afinitySectionTitleStyle(),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(top = 32.dp, bottom = 16.dp),
+                    )
+                    MusicVideoCardRow(
+                        videos = uiState.musicVideos,
+                        onVideoClick = { onMusicVideoClick(it.id.toString()) },
+                    )
                 }
             }
         }

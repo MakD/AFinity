@@ -5,7 +5,12 @@ import com.makd.afinity.data.manager.MediaChangeSource
 import com.makd.afinity.data.manager.MediaRefreshBus
 import com.makd.afinity.data.manager.RefreshTrigger
 import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityFolder
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityMusicVideo
+import com.makd.afinity.data.models.media.AfinityPhoto
+import com.makd.afinity.data.models.media.AfinityPhotoAlbum
+import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.UserDataPatch
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
@@ -143,6 +148,11 @@ constructor(
             is com.makd.afinity.data.models.media.AfinityBoxSet -> copy(favorite = isFavorite)
             is com.makd.afinity.data.models.media.AfinityBook -> copy(favorite = isFavorite)
             is com.makd.afinity.data.models.media.AfinityAudiobook -> copy(favorite = isFavorite)
+            is AfinityVideo -> copy(favorite = isFavorite)
+            is AfinityMusicVideo -> copy(favorite = isFavorite)
+            is AfinityPhoto -> copy(favorite = isFavorite)
+            is AfinityPhotoAlbum -> copy(favorite = isFavorite)
+            is AfinityFolder -> copy(favorite = isFavorite)
             else -> this
         }
 
@@ -155,6 +165,11 @@ constructor(
             is com.makd.afinity.data.models.media.AfinityBoxSet -> copy(liked = isLiked)
             is com.makd.afinity.data.models.media.AfinityBook -> copy(liked = isLiked)
             is com.makd.afinity.data.models.media.AfinityAudiobook -> copy(liked = isLiked)
+            is AfinityVideo -> copy(liked = isLiked)
+            is AfinityMusicVideo -> copy(liked = isLiked)
+            is AfinityPhoto -> copy(liked = isLiked)
+            is AfinityPhotoAlbum -> copy(liked = isLiked)
+            is AfinityFolder -> copy(liked = isLiked)
             else -> this
         }
 }

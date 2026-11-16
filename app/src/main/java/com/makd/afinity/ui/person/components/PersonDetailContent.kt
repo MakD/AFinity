@@ -58,6 +58,7 @@ import com.makd.afinity.data.models.media.AfinityAudiobook
 import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.wikidata.WikidataAwards
@@ -95,6 +96,7 @@ fun PersonDetailContent(
     shows: List<AfinityShow>,
     books: List<AfinityBook>,
     audiobooks: List<AfinityAudiobook>,
+    musicVideos: List<AfinityMusicVideo>,
     onItemClick: (AfinityItem) -> Unit,
     onToggleFavorite: () -> Unit,
     awards: WikidataAwards?,
@@ -140,6 +142,7 @@ fun PersonDetailContent(
             shows = shows,
             books = books,
             audiobooks = audiobooks,
+            musicVideos = musicVideos,
             onItemClick = onItemClick,
             onToggleFavorite = onToggleFavorite,
             awards = awards,
@@ -157,6 +160,7 @@ fun PersonDetailContent(
             shows = shows,
             books = books,
             audiobooks = audiobooks,
+            musicVideos = musicVideos,
             onItemClick = onItemClick,
             onToggleFavorite = onToggleFavorite,
             awards = awards,
@@ -178,6 +182,7 @@ private fun LandscapePersonDetailContent(
     shows: List<AfinityShow>,
     books: List<AfinityBook>,
     audiobooks: List<AfinityAudiobook>,
+    musicVideos: List<AfinityMusicVideo>,
     onItemClick: (AfinityItem) -> Unit,
     onToggleFavorite: () -> Unit,
     awards: WikidataAwards?,
@@ -241,6 +246,7 @@ private fun LandscapePersonDetailContent(
                         shows = shows,
                         books = books,
                         audiobooks = audiobooks,
+                        musicVideos = musicVideos,
                         onItemClick = onItemClick,
                         cardWidth = WindowWidthSizeClass.Compact.portraitWidth,
                         awards = awards,
@@ -262,6 +268,7 @@ private fun PortraitPersonDetailContent(
     shows: List<AfinityShow>,
     books: List<AfinityBook>,
     audiobooks: List<AfinityAudiobook>,
+    musicVideos: List<AfinityMusicVideo>,
     onItemClick: (AfinityItem) -> Unit,
     onToggleFavorite: () -> Unit,
     awards: WikidataAwards?,
@@ -311,6 +318,7 @@ private fun PortraitPersonDetailContent(
                 shows = shows,
                 books = books,
                 audiobooks = audiobooks,
+                musicVideos = musicVideos,
                 onItemClick = onItemClick,
                 cardWidth = cardWidth,
                 awards = awards,
@@ -330,6 +338,7 @@ private fun PersonSharedContentBlocks(
     shows: List<AfinityShow>,
     books: List<AfinityBook>,
     audiobooks: List<AfinityAudiobook>,
+    musicVideos: List<AfinityMusicVideo>,
     onItemClick: (AfinityItem) -> Unit,
     cardWidth: Dp,
     awards: WikidataAwards?,
@@ -386,6 +395,16 @@ private fun PersonSharedContentBlocks(
             onItemClick = onItemClick,
             cardWidth = cardWidth,
             aspectRatio = CardDimensions.ASPECT_RATIO_SQUARE,
+        )
+    }
+
+    if (musicVideos.isNotEmpty()) {
+        PersonFilmographySection(
+            title = stringResource(R.string.music_section_music_videos),
+            items = musicVideos,
+            onItemClick = onItemClick,
+            cardWidth = CardDimensions.landscapeCardWidth,
+            aspectRatio = CardDimensions.ASPECT_RATIO_LANDSCAPE,
         )
     }
 

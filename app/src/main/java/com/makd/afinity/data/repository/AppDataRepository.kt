@@ -21,18 +21,24 @@ import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityAudiobook
 import com.makd.afinity.data.models.extensions.toAfinityBook
 import com.makd.afinity.data.models.extensions.toAfinityItem
+import com.makd.afinity.data.models.extensions.toAfinityMusicVideo
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.media.AfinityAudiobook
 import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityFolder
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.AfinityPersonDetail
+import com.makd.afinity.data.models.media.AfinityPhoto
+import com.makd.afinity.data.models.media.AfinityPhotoAlbum
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.models.media.groupedIntoBooks
 import com.makd.afinity.data.models.media.withPatchedImages
@@ -348,6 +354,16 @@ constructor(
     val latestAudiobookSections: StateFlow<List<Pair<AfinityCollection, List<AfinityAudiobook>>>> =
         _latestAudiobookSections.asStateFlow()
 
+    private val _latestHomeVideoSections =
+        MutableStateFlow<List<Pair<AfinityCollection, List<AfinityItem>>>>(emptyList())
+    val latestHomeVideoSections: StateFlow<List<Pair<AfinityCollection, List<AfinityItem>>>> =
+        _latestHomeVideoSections.asStateFlow()
+
+    private val _latestMusicVideoSections =
+        MutableStateFlow<List<Pair<AfinityCollection, List<AfinityItem>>>>(emptyList())
+    val latestMusicVideoSections: StateFlow<List<Pair<AfinityCollection, List<AfinityItem>>>> =
+        _latestMusicVideoSections.asStateFlow()
+
     private val bookShelfJson = Json {
         ignoreUnknownKeys = true
         explicitNulls = false
@@ -531,7 +547,7 @@ constructor(
         return coroutineScope {
             val books = async {
                 if (HomeRow.LATEST_BOOKS in hidden) null
-                else shelves(LATEST_BOOKS_LIMIT, FieldSets.BOOK_GRID, BaseItemKind.BOOK)
+                else shelves(LATEST_BOOKS_LIMIT, FieldSets.BOOK_SHELF, BaseItemKind.BOOK)
             }
             val audiobooks = async {
                 if (HomeRow.LATEST_AUDIOBOOKS in hidden) null
@@ -546,13 +562,15 @@ constructor(
         }
     }
 
-    private fun CachedBookShelf.library(): AfinityCollection {
+    private fun CachedBookShelf.library(
+        fallbackType: CollectionType = CollectionType.Books
+    ): AfinityCollection {
         val id = UUID.fromString(libraryId)
         return _libraries.value.firstOrNull { it.id == id }
             ?: AfinityCollection(
                 id = id,
                 name = libraryName,
-                type = CollectionType.Books,
+                type = fallbackType,
                 images = AfinityImages(),
                 providerIds = null,
                 externalUrls = null,
@@ -631,6 +649,133 @@ constructor(
             if (HomeRow.LATEST_AUDIOBOOKS in hidden) null
             else decode(homeCacheRepository.getRaw("latest_audiobooks_$cacheKey"))
         applyBookShelves(books, audiobooks)
+    }
+
+    private suspend fun loadVideoShelves(
+        libraries: List<AfinityCollection>
+    ): Pair<List<CachedBookShelf>?, List<CachedBookShelf>?> {
+        val hidden = homeLayoutPreferencesRepository.getHiddenRows()
+        suspend fun shelves(
+            types: Set<CollectionType>,
+            fields: List<ItemFields>,
+            groupItems: Boolean,
+            includeItemTypes: List<BaseItemKind>?,
+        ): List<CachedBookShelf> = coroutineScope {
+            libraries
+                .filter { it.type in types }
+                .map { library ->
+                    async {
+                        CachedBookShelf(
+                            libraryId = library.id.toString(),
+                            libraryName = library.name,
+                            items =
+                                mediaRepository.getLatestDtos(
+                                    parentId = library.id,
+                                    limit = LATEST_VIDEOS_LIMIT,
+                                    fields = fields,
+                                    groupItems = groupItems,
+                                    includeItemTypes = includeItemTypes,
+                                ),
+                        )
+                    }
+                }
+                .awaitAll()
+                .filter { it.items.isNotEmpty() }
+        }
+        return coroutineScope {
+            val home = async {
+                if (HomeRow.LATEST_HOME_VIDEOS in hidden) null
+                else shelves(CollectionType.gallery, FieldSets.PHOTO_GRID, true, null)
+            }
+            val music = async {
+                if (HomeRow.LATEST_MUSIC_VIDEOS in hidden) null
+                else
+                    shelves(
+                        setOf(CollectionType.MusicVideos),
+                        FieldSets.MUSIC_VIDEO_GRID,
+                        false,
+                        listOf(BaseItemKind.MUSIC_VIDEO),
+                    )
+            }
+            home.await() to music.await()
+        }
+    }
+
+    private fun applyVideoShelves(
+        home: List<CachedBookShelf>?,
+        music: List<CachedBookShelf>?,
+    ) {
+        val baseUrl = mediaRepository.getBaseUrl()
+        if (home != null) {
+            _latestHomeVideoSections.value = home.mapNotNull { shelf ->
+                shelf.items
+                    .mapNotNull { it.toAfinityItem(baseUrl) }
+                    .filter {
+                        it is AfinityPhoto ||
+                            it is AfinityPhotoAlbum ||
+                            it is AfinityVideo ||
+                            it is AfinityFolder
+                    }
+                    .takeIf { it.isNotEmpty() }
+                    ?.let { shelf.library(CollectionType.HomeVideos) to it }
+            }
+        }
+        if (music != null) {
+            _latestMusicVideoSections.value = music.mapNotNull { shelf ->
+                shelf.items
+                    .filter { it.type == BaseItemKind.MUSIC_VIDEO }
+                    .map { it.toAfinityMusicVideo(baseUrl) }
+                    .takeIf { it.isNotEmpty() }
+                    ?.let { shelf.library(CollectionType.MusicVideos) to it }
+            }
+        }
+    }
+
+    private suspend fun refreshVideoShelves(libraries: List<AfinityCollection>, cacheKey: String?) {
+        try {
+            val (home, music) = loadVideoShelves(libraries)
+            applyVideoShelves(home, music)
+            if (cacheKey == null) return
+            val serializer = ListSerializer(CachedBookShelf.serializer())
+            if (!home.isNullOrEmpty()) {
+                homeCacheRepository.putRaw(
+                    "latest_home_videos_$cacheKey",
+                    bookShelfJson.encodeToString(serializer, home),
+                )
+            }
+            if (!music.isNullOrEmpty()) {
+                homeCacheRepository.putRaw(
+                    "latest_music_videos_$cacheKey",
+                    bookShelfJson.encodeToString(serializer, music),
+                )
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to refresh latest video rows")
+        }
+    }
+
+    private suspend fun restoreVideoShelves(cacheKey: String) {
+        val serializer = ListSerializer(CachedBookShelf.serializer())
+        fun decode(raw: String?): List<CachedBookShelf>? = raw?.let {
+            try {
+                bookShelfJson.decodeFromString(serializer, it)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Unreadable cached video row")
+                null
+            }
+        }
+        val hidden = homeLayoutPreferencesRepository.getHiddenRows()
+        val home =
+            if (HomeRow.LATEST_HOME_VIDEOS in hidden) null
+            else decode(homeCacheRepository.getRaw("latest_home_videos_$cacheKey"))
+        val music =
+            if (HomeRow.LATEST_MUSIC_VIDEOS in hidden) null
+            else decode(homeCacheRepository.getRaw("latest_music_videos_$cacheKey"))
+        applyVideoShelves(home, music)
     }
 
     private suspend fun refreshContinueBookRows() {
@@ -737,6 +882,7 @@ constructor(
                         ?: emptyList()
                 mediaRepository.restoreCachedLibraries()?.let { _libraries.value = it }
                 restoreBookShelves(cacheKey)
+                restoreVideoShelves(cacheKey)
 
                 startLiveDataCollectors()
                 updateProgress(1f, context.getString(R.string.loading_phase_ready))
@@ -815,6 +961,7 @@ constructor(
                     persistHomeCache(cacheKey, latestMovies, latestTvSeries)
                 }
                 launch { refreshBookShelves(libraries, cacheKey.takeIf { hasSession }) }
+                launch { refreshVideoShelves(libraries, cacheKey.takeIf { hasSession }) }
             }
         } catch (e: CancellationException) {
             throw e
@@ -861,6 +1008,7 @@ constructor(
 
                 val homeDataDeferred = async { loadHomeSpecificData(libraries) }
                 val bookShelvesDeferred = async { refreshBookShelves(libraries, cacheKey) }
+                val videoShelvesDeferred = async { refreshVideoShelves(libraries, cacheKey) }
 
                 val (latestMovies, latestTvSeries) = homeDataDeferred.await()
                 _latestMovies.value = latestMovies
@@ -871,6 +1019,7 @@ constructor(
                 nextUpDeferred.await()
                 continueBookRowsDeferred.await()
                 bookShelvesDeferred.await()
+                videoShelvesDeferred.await()
                 persistHomeCache(cacheKey, latestMovies, latestTvSeries)
             }
             Timber.d("Background network refresh complete")
@@ -947,7 +1096,13 @@ constructor(
                     ) {
                         refreshContinueBookRows()
                     }
-                    if ((LATEST_ROWS + LATEST_BOOK_ROWS).none { it in reEnabled }) return@collect
+                    if (
+                        (LATEST_ROWS + LATEST_BOOK_ROWS + LATEST_VIDEO_ROWS).none {
+                            it in reEnabled
+                        }
+                    ) {
+                        return@collect
+                    }
                     Timber.d("Latest row re-enabled — refreshing library sections")
                     refreshLibrarySections()
                 }
@@ -1638,6 +1793,7 @@ constructor(
         try {
             coroutineScope {
                 launch { refreshBookShelves(libs, currentCacheKey()) }
+                launch { refreshVideoShelves(libs, currentCacheKey()) }
                 val (latestMovies, latestTvSeries) = loadHomeSpecificData(libs)
                 if (latestMovies.isNotEmpty()) _latestMovies.value = latestMovies
                 if (latestTvSeries.isNotEmpty()) _latestTvSeries.value = latestTvSeries
@@ -1734,6 +1890,10 @@ constructor(
                 is AfinityAudiobook ->
                     if (updatedItem.isGrouped) data
                     else data.copy(audiobookParts = data.audiobookParts.replacedWith(updatedItem))
+                is AfinityVideo,
+                is AfinityMusicVideo -> data.copy(videos = data.videos.replacedWith(updatedItem))
+                is AfinityPhoto,
+                is AfinityPhotoAlbum -> data.copy(photos = data.photos.replacedWith(updatedItem))
                 else -> data
             }
         }
@@ -1820,6 +1980,14 @@ constructor(
                         boxSets = media.filterIsInstance<AfinityBoxSet>().sortedBy { it.name },
                         books = media.filterIsInstance<AfinityBook>().sortedBy { it.name },
                         audiobookParts = media.filterIsInstance<AfinityAudiobook>(),
+                        videos =
+                            media
+                                .filter { it is AfinityVideo || it is AfinityMusicVideo }
+                                .sortedBy { it.name },
+                        photos =
+                            media
+                                .filter { it is AfinityPhoto || it is AfinityPhotoAlbum }
+                                .sortedBy { it.name },
                         people = peopleDeferred.await().sortedBy { it.name },
                         channels =
                             channelsDeferred.await().sortedBy { it.channelNumber ?: it.name },
@@ -1959,6 +2127,12 @@ constructor(
                             audiobookParts = current.audiobookParts.upserted(item, isFavorite)
                         )
                     }
+                is AfinityVideo,
+                is AfinityMusicVideo ->
+                    current.copy(videos = current.videos.upserted(item, isFavorite))
+                is AfinityPhoto,
+                is AfinityPhotoAlbum ->
+                    current.copy(photos = current.photos.upserted(item, isFavorite))
                 is AfinityChannel ->
                     current.copy(
                         channels =
@@ -2192,6 +2366,8 @@ constructor(
         _latestTvSeries.value = emptyList()
         _latestBookSections.value = emptyList()
         _latestAudiobookSections.value = emptyList()
+        _latestHomeVideoSections.value = emptyList()
+        _latestMusicVideoSections.value = emptyList()
         _loadedPlaybackRows.value = emptySet()
         _isInitialDataLoaded.value = false
         _homeEssentialsReady.value = false
@@ -2234,6 +2410,8 @@ constructor(
         private const val FAVORITES_RECOUNT_DEBOUNCE_MS = 2_000L
         private val LATEST_ROWS = setOf(HomeRow.LATEST_MOVIES, HomeRow.LATEST_TV)
         private val LATEST_BOOK_ROWS = setOf(HomeRow.LATEST_BOOKS, HomeRow.LATEST_AUDIOBOOKS)
+        private val LATEST_VIDEO_ROWS =
+            setOf(HomeRow.LATEST_HOME_VIDEOS, HomeRow.LATEST_MUSIC_VIDEOS)
         private val PLAYBACK_ROWS =
             setOf(
                 HomeRow.CONTINUE_WATCHING,
@@ -2243,6 +2421,7 @@ constructor(
             )
         private const val LATEST_BOOKS_LIMIT = 16
         private const val LATEST_AUDIOBOOK_PARTS_LIMIT = 100
+        private const val LATEST_VIDEOS_LIMIT = 16
     }
 }
 
@@ -2261,6 +2440,8 @@ data class FavoritesData(
     val boxSets: List<AfinityBoxSet> = emptyList(),
     val books: List<AfinityBook> = emptyList(),
     val audiobookParts: List<AfinityAudiobook> = emptyList(),
+    val videos: List<AfinityItem> = emptyList(),
+    val photos: List<AfinityItem> = emptyList(),
     val people: List<AfinityPersonDetail> = emptyList(),
     val channels: List<AfinityChannel> = emptyList(),
     val favoriteAlbums: List<AfinityAlbum> = emptyList(),
@@ -2281,6 +2462,8 @@ fun FavoritesData.totalCount(): Int =
         boxSets.size +
         books.size +
         audiobooks.size +
+        videos.size +
+        photos.size +
         people.size +
         channels.size +
         favoriteAlbums.size +
@@ -2297,6 +2480,8 @@ fun FavoritesData.itemById(id: UUID): AfinityItem? =
         ?: books.firstOrNull { it.id == id }
         ?: audiobookParts.firstOrNull { it.id == id }
         ?: audiobooks.firstOrNull { it.id == id }
+        ?: videos.firstOrNull { it.id == id }
+        ?: photos.firstOrNull { it.id == id }
         ?: channels.firstOrNull { it.id == id }
 
 data class WatchlistData(

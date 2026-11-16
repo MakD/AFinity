@@ -124,6 +124,7 @@ fun PersonScreen(
                     shows = uiState.shows,
                     books = uiState.books,
                     audiobooks = uiState.audiobooks,
+                    musicVideos = uiState.musicVideos,
                     awards = uiState.awards,
                     externalCredits = uiState.externalCredits,
                     onExternalItemClick = onNavigateToSeerrMedia,

@@ -38,6 +38,8 @@ object FieldSets {
             ItemFields.PARENT_ID,
         )
 
+    val BOOK_SHELF = BOOK_GRID + ItemFields.PEOPLE
+
     val BOOK_DETAIL =
         listOf(
             ItemFields.PARENT_ID,
@@ -105,7 +107,41 @@ object FieldSets {
             ItemFields.RECURSIVE_ITEM_COUNT,
             ItemFields.PRODUCTION_LOCATIONS,
             ItemFields.REMOTE_TRAILERS,
+            ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
         )
+
+    val PHOTO_GRID =
+        listOf(
+            ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+            ItemFields.WIDTH,
+            ItemFields.HEIGHT,
+            ItemFields.PARENT_ID,
+            ItemFields.DATE_CREATED,
+            ItemFields.CHILD_COUNT,
+            ItemFields.RECURSIVE_ITEM_COUNT,
+            ItemFields.CAN_DOWNLOAD,
+        )
+
+    val PHOTO_DETAIL =
+        PHOTO_GRID +
+            listOf(ItemFields.OVERVIEW, ItemFields.TAGS, ItemFields.GENRES, ItemFields.PATH)
+
+    val MUSIC_VIDEO_GRID =
+        listOf(
+            ItemFields.PARENT_ID,
+            ItemFields.DATE_CREATED,
+            ItemFields.MEDIA_SOURCE_COUNT,
+            ItemFields.GENRES,
+        )
+
+    val MUSIC_VIDEO_DETAIL =
+        ITEM_DETAIL +
+            listOf(
+                ItemFields.PARENT_ID,
+                ItemFields.TAGS,
+                ItemFields.MEDIA_SOURCE_COUNT,
+                ItemFields.CAN_DOWNLOAD,
+            )
 
     val SIMILAR_ITEMS = MEDIA_ITEM_CARDS
 

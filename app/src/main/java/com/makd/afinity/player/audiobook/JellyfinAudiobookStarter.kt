@@ -104,7 +104,7 @@ constructor(
             sessionId = UUID.randomUUID().toString(),
             bookId = routeId.toString(),
             title = book.name,
-            author = book.authors.map { it.name }.distinct().joinToString(", ").ifEmpty { null },
+            author = book.authorLine.ifEmpty { null },
             coverUrl = book.images.primary?.toString(),
             tracks = tracks,
             chapters = book.timeline(),

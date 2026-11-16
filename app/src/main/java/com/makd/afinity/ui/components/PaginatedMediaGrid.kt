@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -32,10 +33,11 @@ fun PaginatedMediaGrid(
     modifier: Modifier = Modifier,
     state: LazyGridState = rememberLazyGridState(),
     contentPadding: PaddingValues = PaddingValues(0.dp),
+    columns: GridCells = CardDimensions.gridCells(),
     itemContent: @Composable (AfinityItem) -> Unit,
 ) {
     LazyVerticalGrid(
-        columns = CardDimensions.gridCells(),
+        columns = columns,
         state = state,
         contentPadding = contentPadding,
         horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),

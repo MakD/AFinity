@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -61,9 +62,12 @@ import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityFolder
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityPhoto
+import com.makd.afinity.data.models.media.AfinityPhotoAlbum
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.BookLibraryComposition
 import com.makd.afinity.data.models.media.LibraryFilters
+import com.makd.afinity.data.models.media.LibraryFormatFilter
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
@@ -76,6 +80,7 @@ import com.makd.afinity.ui.components.FilterFab
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.MasonryMediaGrid
 import com.makd.afinity.ui.components.MediaItemGridCard
 import com.makd.afinity.ui.components.PaginatedMediaGrid
 import com.makd.afinity.ui.components.RadioOptionRow
@@ -83,23 +88,27 @@ import com.makd.afinity.ui.components.SortFab
 import com.makd.afinity.ui.components.bottomClearance
 import com.makd.afinity.ui.components.windowHeightDp
 import com.makd.afinity.ui.player.PlayerLauncher
+import com.makd.afinity.ui.theme.CardDimensions
 
 @Composable
 fun LibraryContentScreen(
     onItemClick: (AfinityItem) -> Unit,
     onProfileClick: () -> Unit,
     onSearchClick: () -> Unit,
-    onFolderClick: (AfinityFolder) -> Unit,
+    onFolderClick: (folder: AfinityItem, gallery: Boolean) -> Unit,
     onSeriesClick: (String) -> Unit,
     onPersonClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LibraryContentViewModel = hiltViewModel(),
     onMenuClick: (() -> Unit)? = null,
+    onPhotoClick: (photo: AfinityPhoto, sortBy: SortBy, descending: Boolean) -> Unit = { _, _, _ ->
+    },
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val pagingDataFlow by viewModel.pagingData.collectAsStateWithLifecycle()
     val lazyPagingItems = pagingDataFlow.collectAsLazyPagingItems()
     val gridState = rememberLazyGridState()
+    val galleryState = rememberLazyStaggeredGridState()
     val scrollToIndex by viewModel.scrollToIndex.collectAsStateWithLifecycle()
     var showSortDialog by remember { mutableStateOf(false) }
     var showFilterSheet by remember { mutableStateOf(false) }
@@ -246,12 +255,47 @@ fun LibraryContentScreen(
                         }
                     }
 
+                    uiState.isGallery -> {
+                        MasonryMediaGrid(
+                            items = lazyPagingItems,
+                            state = galleryState,
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding =
+                                PaddingValues(
+                                    start = 16.dp,
+                                    end = 16.dp,
+                                    top = 16.dp,
+                                    bottom = FAB_CONTENT_BOTTOM_PADDING + bottomClearance,
+                                ),
+                            onItemClick = { item ->
+                                when (item) {
+                                    is AfinityPhoto ->
+                                        onPhotoClick(
+                                            item,
+                                            uiState.currentSortBy,
+                                            uiState.currentSortDescending,
+                                        )
+                                    is AfinityVideo -> playVideo(item)
+                                    is AfinityPhotoAlbum,
+                                    is AfinityFolder -> onFolderClick(item, true)
+                                    else -> onItemClick(item)
+                                }
+                            },
+                        )
+                    }
+
                     else -> {
                         Row(modifier = Modifier.fillMaxSize()) {
                             PaginatedMediaGrid(
                                 items = lazyPagingItems,
                                 state = gridState,
                                 modifier = Modifier.weight(1f),
+                                columns =
+                                    if (uiState.libraryType == CollectionType.MusicVideos) {
+                                        CardDimensions.landscapeGridCells()
+                                    } else {
+                                        CardDimensions.gridCells()
+                                    },
                                 contentPadding =
                                     PaddingValues(
                                         start = 16.dp,
@@ -270,7 +314,7 @@ fun LibraryContentScreen(
                                         when (item) {
                                             is AfinityEpisode -> viewModel.selectEpisode(item)
                                             is AfinityVideo -> playVideo(item)
-                                            is AfinityFolder -> onFolderClick(item)
+                                            is AfinityFolder -> onFolderClick(item, false)
 
                                             else -> onItemClick(item)
                                         }
@@ -322,7 +366,12 @@ fun LibraryContentScreen(
 
     if (showSortDialog) {
         SortDialog(
-            options = librarySortOptions(uiState.libraryType, uiState.bookComposition),
+            options =
+                if (uiState.isGallery) {
+                    gallerySortOptions(uiState.currentFilters.formats)
+                } else {
+                    librarySortOptions(uiState.libraryType, uiState.bookComposition)
+                },
             currentSortBy = uiState.currentSortBy,
             currentSortDescending = uiState.currentSortDescending,
             onDismiss = { showSortDialog = false },
@@ -359,6 +408,23 @@ fun LibraryContentScreen(
     )
 }
 
+private fun gallerySortOptions(formats: Set<LibraryFormatFilter>): List<SortBy> =
+    if (LibraryFormatFilter.VIDEOS in formats) {
+        listOf(
+            SortBy.NAME,
+            SortBy.RANDOM,
+            SortBy.IMDB_RATING,
+            SortBy.DATE_ADDED,
+            SortBy.DATE_PLAYED,
+            SortBy.PARENTAL_RATING,
+            SortBy.PLAY_COUNT,
+            SortBy.RELEASE_DATE,
+            SortBy.RUNTIME,
+        )
+    } else {
+        listOf(SortBy.NAME, SortBy.RANDOM, SortBy.DATE_ADDED)
+    }
+
 private fun librarySortOptions(
     type: CollectionType?,
     composition: BookLibraryComposition?,
@@ -380,6 +446,18 @@ private fun librarySortOptions(
                 SortBy.DATE_ADDED,
                 SortBy.DATE_PLAYED,
                 SortBy.SERIES_NUMBER,
+            )
+        type == CollectionType.MusicVideos ->
+            listOf(
+                SortBy.NAME,
+                SortBy.RANDOM,
+                SortBy.IMDB_RATING,
+                SortBy.DATE_ADDED,
+                SortBy.DATE_PLAYED,
+                SortBy.PARENTAL_RATING,
+                SortBy.PLAY_COUNT,
+                SortBy.RELEASE_DATE,
+                SortBy.RUNTIME,
             )
         else ->
             listOf(

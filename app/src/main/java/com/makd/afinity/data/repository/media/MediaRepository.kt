@@ -13,6 +13,7 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
@@ -137,6 +138,8 @@ interface MediaRepository {
         criteria: ItemFilterCriteria = ItemFilterCriteria(),
         enableTotalRecordCount: Boolean = false,
         enableImageTypes: List<String> = emptyList(),
+        enableImages: Boolean = true,
+        enableUserData: Boolean = true,
     ): Result<BaseItemDtoQueryResult>
 
     suspend fun getAudiobooksResult(
@@ -319,6 +322,16 @@ interface MediaRepository {
     ): List<AfinityEpisode>
 
     suspend fun getSpecialFeatures(itemId: UUID, userId: UUID): List<AfinityItem>
+
+    suspend fun getMusicVideos(
+        artistIds: List<UUID> = emptyList(),
+        genreIds: List<UUID> = emptyList(),
+        studioIds: List<UUID> = emptyList(),
+        personIds: List<UUID> = emptyList(),
+        genres: List<String> = emptyList(),
+        studios: List<String> = emptyList(),
+        limit: Int? = null,
+    ): List<AfinityMusicVideo> = emptyList()
 
     suspend fun getThemeSong(itemId: UUID): ThemeSongLookup?
 

@@ -36,7 +36,11 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
+import com.makd.afinity.data.models.media.AfinityPhoto
+import com.makd.afinity.data.models.media.AfinityPhotoAlbum
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.UserDataPatch
 import com.makd.afinity.data.models.media.groupedIntoBooks
 import com.makd.afinity.data.models.music.MusicSearchResults
@@ -407,13 +411,28 @@ constructor(
                 SearchFilter.TV_SHOWS -> listOf("SERIES")
                 SearchFilter.BOX_SETS -> listOf("BOX_SET")
                 SearchFilter.BOOKS -> listOf("BOOK", "AUDIO_BOOK")
+                SearchFilter.VIDEOS -> listOf("VIDEO", "MUSIC_VIDEO")
                 else ->
                     when (selectedLibrary?.type) {
                         CollectionType.Movies -> listOf("MOVIE", "BOX_SET")
                         CollectionType.TvShows -> listOf("SERIES")
                         CollectionType.BoxSets -> listOf("BOX_SET")
                         CollectionType.Books -> listOf("BOOK", "AUDIO_BOOK")
-                        else -> listOf("MOVIE", "SERIES", "BOX_SET", "BOOK", "AUDIO_BOOK")
+                        CollectionType.MusicVideos -> listOf("MUSIC_VIDEO")
+                        CollectionType.HomeVideos,
+                        CollectionType.Photos -> listOf("VIDEO", "PHOTO_ALBUM", "PHOTO")
+                        else ->
+                            listOf(
+                                "MOVIE",
+                                "SERIES",
+                                "BOX_SET",
+                                "BOOK",
+                                "AUDIO_BOOK",
+                                "VIDEO",
+                                "MUSIC_VIDEO",
+                                "PHOTO_ALBUM",
+                                "PHOTO",
+                            )
                     }
             }
 
@@ -464,7 +483,11 @@ constructor(
                                             is AfinityShow,
                                             is AfinityBoxSet,
                                             is AfinityBook,
-                                            is AfinityAudiobook -> item
+                                            is AfinityAudiobook,
+                                            is AfinityVideo,
+                                            is AfinityMusicVideo,
+                                            is AfinityPhoto,
+                                            is AfinityPhotoAlbum -> item
                                             else -> null
                                         }
                                     } catch (e: CancellationException) {
@@ -579,6 +602,9 @@ constructor(
                     listOf(SearchFilter.ALL, SearchFilter.TV_SHOWS, SearchFilter.EPISODES)
                 CollectionType.BoxSets -> listOf(SearchFilter.ALL, SearchFilter.BOX_SETS)
                 CollectionType.Books -> listOf(SearchFilter.ALL, SearchFilter.BOOKS)
+                CollectionType.MusicVideos,
+                CollectionType.HomeVideos,
+                CollectionType.Photos -> listOf(SearchFilter.ALL, SearchFilter.VIDEOS)
                 CollectionType.Music -> listOf(SearchFilter.MUSIC)
                 CollectionType.Mixed ->
                     listOf(
@@ -599,6 +625,7 @@ constructor(
             CollectionType.TvShows -> listOf("SERIES")
             CollectionType.BoxSets -> listOf("BOX_SET")
             CollectionType.Books -> listOf("BOOK")
+            CollectionType.MusicVideos -> listOf("MUSIC_VIDEO")
             else -> listOf("MOVIE", "SERIES", "BOX_SET")
         }
 
@@ -783,7 +810,8 @@ constructor(
             SearchFilter.MOVIES,
             SearchFilter.TV_SHOWS,
             SearchFilter.BOX_SETS,
-            SearchFilter.BOOKS -> performSearch()
+            SearchFilter.BOOKS,
+            SearchFilter.VIDEOS -> performSearch()
             SearchFilter.ALL -> {
                 performSearch()
                 searchJob?.join()
@@ -1453,6 +1481,7 @@ enum class SearchFilter {
     EPISODES,
     BOX_SETS,
     BOOKS,
+    VIDEOS,
     MUSIC,
     REQUEST,
     AUDIOBOOKS,

@@ -12,4 +12,8 @@
         name="logs"
         path="logs/" />
 
+    <cache-path
+        name="shared_photos"
+        path="shared_photos/" />
+
 </paths>

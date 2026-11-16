@@ -30,6 +30,10 @@ fun AfinityItem.withImages(newImages: AfinityImages): AfinityItem =
         is AfinitySeason -> copy(images = newImages)
         is AfinityBoxSet -> copy(images = newImages)
         is AfinityVideo -> copy(images = newImages)
+        is AfinityMusicVideo -> copy(images = newImages)
+        is AfinityPhoto -> copy(images = newImages)
+        is AfinityPhotoAlbum -> copy(images = newImages)
+        is AfinityFolder -> copy(images = newImages)
         is AfinityBook -> copy(images = newImages)
         is AfinityAudiobook -> if (isGrouped) this else copy(images = newImages)
         else -> this

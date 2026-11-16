@@ -74,10 +74,13 @@ import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.common.DrawerLibrariesMode
 import com.makd.afinity.data.models.common.HeroStyle
+import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.media.AfinityAudiobook
 import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityPhoto
+import com.makd.afinity.data.models.media.AfinityPhotoAlbum
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideoPlaylist
@@ -126,6 +129,7 @@ import com.makd.afinity.ui.music.library.MusicLibraryScreen
 import com.makd.afinity.ui.music.player.MusicPlayerScreen
 import com.makd.afinity.ui.onboarding.ServicesHubScreen
 import com.makd.afinity.ui.person.PersonScreen
+import com.makd.afinity.ui.photo.PhotoViewerScreen
 import com.makd.afinity.ui.player.AudioMiniPlayer
 import com.makd.afinity.ui.player.AudioMiniPlayerState
 import com.makd.afinity.ui.player.PlayerLauncher
@@ -429,7 +433,9 @@ fun MainNavigation(
                 currentDestination?.route?.startsWith("audiobookshelf/player/") == true
             val isOnMusicPlayer = currentDestination?.route == Destination.MUSIC_PLAYER_ROUTE
             val isOnBookReader = currentDestination?.route == Destination.BOOK_READER_ROUTE
-            val isOnAnyPlayer = isOnAudiobookshelfPlayer || isOnMusicPlayer || isOnBookReader
+            val isOnPhotoViewer = currentDestination?.route == Destination.PHOTO_VIEWER_ROUTE
+            val isOnAnyPlayer =
+                isOnAudiobookshelfPlayer || isOnMusicPlayer || isOnBookReader || isOnPhotoViewer
             val currentTrack = musicPlaybackState.currentTrack
             val miniPlayerState: AudioMiniPlayerState? =
                 when {
@@ -641,11 +647,12 @@ fun MainNavigation(
                                         },
                                         onProfileClick = { navController.navigateToSettings() },
                                         onSearchClick = { navController.navigateToSearch() },
-                                        onFolderClick = { folder ->
+                                        onFolderClick = { folder, gallery ->
                                             navController.navigate(
                                                 Destination.createFolderContentRoute(
                                                     folder.id.toString(),
                                                     folder.name,
+                                                    gallery,
                                                 )
                                             )
                                         },
@@ -657,6 +664,9 @@ fun MainNavigation(
                                         },
                                         modifier = Modifier.fillMaxSize(),
                                         onMenuClick = libraryMenuClick,
+                                        onPhotoClick = { photo, sortBy, descending ->
+                                            navController.navigateToPhoto(photo, sortBy, descending)
+                                        },
                                     )
                                 }
 
@@ -673,11 +683,12 @@ fun MainNavigation(
                                         },
                                         onProfileClick = { navController.navigateToSettings() },
                                         onSearchClick = { navController.navigateToSearch() },
-                                        onFolderClick = { folder ->
+                                        onFolderClick = { folder, gallery ->
                                             navController.navigate(
                                                 Destination.createFolderContentRoute(
                                                     folder.id.toString(),
                                                     folder.name,
+                                                    gallery,
                                                 )
                                             )
                                         },
@@ -704,11 +715,12 @@ fun MainNavigation(
                                         },
                                         onProfileClick = { navController.navigateToSettings() },
                                         onSearchClick = { navController.navigateToSearch() },
-                                        onFolderClick = { folder ->
+                                        onFolderClick = { folder, gallery ->
                                             navController.navigate(
                                                 Destination.createFolderContentRoute(
                                                     folder.id.toString(),
                                                     folder.name,
+                                                    gallery,
                                                 )
                                             )
                                         },
@@ -728,6 +740,10 @@ fun MainNavigation(
                                         listOf(
                                             navArgument("folderId") { type = NavType.StringType },
                                             navArgument("folderName") { type = NavType.StringType },
+                                            navArgument("gallery") {
+                                                type = NavType.BoolType
+                                                defaultValue = false
+                                            },
                                         ),
                                 ) {
                                     LibraryContentScreen(
@@ -736,11 +752,12 @@ fun MainNavigation(
                                         },
                                         onProfileClick = { navController.navigateToSettings() },
                                         onSearchClick = { navController.navigateToSearch() },
-                                        onFolderClick = { folder ->
+                                        onFolderClick = { folder, gallery ->
                                             navController.navigate(
                                                 Destination.createFolderContentRoute(
                                                     folder.id.toString(),
                                                     folder.name,
+                                                    gallery,
                                                 )
                                             )
                                         },
@@ -751,6 +768,30 @@ fun MainNavigation(
                                             navController.navigateToPerson(personId)
                                         },
                                         modifier = Modifier.fillMaxSize(),
+                                        onPhotoClick = { photo, sortBy, descending ->
+                                            navController.navigateToPhoto(photo, sortBy, descending)
+                                        },
+                                    )
+                                }
+
+                                composable(
+                                    route = Destination.PHOTO_VIEWER_ROUTE,
+                                    arguments =
+                                        listOf(
+                                            navArgument("parentId") { type = NavType.StringType },
+                                            navArgument("startId") { type = NavType.StringType },
+                                            navArgument("sortBy") {
+                                                type = NavType.StringType
+                                                defaultValue = SortBy.NAME.name
+                                            },
+                                            navArgument("desc") {
+                                                type = NavType.BoolType
+                                                defaultValue = false
+                                            },
+                                        ),
+                                ) { backStackEntry ->
+                                    PhotoViewerScreen(
+                                        onBack = { navController.popIfCurrent(backStackEntry) }
                                     )
                                 }
 
@@ -772,6 +813,12 @@ fun MainNavigation(
                                         ),
                                 ) { backStackEntry ->
                                     ItemDetailScreen(
+                                        onMusicArtistClick = { artistId ->
+                                            navController.navigateToMusicArtist(artistId)
+                                        },
+                                        onMusicAlbumClick = { albumId ->
+                                            navController.navigateToMusicAlbum(albumId)
+                                        },
                                         onItemClick = { item ->
                                             navController.navigateToItem(item)
                                         },
@@ -859,6 +906,12 @@ fun MainNavigation(
                                         ),
                                 ) { backStackEntry ->
                                     ItemDetailScreen(
+                                        onMusicArtistClick = { artistId ->
+                                            navController.navigateToMusicArtist(artistId)
+                                        },
+                                        onMusicAlbumClick = { albumId ->
+                                            navController.navigateToMusicAlbum(albumId)
+                                        },
                                         onPlayClick = { item, selection ->
                                             if (selection != null) {
                                                 PlayerLauncher.launch(
@@ -1982,6 +2035,11 @@ fun MainNavigation(
                                         onMusicArtistClick = { artistId ->
                                             navController.navigateToMusicArtist(artistId)
                                         },
+                                        onMusicVideoClick = { videoId ->
+                                            navController.navigate(
+                                                Destination.createItemDetailRoute(videoId)
+                                            )
+                                        },
                                         onHomeClick = { navController.navigateHome() },
                                         onEditMetadataClick = { itemId ->
                                             navController.navigateToEditMetadata(itemId)
@@ -2016,6 +2074,11 @@ fun MainNavigation(
                                     MusicArtistScreen(
                                         onMusicAlbumClick = { albumId ->
                                             navController.navigateToMusicAlbum(albumId)
+                                        },
+                                        onMusicVideoClick = { videoId ->
+                                            navController.navigate(
+                                                Destination.createItemDetailRoute(videoId)
+                                            )
                                         },
                                         onHomeClick = { navController.navigateHome() },
                                         onEditMetadataClick = { itemId ->
@@ -2730,7 +2793,33 @@ private fun NavController.popIfCurrent(entry: NavBackStackEntry) {
     if (currentBackStackEntry?.id == entry.id) popBackStack()
 }
 
+private fun NavController.navigateToPhoto(
+    photo: AfinityPhoto,
+    sortBy: SortBy = SortBy.NAME,
+    descending: Boolean = false,
+) {
+    val parentId = photo.parentId ?: photo.albumId ?: return
+    navigate(
+        Destination.createPhotoViewerRoute(
+            parentId = parentId.toString(),
+            startId = photo.id.toString(),
+            sortBy = sortBy.name,
+            descending = descending,
+        )
+    )
+}
+
 private fun NavController.navigateToItem(item: AfinityItem) {
+    if (item is AfinityPhoto) {
+        navigateToPhoto(item)
+        return
+    }
+    if (item is AfinityPhotoAlbum) {
+        navigate(
+            Destination.createFolderContentRoute(item.id.toString(), item.name, gallery = true)
+        )
+        return
+    }
     if (item is AfinityVideoPlaylist) {
         navigate(Destination.createPlaylistRoute(item.id.toString()))
         return

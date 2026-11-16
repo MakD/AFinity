@@ -23,7 +23,7 @@ data class AfinityVideo(
     override val providerIds: Map<String, String>?,
     override val externalUrls: List<AfinityExternalUrl>?,
     val premiereDate: LocalDateTime?,
-    val people: List<AfinityPerson>,
+    override val people: List<AfinityPerson>,
     val genres: List<String>,
     val communityRating: Float?,
     val officialRating: String?,

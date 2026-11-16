@@ -33,6 +33,7 @@ import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenEmpty
+import com.makd.afinity.ui.components.MasonryItemGrid
 import com.makd.afinity.ui.components.MediaCategoryGrid
 import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.main.MainUiState
@@ -54,6 +55,8 @@ enum class FavoritesCategory {
     EPISODES,
     BOOKS,
     AUDIOBOOKS,
+    VIDEOS,
+    PHOTOS,
     CHANNELS,
     PEOPLE,
     ALBUMS,
@@ -118,6 +121,8 @@ fun FavoritesCategoryScreen(
             FavoritesCategory.EPISODES -> uiState.episodes.isEmpty()
             FavoritesCategory.BOOKS -> uiState.books.isEmpty()
             FavoritesCategory.AUDIOBOOKS -> uiState.audiobooks.isEmpty()
+            FavoritesCategory.VIDEOS -> uiState.videos.isEmpty()
+            FavoritesCategory.PHOTOS -> uiState.photos.isEmpty()
             FavoritesCategory.CHANNELS -> uiState.channels.isEmpty()
             FavoritesCategory.PEOPLE -> uiState.people.isEmpty()
             FavoritesCategory.ALBUMS -> uiState.favoriteAlbums.isEmpty()
@@ -184,6 +189,24 @@ fun FavoritesCategoryScreen(
                         playerClearance = playerClearance,
                         onItemClick = { item -> viewModel.selectEpisode(item as AfinityEpisode) },
                         modifier = gridModifier,
+                    )
+
+                FavoritesCategory.VIDEOS ->
+                    MediaCategoryGrid(
+                        items = uiState.videos,
+                        landscape = true,
+                        widthSizeClass = widthSizeClass,
+                        playerClearance = playerClearance,
+                        onItemClick = onItemClick,
+                        modifier = gridModifier,
+                    )
+
+                FavoritesCategory.PHOTOS ->
+                    MasonryItemGrid(
+                        items = uiState.photos,
+                        onItemClick = onItemClick,
+                        contentPadding = contentPadding,
+                        modifier = gridModifier.fillMaxSize(),
                     )
 
                 FavoritesCategory.CHANNELS ->
@@ -342,6 +365,8 @@ private fun FavoritesCategory.titleRes(): Int =
         FavoritesCategory.EPISODES -> R.string.section_episodes
         FavoritesCategory.BOOKS -> R.string.section_books
         FavoritesCategory.AUDIOBOOKS -> R.string.section_audiobooks
+        FavoritesCategory.VIDEOS -> R.string.section_videos
+        FavoritesCategory.PHOTOS -> R.string.filter_format_photos
         FavoritesCategory.CHANNELS -> R.string.section_tv_channels
         FavoritesCategory.PEOPLE -> R.string.section_people
         FavoritesCategory.ALBUMS -> R.string.section_favorite_albums

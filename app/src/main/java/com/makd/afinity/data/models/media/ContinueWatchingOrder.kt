@@ -11,6 +11,14 @@ data class ContinueWatchingOrder(
         continueWatching: List<AfinityItem>,
         nextUp: List<AfinityEpisode>,
     ): List<AfinityItem> {
+        val resumingIds = continueWatching.mapTo(HashSet()) { it.id }
+        return merge(continueWatching, nextUp.filter { it.id !in resumingIds })
+    }
+
+    private fun merge(
+        continueWatching: List<AfinityItem>,
+        nextUp: List<AfinityEpisode>,
+    ): List<AfinityItem> {
         if (nextUp.isEmpty()) return continueWatching
         if (continueWatching.isEmpty()) return nextUp
 

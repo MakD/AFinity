@@ -125,6 +125,16 @@ fun AfinityItem.applying(values: UserDataValues): AfinityItem {
                 playbackPositionTicks = t,
                 unplayedItemCount = unplayed,
             )
+        is AfinityMusicVideo ->
+            copy(
+                played = p,
+                favorite = f,
+                liked = l,
+                playbackPositionTicks = t,
+                unplayedItemCount = unplayed,
+            )
+        is AfinityPhoto -> copy(played = p, favorite = f, liked = l)
+        is AfinityPhotoAlbum -> copy(played = p, favorite = f, liked = l)
         is AfinityVideoPlaylist ->
             copy(
                 played = p,

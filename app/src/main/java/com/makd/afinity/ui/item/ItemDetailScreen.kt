@@ -64,6 +64,7 @@ import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
@@ -115,6 +116,7 @@ import com.makd.afinity.ui.item.components.shared.VideoQualitySelection
 import com.makd.afinity.ui.item.components.shared.WhereToWatchStrip
 import com.makd.afinity.ui.item.components.shared.detailItem
 import com.makd.afinity.ui.item.components.shared.rememberItemBackdropChain
+import com.makd.afinity.ui.item.components.videoDetailItems
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.utils.IntentUtils
@@ -135,6 +137,8 @@ fun ItemDetailScreen(
     onSeasonClick: (AfinitySeason) -> Unit,
     onPersonClick: (String) -> Unit,
     onNavigateToSeerrMedia: (SearchResultItem) -> Unit,
+    onMusicArtistClick: (String) -> Unit,
+    onMusicAlbumClick: (String) -> Unit,
     onEditMetadataClick: (String) -> Unit,
     onEditImagesClick: (String) -> Unit,
     onIdentifyClick: (itemId: String, itemType: String) -> Unit,
@@ -333,6 +337,8 @@ fun ItemDetailScreen(
                         onSeasonClick = onSeasonClick,
                         onPersonClick = onPersonClick,
                         onNavigateToSeerrMedia = onNavigateToSeerrMedia,
+                        onMusicArtistClick = onMusicArtistClick,
+                        onMusicAlbumClick = onMusicAlbumClick,
                         onEditMetadataClick = onEditMetadataClick,
                         onEditImagesClick = onEditImagesClick,
                         onIdentifyClick = onIdentifyClick,
@@ -548,6 +554,8 @@ private fun ItemDetailContent(
     onSeasonClick: (AfinitySeason) -> Unit,
     onPersonClick: (String) -> Unit,
     onNavigateToSeerrMedia: (SearchResultItem) -> Unit,
+    onMusicArtistClick: (String) -> Unit,
+    onMusicAlbumClick: (String) -> Unit,
     onEditMetadataClick: (String) -> Unit,
     onEditImagesClick: (String) -> Unit,
     onIdentifyClick: (itemId: String, itemType: String) -> Unit,
@@ -607,6 +615,8 @@ private fun ItemDetailContent(
                     onSeasonClick = onSeasonClick,
                     onPersonClick = onPersonClick,
                     onNavigateToSeerrMedia = onNavigateToSeerrMedia,
+                    onMusicArtistClick = onMusicArtistClick,
+                    onMusicAlbumClick = onMusicAlbumClick,
                     onEditMetadataClick = onEditMetadataClick,
                     onEditImagesClick = onEditImagesClick,
                     onIdentifyClick = onIdentifyClick,
@@ -650,6 +660,8 @@ private fun ItemDetailContent(
                     onSeasonClick = onSeasonClick,
                     onPersonClick = onPersonClick,
                     onNavigateToSeerrMedia = onNavigateToSeerrMedia,
+                    onMusicArtistClick = onMusicArtistClick,
+                    onMusicAlbumClick = onMusicAlbumClick,
                     onEditMetadataClick = onEditMetadataClick,
                     onEditImagesClick = onEditImagesClick,
                     onIdentifyClick = onIdentifyClick,
@@ -698,6 +710,8 @@ private fun LandscapeItemDetailContent(
     onSeasonClick: (AfinitySeason) -> Unit,
     onPersonClick: (String) -> Unit,
     onNavigateToSeerrMedia: (SearchResultItem) -> Unit,
+    onMusicArtistClick: (String) -> Unit,
+    onMusicAlbumClick: (String) -> Unit,
     onEditMetadataClick: (String) -> Unit,
     onEditImagesClick: (String) -> Unit,
     onIdentifyClick: (itemId: String, itemType: String) -> Unit,
@@ -960,6 +974,8 @@ private fun LandscapeItemDetailContent(
                 onSeasonClick = onSeasonClick,
                 onPersonClick = if (isOffline) null else onPersonClick,
                 onNavigateToSeerrMedia = onNavigateToSeerrMedia,
+                onMusicArtistClick = onMusicArtistClick,
+                onMusicAlbumClick = onMusicAlbumClick,
                 viewModel = viewModel,
                 context = context,
                 widthSizeClass = widthSizeClass,
@@ -1003,6 +1019,8 @@ private fun PortraitItemDetailContent(
     onSeasonClick: (AfinitySeason) -> Unit,
     onPersonClick: (String) -> Unit,
     onNavigateToSeerrMedia: (SearchResultItem) -> Unit,
+    onMusicArtistClick: (String) -> Unit,
+    onMusicAlbumClick: (String) -> Unit,
     onEditMetadataClick: (String) -> Unit,
     onEditImagesClick: (String) -> Unit,
     onIdentifyClick: (itemId: String, itemType: String) -> Unit,
@@ -1241,6 +1259,8 @@ private fun PortraitItemDetailContent(
                 onSeasonClick = onSeasonClick,
                 onPersonClick = if (isOffline) null else onPersonClick,
                 onNavigateToSeerrMedia = onNavigateToSeerrMedia,
+                onMusicArtistClick = onMusicArtistClick,
+                onMusicAlbumClick = onMusicAlbumClick,
                 viewModel = viewModel,
                 context = context,
                 widthSizeClass = widthSizeClass,
@@ -1323,6 +1343,8 @@ private fun LazyListScope.typeSpecificItems(
     onSeasonClick: (AfinitySeason) -> Unit,
     onPersonClick: ((String) -> Unit)?,
     onNavigateToSeerrMedia: (SearchResultItem) -> Unit,
+    onMusicArtistClick: (String) -> Unit,
+    onMusicAlbumClick: (String) -> Unit,
     viewModel: ItemDetailViewModel,
     context: Context,
     widthSizeClass: WindowWidthSizeClass,
@@ -1428,6 +1450,25 @@ private fun LazyListScope.typeSpecificItems(
                 onPartClick = { part -> onPlayClick(part, null) },
                 onItemClick = onItemClick,
                 onPersonClick = onPersonClick,
+                widthSizeClass = widthSizeClass,
+                horizontalPadding = horizontalPadding,
+                detailLayout = detailLayout,
+                selectedSourceId = selectedSourceId,
+                showExternalLinks = showExternalLinks,
+            )
+        is AfinityMusicVideo,
+        is AfinityVideo ->
+            videoDetailItems(
+                item = item,
+                baseUrl = baseUrl,
+                specialFeatures = specialFeatures,
+                containingBoxSets = containingBoxSets,
+                onSpecialFeatureClick = onSpecialFeatureClick,
+                onPlayClick = { video, sel -> onPlayClick(video, sel) },
+                onItemClick = onItemClick,
+                onPersonClick = onPersonClick,
+                onMusicArtistClick = onMusicArtistClick,
+                onMusicAlbumClick = onMusicAlbumClick,
                 widthSizeClass = widthSizeClass,
                 horizontalPadding = horizontalPadding,
                 detailLayout = detailLayout,

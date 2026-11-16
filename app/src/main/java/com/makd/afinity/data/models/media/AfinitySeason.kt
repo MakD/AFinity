@@ -20,7 +20,7 @@ data class AfinitySeason(
     val episodeCount: Int?,
     val productionYear: Int?,
     val premiereDate: LocalDateTime?,
-    val people: List<AfinityPerson>,
+    override val people: List<AfinityPerson>,
     override val played: Boolean,
     override val favorite: Boolean,
     override val liked: Boolean,

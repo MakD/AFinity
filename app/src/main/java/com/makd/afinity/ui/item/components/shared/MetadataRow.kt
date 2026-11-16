@@ -31,6 +31,7 @@ import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
@@ -103,7 +104,10 @@ fun MetadataRow(
         MetadataFlowRow {
             var needsSeparator = false
             val isSingleMedia =
-                item is AfinityMovie || item is AfinityEpisode || item is AfinityVideo
+                item is AfinityMovie ||
+                    item is AfinityEpisode ||
+                    item is AfinityVideo ||
+                    item is AfinityMusicVideo
             if (isSingleMedia && item.playbackPositionTicks > 0 && stableRuntimeTicks > 0) {
                 MetadataTimeLeft(
                     progress = item.playbackPositionTicks.toFloat() / stableRuntimeTicks.toFloat(),
@@ -140,6 +144,8 @@ fun MetadataRow(
                 is AfinityShow -> item.productionYear?.toString()
                 is AfinityBoxSet -> item.productionYear?.toString()
                 is AfinitySeason -> item.productionYear?.toString()
+                is AfinityVideo -> item.productionYear?.toString()
+                is AfinityMusicVideo -> item.productionYear?.toString()
                 else -> null
             }?.let { year ->
                 if (needsSeparator) MetadataDot()
@@ -185,6 +191,7 @@ fun MetadataRow(
                 is AfinityMovie -> item.officialRating
                 is AfinityShow -> item.officialRating
                 is AfinityBoxSet -> item.officialRating
+                is AfinityMusicVideo -> item.officialRating
                 else -> null
             }?.let { rating ->
                 if (needsSeparator) MetadataDot()
@@ -209,6 +216,7 @@ fun MetadataRow(
                     is AfinityMovie -> item.genres
                     is AfinityShow -> item.genres
                     is AfinityBoxSet -> item.genres
+                    is AfinityMusicVideo -> item.genres
                     else -> emptyList()
                 }
 
@@ -245,7 +253,10 @@ fun MetadataRow(
             }
         }
         val isSingleMediaEndsAt =
-            item is AfinityMovie || item is AfinityEpisode || item is AfinityVideo
+            item is AfinityMovie ||
+                item is AfinityEpisode ||
+                item is AfinityVideo ||
+                item is AfinityMusicVideo
 
         if (isSingleMediaEndsAt && stableRuntimeTicks > 0) {
             val endTimeStr = getFormattedEndTime(context, stableRuntimeTicks / 10_000L)
