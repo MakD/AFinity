@@ -103,7 +103,9 @@ fun libraryTypeIcon(type: CollectionType): Painter =
         CollectionType.TvShows -> painterResource(id = R.drawable.ic_tv)
         CollectionType.Music -> painterResource(id = R.drawable.ic_music)
         CollectionType.Books -> painterResource(id = R.drawable.ic_books)
-        CollectionType.HomeVideos -> painterResource(id = R.drawable.ic_music_video)
+        CollectionType.HomeVideos,
+        CollectionType.Photos -> painterResource(id = R.drawable.ic_video)
+        CollectionType.MusicVideos -> painterResource(id = R.drawable.ic_music_video)
         CollectionType.Playlists -> painterResource(id = R.drawable.ic_playlist)
         CollectionType.LiveTv -> painterResource(id = R.drawable.ic_live_tv_nav)
         CollectionType.BoxSets -> painterResource(id = R.drawable.ic_collection)

@@ -15,9 +15,14 @@ import com.makd.afinity.data.models.media.AfinityFolder
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
+import com.makd.afinity.data.models.media.AfinityMusicVideoArtist
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityPersonImage
+import com.makd.afinity.data.models.media.AfinityPhoto
+import com.makd.afinity.data.models.media.AfinityPhotoAlbum
+import com.makd.afinity.data.models.media.AfinityPhotoExif
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySource
@@ -28,6 +33,7 @@ import com.makd.afinity.data.models.media.BookFormat
 import com.makd.afinity.data.models.media.toAfinityExternalUrl
 import com.makd.afinity.data.models.media.toAfinityMediaStream
 import com.makd.afinity.data.models.media.toAfinityTrickplayInfoMap
+import com.makd.afinity.data.models.media.uprightAspectRatio
 import java.util.UUID
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -52,6 +58,9 @@ fun BaseItemDto.toAfinityItem(baseUrl: String): AfinityItem? {
         BaseItemKind.PLAYLIST -> toAfinityVideoPlaylist(baseUrl)
         BaseItemKind.FOLDER -> toAfinityFolder(baseUrl)
         BaseItemKind.VIDEO -> toAfinityVideo(baseUrl)
+        BaseItemKind.MUSIC_VIDEO -> toAfinityMusicVideo(baseUrl)
+        BaseItemKind.PHOTO -> toAfinityPhoto(baseUrl)
+        BaseItemKind.PHOTO_ALBUM -> toAfinityPhotoAlbum(baseUrl)
         BaseItemKind.BOOK -> toAfinityBook(baseUrl)
         BaseItemKind.AUDIO_BOOK -> toAfinityAudiobook(baseUrl)
         else -> null
@@ -472,6 +481,115 @@ fun BaseItemDto.toAfinityVideo(baseUrl: String): AfinityVideo {
         externalUrls = toAfinityExternalUrls(),
         liked = userData?.likes == true,
         extraType = extraType,
+    )
+}
+
+fun BaseItemDto.toAfinityMusicVideo(baseUrl: String): AfinityMusicVideo {
+    return AfinityMusicVideo(
+        id = id,
+        name = name.orEmpty(),
+        originalTitle = originalTitle,
+        overview = overview.orEmpty(),
+        sources = toAfinitySources(baseUrl),
+        played = userData?.played == true,
+        favorite = userData?.isFavorite == true,
+        liked = userData?.likes == true,
+        canPlay = playAccess != PlayAccess.NONE,
+        canDownload = canDownload == true,
+        runtimeTicks = runTimeTicks ?: 0,
+        playbackPositionTicks = userData?.playbackPositionTicks ?: 0,
+        unplayedItemCount = userData?.unplayedItemCount,
+        images = toAfinityImages(baseUrl),
+        chapters = toAfinityChapters(),
+        trickplayInfo = trickplay?.toAfinityTrickplayInfoMap(),
+        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
+        externalUrls = toAfinityExternalUrls(),
+        artists = artists?.filter { it.isNotBlank() }.orEmpty(),
+        artistItems =
+            artistItems
+                ?.mapNotNull { pair ->
+                    pair.name
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { AfinityMusicVideoArtist(pair.id, it) }
+                }
+                .orEmpty(),
+        album = album?.takeIf { it.isNotBlank() },
+        albumId = albumId,
+        parentId = parentId,
+        premiereDate = premiereDate,
+        dateCreated = dateCreated,
+        productionYear = productionYear,
+        people = people?.map { it.toAfinityPerson(baseUrl) } ?: emptyList(),
+        genres = genres ?: emptyList(),
+        studios = studios?.mapNotNull { it.name?.takeIf { name -> name.isNotBlank() } }.orEmpty(),
+        tags = tags ?: emptyList(),
+        communityRating = communityRating,
+        officialRating = officialRating,
+        criticRating = criticRating,
+        tagline = taglines?.firstOrNull(),
+        mediaSourceCount = mediaSourceCount,
+    )
+}
+
+fun BaseItemDto.toAfinityPhoto(baseUrl: String): AfinityPhoto {
+    return AfinityPhoto(
+        id = id,
+        name = name.orEmpty(),
+        overview = overview.orEmpty(),
+        played = userData?.played == true,
+        favorite = userData?.isFavorite == true,
+        liked = userData?.likes == true,
+        canPlay = playAccess != PlayAccess.NONE,
+        canDownload = canDownload == true,
+        images = toAfinityImages(baseUrl),
+        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
+        externalUrls = toAfinityExternalUrls(),
+        parentId = parentId,
+        albumId = albumId,
+        album = album?.takeIf { it.isNotBlank() },
+        width = width,
+        height = height,
+        orientation = imageOrientation,
+        aspectRatio = uprightAspectRatio(primaryImageAspectRatio, width, height, imageOrientation),
+        dateTaken = premiereDate,
+        dateCreated = dateCreated,
+        productionYear = productionYear,
+        genres = genres ?: emptyList(),
+        tags = tags ?: emptyList(),
+        communityRating = communityRating,
+        exif =
+            AfinityPhotoExif(
+                cameraMake = cameraMake?.takeIf { it.isNotBlank() },
+                cameraModel = cameraModel?.takeIf { it.isNotBlank() },
+                software = software?.takeIf { it.isNotBlank() },
+                exposureTime = exposureTime,
+                focalLength = focalLength,
+                aperture = aperture,
+                shutterSpeed = shutterSpeed,
+                isoSpeedRating = isoSpeedRating,
+                latitude = latitude,
+                longitude = longitude,
+                altitude = altitude,
+            ),
+    )
+}
+
+fun BaseItemDto.toAfinityPhotoAlbum(baseUrl: String): AfinityPhotoAlbum {
+    return AfinityPhotoAlbum(
+        id = id,
+        name = name.orEmpty(),
+        overview = overview.orEmpty(),
+        played = userData?.played == true,
+        favorite = userData?.isFavorite == true,
+        liked = userData?.likes == true,
+        canPlay = playAccess != PlayAccess.NONE,
+        images = toAfinityImages(baseUrl),
+        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
+        externalUrls = toAfinityExternalUrls(),
+        parentId = parentId,
+        childCount = childCount,
+        aspectRatio = primaryImageAspectRatio?.takeIf { it > 0.0 }?.toFloat(),
+        dateCreated = dateCreated,
     )
 }
 

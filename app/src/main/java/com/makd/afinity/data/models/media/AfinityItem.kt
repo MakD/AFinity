@@ -6,6 +6,9 @@ import com.makd.afinity.data.models.extensions.toAfinityBook
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityChannel
 import com.makd.afinity.data.models.extensions.toAfinityFolder
+import com.makd.afinity.data.models.extensions.toAfinityMusicVideo
+import com.makd.afinity.data.models.extensions.toAfinityPhoto
+import com.makd.afinity.data.models.extensions.toAfinityPhotoAlbum
 import com.makd.afinity.data.models.extensions.toAfinityVideo
 import com.makd.afinity.data.models.extensions.toAfinityVideoPlaylist
 import java.util.UUID
@@ -45,6 +48,9 @@ suspend fun BaseItemDto.toAfinityItem(
         BaseItemKind.PLAYLIST -> toAfinityVideoPlaylist(baseUrl)
         BaseItemKind.FOLDER -> toAfinityFolder(baseUrl)
         BaseItemKind.VIDEO -> toAfinityVideo(baseUrl)
+        BaseItemKind.MUSIC_VIDEO -> toAfinityMusicVideo(baseUrl)
+        BaseItemKind.PHOTO -> toAfinityPhoto(baseUrl)
+        BaseItemKind.PHOTO_ALBUM -> toAfinityPhotoAlbum(baseUrl)
         BaseItemKind.BOOK -> toAfinityBook(baseUrl)
         BaseItemKind.AUDIO_BOOK -> toAfinityAudiobook(baseUrl)
         BaseItemKind.TV_CHANNEL -> toAfinityChannel(baseUrl)

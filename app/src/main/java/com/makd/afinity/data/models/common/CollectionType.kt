@@ -4,6 +4,8 @@ enum class CollectionType(val type: String) {
     Movies("movies"),
     TvShows("tvshows"),
     HomeVideos("homevideos"),
+    Photos("photos"),
+    MusicVideos("musicvideos"),
     Music("music"),
     Playlists("playlists"),
     Books("books"),
