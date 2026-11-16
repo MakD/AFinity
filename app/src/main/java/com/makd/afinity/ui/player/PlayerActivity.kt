@@ -45,6 +45,7 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.navigation.LocalShowAwards
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.player.theme.ThemeMusicPlayer
+import com.makd.afinity.ui.components.LocalOriginalImages
 import com.makd.afinity.ui.theme.AFinityTheme
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.UUID
@@ -207,10 +208,13 @@ class PlayerActivity : AppCompatActivity() {
             val dynamicColorsFlow = remember { preferencesRepository.getDynamicColorsFlow() }
             val showRatingsFlow = remember { preferencesRepository.getShowRatingsFlow() }
             val showAwardsFlow = remember { preferencesRepository.getShowAwardsFlow() }
+            val originalImagesFlow = remember { preferencesRepository.getOriginalImagesFlow() }
             val themeMode by themeModeFlow.collectAsStateWithLifecycle(initialValue = "SYSTEM")
             val dynamicColors by dynamicColorsFlow.collectAsStateWithLifecycle(initialValue = true)
             val showRatings by showRatingsFlow.collectAsStateWithLifecycle(initialValue = true)
             val showAwards by showAwardsFlow.collectAsStateWithLifecycle(initialValue = true)
+            val originalImages by
+                originalImagesFlow.collectAsStateWithLifecycle(initialValue = false)
 
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -242,6 +246,7 @@ class PlayerActivity : AppCompatActivity() {
                 CompositionLocalProvider(
                     LocalShowRatings provides showRatings,
                     LocalShowAwards provides showAwards,
+                    LocalOriginalImages provides originalImages,
                 ) {
                     playbackRequest?.let { request ->
                         PlayerScreenWrapper(

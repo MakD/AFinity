@@ -105,6 +105,7 @@ import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinitySplashScreen
 import com.makd.afinity.ui.components.AppNavigationDrawerContent
 import com.makd.afinity.ui.components.LocalNetworkPermissionGrantButton
+import com.makd.afinity.ui.components.LocalOriginalImages
 import com.makd.afinity.ui.components.UnsupportedServerDialog
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.downloads.DownloadedCategory
@@ -200,6 +201,7 @@ fun MainNavigation(
     val showRatings by viewModel.showRatings.collectAsStateWithLifecycle()
     val blurUnwatchedEpisodes by viewModel.blurUnwatchedEpisodes.collectAsStateWithLifecycle()
     val showAwards by viewModel.showAwards.collectAsStateWithLifecycle()
+    val originalImages by viewModel.originalImages.collectAsStateWithLifecycle()
     val cardSize by viewModel.cardSize.collectAsStateWithLifecycle()
     val heroStyle by viewModel.heroStyle.collectAsStateWithLifecycle()
     val sideSheetEnabled by viewModel.sideSheetEnabled.collectAsStateWithLifecycle()
@@ -488,6 +490,7 @@ fun MainNavigation(
                     LocalShowRatings provides showRatings,
                     LocalBlurUnwatchedEpisodes provides blurUnwatchedEpisodes,
                     LocalShowAwards provides showAwards,
+                    LocalOriginalImages provides originalImages,
                     LocalCardSize provides cardSize,
                     LocalHeroStyle provides heroStyle,
                 ) {

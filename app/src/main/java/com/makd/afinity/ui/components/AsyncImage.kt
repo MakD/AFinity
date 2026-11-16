@@ -4,6 +4,7 @@ import android.util.LruCache
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
+import androidx.core.net.toUri
 import coil3.compose.AsyncImage
 import coil3.compose.asPainter
 import coil3.imageLoader
@@ -41,6 +43,8 @@ import timber.log.Timber
 internal const val IMAGE_CROSSFADE_MILLIS = 80
 
 val LocalImageUrlRewriter = staticCompositionLocalOf<((String) -> String)?> { null }
+
+val LocalOriginalImages = compositionLocalOf { false }
 
 private const val BLUR_HASH_BASE_SIZE = 32
 private const val BLUR_HASH_MIN_SIZE = 25
@@ -63,6 +67,8 @@ private val FILL_WIDTH_BUCKETS = intArrayOf(160, 240, 320, 480, 640, 960, 1280, 
 
 private val SIZE_PARAMS = listOf("fillWidth", "fillHeight", "maxWidth", "maxHeight")
 
+private const val FORMAT_PARAM = "format"
+
 private fun bucketedFillWidth(widthPx: Int): Int =
     FILL_WIDTH_BUCKETS.firstOrNull { it >= widthPx } ?: FILL_WIDTH_BUCKETS.last()
 
@@ -70,6 +76,23 @@ private fun String.isResizableItemImage(): Boolean =
     contains("/Items/") && contains("/Images/") && SIZE_PARAMS.none { contains(it) }
 
 private fun String.isLogoImage(): Boolean = contains("/Images/Logo")
+
+internal fun originalImageUrl(imageUrl: String?): String? {
+    if (imageUrl == null || !imageUrl.contains("/Items/") || !imageUrl.contains("/Images/")) {
+        return imageUrl
+    }
+    val uri = imageUrl.toUri()
+    if (uri.getQueryParameter(FORMAT_PARAM) == null) return imageUrl
+    val builder = uri.buildUpon().clearQuery()
+    uri.queryParameterNames
+        .filter { it != FORMAT_PARAM }
+        .forEach { name ->
+            uri.getQueryParameters(name).forEach { value ->
+                builder.appendQueryParameter(name, value)
+            }
+        }
+    return builder.build().toString()
+}
 
 internal fun optimizedImageUrl(
     imageUrl: String?,
@@ -318,16 +341,20 @@ private fun AsyncImageContent(
             }
         }
 
+    val originalImages = LocalOriginalImages.current
     val optimizedUrl =
-        remember(imageUrl, targetWidthPx, targetHeightPx) {
-            if (targetWidthPx == null) imageUrl
-            else optimizedImageUrl(imageUrl, targetWidthPx, heightPx = targetHeightPx)
+        remember(imageUrl, targetWidthPx, targetHeightPx, originalImages) {
+            when {
+                originalImages -> originalImageUrl(imageUrl)
+                targetWidthPx == null -> imageUrl
+                else -> optimizedImageUrl(imageUrl, targetWidthPx, heightPx = targetHeightPx)
+            }
         }
 
     val blurHashPlaceholder = rememberBlurHashPainter(blurHash, targetWidth, targetHeight)
     val lowResPlaceholder =
         rememberCachedLowResPlaceholder(
-            enabled = useLowResPlaceholder,
+            enabled = useLowResPlaceholder && !originalImages,
             imageUrl = imageUrl,
             targetWidthPx = targetWidthPx,
             filterQuality = filterQuality,

@@ -625,7 +625,8 @@ private fun HeroCarouselAutoScrollAndPrefetch(
         }
     }
 
-    LaunchedEffect(pagerState.currentPage, logoWidthPx, logoHeightPx) {
+    val originalImages = LocalOriginalImages.current
+    LaunchedEffect(pagerState.currentPage, logoWidthPx, logoHeightPx, originalImages) {
         if (items.size < 2) return@LaunchedEffect
         val current = pagerState.currentPage
         val neighbours = listOf(current + 1, current - 1).map { it.mod(items.size) }.distinct()
@@ -633,9 +634,12 @@ private fun HeroCarouselAutoScrollAndPrefetch(
             val item = items[index]
             val logoUrl = heroLogoUrl(item)
             if (logoUrl != null) {
+                val logoData =
+                    if (originalImages) originalImageUrl(logoUrl)
+                    else optimizedImageUrl(logoUrl, logoWidthPx, heightPx = logoHeightPx)
                 val logoRequest =
                     ImageRequest.Builder(context)
-                        .data(optimizedImageUrl(logoUrl, logoWidthPx, heightPx = logoHeightPx))
+                        .data(logoData)
                         .size(logoWidthPx, logoHeightPx)
                         .build()
                 context.imageLoader.enqueue(logoRequest)

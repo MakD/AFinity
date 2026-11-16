@@ -342,6 +342,15 @@ constructor(
                 initialValue = true,
             )
 
+    val originalImages: StateFlow<Boolean> =
+        preferencesRepository
+            .getOriginalImagesFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = false,
+            )
+
     val themeMusicEnabled: StateFlow<Boolean> =
         preferencesRepository
             .getThemeMusicEnabledFlow()
@@ -1792,6 +1801,10 @@ constructor(
 
     fun toggleShowAwards(enabled: Boolean) {
         viewModelScope.launch { preferencesRepository.setShowAwards(enabled) }
+    }
+
+    fun toggleOriginalImages(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setOriginalImages(enabled) }
     }
 
     fun toggleThemeMusic(enabled: Boolean) {

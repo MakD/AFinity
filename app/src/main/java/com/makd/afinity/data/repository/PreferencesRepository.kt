@@ -508,6 +508,10 @@ interface PreferencesRepository {
 
     fun getShowAwardsFlow(): Flow<Boolean>
 
+    suspend fun setOriginalImages(enabled: Boolean)
+
+    fun getOriginalImagesFlow(): Flow<Boolean>
+
     suspend fun setThemeMusicEnabled(enabled: Boolean)
 
     suspend fun getThemeMusicEnabled(): Boolean

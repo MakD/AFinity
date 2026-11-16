@@ -108,6 +108,15 @@ constructor(
                 initialValue = true,
             )
 
+    val originalImages =
+        preferencesRepository
+            .getOriginalImagesFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = false,
+            )
+
     val cardSize =
         preferencesRepository
             .getCardSizeFlow()

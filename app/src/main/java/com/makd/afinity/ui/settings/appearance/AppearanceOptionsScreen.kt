@@ -95,6 +95,7 @@ fun AppearanceOptionsScreen(
     val heroStyle by viewModel.heroStyle.collectAsStateWithLifecycle()
     val showRatings by viewModel.showRatings.collectAsStateWithLifecycle()
     val showAwards by viewModel.showAwards.collectAsStateWithLifecycle()
+    val originalImages by viewModel.originalImages.collectAsStateWithLifecycle()
     val lastFmPopularSort by viewModel.lastFmPopularSort.collectAsStateWithLifecycle()
     val appFont by viewModel.appFont.collectAsStateWithLifecycle()
     val themeMusicEnabled by viewModel.themeMusicEnabled.collectAsStateWithLifecycle()
@@ -282,6 +283,14 @@ fun AppearanceOptionsScreen(
                         subtitle = stringResource(R.string.pref_show_awards_summary),
                         checked = showAwards,
                         onCheckedChange = viewModel::toggleShowAwards,
+                    )
+                    SettingsDivider()
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_photo_up),
+                        title = stringResource(R.string.pref_original_images_title),
+                        subtitle = stringResource(R.string.pref_original_images_summary),
+                        checked = originalImages,
+                        onCheckedChange = viewModel::toggleOriginalImages,
                     )
                     SettingsDivider()
                     SettingsSwitchItem(
