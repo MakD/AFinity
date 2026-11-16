@@ -89,6 +89,7 @@ fun AppearanceOptionsScreen(
     val drawerLibrariesMode by viewModel.drawerLibrariesMode.collectAsStateWithLifecycle()
     val sideSheetEnabled by viewModel.sideSheetEnabled.collectAsStateWithLifecycle()
     val episodeLayout by viewModel.episodeLayout.collectAsStateWithLifecycle()
+    val blurUnwatchedEpisodes by viewModel.blurUnwatchedEpisodes.collectAsStateWithLifecycle()
     val detailLayout by viewModel.detailLayout.collectAsStateWithLifecycle()
     val cardSize by viewModel.cardSize.collectAsStateWithLifecycle()
     val heroStyle by viewModel.heroStyle.collectAsStateWithLifecycle()
@@ -259,6 +260,14 @@ fun AppearanceOptionsScreen(
                         )
                         SettingsDivider()
                     }
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_visibility),
+                        title = stringResource(R.string.pref_blur_unwatched_episodes_title),
+                        subtitle = stringResource(R.string.pref_blur_unwatched_episodes_summary),
+                        checked = blurUnwatchedEpisodes,
+                        onCheckedChange = viewModel::toggleBlurUnwatchedEpisodes,
+                    )
+                    SettingsDivider()
                     SettingsSwitchItem(
                         icon = painterResource(id = R.drawable.ic_visibility),
                         title = stringResource(R.string.pref_show_ratings_title),

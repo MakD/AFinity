@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -38,6 +39,7 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.AfinitySegmentType
+import com.makd.afinity.navigation.LocalBlurUnwatchedEpisodes
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
@@ -85,11 +87,17 @@ fun NextUpSkipOverlay(
                     ) {
                         val primaryImageUrl = nextEpisode.images.primaryImageUrl
                         if (primaryImageUrl != null) {
+                            val shouldBlur =
+                                LocalBlurUnwatchedEpisodes.current && !nextEpisode.played
                             AsyncImage(
                                 imageUrl = primaryImageUrl,
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize(),
+                                modifier =
+                                    Modifier.fillMaxSize()
+                                        .then(
+                                            if (shouldBlur) Modifier.blur(12.dp) else Modifier
+                                        ),
                                 targetWidth = thumbnailWidth,
                                 targetHeight = thumbnailWidth * 9f / 16f,
                             )
