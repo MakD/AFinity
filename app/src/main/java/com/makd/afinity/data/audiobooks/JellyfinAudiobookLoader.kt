@@ -21,7 +21,8 @@ constructor(
     private val downloadStore: AudiobookDownloadStore,
 ) {
 
-    suspend fun loadParts(itemId: UUID): Result<List<AfinityAudiobook>?> {
+    suspend fun loadParts(itemId: UUID, offline: Boolean = false): Result<List<AfinityAudiobook>?> {
+        if (offline) return Result.success(downloadStore.downloadedBookParts(itemId))
         val baseUrl = mediaRepository.getBaseUrl()
         val online =
             mediaRepository.getItemResult(itemId, fields = FieldSets.AUDIOBOOK_DETAIL).map { dto ->

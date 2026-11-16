@@ -170,6 +170,8 @@ constructor(
                         loadedItem =
                             databaseRepository.getMovie(itemId, userId)
                                 ?: databaseRepository.getEpisode(itemId, userId)
+                                ?: databaseRepository.getVideo(itemId, userId)
+                                ?: databaseRepository.getMusicVideo(itemId, userId)
 
                         if (loadedItem != null) {
                             Timber.d(

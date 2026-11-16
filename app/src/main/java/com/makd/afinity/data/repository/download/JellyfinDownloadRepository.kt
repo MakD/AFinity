@@ -19,10 +19,12 @@ import com.makd.afinity.data.models.extensions.toAfinityAudiobook
 import com.makd.afinity.data.models.extensions.toAfinityBook
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityMovie
+import com.makd.afinity.data.models.extensions.toAfinityMusicVideo
 import com.makd.afinity.data.models.extensions.toAfinityTrack
 import com.makd.afinity.data.models.extensions.toAfinityVideo
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.PlaylistEntry
@@ -87,6 +89,8 @@ constructor(
         const val KEY_ITEM_TYPE = "item_type"
         const val MAX_CONCURRENT_DOWNLOADS = 2
         const val BOOK_ITEM_TYPE = "Book"
+        const val VIDEO_ITEM_TYPE = "Video"
+        const val MUSIC_VIDEO_ITEM_TYPE = "MusicVideo"
     }
 
     /**
@@ -344,8 +348,8 @@ constructor(
                                     Exception("Failed to convert episode")
                                 )
 
-                        BaseItemKind.VIDEO,
-                        BaseItemKind.MUSIC_VIDEO -> baseItemDto.toAfinityVideo(baseUrl)
+                        BaseItemKind.VIDEO -> baseItemDto.toAfinityVideo(baseUrl)
+                        BaseItemKind.MUSIC_VIDEO -> baseItemDto.toAfinityMusicVideo(baseUrl)
 
                         else ->
                             return@withContext Result.failure(
@@ -378,6 +382,7 @@ constructor(
                         is AfinityMovie -> item.images.primary?.toString()
                         is AfinityEpisode -> item.images.primary?.toString()
                         is AfinityVideo -> item.images.primary?.toString()
+                        is AfinityMusicVideo -> item.images.primary?.toString()
                         else -> null
                     }
 
@@ -389,21 +394,18 @@ constructor(
                     when (item) {
                         is AfinityMovie -> item.productionYear?.toString()
                         is AfinityVideo -> item.productionYear?.toString()
+                        is AfinityMusicVideo -> item.productionYear?.toString()
                         else -> null
                     }
-                val runtimeTicks =
-                    when (item) {
-                        is AfinityMovie -> item.runtimeTicks
-                        is AfinityEpisode -> item.runtimeTicks
-                        is AfinityVideo -> item.runtimeTicks
-                        else -> 0L
-                    }
+                val runtimeTicks = item.runtimeTicks
 
                 val folderPath =
                     when (item) {
                         is AfinityMovie -> "$serverId/movies/$itemId"
                         is AfinityEpisode ->
                             "$serverId/shows/${item.seriesId}/seasons/${item.parentIndexNumber}/$itemId"
+                        is AfinityVideo,
+                        is AfinityMusicVideo -> "$serverId/videos/$itemId"
                         else -> "$serverId/$itemId"
                     }
 
@@ -416,7 +418,8 @@ constructor(
                             when (item) {
                                 is AfinityMovie -> "Movie"
                                 is AfinityEpisode -> "Episode"
-                                is AfinityVideo -> "Video"
+                                is AfinityVideo -> VIDEO_ITEM_TYPE
+                                is AfinityMusicVideo -> MUSIC_VIDEO_ITEM_TYPE
                                 else -> "Unknown"
                             },
                         sourceId = source.id,
@@ -644,14 +647,8 @@ constructor(
                         .getSources(download.itemId)
                         .filter { it.type == AfinitySourceType.LOCAL }
                         .forEach { databaseRepository.deleteSource(it.id) }
-                    if (download.itemType == "Audio") {
-                        databaseRepository.clearMusicTrackLocalFilePath(
-                            download.itemId,
-                            download.serverId,
-                            download.userId.toString(),
-                        )
-                    }
                     databaseRepository.deleteDownload(downloadId)
+                    removeStoredItem(download)
                 }
 
                 Result.success(Unit)
@@ -687,15 +684,8 @@ constructor(
                     .filter { it.type == AfinitySourceType.LOCAL }
                     .forEach { databaseRepository.deleteSource(it.id) }
 
-                if (download.itemType == "Audio") {
-                    databaseRepository.clearMusicTrackLocalFilePath(
-                        download.itemId,
-                        download.serverId,
-                        download.userId.toString(),
-                    )
-                }
-
                 databaseRepository.deleteDownload(downloadId)
+                removeStoredItem(download)
 
                 Result.success(Unit)
             } catch (e: CancellationException) {
@@ -719,6 +709,7 @@ constructor(
                     .forEach { databaseRepository.deleteSource(it.id) }
 
                 databaseRepository.deleteDownload(downloadId)
+                removeStoredItem(download)
 
                 Result.success(Unit)
             } catch (e: CancellationException) {
@@ -728,6 +719,32 @@ constructor(
                 Result.failure(e)
             }
         }
+
+    private suspend fun removeStoredItem(download: DownloadDto) {
+        val removal =
+            try {
+                databaseRepository.removeStoredItem(download)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to remove stored item ${download.itemId}")
+                return
+            }
+        val folders =
+            listOfNotNull(
+                removal.showId?.let { "${download.serverId}/shows/$it" },
+                removal.albumId?.let { "${download.serverId}/music/$it" },
+            )
+        if (folders.isEmpty()) return
+        try {
+            val base = baseDir(download.storageVolumeId)
+            folders.forEach { File(base, it).deleteRecursively() }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to delete leftover folders for ${download.itemId}")
+        }
+    }
 
     override suspend fun getDownload(downloadId: UUID): DownloadInfo? =
         withContext(Dispatchers.IO) { databaseRepository.getDownload(downloadId)?.toDownloadInfo() }
@@ -914,6 +931,9 @@ constructor(
                 val parts =
                     audiobookLoader.get().loadParts(itemId).getOrThrow()
                         ?: return@withContext Result.failure(Exception("Audiobook not found"))
+                sessionManager.currentSession.value?.serverId?.let { serverId ->
+                    databaseRepository.recordAudiobookParts(parts, serverId)
+                }
                 var started = 0
                 for (part in parts) {
                     startDownload(part.id, "", volumeId)

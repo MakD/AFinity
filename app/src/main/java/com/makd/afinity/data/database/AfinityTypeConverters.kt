@@ -10,6 +10,7 @@ import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideoArtist
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinitySegmentType
@@ -97,6 +98,26 @@ class AfinityTypeConverters {
             null
         }
     }
+
+    @TypeConverter
+    fun fromMusicVideoArtistList(artists: List<AfinityMusicVideoArtist>?): String? =
+        artists?.let { list ->
+            json.encodeToString(
+                list.map { SerializableMusicVideoArtist(id = it.id.toString(), name = it.name) }
+            )
+        }
+
+    @TypeConverter
+    fun toMusicVideoArtistList(artistsString: String?): List<AfinityMusicVideoArtist>? =
+        artistsString?.let {
+            try {
+                json.decodeFromString<List<SerializableMusicVideoArtist>>(it).map { artist ->
+                    AfinityMusicVideoArtist(id = UUID.fromString(artist.id), name = artist.name)
+                }
+            } catch (e: Exception) {
+                null
+            }
+        }
 
     @TypeConverter fun fromSourceType(sourceType: AfinitySourceType?): String? = sourceType?.name
 
@@ -575,6 +596,8 @@ class AfinityTypeConverters {
 
 @Serializable
 private data class SerializableExternalUrl(val name: String? = null, val url: String? = null)
+
+@Serializable private data class SerializableMusicVideoArtist(val id: String, val name: String)
 
 @Serializable
 private data class SerializableAfinityStudio(

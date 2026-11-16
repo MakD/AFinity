@@ -277,6 +277,7 @@ fun HomeScreen(
                 uiState.offlineNextUp.isEmpty() &&
                 uiState.downloadedMovies.isEmpty() &&
                 uiState.downloadedShows.isEmpty() &&
+                uiState.downloadedVideos.isEmpty() &&
                 uiState.downloadedBooks.isEmpty() &&
                 uiState.downloadedJellyfinAudiobooks.isEmpty() &&
                 uiState.downloadedAudiobooks.isEmpty() &&
@@ -498,6 +499,32 @@ fun HomeScreen(
                             }
                         }
 
+                        if (uiState.isOffline && uiState.offlineContinueReading.isNotEmpty()) {
+                            item(key = "offline_continue_reading") {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                    ContinueReadingSection(
+                                        books = uiState.offlineContinueReading,
+                                        onBookClick = onItemClick,
+                                        widthSizeClass = widthSizeClass,
+                                    )
+                                }
+                            }
+                        }
+
+                        if (uiState.isOffline && uiState.offlineContinueListening.isNotEmpty()) {
+                            item(key = "offline_continue_listening") {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                    AudiobookRowSection(
+                                        title = stringResource(R.string.home_continue_listening),
+                                        books = uiState.offlineContinueListening,
+                                        onBookClick = onItemClick,
+                                        widthSizeClass = widthSizeClass,
+                                        showProgress = true,
+                                    )
+                                }
+                            }
+                        }
+
                         if (uiState.isOffline && uiState.downloadedMovies.isNotEmpty()) {
                             item(key = "downloaded_movies") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
@@ -526,6 +553,23 @@ fun HomeScreen(
                                         unavailableItemIds = uiState.unavailableDownloadIds,
                                         onViewAllClick = {
                                             onDownloadedCategoryClick(DownloadedCategory.SHOWS)
+                                        },
+                                    )
+                                }
+                            }
+                        }
+
+                        if (uiState.isOffline && uiState.downloadedVideos.isNotEmpty()) {
+                            item(key = "downloaded_videos") {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                    OptimizedLatestTvSeriesSection(
+                                        title = stringResource(R.string.home_downloaded_videos),
+                                        items = uiState.downloadedVideos,
+                                        onItemClick = onItemClick,
+                                        widthSizeClass = widthSizeClass,
+                                        unavailableItemIds = uiState.unavailableDownloadIds,
+                                        onViewAllClick = {
+                                            onDownloadedCategoryClick(DownloadedCategory.VIDEOS)
                                         },
                                     )
                                 }

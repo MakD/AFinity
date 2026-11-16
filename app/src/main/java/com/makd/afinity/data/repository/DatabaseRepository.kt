@@ -8,16 +8,21 @@ import com.makd.afinity.data.database.entities.LastFmPopularCacheEntity
 import com.makd.afinity.data.database.entities.OfflinePlayEntity
 import com.makd.afinity.data.database.entities.WikidataAwardsCacheEntity
 import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.data.models.download.StoredItemRemoval
+import com.makd.afinity.data.models.media.AfinityAudiobook
+import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinityTrickplayInfo
+import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.server.Server
@@ -93,6 +98,34 @@ interface DatabaseRepository {
     suspend fun searchMovies(query: String, userId: UUID): List<AfinityMovie>
 
     fun getMoviesFlow(userId: UUID): Flow<List<AfinityMovie>>
+
+    suspend fun insertVideo(video: AfinityVideo, serverId: String? = null)
+
+    suspend fun getVideo(videoId: UUID, userId: UUID): AfinityVideo?
+
+    suspend fun getAllVideos(userId: UUID): List<AfinityVideo>
+
+    suspend fun insertMusicVideo(musicVideo: AfinityMusicVideo, serverId: String? = null)
+
+    suspend fun getMusicVideo(musicVideoId: UUID, userId: UUID): AfinityMusicVideo?
+
+    suspend fun getAllMusicVideos(userId: UUID): List<AfinityMusicVideo>
+
+    suspend fun insertBook(book: AfinityBook, serverId: String)
+
+    suspend fun getBook(bookId: UUID, userId: UUID): AfinityBook?
+
+    suspend fun getBooksInSeries(seriesName: String, userId: UUID): List<AfinityBook>
+
+    suspend fun insertAudiobookPart(part: AfinityAudiobook, serverId: String)
+
+    suspend fun getAudiobookPart(partId: UUID, userId: UUID): AfinityAudiobook?
+
+    suspend fun recordAudiobookParts(parts: List<AfinityAudiobook>, serverId: String)
+
+    suspend fun getAudiobookPartCount(partId: UUID, serverId: String): Int?
+
+    suspend fun removeStoredItem(download: DownloadDto): StoredItemRemoval
 
     suspend fun insertShow(show: AfinityShow, serverId: String? = null)
 
@@ -346,8 +379,6 @@ interface DatabaseRepository {
         userId: String,
         path: String,
     )
-
-    suspend fun clearMusicTrackLocalFilePath(id: UUID, serverId: String, userId: String)
 
     suspend fun updateMusicTrackLocalImagePath(
         id: UUID,

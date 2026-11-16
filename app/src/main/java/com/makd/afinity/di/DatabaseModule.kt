@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.database.DatabaseMigrations
 import com.makd.afinity.data.database.dao.BookAnnotationDao
+import com.makd.afinity.data.database.dao.BookDao
 import com.makd.afinity.data.database.dao.CustomHomeSectionDao
 import com.makd.afinity.data.database.dao.DeletedItemDao
 import com.makd.afinity.data.database.dao.EpisodeDao
@@ -33,6 +34,7 @@ import com.makd.afinity.data.database.dao.SourceDao
 import com.makd.afinity.data.database.dao.TopPeopleDao
 import com.makd.afinity.data.database.dao.UserDao
 import com.makd.afinity.data.database.dao.UserDataDao
+import com.makd.afinity.data.database.dao.VideoDao
 import com.makd.afinity.data.database.dao.WikidataAwardsDao
 import com.makd.afinity.data.database.dao.WikidataFranchiseDao
 import dagger.Module
@@ -191,6 +193,16 @@ object DatabaseModule {
     @Provides
     fun provideBookAnnotationDao(database: AfinityDatabase): BookAnnotationDao {
         return database.bookAnnotationDao()
+    }
+
+    @Provides
+    fun provideVideoDao(database: AfinityDatabase): VideoDao {
+        return database.videoDao()
+    }
+
+    @Provides
+    fun provideBookDao(database: AfinityDatabase): BookDao {
+        return database.bookDao()
     }
 
     @Provides

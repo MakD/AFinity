@@ -38,8 +38,8 @@ fun LazyListScope.videoDetailItems(
     onPlayClick: (AfinityItem, PlaybackSelection) -> Unit,
     onItemClick: (AfinityItem) -> Unit,
     onPersonClick: ((String) -> Unit)?,
-    onMusicArtistClick: (String) -> Unit,
-    onMusicAlbumClick: (String) -> Unit,
+    onMusicArtistClick: ((String) -> Unit)?,
+    onMusicAlbumClick: ((String) -> Unit)?,
     widthSizeClass: WindowWidthSizeClass,
     horizontalPadding: Dp,
     detailLayout: DetailLayout,
@@ -106,8 +106,8 @@ fun LazyListScope.videoDetailItems(
 @Composable
 private fun MusicVideoCredits(
     video: AfinityMusicVideo,
-    onArtistClick: (String) -> Unit,
-    onAlbumClick: (String) -> Unit,
+    onArtistClick: ((String) -> Unit)?,
+    onAlbumClick: ((String) -> Unit)?,
 ) {
     val style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
     val color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -127,7 +127,7 @@ private fun MusicVideoCredits(
                         video.artists.forEachIndexed { index, name ->
                             if (index > 0) append(", ")
                             val id = linkedIds[name]
-                            if (id == null) {
+                            if (id == null || onArtistClick == null) {
                                 append(name)
                             } else {
                                 withLink(
@@ -153,7 +153,7 @@ private fun MusicVideoCredits(
             Text(
                 text =
                     creditText(template) {
-                        if (albumId == null) {
+                        if (albumId == null || onAlbumClick == null) {
                             append(album)
                         } else {
                             withLink(

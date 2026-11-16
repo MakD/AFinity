@@ -1338,6 +1338,8 @@ constructor(
                     ?: databaseRepository.getShow(itemId, userId)
                     ?: databaseRepository.getSeason(itemId, userId)
                     ?: databaseRepository.getEpisode(itemId, userId)
+                    ?: databaseRepository.getVideo(itemId, userId)
+                    ?: databaseRepository.getMusicVideo(itemId, userId)
                     ?: return null
             if (item is AfinitySeason && item.runtimeTicks == 0L) {
                 val seriesRuntime =

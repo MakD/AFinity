@@ -15,6 +15,7 @@ import com.makd.afinity.data.books.BookSeriesResolver
 import com.makd.afinity.data.books.PaceKind
 import com.makd.afinity.data.books.PaceTracker
 import com.makd.afinity.data.books.ReadingPaceStore
+import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.extensions.toAfinityBook
 import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.BookAnnotation
@@ -162,6 +163,7 @@ constructor(
     private val annotationRepository: BookAnnotationRepository,
     private val paceStore: ReadingPaceStore,
     private val seriesResolver: BookSeriesResolver,
+    private val offlineModeManager: OfflineModeManager,
     @param:ApplicationScope private val applicationScope: CoroutineScope,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -353,15 +355,21 @@ constructor(
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(load = EpubLoadState.Downloading(0L, null)) }
+                val isOffline = offlineModeManager.isCurrentlyOffline()
                 val downloaded = bookMetadataStore.downloaded(itemId)
-                val remote = mediaRepository.getItemResult(itemId, fields = FieldSets.BOOK_GRID)
+                val remote =
+                    if (isOffline) null
+                    else mediaRepository.getItemResult(itemId, fields = FieldSets.BOOK_GRID)
                 val book =
                     remote
-                        .getOrNull()
+                        ?.getOrNull()
                         ?.takeIf { it.type == BaseItemKind.BOOK }
                         ?.toAfinityBook(mediaRepository.getBaseUrl()) ?: downloaded?.book
                 if (book == null) {
-                    fail(if (remote.isFailure) ReaderError.NETWORK else ReaderError.NOT_FOUND)
+                    fail(
+                        if (remote == null || remote.isFailure) ReaderError.NETWORK
+                        else ReaderError.NOT_FOUND
+                    )
                     return@launch
                 }
                 _uiState.update {
@@ -428,7 +436,7 @@ constructor(
                 _canSearch.value = opened.isSearchable
                 viewModelScope.launch {
                     _nextBook.value =
-                        seriesResolver.nextAfter(book)?.takeIf {
+                        seriesResolver.nextAfter(book, isOffline)?.takeIf {
                             it.format == BookFormat.EPUB || it.format == BookFormat.UNKNOWN
                         }
                 }

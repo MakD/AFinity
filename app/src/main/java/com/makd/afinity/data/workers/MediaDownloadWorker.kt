@@ -22,19 +22,23 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityMovie
+import com.makd.afinity.data.models.extensions.toAfinityMusicVideo
 import com.makd.afinity.data.models.extensions.toAfinitySeason
 import com.makd.afinity.data.models.extensions.toAfinityShow
 import com.makd.afinity.data.models.extensions.toAfinityTrack
+import com.makd.afinity.data.models.extensions.toAfinityVideo
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
+import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityMediaStream
 import com.makd.afinity.data.models.player.MusicQuality
 import com.makd.afinity.data.models.player.VideoQuality
@@ -312,6 +316,9 @@ constructor(
                                     BaseItemKind.EPISODE ->
                                         baseItemDto.toAfinityEpisode(baseUrl)
                                             ?: throw Exception("Failed to convert episode")
+                                    BaseItemKind.VIDEO -> baseItemDto.toAfinityVideo(baseUrl)
+                                    BaseItemKind.MUSIC_VIDEO ->
+                                        baseItemDto.toAfinityMusicVideo(baseUrl)
                                     else ->
                                         throw Exception(
                                             "Unsupported item type: ${baseItemDto.type}"
@@ -633,6 +640,16 @@ constructor(
                                     itemId,
                                     userId,
                                 )
+                            } else if (
+                                baseItemDto.type == BaseItemKind.VIDEO ||
+                                    baseItemDto.type == BaseItemKind.MUSIC_VIDEO
+                            ) {
+                                downloadVideoPersonImages(
+                                    apiClient,
+                                    download.serverId,
+                                    itemId,
+                                    userId,
+                                )
                             }
                             downloadSegments(itemId, sourceId)
                         }
@@ -920,6 +937,15 @@ constructor(
                     databaseRepository.insertMusicTrack(track, serverId, userId.toString())
                 }
 
+                BaseItemKind.VIDEO ->
+                    databaseRepository.insertVideo(baseItemDto.toAfinityVideo(baseUrl), serverId)
+
+                BaseItemKind.MUSIC_VIDEO ->
+                    databaseRepository.insertMusicVideo(
+                        baseItemDto.toAfinityMusicVideo(baseUrl),
+                        serverId,
+                    )
+
                 else -> Timber.w("Unsupported item type: ${baseItemDto.type}")
             }
         } catch (e: CancellationException) {
@@ -1091,6 +1117,33 @@ constructor(
             throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to download episode person images")
+        }
+    }
+
+    private suspend fun downloadVideoPersonImages(
+        apiClient: ApiClient,
+        serverId: String,
+        itemId: UUID,
+        userId: UUID,
+    ) {
+        try {
+            val peopleImagesDir =
+                File(downloadRepository.getItemDownloadDirectory(itemId), "people")
+            val video = databaseRepository.getVideo(itemId, userId)
+            if (video != null) {
+                if (video.people.isEmpty()) return
+                val updatedPeople = localizePeopleImages(apiClient, video.people, peopleImagesDir)
+                databaseRepository.insertVideo(video.copy(people = updatedPeople), serverId)
+                return
+            }
+            val musicVideo = databaseRepository.getMusicVideo(itemId, userId) ?: return
+            if (musicVideo.people.isEmpty()) return
+            val updatedPeople = localizePeopleImages(apiClient, musicVideo.people, peopleImagesDir)
+            databaseRepository.insertMusicVideo(musicVideo.copy(people = updatedPeople), serverId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to download video person images")
         }
     }
 
@@ -1447,6 +1500,8 @@ constructor(
         when (item) {
             is AfinityMovie -> item.images.backdrop
             is AfinityEpisode -> item.images.showBackdrop ?: item.images.backdrop
+            is AfinityVideo -> item.images.backdrop
+            is AfinityMusicVideo -> item.images.backdrop
             else -> null
         }?.toString()
 

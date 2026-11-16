@@ -99,6 +99,7 @@ fun AudiobookDetailScreen(
     viewModel: AudiobookDetailViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
     val lazyListState = rememberLazyListState()
     val topBarOpacity by rememberTopBarOpacity(lazyListState)
     val isLandscape = isLandscapeWindow()
@@ -148,7 +149,7 @@ fun AudiobookDetailScreen(
                         showListenedChapters = showListenedChapters,
                         onShowListenedChange = { showListenedChapters = it },
                         onChapterClick = { chapter -> onPlayClick(book, chapter.start) },
-                        onPersonClick = onPersonClick,
+                        onPersonClick = if (isOffline) null else onPersonClick,
                         widthSizeClass = widthSizeClass,
                     )
                 }
@@ -362,6 +363,7 @@ private fun AudiobookActionRow(
     val downloadInfo by viewModel.downloadInfo.collectAsStateWithLifecycle()
     val allowedByServer by viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
     val allowedOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
+    val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
     val downloadVolumes = rememberDownloadVolumes()
     var pendingConfirm by remember { mutableStateOf<DownloadConfirm?>(null) }
     var showLocationDialog by remember { mutableStateOf(false) }
@@ -395,8 +397,10 @@ private fun AudiobookActionRow(
         playbackEnabled = book.canPlay,
         playContentDescription = stringResource(R.string.cd_play),
     ) {
-        WatchedToggleButton(isPlayed = book.played, onClick = onTogglePlayed)
-        FavoriteToggleButton(isFavorite = book.favorite, onClick = onToggleFavorite)
+        if (!isOffline) {
+            WatchedToggleButton(isPlayed = book.played, onClick = onTogglePlayed)
+            FavoriteToggleButton(isFavorite = book.favorite, onClick = onToggleFavorite)
+        }
         if (book.canDownload && allowedByServer || downloadInfo != null) {
             DownloadProgressIndicator(
                 downloadInfo = downloadInfo,
@@ -427,7 +431,7 @@ private fun LazyListScope.audiobookDetailBody(
     showListenedChapters: Boolean,
     onShowListenedChange: (Boolean) -> Unit,
     onChapterClick: (BookChapter) -> Unit,
-    onPersonClick: (UUID) -> Unit,
+    onPersonClick: ((UUID) -> Unit)?,
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val overview = plainOverview(book.overview)
@@ -473,6 +477,18 @@ private fun personKindLabel(person: AfinityPerson): String =
     }
 
 @Composable
+private fun partsLabel(book: AfinityAudiobook): String? {
+    val available = book.playableParts.size
+    val total = book.bookPartCount
+    return when {
+        total != null && total > available ->
+            stringResource(R.string.audiobook_parts_downloaded_fmt, available, total)
+        book.isGrouped -> available.toString()
+        else -> null
+    }
+}
+
+@Composable
 private fun AudiobookDetailsSection(book: AfinityAudiobook) {
     val releaseFormatter = remember { DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG) }
     val containers =
@@ -495,9 +511,7 @@ private fun AudiobookDetailsSection(book: AfinityAudiobook) {
                 ?.let {
                     stringResource(R.string.audiobook_details_length) to formatRuntimeTicks(it)
                 },
-            book.parts.size
-                .takeIf { book.isGrouped }
-                ?.let { stringResource(R.string.audiobook_details_parts) to it.toString() },
+            partsLabel(book)?.let { stringResource(R.string.audiobook_details_parts) to it },
             containers
                 .takeIf { it.isNotEmpty() }
                 ?.let { stringResource(R.string.book_details_format) to it },

@@ -12,6 +12,7 @@ import com.makd.afinity.data.books.ReadingPaceStore
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.MediaChangeSource
+import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.extensions.toAfinityBook
 import com.makd.afinity.data.models.media.AfinityBook
@@ -64,11 +65,14 @@ constructor(
     private val itemStore: ItemStore,
     private val paceStore: ReadingPaceStore,
     private val seriesResolver: BookSeriesResolver,
+    private val offlineModeManager: OfflineModeManager,
     downloadPermissions: DownloadPermissions,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     val itemId: UUID = UUID.fromString(savedStateHandle.get<String>("itemId")!!)
+
+    val isOffline: StateFlow<Boolean> = offlineModeManager.isOffline
 
     val isDownloadAllowedByServer: StateFlow<Boolean> = downloadPermissions.isAllowedByServer
 
@@ -125,6 +129,18 @@ constructor(
     private fun load() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorRes = null) }
+            if (offlineModeManager.isCurrentlyOffline()) {
+                val stored = bookMetadataStore.downloaded(itemId)?.book
+                _uiState.update {
+                    if (stored != null) {
+                        it.copy(book = stored, isLoading = false, errorRes = null)
+                    } else {
+                        it.copy(isLoading = false, errorRes = R.string.error_load_content_generic)
+                    }
+                }
+                if (stored != null) loadSeries(stored, offline = true)
+                return@launch
+            }
             mediaRepository
                 .getItemResult(itemId, fields = FieldSets.BOOK_DETAIL)
                 .onSuccess { dto ->
@@ -157,8 +173,8 @@ constructor(
         }
     }
 
-    private suspend fun loadSeries(book: AfinityBook) {
-        val books = seriesResolver.series(book)
+    private suspend fun loadSeries(book: AfinityBook, offline: Boolean = false) {
+        val books = seriesResolver.series(book, offline)
         val currentIndex = books.indexOfFirst { it.id == book.id }
         val others = books.filterNot { it.id == book.id }
         if (others.isEmpty()) return

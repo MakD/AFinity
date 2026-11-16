@@ -1,17 +1,13 @@
 package com.makd.afinity.data.books
 
-import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.extensions.toAfinityBook
 import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.BookFormat
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.NoActiveSessionException
-import com.makd.afinity.data.repository.download.DownloadRepository
-import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.first
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
@@ -20,11 +16,11 @@ class BookSeriesResolver
 @Inject
 constructor(
     private val mediaRepository: MediaRepository,
-    private val downloadRepository: DownloadRepository,
     private val bookMetadataStore: BookMetadataStore,
 ) {
-    suspend fun series(book: AfinityBook): List<AfinityBook> {
+    suspend fun series(book: AfinityBook, offline: Boolean = false): List<AfinityBook> {
         val seriesName = book.seriesName ?: return emptyList()
+        if (offline) return downloadedSeries(seriesName)
         return try {
             remoteSeries(book, seriesName) ?: downloadedSeries(seriesName)
         } catch (e: CancellationException) {
@@ -36,8 +32,8 @@ constructor(
         }
     }
 
-    suspend fun nextAfter(book: AfinityBook): AfinityBook? {
-        val list = series(book)
+    suspend fun nextAfter(book: AfinityBook, offline: Boolean = false): AfinityBook? {
+        val list = series(book, offline)
         val index = list.indexOfFirst { it.id == book.id }
         if (index < 0) return null
         return list.getOrNull(index + 1)?.takeIf { it.format != BookFormat.KINDLE }
@@ -80,15 +76,8 @@ constructor(
     }
 
     private suspend fun downloadedSeries(seriesName: String): List<AfinityBook> =
-        downloadRepository
-            .getAllDownloadsFlow()
-            .first()
-            .filter {
-                it.itemType == JellyfinDownloadRepository.BOOK_ITEM_TYPE &&
-                    it.status == DownloadStatus.COMPLETED
-            }
-            .mapNotNull { bookMetadataStore.downloaded(it.itemId)?.book }
-            .filter { it.seriesName.equals(seriesName, ignoreCase = true) }
+        bookMetadataStore
+            .downloadedInSeries(seriesName)
             .distinctBy { it.id }
             .sortedWith(seriesOrder)
 

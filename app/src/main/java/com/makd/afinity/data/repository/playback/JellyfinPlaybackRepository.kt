@@ -710,6 +710,8 @@ constructor(
         return try {
             databaseRepository.getEpisode(itemId, userId)?.runtimeTicks
                 ?: databaseRepository.getMovie(itemId, userId)?.runtimeTicks
+                ?: databaseRepository.getVideo(itemId, userId)?.runtimeTicks
+                ?: databaseRepository.getMusicVideo(itemId, userId)?.runtimeTicks
                 ?: 0L
         } catch (e: CancellationException) {
             throw e

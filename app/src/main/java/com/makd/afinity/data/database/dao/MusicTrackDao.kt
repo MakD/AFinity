@@ -45,11 +45,6 @@ interface MusicTrackDao {
     suspend fun updateLocalFilePath(id: String, serverId: String, userId: String, path: String)
 
     @Query(
-        "UPDATE music_tracks SET localFilePath = NULL WHERE id = :id AND serverId = :serverId AND userId = :userId"
-    )
-    suspend fun clearLocalFilePath(id: String, serverId: String, userId: String)
-
-    @Query(
         "UPDATE music_tracks SET localImagePath = :path WHERE id = :id AND serverId = :serverId AND userId = :userId"
     )
     suspend fun updateLocalImagePath(id: String, serverId: String, userId: String, path: String)

@@ -18,6 +18,7 @@ import com.makd.afinity.data.books.PaceKind
 import com.makd.afinity.data.books.PaceTracker
 import com.makd.afinity.data.books.PdfPageSource
 import com.makd.afinity.data.books.ReadingPaceStore
+import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.extensions.toAfinityBook
 import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.BookAnnotation
@@ -98,6 +99,7 @@ constructor(
     private val annotationRepository: BookAnnotationRepository,
     private val paceStore: ReadingPaceStore,
     private val seriesResolver: BookSeriesResolver,
+    private val offlineModeManager: OfflineModeManager,
     @param:ApplicationScope private val applicationScope: CoroutineScope,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -230,15 +232,21 @@ constructor(
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(load = ReaderLoadState.Downloading(0L, null)) }
+                val isOffline = offlineModeManager.isCurrentlyOffline()
                 val downloaded = bookMetadataStore.downloaded(itemId)
-                val remote = mediaRepository.getItemResult(itemId, fields = FieldSets.BOOK_GRID)
+                val remote =
+                    if (isOffline) null
+                    else mediaRepository.getItemResult(itemId, fields = FieldSets.BOOK_GRID)
                 val loaded =
                     remote
-                        .getOrNull()
+                        ?.getOrNull()
                         ?.takeIf { it.type == BaseItemKind.BOOK }
                         ?.toAfinityBook(mediaRepository.getBaseUrl()) ?: downloaded?.book
                 if (loaded == null) {
-                    fail(if (remote.isFailure) ReaderError.NETWORK else ReaderError.NOT_FOUND)
+                    fail(
+                        if (remote == null || remote.isFailure) ReaderError.NETWORK
+                        else ReaderError.NOT_FOUND
+                    )
                     return@launch
                 }
                 _uiState.update {
@@ -271,7 +279,9 @@ constructor(
                 }
                 pageFlow.value = startPage
                 progressReporter.start(itemId, loaded.runtimeTicks, ticksFor(startPage))
-                viewModelScope.launch { _nextBook.value = seriesResolver.nextAfter(loaded) }
+                viewModelScope.launch {
+                    _nextBook.value = seriesResolver.nextAfter(loaded, isOffline)
+                }
                 _canSearch.value =
                     (pageSource as? PdfPageSource)?.let {
                         runCatching { it.hasText() }.getOrDefault(false)

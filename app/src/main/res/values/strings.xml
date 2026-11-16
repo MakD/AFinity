@@ -54,6 +54,7 @@
     <string name="home_error_title">Something went wrong</string>
     <string name="home_downloaded_movies">Downloaded Movies</string>
     <string name="home_downloaded_shows">Downloaded Shows</string>
+    <string name="home_downloaded_videos">Downloaded Videos</string>
     <string name="home_critics_choice">Critics\' Choice</string>
     <string name="home_popular_studios">Popular Studios</string>
     <string name="home_franchises">Universes &amp; Sagas</string>
@@ -539,6 +540,8 @@
     <string name="photo_action_share">Share</string>
     <string name="photo_action_play">Play video</string>
     <string name="photo_saving">Saving to Pictures/AFinity</string>
+    <string name="photo_saved">Saved to Pictures/AFinity</string>
+    <string name="photo_save_failed">Couldn\'t save the photo</string>
     <string name="photo_action_failed">Something went wrong. Try again.</string>
     <string name="photo_info_taken">Taken</string>
     <string name="photo_info_camera">Camera</string>
@@ -558,6 +561,7 @@
     <string name="audiobook_progress_percent_fmt">%1$d%% listened</string>
     <string name="audiobook_details_length">Length</string>
     <string name="audiobook_details_parts">Parts</string>
+    <string name="audiobook_parts_downloaded_fmt">%1$d of %2$d downloaded</string>
     <string name="library_filter_tags_hint">Search tags</string>
     <string name="library_filter_ratings_hint">Search ratings</string>
     <string name="library_filter_years_hint">Search years</string>
@@ -1814,6 +1818,8 @@
     <string name="wikidata_disconnect_action">Disconnect</string>
     <string name="pref_show_awards_title">Show awards</string>
     <string name="pref_show_awards_summary">Award banner and win history on detail screens</string>
+    <string name="pref_original_images_title">Original image quality</string>
+    <string name="pref_original_images_summary">Load full-size images instead of resized ones. Uses more data.</string>
     <string name="settings_group_theme_music">Theme Music</string>
     <string name="pref_theme_music_title">Play on detail pages</string>
     <string name="pref_theme_music_summary">Theme songs on movies, shows and collections</string>

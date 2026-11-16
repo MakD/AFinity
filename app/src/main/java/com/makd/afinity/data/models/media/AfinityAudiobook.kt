@@ -37,6 +37,7 @@ data class AfinityAudiobook(
     val container: String?,
     val lastPlayedDate: LocalDateTime? = null,
     val parts: List<AfinityAudiobook> = emptyList(),
+    val bookPartCount: Int? = null,
 ) : AfinityItem {
     val isGrouped: Boolean
         get() = parts.size > 1
@@ -162,6 +163,7 @@ fun combineParts(parts: List<AfinityAudiobook>): AfinityAudiobook {
         unplayedItemCount = sorted.count { !it.played },
         dateCreated = sorted.mapNotNull { it.dateCreated }.maxOrNull(),
         lastPlayedDate = sorted.mapNotNull { it.lastPlayedDate }.maxOrNull(),
+        bookPartCount = sorted.mapNotNull { it.bookPartCount }.maxOrNull(),
         chapters = emptyList(),
         trackNumber = null,
         discNumber = null,

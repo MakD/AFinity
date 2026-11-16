@@ -7,6 +7,7 @@ import com.makd.afinity.data.database.dao.AbsDownloadDao
 import com.makd.afinity.data.database.dao.AudibleRatingDao
 import com.makd.afinity.data.database.dao.AudiobookshelfDao
 import com.makd.afinity.data.database.dao.BookAnnotationDao
+import com.makd.afinity.data.database.dao.BookDao
 import com.makd.afinity.data.database.dao.CustomHomeSectionDao
 import com.makd.afinity.data.database.dao.DeletedItemDao
 import com.makd.afinity.data.database.dao.EpisodeDao
@@ -36,17 +37,22 @@ import com.makd.afinity.data.database.dao.SourceDao
 import com.makd.afinity.data.database.dao.TopPeopleDao
 import com.makd.afinity.data.database.dao.UserDao
 import com.makd.afinity.data.database.dao.UserDataDao
+import com.makd.afinity.data.database.dao.VideoDao
 import com.makd.afinity.data.database.dao.WikidataAwardsDao
 import com.makd.afinity.data.database.dao.WikidataFranchiseDao
 import com.makd.afinity.data.database.entities.AbsDownloadEntity
+import com.makd.afinity.data.database.entities.AfinityAudiobookPartDto
+import com.makd.afinity.data.database.entities.AfinityBookDto
 import com.makd.afinity.data.database.entities.AfinityEpisodeDto
 import com.makd.afinity.data.database.entities.AfinityMediaStreamDto
 import com.makd.afinity.data.database.entities.AfinityMovieDto
+import com.makd.afinity.data.database.entities.AfinityMusicVideoDto
 import com.makd.afinity.data.database.entities.AfinitySeasonDto
 import com.makd.afinity.data.database.entities.AfinitySegmentDto
 import com.makd.afinity.data.database.entities.AfinityShowDto
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
+import com.makd.afinity.data.database.entities.AfinityVideoDto
 import com.makd.afinity.data.database.entities.AudibleRatingEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfAddressEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfBookmarkEntity
@@ -148,6 +154,10 @@ const val AFINITY_DB_VERSION = 91
             SeerrArtworkEntity::class,
             OfflinePlayEntity::class,
             BookAnnotationEntity::class,
+            AfinityVideoDto::class,
+            AfinityMusicVideoDto::class,
+            AfinityBookDto::class,
+            AfinityAudiobookPartDto::class,
         ],
     version = AFINITY_DB_VERSION,
     exportSchema = true,
@@ -224,4 +234,8 @@ abstract class AfinityDatabase : RoomDatabase() {
     abstract fun offlinePlayDao(): OfflinePlayDao
 
     abstract fun bookAnnotationDao(): BookAnnotationDao
+
+    abstract fun videoDao(): VideoDao
+
+    abstract fun bookDao(): BookDao
 }

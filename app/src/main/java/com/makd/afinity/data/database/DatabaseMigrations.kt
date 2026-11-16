@@ -1873,6 +1873,18 @@ object DatabaseMigrations {
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS `index_book_annotations_serverId_userId_itemId` ON `book_annotations` (`serverId`, `userId`, `itemId`)"
                 )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `videos` (`id` TEXT NOT NULL, `serverId` TEXT NOT NULL, `name` TEXT NOT NULL, `originalTitle` TEXT, `overview` TEXT NOT NULL, `runtimeTicks` INTEGER NOT NULL, `premiereDate` TEXT, `communityRating` REAL, `officialRating` TEXT, `criticRating` REAL, `status` TEXT NOT NULL, `productionYear` INTEGER, `endDate` TEXT, `chapters` TEXT, `images` TEXT, `genres` TEXT, `tagline` TEXT, `people` TEXT, `providerIds` TEXT, `externalUrls` TEXT, `extraType` TEXT, PRIMARY KEY(`id`))"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `music_videos` (`id` TEXT NOT NULL, `serverId` TEXT NOT NULL, `name` TEXT NOT NULL, `originalTitle` TEXT, `overview` TEXT NOT NULL, `runtimeTicks` INTEGER NOT NULL, `premiereDate` TEXT, `dateCreated` TEXT, `productionYear` INTEGER, `communityRating` REAL, `officialRating` TEXT, `criticRating` REAL, `chapters` TEXT, `images` TEXT, `genres` TEXT, `studios` TEXT, `tags` TEXT, `tagline` TEXT, `people` TEXT, `providerIds` TEXT, `externalUrls` TEXT, `artists` TEXT, `artistItems` TEXT, `album` TEXT, `albumId` TEXT, `parentId` TEXT, PRIMARY KEY(`id`))"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `books` (`id` TEXT NOT NULL, `serverId` TEXT NOT NULL, `name` TEXT NOT NULL, `originalTitle` TEXT, `overview` TEXT NOT NULL, `runtimeTicks` INTEGER NOT NULL, `images` TEXT, `chapters` TEXT, `providerIds` TEXT, `externalUrls` TEXT, `seriesName` TEXT, `seriesIndex` INTEGER, `people` TEXT, `publisher` TEXT, `premiereDate` TEXT, `productionYear` INTEGER, `genres` TEXT, `tags` TEXT, `communityRating` REAL, `dateCreated` TEXT, `format` TEXT NOT NULL, `parentId` TEXT, PRIMARY KEY(`id`))"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `audiobook_parts` (`id` TEXT NOT NULL, `serverId` TEXT NOT NULL, `name` TEXT NOT NULL, `originalTitle` TEXT, `overview` TEXT NOT NULL, `runtimeTicks` INTEGER NOT NULL, `images` TEXT, `chapters` TEXT, `providerIds` TEXT, `externalUrls` TEXT, `album` TEXT, `people` TEXT, `publisher` TEXT, `premiereDate` TEXT, `productionYear` INTEGER, `genres` TEXT, `communityRating` REAL, `dateCreated` TEXT, `parentId` TEXT, `trackNumber` INTEGER, `discNumber` INTEGER, `container` TEXT, `bookPartCount` INTEGER, PRIMARY KEY(`id`))"
+                )
             }
         }
 

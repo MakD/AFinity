@@ -10,6 +10,7 @@ data class AfinityChapter(
     val name: String? = null,
     val imageIndex: Int? = null,
     val imageTag: String? = null,
+    val localImagePath: String? = null,
 )
 
 fun BaseItemDto.toAfinityChapters(): List<AfinityChapter> {
@@ -24,6 +25,9 @@ fun BaseItemDto.toAfinityChapters(): List<AfinityChapter> {
 }
 
 fun AfinityChapter.getChapterImageUrl(baseUrl: String, itemId: UUID): String? {
+    localImagePath?.let {
+        return it
+    }
     return imageIndex?.let { index ->
         val url = "$baseUrl/Items/$itemId/Images/Chapter/$index"
         imageTag?.let { "$url?tag=$it" } ?: url

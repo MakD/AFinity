@@ -1,11 +1,11 @@
 package com.makd.afinity.ui.photo
 
-import android.app.DownloadManager
+import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
+import android.provider.MediaStore
 import androidx.core.content.FileProvider
-import androidx.core.net.toUri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -53,6 +53,10 @@ sealed interface PhotoViewerEvent {
     data class Share(val uri: Uri, val mimeType: String) : PhotoViewerEvent
 
     data object SaveStarted : PhotoViewerEvent
+
+    data object Saved : PhotoViewerEvent
+
+    data object SaveFailed : PhotoViewerEvent
 
     data object ActionFailed : PhotoViewerEvent
 
@@ -180,30 +184,72 @@ constructor(
     }
 
     fun savePhoto(photo: AfinityPhoto) {
-        val apiClient = sessionManager.getCurrentApiClient() ?: return
-        try {
-            val name = photo.safeFileName()
-            val request =
-                DownloadManager.Request(apiClient.libraryApi.getDownloadUrl(photo.id).toUri())
-                    .addRequestHeader(
-                        "Authorization",
-                        "MediaBrowser Token=\"${apiClient.accessToken ?: ""}\"",
+        _events.tryEmit(PhotoViewerEvent.SaveStarted)
+        viewModelScope.launch {
+            val saved =
+                try {
+                    withContext(Dispatchers.IO) { saveToGallery(photo) }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to save photo ${photo.id}")
+                    false
+                }
+            _events.emit(if (saved) PhotoViewerEvent.Saved else PhotoViewerEvent.SaveFailed)
+        }
+    }
+
+    private fun saveToGallery(photo: AfinityPhoto): Boolean {
+        val apiClient = sessionManager.getCurrentApiClient() ?: return false
+        val request =
+            Request.Builder()
+                .url(apiClient.libraryApi.getDownloadUrl(photo.id))
+                .header("Authorization", "MediaBrowser Token=\"${apiClient.accessToken ?: ""}\"")
+                .build()
+        return okHttpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                Timber.w("Photo ${photo.id} download returned ${response.code}")
+                return@use false
+            }
+            val resolver = context.contentResolver
+            val values =
+                ContentValues().apply {
+                    put(MediaStore.Images.Media.DISPLAY_NAME, photo.safeFileName())
+                    put(
+                        MediaStore.Images.Media.MIME_TYPE,
+                        response.body.contentType()?.toString() ?: "image/jpeg",
                     )
-                    .setTitle(name)
-                    .setNotificationVisibility(
-                        DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+                    put(
+                        MediaStore.Images.Media.RELATIVE_PATH,
+                        "${Environment.DIRECTORY_PICTURES}/$SAVE_FOLDER",
                     )
-                    .setDestinationInExternalPublicDir(
-                        Environment.DIRECTORY_PICTURES,
-                        "$SAVE_FOLDER/$name",
+                    put(MediaStore.Images.Media.IS_PENDING, 1)
+                }
+            val target =
+                resolver.insert(
+                    MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY),
+                    values,
+                ) ?: return@use false
+            var published = false
+            try {
+                val written =
+                    resolver.openOutputStream(target)?.use { out ->
+                        response.body.byteStream().copyTo(out)
+                        true
+                    } ?: false
+                if (written) {
+                    resolver.update(
+                        target,
+                        ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) },
+                        null,
+                        null,
                     )
-            context.getSystemService(DownloadManager::class.java).enqueue(request)
-            _events.tryEmit(PhotoViewerEvent.SaveStarted)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to save photo ${photo.id}")
-            _events.tryEmit(PhotoViewerEvent.ActionFailed)
+                    published = true
+                }
+                published
+            } finally {
+                if (!published) resolver.delete(target, null, null)
+            }
         }
     }
 

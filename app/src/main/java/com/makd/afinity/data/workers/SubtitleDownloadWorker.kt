@@ -9,6 +9,8 @@ import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityMovie
+import com.makd.afinity.data.models.extensions.toAfinityMusicVideo
+import com.makd.afinity.data.models.extensions.toAfinityVideo
 import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
@@ -132,6 +134,10 @@ constructor(
                                 ?: return@withContext Result.failure(
                                     workDataOf("error" to "Failed to convert episode")
                                 )
+
+                        BaseItemKind.VIDEO -> baseItemDto.toAfinityVideo(baseUrl)
+
+                        BaseItemKind.MUSIC_VIDEO -> baseItemDto.toAfinityMusicVideo(baseUrl)
 
                         else ->
                             return@withContext Result.failure(

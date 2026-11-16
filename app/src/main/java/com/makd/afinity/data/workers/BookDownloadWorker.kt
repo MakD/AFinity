@@ -1,15 +1,19 @@
 package com.makd.afinity.data.workers
 
 import android.content.Context
+import androidx.core.net.toUri
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.makd.afinity.data.audiobooks.AUDIOBOOK_DOWNLOAD_TYPE
 import com.makd.afinity.data.books.BookDownloadCover
-import com.makd.afinity.data.books.BookMetadataStore
+import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.data.models.extensions.toAfinityAudiobook
+import com.makd.afinity.data.models.extensions.toAfinityBook
+import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
@@ -25,6 +29,8 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jellyfin.sdk.api.client.extensions.libraryApi
+import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
 import timber.log.Timber
 
@@ -37,7 +43,6 @@ constructor(
     private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
     private val downloadRepository: JellyfinDownloadRepository,
-    private val bookMetadataStore: BookMetadataStore,
     @param:DownloadClient private val okHttpClient: OkHttpClient,
 ) : CoroutineWorker(appContext, workerParams) {
 
@@ -86,7 +91,6 @@ constructor(
                         .content
                         .items
                         .firstOrNull() ?: throw IllegalStateException("Book not found")
-                bookMetadataStore.write(itemDir, item)
 
                 val coverFile = File(itemDir, BookDownloadCover.FILE_NAME)
                 if (item.imageTags?.containsKey(ImageType.PRIMARY) == true && !coverFile.exists()) {
@@ -101,6 +105,7 @@ constructor(
                     }
                         .onFailure { Timber.w(it, "Book cover download failed") }
                 }
+                saveItemRow(item, baseUrl, itemDir, token, download)
 
                 val finalFile = File(mediaDir, "${download.itemId}.${download.sourceName}")
                 if (!finalFile.exists()) {
@@ -167,6 +172,69 @@ constructor(
             }
         }
 
+    private suspend fun saveItemRow(
+        item: BaseItemDto,
+        baseUrl: String,
+        itemDir: File,
+        token: String,
+        download: DownloadDto,
+    ) {
+        val serverId = download.serverId
+        val cover = File(itemDir, BookDownloadCover.FILE_NAME).takeIf { it.exists() }?.toUri()
+        if (item.type == BaseItemKind.AUDIO_BOOK) {
+            val part = item.toAfinityAudiobook(baseUrl)
+            val images = if (cover == null) part.images else part.images.copy(primary = cover)
+            databaseRepository.insertAudiobookPart(
+                part.copy(
+                    images = images,
+                    people = localizePeople(part.people, itemDir, token),
+                    bookPartCount = databaseRepository.getAudiobookPartCount(item.id, serverId),
+                ),
+                serverId,
+            )
+        } else {
+            val book = item.toAfinityBook(baseUrl)
+            val images = if (cover == null) book.images else book.images.copy(primary = cover)
+            databaseRepository.insertBook(
+                book.copy(images = images, people = localizePeople(book.people, itemDir, token)),
+                serverId,
+            )
+        }
+        item.userData?.let {
+            databaseRepository.patchUserDataLocally(item.id, download.userId, serverId, it)
+        }
+    }
+
+    private suspend fun localizePeople(
+        people: List<AfinityPerson>,
+        itemDir: File,
+        token: String,
+    ): List<AfinityPerson> {
+        if (people.none { it.image.uri != null }) return people
+        val peopleDir = File(itemDir, PEOPLE_DIR)
+        if (!peopleDir.exists() && !peopleDir.mkdirs()) return people
+        return people.map { person ->
+            val remote = person.image.uri ?: return@map person
+            val target = File(peopleDir, "${person.id}.jpg")
+            val saved =
+                target.exists() ||
+                    try {
+                        fetch(remote.toString(), token, target, resume = false) { _, _ -> }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Timber.w(e, "Credit photo download failed for ${person.name}")
+                        target.delete()
+                        false
+                    }
+            if (saved && target.exists()) {
+                person.copy(image = person.image.copy(uri = target.toUri()))
+            } else {
+                person
+            }
+        }
+    }
+
     private suspend fun fetch(
         url: String,
         token: String,
@@ -210,6 +278,7 @@ constructor(
 
     companion object {
         private const val MEDIA_DIR = "media"
+        private const val PEOPLE_DIR = "people"
         private const val COVER_WIDTH = 600
         private const val BUFFER_SIZE = 64 * 1024
         private const val PROGRESS_WRITE_INTERVAL_MS = 500L

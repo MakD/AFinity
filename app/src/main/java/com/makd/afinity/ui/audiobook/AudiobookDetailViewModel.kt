@@ -9,6 +9,7 @@ import com.makd.afinity.data.audiobooks.JellyfinAudiobookLoader
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.MediaChangeSource
+import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.media.AfinityAudiobook
@@ -56,11 +57,14 @@ constructor(
     private val mediaChangeManager: MediaChangeManager,
     private val itemStore: ItemStore,
     private val downloadRepository: DownloadRepository,
+    private val offlineModeManager: OfflineModeManager,
     downloadPermissions: DownloadPermissions,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     val itemId: UUID = UUID.fromString(savedStateHandle.get<String>("itemId")!!)
+
+    val isOffline: StateFlow<Boolean> = offlineModeManager.isOffline
 
     private val _uiState = MutableStateFlow(AudiobookDetailUiState())
     val uiState: StateFlow<AudiobookDetailUiState> =
@@ -168,7 +172,7 @@ constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorRes = null) }
             audiobookLoader
-                .loadParts(itemId)
+                .loadParts(itemId, offline = offlineModeManager.isCurrentlyOffline())
                 .onSuccess { parts ->
                     if (parts.isNullOrEmpty()) {
                         _uiState.update {

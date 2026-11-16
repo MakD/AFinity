@@ -1,5 +1,7 @@
 package com.makd.afinity.data.repository.impl
 
+import com.makd.afinity.data.audiobooks.AUDIOBOOK_DOWNLOAD_TYPE
+import com.makd.afinity.data.database.dao.BookDao
 import com.makd.afinity.data.database.dao.EpisodeDao
 import com.makd.afinity.data.database.dao.ItemMetadataCacheDao
 import com.makd.afinity.data.database.dao.LastFmArtistDao
@@ -17,12 +19,17 @@ import com.makd.afinity.data.database.dao.ShowDao
 import com.makd.afinity.data.database.dao.SourceDao
 import com.makd.afinity.data.database.dao.UserDao
 import com.makd.afinity.data.database.dao.UserDataDao
+import com.makd.afinity.data.database.dao.VideoDao
 import com.makd.afinity.data.database.dao.WikidataAwardsDao
+import com.makd.afinity.data.database.entities.AfinityAudiobookPartDto
+import com.makd.afinity.data.database.entities.AfinityBookDto
 import com.makd.afinity.data.database.entities.AfinityEpisodeDto
 import com.makd.afinity.data.database.entities.AfinityMovieDto
+import com.makd.afinity.data.database.entities.AfinityMusicVideoDto
 import com.makd.afinity.data.database.entities.AfinitySeasonDto
 import com.makd.afinity.data.database.entities.AfinityShowDto
 import com.makd.afinity.data.database.entities.AfinitySourceDto
+import com.makd.afinity.data.database.entities.AfinityVideoDto
 import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
 import com.makd.afinity.data.database.entities.LastFmArtistCacheEntity
@@ -31,30 +38,40 @@ import com.makd.afinity.data.database.entities.MusicLyricsEntity
 import com.makd.afinity.data.database.entities.OfflinePlayEntity
 import com.makd.afinity.data.database.entities.WikidataAwardsCacheEntity
 import com.makd.afinity.data.database.entities.toAfinityAlbum
+import com.makd.afinity.data.database.entities.toAfinityAudiobookPartDto
+import com.makd.afinity.data.database.entities.toAfinityBookDto
 import com.makd.afinity.data.database.entities.toAfinityEpisodeDto
 import com.makd.afinity.data.database.entities.toAfinityMediaStreamDto
 import com.makd.afinity.data.database.entities.toAfinityMovieDto
+import com.makd.afinity.data.database.entities.toAfinityMusicVideoDto
 import com.makd.afinity.data.database.entities.toAfinitySeasonDto
 import com.makd.afinity.data.database.entities.toAfinitySegmentsDto
 import com.makd.afinity.data.database.entities.toAfinityShowDto
 import com.makd.afinity.data.database.entities.toAfinitySourceDto
 import com.makd.afinity.data.database.entities.toAfinityTrack
 import com.makd.afinity.data.database.entities.toAfinityTrickplayInfoDto
+import com.makd.afinity.data.database.entities.toAfinityVideoDto
 import com.makd.afinity.data.database.entities.toMusicAlbumEntity
 import com.makd.afinity.data.database.entities.toMusicTrackEntity
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.data.models.download.StoredItemRemoval
+import com.makd.afinity.data.models.media.AfinityAudiobook
+import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinityTrickplayInfo
+import com.makd.afinity.data.models.media.AfinityVideo
+import com.makd.afinity.data.models.media.BookFormat
 import com.makd.afinity.data.models.media.toAfinityMediaStream
 import com.makd.afinity.data.models.media.toAfinitySegment
 import com.makd.afinity.data.models.media.toAfinitySource
@@ -68,7 +85,10 @@ import com.makd.afinity.data.models.server.ServerWithAddressesAndUsers
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
+import java.time.Instant
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Provider
@@ -78,7 +98,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import org.jellyfin.sdk.model.api.ExtraType
 import org.jellyfin.sdk.model.api.UserItemDataDto
+
+private const val MOVIE_DOWNLOAD_TYPE = "Movie"
+private const val EPISODE_DOWNLOAD_TYPE = "Episode"
+private const val AUDIO_DOWNLOAD_TYPE = "Audio"
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
@@ -104,6 +129,8 @@ constructor(
     private val musicAlbumDao: MusicAlbumDao,
     private val musicLyricsDao: MusicLyricsDao,
     private val offlinePlayDao: OfflinePlayDao,
+    private val videoDao: VideoDao,
+    private val bookDao: BookDao,
 ) : DatabaseRepository {
 
     private val sessionManager: SessionManager
@@ -241,6 +268,152 @@ constructor(
                 movieDtos.map { it.toAfinityMovie(serverDatabaseDao, userId) }
             }
         }
+    }
+
+    override suspend fun insertVideo(video: AfinityVideo, serverId: String?) {
+        val actualServerId = serverId ?: sessionManager.currentSession.value?.serverId ?: return
+        videoDao.insertVideo(video.toAfinityVideoDto(actualServerId))
+    }
+
+    override suspend fun getVideo(videoId: UUID, userId: UUID): AfinityVideo? {
+        val serverId = sessionManager.currentSession.value?.serverId ?: return null
+        return videoDao.getVideo(videoId, serverId)?.toAfinityVideo(serverDatabaseDao, userId)
+    }
+
+    override suspend fun getAllVideos(userId: UUID): List<AfinityVideo> {
+        val serverId = sessionManager.currentSession.value?.serverId ?: return emptyList()
+        return videoDao.getVideos(serverId).map { it.toAfinityVideo(serverDatabaseDao, userId) }
+    }
+
+    override suspend fun insertMusicVideo(musicVideo: AfinityMusicVideo, serverId: String?) {
+        val actualServerId = serverId ?: sessionManager.currentSession.value?.serverId ?: return
+        videoDao.insertMusicVideo(musicVideo.toAfinityMusicVideoDto(actualServerId))
+    }
+
+    override suspend fun getMusicVideo(musicVideoId: UUID, userId: UUID): AfinityMusicVideo? {
+        val serverId = sessionManager.currentSession.value?.serverId ?: return null
+        return videoDao
+            .getMusicVideo(musicVideoId, serverId)
+            ?.toAfinityMusicVideo(serverDatabaseDao, userId)
+    }
+
+    override suspend fun getAllMusicVideos(userId: UUID): List<AfinityMusicVideo> {
+        val serverId = sessionManager.currentSession.value?.serverId ?: return emptyList()
+        return videoDao.getMusicVideos(serverId).map {
+            it.toAfinityMusicVideo(serverDatabaseDao, userId)
+        }
+    }
+
+    override suspend fun insertBook(book: AfinityBook, serverId: String) {
+        bookDao.insertBook(book.toAfinityBookDto(serverId))
+    }
+
+    override suspend fun getBook(bookId: UUID, userId: UUID): AfinityBook? {
+        val serverId = sessionManager.currentSession.value?.serverId ?: return null
+        return bookDao.getBook(bookId, serverId)?.toAfinityBook(serverDatabaseDao, userId)
+    }
+
+    override suspend fun getBooksInSeries(seriesName: String, userId: UUID): List<AfinityBook> {
+        val serverId = sessionManager.currentSession.value?.serverId ?: return emptyList()
+        return bookDao.getBooksInSeries(serverId, seriesName).map {
+            it.toAfinityBook(serverDatabaseDao, userId)
+        }
+    }
+
+    override suspend fun insertAudiobookPart(part: AfinityAudiobook, serverId: String) {
+        bookDao.insertAudiobookPart(part.toAfinityAudiobookPartDto(serverId))
+    }
+
+    override suspend fun recordAudiobookParts(parts: List<AfinityAudiobook>, serverId: String) {
+        if (parts.isEmpty()) return
+        bookDao.insertAudiobookPartsIfAbsent(parts.map { it.toAfinityAudiobookPartDto(serverId) })
+        bookDao.updateBookPartCount(parts.map { it.id }, serverId, parts.size)
+    }
+
+    override suspend fun getAudiobookPartCount(partId: UUID, serverId: String): Int? =
+        bookDao.getBookPartCount(partId, serverId)
+
+    override suspend fun removeStoredItem(download: DownloadDto): StoredItemRemoval {
+        val itemId = download.itemId
+        if (serverDatabaseDao.getDownloadByItemId(itemId) != null) return StoredItemRemoval()
+        val serverId = download.serverId
+        val userId = download.userId
+        return when (download.itemType) {
+            MOVIE_DOWNLOAD_TYPE -> {
+                movieDao.deleteMovieById(itemId)
+                StoredItemRemoval()
+            }
+            EPISODE_DOWNLOAD_TYPE -> removeStoredEpisode(itemId, serverId, userId)
+            JellyfinDownloadRepository.VIDEO_ITEM_TYPE -> {
+                videoDao.deleteVideo(itemId)
+                StoredItemRemoval()
+            }
+            JellyfinDownloadRepository.MUSIC_VIDEO_ITEM_TYPE -> {
+                videoDao.deleteMusicVideo(itemId)
+                StoredItemRemoval()
+            }
+            JellyfinDownloadRepository.BOOK_ITEM_TYPE -> {
+                bookDao.deleteBook(itemId)
+                StoredItemRemoval()
+            }
+            AUDIOBOOK_DOWNLOAD_TYPE -> {
+                bookDao.deleteAudiobookPart(itemId)
+                StoredItemRemoval()
+            }
+            AUDIO_DOWNLOAD_TYPE -> removeStoredTrack(download)
+            else -> StoredItemRemoval()
+        }
+    }
+
+    private suspend fun removeStoredEpisode(
+        episodeId: UUID,
+        serverId: String,
+        userId: UUID,
+    ): StoredItemRemoval {
+        val episode = serverDatabaseDao.getEpisode(episodeId) ?: return StoredItemRemoval()
+        serverDatabaseDao.deleteEpisode(episodeId)
+        val seriesId = episode.seriesId
+        if (
+            serverDatabaseDao.countDownloadsWithSeriesId(seriesId.toString(), serverId, userId) == 0
+        ) {
+            serverDatabaseDao.deleteShow(seriesId)
+            return StoredItemRemoval(showId = seriesId)
+        }
+        if (serverDatabaseDao.getEpisodesForSeason(episode.seasonId).isEmpty()) {
+            serverDatabaseDao.deleteSeason(episode.seasonId)
+        }
+        return StoredItemRemoval()
+    }
+
+    private suspend fun removeStoredTrack(download: DownloadDto): StoredItemRemoval {
+        val serverId = download.serverId
+        val userIdText = download.userId.toString()
+        val trackId = download.itemId.toString()
+        musicTrackDao.delete(trackId, serverId, userIdText)
+        val albumId = download.seriesId ?: return StoredItemRemoval()
+        if (serverDatabaseDao.countDownloadsWithSeriesId(albumId, serverId, download.userId) == 0) {
+            musicAlbumDao.delete(albumId, serverId, userIdText)
+            return StoredItemRemoval(albumId = runCatching { UUID.fromString(albumId) }.getOrNull())
+        }
+        val album = musicAlbumDao.getById(albumId, serverId, userIdText)
+        if (album?.localImagePath?.contains("/$trackId/") == true) {
+            musicTrackDao
+                .getByAlbum(albumId, serverId, userIdText)
+                .firstNotNullOfOrNull { track ->
+                    track.localImagePath?.takeIf { track.localFilePath != null }
+                }
+                ?.let { cover ->
+                    musicAlbumDao.updateLocalImagePath(albumId, serverId, userIdText, cover)
+                }
+        }
+        return StoredItemRemoval()
+    }
+
+    override suspend fun getAudiobookPart(partId: UUID, userId: UUID): AfinityAudiobook? {
+        val serverId = sessionManager.currentSession.value?.serverId ?: return null
+        return bookDao
+            .getAudiobookPart(partId, serverId)
+            ?.toAfinityAudiobook(serverDatabaseDao, userId)
     }
 
     override suspend fun insertShow(show: AfinityShow, serverId: String?) {
@@ -691,6 +864,184 @@ constructor(
         )
     }
 
+    private suspend fun storedTrickplay(
+        database: ServerDatabaseDao,
+        sources: List<AfinitySource>,
+    ): Map<String, List<AfinityTrickplayInfo>> {
+        val trickplayInfos = mutableMapOf<String, List<AfinityTrickplayInfo>>()
+        for (source in sources) {
+            database.getTrickplayInfo(source.id)?.toAfinityTrickplayInfo()?.let {
+                trickplayInfos[source.id] = listOf(it)
+            }
+        }
+        return trickplayInfos
+    }
+
+    private suspend fun AfinityVideoDto.toAfinityVideo(
+        database: ServerDatabaseDao,
+        userId: UUID,
+    ): AfinityVideo {
+        val userData = database.getUserDataOrCreateNew(id, userId, serverId)
+        val sources = database.getSources(id).map { it.toAfinitySource(database) }
+        return AfinityVideo(
+            id = id,
+            name = name,
+            originalTitle = originalTitle,
+            overview = overview,
+            played = userData.played,
+            favorite = userData.favorite,
+            liked = false,
+            canPlay = true,
+            canDownload = false,
+            sources = sources,
+            runtimeTicks = runtimeTicks,
+            playbackPositionTicks = userData.playbackPositionTicks,
+            unplayedItemCount = null,
+            images = images ?: AfinityImages(),
+            chapters = chapters ?: emptyList(),
+            providerIds = providerIds,
+            externalUrls = externalUrls,
+            premiereDate = premiereDate,
+            people = people ?: emptyList(),
+            genres = genres ?: emptyList(),
+            communityRating = communityRating,
+            officialRating = officialRating,
+            criticRating = criticRating,
+            status = status,
+            productionYear = productionYear,
+            endDate = endDate,
+            trailer = null,
+            tagline = tagline,
+            trickplayInfo = storedTrickplay(database, sources).values.firstOrNull()?.firstOrNull(),
+            extraType =
+                extraType?.let { name -> ExtraType.entries.firstOrNull { it.name == name } },
+        )
+    }
+
+    private suspend fun AfinityMusicVideoDto.toAfinityMusicVideo(
+        database: ServerDatabaseDao,
+        userId: UUID,
+    ): AfinityMusicVideo {
+        val userData = database.getUserDataOrCreateNew(id, userId, serverId)
+        val sources = database.getSources(id).map { it.toAfinitySource(database) }
+        return AfinityMusicVideo(
+            id = id,
+            name = name,
+            originalTitle = originalTitle,
+            overview = overview,
+            sources = sources,
+            played = userData.played,
+            favorite = userData.favorite,
+            liked = false,
+            canPlay = true,
+            canDownload = false,
+            runtimeTicks = runtimeTicks,
+            playbackPositionTicks = userData.playbackPositionTicks,
+            images = images ?: AfinityImages(),
+            chapters = chapters ?: emptyList(),
+            trickplayInfo = storedTrickplay(database, sources),
+            providerIds = providerIds,
+            externalUrls = externalUrls,
+            artists = artists ?: emptyList(),
+            artistItems = artistItems ?: emptyList(),
+            album = album,
+            albumId = albumId,
+            parentId = parentId,
+            premiereDate = premiereDate,
+            dateCreated = dateCreated,
+            productionYear = productionYear,
+            people = people ?: emptyList(),
+            genres = genres ?: emptyList(),
+            studios = studios ?: emptyList(),
+            tags = tags ?: emptyList(),
+            communityRating = communityRating,
+            officialRating = officialRating,
+            criticRating = criticRating,
+            tagline = tagline,
+            mediaSourceCount = sources.size,
+        )
+    }
+
+    private fun Long.toLocalDateTime(): LocalDateTime =
+        LocalDateTime.ofInstant(Instant.ofEpochMilli(this), ZoneId.systemDefault())
+
+    private suspend fun AfinityBookDto.toAfinityBook(
+        database: ServerDatabaseDao,
+        userId: UUID,
+    ): AfinityBook {
+        val userData = database.getUserDataOrCreateNew(id, userId, serverId)
+        return AfinityBook(
+            id = id,
+            name = name,
+            originalTitle = originalTitle,
+            overview = overview,
+            played = userData.played,
+            favorite = userData.favorite,
+            liked = false,
+            canPlay = true,
+            canDownload = false,
+            runtimeTicks = runtimeTicks,
+            playbackPositionTicks = userData.playbackPositionTicks,
+            unplayedItemCount = null,
+            images = images ?: AfinityImages(),
+            chapters = chapters ?: emptyList(),
+            providerIds = providerIds,
+            externalUrls = externalUrls,
+            seriesName = seriesName,
+            seriesIndex = seriesIndex,
+            people = people ?: emptyList(),
+            publisher = publisher,
+            premiereDate = premiereDate,
+            productionYear = productionYear,
+            genres = genres ?: emptyList(),
+            tags = tags ?: emptyList(),
+            communityRating = communityRating,
+            dateCreated = dateCreated,
+            format = BookFormat.entries.firstOrNull { it.name == format } ?: BookFormat.UNKNOWN,
+            parentId = parentId,
+            lastPlayedDate = userData.lastPlayedAt?.toLocalDateTime(),
+        )
+    }
+
+    private suspend fun AfinityAudiobookPartDto.toAfinityAudiobook(
+        database: ServerDatabaseDao,
+        userId: UUID,
+    ): AfinityAudiobook {
+        val userData = database.getUserDataOrCreateNew(id, userId, serverId)
+        return AfinityAudiobook(
+            id = id,
+            name = name,
+            originalTitle = originalTitle,
+            overview = overview,
+            played = userData.played,
+            favorite = userData.favorite,
+            liked = false,
+            canPlay = true,
+            canDownload = false,
+            runtimeTicks = runtimeTicks,
+            playbackPositionTicks = userData.playbackPositionTicks,
+            unplayedItemCount = null,
+            images = images ?: AfinityImages(),
+            chapters = chapters ?: emptyList(),
+            providerIds = providerIds,
+            externalUrls = externalUrls,
+            album = album,
+            people = people ?: emptyList(),
+            publisher = publisher,
+            premiereDate = premiereDate,
+            productionYear = productionYear,
+            genres = genres ?: emptyList(),
+            communityRating = communityRating,
+            dateCreated = dateCreated,
+            parentId = parentId,
+            trackNumber = trackNumber,
+            discNumber = discNumber,
+            container = container,
+            lastPlayedDate = userData.lastPlayedAt?.toLocalDateTime(),
+            bookPartCount = bookPartCount,
+        )
+    }
+
     private suspend fun AfinityShowDto.toAfinityShow(
         database: ServerDatabaseDao,
         userId: UUID,
@@ -1001,10 +1352,6 @@ constructor(
         path: String,
     ) {
         musicTrackDao.updateLocalFilePath(id.toString(), serverId, userId, path)
-    }
-
-    override suspend fun clearMusicTrackLocalFilePath(id: UUID, serverId: String, userId: String) {
-        musicTrackDao.clearLocalFilePath(id.toString(), serverId, userId)
     }
 
     override suspend fun updateMusicTrackLocalImagePath(

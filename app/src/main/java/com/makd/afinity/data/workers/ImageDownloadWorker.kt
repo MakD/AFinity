@@ -7,10 +7,14 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
+import com.makd.afinity.data.models.media.AfinityVideo
+import com.makd.afinity.data.models.media.getChapterImageUrl
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
@@ -45,6 +49,8 @@ constructor(
         const val KEY_ITEM_ID = "item_id"
         const val KEY_SOURCE_ID = "source_id"
         const val BUFFER_SIZE = 8192
+        private const val CHAPTERS_DIR = "chapters"
+        private const val CHAPTER_IMAGE_WIDTH = 480
     }
 
     override suspend fun doWork(): Result =
@@ -122,6 +128,8 @@ constructor(
                 val item =
                     databaseRepository.getMovie(itemId, userId)
                         ?: databaseRepository.getEpisode(itemId, userId)
+                        ?: databaseRepository.getVideo(itemId, userId)
+                        ?: databaseRepository.getMusicVideo(itemId, userId)
                         ?: return@withContext Result.failure(
                             workDataOf("error" to "Item not found in database")
                         )
@@ -291,8 +299,10 @@ constructor(
                     "Image download completed for item: $itemId - ${downloadedImages.size} images downloaded"
                 )
 
-                if (downloadedImages.isNotEmpty()) {
-                    updateItemWithLocalImages(item, downloadedImages, download.serverId)
+                val chapters = downloadChapterImages(apiClient, item, itemDir)
+
+                if (downloadedImages.isNotEmpty() || chapters != item.chapters) {
+                    updateItemWithLocalImages(item, downloadedImages, chapters, download.serverId)
                 }
 
                 return@withContext Result.success(
@@ -311,6 +321,34 @@ constructor(
                 )
             }
         }
+
+    private fun downloadChapterImages(
+        apiClient: ApiClient,
+        item: AfinityItem,
+        itemDir: File,
+    ): List<AfinityChapter> {
+        val chapters = item.chapters
+        if (chapters.none { it.imageIndex != null && it.localImagePath == null }) return chapters
+        val baseUrl = apiClient.baseUrl?.trimEnd('/') ?: return chapters
+        val chaptersDir = File(itemDir, CHAPTERS_DIR)
+        if (!chaptersDir.exists() && !chaptersDir.mkdirs()) return chapters
+        return chapters.map { chapter ->
+            if (chapter.localImagePath != null) return@map chapter
+            val index = chapter.imageIndex ?: return@map chapter
+            val url = chapter.getChapterImageUrl(baseUrl, item.id) ?: return@map chapter
+            val sized = url + (if ('?' in url) "&" else "?") + "maxWidth=$CHAPTER_IMAGE_WIDTH"
+            val local =
+                try {
+                    downloadImage(apiClient, sized, chaptersDir, index.toString())
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to download chapter image $index for ${item.id}")
+                    null
+                }
+            if (local != null) chapter.copy(localImagePath = local.toString()) else chapter
+        }
+    }
 
     private fun downloadImage(
         apiClient: ApiClient,
@@ -450,6 +488,7 @@ constructor(
     private suspend fun updateItemWithLocalImages(
         item: AfinityItem,
         downloadedImages: Map<String, android.net.Uri>,
+        chapters: List<AfinityChapter>,
         serverId: String,
     ) {
         try {
@@ -474,16 +513,42 @@ constructor(
 
             when (item) {
                 is AfinityMovie -> {
-                    databaseRepository.insertMovie(item.copy(images = updatedImages), serverId)
+                    databaseRepository.insertMovie(
+                        item.copy(images = updatedImages, chapters = chapters),
+                        serverId,
+                    )
                     Timber.i(
                         "Updated movie in database with ${downloadedImages.size} local image paths"
                     )
                 }
 
                 is AfinityEpisode -> {
-                    databaseRepository.insertEpisode(item.copy(images = updatedImages), serverId)
+                    databaseRepository.insertEpisode(
+                        item.copy(images = updatedImages, chapters = chapters),
+                        serverId,
+                    )
                     Timber.i(
                         "Updated episode in database with ${downloadedImages.size} local image paths"
+                    )
+                }
+
+                is AfinityVideo -> {
+                    databaseRepository.insertVideo(
+                        item.copy(images = updatedImages, chapters = chapters),
+                        serverId,
+                    )
+                    Timber.i(
+                        "Updated video in database with ${downloadedImages.size} local image paths"
+                    )
+                }
+
+                is AfinityMusicVideo -> {
+                    databaseRepository.insertMusicVideo(
+                        item.copy(images = updatedImages, chapters = chapters),
+                        serverId,
+                    )
+                    Timber.i(
+                        "Updated music video in database with ${downloadedImages.size} local image paths"
                     )
                 }
 

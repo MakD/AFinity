@@ -104,6 +104,7 @@ fun BookDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val secondsLeft by viewModel.secondsLeft.collectAsStateWithLifecycle()
+    val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
     val lazyListState = rememberLazyListState()
     val topBarOpacity by rememberTopBarOpacity(lazyListState)
     val isLandscape = isLandscapeWindow()
@@ -130,7 +131,7 @@ fun BookDetailScreen(
                         seriesBooks = uiState.seriesBooks,
                         seriesStartIndex = uiState.seriesStartIndex,
                         onBookClick = onBookClick,
-                        onPersonClick = onPersonClick,
+                        onPersonClick = if (isOffline) null else onPersonClick,
                         widthSizeClass = widthSizeClass,
                     )
                 }
@@ -390,6 +391,7 @@ private fun BookActionRow(
     val downloadInfo by viewModel.downloadInfo.collectAsStateWithLifecycle()
     val allowedByServer by viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
     val allowedOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
+    val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
     val downloadVolumes = rememberDownloadVolumes()
     var pendingConfirm by remember { mutableStateOf<DownloadConfirm?>(null) }
     var showLocationDialog by remember { mutableStateOf(false) }
@@ -425,8 +427,10 @@ private fun BookActionRow(
         playIconRes = R.drawable.ic_book,
         playContentDescription = stringResource(R.string.cd_read_book),
     ) {
-        WatchedToggleButton(isPlayed = book.played, onClick = onToggleRead)
-        FavoriteToggleButton(isFavorite = book.favorite, onClick = onToggleFavorite)
+        if (!isOffline) {
+            WatchedToggleButton(isPlayed = book.played, onClick = onToggleRead)
+            FavoriteToggleButton(isFavorite = book.favorite, onClick = onToggleFavorite)
+        }
         if (readable && (book.canDownload && allowedByServer || downloadInfo != null)) {
             DownloadProgressIndicator(
                 downloadInfo = downloadInfo,
@@ -453,7 +457,7 @@ private fun LazyListScope.bookDetailBody(
     seriesBooks: List<AfinityBook>,
     seriesStartIndex: Int,
     onBookClick: (AfinityBook) -> Unit,
-    onPersonClick: (UUID) -> Unit,
+    onPersonClick: ((UUID) -> Unit)?,
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val overview = plainOverview(book.overview)

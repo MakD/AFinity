@@ -12,6 +12,7 @@ import com.makd.afinity.data.models.extensions.toAfinityMovie
 import com.makd.afinity.data.models.media.AfinityTrickplayInfo
 import com.makd.afinity.data.models.media.closestTo
 import com.makd.afinity.data.models.media.forSource
+import com.makd.afinity.data.models.media.toAfinityTrickplayInfoMap
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.di.DownloadClient
@@ -129,14 +130,19 @@ constructor(
                         null
                     } ?: return@withContext Result.failure(workDataOf("error" to "Item not found"))
 
-                val item =
+                val trickplay =
                     when (baseItemDto.type) {
-                        BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(baseUrl)
+                        BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(baseUrl).trickplayInfo
                         BaseItemKind.EPISODE ->
-                            baseItemDto.toAfinityEpisode(baseUrl)
-                                ?: return@withContext Result.failure(
-                                    workDataOf("error" to "Failed to convert episode")
-                                )
+                            (baseItemDto.toAfinityEpisode(baseUrl)
+                                    ?: return@withContext Result.failure(
+                                        workDataOf("error" to "Failed to convert episode")
+                                    ))
+                                .trickplayInfo
+
+                        BaseItemKind.VIDEO,
+                        BaseItemKind.MUSIC_VIDEO ->
+                            baseItemDto.trickplay?.toAfinityTrickplayInfoMap()
 
                         else ->
                             return@withContext Result.failure(
@@ -145,7 +151,7 @@ constructor(
                     }
 
                 val trickplayInfo =
-                    item.trickplayInfo?.forSource(sourceId)?.closestTo(DOWNLOAD_TRICKPLAY_WIDTH)
+                    trickplay?.forSource(sourceId)?.closestTo(DOWNLOAD_TRICKPLAY_WIDTH)
                 if (trickplayInfo == null) {
                     Timber.d("No trickplay info available for item: $itemId source: $sourceId")
                     return@withContext Result.success()

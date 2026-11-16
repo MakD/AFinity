@@ -664,8 +664,14 @@ constructor(
                 }
             }
 
+            val downloadedVideos: List<AfinityItem> =
+                (databaseRepository.getAllVideos(userId) +
+                        databaseRepository.getAllMusicVideos(userId))
+                    .filter { video -> video.id in downloadedItemIds }
+                    .sortedBy { it.name.lowercase() }
+
             Timber.d(
-                "Found ${downloadedMovies.size} movies and ${downloadedShows.size} shows with downloads"
+                "Found ${downloadedMovies.size} movies, ${downloadedShows.size} shows and ${downloadedVideos.size} videos with downloads"
             )
 
             val offlineContinueWatching = mutableListOf<AfinityItem>()
@@ -673,6 +679,12 @@ constructor(
             downloadedMovies.forEach { movie ->
                 if (movie.playbackPositionTicks > 0 && !movie.played) {
                     offlineContinueWatching.add(movie)
+                }
+            }
+
+            downloadedVideos.forEach { video ->
+                if (video.playbackPositionTicks > 0 && !video.played) {
+                    offlineContinueWatching.add(video)
                 }
             }
 
@@ -691,11 +703,7 @@ constructor(
             }
 
             val sortedOfflineContinueWatching = offlineContinueWatching.sortedByDescending { item ->
-                when (item) {
-                    is AfinityMovie -> item.playbackPositionTicks
-                    is AfinityEpisode -> item.playbackPositionTicks
-                    else -> 0L
-                }
+                item.playbackPositionTicks
             }
 
             Timber.d(
@@ -756,7 +764,10 @@ constructor(
                     }
                     .map { it.id }
                     .toSet()
-            val unavailableDownloadIds = unavailableMovieIds + unavailableShowIds
+            val unavailableVideoIds =
+                downloadedVideos.map { it.id }.filter { isItemUnavailable(it) }.toSet()
+            val unavailableDownloadIds =
+                unavailableMovieIds + unavailableShowIds + unavailableVideoIds
 
             val downloadedMusicTracks =
                 databaseRepository.getAllMusicTracksByUser(userId).filter {
@@ -779,14 +790,26 @@ constructor(
                     it.name.lowercase()
                 }
 
+            val offlineContinueReading =
+                downloadedBooks
+                    .filter { !it.played && it.playbackPositionTicks > 0 }
+                    .sortedByDescending { it.lastPlayedDate }
+            val offlineContinueListening =
+                downloadedJellyfinAudiobooks
+                    .filter { !it.played && it.playbackPositionTicks > 0 }
+                    .sortedByDescending { it.lastPlayedDate }
+
             _uiState.update {
                 it.copy(
                     downloadedMovies = downloadedMovies.distinctItems(),
                     downloadedShows = downloadedShows.distinctItems(),
+                    downloadedVideos = downloadedVideos.distinctItems(),
                     downloadedBooks = downloadedBooks.distinctItems(),
                     downloadedJellyfinAudiobooks = downloadedJellyfinAudiobooks.distinctItems(),
                     offlineContinueWatching = sortedOfflineContinueWatching.distinctItems(),
                     offlineNextUp = offlineNextUp.distinctItems(),
+                    offlineContinueReading = offlineContinueReading.distinctItems(),
+                    offlineContinueListening = offlineContinueListening.distinctItems(),
                     downloadedAudiobooks = downloadedAudiobooks,
                     downloadedPodcastEpisodes = downloadedPodcastEpisodes,
                     downloadedMusicAlbums = downloadedMusicAlbums,
@@ -1026,6 +1049,8 @@ data class HomeUiState(
     val offlineContinueWatching: List<AfinityItem> = emptyList(),
     val nextUp: List<AfinityEpisode> = emptyList(),
     val offlineNextUp: List<AfinityEpisode> = emptyList(),
+    val offlineContinueReading: List<AfinityBook> = emptyList(),
+    val offlineContinueListening: List<AfinityAudiobook> = emptyList(),
     val mergeContinueWatchingNextUp: Boolean = false,
     val continueWatchingOrder: ContinueWatchingOrder = ContinueWatchingOrder(),
     val upcomingEpisodes: List<AfinityEpisode> = emptyList(),
@@ -1050,6 +1075,7 @@ data class HomeUiState(
     val genreShows: Map<String, List<AfinityShow>> = emptyMap(),
     val downloadedMovies: List<AfinityMovie> = emptyList(),
     val downloadedShows: List<AfinityShow> = emptyList(),
+    val downloadedVideos: List<AfinityItem> = emptyList(),
     val downloadedBooks: List<AfinityBook> = emptyList(),
     val downloadedJellyfinAudiobooks: List<AfinityAudiobook> = emptyList(),
     val downloadedAudiobooks: List<AbsDownloadInfo> = emptyList(),

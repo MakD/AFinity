@@ -6,6 +6,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -38,6 +39,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -78,6 +81,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityPhoto
+import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityBackButton
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
@@ -89,6 +93,7 @@ import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private const val MAX_SCALE = 5f
 private const val DOUBLE_TAP_SCALE = 2.5f
@@ -97,6 +102,7 @@ private const val ZOOMED_EPSILON = 1.01f
 private const val DISMISS_FRACTION = 0.15f
 private const val SLIDESHOW_INTERVAL_MS = 5_000L
 private const val ORIGINAL_MAX_PX = 4096
+private val SnackbarAboveChrome = 72.dp
 
 @Composable
 fun PhotoViewerScreen(onBack: () -> Unit, viewModel: PhotoViewerViewModel = hiltViewModel()) {
@@ -104,10 +110,21 @@ fun PhotoViewerScreen(onBack: () -> Unit, viewModel: PhotoViewerViewModel = hilt
     val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var chromeVisible by rememberSaveable { mutableStateOf(true) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     PlayerSystemBarsController(isControlsVisible = chromeVisible)
 
-    LaunchedEffect(Unit) { viewModel.events.collect { event -> handleEvent(context, event) } }
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            val messageRes = event.messageRes()
+            if (messageRes != null) {
+                snackbarHostState.currentSnackbarData?.dismiss()
+                launch { snackbarHostState.showSnackbar(context.getString(messageRes)) }
+            } else {
+                handleEvent(context, event)
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         when {
@@ -129,8 +146,27 @@ fun PhotoViewerScreen(onBack: () -> Unit, viewModel: PhotoViewerViewModel = hilt
                     viewModel = viewModel,
                 )
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            snackbar = { AFinitySnackbar(it) },
+            modifier =
+                Modifier.align(Alignment.BottomCenter)
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .padding(bottom = SnackbarAboveChrome),
+        )
     }
 }
+
+@StringRes
+private fun PhotoViewerEvent.messageRes(): Int? =
+    when (this) {
+        PhotoViewerEvent.SaveStarted -> R.string.photo_saving
+        PhotoViewerEvent.Saved -> R.string.photo_saved
+        PhotoViewerEvent.SaveFailed -> R.string.photo_save_failed
+        PhotoViewerEvent.ActionFailed -> R.string.photo_action_failed
+        else -> null
+    }
 
 private fun handleEvent(context: Context, event: PhotoViewerEvent) {
     when (event) {
@@ -143,10 +179,10 @@ private fun handleEvent(context: Context, event: PhotoViewerEvent) {
                 }
             context.startActivity(Intent.createChooser(send, null))
         }
-        PhotoViewerEvent.SaveStarted ->
-            Toast.makeText(context, R.string.photo_saving, Toast.LENGTH_SHORT).show()
-        PhotoViewerEvent.ActionFailed ->
-            Toast.makeText(context, R.string.photo_action_failed, Toast.LENGTH_SHORT).show()
+        PhotoViewerEvent.SaveStarted,
+        PhotoViewerEvent.Saved,
+        PhotoViewerEvent.SaveFailed,
+        PhotoViewerEvent.ActionFailed -> Unit
         is PhotoViewerEvent.PlayVideo ->
             PlayerLauncher.launch(
                 context = context,

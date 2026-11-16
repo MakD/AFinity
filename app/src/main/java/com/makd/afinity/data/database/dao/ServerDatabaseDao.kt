@@ -197,6 +197,15 @@ abstract class ServerDatabaseDao {
     ): List<DownloadDto>
 
     @Query(
+        "SELECT COUNT(*) FROM downloads WHERE seriesId = :seriesId AND serverId = :serverId AND userId = :userId"
+    )
+    abstract suspend fun countDownloadsWithSeriesId(
+        seriesId: String,
+        serverId: String,
+        userId: UUID,
+    ): Int
+
+    @Query(
         "SELECT storageVolumeId, COALESCE(SUM(totalBytes), 0) AS totalBytes FROM downloads WHERE serverId = :serverId AND status = 'COMPLETED' GROUP BY storageVolumeId"
     )
     abstract suspend fun getTotalBytesPerVolumeForServer(serverId: String): List<VolumeUsage>
@@ -227,6 +236,18 @@ abstract class ServerDatabaseDao {
 
     @Query("DELETE FROM movies WHERE serverId = :serverId")
     abstract suspend fun deleteMoviesByServerId(serverId: String)
+
+    @Query("DELETE FROM videos WHERE serverId = :serverId")
+    abstract suspend fun deleteVideosByServerId(serverId: String)
+
+    @Query("DELETE FROM music_videos WHERE serverId = :serverId")
+    abstract suspend fun deleteMusicVideosByServerId(serverId: String)
+
+    @Query("DELETE FROM books WHERE serverId = :serverId")
+    abstract suspend fun deleteBooksByServerId(serverId: String)
+
+    @Query("DELETE FROM audiobook_parts WHERE serverId = :serverId")
+    abstract suspend fun deleteAudiobookPartsByServerId(serverId: String)
 
     @Query("DELETE FROM shows WHERE serverId = :serverId")
     abstract suspend fun deleteShowsByServerId(serverId: String)
@@ -365,6 +386,10 @@ abstract class ServerDatabaseDao {
     @Transaction
     open suspend fun clearAllDataForServer(serverId: String) {
         deleteMoviesByServerId(serverId)
+        deleteVideosByServerId(serverId)
+        deleteMusicVideosByServerId(serverId)
+        deleteBooksByServerId(serverId)
+        deleteAudiobookPartsByServerId(serverId)
         deleteShowsByServerId(serverId)
         deleteSeasonsByServerId(serverId)
         deleteEpisodesByServerId(serverId)
@@ -483,6 +508,10 @@ abstract class ServerDatabaseDao {
     @Transaction
     open suspend fun clearAllData() {
         deleteAllMovies()
+        deleteAllVideos()
+        deleteAllMusicVideos()
+        deleteAllBooks()
+        deleteAllAudiobookParts()
         deleteAllShows()
         deleteAllSeasons()
         deleteAllEpisodes()
@@ -496,6 +525,14 @@ abstract class ServerDatabaseDao {
     }
 
     @Query("DELETE FROM movies") abstract suspend fun deleteAllMovies()
+
+    @Query("DELETE FROM videos") abstract suspend fun deleteAllVideos()
+
+    @Query("DELETE FROM music_videos") abstract suspend fun deleteAllMusicVideos()
+
+    @Query("DELETE FROM books") abstract suspend fun deleteAllBooks()
+
+    @Query("DELETE FROM audiobook_parts") abstract suspend fun deleteAllAudiobookParts()
 
     @Query("DELETE FROM shows") abstract suspend fun deleteAllShows()
 

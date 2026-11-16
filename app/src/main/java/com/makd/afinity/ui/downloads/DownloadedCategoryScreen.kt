@@ -37,7 +37,9 @@ import com.makd.afinity.data.models.media.AfinityAudiobook
 import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicFilterOptions
@@ -101,6 +103,16 @@ enum class DownloadedCategory(
             MusicSortField.CommunityRating,
         ),
         true,
+    ),
+    VIDEOS(
+        R.string.home_downloaded_videos,
+        listOf(
+            MusicSortField.Name,
+            MusicSortField.ReleaseDate,
+            MusicSortField.DateAdded,
+            MusicSortField.Runtime,
+        ),
+        false,
     ),
     BOOKS(
         R.string.home_downloaded_books,
@@ -263,6 +275,29 @@ private fun AfinityShow.sortKeys() =
 private fun AfinityShow.filterKeys() =
     FilterKeys(favorite = favorite, played = played, genres = genres, year = productionYear)
 
+private fun AfinityItem.videoSortKeys() =
+    when (this) {
+        is AfinityMusicVideo ->
+            SortKeys(
+                name = name,
+                creator = artists.firstOrNull(),
+                released =
+                    premiereDate?.toLocalDate()?.toEpochDay() ?: releasedFrom(productionYear),
+                added = dateCreated?.toEpochSecond(ZoneOffset.UTC),
+                runtime = runtimeTicks,
+                rating = communityRating,
+            )
+        is AfinityVideo ->
+            SortKeys(
+                name = name,
+                released =
+                    premiereDate?.toLocalDate()?.toEpochDay() ?: releasedFrom(productionYear),
+                runtime = runtimeTicks,
+                rating = communityRating,
+            )
+        else -> SortKeys(name = name, runtime = runtimeTicks)
+    }
+
 private fun AfinityBook.sortKeys() =
     SortKeys(
         name = name,
@@ -365,6 +400,16 @@ fun DownloadedCategoryScreen(
                 AfinityShow::filterKeys,
             )
         }
+    val videos =
+        remember(uiState.downloadedVideos, sortField, sortDescending) {
+            uiState.downloadedVideos.sortedAndFiltered(
+                sortField,
+                sortDescending,
+                filters,
+                AfinityItem::videoSortKeys,
+                null,
+            )
+        }
     val books =
         remember(uiState.downloadedBooks, sortField, sortDescending, filters) {
             uiState.downloadedBooks.sortedAndFiltered(
@@ -462,6 +507,7 @@ fun DownloadedCategoryScreen(
         when (category) {
             DownloadedCategory.MOVIES -> uiState.downloadedMovies.size
             DownloadedCategory.SHOWS -> uiState.downloadedShows.size
+            DownloadedCategory.VIDEOS -> uiState.downloadedVideos.size
             DownloadedCategory.BOOKS -> uiState.downloadedBooks.size
             DownloadedCategory.AUDIOBOOKS -> uiState.downloadedAudiobooks.size
             DownloadedCategory.JELLYFIN_AUDIOBOOKS -> uiState.downloadedJellyfinAudiobooks.size
@@ -473,6 +519,7 @@ fun DownloadedCategoryScreen(
         when (category) {
             DownloadedCategory.MOVIES -> movies.size
             DownloadedCategory.SHOWS -> shows.size
+            DownloadedCategory.VIDEOS -> videos.size
             DownloadedCategory.BOOKS -> books.size
             DownloadedCategory.AUDIOBOOKS -> audiobooks.size
             DownloadedCategory.JELLYFIN_AUDIOBOOKS -> jellyfinAudiobooks.size
@@ -542,11 +589,13 @@ fun DownloadedCategoryScreen(
 
             category == DownloadedCategory.MOVIES ||
                 category == DownloadedCategory.SHOWS ||
+                category == DownloadedCategory.VIDEOS ||
                 category == DownloadedCategory.BOOKS -> {
                 val items: List<AfinityItem> =
                     when (category) {
                         DownloadedCategory.MOVIES -> movies
                         DownloadedCategory.SHOWS -> shows
+                        DownloadedCategory.VIDEOS -> videos
                         else -> books
                     }
                 DownloadedGrid(
