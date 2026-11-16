@@ -17,6 +17,7 @@ import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.extensions.toAfinityMovie
+import com.makd.afinity.data.models.extensions.toAfinityMusicVideo
 import com.makd.afinity.data.models.extensions.toAfinityPersonDetail
 import com.makd.afinity.data.models.extensions.toAfinitySeason
 import com.makd.afinity.data.models.extensions.toAfinityShow
@@ -31,6 +32,7 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
@@ -55,6 +57,7 @@ import com.makd.afinity.data.network.MdbListApiService
 import com.makd.afinity.data.network.OmdbApiService
 import com.makd.afinity.data.paging.BookLibraryPagingSource
 import com.makd.afinity.data.paging.JellyfinItemsPagingSource
+import com.makd.afinity.data.paging.RandomOrder
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinApiInvoker
@@ -125,7 +128,8 @@ import timber.log.Timber
 
 private const val LOCAL_SOURCE_SUFFIX = "_local"
 
-private val RESUMABLE_ITEM_TYPES = listOf(BaseItemKind.MOVIE, BaseItemKind.EPISODE)
+private val RESUMABLE_ITEM_TYPES =
+    listOf(BaseItemKind.MOVIE, BaseItemKind.EPISODE, BaseItemKind.VIDEO, BaseItemKind.MUSIC_VIDEO)
 
 private val CARD_IMAGE_TYPES = listOf(ImageType.PRIMARY, ImageType.BACKDROP, ImageType.THUMB)
 
@@ -765,8 +769,9 @@ constructor(
         includeItemTypes: List<String>?,
         recursive: Boolean,
         onSourceCreated: ((PagingSource<Int, AfinityItem>) -> Unit)?,
-    ): Flow<PagingData<AfinityItem>> =
-        Pager(
+    ): Flow<PagingData<AfinityItem>> {
+        val randomOrder = if (sortBy == SortBy.RANDOM) RandomOrder() else null
+        return Pager(
                 config =
                     PagingConfig(pageSize = 50, enablePlaceholders = false, initialLoadSize = 50)
             ) {
@@ -782,10 +787,12 @@ constructor(
                         studioNames = studioNames,
                         includeItemTypes = includeItemTypes,
                         recursive = recursive,
+                        randomOrder = randomOrder,
                     )
                     .also { source -> onSourceCreated?.invoke(source) }
             }
             .flow
+    }
 
     override fun getBookLibraryPaging(
         parentId: UUID?,
@@ -876,6 +883,7 @@ constructor(
                         CollectionType.Movies -> listOf(BaseItemKind.MOVIE)
                         CollectionType.BoxSets -> listOf(BaseItemKind.BOX_SET)
                         CollectionType.Books -> listOf(BaseItemKind.BOOK)
+                        CollectionType.MusicVideos -> listOf(BaseItemKind.MUSIC_VIDEO)
                         else -> emptyList()
                     }
                 }
@@ -1215,6 +1223,8 @@ constructor(
         criteria: ItemFilterCriteria,
         enableTotalRecordCount: Boolean,
         enableImageTypes: List<String>,
+        enableImages: Boolean,
+        enableUserData: Boolean,
     ): Result<BaseItemDtoQueryResult> = apiInvoker.apiResult { apiClient, userId ->
         val filters = buildList {
             if (criteria.isLiked == true) add(ItemFilter.LIKES)
@@ -1302,7 +1312,7 @@ constructor(
                         null
                     },
                 hasOverview = criteria.hasOverview,
-                enableImages = true,
+                enableImages = enableImages,
                 enableImageTypes =
                     enableImageTypes
                         .mapNotNull {
@@ -1316,7 +1326,7 @@ constructor(
                         }
                         .ifEmpty { null },
                 imageTypeLimit = if (enableImageTypes.isNotEmpty()) 1 else null,
-                enableUserData = true,
+                enableUserData = enableUserData,
             )
             .content
     }
@@ -2006,6 +2016,10 @@ constructor(
                         BaseItemKind.BOX_SET,
                         BaseItemKind.BOOK,
                         BaseItemKind.AUDIO_BOOK,
+                        BaseItemKind.VIDEO,
+                        BaseItemKind.MUSIC_VIDEO,
+                        BaseItemKind.PHOTO,
+                        BaseItemKind.PHOTO_ALBUM,
                     ),
                 isFavorite = true,
                 recursive = true,
@@ -2176,6 +2190,45 @@ constructor(
                     }
                 }
         }
+
+    override suspend fun getMusicVideos(
+        artistIds: List<UUID>,
+        genreIds: List<UUID>,
+        studioIds: List<UUID>,
+        personIds: List<UUID>,
+        genres: List<String>,
+        studios: List<String>,
+        limit: Int?,
+    ): List<AfinityMusicVideo> {
+        val knownLibraries = _libraries.value.ifEmpty { getLibraries() }
+        if (knownLibraries.none { it.type == CollectionType.MusicVideos }) return emptyList()
+        return apiCall(emptyList(), "Failed to get music videos") { apiClient, userId ->
+            val baseUrl = getBaseUrl()
+            LibraryApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    includeItemTypes = listOf(BaseItemKind.MUSIC_VIDEO),
+                    artistIds = artistIds.ifEmpty { null },
+                    genreIds = genreIds.ifEmpty { null },
+                    studioIds = studioIds.ifEmpty { null },
+                    personIds = personIds.ifEmpty { null },
+                    genres = genres.ifEmpty { null },
+                    studios = studios.ifEmpty { null },
+                    sortBy = listOf(ItemSortBy.SORT_NAME),
+                    limit = limit,
+                    fields = FieldSets.MUSIC_VIDEO_GRID,
+                    recursive = true,
+                    enableUserData = true,
+                    enableImages = true,
+                    imageTypeLimit = 1,
+                    enableTotalRecordCount = false,
+                )
+                .content
+                .items
+                .filter { it.type == BaseItemKind.MUSIC_VIDEO }
+                .map { it.toAfinityMusicVideo(baseUrl) }
+        }
+    }
 
     override suspend fun searchItems(
         query: String,
@@ -2663,6 +2716,8 @@ constructor(
             SortBy.SERIES_DATE_PLAYED -> ItemSortBy.SERIES_SORT_NAME
             SortBy.DATE_LAST_CONTENT_ADDED -> ItemSortBy.DATE_LAST_CONTENT_ADDED
             SortBy.SERIES_NUMBER -> ItemSortBy.INDEX_NUMBER
+            SortBy.PLAY_COUNT -> ItemSortBy.PLAY_COUNT
+            SortBy.RUNTIME -> ItemSortBy.RUNTIME
             SortBy.RANDOM -> ItemSortBy.RANDOM
         }
     }

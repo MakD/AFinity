@@ -19,6 +19,8 @@ enum class HomeRow(
     LATEST_TV("latest_tv", R.string.home_row_latest_tv),
     LATEST_BOOKS("latest_books", R.string.home_row_latest_books),
     LATEST_AUDIOBOOKS("latest_audiobooks", R.string.home_row_latest_audiobooks),
+    LATEST_HOME_VIDEOS("latest_home_videos", R.string.home_row_latest_home_videos),
+    LATEST_MUSIC_VIDEOS("latest_music_videos", R.string.home_row_latest_music_videos),
     UPCOMING_EPISODES("upcoming_episodes", R.string.home_row_upcoming),
     CRITICS_CHOICE("critics_choice", R.string.home_row_critics_choice),
     FRANCHISES(

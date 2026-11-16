@@ -48,6 +48,7 @@ data class LibraryFilterCapabilities(
     val readingStatus: Boolean = false,
     val listeningStatus: Boolean = false,
     val formats: Boolean = false,
+    val galleryFormats: Boolean = false,
 )
 
 @Composable
@@ -151,6 +152,20 @@ private fun typeFilterCapabilities(type: CollectionType?): LibraryFilterCapabili
                 videoType = true,
                 seriesStatus = false,
                 languages = false,
+            )
+        CollectionType.HomeVideos,
+        CollectionType.Photos ->
+            LibraryFilterCapabilities(
+                genres = true,
+                ratings = false,
+                tags = true,
+                years = true,
+                videoType = false,
+                seriesStatus = false,
+                features = false,
+                languages = false,
+                watchlist = false,
+                galleryFormats = true,
             )
         else ->
             LibraryFilterCapabilities(
@@ -289,13 +304,22 @@ fun LibraryFilterBottomSheet(
             }
         }
 
-        if (capabilities.formats) {
+        if (capabilities.formats || capabilities.galleryFormats) {
             val formatLabels =
-                listOf(
-                    LibraryFormatFilter.BOOKS to stringResource(R.string.filter_format_books),
-                    LibraryFormatFilter.AUDIOBOOKS to
-                        stringResource(R.string.filter_format_audiobooks),
-                )
+                if (capabilities.galleryFormats) {
+                    listOf(
+                        LibraryFormatFilter.PHOTOS to stringResource(R.string.filter_format_photos),
+                        LibraryFormatFilter.PHOTO_ALBUMS to
+                            stringResource(R.string.filter_format_albums),
+                        LibraryFormatFilter.VIDEOS to stringResource(R.string.filter_format_videos),
+                    )
+                } else {
+                    listOf(
+                        LibraryFormatFilter.BOOKS to stringResource(R.string.filter_format_books),
+                        LibraryFormatFilter.AUDIOBOOKS to
+                            stringResource(R.string.filter_format_audiobooks),
+                    )
+                }
             val formatSummary =
                 formatLabels
                     .filter { working.formats.contains(it.first) }

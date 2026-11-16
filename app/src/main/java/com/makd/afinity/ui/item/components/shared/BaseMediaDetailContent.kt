@@ -46,6 +46,7 @@ import com.makd.afinity.data.models.mdblist.MdbListRatingBadges
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.tmdb.TmdbRegionProviders
 import com.makd.afinity.data.models.tmdb.TmdbReview
@@ -224,12 +225,14 @@ internal fun orderedRatingsFor(
             is AfinityMovie -> item.communityRating
             is AfinityShow -> item.communityRating
             is AfinityBoxSet -> item.communityRating
+            is AfinityMusicVideo -> item.communityRating
             else -> null
         }
 
     val criticRating =
         when (item) {
             is AfinityMovie -> item.criticRating
+            is AfinityMusicVideo -> item.criticRating
             else -> null
         }
 

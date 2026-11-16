@@ -48,7 +48,7 @@ data class AfinityBook(
     override val externalUrls: List<AfinityExternalUrl>?,
     val seriesName: String?,
     val seriesIndex: Int?,
-    val people: List<AfinityPerson>,
+    override val people: List<AfinityPerson>,
     val publisher: String?,
     val premiereDate: LocalDateTime?,
     val productionYear: Int?,
@@ -62,6 +62,9 @@ data class AfinityBook(
 ) : AfinityItem {
     val authors: List<AfinityPerson>
         get() = people.filter { it.type == PersonKind.AUTHOR }
+
+    val authorLine: String
+        get() = authors.map { it.name }.distinct().joinToString(", ")
 
     val pageCount: Int?
         get() =

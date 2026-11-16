@@ -33,6 +33,8 @@ interface AfinityItem : AfinityUserDataOwner {
     val chapters: List<AfinityChapter>
     val providerIds: Map<String, String>?
     val externalUrls: List<AfinityExternalUrl>?
+    val people: List<AfinityPerson>
+        get() = emptyList()
 }
 
 suspend fun BaseItemDto.toAfinityItem(

@@ -24,7 +24,7 @@ data class AfinityBoxSet(
     val genres: List<String> = emptyList(),
     val communityRating: Float? = null,
     val officialRating: String? = null,
-    val people: List<AfinityPerson> = emptyList(),
+    override val people: List<AfinityPerson> = emptyList(),
     override val providerIds: Map<String, String>?,
     override val externalUrls: List<AfinityExternalUrl>?,
 ) : AfinityItem

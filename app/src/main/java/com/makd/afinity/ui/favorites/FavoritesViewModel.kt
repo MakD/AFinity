@@ -75,6 +75,8 @@ constructor(
             val boxSets = live(state.boxSets)
             val books = live(state.books)
             val audiobooks = live(state.audiobooks)
+            val videos = live(state.videos)
+            val photos = live(state.photos)
             val albums = liveOwners(state.favoriteAlbums)
             val artists = liveOwners(state.favoriteArtists)
             val tracks = liveOwners(state.favoriteTracks)
@@ -86,6 +88,8 @@ constructor(
                     boxSets === state.boxSets &&
                     books === state.books &&
                     audiobooks === state.audiobooks &&
+                    videos === state.videos &&
+                    photos === state.photos &&
                     albums === state.favoriteAlbums &&
                     artists === state.favoriteArtists &&
                     tracks === state.favoriteTracks
@@ -100,6 +104,8 @@ constructor(
                     boxSets = boxSets,
                     books = books,
                     audiobooks = audiobooks,
+                    videos = videos,
+                    photos = photos,
                     favoriteAlbums = albums,
                     favoriteArtists = artists,
                     favoriteTracks = tracks,
@@ -141,6 +147,8 @@ constructor(
                             boxSets = data.boxSets,
                             books = data.books,
                             audiobooks = data.audiobooks,
+                            videos = data.videos,
+                            photos = data.photos,
                             channels = data.channels,
                             people = data.people,
                             favoriteAlbums = data.favoriteAlbums,
@@ -245,6 +253,8 @@ data class FavoritesUiState(
     val boxSets: List<AfinityBoxSet> = emptyList(),
     val books: List<AfinityBook> = emptyList(),
     val audiobooks: List<AfinityAudiobook> = emptyList(),
+    val videos: List<AfinityItem> = emptyList(),
+    val photos: List<AfinityItem> = emptyList(),
     val people: List<AfinityPersonDetail> = emptyList(),
     val channels: List<AfinityChannel> = emptyList(),
     val favoriteAlbums: List<AfinityAlbum> = emptyList(),

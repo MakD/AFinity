@@ -36,7 +36,7 @@ data class AfinityEpisode(
     val seriesLogoBlurHash: String?,
     val seasonId: UUID,
     val communityRating: Float?,
-    val people: List<AfinityPerson>,
+    override val people: List<AfinityPerson>,
     override val unplayedItemCount: Int? = null,
     val missing: Boolean = false,
     val partCount: Int? = null,

@@ -412,6 +412,11 @@
         <item quantity="one">Producer: %1$s</item>
         <item quantity="other">Producers: %1$s</item>
     </plurals>
+    <plurals name="music_video_artists_prefix">
+        <item quantity="one">Artist: %1$s</item>
+        <item quantity="other">Artists: %1$s</item>
+    </plurals>
+    <string name="music_video_album_prefix">Album: %1$s</string>
     <plurals name="detail_fact_director">
         <item quantity="one">Director</item>
         <item quantity="other">Directors</item>
@@ -522,6 +527,32 @@
     <string name="library_filter_format">Format</string>
     <string name="filter_format_books">Books</string>
     <string name="filter_format_audiobooks">Audiobooks</string>
+    <string name="filter_format_photos">Photos</string>
+    <string name="filter_format_albums">Albums</string>
+    <string name="filter_format_videos">Videos</string>
+    <string name="photo_viewer_load_failed">Couldn\'t load these photos</string>
+    <string name="photo_position_fmt">%1$d of %2$d</string>
+    <string name="photo_action_info">Details</string>
+    <string name="photo_action_slideshow_start">Start slideshow</string>
+    <string name="photo_action_slideshow_stop">Stop slideshow</string>
+    <string name="photo_action_save">Save to device</string>
+    <string name="photo_action_share">Share</string>
+    <string name="photo_action_play">Play video</string>
+    <string name="photo_saving">Saving to Pictures/AFinity</string>
+    <string name="photo_action_failed">Something went wrong. Try again.</string>
+    <string name="photo_info_taken">Taken</string>
+    <string name="photo_info_camera">Camera</string>
+    <string name="photo_info_exposure">Exposure</string>
+    <string name="photo_info_resolution">Resolution</string>
+    <string name="photo_info_album">Album</string>
+    <string name="photo_info_location">Location</string>
+    <string name="photo_info_file">File</string>
+    <string name="photo_info_open_map">Open in Maps</string>
+    <string name="photo_info_resolution_fmt">%1$d × %2$d</string>
+    <plurals name="gallery_item_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
     <string name="cd_audiobook">Audiobook</string>
     <string name="cd_audiobook_cover">Audiobook cover</string>
     <string name="audiobook_progress_percent_fmt">%1$d%% listened</string>
@@ -561,6 +592,8 @@
     <string name="sort_option_date_last_content_added">Date Last Content Added</string>
     <string name="sort_option_random">Random</string>
     <string name="sort_option_series_number">Series number</string>
+    <string name="sort_option_play_count">Play count</string>
+    <string name="sort_option_runtime">Runtime</string>
     <string name="unit_mbps_fmt">%1$d Mbps</string>
     <string name="unit_megabytes_fmt">%1$d MB</string>
     <string name="cd_sort_fab">Sort</string>
@@ -1174,6 +1207,7 @@
     <string name="empty_genre_movies">No movies found in this genre</string>
     <string name="empty_genre_tv">No TV shows found in this genre</string>
     <string name="empty_genre_books">No books found in this genre</string>
+    <string name="empty_genre_music_videos">No music videos found in this genre</string>
     <string name="empty_genre_audiobooks">No audiobooks found in this genre</string>
     <string name="empty_genre_podcasts">No podcasts found in this genre</string>
 
@@ -3450,6 +3484,7 @@
     <string name="music_section_more_from_fmt">More from %1$s</string>
     <string name="music_section_more_like_this">More like this</string>
     <string name="music_section_appears_on">Appears On</string>
+    <string name="music_section_music_videos">Music Videos</string>
     <string name="music_section_most_played">Most Played</string>
     <!-- Mixes -->
     <string name="music_mix_surprise_me">Surprise Me</string>
@@ -3865,6 +3900,8 @@
     <string name="home_continue_reading">Continue Reading</string>
     <string name="home_row_continue_listening">Continue Listening</string>
     <string name="home_row_latest_audiobooks">Latest Audiobooks</string>
+    <string name="home_row_latest_home_videos">Latest Home Videos &amp; Photos</string>
+    <string name="home_row_latest_music_videos">Latest Music Videos</string>
     <string name="home_continue_listening">Continue Listening</string>
     <string name="home_latest_audiobooks_in_fmt">Audiobooks in %1$s</string>
     <string name="home_downloaded_books">Downloaded Books</string>

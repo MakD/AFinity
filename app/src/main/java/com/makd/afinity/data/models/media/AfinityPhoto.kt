@@ -36,6 +36,7 @@ data class AfinityPhoto(
     val tags: List<String>,
     val communityRating: Float?,
     val exif: AfinityPhotoExif,
+    val fileName: String? = null,
 ) : AfinityItem
 
 data class AfinityPhotoExif(

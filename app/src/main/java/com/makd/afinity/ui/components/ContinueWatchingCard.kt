@@ -38,6 +38,8 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.common.CardSize
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
+import com.makd.afinity.data.models.extensions.landscapeBlurHash
+import com.makd.afinity.data.models.extensions.landscapeImageUrl
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.extensions.showBackdropBlurHash
@@ -49,6 +51,7 @@ import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.preview.CardSizePreviewProvider
@@ -85,7 +88,9 @@ fun ContinueWatchingCard(
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 val blurHash =
-                    if (item is AfinityMovie) {
+                    if (item is AfinityMusicVideo) {
+                        item.images.landscapeBlurHash
+                    } else if (item is AfinityMovie) {
                         item.images.thumbBlurHash
                             ?: item.images.backdropBlurHash
                             ?: item.images.primaryBlurHash
@@ -98,7 +103,9 @@ fun ContinueWatchingCard(
                     }
 
                 val imageUrl =
-                    if (item is AfinityMovie) {
+                    if (item is AfinityMusicVideo) {
+                        item.images.landscapeImageUrl
+                    } else if (item is AfinityMovie) {
                         item.images.thumbImageUrl
                             ?: item.images.backdropImageUrl
                             ?: item.images.primaryImageUrl
@@ -329,6 +336,21 @@ fun ContinueWatchingCard(
                                 }
                             }
                         }
+                    }
+
+                    is AfinityMusicVideo -> {
+                        item.artists
+                            .joinToString(", ")
+                            .ifBlank { null }
+                            ?.let { subtitle ->
+                                Text(
+                                    text = subtitle,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
                     }
 
                     is AfinityShow -> {

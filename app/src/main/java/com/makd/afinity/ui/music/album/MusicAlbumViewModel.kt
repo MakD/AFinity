@@ -10,6 +10,7 @@ import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadQuality
 import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.UserDataPatch
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityTrack
@@ -19,6 +20,7 @@ import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.lastfm.LastFmRepository
+import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.ui.components.DownloadConfirm
@@ -52,6 +54,7 @@ data class MusicAlbumUiState(
     val trackDownloadInfos: Map<UUID, DownloadInfo> = emptyMap(),
     val moreFromArtist: List<AfinityAlbum> = emptyList(),
     val similarAlbums: List<AfinityAlbum> = emptyList(),
+    val musicVideos: List<AfinityMusicVideo> = emptyList(),
     val hotTrackIds: Set<UUID> = emptySet(),
     val hasInternet: Boolean = true,
 )
@@ -69,6 +72,7 @@ constructor(
     private val lastFmRepository: LastFmRepository,
     private val offlineModeManager: OfflineModeManager,
     private val networkMonitor: NetworkConnectivityMonitor,
+    private val mediaRepository: MediaRepository,
     preferencesRepository: PreferencesRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -95,11 +99,13 @@ constructor(
             val tracks = liveOwners(state.tracks)
             val moreFromArtist = liveOwners(state.moreFromArtist)
             val similarAlbums = liveOwners(state.similarAlbums)
+            val musicVideos = live(state.musicVideos)
             if (
                 album === state.album &&
                     tracks === state.tracks &&
                     moreFromArtist === state.moreFromArtist &&
-                    similarAlbums === state.similarAlbums
+                    similarAlbums === state.similarAlbums &&
+                    musicVideos === state.musicVideos
             ) {
                 state
             } else {
@@ -108,6 +114,7 @@ constructor(
                     tracks = tracks,
                     moreFromArtist = moreFromArtist,
                     similarAlbums = similarAlbums,
+                    musicVideos = musicVideos,
                 )
             }
         }
@@ -232,6 +239,16 @@ constructor(
                         }
                     }
                     .onFailure { Timber.e(it, "Failed to load more albums from artist $artistId") }
+            }
+
+            viewModelScope.launch {
+                if (offlineModeManager.isCurrentlyOffline()) return@launch
+                val videos =
+                    mediaRepository.getMusicVideos(artistIds = listOf(artistId)).filter { video ->
+                        video.albumId == album.id ||
+                            video.album?.trim().equals(album.name.trim(), ignoreCase = true)
+                    }
+                if (videos.isNotEmpty()) _uiState.update { it.copy(musicVideos = videos) }
             }
         }
 

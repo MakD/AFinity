@@ -571,6 +571,8 @@ fun BaseItemDto.toAfinityPhoto(baseUrl: String): AfinityPhoto {
                 longitude = longitude,
                 altitude = altitude,
             ),
+        fileName =
+            path?.substringAfterLast('/')?.substringAfterLast('\\')?.takeIf { it.isNotBlank() },
     )
 }
 

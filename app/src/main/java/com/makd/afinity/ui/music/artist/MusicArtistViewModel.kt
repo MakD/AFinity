@@ -8,6 +8,7 @@ import com.makd.afinity.data.manager.AdminChangeKind
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.UserDataPatch
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
@@ -19,6 +20,7 @@ import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.lastfm.ArtistPopularity
 import com.makd.afinity.data.repository.lastfm.LastFmRepository
 import com.makd.afinity.data.repository.lastfm.PopularRanking
+import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.store.ItemStore
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -44,6 +46,7 @@ data class MusicArtistUiState(
     val topTracks: List<AfinityTrack> = emptyList(),
     val albums: List<AfinityAlbum> = emptyList(),
     val appearsOn: List<AfinityAlbum> = emptyList(),
+    val musicVideos: List<AfinityMusicVideo> = emptyList(),
     val isLoading: Boolean = true,
     val error: String? = null,
     val trackDownloadInfos: Map<UUID, DownloadInfo> = emptyMap(),
@@ -64,6 +67,7 @@ constructor(
     private val lastFmRepository: LastFmRepository,
     private val offlineModeManager: OfflineModeManager,
     private val preferencesRepository: PreferencesRepository,
+    private val mediaRepository: MediaRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -80,11 +84,13 @@ constructor(
             val topTracks = liveOwners(state.topTracks)
             val albums = liveOwners(state.albums)
             val appearsOn = liveOwners(state.appearsOn)
+            val musicVideos = live(state.musicVideos)
             if (
                 artist === state.artist &&
                     topTracks === state.topTracks &&
                     albums === state.albums &&
-                    appearsOn === state.appearsOn
+                    appearsOn === state.appearsOn &&
+                    musicVideos === state.musicVideos
             ) {
                 state
             } else {
@@ -93,6 +99,7 @@ constructor(
                     topTracks = topTracks,
                     albums = albums,
                     appearsOn = appearsOn,
+                    musicVideos = musicVideos,
                 )
             }
         }
@@ -180,6 +187,10 @@ constructor(
                 }
                 val albumsDeferred = async { musicRepository.getArtistAlbums(artistId) }
                 val appearsDeferred = async { musicRepository.getArtistAppearsOn(artistId) }
+                val musicVideosDeferred = async {
+                    if (offlineModeManager.isCurrentlyOffline()) emptyList()
+                    else mediaRepository.getMusicVideos(artistIds = listOf(artistId))
+                }
                 val sortDeferred = async {
                     preferencesRepository.getLastFmPopularSortFlow().first()
                 }
@@ -196,6 +207,7 @@ constructor(
                 val topTracks = tracksDeferred.await()
                 val albums = albumsDeferred.await()
                 val appearsOn = appearsDeferred.await()
+                val musicVideos = musicVideosDeferred.await()
                 val ranked = rankedDeferred.await()
                 ranking = rankingDeferred.await()
                 sortByLastFm = sortDeferred.await()
@@ -209,6 +221,7 @@ constructor(
                         topTracks = popular,
                         albums = albums,
                         appearsOn = appearsOn,
+                        musicVideos = musicVideos,
                         popularFromLastFm = ranked.isNotEmpty(),
                         isLoading = false,
                     )

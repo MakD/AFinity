@@ -25,7 +25,7 @@ data class AfinityShow(
     override val playbackPositionTicks: Long = 0L,
     override val unplayedItemCount: Int?,
     val genres: List<String>,
-    val people: List<AfinityPerson>,
+    override val people: List<AfinityPerson>,
     override val runtimeTicks: Long,
     val communityRating: Float?,
     val officialRating: String?,

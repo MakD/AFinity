@@ -27,6 +27,7 @@ import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.BookLibraryComposition
 import com.makd.afinity.data.models.media.LibraryFilterOptions
 import com.makd.afinity.data.models.media.LibraryFilters
+import com.makd.afinity.data.models.media.galleryItemTypes
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
@@ -116,6 +117,7 @@ constructor(
     private val folderName: String? =
         savedStateHandle.get<String>("folderName")?.let { URLDecoder.decode(it, "UTF-8") }
     private val browseParentId: UUID? = (folderId ?: libraryId)?.let { UUID.fromString(it) }
+    private val isGalleryFolder: Boolean = savedStateHandle.get<Boolean>("gallery") ?: false
     private var isMixedLibrary = false
 
     private var customSection: CustomHomeSection? = null
@@ -369,8 +371,15 @@ constructor(
 
     private fun isFolderBrowse(): Boolean = folderId != null || isMixedLibrary
 
+    private fun isGallery(): Boolean = isGalleryFolder || libraryType in CollectionType.gallery
+
     private fun browseItemTypes(): List<String>? =
-        if (isFolderBrowse()) FOLDER_ITEM_TYPES else sectionItemTypes
+        when {
+            isGalleryFolder -> GALLERY_FOLDER_ITEM_TYPES
+            isFolderBrowse() -> FOLDER_ITEM_TYPES
+            libraryType in CollectionType.gallery -> galleryItemTypes(currentFilters.formats)
+            else -> sectionItemTypes
+        }
 
     private fun sectionLibraryType(): CollectionType {
         val types = customSection?.itemTypes.orEmpty()
@@ -444,7 +453,10 @@ constructor(
                     currentSortDescending = sort.descending
                     currentFilters =
                         if (isFolderBrowse()) LibraryFilters() else loadPersistedFilters()
-                    if (bookComposition != BookLibraryComposition.MIXED) {
+                    if (
+                        bookComposition != BookLibraryComposition.MIXED &&
+                            type !in CollectionType.gallery
+                    ) {
                         currentFilters = currentFilters.copy(formats = emptySet())
                     }
                 }
@@ -454,6 +466,7 @@ constructor(
                         libraryName = section?.title ?: _uiState.value.libraryName,
                         libraryType = type,
                         bookComposition = bookComposition,
+                        isGallery = isGallery(),
                         filtersLocked = sectionId != null || isFolderBrowse(),
                         currentSortBy = currentSortBy,
                         currentSortDescending = currentSortDescending,
@@ -643,8 +656,11 @@ data class LibraryContentUiState(
     val isStudioMode: Boolean = false,
     val selectedLetter: String? = null,
     val filtersLocked: Boolean = false,
+    val isGallery: Boolean = false,
 )
 
 @Serializable private data class LibrarySort(val sortBy: SortBy, val descending: Boolean)
 
 private val FOLDER_ITEM_TYPES = listOf("FOLDER", "MOVIE", "SERIES", "VIDEO")
+
+private val GALLERY_FOLDER_ITEM_TYPES = listOf("FOLDER", "PHOTO_ALBUM", "PHOTO", "VIDEO")

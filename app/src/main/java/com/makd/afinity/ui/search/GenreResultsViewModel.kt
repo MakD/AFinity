@@ -67,6 +67,16 @@ constructor(
             .map { libraries -> libraries.any { it.type == CollectionType.Books } }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
+    private val _musicVideosPagingData =
+        MutableStateFlow<Flow<PagingData<AfinityItem>>>(emptyFlow())
+    val musicVideosPagingData: StateFlow<Flow<PagingData<AfinityItem>>> =
+        _musicVideosPagingData.asStateFlow()
+
+    val hasMusicVideosLibrary: StateFlow<Boolean> =
+        appDataRepository.libraries
+            .map { libraries -> libraries.any { it.type == CollectionType.MusicVideos } }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
     private var currentGenre: String? = null
     private var lastLoadedAt = 0L
 
@@ -125,6 +135,17 @@ constructor(
                 filters = LibraryFilters(genres = setOf(genre)),
             )
         _booksPagingData.value = applyUpdatesToPagingFlow(booksBaseFlow)
+        _musicVideosPagingData.value =
+            if (appDataRepository.libraries.value.any { it.type == CollectionType.MusicVideos }) {
+                applyUpdatesToPagingFlow(
+                    Pager(PagingConfig(pageSize = 50)) {
+                            GenrePagingSource(mediaRepository, genre, "MUSIC_VIDEO")
+                        }
+                        .flow
+                )
+            } else {
+                emptyFlow()
+            }
         lastLoadedAt = System.currentTimeMillis()
     }
 

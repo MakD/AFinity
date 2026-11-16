@@ -15,6 +15,7 @@ import com.makd.afinity.data.models.media.AfinityAudiobook
 import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.groupedIntoBooks
@@ -85,15 +86,23 @@ constructor(
             val shows = live(state.shows)
             val books = live(state.books)
             val audiobooks = live(state.audiobooks)
+            val musicVideos = live(state.musicVideos)
             if (
                 movies === state.movies &&
                     shows === state.shows &&
                     books === state.books &&
-                    audiobooks === state.audiobooks
+                    audiobooks === state.audiobooks &&
+                    musicVideos === state.musicVideos
             ) {
                 state
             } else {
-                state.copy(movies = movies, shows = shows, books = books, audiobooks = audiobooks)
+                state.copy(
+                    movies = movies,
+                    shows = shows,
+                    books = books,
+                    audiobooks = audiobooks,
+                    musicVideos = musicVideos,
+                )
             }
         }
 
@@ -133,6 +142,7 @@ constructor(
                     uiState.value.movies.forEach { add(it.id) }
                     uiState.value.shows.forEach { add(it.id) }
                     uiState.value.books.forEach { add(it.id) }
+                    uiState.value.musicVideos.forEach { add(it.id) }
                 }
 
                 val resolved =
@@ -180,7 +190,8 @@ constructor(
                     val itemsDeferred = async {
                         mediaRepository.getPersonItems(
                             personId = personId,
-                            includeItemTypes = listOf("Movie", "Series", "Book", "Audio_Book"),
+                            includeItemTypes =
+                                listOf("Movie", "Series", "Book", "Audio_Book", "Music_Video"),
                             fields =
                                 FieldSets.MEDIA_ITEM_CARDS +
                                     ItemFields.PROVIDER_IDS +
@@ -219,6 +230,10 @@ constructor(
                                     .filterIsInstance<AfinityAudiobook>()
                                     .groupedIntoBooks()
                                     .sortedBy { it.name.lowercase() },
+                            musicVideos =
+                                personItems.filterIsInstance<AfinityMusicVideo>().sortedBy {
+                                    it.name.lowercase()
+                                },
                         )
                     }
 
@@ -392,6 +407,7 @@ data class PersonUiState(
     val shows: List<AfinityShow> = emptyList(),
     val books: List<AfinityBook> = emptyList(),
     val audiobooks: List<AfinityAudiobook> = emptyList(),
+    val musicVideos: List<AfinityMusicVideo> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val awards: WikidataAwards? = null,

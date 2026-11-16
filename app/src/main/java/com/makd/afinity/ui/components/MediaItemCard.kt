@@ -79,6 +79,7 @@ fun MediaItemCard(
     modifier: Modifier = Modifier,
     isUnavailable: Boolean = false,
     aspectRatio: Float = CardDimensions.ASPECT_RATIO_PORTRAIT,
+    subtitle: String? = null,
 ) {
     val ratingScale = rememberRatingMetadataScale()
     val effectiveAspectRatio =
@@ -171,6 +172,17 @@ fun MediaItemCard(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+
+        if (subtitle != null) {
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            return@Column
+        }
 
         val metadataItems = mutableListOf<@Composable () -> Unit>()
         val showRatings = LocalShowRatings.current

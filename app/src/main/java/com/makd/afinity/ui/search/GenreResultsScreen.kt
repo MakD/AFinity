@@ -41,6 +41,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityAudiobook
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.ui.components.AfinityBackButton
 import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
@@ -53,6 +54,7 @@ import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.components.MediaItemGridCard
 import com.makd.afinity.ui.components.PaginatedMediaGrid
 import com.makd.afinity.ui.components.playerClearance
+import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
 
 @Composable
@@ -72,6 +74,12 @@ fun GenreResultsScreen(
     val books =
         viewModel.booksPagingData.collectAsStateWithLifecycle().value.collectAsLazyPagingItems()
     val hasBooksLibrary by viewModel.hasBooksLibrary.collectAsStateWithLifecycle()
+    val musicVideos =
+        viewModel.musicVideosPagingData
+            .collectAsStateWithLifecycle()
+            .value
+            .collectAsLazyPagingItems()
+    val hasMusicVideosLibrary by viewModel.hasMusicVideosLibrary.collectAsStateWithLifecycle()
     val playerClearance = playerClearance()
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -113,6 +121,7 @@ fun GenreResultsScreen(
                         movies = movies,
                         shows = shows,
                         books = if (hasBooksLibrary) books else null,
+                        musicVideos = if (hasMusicVideosLibrary) musicVideos else null,
                         onItemClick = onItemClick,
                         widthSizeClass = widthSizeClass,
                         customPadding = customPadding,
@@ -123,36 +132,62 @@ fun GenreResultsScreen(
     }
 }
 
-private const val BOOKS_TAB = 2
+private class GenreTab(
+    val title: String,
+    val items: LazyPagingItems<AfinityItem>,
+    val emptyMessage: String,
+    val landscape: Boolean = false,
+)
 
 @Composable
 private fun GenreResultsContent(
     movies: LazyPagingItems<AfinityItem>,
     shows: LazyPagingItems<AfinityItem>,
     books: LazyPagingItems<AfinityItem>?,
+    musicVideos: LazyPagingItems<AfinityItem>?,
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     customPadding: PaddingValues,
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var tabChosen by rememberSaveable { mutableStateOf(false) }
-    val tabs =
+    val genreTabs =
         listOfNotNull(
-            stringResource(R.string.tab_movies),
-            stringResource(R.string.tab_tv_shows),
-            books?.let { stringResource(R.string.section_books) },
+            GenreTab(
+                stringResource(R.string.tab_movies),
+                movies,
+                stringResource(R.string.empty_genre_movies),
+            ),
+            GenreTab(
+                stringResource(R.string.tab_tv_shows),
+                shows,
+                stringResource(R.string.empty_genre_tv),
+            ),
+            books?.let {
+                GenreTab(
+                    stringResource(R.string.section_books),
+                    it,
+                    stringResource(R.string.empty_genre_books),
+                )
+            },
+            musicVideos?.let {
+                GenreTab(
+                    stringResource(R.string.music_section_music_videos),
+                    it,
+                    stringResource(R.string.empty_genre_music_videos),
+                    landscape = true,
+                )
+            },
         )
-    val moviesEmpty = movies.loadState.refresh is LoadState.NotLoading && movies.itemCount == 0
-    val showsEmpty = shows.loadState.refresh is LoadState.NotLoading && shows.itemCount == 0
-    val hasBooks = books != null && books.itemCount > 0
-    LaunchedEffect(moviesEmpty, showsEmpty, hasBooks) {
-        if (!tabChosen && moviesEmpty) {
-            selectedTab =
-                when {
-                    shows.itemCount > 0 -> 1
-                    showsEmpty && hasBooks -> BOOKS_TAB
-                    else -> selectedTab
-                }
+    val tabs = genreTabs.map { it.title }
+    val settled = genreTabs.map { it.items.loadState.refresh is LoadState.NotLoading }
+    val counts = genreTabs.map { it.items.itemCount }
+    LaunchedEffect(settled, counts) {
+        val current = genreTabs.getOrNull(selectedTab)
+        val currentEmpty = current == null || (settled[selectedTab] && counts[selectedTab] == 0)
+        if (!tabChosen && currentEmpty) {
+            val firstFilled = counts.indexOfFirst { it > 0 }
+            if (firstFilled >= 0) selectedTab = firstFilled
         }
     }
 
@@ -206,28 +241,20 @@ private fun GenreResultsContent(
             }
         }
 
-        val activeList =
-            when {
-                selectedTab == BOOKS_TAB && books != null -> books
-                selectedTab == 0 -> movies
-                else -> shows
-            }
-        val emptyMessage =
-            when {
-                selectedTab == BOOKS_TAB && books != null ->
-                    stringResource(R.string.empty_genre_books)
-                selectedTab == 0 -> stringResource(R.string.empty_genre_movies)
-                else -> stringResource(R.string.empty_genre_tv)
-            }
+        val activeTab = genreTabs.getOrElse(selectedTab) { genreTabs.first() }
+        val activeList = activeTab.items
         val isEmpty =
             activeList.loadState.refresh is LoadState.NotLoading && activeList.itemCount == 0
 
         if (isEmpty) {
-            FullScreenEmpty(message = emptyMessage)
+            FullScreenEmpty(message = activeTab.emptyMessage)
         } else {
             PaginatedMediaGrid(
                 items = activeList,
                 modifier = Modifier.fillMaxSize(),
+                columns =
+                    if (activeTab.landscape) CardDimensions.landscapeGridCells()
+                    else CardDimensions.gridCells(),
                 contentPadding =
                     PaddingValues(
                         top = 16.dp,
@@ -236,7 +263,7 @@ private fun GenreResultsContent(
                         bottom = customPadding.calculateBottomPadding() + 16.dp,
                     ),
             ) { item ->
-                if (item is AfinityAudiobook) {
+                if (item is AfinityAudiobook || item is AfinityMusicVideo) {
                     MediaItemGridCard(
                         item = item,
                         onClick = { onItemClick(item) },

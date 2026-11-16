@@ -12,6 +12,10 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.media.AfinityAudiobook
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityMusicVideo
+import com.makd.afinity.data.models.media.AfinityPhoto
+import com.makd.afinity.data.models.media.AfinityPhotoAlbum
+import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.ui.theme.CardDimensions
 
 @Composable
@@ -29,6 +33,10 @@ fun MediaRowSection(
         when {
             items.firstOrNull() is AfinityEpisode -> CardDimensions.ASPECT_RATIO_LANDSCAPE
             items.all { it is AfinityAudiobook } -> CardDimensions.ASPECT_RATIO_SQUARE
+            items.all { it is AfinityVideo || it is AfinityMusicVideo } ->
+                CardDimensions.ASPECT_RATIO_LANDSCAPE
+            items.all { it is AfinityPhoto || it is AfinityPhotoAlbum } ->
+                CardDimensions.ASPECT_RATIO_SQUARE
             else -> CardDimensions.ASPECT_RATIO_PORTRAIT
         }
     val fixedRowHeight = CardDimensions.rowHeight(cardWidth, aspectRatio)

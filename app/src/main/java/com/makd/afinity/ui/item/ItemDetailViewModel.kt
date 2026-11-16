@@ -30,7 +30,9 @@ import com.makd.afinity.data.models.download.DownloadQuality
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityItem
+import com.makd.afinity.data.models.extensions.toAfinityMusicVideo
 import com.makd.afinity.data.models.extensions.toAfinitySeason
+import com.makd.afinity.data.models.extensions.toAfinityVideo
 import com.makd.afinity.data.models.extensions.toAfinityVideoPlaylist
 import com.makd.afinity.data.models.external.ExternalTitles
 import com.makd.afinity.data.models.mdblist.MdbListRating
@@ -39,6 +41,7 @@ import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
@@ -721,6 +724,10 @@ constructor(
                             baseItemDto.toAfinityBoxSet(mediaRepository.getBaseUrl())
                         BaseItemKind.PLAYLIST ->
                             baseItemDto.toAfinityVideoPlaylist(mediaRepository.getBaseUrl())
+                        BaseItemKind.VIDEO ->
+                            baseItemDto.toAfinityVideo(mediaRepository.getBaseUrl())
+                        BaseItemKind.MUSIC_VIDEO ->
+                            baseItemDto.toAfinityMusicVideo(mediaRepository.getBaseUrl())
                         BaseItemKind.SEASON -> {
                             val season = baseItemDto.toAfinitySeason(mediaRepository.getBaseUrl())
                             if (season.runtimeTicks == 0L) {
@@ -887,6 +894,10 @@ constructor(
                                     baseItemDto.toAfinityBoxSet(mediaRepository.getBaseUrl())
                                 BaseItemKind.PLAYLIST ->
                                     baseItemDto.toAfinityVideoPlaylist(mediaRepository.getBaseUrl())
+                                BaseItemKind.VIDEO ->
+                                    baseItemDto.toAfinityVideo(mediaRepository.getBaseUrl())
+                                BaseItemKind.MUSIC_VIDEO ->
+                                    baseItemDto.toAfinityMusicVideo(mediaRepository.getBaseUrl())
                                 BaseItemKind.SEASON -> {
                                     val season =
                                         baseItemDto.toAfinitySeason(mediaRepository.getBaseUrl())
@@ -1186,7 +1197,7 @@ constructor(
             }
             "PLAYLIST" -> {}
             else -> {
-                if (item !is AfinityBoxSet) {
+                if (item !is AfinityBoxSet && item !is AfinityMusicVideo) {
                     viewModelScope.launch {
                         try {
                             val similar = mediaRepository.getSimilarItems(itemId)
@@ -1877,6 +1888,8 @@ constructor(
                 is AfinityEpisode -> currentItem.copy(favorite = !currentItem.favorite)
                 is AfinityBoxSet -> currentItem.copy(favorite = !currentItem.favorite)
                 is AfinitySeason -> currentItem.copy(favorite = !currentItem.favorite)
+                is AfinityVideo -> currentItem.copy(favorite = !currentItem.favorite)
+                is AfinityMusicVideo -> currentItem.copy(favorite = !currentItem.favorite)
                 else -> currentItem
             }
         itemUserDataDelegate.toggleFavorite(
@@ -1896,6 +1909,8 @@ constructor(
                 is AfinityEpisode -> currentItem.copy(liked = !currentItem.liked)
                 is AfinitySeason -> currentItem.copy(liked = !currentItem.liked)
                 is AfinityBoxSet -> currentItem.copy(liked = !currentItem.liked)
+                is AfinityVideo -> currentItem.copy(liked = !currentItem.liked)
+                is AfinityMusicVideo -> currentItem.copy(liked = !currentItem.liked)
                 else -> currentItem
             }
         itemUserDataDelegate.toggleWatchlist(
@@ -1963,6 +1978,16 @@ constructor(
                     playbackPositionTicks = if (played) 0L else playbackPositionTicks,
                 )
             is AfinityBoxSet -> copy(played = played)
+            is AfinityVideo ->
+                copy(
+                    played = played,
+                    playbackPositionTicks = if (played) 0L else playbackPositionTicks,
+                )
+            is AfinityMusicVideo ->
+                copy(
+                    played = played,
+                    playbackPositionTicks = if (played) 0L else playbackPositionTicks,
+                )
             else -> this
         }
 

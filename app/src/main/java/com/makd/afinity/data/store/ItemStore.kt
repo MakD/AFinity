@@ -449,4 +449,5 @@ private fun Map<UUID, AfinityUserDataOwner>.movedToEnd(
 internal fun AfinityItem.richness(): Int =
     (if (sources.any { it.type != AfinitySourceType.LOCAL }) 4 else 0) +
         (if (externalUrls != null) 2 else 0) +
-        (if (overview.isNotBlank()) 1 else 0)
+        (if (overview.isNotBlank()) 1 else 0) +
+        (if (people.isNotEmpty()) 1 else 0)

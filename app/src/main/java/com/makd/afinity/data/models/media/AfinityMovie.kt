@@ -25,7 +25,7 @@ data class AfinityMovie(
     override val playbackPositionTicks: Long,
     val premiereDate: LocalDateTime?,
     val dateCreated: LocalDateTime?,
-    val people: List<AfinityPerson>,
+    override val people: List<AfinityPerson>,
     val genres: List<String>,
     val communityRating: Float?,
     val officialRating: String?,

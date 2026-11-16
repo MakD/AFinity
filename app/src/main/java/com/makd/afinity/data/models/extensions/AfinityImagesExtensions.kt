@@ -38,6 +38,28 @@ val AfinityImages.showThumbBlurHash: String?
 val AfinityImages.showPrimaryBlurHash: String?
     get() = showPrimaryImageBlurHash
 
+val AfinityImages.landscapeImageUrl: String?
+    get() = backdropImageUrl ?: thumbImageUrl ?: primaryImageUrl
+
+val AfinityImages.landscapeBlurHash: String?
+    get() =
+        when {
+            backdrop != null -> backdropBlurHash
+            thumb != null -> thumbBlurHash
+            else -> primaryBlurHash
+        }
+
+val AfinityImages.posterImageUrl: String?
+    get() = primaryImageUrl ?: backdropImageUrl ?: thumbImageUrl
+
+val AfinityImages.posterBlurHash: String?
+    get() =
+        when {
+            primary != null -> primaryBlurHash
+            backdrop != null -> backdropBlurHash
+            else -> thumbBlurHash
+        }
+
 fun String.withLogoFormat(): String {
     return if (contains("?")) "$this&format=webp" else "$this?format=webp"
 }

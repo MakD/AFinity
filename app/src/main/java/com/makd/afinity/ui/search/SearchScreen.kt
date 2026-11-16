@@ -100,7 +100,11 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
+import com.makd.afinity.data.models.media.AfinityPhoto
+import com.makd.afinity.data.models.media.AfinityPhotoAlbum
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicSearchResults
 import com.makd.afinity.navigation.LocalShowRatings
@@ -611,6 +615,14 @@ private fun SearchFilterRow(
 ) {
     val hasMusicLibrary = remember(libraries) { libraries.any { it.type == CollectionType.Music } }
     val hasBooksLibrary = remember(libraries) { libraries.any { it.type == CollectionType.Books } }
+    val hasVideosLibrary =
+        remember(libraries) {
+            libraries.any {
+                it.type == CollectionType.MusicVideos ||
+                    it.type == CollectionType.HomeVideos ||
+                    it.type == CollectionType.Photos
+            }
+        }
 
     val isAudiobooksScope = selectedFilter == SearchFilter.AUDIOBOOKS
 
@@ -642,6 +654,7 @@ private fun SearchFilterRow(
             selectedLibrary,
             hasMusicLibrary,
             hasBooksLibrary,
+            hasVideosLibrary,
             isJellyseerrAuthenticated,
             isAudiobookshelfAuthenticated,
         ) {
@@ -658,6 +671,9 @@ private fun SearchFilterRow(
                     }
                     CollectionType.BoxSets -> add(SearchFilter.BOX_SETS to R.string.section_boxset)
                     CollectionType.Books -> add(SearchFilter.BOOKS to R.string.section_books)
+                    CollectionType.MusicVideos,
+                    CollectionType.HomeVideos,
+                    CollectionType.Photos -> add(SearchFilter.VIDEOS to R.string.section_videos)
                     CollectionType.Music -> add(SearchFilter.MUSIC to R.string.section_music)
                     CollectionType.Mixed -> {
                         add(SearchFilter.MOVIES to R.string.section_movies)
@@ -676,6 +692,7 @@ private fun SearchFilterRow(
                         add(SearchFilter.EPISODES to R.string.section_episodes)
                         add(SearchFilter.BOX_SETS to R.string.section_boxset)
                         if (hasBooksLibrary) add(SearchFilter.BOOKS to R.string.section_books)
+                        if (hasVideosLibrary) add(SearchFilter.VIDEOS to R.string.section_videos)
                         if (hasMusicLibrary) add(SearchFilter.MUSIC to R.string.section_music)
                     }
                 }
@@ -1024,11 +1041,11 @@ private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
                     }
                 }
                 if (item is AfinityAudiobook) {
-                    val authors = item.authors.map { it.name }.distinct()
+                    val authors = item.authorLine
                     if (authors.isNotEmpty()) {
                         elements.add {
                             Text(
-                                text = authors.joinToString(", "),
+                                text = authors,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
@@ -1606,6 +1623,13 @@ private fun CombinedSearchResultsContent(
     val books = remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityBook>() }
     val audiobooks =
         remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityAudiobook>() }
+    val videos =
+        remember(jellyfinResults) {
+            jellyfinResults.filter { it is AfinityVideo || it is AfinityMusicVideo }
+        }
+    val photoAlbums =
+        remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityPhotoAlbum>() }
+    val photos = remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityPhoto>() }
     val playerClearance = playerClearance()
 
     LazyColumn(
@@ -1662,6 +1686,27 @@ private fun CombinedSearchResultsContent(
         if (audiobooks.isNotEmpty()) {
             item { SearchSectionHeader(stringResource(R.string.section_audiobooks)) }
             items(audiobooks, key = { "audiobook_${it.id}" }) { item ->
+                SearchResultItem(item = item, onClick = { onItemClick(item) })
+            }
+        }
+
+        if (videos.isNotEmpty()) {
+            item { SearchSectionHeader(stringResource(R.string.section_videos)) }
+            items(videos, key = { "video_${it.id}" }) { item ->
+                SearchResultItem(item = item, onClick = { onItemClick(item) })
+            }
+        }
+
+        if (photoAlbums.isNotEmpty()) {
+            item { SearchSectionHeader(stringResource(R.string.filter_format_albums)) }
+            items(photoAlbums, key = { "photo_album_${it.id}" }) { item ->
+                SearchResultItem(item = item, onClick = { onItemClick(item) })
+            }
+        }
+
+        if (photos.isNotEmpty()) {
+            item { SearchSectionHeader(stringResource(R.string.filter_format_photos)) }
+            items(photos, key = { "photo_${it.id}" }) { item ->
                 SearchResultItem(item = item, onClick = { onItemClick(item) })
             }
         }

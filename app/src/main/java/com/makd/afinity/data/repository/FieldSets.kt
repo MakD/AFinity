@@ -38,6 +38,8 @@ object FieldSets {
             ItemFields.PARENT_ID,
         )
 
+    val BOOK_SHELF = BOOK_GRID + ItemFields.PEOPLE
+
     val BOOK_DETAIL =
         listOf(
             ItemFields.PARENT_ID,
@@ -119,7 +121,9 @@ object FieldSets {
             ItemFields.CAN_DOWNLOAD,
         )
 
-    val PHOTO_DETAIL = PHOTO_GRID + listOf(ItemFields.OVERVIEW, ItemFields.TAGS, ItemFields.GENRES)
+    val PHOTO_DETAIL =
+        PHOTO_GRID +
+            listOf(ItemFields.OVERVIEW, ItemFields.TAGS, ItemFields.GENRES, ItemFields.PATH)
 
     val MUSIC_VIDEO_GRID =
         listOf(

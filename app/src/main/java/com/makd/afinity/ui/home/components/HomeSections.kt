@@ -53,13 +53,16 @@ import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.ContinueWatchingCard
+import com.makd.afinity.ui.components.GalleryTile
 import com.makd.afinity.ui.components.LibraryCard
 import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.ui.components.MusicVideoCardRow
 import com.makd.afinity.ui.components.formatTimeLeftTicks
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.ui.theme.CardDimensions
@@ -80,10 +83,8 @@ fun OptimizedContinueWatchingSection(
     Column(modifier = Modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = stringResource(R.string.home_continue_watching))
 
-        val uniqueItems = items.distinctBy { it.id }
-
         CardRow(state = scrollState, modifier = Modifier.height(fixedRowHeight)) {
-            items(items = uniqueItems, key = { item -> "continue_${item.id}" }) { item ->
+            items(items = items, key = { item -> "continue_${item.id}" }) { item ->
                 ContinueWatchingCard(
                     item = item,
                     onClick = { onItemClick(item) },
@@ -101,13 +102,17 @@ fun ContinueReadingSection(
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val cardWidth = widthSizeClass.portraitWidth
-    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
+    val fixedRowHeight =
+        CardDimensions.rowHeight(
+            cardWidth,
+            CardDimensions.ASPECT_RATIO_PORTRAIT,
+            metadataHeight = CardDimensions.subtitleLine,
+        )
 
     Column(modifier = Modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = stringResource(R.string.home_continue_reading))
 
-        val uniqueBooks = books.distinctBy { it.id }
-        val firstBookId = uniqueBooks.firstOrNull()?.id
+        val firstBookId = books.firstOrNull()?.id
         val scrollState = rememberLazyListState()
         val lastKnownFirstBookId = remember { mutableStateOf<Any?>(null) }
 
@@ -122,7 +127,7 @@ fun ContinueReadingSection(
         }
 
         CardRow(state = scrollState, modifier = Modifier.height(fixedRowHeight)) {
-            items(items = uniqueBooks, key = { book -> "continue_reading_${book.id}" }) { book ->
+            items(items = books, key = { book -> "continue_reading_${book.id}" }) { book ->
                 ContinueReadingCard(
                     book = book,
                     onClick = { onBookClick(book) },
@@ -186,6 +191,63 @@ private fun ContinueReadingCard(book: AfinityBook, onClick: () -> Unit, cardWidt
 }
 
 @Composable
+fun LatestGalleryRowSection(
+    title: String,
+    items: List<AfinityItem>,
+    onItemClick: (AfinityItem) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
+) {
+    val cardWidth = widthSizeClass.landscapeWidth
+    val fixedRowHeight =
+        CardDimensions.rowHeight(
+            cardWidth,
+            CardDimensions.ASPECT_RATIO_LANDSCAPE,
+            metadataHeight = 0.dp,
+        )
+
+    Column(modifier = Modifier.padding(horizontal = CardDimensions.RowGutter)) {
+        HomeSectionHeader(title = title)
+
+        val scrollState = rememberLazyListState()
+        val firstId = items.firstOrNull()?.id
+        val lastKnownFirstId = remember { mutableStateOf<Any?>(null) }
+        LaunchedEffect(firstId) {
+            val previous = lastKnownFirstId.value
+            if (firstId != null && previous != null && firstId != previous) {
+                scrollState.scrollToItem(0)
+            }
+            if (firstId != null) lastKnownFirstId.value = firstId
+        }
+
+        CardRow(state = scrollState, modifier = Modifier.height(fixedRowHeight)) {
+            items(items = items, key = { item -> "gallery_${item.id}" }) { item ->
+                Box(modifier = Modifier.width(cardWidth)) {
+                    GalleryTile(
+                        item = item,
+                        onClick = { onItemClick(item) },
+                        fixedRatio = CardDimensions.ASPECT_RATIO_LANDSCAPE,
+                        galleryStyle = false,
+                        showTitle = true,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LatestMusicVideoRowSection(
+    title: String,
+    videos: List<AfinityMusicVideo>,
+    onVideoClick: (AfinityMusicVideo) -> Unit,
+) {
+    Column(modifier = Modifier.padding(horizontal = CardDimensions.RowGutter)) {
+        HomeSectionHeader(title = title)
+        MusicVideoCardRow(videos = videos, onVideoClick = onVideoClick)
+    }
+}
+
+@Composable
 fun AudiobookRowSection(
     title: String,
     books: List<AfinityAudiobook>,
@@ -195,13 +257,17 @@ fun AudiobookRowSection(
     onViewAllClick: (() -> Unit)? = null,
 ) {
     val cardWidth = widthSizeClass.portraitWidth
-    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_SQUARE)
+    val fixedRowHeight =
+        CardDimensions.rowHeight(
+            cardWidth,
+            CardDimensions.ASPECT_RATIO_SQUARE,
+            metadataHeight = CardDimensions.subtitleLine,
+        )
 
     Column(modifier = Modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = title, onViewAllClick = onViewAllClick)
 
-        val uniqueBooks = books.distinctBy { it.id }
-        val firstBookId = uniqueBooks.firstOrNull()?.id
+        val firstBookId = books.firstOrNull()?.id
         val scrollState = rememberLazyListState()
         val lastKnownFirstBookId = remember { mutableStateOf<Any?>(null) }
 
@@ -216,7 +282,7 @@ fun AudiobookRowSection(
         }
 
         CardRow(state = scrollState, modifier = Modifier.height(fixedRowHeight)) {
-            items(items = uniqueBooks, key = { book -> "audiobook_${book.id}" }) { book ->
+            items(items = books, key = { book -> "audiobook_${book.id}" }) { book ->
                 AudiobookCard(
                     book = book,
                     onClick = { onBookClick(book) },
@@ -280,7 +346,7 @@ private fun AudiobookCard(
             if (showProgress && book.playbackPositionTicks > 0 && ticksLeft > 0) {
                 formatTimeLeftTicks(ticksLeft)
             } else {
-                book.authors.map { it.name }.distinct().joinToString(", ")
+                book.authorLine
             }
         Text(
             text = subtitle,
@@ -322,8 +388,7 @@ fun OptimizedLatestMoviesSection(
     Column(modifier = Modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = title)
 
-        val uniqueItems = items.distinctBy { it.id }
-        val firstItemId = uniqueItems.firstOrNull()?.id
+        val firstItemId = items.firstOrNull()?.id
         val scrollState = rememberLazyListState()
         val lastKnownFirstItemId = remember { mutableStateOf<Any?>(null) }
 
@@ -338,7 +403,7 @@ fun OptimizedLatestMoviesSection(
         }
 
         CardRow(state = scrollState, modifier = Modifier.height(fixedRowHeight)) {
-            items(items = uniqueItems, key = { item -> "latest_movie_${item.id}" }) { item ->
+            items(items = items, key = { item -> "latest_movie_${item.id}" }) { item ->
                 MediaItemCard(
                     item = item,
                     onClick = { onItemClick(item) },
@@ -389,22 +454,31 @@ fun LibrariesSection(
 }
 
 @Composable
-fun OptimizedLatestTvSeriesSection(
-    items: List<AfinityItem>,
-    onItemClick: (AfinityItem) -> Unit,
+fun <T : AfinityItem> OptimizedLatestTvSeriesSection(
+    items: List<T>,
+    onItemClick: (T) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     title: String = stringResource(R.string.home_latest_tv_series),
     unavailableItemIds: Set<java.util.UUID> = emptySet(),
     onViewAllClick: (() -> Unit)? = null,
+    subtitleFor: ((T) -> String)? = null,
 ) {
     val cardWidth = widthSizeClass.portraitWidth
-    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
+    val fixedRowHeight =
+        if (subtitleFor != null) {
+            CardDimensions.rowHeight(
+                cardWidth,
+                CardDimensions.ASPECT_RATIO_PORTRAIT,
+                metadataHeight = CardDimensions.subtitleLine,
+            )
+        } else {
+            CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
+        }
 
     Column(modifier = Modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = title, onViewAllClick = onViewAllClick)
 
-        val uniqueItems = items.distinctBy { it.id }
-        val firstItemId = uniqueItems.firstOrNull()?.id
+        val firstItemId = items.firstOrNull()?.id
         val scrollState = rememberLazyListState()
         val lastKnownFirstItemId = remember { mutableStateOf<Any?>(null) }
 
@@ -419,12 +493,13 @@ fun OptimizedLatestTvSeriesSection(
         }
 
         CardRow(state = scrollState, modifier = Modifier.height(fixedRowHeight)) {
-            items(items = uniqueItems, key = { item -> "latest_tv_${item.id}" }) { item ->
+            items(items = items, key = { item -> "latest_tv_${item.id}" }) { item ->
                 MediaItemCard(
                     item = item,
                     onClick = { onItemClick(item) },
                     cardWidth = cardWidth,
                     isUnavailable = item.id in unavailableItemIds,
+                    subtitle = subtitleFor?.invoke(item),
                 )
             }
         }
@@ -445,10 +520,8 @@ fun UpcomingEpisodesSection(
     Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = title)
 
-        val uniqueItems = items.distinctBy { it.id }
-
         CardRow(modifier = Modifier.height(fixedRowHeight)) {
-            items(items = uniqueItems, key = { item -> "upcoming_${item.id}" }) { episode ->
+            items(items = items, key = { item -> "upcoming_${item.id}" }) { episode ->
                 UpcomingEpisodeCard(
                     episode = episode,
                     onClick = { onItemClick(episode) },

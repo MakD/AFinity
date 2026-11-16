@@ -39,6 +39,7 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
@@ -195,19 +196,19 @@ constructor(
         viewModelScope.launch {
             mediaRepository.getContinueWatchingFlow().collect { items ->
                 lastHomeRefreshedAt = System.currentTimeMillis()
-                _uiState.update { it.copy(continueWatching = items) }
+                _uiState.update { it.copy(continueWatching = items.distinctItems()) }
             }
         }
 
         viewModelScope.launch {
             mediaRepository.continueReading.collect { books ->
-                _uiState.update { it.copy(continueReading = books) }
+                _uiState.update { it.copy(continueReading = books.distinctItems()) }
             }
         }
 
         viewModelScope.launch {
             mediaRepository.continueListening.collect { books ->
-                _uiState.update { it.copy(continueListening = books) }
+                _uiState.update { it.copy(continueListening = books.distinctItems()) }
             }
         }
 
@@ -219,19 +220,43 @@ constructor(
 
         viewModelScope.launch {
             appDataRepository.latestBookSections.collect { sections ->
-                _uiState.update { it.copy(latestBookSections = sections) }
+                _uiState.update {
+                    it.copy(
+                        latestBookSections = sections.distinctSections(),
+                        bookLibraryIds = sections.mapTo(HashSet()) { (library, _) -> library.id },
+                    )
+                }
             }
         }
 
         viewModelScope.launch {
             appDataRepository.latestAudiobookSections.collect { sections ->
-                _uiState.update { it.copy(latestAudiobookSections = sections) }
+                _uiState.update { it.copy(latestAudiobookSections = sections.distinctSections()) }
+            }
+        }
+
+        viewModelScope.launch {
+            appDataRepository.latestHomeVideoSections.collect { sections ->
+                _uiState.update { it.copy(latestHomeVideoSections = sections.distinctSections()) }
+            }
+        }
+
+        viewModelScope.launch {
+            appDataRepository.latestMusicVideoSections.collect { sections ->
+                val musicVideoSections = sections.mapNotNull { (library, items) ->
+                    items
+                        .filterIsInstance<AfinityMusicVideo>()
+                        .distinctItems()
+                        .takeIf { it.isNotEmpty() }
+                        ?.let { library to it }
+                }
+                _uiState.update { it.copy(latestMusicVideoSections = musicVideoSections) }
             }
         }
 
         viewModelScope.launch {
             mediaRepository.getNextUpFlow().collect { items ->
-                _uiState.update { it.copy(nextUp = items, nextUpLoaded = true) }
+                _uiState.update { it.copy(nextUp = items.distinctItems(), nextUpLoaded = true) }
             }
         }
 
@@ -579,7 +604,18 @@ constructor(
     private fun <T : AfinityItem> List<T>.unplayedForDisplay(): List<T> = filter {
         !it.played
     }
+        .distinctItems()
         .take(AppDataRepository.LATEST_DISPLAYED)
+
+    private fun <T : AfinityItem> List<T>.distinctItems(): List<T> {
+        val seen = HashSet<UUID>(size)
+        return if (all { seen.add(it.id) }) this else distinctBy { it.id }
+    }
+
+    private fun <T : AfinityItem> List<Pair<AfinityCollection, List<T>>>.distinctSections():
+        List<Pair<AfinityCollection, List<T>>> = map { (library, items) ->
+        library to items.distinctItems()
+    }
 
     private fun <T : AfinityItem> sectionsForDisplay(
         sections: List<Pair<AfinityCollection, List<T>>>
@@ -745,12 +781,12 @@ constructor(
 
             _uiState.update {
                 it.copy(
-                    downloadedMovies = downloadedMovies,
-                    downloadedShows = downloadedShows,
-                    downloadedBooks = downloadedBooks,
-                    downloadedJellyfinAudiobooks = downloadedJellyfinAudiobooks,
-                    offlineContinueWatching = sortedOfflineContinueWatching,
-                    offlineNextUp = offlineNextUp,
+                    downloadedMovies = downloadedMovies.distinctItems(),
+                    downloadedShows = downloadedShows.distinctItems(),
+                    downloadedBooks = downloadedBooks.distinctItems(),
+                    downloadedJellyfinAudiobooks = downloadedJellyfinAudiobooks.distinctItems(),
+                    offlineContinueWatching = sortedOfflineContinueWatching.distinctItems(),
+                    offlineNextUp = offlineNextUp.distinctItems(),
                     downloadedAudiobooks = downloadedAudiobooks,
                     downloadedPodcastEpisodes = downloadedPodcastEpisodes,
                     downloadedMusicAlbums = downloadedMusicAlbums,
@@ -846,7 +882,9 @@ constructor(
                 return
             }
             val upcoming = mediaRepository.getUpcomingEpisodes(limit = 24)
-            _uiState.update { it.copy(upcomingEpisodes = upcoming, upcomingLoaded = true) }
+            _uiState.update {
+                it.copy(upcomingEpisodes = upcoming.distinctItems(), upcomingLoaded = true)
+            }
             homeSectionsRepository.recordRowFilled(
                 HomeRow.UPCOMING_EPISODES,
                 filled = upcoming.isNotEmpty(),
@@ -978,8 +1016,12 @@ data class HomeUiState(
     val continueWatching: List<AfinityItem> = emptyList(),
     val continueReading: List<AfinityBook> = emptyList(),
     val latestBookSections: List<Pair<AfinityCollection, List<AfinityBook>>> = emptyList(),
+    val bookLibraryIds: Set<UUID> = emptySet(),
     val continueListening: List<AfinityAudiobook> = emptyList(),
     val latestAudiobookSections: List<Pair<AfinityCollection, List<AfinityAudiobook>>> =
+        emptyList(),
+    val latestHomeVideoSections: List<Pair<AfinityCollection, List<AfinityItem>>> = emptyList(),
+    val latestMusicVideoSections: List<Pair<AfinityCollection, List<AfinityMusicVideo>>> =
         emptyList(),
     val offlineContinueWatching: List<AfinityItem> = emptyList(),
     val nextUp: List<AfinityEpisode> = emptyList(),
@@ -1037,6 +1079,10 @@ fun ItemProjection.projectHome(state: HomeUiState): HomeUiState {
     val continueL = live(state.continueListening)
     val audiobookSections =
         liveNested(state.latestAudiobookSections, { it.second }, { p, l -> p.first to l })
+    val homeVideoSections =
+        liveNested(state.latestHomeVideoSections, { it.second }, { p, l -> p.first to l })
+    val musicVideoSections =
+        liveNested(state.latestMusicVideoSections, { it.second }, { p, l -> p.first to l })
     val next = live(state.nextUp)
     val upcoming = live(state.upcomingEpisodes)
     val movies = live(state.latestMovies)
@@ -1063,6 +1109,8 @@ fun ItemProjection.projectHome(state: HomeUiState): HomeUiState {
             bookSections === state.latestBookSections &&
             continueL === state.continueListening &&
             audiobookSections === state.latestAudiobookSections &&
+            homeVideoSections === state.latestHomeVideoSections &&
+            musicVideoSections === state.latestMusicVideoSections &&
             next === state.nextUp &&
             upcoming === state.upcomingEpisodes &&
             movies === state.latestMovies &&
@@ -1085,6 +1133,8 @@ fun ItemProjection.projectHome(state: HomeUiState): HomeUiState {
         latestBookSections = bookSections,
         continueListening = continueL,
         latestAudiobookSections = audiobookSections,
+        latestHomeVideoSections = homeVideoSections,
+        latestMusicVideoSections = musicVideoSections,
         nextUp = next,
         upcomingEpisodes = upcoming,
         latestMovies = movies,

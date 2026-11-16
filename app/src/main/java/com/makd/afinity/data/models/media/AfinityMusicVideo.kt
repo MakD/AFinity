@@ -30,7 +30,7 @@ data class AfinityMusicVideo(
     val premiereDate: LocalDateTime?,
     val dateCreated: LocalDateTime?,
     val productionYear: Int?,
-    val people: List<AfinityPerson>,
+    override val people: List<AfinityPerson>,
     val genres: List<String>,
     val studios: List<String>,
     val tags: List<String>,

@@ -63,8 +63,10 @@ import com.makd.afinity.ui.components.DownloadConfirmKind
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.LandscapeDetailArrangement
 import com.makd.afinity.ui.components.LandscapeDetailLayout
+import com.makd.afinity.ui.components.MusicVideoCardRow
 import com.makd.afinity.ui.components.PortraitDetailLayout
 import com.makd.afinity.ui.components.PortraitHero
+import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.backdropChainOf
 import com.makd.afinity.ui.components.detailListBottomPadding
 import com.makd.afinity.ui.components.isLandscapeWindow
@@ -95,6 +97,7 @@ import kotlinx.coroutines.launch
 fun MusicAlbumScreen(
     onMusicAlbumClick: (String) -> Unit,
     onMusicArtistClick: (String) -> Unit,
+    onMusicVideoClick: (String) -> Unit,
     onHomeClick: () -> Unit,
     onEditMetadataClick: (String) -> Unit,
     onEditImagesClick: (String) -> Unit,
@@ -301,6 +304,21 @@ fun MusicAlbumScreen(
         Column {
             val artist = uiState.album?.artist ?: uiState.album?.artists?.firstOrNull()
             val artistId = uiState.album?.artistId
+
+            if (uiState.musicVideos.isNotEmpty()) {
+                Column(modifier = Modifier.padding(horizontal = DetailGutter)) {
+                    Text(
+                        text = stringResource(R.string.music_section_music_videos),
+                        style = afinitySectionTitleStyle(),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(top = 32.dp, bottom = 16.dp),
+                    )
+                    MusicVideoCardRow(
+                        videos = uiState.musicVideos,
+                        onVideoClick = { onMusicVideoClick(it.id.toString()) },
+                    )
+                }
+            }
 
             if (artist != null) {
                 AlbumRelatedSection(

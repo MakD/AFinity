@@ -1,6 +1,7 @@
 package com.makd.afinity.ui.theme
 
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
@@ -21,43 +22,64 @@ import kotlin.math.roundToInt
 
 val LocalCardSize = compositionLocalOf { CardSize.DEFAULT }
 
+private fun Density.steppedCellSizes(
+    availableSize: Int,
+    spacing: Int,
+    baseCardWidth: Dp,
+    cardSize: CardSize,
+    minCount: Int,
+    minCardWidth: Dp,
+): List<Int> {
+    if (availableSize <= 0) return List(minCount) { 0 }
+
+    val basePx = baseCardWidth.roundToPx()
+    val baseCount =
+        ((availableSize + spacing).toFloat() / (basePx + spacing))
+            .roundToInt()
+            .coerceAtLeast(minCount)
+
+    val columnDelta =
+        when (cardSize) {
+            CardSize.LARGE -> -1
+            CardSize.DEFAULT -> 0
+            CardSize.SMALL -> 1
+            CardSize.EXTRA_SMALL -> 2
+        }
+
+    var count = (baseCount + columnDelta).coerceAtLeast(minCount)
+
+    val minCardPx = minCardWidth.roundToPx()
+    while (count > minCount) {
+        val cardPx = (availableSize - spacing * (count - 1)) / count
+        if (cardPx >= minCardPx) break
+        count--
+    }
+
+    val cellsSize = availableSize - spacing * (count - 1)
+    val cellSize = cellsSize / count
+    val remainder = cellsSize % count
+    return List(count) { index -> cellSize + if (index < remainder) 1 else 0 }
+}
+
 private data class SteppedGridCells(
     val baseCardWidth: Dp,
     val cardSize: CardSize,
     val minCount: Int = 2,
     val minCardWidth: Dp = 56.dp,
 ) : GridCells {
-    override fun Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): List<Int> {
-        if (availableSize <= 0) return List(minCount) { 0 }
+    override fun Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): List<Int> =
+        steppedCellSizes(availableSize, spacing, baseCardWidth, cardSize, minCount, minCardWidth)
+}
 
-        val basePx = baseCardWidth.roundToPx()
-        val baseCount =
-            ((availableSize + spacing).toFloat() / (basePx + spacing))
-                .roundToInt()
-                .coerceAtLeast(minCount)
-
-        val columnDelta =
-            when (cardSize) {
-                CardSize.LARGE -> -1
-                CardSize.DEFAULT -> 0
-                CardSize.SMALL -> 1
-                CardSize.EXTRA_SMALL -> 2
-            }
-
-        var count = (baseCount + columnDelta).coerceAtLeast(minCount)
-
-        val minCardPx = minCardWidth.roundToPx()
-        while (count > minCount) {
-            val cardPx = (availableSize - spacing * (count - 1)) / count
-            if (cardPx >= minCardPx) break
-            count--
-        }
-
-        val cellsSize = availableSize - spacing * (count - 1)
-        val cellSize = cellsSize / count
-        val remainder = cellsSize % count
-        return List(count) { index -> cellSize + if (index < remainder) 1 else 0 }
-    }
+private data class SteppedStaggeredGridCells(
+    val baseCardWidth: Dp,
+    val cardSize: CardSize,
+    val minCount: Int = 2,
+    val minCardWidth: Dp = 56.dp,
+) : StaggeredGridCells {
+    override fun Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): IntArray =
+        steppedCellSizes(availableSize, spacing, baseCardWidth, cardSize, minCount, minCardWidth)
+            .toIntArray()
 }
 
 object CardDimensions {
@@ -188,6 +210,16 @@ object CardDimensions {
     @ReadOnlyComposable
     fun gridCells(): GridCells =
         SteppedGridCells(
+            baseCardWidth = gridPosterWidth(),
+            cardSize = LocalCardSize.current,
+            minCount = 2,
+            minCardWidth = 56.dp,
+        )
+
+    @Composable
+    @ReadOnlyComposable
+    fun staggeredGridCells(): StaggeredGridCells =
+        SteppedStaggeredGridCells(
             baseCardWidth = gridPosterWidth(),
             cardSize = LocalCardSize.current,
             minCount = 2,

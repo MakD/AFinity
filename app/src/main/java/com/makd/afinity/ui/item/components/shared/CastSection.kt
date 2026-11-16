@@ -31,6 +31,7 @@ import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
@@ -49,6 +50,7 @@ fun AfinityItem.displayPeople(): List<AfinityPerson> =
         is AfinitySeason -> people
         is AfinityEpisode -> people
         is AfinityVideo -> people
+        is AfinityMusicVideo -> people
         is AfinityBoxSet -> people
         is AfinityBook -> people
         else -> emptyList()

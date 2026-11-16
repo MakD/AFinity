@@ -35,6 +35,10 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.common.CardSize
+import com.makd.afinity.data.models.extensions.landscapeBlurHash
+import com.makd.afinity.data.models.extensions.landscapeImageUrl
+import com.makd.afinity.data.models.extensions.posterBlurHash
+import com.makd.afinity.data.models.extensions.posterImageUrl
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityAudiobook
@@ -42,6 +46,7 @@ import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityFolder
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityMusicVideo
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.AfinityVideoPlaylist
@@ -71,10 +76,23 @@ fun MediaItemGridCard(
     val letterboxed = item is AfinityAudiobook && audiobookFrame == AudiobookCardFrame.LETTERBOX
     val aspectRatio =
         when {
+            item is AfinityMusicVideo -> CardDimensions.ASPECT_RATIO_LANDSCAPE
             item is AfinityVideoPlaylist || item is AfinityVideo ->
                 CardDimensions.ASPECT_RATIO_SQUARE
             item is AfinityAudiobook && !letterboxed -> CardDimensions.ASPECT_RATIO_SQUARE
             else -> CardDimensions.ASPECT_RATIO_PORTRAIT
+        }
+    val imageUrl =
+        when (aspectRatio) {
+            CardDimensions.ASPECT_RATIO_LANDSCAPE -> item.images.landscapeImageUrl
+            CardDimensions.ASPECT_RATIO_PORTRAIT -> item.images.posterImageUrl
+            else -> item.images.primaryImageUrl
+        }
+    val blurHash =
+        when (aspectRatio) {
+            CardDimensions.ASPECT_RATIO_LANDSCAPE -> item.images.landscapeBlurHash
+            CardDimensions.ASPECT_RATIO_PORTRAIT -> item.images.posterBlurHash
+            else -> item.images.primaryBlurHash
         }
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -90,9 +108,9 @@ fun MediaItemGridCard(
                     AudiobookBadge(modifier = Modifier.align(Alignment.TopStart))
                 } else {
                     AsyncImage(
-                        imageUrl = item.images.primaryImageUrl,
+                        imageUrl = imageUrl,
                         contentDescription = item.name,
-                        blurHash = item.images.primaryBlurHash,
+                        blurHash = blurHash,
                         targetWidth = 160.dp,
                         targetHeight = 160.dp / aspectRatio,
                         modifier = Modifier.fillMaxSize(),
@@ -100,7 +118,7 @@ fun MediaItemGridCard(
                     )
                 }
 
-                if (item is AfinityFolder && item.images.primaryImageUrl == null) {
+                if (item is AfinityFolder && imageUrl == null) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_folder),
                         contentDescription = null,
@@ -139,6 +157,13 @@ fun MediaItemGridCard(
                                 modifier = Modifier.align(Alignment.TopEnd),
                             )
                         }
+                    }
+
+                    item is AfinityMusicVideo && (item.mediaSourceCount ?: 0) > 1 -> {
+                        MediaCountBadge(
+                            text = "${item.mediaSourceCount}",
+                            modifier = Modifier.align(Alignment.TopEnd),
+                        )
                     }
 
                     item is AfinityVideoPlaylist -> {
@@ -188,6 +213,22 @@ fun MediaItemGridCard(
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Start,
         )
+
+        if (item is AfinityMusicVideo) {
+            item.artists
+                .joinToString(", ")
+                .ifBlank { null }
+                ?.let { subtitle ->
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Start,
+                    )
+                }
+        }
 
         val showRatings = LocalShowRatings.current
         val metadataItems = mutableListOf<@Composable () -> Unit>()

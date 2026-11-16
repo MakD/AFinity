@@ -174,6 +174,8 @@ fun FavoritesScreen(
                             uiState.boxSets.isNotEmpty() ||
                             uiState.books.isNotEmpty() ||
                             uiState.audiobooks.isNotEmpty() ||
+                            uiState.videos.isNotEmpty() ||
+                            uiState.photos.isNotEmpty() ||
                             uiState.people.isNotEmpty() ||
                             uiState.channels.isNotEmpty() ||
                             uiState.favoriteAlbums.isNotEmpty() ||
@@ -284,6 +286,32 @@ fun FavoritesScreen(
                                         cardWidth = portraitWidth,
                                         onViewAllClick = {
                                             onViewAllClick(FavoritesCategory.AUDIOBOOKS)
+                                        },
+                                    )
+                                }
+                            }
+                            if (uiState.videos.isNotEmpty()) {
+                                item {
+                                    MediaRowSection(
+                                        title = stringResource(R.string.section_videos),
+                                        items = uiState.videos,
+                                        onItemClick = onItemClick,
+                                        cardWidth = landscapeWidth,
+                                        onViewAllClick = {
+                                            onViewAllClick(FavoritesCategory.VIDEOS)
+                                        },
+                                    )
+                                }
+                            }
+                            if (uiState.photos.isNotEmpty()) {
+                                item {
+                                    MediaRowSection(
+                                        title = stringResource(R.string.filter_format_photos),
+                                        items = uiState.photos,
+                                        onItemClick = onItemClick,
+                                        cardWidth = portraitWidth,
+                                        onViewAllClick = {
+                                            onViewAllClick(FavoritesCategory.PHOTOS)
                                         },
                                     )
                                 }

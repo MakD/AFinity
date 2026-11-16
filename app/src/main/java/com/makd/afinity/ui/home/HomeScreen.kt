@@ -66,6 +66,7 @@ import com.makd.afinity.data.manager.UnreachableReason
 import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.HomeRow
+import com.makd.afinity.data.models.media.AfinityBook
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -93,6 +94,8 @@ import com.makd.afinity.ui.home.components.FranchisesSection
 import com.makd.afinity.ui.home.components.GenreSection
 import com.makd.afinity.ui.home.components.HighestRatedSection
 import com.makd.afinity.ui.home.components.ItemsRowSection
+import com.makd.afinity.ui.home.components.LatestGalleryRowSection
+import com.makd.afinity.ui.home.components.LatestMusicVideoRowSection
 import com.makd.afinity.ui.home.components.LibrariesSection
 import com.makd.afinity.ui.home.components.MovieRecommendationSection
 import com.makd.afinity.ui.home.components.NextUpSection
@@ -441,6 +444,7 @@ fun HomeScreen(
                                             title = stringResource(R.string.home_continue_reading),
                                             cardWidth = widthSizeClass.portraitWidth,
                                             aspectRatio = CardDimensions.ASPECT_RATIO_PORTRAIT,
+                                            metadataHeight = CardDimensions.subtitleLine,
                                         )
                                     }
                                 }
@@ -473,6 +477,7 @@ fun HomeScreen(
                                                 stringResource(R.string.home_continue_listening),
                                             cardWidth = widthSizeClass.portraitWidth,
                                             aspectRatio = CardDimensions.ASPECT_RATIO_SQUARE,
+                                            metadataHeight = CardDimensions.subtitleLine,
                                         )
                                     }
                                 }
@@ -755,6 +760,7 @@ fun HomeScreen(
                                         items = books,
                                         onItemClick = onItemClick,
                                         widthSizeClass = widthSizeClass,
+                                        subtitleFor = AfinityBook::authorLine,
                                     )
                                 }
                             }
@@ -767,8 +773,7 @@ fun HomeScreen(
                                 items = uiState.latestAudiobookSections,
                                 key = { (library, _) -> "audiobook_lib_${library.id}" },
                             ) { (library, books) ->
-                                val alsoHasBooks =
-                                    uiState.latestBookSections.any { it.first.id == library.id }
+                                val alsoHasBooks = library.id in uiState.bookLibraryIds
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     AudiobookRowSection(
                                         title =
@@ -782,6 +787,41 @@ fun HomeScreen(
                                         onBookClick = onItemClick,
                                         widthSizeClass = widthSizeClass,
                                         showProgress = false,
+                                    )
+                                }
+                            }
+                        }
+
+                        if (
+                            !uiState.isOffline && HomeRow.LATEST_HOME_VIDEOS !in uiState.hiddenRows
+                        ) {
+                            items(
+                                items = uiState.latestHomeVideoSections,
+                                key = { (library, _) -> "home_video_lib_${library.id}" },
+                            ) { (library, entries) ->
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                    LatestGalleryRowSection(
+                                        title = library.name,
+                                        items = entries,
+                                        onItemClick = onItemClick,
+                                        widthSizeClass = widthSizeClass,
+                                    )
+                                }
+                            }
+                        }
+
+                        if (
+                            !uiState.isOffline && HomeRow.LATEST_MUSIC_VIDEOS !in uiState.hiddenRows
+                        ) {
+                            items(
+                                items = uiState.latestMusicVideoSections,
+                                key = { (library, _) -> "music_video_lib_${library.id}" },
+                            ) { (library, videos) ->
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                    LatestMusicVideoRowSection(
+                                        title = library.name,
+                                        videos = videos,
+                                        onVideoClick = onItemClick,
                                     )
                                 }
                             }

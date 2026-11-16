@@ -17,7 +17,22 @@ enum class CollectionType(val type: String) {
     companion object {
         val defaultValue = Unknown
 
-        val supported = listOf(Movies, TvShows, BoxSets, LiveTv, Music, Playlists, Mixed, Books)
+        val supported =
+            listOf(
+                Movies,
+                TvShows,
+                BoxSets,
+                LiveTv,
+                Music,
+                Playlists,
+                Mixed,
+                Books,
+                MusicVideos,
+                HomeVideos,
+                Photos,
+            )
+
+        val gallery = setOf(HomeVideos, Photos)
 
         fun fromString(string: String?): CollectionType {
             if (string == null) {

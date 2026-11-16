@@ -24,7 +24,7 @@ data class AfinityAudiobook(
     override val providerIds: Map<String, String>?,
     override val externalUrls: List<AfinityExternalUrl>?,
     val album: String?,
-    val people: List<AfinityPerson>,
+    override val people: List<AfinityPerson>,
     val publisher: String?,
     val premiereDate: LocalDateTime?,
     val productionYear: Int?,
@@ -46,6 +46,9 @@ data class AfinityAudiobook(
 
     val authors: List<AfinityPerson>
         get() = people.filter { it.type == PersonKind.AUTHOR }
+
+    val authorLine: String
+        get() = authors.map { it.name }.distinct().joinToString(", ")
 
     val narrators: List<AfinityPerson>
         get() = people.filter { it.type == PersonKind.NARRATOR }

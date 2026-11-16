@@ -94,6 +94,7 @@ fun RowSkeleton(
     aspectRatio: Float,
     modifier: Modifier = Modifier,
     showText: Boolean = true,
+    metadataHeight: Dp = CardDimensions.metadataLine,
 ) {
     Column(modifier = modifier.padding(horizontal = CardDimensions.RowGutter)) {
         HomeSectionHeader(title = title)
@@ -101,7 +102,12 @@ fun RowSkeleton(
         MediaRowSkeleton(
             cardWidth = cardWidth,
             height =
-                if (showText) CardDimensions.rowHeight(cardWidth, aspectRatio)
+                if (showText)
+                    CardDimensions.rowHeight(
+                        cardWidth,
+                        aspectRatio,
+                        metadataHeight = metadataHeight,
+                    )
                 else
                     CardDimensions.rowHeight(
                         cardWidth,
