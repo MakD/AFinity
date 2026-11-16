@@ -3590,4 +3590,6 @@
     <string name="library_provider_none_in_use">Ingen används</string>
     <string name="cd_provider_remove">Sluta använda %1$s</string>
     <string name="cd_provider_add">Använd %1$s</string>
+    <string name="task_duration_under_minute">&lt;1 min</string>
+    <string name="task_took_fmt">tog %1$s</string>
 </resources>

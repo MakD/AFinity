@@ -528,4 +528,12 @@
     <string name="discovery_section_trending_shows_summary">Serie di tendenza a livello mondiale su Cinemeta presenti nella tua libreria</string>
     <string name="hero_content_random_desc">Un insieme casuale di film e serie non ancora visti.</string>
     <string name="hero_content_recommended">Consigliato per te</string>
+    <string name="hero_content_recommended_desc">In base a ciò che hai guardato di recente. Mostra un mix casuale finché non hai una cronologia di visualizzazione.</string>
+    <string name="hero_content_recently_added">Aggiunti di Recente</string>
+    <string name="hero_content_recently_added_desc">I film e le serie tv più recenti che non hai ancora visto.</string>
+    <string name="hero_content_collection">Raccolta o playlist</string>
+    <string name="hero_content_collection_desc">Ruota tra una raccolta o una playlist di video.</string>
+    <string name="hero_content_custom_filter">Filtro personalizzato</string>
+    <string name="hero_content_custom_filter_desc">Film e programmi che corrispondono ai generi, agli studi di produzione o ai tag selezionati, con la possibilità di affinare ulteriormente i risultati.</string>
+    <string name="hero_content_group_slides">Diapositive</string>
 </resources>
