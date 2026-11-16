@@ -155,9 +155,9 @@ private fun imageOptionsJson(values: List<ImageOptionValue>): JsonArray =
                     "Type" to JsonPrimitive(option.type),
                     "Limit" to JsonPrimitive(option.limit),
                     "MinWidth" to JsonPrimitive(option.minWidth),
-                )
+                ),
             )
-        }
+        },
     )
 
 private fun JsonElement.isEntry(entry: ProviderEntry): Boolean {
@@ -186,7 +186,7 @@ private fun ConfigFormUiState.withEntryValues(
     val index = current.indexOfFirst { it.isEntry(entry) }
     if (index < 0) {
         return JsonArray(
-            current + JsonObject(mapOf(entry.idKey to JsonPrimitive(entry.id)) + values)
+            current + JsonObject(mapOf(entry.idKey to JsonPrimitive(entry.id)) + values),
         )
     }
     val existing = current[index] as JsonObject
@@ -224,7 +224,7 @@ private fun List<ProviderRow>.applyEdit(edit: ProviderEdit): List<ProviderRow> {
 private fun JsonObject.valueAt(path: String): JsonElement? =
     if (PATH_SEPARATOR in path) {
         (this[path.substringBefore(PATH_SEPARATOR)] as? JsonObject)?.get(
-            path.substringAfter(PATH_SEPARATOR)
+            path.substringAfter(PATH_SEPARATOR),
         )
     } else {
         this[path]

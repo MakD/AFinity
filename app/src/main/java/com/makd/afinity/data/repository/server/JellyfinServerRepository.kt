@@ -96,11 +96,11 @@ constructor(
                             _currentBaseUrl.value = session.serverUrl
                             _isConnected.value = sessionManager.isServerReachable.value
                             Timber.d(
-                                "JellyfinServerRepository: Updated current server to ${server.name} (${server.id}). Connected: ${_isConnected.value}"
+                                "JellyfinServerRepository: Updated current server to ${server.name} (${server.id}). Connected: ${_isConnected.value}",
                             )
                         } else {
                             Timber.w(
-                                "JellyfinServerRepository: Session changed but server ${session.serverId} not found in database"
+                                "JellyfinServerRepository: Session changed but server ${session.serverId} not found in database",
                             )
                         }
                     } catch (e: CancellationException) {
@@ -178,7 +178,7 @@ constructor(
                     sessionManager.setServerReachable(true)
                     if (result.address != _currentBaseUrl.value) {
                         Timber.d(
-                            "Reconnected: updating URL from ${_currentBaseUrl.value} to ${result.address}"
+                            "Reconnected: updating URL from ${_currentBaseUrl.value} to ${result.address}",
                         )
                         setBaseUrl(result.address)
                         sessionManager.updateSessionUrl(result.address)
@@ -334,10 +334,10 @@ constructor(
 
                     if (!ServerVersionSupport.isSupported(systemInfo.version)) {
                         Timber.w(
-                            "Rejecting server at $url: version ${systemInfo.version} is below ${ServerVersionSupport.minimum}"
+                            "Rejecting server at $url: version ${systemInfo.version} is below ${ServerVersionSupport.minimum}",
                         )
                         return@withContext ServerConnectionResult.Error(
-                            ServerVersionSupport.unsupportedMessage(context, systemInfo.version)
+                            ServerVersionSupport.unsupportedMessage(context, systemInfo.version),
                         )
                     }
                     val server =
@@ -369,7 +369,7 @@ constructor(
                 )
             ) {
                 Timber.w(
-                    "Server test failed and local network permission is not granted for $serverAddress"
+                    "Server test failed and local network permission is not granted for $serverAddress",
                 )
                 return@withContext ServerConnectionResult.LocalNetworkPermissionRequired
             }
@@ -377,12 +377,12 @@ constructor(
             if (lastException is ApiClientException) {
                 Timber.e(lastException, "API error testing server connection")
                 ServerConnectionResult.Error(
-                    "Server error: ${lastException.message ?: "Unknown API error"}"
+                    "Server error: ${lastException.message ?: "Unknown API error"}",
                 )
             } else {
                 Timber.e(lastException, "Network error testing server connection")
                 ServerConnectionResult.Error(
-                    "Failed to connect: ${lastException?.message ?: "Check server address and network connection"}"
+                    "Failed to connect: ${lastException?.message ?: "Check server address and network connection"}",
                 )
             }
         }
@@ -472,7 +472,7 @@ constructor(
                         null
                     } else {
                         Timber.e(
-                            "Connected server is Jellyfin ${systemInfo.version}, below the required ${ServerVersionSupport.minimum}"
+                            "Connected server is Jellyfin ${systemInfo.version}, below the required ${ServerVersionSupport.minimum}",
                         )
                         systemInfo.version
                     }

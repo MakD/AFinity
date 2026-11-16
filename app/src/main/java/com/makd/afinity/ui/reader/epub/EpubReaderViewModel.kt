@@ -368,7 +368,7 @@ constructor(
                 if (book == null) {
                     fail(
                         if (remote == null || remote.isFailure) ReaderError.NETWORK
-                        else ReaderError.NOT_FOUND
+                        else ReaderError.NOT_FOUND,
                     )
                     return@launch
                 }
@@ -450,7 +450,7 @@ constructor(
                         BookOpenError.PASSWORD_PROTECTED -> ReaderError.PASSWORD_PROTECTED
                         BookOpenError.NO_PAGES -> ReaderError.NO_PAGES
                         BookOpenError.CORRUPT -> ReaderError.CORRUPT
-                    }
+                    },
                 )
             } catch (e: CancellationException) {
                 throw e
@@ -472,7 +472,7 @@ constructor(
                         httpClient = httpClient,
                         assetRetriever = assetRetriever,
                         pdfFactory = null,
-                    )
+                    ),
             )
         val asset =
             assetRetriever.retrieve(file, MediaType.EPUB).getOrElse { error ->

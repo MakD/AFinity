@@ -96,7 +96,7 @@ fun LibrariesScreen(
                     modifier =
                         Modifier.fillMaxSize()
                             .windowInsetsPadding(
-                                WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                                WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal),
                             ),
                 ) {
                     items(

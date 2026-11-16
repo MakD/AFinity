@@ -204,7 +204,7 @@ private fun rememberTimeline(book: AfinityAudiobook): List<BookChapter> {
         book.timeline().map { chapter ->
             if (chapter.title.isBlank()) {
                 chapter.copy(
-                    title = resources.getString(R.string.chapter_number_fmt, chapter.id + 1)
+                    title = resources.getString(R.string.chapter_number_fmt, chapter.id + 1),
                 )
             } else {
                 chapter
@@ -532,7 +532,7 @@ private fun AudiobookDetailsSection(book: AfinityAudiobook) {
                             SpanStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Medium,
-                            )
+                            ),
                         ) {
                             append(value)
                         }

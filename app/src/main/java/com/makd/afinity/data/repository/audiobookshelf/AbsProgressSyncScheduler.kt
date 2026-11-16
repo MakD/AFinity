@@ -35,7 +35,7 @@ constructor(@param:ApplicationContext private val context: Context) {
                 .enqueueUniqueWork(SYNC_WORK_NAME, ExistingWorkPolicy.REPLACE, request)
 
             Timber.d(
-                "ABS progress sync scheduled for serverId=$serverId (runs when network available)"
+                "ABS progress sync scheduled for serverId=$serverId (runs when network available)",
             )
         } catch (e: Exception) {
             Timber.e(e, "Failed to schedule ABS progress sync")

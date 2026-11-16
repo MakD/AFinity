@@ -88,7 +88,7 @@ fun QualitySelectionDialog(
         remember(initialQualityBitrate, qualityOptions) {
             mutableStateOf(
                 initialQualityBitrate.takeIf { it in qualityOptions }
-                    ?: VideoQuality.ORIGINAL_BITRATE
+                    ?: VideoQuality.ORIGINAL_BITRATE,
             )
         }
     val imageSubtitles =
@@ -110,7 +110,7 @@ fun QualitySelectionDialog(
     var audioStreamIndex by
         remember(selectedSource) {
             mutableStateOf(
-                (audioStreams.firstOrNull { it.isDefault } ?: audioStreams.firstOrNull())?.index
+                (audioStreams.firstOrNull { it.isDefault } ?: audioStreams.firstOrNull())?.index,
             )
         }
 
@@ -121,7 +121,7 @@ fun QualitySelectionDialog(
                     text =
                         stringResource(
                             if (showSourcePicker) R.string.quality_dialog_title
-                            else R.string.action_download
+                            else R.string.action_download,
                         ),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,

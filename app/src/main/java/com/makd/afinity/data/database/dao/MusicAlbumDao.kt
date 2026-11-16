@@ -17,28 +17,28 @@ interface MusicAlbumDao {
     suspend fun insertAll(albums: List<MusicAlbumEntity>)
 
     @Query(
-        "SELECT * FROM music_albums WHERE id = :id AND serverId = :serverId AND userId = :userId LIMIT 1"
+        "SELECT * FROM music_albums WHERE id = :id AND serverId = :serverId AND userId = :userId LIMIT 1",
     )
     suspend fun getById(id: String, serverId: String, userId: String): MusicAlbumEntity?
 
     @Query(
-        "SELECT * FROM music_albums WHERE serverId = :serverId AND userId = :userId ORDER BY name ASC"
+        "SELECT * FROM music_albums WHERE serverId = :serverId AND userId = :userId ORDER BY name ASC",
     )
     fun getAllFlow(serverId: String, userId: String): Flow<List<MusicAlbumEntity>>
 
     @Query(
-        "SELECT * FROM music_albums WHERE serverId = :serverId AND userId = :userId ORDER BY name ASC"
+        "SELECT * FROM music_albums WHERE serverId = :serverId AND userId = :userId ORDER BY name ASC",
     )
     suspend fun getAll(serverId: String, userId: String): List<MusicAlbumEntity>
 
     @Query(
-        "UPDATE music_albums SET localImagePath = :path WHERE id = :id AND serverId = :serverId AND userId = :userId"
+        "UPDATE music_albums SET localImagePath = :path WHERE id = :id AND serverId = :serverId AND userId = :userId",
     )
     suspend fun updateLocalImagePath(id: String, serverId: String, userId: String, path: String)
 
     @Query(
         "UPDATE music_albums SET overview = :overview, externalUrls = :externalUrls " +
-            "WHERE id = :id AND serverId = :serverId AND userId = :userId"
+            "WHERE id = :id AND serverId = :serverId AND userId = :userId",
     )
     suspend fun updateDetails(
         id: String,
@@ -50,13 +50,13 @@ interface MusicAlbumDao {
 
     @Query(
         "UPDATE music_albums SET artistImagePath = :path " +
-            "WHERE id = :id AND serverId = :serverId AND userId = :userId"
+            "WHERE id = :id AND serverId = :serverId AND userId = :userId",
     )
     suspend fun updateArtistImagePath(id: String, serverId: String, userId: String, path: String)
 
     @Query(
         "SELECT artistImagePath FROM music_albums WHERE artistId = :artistId " +
-            "AND serverId = :serverId AND userId = :userId AND artistImagePath IS NOT NULL LIMIT 1"
+            "AND serverId = :serverId AND userId = :userId AND artistImagePath IS NOT NULL LIMIT 1",
     )
     suspend fun getArtistImagePath(artistId: String, serverId: String, userId: String): String?
 

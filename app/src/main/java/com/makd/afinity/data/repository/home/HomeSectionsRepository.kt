@@ -332,7 +332,7 @@ constructor(
         _pinnedLayout.value =
             visible
                 .sortedWith(
-                    compareByDescending<CustomHomeSection> { it.isSeasonal }.thenBy { it.position }
+                    compareByDescending<CustomHomeSection> { it.isSeasonal }.thenBy { it.position },
                 )
                 .map { section ->
                     HomeSectionDescriptor(
@@ -585,7 +585,7 @@ constructor(
                             retainPinnedContent()
                             _layout.value = reinterleave(cachedLayout.distinctBy { it.key })
                             Timber.d(
-                                "Home layout restored from cache (${cachedLayout.size} sections)"
+                                "Home layout restored from cache (${cachedLayout.size} sections)",
                             )
                             return@launch
                         }
@@ -834,7 +834,7 @@ constructor(
             return
         }
         enqueueHydration(
-            list.subList(index, minOf(index + HYDRATE_AHEAD, list.size)).map { it.key }
+            list.subList(index, minOf(index + HYDRATE_AHEAD, list.size)).map { it.key },
         )
     }
 
@@ -994,7 +994,7 @@ constructor(
         if (keys.isEmpty()) return
         val (rendered, offScreen) = keys.partition { _content.value.containsKey(it) }
         Timber.d(
-            "Refreshing pinned home sections ($reason): ${rendered.size} on screen, ${offScreen.size} deferred"
+            "Refreshing pinned home sections ($reason): ${rendered.size} on screen, ${offScreen.size} deferred",
         )
         if (offScreen.isNotEmpty()) {
             scope.launch(Dispatchers.IO) {
@@ -1024,7 +1024,7 @@ constructor(
         if (keys.isEmpty()) return
         val (rendered, offScreen) = keys.partition { _content.value.containsKey(it) }
         Timber.d(
-            "Refreshing discovery home sections ($reason): ${rendered.size} on screen, ${offScreen.size} deferred"
+            "Refreshing discovery home sections ($reason): ${rendered.size} on screen, ${offScreen.size} deferred",
         )
         if (offScreen.isNotEmpty()) {
             scope.launch(Dispatchers.IO) {
@@ -1115,8 +1115,8 @@ constructor(
                     HomeSectionContent.Movie(
                         content.section.copy(
                             recommendedItems =
-                                content.section.recommendedItems.filterNot { matches(it.id) }
-                        )
+                                content.section.recommendedItems.filterNot { matches(it.id) },
+                        ),
                     )
                 } else {
                     content
@@ -1216,8 +1216,8 @@ constructor(
                             recommendedItems =
                                 content.section.recommendedItems.map {
                                     if (it.id == updatedItem.id) updatedItem else it
-                                }
-                        )
+                                },
+                        ),
                     )
                 } else {
                     content
@@ -1338,7 +1338,7 @@ constructor(
             peopleRepository.getPersonSection(personWithCount, sectionType, bypassCache)
                 ?: return HomeSectionContent.Empty
         return HomeSectionContent.Person(
-            section.copy(items = presentationOrder(descriptor.key, section.items))
+            section.copy(items = presentationOrder(descriptor.key, section.items)),
         )
     }
 
@@ -1369,7 +1369,7 @@ constructor(
                     referenceMovie = referenceMovie,
                     recommendedItems = presentationSample(descriptor.key, cachedItems, ROW_SIZE),
                     sectionType = sectionType,
-                )
+                ),
             )
         }
 
@@ -1386,7 +1386,7 @@ constructor(
                 referenceMovie = referenceMovie,
                 recommendedItems = presentationSample(descriptor.key, pool, ROW_SIZE),
                 sectionType = sectionType,
-            )
+            ),
         )
     }
 
@@ -1814,7 +1814,7 @@ constructor(
                     referenceMovie = referenceMovie,
                     items = presentationSample(descriptor.key, cachedItems, ROW_SIZE),
                     sectionType = sectionType,
-                )
+                ),
             )
         }
 
@@ -1841,7 +1841,7 @@ constructor(
                 referenceMovie = referenceMovie,
                 items = presentationSample(descriptor.key, personMovies, ROW_SIZE),
                 sectionType = sectionType,
-            )
+            ),
         )
     }
 
@@ -1857,7 +1857,7 @@ constructor(
                 homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
         if (!cachedItems.isNullOrEmpty()) {
             return HomeSectionContent.Spotlight(
-                presentationSample(descriptor.key, cachedItems, SPOTLIGHT_ROW_SIZE)
+                presentationSample(descriptor.key, cachedItems, SPOTLIGHT_ROW_SIZE),
             )
         }
 
@@ -1910,7 +1910,7 @@ constructor(
 
         homeCacheRepository.putItems(cacheKey, pool)
         return HomeSectionContent.Spotlight(
-            presentationSample(descriptor.key, pool, SPOTLIGHT_ROW_SIZE)
+            presentationSample(descriptor.key, pool, SPOTLIGHT_ROW_SIZE),
         )
     }
 
@@ -2028,7 +2028,7 @@ constructor(
                                 referenceMovie.name,
                             ),
                         referenceMovieJson = movieJson,
-                    )
+                    ),
                 )
             }
 
@@ -2046,7 +2046,7 @@ constructor(
                         title =
                             context.getString(R.string.home_because_you_liked, referenceMovie.name),
                         referenceMovieJson = movieJson,
-                    )
+                    ),
                 )
             }
 
@@ -2099,7 +2099,7 @@ constructor(
                                 context.getString(titleRes, selectedPerson.name, randomMovie.name),
                             person = PersonWithCount(selectedPerson, 0).toCached(),
                             referenceMovieJson = movieJson,
-                        )
+                        ),
                     )
                     added++
                 }
@@ -2141,7 +2141,7 @@ constructor(
                                         genre.name,
                                     ),
                                 genreName = genre.name,
-                            )
+                            ),
                         )
                     }
                 genres
@@ -2159,7 +2159,7 @@ constructor(
                                         genre.name,
                                     ),
                                 genreName = genre.name,
-                            )
+                            ),
                         )
                     }
                 studiosDeferred.await().shuffled().take(10).forEach { studio ->
@@ -2170,7 +2170,7 @@ constructor(
                             title =
                                 context.getString(R.string.home_best_of_studio_fmt, studio.name),
                             studioName = studio.name,
-                        )
+                        ),
                     )
                 }
                 boxSetsDeferred.await().shuffled().take(8).forEach { boxSet ->
@@ -2180,7 +2180,7 @@ constructor(
                             type = HomeSectionType.SPOTLIGHT_BOXSET,
                             title = boxSet.name.orEmpty(),
                             boxSetId = boxSet.id.toString(),
-                        )
+                        ),
                     )
                 }
             }
@@ -2217,7 +2217,7 @@ constructor(
         }
 
     private fun reinterleave(
-        descriptors: List<HomeSectionDescriptor>
+        descriptors: List<HomeSectionDescriptor>,
     ): List<HomeSectionDescriptor> {
         val genres =
             descriptors

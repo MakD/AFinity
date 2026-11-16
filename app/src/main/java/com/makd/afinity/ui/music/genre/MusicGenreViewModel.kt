@@ -121,7 +121,7 @@ constructor(
                         trackDownloadInfos =
                             allDownloads
                                 .filter { d -> d.itemType == "Audio" }
-                                .associateBy { d -> d.itemId }
+                                .associateBy { d -> d.itemId },
                     )
                 }
             }

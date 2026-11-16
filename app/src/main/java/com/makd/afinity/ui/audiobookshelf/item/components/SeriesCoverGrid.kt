@@ -24,7 +24,7 @@ import com.makd.afinity.ui.audiobookshelf.withAbsWidth
 fun SeriesCoverGrid(coverUrls: List<String>, modifier: Modifier = Modifier) {
     BoxWithConstraints(
         modifier =
-            modifier.aspectRatio(1f).clip(RoundedCornerShape(8.dp)).background(Color.Transparent)
+            modifier.aspectRatio(1f).clip(RoundedCornerShape(8.dp)).background(Color.Transparent),
     ) {
         val density = LocalDensity.current
         val gridPx = with(density) { maxWidth.roundToPx() }

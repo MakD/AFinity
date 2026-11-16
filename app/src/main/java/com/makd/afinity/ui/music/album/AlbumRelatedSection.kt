@@ -53,7 +53,7 @@ fun AlbumRelatedSection(
                                 interactionSource = remember { MutableInteractionSource() },
                                 onClick = onViewAllClick,
                             )
-                        else Modifier
+                        else Modifier,
                     )
                     .padding(top = 32.dp, bottom = 16.dp),
         ) {

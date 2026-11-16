@@ -10,7 +10,7 @@ import com.makd.afinity.data.database.entities.AudibleRatingEntity
 interface AudibleRatingDao {
 
     @Query(
-        "SELECT * FROM audible_ratings WHERE itemId = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "SELECT * FROM audible_ratings WHERE itemId = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun getRating(itemId: String, serverId: String, userId: String): AudibleRatingEntity?
 
@@ -18,7 +18,7 @@ interface AudibleRatingDao {
     suspend fun insertRating(rating: AudibleRatingEntity)
 
     @Query(
-        "DELETE FROM audible_ratings WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM audible_ratings WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun deleteAllRatings(serverId: String, userId: String)
 

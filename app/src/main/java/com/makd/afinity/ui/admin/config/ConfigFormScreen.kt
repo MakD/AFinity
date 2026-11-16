@@ -814,7 +814,7 @@ private fun InUseProviderRow(
                     contentDescription = stringResource(R.string.cd_provider_drag_reorder),
                     tint =
                         MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                            alpha = if (enabled) 0.5f else 0.25f
+                            alpha = if (enabled) 0.5f else 0.25f,
                         ),
                     modifier = handleModifier.padding(12.dp).size(24.dp),
                 )
@@ -989,7 +989,7 @@ private fun ImageOptionsDialog(
                                     option.copy(limit = maxOf(option.limit, 1))
                                 else -> option.copy(limit = 0)
                             }
-                        }
+                        },
                     )
                 },
                 enabled = isValid,
@@ -1037,7 +1037,7 @@ internal fun ConfigSaveButton(saving: Boolean, enabled: Boolean, onSave: () -> U
             }
             Text(
                 if (saving) stringResource(R.string.admin_saving)
-                else stringResource(R.string.admin_save_changes)
+                else stringResource(R.string.admin_save_changes),
             )
         }
     }

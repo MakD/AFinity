@@ -135,7 +135,7 @@ fun AbsCastRemote(
                     painter =
                         painterResource(
                             if (hasBookmarks) R.drawable.ic_bookmark_filled
-                            else R.drawable.ic_bookmark
+                            else R.drawable.ic_bookmark,
                         ),
                     label = stringResource(R.string.cd_abs_bookmarks),
                     onClick = onOpenBookmarks,
@@ -147,7 +147,7 @@ fun AbsCastRemote(
                 painter =
                     painterResource(
                         if (playbackState.hasSleepTimer) R.drawable.ic_moon_filled
-                        else R.drawable.ic_moon
+                        else R.drawable.ic_moon,
                     ),
                 label = stringResource(R.string.cd_music_sleep_timer),
                 onClick = onOpenSleepTimer,

@@ -100,11 +100,11 @@ fun ChapterSwitcher(
                     Modifier.fillMaxWidth()
                         .windowInsetsPadding(
                             WindowInsets.systemBarsIgnoringVisibility.only(
-                                WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
-                            )
+                                WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
+                            ),
                         )
                         .windowInsetsPadding(
-                            WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                            WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal),
                         )
                         .padding(horizontal = 16.dp, vertical = 16.dp)
                         .clickable(
@@ -170,7 +170,7 @@ private fun ChapterSwitcherCard(
                         color =
                             if (isCurrent) MaterialTheme.colorScheme.primary else Color.Transparent,
                         shape = RoundedCornerShape(12.dp),
-                    )
+                    ),
         ) {
             if (imageUrl != null) {
                 AsyncImage(
@@ -205,7 +205,7 @@ private fun ChapterSwitcherCard(
                                 endY = size.height,
                             )
                         onDrawBehind { drawRect(gradient) }
-                    }
+                    },
             )
 
             Surface(

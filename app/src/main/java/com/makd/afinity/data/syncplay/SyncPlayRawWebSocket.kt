@@ -159,7 +159,7 @@ constructor(
                         else SyncPlayGroupEvent.GroupLeft(groupInfo.groupId)
                     _groupEvents.emit(event)
                     Timber.d(
-                        "SyncPlay raw: $groupUpdateType — group=${groupInfo.groupName}, state=${groupInfo.state}"
+                        "SyncPlay raw: $groupUpdateType — group=${groupInfo.groupName}, state=${groupInfo.state}",
                     )
                 }
                 GroupUpdateType.STATE_UPDATE -> {
@@ -205,7 +205,7 @@ constructor(
                         )
                     _playQueueUpdates.emit(update)
                     Timber.d(
-                        "SyncPlay raw: PLAY_QUEUE — ${update.playlist.size} items, idx=${update.playingItemIndex}"
+                        "SyncPlay raw: PLAY_QUEUE — ${update.playlist.size} items, idx=${update.playingItemIndex}",
                     )
                 }
                 else -> {}

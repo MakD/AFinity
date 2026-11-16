@@ -56,7 +56,7 @@ constructor(
                 val session =
                     sessionManager.currentSession.value
                         ?: return@withContext Result.failure(
-                            workDataOf("error" to "No active session")
+                            workDataOf("error" to "No active session"),
                         )
 
                 val apiClient =

@@ -45,7 +45,7 @@ class JellyfinItemsPagingSource(
             val page = params.key ?: 0
 
             Timber.d(
-                "PagingSource load: page=$page, nameStartsWith='$nameStartsWith', libraryType=$libraryType"
+                "PagingSource load: page=$page, nameStartsWith='$nameStartsWith', libraryType=$libraryType",
             )
 
             val includeTypes =
@@ -95,7 +95,7 @@ class JellyfinItemsPagingSource(
             val items = response.items.mapNotNull { it.toAfinityItem(baseUrl) }
 
             Timber.d(
-                "PagingSource: Loaded ${items.size} items for nameStartsWith='$nameStartsWith'"
+                "PagingSource: Loaded ${items.size} items for nameStartsWith='$nameStartsWith'",
             )
 
             LoadResult.Page(
@@ -168,7 +168,7 @@ class JellyfinItemsPagingSource(
                         )
                         .getOrThrow()
                         .items
-                        .map { it.id }
+                        .map { it.id },
                 )
                 .also { shuffledIds = it }
     }

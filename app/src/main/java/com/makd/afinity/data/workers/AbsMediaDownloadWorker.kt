@@ -81,7 +81,7 @@ constructor(
             val downloadIdStr =
                 inputData.getString(AbsDownloadRepositoryImpl.KEY_DOWNLOAD_ID)
                     ?: return@withContext Result.failure(
-                        workDataOf("error" to "Missing download ID")
+                        workDataOf("error" to "Missing download ID"),
                     )
             val downloadId = runCatching {
                 UUID.fromString(downloadIdStr)
@@ -93,18 +93,18 @@ constructor(
             val libraryItemId =
                 inputData.getString(AbsDownloadRepositoryImpl.KEY_LIBRARY_ITEM_ID)
                     ?: return@withContext Result.failure(
-                        workDataOf("error" to "Missing libraryItemId")
+                        workDataOf("error" to "Missing libraryItemId"),
                     )
             val episodeId = inputData.getString(AbsDownloadRepositoryImpl.KEY_EPISODE_ID)
 
             val entity =
                 absDownloadDao.getById(downloadId)
                     ?: return@withContext Result.failure(
-                        workDataOf("error" to "Download record not found")
+                        workDataOf("error" to "Download record not found"),
                     )
 
             Timber.d(
-                "AbsDownload: entity loaded — serverId=${entity.jellyfinServerId} userId=${entity.jellyfinUserId} libraryItemId=${entity.libraryItemId} episodeId=${entity.episodeId}"
+                "AbsDownload: entity loaded — serverId=${entity.jellyfinServerId} userId=${entity.jellyfinUserId} libraryItemId=${entity.libraryItemId} episodeId=${entity.episodeId}",
             )
 
             try {
@@ -118,7 +118,7 @@ constructor(
                         null,
                         0f,
                         appContext.getString(R.string.download_status_queued),
-                    )
+                    ),
                 )
             } catch (e: CancellationException) {
                 throw e
@@ -148,7 +148,7 @@ constructor(
                         ?: run {
                             markFailed(downloadId, "No ABS server URL available")
                             return@withContext Result.failure(
-                                workDataOf("error" to "No ABS server URL")
+                                workDataOf("error" to "No ABS server URL"),
                             )
                         }
 
@@ -157,7 +157,7 @@ constructor(
                         apiService.get().getItem(libraryItemId, expanded = 1, include = null)
                     if (!response.isSuccessful || response.body() == null) {
                         throw Exception(
-                            "Item API returned ${response.code()}: ${response.message()}"
+                            "Item API returned ${response.code()}: ${response.message()}",
                         )
                     }
                     response.body()!!
@@ -195,7 +195,7 @@ constructor(
                                 addedAt = item.addedAt,
                                 updatedAt = item.updatedAt,
                                 cachedAt = System.currentTimeMillis(),
-                            )
+                            ),
                         )
                         item.media.episodes?.let { episodes ->
                             audiobookshelfDao.replaceEpisodesForItem(
@@ -213,7 +213,7 @@ constructor(
                             )
                         }
                         Timber.d(
-                            "AbsDownload: cached item $libraryItemId for offline browsing (${item.media.episodes?.size ?: 0} episodes)"
+                            "AbsDownload: cached item $libraryItemId for offline browsing (${item.media.episodes?.size ?: 0} episodes)",
                         )
                     }
                         .onFailure {
@@ -230,17 +230,17 @@ constructor(
                     val episode = item.media?.episodes?.find { it.id == episodeId }
                     if (episode == null) {
                         Timber.e(
-                            "AbsDownload: episode $episodeId not found. Episodes in response: ${item.media?.episodes?.map { it.id }}"
+                            "AbsDownload: episode $episodeId not found. Episodes in response: ${item.media?.episodes?.map { it.id }}",
                         )
                         markFailed(downloadId, "Episode $episodeId not found in item response")
                         return@withContext Result.failure(
-                            workDataOf("error" to "Episode not found")
+                            workDataOf("error" to "Episode not found"),
                         )
                     }
                     val audioFile = episode.audioFile
                     if (audioFile == null) {
                         Timber.e(
-                            "AbsDownload: episode $episodeId has no audioFile. audioTrack=${episode.audioTrack?.contentUrl}"
+                            "AbsDownload: episode $episodeId has no audioFile. audioTrack=${episode.audioTrack?.contentUrl}",
                         )
                         markFailed(
                             downloadId,
@@ -249,7 +249,7 @@ constructor(
                         return@withContext Result.failure(workDataOf("error" to "No audio file"))
                     }
                     Timber.d(
-                        "AbsDownload: episode audioFile ino=${audioFile.ino}, filename=${audioFile.metadata.filename}"
+                        "AbsDownload: episode audioFile ino=${audioFile.ino}, filename=${audioFile.metadata.filename}",
                     )
                     audioFilesToDownload = listOf(audioFile)
                     episodeDuration = episode.duration ?: audioFile.duration ?: 0.0
@@ -260,7 +260,7 @@ constructor(
                             entity.copy(
                                 episodeDescription = episode.description,
                                 publishedAt = episode.publishedAt,
-                            )
+                            ),
                         )
                     }
                 } else {
@@ -309,7 +309,7 @@ constructor(
                             tracksTotal = audioFilesToDownload.size,
                             coverUrl = "$baseUrl/api/items/$libraryItemId/cover",
                             updatedAt = System.currentTimeMillis(),
-                        )
+                        ),
                 )
 
                 val localCoverPath = downloadCover(libraryItemId, baseUrl, token, localDir)
@@ -319,7 +319,7 @@ constructor(
                             current.copy(
                                 coverUrl = localCoverPath,
                                 updatedAt = System.currentTimeMillis(),
-                            )
+                            ),
                         )
                     }
                 }
@@ -392,7 +392,7 @@ constructor(
                             val serverIgnoredRange = resumeFrom > 0 && response.code == 200
                             if (serverIgnoredRange) {
                                 Timber.w(
-                                    "Server ignored Range header, restarting track from byte 0"
+                                    "Server ignored Range header, restarting track from byte 0",
                                 )
                                 trackBytesDownloaded = 0L
                                 downloadedBytesAllTracks -= resumeFrom
@@ -470,7 +470,7 @@ constructor(
                     if (outputFile.exists() && !outputFile.renameTo(finalFile)) {
                         markFailed(downloadId, "Failed to move track $index into place")
                         return@withContext Result.failure(
-                            workDataOf("error" to "Failed to move track $index into place")
+                            workDataOf("error" to "Failed to move track $index into place"),
                         )
                     }
                     localTrackPaths.add(finalFile.absolutePath)
@@ -576,7 +576,7 @@ constructor(
                 downloadNotificationManager.cleanupActiveSummary(downloadId.hashCode())
 
                 Timber.d(
-                    "AbsDownload: completed $libraryItemId / $episodeId — ${audioFilesToDownload.size} tracks"
+                    "AbsDownload: completed $libraryItemId / $episodeId — ${audioFilesToDownload.size} tracks",
                 )
                 Result.success()
             }
@@ -709,7 +709,7 @@ constructor(
                     NOTIFICATION_CHANNEL_ID,
                     appContext.getString(R.string.notif_channel_audiobook_downloads),
                     NotificationManager.IMPORTANCE_LOW,
-                )
+                ),
             )
         }
         val notification =
@@ -751,7 +751,7 @@ constructor(
                     R.string.notif_track_progress_fmt,
                     trackIndex + 1,
                     tracksTotal,
-                )
+                ),
             )
         if (totalBytes > 0) {
             add("${downloadedBytes * 100 / totalBytes}%")
@@ -760,7 +760,7 @@ constructor(
                     R.string.notif_download_progress_fmt,
                     formatFileSize(appContext, downloadedBytes),
                     formatFileSize(appContext, totalBytes),
-                )
+                ),
             )
         } else {
             add(formatFileSize(appContext, downloadedBytes))

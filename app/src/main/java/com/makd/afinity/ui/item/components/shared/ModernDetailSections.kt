@@ -189,7 +189,7 @@ fun DetailFactsPanel(
         ) {
             if (directors.isNotEmpty()) {
                 FactRow(
-                    label = pluralStringResource(R.plurals.detail_fact_director, directors.size)
+                    label = pluralStringResource(R.plurals.detail_fact_director, directors.size),
                 ) {
                     FactText(directors.joinToString(", ") { it.name })
                 }
@@ -201,7 +201,7 @@ fun DetailFactsPanel(
             }
             if (producers.isNotEmpty()) {
                 FactRow(
-                    label = pluralStringResource(R.plurals.detail_fact_producer, producers.size)
+                    label = pluralStringResource(R.plurals.detail_fact_producer, producers.size),
                 ) {
                     FactText(producers.joinToString(", ") { it.name })
                 }

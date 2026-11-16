@@ -258,14 +258,14 @@ object TrackSelection {
     }
 
     private fun orderedCandidates(
-        subtitleStreams: List<AfinityMediaStream>
+        subtitleStreams: List<AfinityMediaStream>,
     ): List<IndexedValue<AfinityMediaStream>> =
         subtitleStreams
             .withIndex()
             .sortedWith(
                 compareByDescending<IndexedValue<AfinityMediaStream>> { it.value.isExternal }
                     .thenByDescending { codecPriority(it.value.codec) }
-                    .thenBy { it.index }
+                    .thenBy { it.index },
             )
 
     private fun List<IndexedValue<AfinityMediaStream>>.firstFull(
@@ -278,12 +278,12 @@ object TrackSelection {
             compareByDescending<IndexedValue<AfinityMediaStream>> {
                     it.value.isHearingImpaired == preferHearingImpaired
                 }
-                .thenByDescending { it.value.isDefault }
+                .thenByDescending { it.value.isDefault },
         )
         .firstOrNull()
 
     private fun List<IndexedValue<AfinityMediaStream>>.firstForced(
-        language: String
+        language: String,
     ): IndexedValue<AfinityMediaStream>? =
         firstOrNull { it.value.isForced && matches(it.value, language) }
             ?: firstOrNull { it.value.isForced && it.value.isDefault }

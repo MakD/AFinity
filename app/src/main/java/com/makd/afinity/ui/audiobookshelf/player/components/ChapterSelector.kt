@@ -103,7 +103,7 @@ private fun ChapterRow(chapter: BookChapter, index: Int, isCurrent: Boolean, onC
                 .clickable(role = Role.Button, onClick = onClick)
                 .background(
                     if (isCurrent) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    else MaterialTheme.colorScheme.surface
+                    else MaterialTheme.colorScheme.surface,
                 )
                 .padding(horizontal = 24.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -114,7 +114,7 @@ private fun ChapterRow(chapter: BookChapter, index: Int, isCurrent: Boolean, onC
                     .clip(CircleShape)
                     .background(
                         if (isCurrent) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.surfaceContainer
+                        else MaterialTheme.colorScheme.surfaceContainer,
                     ),
             contentAlignment = Alignment.Center,
         ) {
@@ -141,7 +141,7 @@ private fun ChapterRow(chapter: BookChapter, index: Int, isCurrent: Boolean, onC
                 text = chapter.title,
                 style =
                     MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium
+                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
                     ),
                 color =
                     if (isCurrent) MaterialTheme.colorScheme.primary
@@ -163,7 +163,7 @@ private fun ChapterRow(chapter: BookChapter, index: Int, isCurrent: Boolean, onC
             modifier =
                 Modifier.clip(RoundedCornerShape(8.dp))
                     .background(MaterialTheme.colorScheme.surfaceContainer)
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
         ) {
             Text(
                 text = formatRuntimeSeconds(chapter.end - chapter.start),

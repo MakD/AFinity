@@ -161,7 +161,7 @@ fun ActivityScreen(
                     onRefresh = {
                         items.refresh()
                         viewModel.onRefreshed()
-                    }
+                    },
                 )
             }
 
@@ -406,7 +406,7 @@ private fun TimelineEntry(entry: ActivityEntry, followsEntry: Boolean, precedesE
                 .height(IntrinsicSize.Min)
                 .clip(RoundedCornerShape(14.dp))
                 .background(rowTint)
-                .padding(horizontal = ROW_HORIZONTAL_PADDING)
+                .padding(horizontal = ROW_HORIZONTAL_PADDING),
     ) {
         Box(
             modifier =

@@ -185,7 +185,9 @@ fun RequestConfirmationDialog(
                 if (isManagementMode && !headerImageUrl.isNullOrBlank()) {
                     Box(
                         modifier =
-                            Modifier.fillMaxWidth().height(200.dp).clip(MaterialTheme.shapes.medium)
+                            Modifier.fillMaxWidth()
+                                .height(200.dp)
+                                .clip(MaterialTheme.shapes.medium),
                     ) {
                         AsyncImage(
                             imageUrl = headerImageUrl,
@@ -210,7 +212,7 @@ fun RequestConfirmationDialog(
                                             endY = size.height,
                                         )
                                     onDrawBehind { drawRect(gradient) }
-                                }
+                                },
                         )
                         Column(modifier = Modifier.align(Alignment.BottomStart).padding(12.dp)) {
                             Text(
@@ -281,7 +283,7 @@ fun RequestConfirmationDialog(
                                                 R.drawable.ic_imdb_logo,
                                                 String.format(Locale.US, "%.1f", it),
                                                 "IMDb",
-                                            )
+                                            ),
                                         )
                                     }
                                     ratingsCombined?.rt?.criticsScore?.let {
@@ -291,7 +293,7 @@ fun RequestConfirmationDialog(
                                                 else R.drawable.ic_rotten_tomato_rotten,
                                                 "$it%",
                                                 rtCriticLabel,
-                                            )
+                                            ),
                                         )
                                     }
                                     ratingsCombined?.rt?.audienceScore?.let {
@@ -301,7 +303,7 @@ fun RequestConfirmationDialog(
                                                 else R.drawable.ic_rt_stale_popcorn,
                                                 "$it%",
                                                 rtAudienceLabel,
-                                            )
+                                            ),
                                         )
                                     }
                                     voteAverage?.let {
@@ -311,7 +313,7 @@ fun RequestConfirmationDialog(
                                                     R.drawable.ic_tmdb,
                                                     "${(it * 10).toInt()}%",
                                                     "TMDB",
-                                                )
+                                                ),
                                             )
                                     }
                                     originalLanguage
@@ -323,7 +325,7 @@ fun RequestConfirmationDialog(
                                                     it.uppercase(),
                                                     languageLabel,
                                                     flagUrl = getAutoFlagUrl(it),
-                                                )
+                                                ),
                                             )
                                         }
                                     certification
@@ -360,7 +362,7 @@ fun RequestConfirmationDialog(
                                                     androidx.compose.foundation.BorderStroke(
                                                         1.dp,
                                                         MaterialTheme.colorScheme.onSurface.copy(
-                                                            0.5f
+                                                            0.5f,
                                                         ),
                                                     ),
                                                 color = Color.Transparent,
@@ -369,11 +371,11 @@ fun RequestConfirmationDialog(
                                                     item.text,
                                                     style =
                                                         MaterialTheme.typography.labelSmall.copy(
-                                                            fontWeight = FontWeight.Bold
+                                                            fontWeight = FontWeight.Bold,
                                                         ),
                                                     color =
                                                         MaterialTheme.colorScheme.onSurface.copy(
-                                                            0.9f
+                                                            0.9f,
                                                         ),
                                                     modifier =
                                                         Modifier.padding(
@@ -387,7 +389,7 @@ fun RequestConfirmationDialog(
                                                 item.text,
                                                 style =
                                                     MaterialTheme.typography.bodyMedium.copy(
-                                                        fontWeight = FontWeight.SemiBold
+                                                        fontWeight = FontWeight.SemiBold,
                                                     ),
                                                 color =
                                                     MaterialTheme.colorScheme.onSurface.copy(0.9f),
@@ -810,7 +812,7 @@ fun RequestConfirmationDialog(
                             enabled = !isLoading,
                             colors =
                                 ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.tertiary
+                                    containerColor = MaterialTheme.colorScheme.tertiary,
                                 ),
                         ) {
                             if (isLoading)
@@ -827,7 +829,7 @@ fun RequestConfirmationDialog(
                             enabled = !isLoading,
                             colors =
                                 ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary
+                                    containerColor = MaterialTheme.colorScheme.primary,
                                 ),
                         ) {
                             if (isLoading)
@@ -884,8 +886,8 @@ fun RequestConfirmationDialog(
                             Text(
                                 stringResource(
                                     if (is4k) R.string.request_4k_title
-                                    else R.string.request_on_seerr_title
-                                )
+                                    else R.string.request_on_seerr_title,
+                                ),
                             )
                         }
                 }
@@ -900,7 +902,7 @@ fun RequestConfirmationDialog(
                             enabled = !isLoading,
                             colors =
                                 ButtonDefaults.textButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.error
+                                    contentColor = MaterialTheme.colorScheme.error,
                                 ),
                         ) {
                             Text(stringResource(R.string.request_decline))
@@ -911,7 +913,7 @@ fun RequestConfirmationDialog(
                             enabled = !isLoading,
                             colors =
                                 ButtonDefaults.textButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.error
+                                    contentColor = MaterialTheme.colorScheme.error,
                                 ),
                         ) {
                             Text(stringResource(R.string.request_delete_action))
@@ -1056,7 +1058,7 @@ private fun RootFolderTile(
             Modifier.fillMaxWidth()
                 .clip(MaterialTheme.shapes.medium)
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(0.5f))
-                .padding(16.dp)
+                .padding(16.dp),
     ) {
         Column {
             Text(

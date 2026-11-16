@@ -110,7 +110,7 @@ private fun CrashCard(
                         size = Size(accentWidthPx, size.height),
                     )
                 }
-                .padding(start = CrashAccentWidth)
+                .padding(start = CrashAccentWidth),
     ) {
         Column(modifier = Modifier.weight(1f).padding(horizontal = 14.dp, vertical = 15.dp)) {
             Row(
@@ -204,7 +204,7 @@ fun CrashDetailContent(
                 Modifier.weight(1f)
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp)
-                    .padding(top = contentPadding.calculateTopPadding())
+                    .padding(top = contentPadding.calculateTopPadding()),
         ) {
             Text(
                 text = report.simpleExceptionClass,
@@ -227,7 +227,7 @@ fun CrashDetailContent(
                         .padding(top = 18.dp)
                         .clip(RoundedCornerShape(14.dp))
                         .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                        .padding(horizontal = 14.dp)
+                        .padding(horizontal = 14.dp),
             ) {
                 MetaRow(
                     stringResource(R.string.logs_crash_meta_time),
@@ -251,7 +251,7 @@ fun CrashDetailContent(
                     Modifier.fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
                         .background(LogLevelColors.container(LogLevel.ERROR))
-                        .padding(horizontal = 14.dp, vertical = 12.dp)
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
             ) {
                 Text(
                     text = report.stackTrace,
@@ -276,7 +276,7 @@ fun CrashDetailContent(
                             painterResource(
                                 id =
                                     if (logsExpanded) R.drawable.ic_keyboard_arrow_up
-                                    else R.drawable.ic_keyboard_arrow_down
+                                    else R.drawable.ic_keyboard_arrow_down,
                             ),
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -305,7 +305,7 @@ fun CrashDetailContent(
                             Modifier.fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(LogLevelColors.consoleSurface)
-                                .padding(horizontal = 12.dp, vertical = 10.dp)
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
                     ) {
                         Text(
                             text = report.precedingLogs,
@@ -361,7 +361,7 @@ private fun MetaRow(key: String, value: String, first: Boolean = false) {
             modifier =
                 Modifier.fillMaxWidth()
                     .height(1.dp)
-                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
         )
     }
     Row(

@@ -100,7 +100,7 @@ suspend fun probeAddresses(
 
     Timber.d(
         "$logTag: Resolving address, preferLocal=$preferLocalNow, " +
-            "addresses=${orderedAddresses.map { "${it}[${if (it in localSet) "local" else "ext"}]" }}"
+            "addresses=${orderedAddresses.map { "${it}[${if (it in localSet) "local" else "ext"}]" }}",
     )
 
     val startTime = System.currentTimeMillis()

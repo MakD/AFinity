@@ -160,7 +160,7 @@ constructor(
         val result = SCANNED_ROLES.associateWith { role -> rankPeople(items, role, baseUrl) }
         Timber.d(
             "Scan complete: " +
-                result.entries.joinToString { (role, people) -> "${people.size} ${role.name}s" }
+                result.entries.joinToString { (role, people) -> "${people.size} ${role.name}s" },
         )
 
         val serverId = currentServerId()
@@ -173,7 +173,7 @@ constructor(
                     userId = userId,
                     peopleData = json.encodeToString(people.map { it.toCached() }),
                     cachedTimestamp = now,
-                )
+                ),
             )
         }
         scanResult = Triple(sessionKey, now, result)
@@ -340,7 +340,7 @@ constructor(
                     }
                     if (retained.size != itemStrings.size) {
                         personSectionDao.insertSection(
-                            section.copy(itemsData = json.encodeToString(retained))
+                            section.copy(itemsData = json.encodeToString(retained)),
                         )
                     }
                 }
@@ -379,7 +379,7 @@ constructor(
                         }
                         if (changed) {
                             personSectionDao.insertSection(
-                                section.copy(itemsData = json.encodeToString(newItemStrings))
+                                section.copy(itemsData = json.encodeToString(newItemStrings)),
                             )
                         }
                     }

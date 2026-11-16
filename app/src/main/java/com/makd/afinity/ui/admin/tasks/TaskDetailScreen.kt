@@ -350,7 +350,8 @@ private fun RunBar(task: TaskInfo, isPending: Boolean, onRun: () -> Unit, onStop
             Icon(
                 painter =
                     painterResource(
-                        id = if (isActive) R.drawable.ic_close else R.drawable.ic_player_play_filled
+                        id =
+                            if (isActive) R.drawable.ic_close else R.drawable.ic_player_play_filled,
                     ),
                 contentDescription = null,
                 modifier = Modifier.size(18.dp),
@@ -359,7 +360,7 @@ private fun RunBar(task: TaskInfo, isPending: Boolean, onRun: () -> Unit, onStop
             Text(
                 text =
                     if (isActive) stringResource(R.string.task_stop_run)
-                    else stringResource(R.string.task_run_now)
+                    else stringResource(R.string.task_run_now),
             )
         }
     }

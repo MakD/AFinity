@@ -426,7 +426,7 @@ fun AudiobookshelfItemScreen(
                             detailItem("recommendations", DetailGutter) {
                                 LaunchedEffect(Unit) { viewModel.ensureRecommendations() }
                                 Column(
-                                    verticalArrangement = Arrangement.spacedBy(DetailSectionGap)
+                                    verticalArrangement = Arrangement.spacedBy(DetailSectionGap),
                                 ) {
                                     recommendationRows.forEach { row ->
                                         RecommendationRowSection(
@@ -584,7 +584,7 @@ fun AudiobookshelfItemScreen(
                             .padding(WindowInsets.navigationBars.asPaddingValues()),
                     colors =
                         CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
                         ),
                 ) {
                     Text(

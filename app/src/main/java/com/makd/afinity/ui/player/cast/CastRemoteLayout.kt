@@ -121,9 +121,9 @@ fun CastRemoteLayout(
                                                 Color.Transparent,
                                                 background.copy(alpha = 0.75f),
                                                 background,
-                                            )
-                                        )
-                                    )
+                                            ),
+                                        ),
+                                    ),
                         )
                         artworkOverlay()
                         CastRemoteIconButton(
@@ -134,8 +134,8 @@ fun CastRemoteLayout(
                                 Modifier.align(Alignment.TopStart)
                                     .windowInsetsPadding(
                                         WindowInsets.safeDrawing.only(
-                                            WindowInsetsSides.Top + WindowInsetsSides.Start
-                                        )
+                                            WindowInsetsSides.Top + WindowInsetsSides.Start,
+                                        ),
                                     )
                                     .padding(16.dp),
                         )
@@ -146,8 +146,8 @@ fun CastRemoteLayout(
                                 .fillMaxHeight()
                                 .windowInsetsPadding(
                                     WindowInsets.safeDrawing.only(
-                                        WindowInsetsSides.Vertical + WindowInsetsSides.End
-                                    )
+                                        WindowInsetsSides.Vertical + WindowInsetsSides.End,
+                                    ),
                                 ),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -156,7 +156,12 @@ fun CastRemoteLayout(
                                 Modifier.widthIn(max = 480.dp)
                                     .fillMaxWidth()
                                     .verticalScroll(rememberScrollState())
-                                    .padding(start = 8.dp, end = 28.dp, top = 12.dp, bottom = 12.dp)
+                                    .padding(
+                                        start = 8.dp,
+                                        end = 28.dp,
+                                        top = 12.dp,
+                                        bottom = 12.dp,
+                                    ),
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -204,9 +209,9 @@ fun CastRemoteLayout(
                                             Color.Transparent,
                                             background.copy(alpha = 0.78f),
                                             background,
-                                        )
-                                    )
-                                )
+                                        ),
+                                    ),
+                                ),
                     )
                     artworkOverlay()
                     Row(
@@ -215,8 +220,8 @@ fun CastRemoteLayout(
                                 .fillMaxWidth()
                                 .windowInsetsPadding(
                                     WindowInsets.safeDrawing.only(
-                                        WindowInsetsSides.Top + WindowInsetsSides.Horizontal
-                                    )
+                                        WindowInsetsSides.Top + WindowInsetsSides.Horizontal,
+                                    ),
                                 )
                                 .padding(horizontal = 16.dp, vertical = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -241,7 +246,7 @@ fun CastRemoteLayout(
                                 .widthIn(max = 560.dp)
                                 .fillMaxWidth()
                                 .windowInsetsPadding(
-                                    WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+                                    WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal),
                                 )
                                 .padding(horizontal = 28.dp)
                                 .padding(bottom = 8.dp),
@@ -255,11 +260,11 @@ fun CastRemoteLayout(
                             .fillMaxWidth()
                             .windowInsetsPadding(
                                 WindowInsets.safeDrawing.only(
-                                    WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal
-                                )
+                                    WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal,
+                                ),
                             )
                             .padding(horizontal = 28.dp)
-                            .padding(top = 18.dp, bottom = 12.dp)
+                            .padding(top = 18.dp, bottom = 12.dp),
                 ) {
                     transport()
                     CastRemoteActionRow(actions = actions)
@@ -581,11 +586,11 @@ fun CastRemoteTransport(
                             painter =
                                 painterResource(
                                     if (isPlaying) R.drawable.ic_player_pause_filled
-                                    else R.drawable.ic_player_play_filled
+                                    else R.drawable.ic_player_play_filled,
                                 ),
                             contentDescription =
                                 stringResource(
-                                    if (isPlaying) R.string.cd_pause else R.string.cd_play
+                                    if (isPlaying) R.string.cd_pause else R.string.cd_play,
                                 ),
                             modifier = Modifier.size(playSize * 0.45f),
                         )

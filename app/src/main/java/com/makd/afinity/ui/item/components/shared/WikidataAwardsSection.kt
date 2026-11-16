@@ -106,7 +106,7 @@ fun AwardsHeadlineBar(headline: String?, awards: WikidataAwards?, modifier: Modi
                 .fillMaxWidth()
                 .then(
                     if (found) Modifier.clickable(role = Role.Button) { showSheet = true }
-                    else Modifier
+                    else Modifier,
                 ),
     ) {
         Row(
@@ -126,7 +126,7 @@ fun AwardsHeadlineBar(headline: String?, awards: WikidataAwards?, modifier: Modi
                         text = headline,
                         style =
                             MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
                             ),
                         color = AwardGold,
                         maxLines = 2,
@@ -140,7 +140,7 @@ fun AwardsHeadlineBar(headline: String?, awards: WikidataAwards?, modifier: Modi
                             if (headline != null) MaterialTheme.typography.bodySmall
                             else
                                 MaterialTheme.typography.titleSmall.copy(
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.SemiBold,
                                 ),
                         color =
                             if (headline != null) MaterialTheme.colorScheme.onSurfaceVariant
@@ -252,7 +252,7 @@ private fun AwardsSheet(awards: WikidataAwards, onDismiss: () -> Unit) {
             modifier =
                 Modifier.fillMaxWidth()
                     .padding(horizontal = 24.dp, vertical = 16.dp)
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(rememberScrollState()),
         ) {
             Text(
                 text = stringResource(R.string.section_awards),
@@ -382,7 +382,7 @@ private fun AwardResultPill(result: AwardResult) {
         Text(
             text =
                 stringResource(
-                    if (won) R.string.awards_result_won else R.string.awards_result_nominated
+                    if (won) R.string.awards_result_won else R.string.awards_result_nominated,
                 ),
             style =
                 MaterialTheme.typography.labelSmall.copy(

@@ -134,7 +134,7 @@ fun QuickConnectDigitEntry(
                                                             MaterialTheme.colorScheme.primary
                                                         else ->
                                                             MaterialTheme.colorScheme.outline.copy(
-                                                                alpha = 0.4f
+                                                                alpha = 0.4f,
                                                             )
                                                     },
                                                 shape = RoundedCornerShape(cornerRadius),

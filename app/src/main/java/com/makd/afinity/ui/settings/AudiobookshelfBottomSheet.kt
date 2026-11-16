@@ -173,7 +173,7 @@ internal fun AudiobookshelfLoginContent(
                                             R.drawable.ic_visibility_off
                                         } else {
                                             R.drawable.ic_visibility
-                                        }
+                                        },
                                 ),
                             contentDescription =
                                 if (passwordVisible) {
@@ -197,7 +197,7 @@ internal fun AudiobookshelfLoginContent(
                             if (!uiState.isLoggingIn) {
                                 viewModel.login()
                             }
-                        }
+                        },
                     ),
                 modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Password },
             )

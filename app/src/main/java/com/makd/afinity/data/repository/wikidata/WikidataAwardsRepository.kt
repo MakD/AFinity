@@ -120,7 +120,7 @@ constructor(
                     tmdbId = tmdbId,
                     awards = awards.awards,
                     confirmed = awards.confirmed,
-                )
+                ),
             )
         }
     }

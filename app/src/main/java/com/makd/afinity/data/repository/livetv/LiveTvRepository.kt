@@ -91,7 +91,7 @@ interface LiveTvRepository {
     suspend fun getRecordingsResult(): Result<List<AfinityRecording>>
 
     suspend fun getSeriesRecordingOptionsResult(
-        seriesTimerId: String
+        seriesTimerId: String,
     ): Result<SeriesRecordingOptions>
 
     suspend fun updateSeriesRecordingOptionsResult(

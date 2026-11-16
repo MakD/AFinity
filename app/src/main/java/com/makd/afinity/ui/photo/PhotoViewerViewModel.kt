@@ -178,7 +178,7 @@ constructor(
                     itemId = video.id,
                     mediaSourceId = mediaSourceId,
                     startPositionMs = detailed.playbackPositionTicks / 10000,
-                )
+                ),
             )
         }
     }

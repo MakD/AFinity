@@ -16,7 +16,7 @@ object LogSignatures {
                 "|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}" +
                 "|\\b[0-9a-fA-F]{8,}\\b" +
                 "|\"[^\"]*\"" +
-                "|\\b\\d+(?:\\.\\d+)?\\b"
+                "|\\b\\d+(?:\\.\\d+)?\\b",
         )
 
     fun of(message: String): LogSignature {

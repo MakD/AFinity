@@ -225,7 +225,7 @@ private fun streamSummary(castState: CastSessionState, item: AfinityItem): Strin
     val method =
         stringResource(
             if (castState.playMethod == "Transcode") R.string.session_method_transcode
-            else R.string.session_method_direct_play
+            else R.string.session_method_direct_play,
         )
     val source =
         item.sources.firstOrNull { it.id == castState.mediaSourceId } ?: item.sources.firstOrNull()

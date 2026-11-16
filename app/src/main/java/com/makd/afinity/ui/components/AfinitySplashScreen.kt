@@ -198,7 +198,7 @@ fun AfinitySplashScreen(
                                     radius = currentRadius,
                                 )
                             }
-                        }
+                        },
                 )
                 Image(
                     painter = painterResource(id = R.drawable.ic_launcher_splash),
@@ -329,7 +329,7 @@ fun AfinitySplashScreen(
                                     .background(
                                         color = primaryColor.copy(alpha = 0.2f),
                                         shape = CircleShape,
-                                    )
+                                    ),
                         ) {
                             Box(
                                 modifier =
@@ -342,10 +342,10 @@ fun AfinitySplashScreen(
                                                         listOf(
                                                             primaryColor.copy(alpha = 0.6f),
                                                             primaryColor,
-                                                        )
+                                                        ),
                                                 ),
                                             shape = CircleShape,
-                                        )
+                                        ),
                             )
                         }
                     }

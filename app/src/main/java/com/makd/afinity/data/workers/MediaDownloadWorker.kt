@@ -131,7 +131,7 @@ constructor(
                     status = DownloadStatus.FAILED,
                     error = applicationContext.getString(R.string.local_network_permission_needed),
                     updatedAt = System.currentTimeMillis(),
-                )
+                ),
             )
         } catch (e: CancellationException) {
             throw e
@@ -145,7 +145,7 @@ constructor(
             val downloadIdString =
                 inputData.getString(KEY_DOWNLOAD_ID)
                     ?: return@withContext Result.failure(
-                        workDataOf("error" to "Missing download ID")
+                        workDataOf("error" to "Missing download ID"),
                     )
 
             val downloadId =
@@ -163,11 +163,11 @@ constructor(
             if (downloadServerUrl != null && localNetworkPermission.blocks(downloadServerUrl)) {
                 if (runAttemptCount >= MAX_PERMISSION_RETRY_ATTEMPTS) {
                     Timber.w(
-                        "Download failed: local network permission still missing after $runAttemptCount attempts"
+                        "Download failed: local network permission still missing after $runAttemptCount attempts",
                     )
                     markPermissionFailure(downloadId)
                     return@withContext Result.failure(
-                        workDataOf("error" to "Local network permission not granted")
+                        workDataOf("error" to "Local network permission not granted"),
                     )
                 }
                 Timber.w("Download deferred: local network permission not granted")
@@ -228,7 +228,7 @@ constructor(
                                 null,
                                 0,
                                 0,
-                            )
+                            ),
                         )
                     } catch (e: CancellationException) {
                         throw e
@@ -242,13 +242,13 @@ constructor(
                         val download: DownloadDto =
                             databaseRepository.getDownload(downloadId)
                                 ?: return@withContext Result.failure(
-                                    workDataOf("error" to "Download not found")
+                                    workDataOf("error" to "Download not found"),
                                 )
 
                         val apiClient =
                             sessionManager.getOrRestoreApiClient(download.serverId)
                                 ?: throw Exception(
-                                    "Could not restore session for server ${download.serverId}"
+                                    "Could not restore session for server ${download.serverId}",
                                 )
 
                         databaseRepository.insertDownload(
@@ -256,7 +256,7 @@ constructor(
                                 status = DownloadStatus.DOWNLOADING,
                                 updatedAt = System.currentTimeMillis(),
                                 transcodedContainer = null,
-                            )
+                            ),
                         )
 
                         val userId = download.userId
@@ -321,7 +321,7 @@ constructor(
                                         baseItemDto.toAfinityMusicVideo(baseUrl)
                                     else ->
                                         throw Exception(
-                                            "Unsupported item type: ${baseItemDto.type}"
+                                            "Unsupported item type: ${baseItemDto.type}",
                                         )
                                 }
                             } else null
@@ -339,10 +339,10 @@ constructor(
 
                         if (!mediaDir.exists() && !mediaDir.mkdirs()) {
                             Timber.e(
-                                "Failed to create download directory at ${mediaDir.absolutePath}"
+                                "Failed to create download directory at ${mediaDir.absolutePath}",
                             )
                             throw Exception(
-                                "Failed to create download directory. Check storage permissions."
+                                "Failed to create download directory. Check storage permissions.",
                             )
                         }
 
@@ -426,12 +426,12 @@ constructor(
                                 okHttpClient.newCall(request).execute().use { response ->
                                     if (!response.isSuccessful && response.code != 416) {
                                         throw Exception(
-                                            "Download failed: ${response.code} ${response.message}"
+                                            "Download failed: ${response.code} ${response.message}",
                                         )
                                     }
                                     if (response.code == 416) {
                                         Timber.w(
-                                            "File already fully downloaded (416). Skipping body copy."
+                                            "File already fully downloaded (416). Skipping body copy.",
                                         )
                                         return@use
                                     }
@@ -440,7 +440,7 @@ constructor(
                                         existingFileSize > 0 && response.code == 200
                                     if (serverIgnoredRange) {
                                         Timber.w(
-                                            "Server ignored Range header, restarting from byte 0"
+                                            "Server ignored Range header, restarting from byte 0",
                                         )
                                     }
                                     val resumeOffset =
@@ -467,7 +467,7 @@ constructor(
                                                     transcodedContainer = actualExtension,
                                                     transcodeSessionId = plan.playSessionId,
                                                     updatedAt = System.currentTimeMillis(),
-                                                )
+                                                ),
                                             )
                                         }
                                         convertingText =
@@ -503,7 +503,7 @@ constructor(
                                                             while (isActive) {
                                                                 delay(
                                                                     PROGRESS_UPDATE_INTERVAL_MS
-                                                                        .milliseconds
+                                                                        .milliseconds,
                                                                 )
                                                                 val bytes = downloadedBytes.get()
                                                                 val shownTotal =
@@ -516,7 +516,7 @@ constructor(
                                                                 val progress =
                                                                     if (estimatedTotal != null) {
                                                                         rawProgress.coerceAtMost(
-                                                                            ESTIMATED_PROGRESS_CAP
+                                                                            ESTIMATED_PROGRESS_CAP,
                                                                         )
                                                                     } else rawProgress
                                                                 updateProgress(
@@ -530,7 +530,7 @@ constructor(
                                                                         PROGRESS_KEY to progress,
                                                                         "downloadedBytes" to bytes,
                                                                         "totalBytes" to shownTotal,
-                                                                    )
+                                                                    ),
                                                                 )
                                                                 downloadNotificationManager.notify(
                                                                     downloadId.hashCode(),
@@ -573,7 +573,7 @@ constructor(
                                     if (stoppedByUser) {
                                         if (plan != null) outputFile.delete()
                                         return@withContext Result.failure(
-                                            workDataOf("error" to "Paused")
+                                            workDataOf("error" to "Paused"),
                                         )
                                     }
                                 }
@@ -712,7 +712,7 @@ constructor(
                                 KEY_ITEM_ID to itemIdString,
                                 KEY_SOURCE_ID to sourceId,
                                 KEY_FILE_PATH to finalFile.absolutePath,
-                            )
+                            ),
                         )
                     } catch (e: CancellationException) {
                         throw e
@@ -727,7 +727,7 @@ constructor(
                                             status = DownloadStatus.FAILED,
                                             error = e.message ?: "Unknown error",
                                             updatedAt = System.currentTimeMillis(),
-                                        )
+                                        ),
                                     )
                                 }
                             }
@@ -743,7 +743,7 @@ constructor(
                             )
                         }
                         return@withContext Result.failure(
-                            workDataOf("error" to (e.message ?: "Unknown error"))
+                            workDataOf("error" to (e.message ?: "Unknown error")),
                         )
                     }
                 }
@@ -806,7 +806,7 @@ constructor(
         if (reachedMs < expectedMs - tolerance) {
             file.delete()
             throw Exception(
-                "The server stopped converting early (${reachedMs / 1000L}s of ${expectedMs / 1000L}s)"
+                "The server stopped converting early (${reachedMs / 1000L}s of ${expectedMs / 1000L}s)",
             )
         }
     }
@@ -1184,7 +1184,7 @@ constructor(
                 if (localPath != null) {
                     person.copy(
                         image =
-                            AfinityPersonImage(uri = localPath, blurHash = person.image.blurHash)
+                            AfinityPersonImage(uri = localPath, blurHash = person.image.blurHash),
                     )
                 } else person
             } ?: person
@@ -1401,7 +1401,7 @@ constructor(
                         setStyle(
                             NotificationCompat.BigPictureStyle()
                                 .bigPicture(bigPicture)
-                                .bigLargeIcon(null as Bitmap?)
+                                .bigLargeIcon(null as Bitmap?),
                         )
                     }
                 }

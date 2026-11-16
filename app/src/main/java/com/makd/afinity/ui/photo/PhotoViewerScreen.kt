@@ -401,7 +401,7 @@ private fun ZoomablePhoto(
                     alpha =
                         if (size.height > 0) 1f - (dismissDrag / size.height).coerceIn(0f, 0.6f)
                         else 1f
-                }
+                },
     ) {
         AsyncImage(
             model = screenUrl,
@@ -469,8 +469,8 @@ private fun TopChrome(
                 .fillMaxWidth()
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent)
-                    )
+                        listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent),
+                    ),
                 )
                 .windowInsetsPadding(WindowInsets.statusBars)
                 .padding(horizontal = 4.dp, vertical = 8.dp),
@@ -512,8 +512,8 @@ private fun BottomChrome(
                 .fillMaxWidth()
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))
-                    )
+                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
+                    ),
                 )
                 .windowInsetsPadding(WindowInsets.navigationBars)
                 .padding(horizontal = 8.dp, vertical = 12.dp),
@@ -526,7 +526,7 @@ private fun BottomChrome(
                     painterResource(
                         id =
                             if (item.favorite) R.drawable.ic_favorite_filled
-                            else R.drawable.ic_favorite
+                            else R.drawable.ic_favorite,
                     ),
                 contentDescription = stringResource(R.string.filter_favorites),
             )
@@ -545,12 +545,12 @@ private fun BottomChrome(
                     painterResource(
                         id =
                             if (slideshow) R.drawable.ic_player_pause_filled
-                            else R.drawable.ic_player_play_filled
+                            else R.drawable.ic_player_play_filled,
                     ),
                 contentDescription =
                     stringResource(
                         if (slideshow) R.string.photo_action_slideshow_stop
-                        else R.string.photo_action_slideshow_start
+                        else R.string.photo_action_slideshow_start,
                     ),
             )
         }
@@ -624,7 +624,7 @@ private fun PhotoInfo(photo: AfinityPhoto) {
                                 )
                                 .show()
                         }
-                    }
+                    },
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_map_pin),
@@ -659,7 +659,7 @@ private fun exposureLine(photo: AfinityPhoto): String? {
             ?.let { seconds ->
                 add(
                     if (seconds < 1) "1/${(1 / seconds).roundToInt()} s"
-                    else String.format(Locale.US, "%.1f s", seconds)
+                    else String.format(Locale.US, "%.1f s", seconds),
                 )
             }
         exif.aperture?.takeIf { it > 0 }?.let { add(String.format(Locale.US, "f/%.1f", it)) }

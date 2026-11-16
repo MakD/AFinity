@@ -133,7 +133,7 @@ fun DoubleTapSeekOverlay(state: DoubleTapSeekFeedbackState, modifier: Modifier =
                         .fillMaxWidth(REGION_WIDTH_FRACTION)
                         .align(
                             if (feedback.isForward) AbsoluteAlignment.CenterRight
-                            else AbsoluteAlignment.CenterLeft
+                            else AbsoluteAlignment.CenterLeft,
                         ),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),

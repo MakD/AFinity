@@ -25,7 +25,7 @@ interface UserDataDao {
     @Delete suspend fun deleteUserData(userData: AfinityUserDataDto)
 
     @Query(
-        "DELETE FROM userdata WHERE userId = :userId AND itemId = :itemId AND serverId = :serverId"
+        "DELETE FROM userdata WHERE userId = :userId AND itemId = :itemId AND serverId = :serverId",
     )
     suspend fun deleteUserDataByIds(userId: UUID, itemId: UUID, serverId: String)
 
@@ -33,7 +33,7 @@ interface UserDataDao {
     suspend fun deleteUserDataByUserId(userId: UUID, serverId: String)
 
     @Query(
-        "SELECT * FROM userdata WHERE userId = :userId AND itemId = :itemId AND serverId = :serverId"
+        "SELECT * FROM userdata WHERE userId = :userId AND itemId = :itemId AND serverId = :serverId",
     )
     suspend fun getUserData(userId: UUID, itemId: UUID, serverId: String): AfinityUserDataDto?
 
@@ -44,37 +44,37 @@ interface UserDataDao {
     fun getAllUserDataFlow(userId: UUID, serverId: String): Flow<List<AfinityUserDataDto>>
 
     @Query(
-        "SELECT * FROM userdata WHERE userId = :userId AND serverId = :serverId AND favorite = 1"
+        "SELECT * FROM userdata WHERE userId = :userId AND serverId = :serverId AND favorite = 1",
     )
     suspend fun getFavoriteItems(userId: UUID, serverId: String): List<AfinityUserDataDto>
 
     @Query(
-        "SELECT * FROM userdata WHERE userId = :userId AND serverId = :serverId AND favorite = 1"
+        "SELECT * FROM userdata WHERE userId = :userId AND serverId = :serverId AND favorite = 1",
     )
     fun getFavoriteItemsFlow(userId: UUID, serverId: String): Flow<List<AfinityUserDataDto>>
 
     @Query(
-        "SELECT * FROM userdata WHERE userId = :userId AND serverId = :serverId AND playbackPositionTicks > 0 AND played = 0"
+        "SELECT * FROM userdata WHERE userId = :userId AND serverId = :serverId AND playbackPositionTicks > 0 AND played = 0",
     )
     suspend fun getContinueWatchingItems(userId: UUID, serverId: String): List<AfinityUserDataDto>
 
     @Query(
-        "SELECT * FROM userdata WHERE userId = :userId AND serverId = :serverId AND playbackPositionTicks > 0 AND played = 0"
+        "SELECT * FROM userdata WHERE userId = :userId AND serverId = :serverId AND playbackPositionTicks > 0 AND played = 0",
     )
     fun getContinueWatchingItemsFlow(userId: UUID, serverId: String): Flow<List<AfinityUserDataDto>>
 
     @Query(
-        "SELECT * FROM userdata WHERE userId = :userId AND serverId = :serverId AND toBeSynced = 1"
+        "SELECT * FROM userdata WHERE userId = :userId AND serverId = :serverId AND toBeSynced = 1",
     )
     suspend fun getUnsyncedUserData(userId: UUID, serverId: String): List<AfinityUserDataDto>
 
     @Query(
-        "UPDATE userdata SET toBeSynced = 0 WHERE userId = :userId AND itemId = :itemId AND serverId = :serverId"
+        "UPDATE userdata SET toBeSynced = 0 WHERE userId = :userId AND itemId = :itemId AND serverId = :serverId",
     )
     suspend fun markUserDataSynced(userId: UUID, itemId: UUID, serverId: String)
 
     @Query(
-        "UPDATE userdata SET toBeSynced = 1 WHERE userId = :userId AND itemId = :itemId AND serverId = :serverId"
+        "UPDATE userdata SET toBeSynced = 1 WHERE userId = :userId AND itemId = :itemId AND serverId = :serverId",
     )
     suspend fun markUserDataUnsynced(userId: UUID, itemId: UUID, serverId: String)
 
@@ -97,7 +97,7 @@ interface UserDataDao {
           AND userId = :userId
           AND serverId = :serverId
           AND toBeSynced = 0
-    """
+    """,
     )
     suspend fun updateUserDataLocally(
         itemId: UUID,
@@ -150,7 +150,7 @@ interface UserDataDao {
                 playbackPositionTicks = positionTicks,
                 unplayedItemCount = unplayedItemCount,
                 playCount = playCount,
-            )
+            ),
         )
     }
 
@@ -158,7 +158,7 @@ interface UserDataDao {
         """
         SELECT * FROM userdata
         WHERE userId = :userId AND serverId = :serverId AND itemId IN (:itemIds)
-    """
+    """,
     )
     fun getUserDataForItemsFlow(
         userId: UUID,

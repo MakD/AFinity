@@ -214,7 +214,7 @@ fun EpubReaderScreen(
                             initialPreferences = load.initialPreferences.resolved(appDark),
                             configuration =
                                 EpubNavigatorFragment.Configuration(
-                                    selectionActionModeCallback = selectionMenu
+                                    selectionActionModeCallback = selectionMenu,
                                 ),
                         )
                         .also { activity.supportFragmentManager.fragmentFactory = it }
@@ -255,7 +255,7 @@ fun EpubReaderScreen(
                                                 isActive = true,
                                             ),
                                     )
-                                }
+                                },
                             ),
                             SEARCH_GROUP,
                         )
@@ -404,7 +404,7 @@ private fun HighlightBindings(
         val listener =
             object : DecorableNavigator.Listener {
                 override fun onDecorationActivated(
-                    event: DecorableNavigator.OnActivatedEvent
+                    event: DecorableNavigator.OnActivatedEvent,
                 ): Boolean {
                     currentOnTap(event.decoration.id)
                     return true
@@ -427,7 +427,7 @@ private fun HighlightBindings(
                         locator = locator,
                         style =
                             Decoration.Style.Highlight(
-                                tint = (annotation.color ?: HighlightColor.YELLOW).argb
+                                tint = (annotation.color ?: HighlightColor.YELLOW).argb,
                             ),
                     )
                 }
@@ -541,7 +541,7 @@ private fun EpubChrome(
                                 stringResource(R.string.reader_seek_bubble_fmt, title, percent)
                             } else {
                                 stringResource(R.string.reader_progress_percent_fmt, percent)
-                            }
+                            },
                     )
                 }
                 val count = uiState.positionCount
@@ -550,7 +550,7 @@ private fun EpubChrome(
                     if (count > 0) {
                         " · " +
                             formatTimeLeftSeconds(
-                                (1.0 - progression).coerceAtLeast(0.0) * count * secondsPerPosition
+                                (1.0 - progression).coerceAtLeast(0.0) * count * secondsPerPosition,
                             )
                     } else {
                         ""
@@ -561,7 +561,7 @@ private fun EpubChrome(
                             formatTimeLeftSeconds(
                                 (toc.chapterEnd(currentIndex) - progression).coerceAtLeast(0.0) *
                                     count *
-                                    secondsPerPosition
+                                    secondsPerPosition,
                             )
                     } else {
                         ""

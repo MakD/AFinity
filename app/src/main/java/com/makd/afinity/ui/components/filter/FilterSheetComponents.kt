@@ -245,7 +245,7 @@ fun <T> SearchableChipMultiSelect(
                         singleLine = true,
                         textStyle =
                             MaterialTheme.typography.bodyLarge.copy(
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
                             ),
                         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
@@ -291,14 +291,14 @@ fun <T> SearchableChipMultiSelect(
                         } else {
                             editing = true
                         }
-                    }
+                    },
                 ) {
                     Icon(
                         painter =
                             painterResource(
                                 id =
                                     if (editing) R.drawable.ic_keyboard_up
-                                    else R.drawable.ic_keyboard_down
+                                    else R.drawable.ic_keyboard_down,
                             ),
                         contentDescription = stringResource(R.string.cd_toggle_keyboard),
                     )

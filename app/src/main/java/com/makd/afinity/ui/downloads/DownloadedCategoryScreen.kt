@@ -674,7 +674,7 @@ fun DownloadedCategoryScreen(
                                         prepend = loaded,
                                         append = loaded,
                                     ),
-                            )
+                            ),
                         )
                     }
                 val lazyTracks = pagingFlow.collectAsLazyPagingItems()

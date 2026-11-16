@@ -284,7 +284,7 @@ private fun SegmentedTabBar(
                         Icon(
                             painter =
                                 painterResource(
-                                    id = if (isSelected) tab.activeIconRes else tab.inactiveIconRes
+                                    id = if (isSelected) tab.activeIconRes else tab.inactiveIconRes,
                                 ),
                             contentDescription = null,
                             modifier = Modifier.size(16.dp),
@@ -296,7 +296,7 @@ private fun SegmentedTabBar(
                             text = stringResource(tab.labelRes),
                             style =
                                 MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
                                 ),
                             color = animatedContentColor,
                             maxLines = 1,

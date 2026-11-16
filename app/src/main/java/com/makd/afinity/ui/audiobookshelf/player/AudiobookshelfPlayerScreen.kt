@@ -194,7 +194,7 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
                 painter =
                     painterResource(
                         if (playbackState.hasSleepTimer) R.drawable.ic_moon_filled
-                        else R.drawable.ic_moon
+                        else R.drawable.ic_moon,
                     ),
                 contentDescription = stringResource(R.string.cd_music_sleep_timer),
                 onClick = { showSleepTimer = true },
@@ -207,7 +207,7 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
                         painterResource(
                             id =
                                 if (hasBookmarks) R.drawable.ic_bookmark_filled
-                                else R.drawable.ic_bookmark
+                                else R.drawable.ic_bookmark,
                         ),
                     contentDescription = stringResource(R.string.cd_abs_bookmarks),
                     onClick = openBookmarks,
@@ -233,7 +233,7 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
                     value =
                         stringResource(
                             if (equalizerState.isEnabled) R.string.state_toggle_on
-                            else R.string.state_toggle_off
+                            else R.string.state_toggle_off,
                         ),
                     onClick = {
                         showMoreSheet = false
@@ -246,7 +246,7 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
                     value =
                         stringResource(
                             if (skipSilenceEnabled) R.string.state_toggle_on
-                            else R.string.state_toggle_off
+                            else R.string.state_toggle_off,
                         ),
                     onClick = { viewModel.setSkipSilence(!skipSilenceEnabled) },
                 )

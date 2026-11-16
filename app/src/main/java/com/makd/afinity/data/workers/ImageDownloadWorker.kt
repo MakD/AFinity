@@ -58,7 +58,7 @@ constructor(
             val downloadIdString =
                 inputData.getString(KEY_DOWNLOAD_ID)
                     ?: return@withContext Result.failure(
-                        workDataOf("error" to "Missing download ID")
+                        workDataOf("error" to "Missing download ID"),
                     )
 
             val itemIdString =
@@ -89,7 +89,7 @@ constructor(
                 val download: DownloadDto =
                     databaseRepository.getDownload(downloadId)
                         ?: return@withContext Result.failure(
-                            workDataOf("error" to "Download not found")
+                            workDataOf("error" to "Download not found"),
                         )
 
                 val apiClient =
@@ -97,8 +97,8 @@ constructor(
                         ?: return@withContext Result.failure(
                             workDataOf(
                                 "error" to
-                                    "Could not restore session for server ${download.serverId}"
-                            )
+                                    "Could not restore session for server ${download.serverId}",
+                            ),
                         )
 
                 val userId = download.userId
@@ -120,7 +120,7 @@ constructor(
                                 KEY_DOWNLOAD_ID to downloadIdString,
                                 KEY_ITEM_ID to itemIdString,
                                 KEY_SOURCE_ID to sourceId,
-                            )
+                            ),
                         )
                     else Result.failure(workDataOf("error" to "Music image download failed"))
                 }
@@ -131,11 +131,11 @@ constructor(
                         ?: databaseRepository.getVideo(itemId, userId)
                         ?: databaseRepository.getMusicVideo(itemId, userId)
                         ?: return@withContext Result.failure(
-                            workDataOf("error" to "Item not found in database")
+                            workDataOf("error" to "Item not found in database"),
                         )
 
                 Timber.d(
-                    "Loaded item from database: ${item.name}, has images: ${item.images.primary != null}"
+                    "Loaded item from database: ${item.name}, has images: ${item.images.primary != null}",
                 )
 
                 val itemDir = downloadRepository.getItemDownloadDirectory(download)
@@ -144,7 +144,7 @@ constructor(
                 if (!imagesDir.exists() && !imagesDir.mkdirs()) {
                     Timber.e("Failed to create images directory at ${imagesDir.absolutePath}")
                     return@withContext Result.failure(
-                        workDataOf("error" to "Failed to create images directory")
+                        workDataOf("error" to "Failed to create images directory"),
                     )
                 }
 
@@ -296,7 +296,7 @@ constructor(
                 }
 
                 Timber.i(
-                    "Image download completed for item: $itemId - ${downloadedImages.size} images downloaded"
+                    "Image download completed for item: $itemId - ${downloadedImages.size} images downloaded",
                 )
 
                 val chapters = downloadChapterImages(apiClient, item, itemDir)
@@ -310,14 +310,14 @@ constructor(
                         KEY_DOWNLOAD_ID to downloadIdString,
                         KEY_ITEM_ID to itemIdString,
                         KEY_SOURCE_ID to sourceId,
-                    )
+                    ),
                 )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Image download failed")
                 return@withContext Result.failure(
-                    workDataOf("error" to (e.message ?: "Unknown error"))
+                    workDataOf("error" to (e.message ?: "Unknown error")),
                 )
             }
         }
@@ -518,7 +518,7 @@ constructor(
                         serverId,
                     )
                     Timber.i(
-                        "Updated movie in database with ${downloadedImages.size} local image paths"
+                        "Updated movie in database with ${downloadedImages.size} local image paths",
                     )
                 }
 
@@ -528,7 +528,7 @@ constructor(
                         serverId,
                     )
                     Timber.i(
-                        "Updated episode in database with ${downloadedImages.size} local image paths"
+                        "Updated episode in database with ${downloadedImages.size} local image paths",
                     )
                 }
 
@@ -538,7 +538,7 @@ constructor(
                         serverId,
                     )
                     Timber.i(
-                        "Updated video in database with ${downloadedImages.size} local image paths"
+                        "Updated video in database with ${downloadedImages.size} local image paths",
                     )
                 }
 
@@ -548,7 +548,7 @@ constructor(
                         serverId,
                     )
                     Timber.i(
-                        "Updated music video in database with ${downloadedImages.size} local image paths"
+                        "Updated music video in database with ${downloadedImages.size} local image paths",
                     )
                 }
 

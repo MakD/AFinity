@@ -40,7 +40,7 @@ fun HomeSectionHeader(
                             role = Role.Button,
                             onClick = onViewAllClick,
                         )
-                    } else Modifier
+                    } else Modifier,
                 )
                 .padding(start = startPadding, bottom = bottomPadding),
         verticalAlignment = Alignment.CenterVertically,

@@ -17,7 +17,7 @@ class ChoiceOptionsLoader(private val adminRepository: ServerAdminRepository) {
             sections =
                 spec.sections.map { section ->
                     section.copy(fields = section.fields.map { field -> field.withOptions() })
-                }
+                },
         )
     }
 

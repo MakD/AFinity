@@ -170,7 +170,7 @@ private fun DeviceCheckAnimation(status: MpvDeviceCheckStatus) {
                 property = LottieProperty.STROKE_COLOR,
                 value = color.toArgb(),
                 keyPath = arrayOf("**"),
-            )
+            ),
         )
 
     LottieAnimation(

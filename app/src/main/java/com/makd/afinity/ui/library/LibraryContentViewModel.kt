@@ -142,12 +142,12 @@ constructor(
                     folderName ?: (libraryName ?: studioName ?: "Content").replace("%2F", "/"),
                 isStudioMode = studioName != null,
                 filtersLocked = sectionId != null || folderId != null,
-            )
+            ),
         )
     val uiState: StateFlow<LibraryContentUiState> = _uiState.asStateFlow()
 
     private fun applyUpdatesToPagingFlow(
-        baseFlow: Flow<PagingData<AfinityItem>>
+        baseFlow: Flow<PagingData<AfinityItem>>,
     ): Flow<PagingData<AfinityItem>> {
         return baseFlow
             .cachedIn(viewModelScope)

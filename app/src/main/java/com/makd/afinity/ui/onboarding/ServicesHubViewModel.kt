@@ -116,7 +116,7 @@ constructor(
                         if (result.server.id != session.serverId) {
                             _remoteError.value =
                                 context.getString(
-                                    R.string.services_hub_remote_error_different_server
+                                    R.string.services_hub_remote_error_different_server,
                                 )
                             return@launch
                         }
@@ -129,7 +129,7 @@ constructor(
                                     id = UUID.randomUUID(),
                                     serverId = session.serverId,
                                     address = address,
-                                )
+                                ),
                             )
                         }
                         onSaved()

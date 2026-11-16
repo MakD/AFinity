@@ -269,7 +269,7 @@ constructor(
         if (tracks.isEmpty()) return
         queueManager.loadQueue(tracks, index, lastPositionMs)
         context.startService(
-            Intent(context, AudioService::class.java).setAction(AudioService.ACTION_ENGINE_MUSIC)
+            Intent(context, AudioService::class.java).setAction(AudioService.ACTION_ENGINE_MUSIC),
         )
     }
 
@@ -279,7 +279,7 @@ constructor(
             loadQueueOnCast(queueManager.currentIndex.value, playbackState.value.positionMs)
         if (!loaded) return
         context.startService(
-            Intent(context, AudioService::class.java).setAction(AudioService.ACTION_PAUSE_FOR_CAST)
+            Intent(context, AudioService::class.java).setAction(AudioService.ACTION_PAUSE_FOR_CAST),
         )
     }
 
@@ -337,13 +337,13 @@ constructor(
         if (isMusicCasting.value) {
             val pos =
                 (castManager.castState.value.currentPosition + amountMs).coerceAtMost(
-                    playbackState.value.durationMs
+                    playbackState.value.durationMs,
                 )
             castManager.seekTo(pos)
         } else {
             val pos =
                 (playbackState.value.positionMs + amountMs).coerceAtMost(
-                    playbackState.value.durationMs
+                    playbackState.value.durationMs,
                 )
             playbackManager.seekTo(pos)
         }

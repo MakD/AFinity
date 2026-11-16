@@ -110,7 +110,7 @@ private fun BackupBody(viewModel: BackupViewModel, modifier: Modifier = Modifier
 
     val exportLauncher =
         rememberLauncherForActivityResult(
-            ActivityResultContracts.CreateDocument("application/json")
+            ActivityResultContracts.CreateDocument("application/json"),
         ) { uri ->
             val payload = uiState.pendingExport
             if (uri != null && payload != null) {
@@ -194,7 +194,7 @@ private fun BackupBody(viewModel: BackupViewModel, modifier: Modifier = Modifier
                         text = stringResource(R.string.backup_import_skipped),
                         style =
                             MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
                             ),
                         color = MaterialTheme.colorScheme.onSurface,
                     )

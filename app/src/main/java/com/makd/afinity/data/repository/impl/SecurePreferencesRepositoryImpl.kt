@@ -268,7 +268,7 @@ constructor(@param:ApplicationContext private val context: Context) : SecurePref
             cachedJellyseerrUsername = username
 
             Timber.d(
-                "Switched Jellyseerr context. Valid: ${!url.isNullOrBlank() && !cookie.isNullOrBlank()}"
+                "Switched Jellyseerr context. Valid: ${!url.isNullOrBlank() && !cookie.isNullOrBlank()}",
             )
 
             !url.isNullOrBlank() && !cookie.isNullOrBlank()
@@ -385,11 +385,11 @@ constructor(@param:ApplicationContext private val context: Context) : SecurePref
                             val token = decrypt(preferences[key] as? String)
                             val username =
                                 getDecryptedString(
-                                    stringPreferencesKey("username_${serverId}_$userId")
+                                    stringPreferencesKey("username_${serverId}_$userId"),
                                 )
                             val serverUrl =
                                 getDecryptedString(
-                                    stringPreferencesKey("serverUrl_${serverId}_$userId")
+                                    stringPreferencesKey("serverUrl_${serverId}_$userId"),
                                 )
 
                             if (token != null && username != null && serverUrl != null) {
@@ -400,7 +400,7 @@ constructor(@param:ApplicationContext private val context: Context) : SecurePref
                                         accessToken = token,
                                         username = username,
                                         serverUrl = serverUrl,
-                                    )
+                                    ),
                                 )
                             }
                         }
@@ -514,7 +514,7 @@ constructor(@param:ApplicationContext private val context: Context) : SecurePref
             activeAbsUserId = jellyfinUserId
 
             Timber.d(
-                "Switched Audiobookshelf context. Valid: ${!url.isNullOrBlank() && !token.isNullOrBlank()}"
+                "Switched Audiobookshelf context. Valid: ${!url.isNullOrBlank() && !token.isNullOrBlank()}",
             )
 
             !url.isNullOrBlank() && !token.isNullOrBlank()
@@ -548,7 +548,11 @@ constructor(@param:ApplicationContext private val context: Context) : SecurePref
             val refreshToken =
                 decrypt(
                     prefs[
-                        getAudiobookshelfKey("abs_refresh_token", jellyfinServerId, jellyfinUserId)]
+                        getAudiobookshelfKey(
+                            "abs_refresh_token",
+                            jellyfinServerId,
+                            jellyfinUserId,
+                        )],
                 )
 
             if (url != null && token != null && absUserId != null && username != null) {
@@ -575,7 +579,7 @@ constructor(@param:ApplicationContext private val context: Context) : SecurePref
             prefs.remove(getAudiobookshelfKey("abs_userid", jellyfinServerId, jellyfinUserId))
             prefs.remove(getAudiobookshelfKey("abs_user", jellyfinServerId, jellyfinUserId))
             prefs.remove(
-                getAudiobookshelfKey("abs_refresh_token", jellyfinServerId, jellyfinUserId)
+                getAudiobookshelfKey("abs_refresh_token", jellyfinServerId, jellyfinUserId),
             )
         }
         clearActiveAudiobookshelfCache()

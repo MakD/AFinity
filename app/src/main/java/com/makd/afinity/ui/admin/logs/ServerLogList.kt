@@ -199,7 +199,7 @@ private fun ServerLogRowItem(
                         size = Size(railWidthPx, size.height),
                     )
                 }
-                .padding(start = RowStartPadding)
+                .padding(start = RowStartPadding),
     ) {
         Text(
             text = row.time,
@@ -224,7 +224,7 @@ private fun ServerLogRowItem(
                     Modifier.requiredSize(17.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surface)
-                        .border(2.dp, tint, CircleShape)
+                        .border(2.dp, tint, CircleShape),
             )
             Box(modifier = Modifier.requiredSize(9.dp).clip(CircleShape).background(tint))
         }
@@ -281,7 +281,7 @@ private fun ServerLogRowItem(
                             .padding(top = 8.dp)
                             .clip(RoundedCornerShape(10.dp))
                             .background(LogLevelColors.container(row.level))
-                            .padding(horizontal = 12.dp, vertical = 10.dp)
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
                 ) {
                     Text(
                         text = trace,
@@ -303,7 +303,7 @@ private fun ServerLogRowItem(
                         modifier =
                             Modifier.weight(1f)
                                 .height(1.dp)
-                                .background(MaterialTheme.colorScheme.outlineVariant)
+                                .background(MaterialTheme.colorScheme.outlineVariant),
                     )
                     Text(
                         text = row.times,

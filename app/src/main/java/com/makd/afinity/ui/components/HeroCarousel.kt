@@ -492,7 +492,7 @@ private fun HeroFullBleed(
             modifier.bottomOverlap(overlap).fillMaxWidth().height(heroHeight).onGloballyPositioned {
                 toneTracker.container = it
                 toneTracker.update()
-            }
+            },
     ) {
         HeroBackdrop(
             pagerState = pagerState,
@@ -717,8 +717,8 @@ private fun HeroCardCarousel(
                     .fillMaxWidth()
                     .height(metrics.cardHeight)
                     .windowInsetsPadding(
-                        WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
-                    )
+                        WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal),
+                    ),
         ) {
             HorizontalPager(
                 state = pagerState,
@@ -740,7 +740,7 @@ private fun HeroCardCarousel(
                             transformOrigin = TransformOrigin(if (offset > 0f) 1f else 0f, 0.5f)
                             shape = cardShape
                             clip = true
-                        }
+                        },
                 ) {
                     AsyncImage(
                         imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl,
@@ -1011,7 +1011,7 @@ private fun HeroPeekLogo(item: AfinityItem, logoSize: DpSize, alignStart: Boolea
                 modifier =
                     Modifier.fillMaxHeight()
                         .wrapContentWidth(
-                            if (alignStart) Alignment.Start else Alignment.CenterHorizontally
+                            if (alignStart) Alignment.Start else Alignment.CenterHorizontally,
                         ),
                 contentScale = ContentScale.Fit,
                 alignment = alignment,
@@ -1189,7 +1189,7 @@ private fun BoxScope.HeroContentCentered(
         modifier =
             Modifier.align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .padding(horizontal = 24.dp, vertical = 16.dp),
     ) {
         IconButton(
             onClick = { onMoreInformationClick(currentItem) },
@@ -1268,7 +1268,7 @@ private fun HeroContentRich(
         modifier =
             Modifier.fillMaxSize()
                 .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))
-                .padding(start = 14.dp, end = 48.dp)
+                .padding(start = 14.dp, end = 48.dp),
     ) {
         val availableHeight = maxHeight
         val isCompactHeight = availableHeight < 380.dp
@@ -1475,7 +1475,7 @@ private fun HeroMetadata(
                                         painterResource(
                                             id =
                                                 if (rtRating > 60) R.drawable.ic_rotten_tomato_fresh
-                                                else R.drawable.ic_rotten_tomato_rotten
+                                                else R.drawable.ic_rotten_tomato_rotten,
                                         ),
                                     contentDescription = null,
                                     tint = Color.Unspecified,

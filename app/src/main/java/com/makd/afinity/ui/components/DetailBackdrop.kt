@@ -136,7 +136,7 @@ private fun BlurredCoverBackdrop(
                                 endY = size.height,
                             )
                         onDrawBehind { drawRect(gradient) }
-                    }
+                    },
             )
         }
     } else {

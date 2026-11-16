@@ -120,7 +120,7 @@ constructor(
                         mdbRatingBadges = fetched.mdbRatingBadges,
                         omdbAwards = fetched.omdbAwards,
                         watchProviders = fetched.watchProviders,
-                    )
+                    ),
                 )
             } catch (e: CancellationException) {
                 throw e

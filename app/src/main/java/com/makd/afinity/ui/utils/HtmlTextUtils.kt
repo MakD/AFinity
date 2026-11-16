@@ -43,9 +43,9 @@ private fun spannedToAnnotatedString(spanned: Spanned, linkColor: Color): Annota
                                 SpanStyle(
                                     color = linkColor,
                                     textDecoration = TextDecoration.Underline,
-                                )
+                                ),
                         ),
-                )
+                ),
             ) {
                 append(text.substring(start, end))
             }

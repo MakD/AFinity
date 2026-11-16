@@ -96,7 +96,7 @@ fun AdminScaffold(
                     end = paddingValues.calculateEndPadding(layoutDirection),
                     bottom =
                         max(max(paddingValues.calculateBottomPadding(), playerOffset), imeBottom),
-                )
+                ),
             )
         }
     }

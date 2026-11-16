@@ -245,7 +245,7 @@ constructor(
                 if (loaded == null) {
                     fail(
                         if (remote == null || remote.isFailure) ReaderError.NETWORK
-                        else ReaderError.NOT_FOUND
+                        else ReaderError.NOT_FOUND,
                     )
                     return@launch
                 }

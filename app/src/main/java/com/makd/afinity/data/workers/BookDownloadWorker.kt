@@ -56,7 +56,7 @@ constructor(
                 val download =
                     databaseRepository.getDownload(downloadId)
                         ?: return@withContext Result.failure(
-                            workDataOf("error" to "Download not found")
+                            workDataOf("error" to "Download not found"),
                         )
                 val apiClient =
                     sessionManager.getOrRestoreApiClient(download.serverId)
@@ -150,7 +150,7 @@ constructor(
                             else current.imageUrl,
                         error = null,
                         updatedAt = System.currentTimeMillis(),
-                    )
+                    ),
                 )
                 Result.success()
             } catch (e: CancellationException) {
@@ -164,7 +164,7 @@ constructor(
                                 status = DownloadStatus.FAILED,
                                 error = e.message ?: "Unknown error",
                                 updatedAt = System.currentTimeMillis(),
-                            )
+                            ),
                         )
                     }
                 }

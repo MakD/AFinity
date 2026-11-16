@@ -133,7 +133,7 @@ constructor(
                         VolumeUnavailableException(
                             volumeId,
                             storageLocationProvider.displayNameFor(volumeId),
-                        )
+                        ),
                     )
                 }
 
@@ -165,7 +165,7 @@ constructor(
                             existingDownload.status == DownloadStatus.QUEUED
                     ) {
                         return@withContext Result.failure(
-                            Exception("Item is already being downloaded")
+                            Exception("Item is already being downloaded"),
                         )
                     }
                 }
@@ -291,7 +291,7 @@ constructor(
                                 ?: baseItemDto.mediaSources?.firstOrNull()
                         }
                             ?: return@withContext Result.failure(
-                                Exception("No media source for audio item")
+                                Exception("No media source for audio item"),
                             )
 
                     val resolvedSourceId = mediaSource.id ?: itemId.toString()
@@ -345,7 +345,7 @@ constructor(
                         BaseItemKind.EPISODE ->
                             baseItemDto.toAfinityEpisode(baseUrl)
                                 ?: return@withContext Result.failure(
-                                    Exception("Failed to convert episode")
+                                    Exception("Failed to convert episode"),
                                 )
 
                         BaseItemKind.VIDEO -> baseItemDto.toAfinityVideo(baseUrl)
@@ -353,7 +353,7 @@ constructor(
 
                         else ->
                             return@withContext Result.failure(
-                                Exception("Unsupported item type: ${baseItemDto.type}")
+                                Exception("Unsupported item type: ${baseItemDto.type}"),
                             )
                     }
 
@@ -361,7 +361,7 @@ constructor(
                     if (sourceId.isEmpty()) {
                         item.sources.firstOrNull { it.type == AfinitySourceType.REMOTE }
                             ?: return@withContext Result.failure(
-                                Exception("No remote source available")
+                                Exception("No remote source available"),
                             )
                     } else {
                         item.sources.find { it.id == sourceId }
@@ -539,7 +539,7 @@ constructor(
             workManager
                 .beginUniqueWork("download_${download.id}", policy, mediaDownloadRequest)
                 .then(
-                    listOf(trickplayDownloadRequest, imageDownloadRequest, subtitleDownloadRequest)
+                    listOf(trickplayDownloadRequest, imageDownloadRequest, subtitleDownloadRequest),
                 )
                 .enqueue()
         }
@@ -557,7 +557,7 @@ constructor(
                         download.copy(
                             status = DownloadStatus.PAUSED,
                             updatedAt = System.currentTimeMillis(),
-                        )
+                        ),
                     )
                 }
 
@@ -769,7 +769,7 @@ constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun getDownloadsByStatusFlow(
-        statuses: List<DownloadStatus>
+        statuses: List<DownloadStatus>,
     ): Flow<List<DownloadInfo>> {
         return sessionManager.currentSession
             .filterNotNull()
@@ -790,7 +790,7 @@ constructor(
                 DownloadStatus.DOWNLOADING,
                 DownloadStatus.PAUSED,
                 DownloadStatus.FAILED,
-            )
+            ),
         )
     }
 
@@ -1001,7 +1001,7 @@ constructor(
                         .onFailure { Timber.w(it, "Skipping season ${season.name}: ${it.message}") }
                 }
                 Timber.i(
-                    "Series download queued $totalStarted episodes across ${seasons.size} seasons"
+                    "Series download queued $totalStarted episodes across ${seasons.size} seasons",
                 )
                 Result.success(totalStarted)
             } catch (e: CancellationException) {
@@ -1116,7 +1116,7 @@ constructor(
                         .onFailure { Timber.w(it, "Skipping album ${album.name}: ${it.message}") }
                 }
                 Timber.i(
-                    "Artist download queued $totalStarted tracks across ${albums.size} albums for artist $artistId"
+                    "Artist download queued $totalStarted tracks across ${albums.size} albums for artist $artistId",
                 )
                 Result.success(totalStarted)
             } catch (e: CancellationException) {
@@ -1161,7 +1161,7 @@ constructor(
                         }
                 }
                 Timber.i(
-                    "Playlist download queued $started/${entries.size} items for playlist $playlistId"
+                    "Playlist download queued $started/${entries.size} items for playlist $playlistId",
                 )
                 Result.success(started)
             } catch (e: CancellationException) {

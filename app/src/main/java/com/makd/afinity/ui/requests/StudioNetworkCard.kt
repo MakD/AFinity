@@ -126,8 +126,8 @@ fun GenreCard(
                                         listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
                                     startY = 0f,
                                     endY = Float.POSITIVE_INFINITY,
-                                )
-                            )
+                                ),
+                            ),
                 )
 
                 Text(

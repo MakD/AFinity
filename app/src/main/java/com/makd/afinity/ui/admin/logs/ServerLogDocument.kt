@@ -30,7 +30,7 @@ private const val NEWLINE: Byte = 10
 private val headerPattern =
     Regex(
         "^\\[\\d{4}-\\d{2}-\\d{2} (\\d{2}):(\\d{2}):(\\d{2})\\.\\d{3} [+-]\\d{2}:\\d{2}\\] " +
-            "\\[(\\w{3})\\] \\[\\d+\\] ([^:]+): (.*)$"
+            "\\[(\\w{3})\\] \\[\\d+\\] ([^:]+): (.*)$",
     )
 
 private val variablePattern =
@@ -40,7 +40,7 @@ private val variablePattern =
             "|\\b[0-9a-fA-F]{8,}\\b" +
             "|\"[^\"]*\"" +
             "|\\b\\d{1,3}(?:\\.\\d{1,3}){3}\\b" +
-            "|\\b\\d+(?:\\.\\d+)?(?:ms|s|kb|mb|gb|%)?\\b"
+            "|\\b\\d+(?:\\.\\d+)?(?:ms|s|kb|mb|gb|%)?\\b",
     )
 
 private val whitespacePattern = Regex("\\s+")
@@ -115,7 +115,7 @@ private constructor(
     private val cache =
         object : LinkedHashMap<Int, ServerLogEntry>(ENTRY_CACHE_SIZE, 0.75f, true) {
             override fun removeEldestEntry(
-                eldest: MutableMap.MutableEntry<Int, ServerLogEntry>?
+                eldest: MutableMap.MutableEntry<Int, ServerLogEntry>?,
             ): Boolean = size > ENTRY_CACHE_SIZE
         }
 
@@ -361,7 +361,7 @@ private constructor(
                     seconds.add(
                         hours.toInt() * SECONDS_PER_HOUR +
                             minutes.toInt() * SECONDS_PER_MINUTE +
-                            secs.toInt()
+                            secs.toInt(),
                     )
                     levels.add(level.ordinal)
                     tagIds.add(tagId)
@@ -429,7 +429,7 @@ private constructor(
                                     label = mergedLabel(members, ids.map { tokens[it] }),
                                     truncated = true,
                                 ),
-                        )
+                        ),
                     )
                 } else {
                     ids.forEach { id ->
@@ -448,7 +448,7 @@ private constructor(
                                             },
                                         truncated = false,
                                     ),
-                            )
+                            ),
                         )
                     }
                 }

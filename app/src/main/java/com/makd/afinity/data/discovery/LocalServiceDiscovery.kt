@@ -104,7 +104,7 @@ constructor(
             fun closeDiagnosed() {
                 if (found.isEmpty() && !localNetworkPermission.isSatisfied()) {
                     Timber.w(
-                        "mDNS: no services for $serviceType and local network permission not granted"
+                        "mDNS: no services for $serviceType and local network permission not granted",
                     )
                     trySend(DiscoveryResult.PermissionRequired)
                 }
@@ -137,7 +137,7 @@ constructor(
                         val callback =
                             object : NsdManager.ServiceInfoCallback {
                                 override fun onServiceInfoCallbackRegistrationFailed(
-                                    errorCode: Int
+                                    errorCode: Int,
                                 ) {
                                     Timber.w("mDNS: resolve failed for $key (error $errorCode)")
                                 }

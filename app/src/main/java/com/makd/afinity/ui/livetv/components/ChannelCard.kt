@@ -69,7 +69,7 @@ fun ChannelCard(
                     role = Role.Button,
                     onClick = onClick,
                     onLongClick = onLongClick,
-                )
+                ),
     ) {
         Card(
             modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f),
@@ -120,7 +120,7 @@ fun ChannelCard(
                                     MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
                                     RoundedCornerShape(6.dp),
                                 )
-                                .padding(if (isCompactCard) 2.dp else 4.dp)
+                                .padding(if (isCompactCard) 2.dp else 4.dp),
                     ) {
                         AsyncImage(
                             imageUrl = channel.images.primary.toString(),
@@ -149,7 +149,7 @@ fun ChannelCard(
                             painterResource(
                                 id =
                                     if (channel.favorite) R.drawable.ic_favorite_filled
-                                    else R.drawable.ic_favorite
+                                    else R.drawable.ic_favorite,
                             ),
                         contentDescription = stringResource(R.string.cd_favorite),
                         modifier = Modifier.size(16.dp),
@@ -201,7 +201,7 @@ fun ChannelCard(
                         Modifier.fillMaxWidth(0.72f)
                             .height(10.dp)
                             .clip(RoundedCornerShape(5.dp))
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                 )
             }
             return@Column

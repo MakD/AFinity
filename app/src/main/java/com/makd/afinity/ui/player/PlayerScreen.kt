@@ -135,7 +135,7 @@ fun PlayerScreen(
                     channelName = item.name,
                     streamUrl = liveStreamUrl,
                     playbackInfo = livePlaybackInfo,
-                )
+                ),
             )
         } else {
             Timber.d("Initializing playlist and playing media: ${item.name}")
@@ -174,7 +174,7 @@ fun PlayerScreen(
 
                 override val currentItemId: UUID?
                     get() = viewModel.currentPlayingItemId
-            }
+            },
         )
         syncPlayViewModel.setBufferingFlow(viewModel.uiState.map { it.isBuffering })
     }
@@ -188,7 +188,7 @@ fun PlayerScreen(
                             item = effect.item,
                             mediaSourceId = effect.mediaSourceId,
                             startPositionMs = effect.startPositionMs,
-                        )
+                        ),
                     )
                 is SyncPlayEffect.GroupJoined -> syncPlayViewModel.dismissGroupSheet()
                 else -> {}
@@ -301,8 +301,8 @@ fun PlayerScreen(
                         } else {
                             viewModel.handlePlayerEvent(
                                 PlayerEvent.OnSeekBarDragFinished(
-                                    viewModel.uiState.value.seekPosition
-                                )
+                                    viewModel.uiState.value.seekPosition,
+                                ),
                             )
                         }
                     }
@@ -430,7 +430,7 @@ fun PlayerScreen(
                             indication = null,
                         ) {
                             showVersionPicker = false
-                        }
+                        },
                 ) {
                     Box(
                         modifier =
@@ -442,7 +442,7 @@ fun PlayerScreen(
                                     indication = null,
                                 ) {
                                     /* consume */
-                                }
+                                },
                     ) {
                         VersionPickerSheet(
                             sources = uiState.availableSources,

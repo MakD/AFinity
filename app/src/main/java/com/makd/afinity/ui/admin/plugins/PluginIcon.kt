@@ -34,7 +34,7 @@ internal fun PluginCover(
         shape = RoundedCornerShape(cornerRadius),
         colors =
             CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             ),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
     ) {

@@ -312,7 +312,7 @@ private fun CreateButton(creating: Boolean, enabled: Boolean, onCreate: () -> Un
             }
             Text(
                 if (creating) stringResource(R.string.library_add_creating)
-                else stringResource(R.string.library_add_create)
+                else stringResource(R.string.library_add_create),
             )
         }
     }

@@ -23,7 +23,7 @@ interface AbsDownloadDao {
              AND episodeId IS NULL
              AND jellyfinServerId = :serverId
              AND jellyfinUserId = :userId
-           LIMIT 1"""
+           LIMIT 1""",
     )
     suspend fun getDownloadForBook(
         libraryItemId: String,
@@ -37,7 +37,7 @@ interface AbsDownloadDao {
              AND episodeId = :episodeId
              AND jellyfinServerId = :serverId
              AND jellyfinUserId = :userId
-           LIMIT 1"""
+           LIMIT 1""",
     )
     suspend fun getDownloadForEpisode(
         libraryItemId: String,
@@ -54,7 +54,7 @@ interface AbsDownloadDao {
              AND jellyfinServerId = :serverId
              AND jellyfinUserId = :userId
            ORDER BY updatedAt DESC
-           LIMIT 1"""
+           LIMIT 1""",
     )
     suspend fun getFirstCompletedEpisodeForItem(
         libraryItemId: String,
@@ -69,7 +69,7 @@ interface AbsDownloadDao {
              AND status = 'COMPLETED'
              AND jellyfinServerId = :serverId
              AND jellyfinUserId = :userId
-           ORDER BY updatedAt DESC"""
+           ORDER BY updatedAt DESC""",
     )
     suspend fun getCompletedEpisodesForItem(
         libraryItemId: String,
@@ -82,7 +82,7 @@ interface AbsDownloadDao {
            WHERE status IN ('QUEUED', 'DOWNLOADING')
              AND jellyfinServerId = :serverId
              AND jellyfinUserId = :userId
-           ORDER BY createdAt DESC"""
+           ORDER BY createdAt DESC""",
     )
     fun getActiveDownloadsFlow(serverId: String, userId: String): Flow<List<AbsDownloadEntity>>
 
@@ -91,7 +91,7 @@ interface AbsDownloadDao {
            WHERE status = 'COMPLETED'
              AND jellyfinServerId = :serverId
              AND jellyfinUserId = :userId
-           ORDER BY updatedAt DESC"""
+           ORDER BY updatedAt DESC""",
     )
     fun getCompletedDownloadsFlow(serverId: String, userId: String): Flow<List<AbsDownloadEntity>>
 
@@ -100,7 +100,7 @@ interface AbsDownloadDao {
            WHERE status = 'COMPLETED'
              AND jellyfinServerId = :serverId
              AND jellyfinUserId = :userId
-           ORDER BY updatedAt DESC"""
+           ORDER BY updatedAt DESC""",
     )
     suspend fun getCompletedDownloads(serverId: String, userId: String): List<AbsDownloadEntity>
 
@@ -110,7 +110,7 @@ interface AbsDownloadDao {
              AND episodeId IS NULL
              AND status = 'COMPLETED'
              AND jellyfinServerId = :serverId
-             AND jellyfinUserId = :userId"""
+             AND jellyfinUserId = :userId""",
     )
     suspend fun isBookDownloaded(libraryItemId: String, serverId: String, userId: String): Int
 
@@ -120,7 +120,7 @@ interface AbsDownloadDao {
              AND episodeId = :episodeId
              AND status = 'COMPLETED'
              AND jellyfinServerId = :serverId
-             AND jellyfinUserId = :userId"""
+             AND jellyfinUserId = :userId""",
     )
     suspend fun isEpisodeDownloaded(
         libraryItemId: String,
@@ -138,7 +138,7 @@ interface AbsDownloadDao {
                tracksDownloaded = :tracksDownloaded,
                serializedSession = COALESCE(:serializedSession, serializedSession),
                updatedAt = :updatedAt
-           WHERE id = :id AND status != 'CANCELLED'"""
+           WHERE id = :id AND status != 'CANCELLED'""",
     )
     suspend fun updateProgress(
         id: UUID,
@@ -152,7 +152,7 @@ interface AbsDownloadDao {
     )
 
     @Query(
-        "UPDATE abs_downloads SET status = :status, error = :error, updatedAt = :updatedAt WHERE id = :id"
+        "UPDATE abs_downloads SET status = :status, error = :error, updatedAt = :updatedAt WHERE id = :id",
     )
     suspend fun updateStatus(id: UUID, status: AbsDownloadStatus, error: String?, updatedAt: Long)
 
@@ -161,7 +161,7 @@ interface AbsDownloadDao {
            SET authorDescription = :description,
                authorImagePath = :imagePath,
                authorTitleCount = :titleCount
-           WHERE id = :id"""
+           WHERE id = :id""",
     )
     suspend fun updateAuthor(id: UUID, description: String?, imagePath: String?, titleCount: Int?)
 
@@ -171,13 +171,13 @@ interface AbsDownloadDao {
         """SELECT COALESCE(SUM(bytesDownloaded), 0) FROM abs_downloads
            WHERE status = 'COMPLETED'
              AND jellyfinServerId = :serverId
-             AND jellyfinUserId = :userId"""
+             AND jellyfinUserId = :userId""",
     )
     suspend fun getTotalBytesForServer(serverId: String, userId: String): Long
 
     @Query(
         """SELECT COALESCE(SUM(bytesDownloaded), 0) FROM abs_downloads
-           WHERE status = 'COMPLETED'"""
+           WHERE status = 'COMPLETED'""",
     )
     suspend fun getTotalBytesAllServers(): Long
 
@@ -187,7 +187,7 @@ interface AbsDownloadDao {
            WHERE status = 'COMPLETED'
              AND jellyfinServerId = :serverId
              AND jellyfinUserId = :userId
-           GROUP BY storageVolumeId"""
+           GROUP BY storageVolumeId""",
     )
     suspend fun getStorageUsedPerVolume(serverId: String, userId: String): List<VolumeUsage>
 
@@ -195,7 +195,7 @@ interface AbsDownloadDao {
         """SELECT storageVolumeId, COALESCE(SUM(bytesDownloaded), 0) AS totalBytes
            FROM abs_downloads
            WHERE status = 'COMPLETED'
-           GROUP BY storageVolumeId"""
+           GROUP BY storageVolumeId""",
     )
     suspend fun getStorageUsedPerVolumeAllServers(): List<VolumeUsage>
 }

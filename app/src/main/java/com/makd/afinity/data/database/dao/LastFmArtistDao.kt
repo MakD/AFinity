@@ -21,7 +21,7 @@ interface LastFmArtistDao {
 
     @Query(
         "SELECT * FROM lastfm_popular_cache WHERE serverId = :serverId AND userId = :userId " +
-            "AND artistId = :artistId"
+            "AND artistId = :artistId",
     )
     suspend fun getPopular(
         serverId: String,

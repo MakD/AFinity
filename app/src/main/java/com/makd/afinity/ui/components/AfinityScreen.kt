@@ -54,7 +54,7 @@ fun AfinityScreen(
         containerColor = containerColor,
         contentWindowInsets =
             ScaffoldDefaults.contentWindowInsets.only(
-                WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
             ),
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {

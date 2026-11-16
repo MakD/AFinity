@@ -29,7 +29,7 @@ fun musicAdminMenuActions(
                 iconRes = R.drawable.ic_edit_circle,
                 onClick = onEditMetadata,
                 dividerBefore = true,
-            )
+            ),
         )
         if (onIdentify != null) {
             add(
@@ -37,7 +37,7 @@ fun musicAdminMenuActions(
                     label = stringResource(R.string.admin_action_identify),
                     iconRes = R.drawable.ic_search,
                     onClick = onIdentify,
-                )
+                ),
             )
         }
         add(
@@ -45,14 +45,14 @@ fun musicAdminMenuActions(
                 label = stringResource(R.string.admin_action_edit_images),
                 iconRes = R.drawable.ic_photo_search,
                 onClick = onEditImages,
-            )
+            ),
         )
         add(
             DetailMenuAction(
                 label = stringResource(R.string.admin_action_refresh_metadata),
                 iconRes = R.drawable.ic_refresh,
                 onClick = onRefresh,
-            )
+            ),
         )
         if (canDelete && deleteLabel != null) {
             add(
@@ -61,7 +61,7 @@ fun musicAdminMenuActions(
                     iconRes = R.drawable.ic_delete,
                     onClick = onDelete,
                     destructive = true,
-                )
+                ),
             )
         }
     }
@@ -96,7 +96,7 @@ fun rememberTrackAdminActions(
                 },
                 onDelete = { track ->
                     currentOnRequest(
-                        MusicAdminRequest.Delete(track.id, track.name, MusicDeleteKind.TRACK)
+                        MusicAdminRequest.Delete(track.id, track.name, MusicDeleteKind.TRACK),
                     )
                 },
             )

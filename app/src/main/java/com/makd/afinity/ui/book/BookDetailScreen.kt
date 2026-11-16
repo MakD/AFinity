@@ -511,7 +511,7 @@ private fun SeriesSection(
         )
     val rowState =
         rememberLazyListState(
-            initialFirstVisibleItemIndex = startIndex.coerceIn(0, books.lastIndex)
+            initialFirstVisibleItemIndex = startIndex.coerceIn(0, books.lastIndex),
         )
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         DetailSectionTitle(text = stringResource(R.string.book_more_in_series_fmt, seriesName))
@@ -580,7 +580,7 @@ private fun BookDetailsSection(book: AfinityBook) {
                             SpanStyle(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Medium,
-                            )
+                            ),
                         ) {
                             append(value)
                         }

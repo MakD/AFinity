@@ -25,7 +25,7 @@ interface ShowDao {
 
     @Query(
         "UPDATE shows SET providerIds = :providerIds, externalUrls = :externalUrls, " +
-            "tagline = :tagline WHERE id = :showId AND serverId = :serverId"
+            "tagline = :tagline WHERE id = :showId AND serverId = :serverId",
     )
     suspend fun updateExternalIds(
         showId: UUID,
@@ -55,7 +55,7 @@ interface ShowDao {
         WHERE serverId = :serverId
         AND (name LIKE '%' || :query || '%' OR originalTitle LIKE '%' || :query || '%')
         ORDER BY name ASC
-    """
+    """,
     )
     suspend fun searchShows(query: String, serverId: String): List<AfinityShowDto>
 

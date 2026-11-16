@@ -116,7 +116,7 @@ fun MusicQueueSheet(
                     onClick = {
                         viewModel.clearQueue()
                         onDismiss()
-                    }
+                    },
                 ) {
                     Text(
                         stringResource(R.string.music_filter_clear),
@@ -131,7 +131,7 @@ fun MusicQueueSheet(
                         text = stringResource(R.string.music_queue_now_playing),
                         style =
                             MaterialTheme.typography.labelMedium.copy(
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
                             ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 8.dp),
@@ -222,7 +222,7 @@ fun MusicQueueSheet(
                                                 stringResource(R.string.cd_music_remove),
                                             tint =
                                                 MaterialTheme.colorScheme.onErrorContainer.copy(
-                                                    alpha = iconAlpha
+                                                    alpha = iconAlpha,
                                                 ),
                                         )
                                     }
@@ -249,7 +249,7 @@ fun MusicQueueSheet(
                                                         currentIndex + 1 + toLocal,
                                                     )
                                                 }
-                                            }
+                                            },
                                         ),
                                     elevation = elevation,
                                 )
@@ -297,7 +297,7 @@ private fun QueueTrackRow(
                 modifier =
                     Modifier.size(48.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
             ) {
                 com.makd.afinity.ui.components.AsyncImage(
                     imageUrl = track.images.primary?.toString(),
@@ -332,7 +332,7 @@ private fun QueueTrackRow(
                     text = track.name,
                     style =
                         MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = if (isCurrentTrack) FontWeight.Bold else FontWeight.Medium
+                            fontWeight = if (isCurrentTrack) FontWeight.Bold else FontWeight.Medium,
                         ),
                     color =
                         if (isCurrentTrack) MaterialTheme.colorScheme.primary

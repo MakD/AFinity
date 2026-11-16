@@ -134,7 +134,7 @@ fun LicensesScreen(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
                 ),
             variantColors =
                 LibraryDefaults.m3VariantColors(
-                    licenseHueResolver = accentDerivedLicenseHueResolver()
+                    licenseHueResolver = accentDerivedLicenseHueResolver(),
                 ),
             header = {
                 item {
@@ -159,7 +159,7 @@ fun LicensesScreen(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
                             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 aboutLinks.forEach { link ->
                                     FilledTonalIconButton(
-                                        onClick = { uriHandler.openUri(link.url) }
+                                        onClick = { uriHandler.openUri(link.url) },
                                     ) {
                                         Icon(
                                             painter = painterResource(link.iconRes),
@@ -176,7 +176,7 @@ fun LicensesScreen(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
                                 text = stringResource(R.string.licenses_header_title),
                                 style =
                                     MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
                                     ),
                             )
                             Spacer(modifier = Modifier.height(8.dp))
@@ -207,7 +207,7 @@ fun LicensesScreen(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
                             text = stringResource(R.string.licenses_footer_built_with),
                             style =
                                 MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Medium,
                                 ),
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurface,

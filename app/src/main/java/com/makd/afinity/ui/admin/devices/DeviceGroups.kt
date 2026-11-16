@@ -196,7 +196,7 @@ internal fun buildDeviceGroups(
         }
         .sortedWith(
             compareByDescending<AdminDeviceGroup> { it.isThisDevice }
-                .thenByDescending { it.lastActivity }
+                .thenByDescending { it.lastActivity },
         )
 
 internal fun AdminDeviceGroup.matches(

@@ -101,7 +101,7 @@ fun LazyListScope.chapterWindowItems(
                         painterResource(
                             id =
                                 if (showListened) R.drawable.ic_keyboard_arrow_up
-                                else R.drawable.ic_keyboard_arrow_down
+                                else R.drawable.ic_keyboard_arrow_down,
                         ),
                     contentDescription =
                         if (showListened) stringResource(R.string.cd_collapse)
@@ -129,7 +129,7 @@ fun LazyListScope.chapterWindowItems(
                 Modifier.animateItem()
                     .fadeOutBottom(fadeLast && offset == lastWindowIndex)
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
         ) {
             ChapterItem(
                 chapter = chapter,

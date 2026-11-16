@@ -108,7 +108,7 @@ fun ModalSideSheet(
                             interactionSource = remember { MutableInteractionSource() },
                         ) {
                             scope.launch { animateOutAndDismiss() }
-                        }
+                        },
             )
 
             Surface(
@@ -126,7 +126,7 @@ fun ModalSideSheet(
                                         val next = offsetX.value + delta
                                         offsetX.snapTo(
                                             if (isEndOnRight) next.coerceIn(0f, sheetWidthPx)
-                                            else next.coerceIn(-sheetWidthPx, 0f)
+                                            else next.coerceIn(-sheetWidthPx, 0f),
                                         )
                                     }
                                 },

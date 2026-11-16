@@ -119,7 +119,7 @@ constructor(
                     _isOnWifi.value = false
                     _networkSwitchEvents.tryEmit(Unit)
                 }
-            }
+            },
         )
     }
 

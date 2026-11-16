@@ -133,7 +133,7 @@ fun MetadataRow(
                     ?.takeIf { it > 0 }
                     ?.let { count ->
                         MetadataText(
-                            pluralStringResource(R.plurals.meta_episode_count, count, count)
+                            pluralStringResource(R.plurals.meta_episode_count, count, count),
                         )
                         needsSeparator = true
                     }

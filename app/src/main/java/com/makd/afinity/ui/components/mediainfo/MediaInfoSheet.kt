@@ -217,7 +217,7 @@ fun MediaInfoSheet(info: MediaInfo, onDismiss: () -> Unit) {
     var versionIndex by
         rememberSaveable(info.versions.size) {
             mutableIntStateOf(
-                info.initialVersion.coerceIn(0, (info.versions.size - 1).coerceAtLeast(0))
+                info.initialVersion.coerceIn(0, (info.versions.size - 1).coerceAtLeast(0)),
             )
         }
     val version = info.versions.getOrNull(versionIndex)
@@ -310,9 +310,9 @@ private fun MediaInfoContainer(onDismiss: () -> Unit, content: @Composable (Modi
                 Modifier.statusBarsPadding()
                     .navigationBarsPadding()
                     .windowInsetsPadding(
-                        WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                        WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal),
                     )
-                    .padding(top = 24.dp)
+                    .padding(top = 24.dp),
             )
         }
     } else {
@@ -421,7 +421,7 @@ private fun SectionCard(
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
-            modifier = Modifier.padding(bottom = if (section.entries.isEmpty()) 8.dp else 0.dp)
+            modifier = Modifier.padding(bottom = if (section.entries.isEmpty()) 8.dp else 0.dp),
         ) {
             Row(
                 modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 4.dp),
@@ -442,7 +442,7 @@ private fun SectionCard(
                 }
                 Box(modifier = Modifier.weight(1f))
                 IconButton(
-                    onClick = { copy(context, section.title, section.copyText(), copiedText) }
+                    onClick = { copy(context, section.title, section.copyText(), copiedText) },
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_clipboard),
@@ -587,7 +587,7 @@ private fun EntryRow(
             modifier =
                 Modifier.fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surfaceContainer)
-                    .padding(vertical = 6.dp)
+                    .padding(vertical = 6.dp),
         ) {
             entry.groups.forEach { group ->
                 group.header?.let {

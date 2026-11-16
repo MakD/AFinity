@@ -74,7 +74,7 @@ class MPVPlayer(
     private val boundInputKeys: Set<String>
 
     private constructor(
-        builder: Builder
+        builder: Builder,
     ) : this(
         context = builder.context,
         audioAttributes = builder.audioAttributes,
@@ -202,7 +202,7 @@ class MPVPlayer(
         val effectiveHwDec = if (useVulkan && hwDec == "mediacodec") "mediacodec-copy" else hwDec
 
         Timber.d(
-            "MPVPlayer init: vo=$videoOutput, ao=$audioOutput, hwdec=$effectiveHwDec, gpu-api=$gpuApi"
+            "MPVPlayer init: vo=$videoOutput, ao=$audioOutput, hwdec=$effectiveHwDec, gpu-api=$gpuApi",
         )
 
         mpv.setOptionString("config", "yes")
@@ -795,7 +795,7 @@ class MPVPlayer(
                     "${mediaItem.localConfiguration?.uri}",
                     "insert-at",
                     index.toString(),
-                )
+                ),
             )
         }
     }
@@ -817,7 +817,7 @@ class MPVPlayer(
                     "loadfile",
                     "${mediaItem.localConfiguration?.uri}",
                     if (index == 0) "replace" else "append",
-                )
+                ),
             )
         }
 
@@ -831,7 +831,7 @@ class MPVPlayer(
                         "auto",
                         "${subtitle.label}",
                         "${subtitle.language}",
-                    )
+                    ),
                 )
             }
             if (initialIndex > 0) {
@@ -852,7 +852,7 @@ class MPVPlayer(
                         "auto",
                         "${subtitle.label}",
                         "${subtitle.language}",
-                    )
+                    ),
                 )
             }
             if (currentMediaItemIndex != index) {
@@ -921,7 +921,11 @@ class MPVPlayer(
             initialSeekTo =
                 if (isPlayerReady) {
                     mpv.command(
-                        arrayOf("seek", "${seekTo.toDouble().div(C.MILLIS_PER_SECOND)}", "absolute")
+                        arrayOf(
+                            "seek",
+                            "${seekTo.toDouble().div(C.MILLIS_PER_SECOND)}",
+                            "absolute",
+                        ),
                     )
 
                     currentPositionMs = targetMs
@@ -1294,7 +1298,7 @@ class MPVPlayer(
                     .setLanguage(json.optNullableString("lang"))
                     .setSelectionFlags(
                         (if (json.optBoolean("default")) C.SELECTION_FLAG_DEFAULT else 0) or
-                            (if (json.optBoolean("forced")) C.SELECTION_FLAG_FORCED else 0)
+                            (if (json.optBoolean("forced")) C.SELECTION_FLAG_FORCED else 0),
                     )
                     .setCodecs(json.optNullableString("codec"))
                     .setCustomData(json.optNullableString("external-filename"))
@@ -1309,7 +1313,7 @@ class MPVPlayer(
                             .setWidth(json.optInt("demux-w", Format.NO_VALUE))
                             .setHeight(json.optInt("demux-h", Format.NO_VALUE))
                             .setFrameRate(
-                                (json.optNullableDouble("demux-fps") ?: Format.NO_VALUE).toFloat()
+                                (json.optNullableDouble("demux-fps") ?: Format.NO_VALUE).toFloat(),
                             )
                             .build()
                     }

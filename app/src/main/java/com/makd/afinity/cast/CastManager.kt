@@ -210,7 +210,7 @@ constructor(
                         }
                             ?: run {
                                 _castEvents.emit(
-                                    CastEvent.PlaybackError("Failed to get stream URL")
+                                    CastEvent.PlaybackError("Failed to get stream URL"),
                                 )
                                 return@launch
                             }
@@ -235,7 +235,7 @@ constructor(
                     }
 
                 Timber.d(
-                    "Cast stream URL: $streamUrl (method: $playMethod, contentType: $contentType)"
+                    "Cast stream URL: $streamUrl (method: $playMethod, contentType: $contentType)",
                 )
 
                 val apiToken =
@@ -419,7 +419,7 @@ constructor(
                     remoteMediaClient
                         ?: run {
                             _castEvents.emit(
-                                CastEvent.PlaybackError("Not connected to a cast device")
+                                CastEvent.PlaybackError("Not connected to a cast device"),
                             )
                             return@launch
                         }
@@ -445,7 +445,7 @@ constructor(
                             .setStreamDuration(durationMs)
                             .setMetadata(metadata)
                             .setCustomData(
-                                JSONObject().put(MUSIC_TRACK_ID_KEY, track.id.toString())
+                                JSONObject().put(MUSIC_TRACK_ID_KEY, track.id.toString()),
                             )
                             .build()
 
@@ -468,7 +468,7 @@ constructor(
                 startPositionPolling()
 
                 Timber.d(
-                    "Music queue loaded to Cast: ${tracks.size} tracks, starting at $startIndex"
+                    "Music queue loaded to Cast: ${tracks.size} tracks, starting at $startIndex",
                 )
             } catch (e: CancellationException) {
                 throw e
@@ -526,7 +526,7 @@ constructor(
                     remoteMediaClient
                         ?: run {
                             _castEvents.emit(
-                                CastEvent.PlaybackError("Not connected to a cast device")
+                                CastEvent.PlaybackError("Not connected to a cast device"),
                             )
                             return@launch
                         }
@@ -583,7 +583,7 @@ constructor(
                 startPositionPolling()
 
                 Timber.d(
-                    "ABS loaded to Cast: ${tracks.size} tracks, starting at index $startTrackIndex, pos ${startPositionInTrackMs}ms"
+                    "ABS loaded to Cast: ${tracks.size} tracks, starting at index $startTrackIndex, pos ${startPositionInTrackMs}ms",
                 )
             } catch (e: CancellationException) {
                 throw e
@@ -605,7 +605,7 @@ constructor(
                     val currentItemId = client.mediaStatus?.currentItemId
                     if (currentItemId == targetEntry.key) {
                         client.seek(
-                            MediaSeekOptions.Builder().setPosition(positionWithinTrackMs).build()
+                            MediaSeekOptions.Builder().setPosition(positionWithinTrackMs).build(),
                         )
                     } else {
                         client.queueJumpToItem(targetEntry.key, positionWithinTrackMs, null)
@@ -1203,18 +1203,18 @@ constructor(
                     if (wasMusicCasting) {
                         _castEvents.emit(
                             CastEvent.MusicCastDisconnected(
-                                lastPositionMs = finalState.currentPosition
-                            )
+                                lastPositionMs = finalState.currentPosition,
+                            ),
                         )
                     } else if (wasAbsCasting) {
                         _castEvents.emit(
                             CastEvent.AbsCastDisconnected(
-                                lastPositionSeconds = finalState.currentPosition / 1000.0
-                            )
+                                lastPositionSeconds = finalState.currentPosition / 1000.0,
+                            ),
                         )
                     } else {
                         _castEvents.emit(
-                            CastEvent.Disconnected(lastPositionMs = finalState.currentPosition)
+                            CastEvent.Disconnected(lastPositionMs = finalState.currentPosition),
                         )
                     }
                 }

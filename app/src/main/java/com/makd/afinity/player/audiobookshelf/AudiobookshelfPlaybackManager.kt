@@ -29,7 +29,7 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
 
     fun setSession(session: PlaybackSession, serverUrl: String? = null, token: String? = null) {
         Timber.d(
-            "PlaybackManager.setSession: id=${session.id} title=${session.displayTitle} author=${session.displayAuthor}"
+            "PlaybackManager.setSession: id=${session.id} title=${session.displayTitle} author=${session.displayAuthor}",
         )
         _currentSession.value = session
 
@@ -147,7 +147,7 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
     fun clearSession() {
         Timber.tag("ABS-MiniPlayer")
             .d(
-                "PlaybackManager.clearSession: was sessionId=${_currentSession.value?.id} displayTitle=${_playbackState.value.displayTitle}"
+                "PlaybackManager.clearSession: was sessionId=${_currentSession.value?.id} displayTitle=${_playbackState.value.displayTitle}",
             )
         _currentSession.value = null
         _playbackState.update { current ->

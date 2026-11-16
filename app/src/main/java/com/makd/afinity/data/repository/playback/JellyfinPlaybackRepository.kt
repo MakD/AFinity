@@ -107,7 +107,7 @@ constructor(
                     mediaInfoApi.getPostedPlaybackInfo(itemId = itemId, data = playbackInfoDto)
 
                 Timber.d(
-                    "Got playback info response with ${response.content.mediaSources.size} media sources"
+                    "Got playback info response with ${response.content.mediaSources.size} media sources",
                 )
 
                 response.content
@@ -159,7 +159,7 @@ constructor(
                     mediaInfoApi.getPostedPlaybackInfo(itemId = itemId, data = playbackInfoDto)
 
                 Timber.d(
-                    "Got ${response.content.mediaSources.size} media sources for item: $itemId"
+                    "Got ${response.content.mediaSources.size} media sources for item: $itemId",
                 )
                 response.content.mediaSources
             } catch (e: CancellationException) {
@@ -226,7 +226,7 @@ constructor(
                                     maxStreamingBitrate = maxStreamingBitrate,
                                     deviceProfile =
                                         deviceProfileFactory.createMusicProfile(
-                                            maxStreamingBitrate
+                                            maxStreamingBitrate,
                                         ),
                                     enableDirectPlay = true,
                                     enableDirectStream = true,
@@ -254,13 +254,13 @@ constructor(
                     source.transcodingUrl?.takeIf { it.isNotBlank() }
                         ?: run {
                             Timber.e(
-                                "Audio source $itemId supports neither direct play nor transcoding"
+                                "Audio source $itemId supports neither direct play nor transcoding",
                             )
                             return@withContext null
                         }
 
                 Timber.d(
-                    "Resolved audio stream for $itemId: protocol=${source.transcodingSubProtocol} reasons=${TranscodingUrl.transcodeReasons(transcodingUrl)}"
+                    "Resolved audio stream for $itemId: protocol=${source.transcodingSubProtocol} reasons=${TranscodingUrl.transcodeReasons(transcodingUrl)}",
                 )
 
                 StreamDecision.Transcode(
@@ -333,7 +333,7 @@ constructor(
                 val burnedIn = TranscodingUrl.burnedInSubtitleIndex(rewritten)
 
                 Timber.d(
-                    "Resolved stream for $itemId: directStream=${source.supportsDirectStream} protocol=${source.transcodingSubProtocol} reasons=$reasons burnedIn=$burnedIn"
+                    "Resolved stream for $itemId: directStream=${source.supportsDirectStream} protocol=${source.transcodingSubProtocol} reasons=$reasons burnedIn=$burnedIn",
                 )
 
                 if (source.supportsDirectStream) {
@@ -389,7 +389,7 @@ constructor(
                         isMuted = false,
                         repeatMode = RepeatMode.REPEAT_NONE,
                         playbackOrder = PlaybackOrder.DEFAULT,
-                    )
+                    ),
                 )
                 true
             } catch (e: ApiClientException) {
@@ -434,7 +434,7 @@ constructor(
                     sessionManager.getCurrentApiClient()
                         ?: run {
                             Timber.w(
-                                "No API client available, saving playback progress locally for item: $itemId"
+                                "No API client available, saving playback progress locally for item: $itemId",
                             )
                             savePlaybackProgressLocally(
                                 itemId,
@@ -461,7 +461,7 @@ constructor(
                         isMuted = isMuted,
                         canSeek = true,
                         playbackOrder = PlaybackOrder.DEFAULT,
-                    )
+                    ),
                 )
                 true
             } catch (e: ApiClientException) {
@@ -526,7 +526,7 @@ constructor(
                     sessionManager.getCurrentApiClient()
                         ?: run {
                             Timber.w(
-                                "No API client available, saving playback stop locally for item: $itemId"
+                                "No API client available, saving playback stop locally for item: $itemId",
                             )
                             savePlaybackProgressLocally(
                                 itemId = itemId,
@@ -552,7 +552,7 @@ constructor(
                         playSessionId = sessionId,
                         playlistItemId = playlistItemId,
                         failed = false,
-                    )
+                    ),
                 )
                 if (!isMusic) clearPendingSync(itemId)
                 true
@@ -685,7 +685,7 @@ constructor(
                 )
             databaseRepository.insertUserData(updatedData)
             Timber.i(
-                "Saved playback progress locally for item $itemId: ${resolved.positionTicks / 10000}ms, played=${updatedData.played}"
+                "Saved playback progress locally for item $itemId: ${resolved.positionTicks / 10000}ms, played=${updatedData.played}",
             )
         } catch (e: CancellationException) {
             throw e
@@ -774,7 +774,7 @@ constructor(
                         ?: sessions.firstOrNull { it.deviceId == deviceId }?.transcodingInfo
                 if (info == null) {
                     Timber.d(
-                        "No transcoding info for deviceId=$deviceId (sessions=${sessions.size})"
+                        "No transcoding info for deviceId=$deviceId (sessions=${sessions.size})",
                     )
                 }
                 info
@@ -908,7 +908,7 @@ constructor(
                     mediaInfoApi.getPostedPlaybackInfo(itemId = itemId, data = playbackInfoDto)
 
                 Timber.d(
-                    "Got cast playback info with ${response.content.mediaSources.size} media sources"
+                    "Got cast playback info with ${response.content.mediaSources.size} media sources",
                 )
                 response.content
             } catch (e: ApiClientException) {

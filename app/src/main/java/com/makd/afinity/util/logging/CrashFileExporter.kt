@@ -40,11 +40,11 @@ class CrashFileExporter(
                     appendLine("${CrashStore.THREAD_KEY} ${thread.name}")
                     appendLine(
                         "${CrashStore.BUILD_KEY} ${BuildConfig.VERSION_NAME} " +
-                            "(${BuildConfig.VERSION_CODE}) $buildType"
+                            "(${BuildConfig.VERSION_CODE}) $buildType",
                     )
                     appendLine(
                         "${CrashStore.DEVICE_KEY} ${Build.MANUFACTURER} ${Build.MODEL} · " +
-                            "Android ${Build.VERSION.RELEASE} (${Build.VERSION.SDK_INT})"
+                            "Android ${Build.VERSION.RELEASE} (${Build.VERSION.SDK_INT})",
                     )
                     appendLine()
                     appendLine(CrashStore.TRACE_HEADER)
@@ -52,7 +52,7 @@ class CrashFileExporter(
                     appendLine()
                     appendLine(CrashStore.LOGS_HEADER)
                     appendLine(ringBufferTree?.dump() ?: "(no ring buffer available)")
-                }
+                },
             )
         } catch (_: Exception) {} finally {
             defaultHandler?.uncaughtException(thread, throwable) ?: exitProcess(1)

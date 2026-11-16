@@ -156,7 +156,7 @@ fun MusicLibraryScreen(
                 onSearchClick = onSearchClick,
                 onMenuClick = onMenuClick,
             )
-        }
+        },
     ) { innerPadding ->
         MusicHomeContent(
             uiState = uiState,
@@ -929,7 +929,7 @@ private fun MadeForYouCarousel(
                     modifier =
                         Modifier.height(itemSize.height)
                             .maskClip(MaterialTheme.shapes.extraLarge)
-                            .clip(MaterialTheme.shapes.extraLarge)
+                            .clip(MaterialTheme.shapes.extraLarge),
                 ) {
                     when (val slot = slots[index]) {
                         is MadeForYouSlot.Mix -> {
@@ -1001,7 +1001,7 @@ private fun MusicTracksCard(
                         drawRect(gradient)
                         drawContent()
                     }
-                }
+                },
         ) {
             Row(
                 modifier =
@@ -1078,13 +1078,13 @@ private fun HeroDiscoverCard(
                             endY = size.height,
                         )
                     onDrawBehind { drawRect(gradient) }
-                }
+                },
         )
         Column(
             modifier =
                 Modifier.align(Alignment.BottomStart)
                     .graphicsLayer { alpha = contentAlpha() }
-                    .padding(16.dp)
+                    .padding(16.dp),
         ) {
             Text(
                 text = album.name,
@@ -1190,7 +1190,7 @@ fun CompactTrackGridSection(
                             text = track.name,
                             style =
                                 MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.SemiBold,
                                 ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -1224,6 +1224,6 @@ internal fun startMusicService(context: Context) {
         .audiobookshelfPlayer()
         .releaseForEngineSwitch()
     context.startService(
-        Intent(context, AudioService::class.java).setAction(AudioService.ACTION_ENGINE_MUSIC)
+        Intent(context, AudioService::class.java).setAction(AudioService.ACTION_ENGINE_MUSIC),
     )
 }

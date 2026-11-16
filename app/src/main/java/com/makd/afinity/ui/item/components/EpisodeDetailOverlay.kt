@@ -200,17 +200,20 @@ fun EpisodeDetailOverlay(
                                                             else Color.Red.copy(alpha = 0.8f),
                                                             RoundedCornerShape(4.dp),
                                                         )
-                                                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                                                        .padding(
+                                                            horizontal = 4.dp,
+                                                            vertical = 2.dp,
+                                                        ),
                                             ) {
                                                 Text(
                                                     text =
                                                         if (isUnaired)
                                                             stringResource(
-                                                                R.string.episode_upcoming
+                                                                R.string.episode_upcoming,
                                                             )
                                                         else
                                                             stringResource(
-                                                                R.string.episode_missing
+                                                                R.string.episode_missing,
                                                             ),
                                                     color = Color.White,
                                                     style =
@@ -234,8 +237,8 @@ fun EpisodeDetailOverlay(
                                         val formattedDate =
                                             date.format(
                                                 DateTimeFormatter.ofLocalizedDate(
-                                                    FormatStyle.MEDIUM
-                                                )
+                                                    FormatStyle.MEDIUM,
+                                                ),
                                             )
                                         Text(
                                             text =
@@ -299,7 +302,7 @@ fun EpisodeDetailOverlay(
                                             Icon(
                                                 painter =
                                                     painterResource(
-                                                        id = R.drawable.ic_community_rating
+                                                        id = R.drawable.ic_community_rating,
                                                     ),
                                                 contentDescription =
                                                     stringResource(R.string.cd_imdb),
@@ -440,7 +443,7 @@ fun EpisodeDetailOverlay(
                                             label = stringResource(R.string.media_info_title),
                                             iconRes = R.drawable.ic_info,
                                             onClick = { showMediaInfo = true },
-                                        )
+                                        ),
                                     )
                                 }
                                 if (isAdmin) {
@@ -451,7 +454,7 @@ fun EpisodeDetailOverlay(
                                             iconRes = R.drawable.ic_edit_circle,
                                             onClick = { onAdminAction(AdminAction.EditMetadata) },
                                             dividerBefore = hasMediaInfo,
-                                        )
+                                        ),
                                     )
                                     add(
                                         DetailMenuAction(
@@ -459,17 +462,17 @@ fun EpisodeDetailOverlay(
                                                 stringResource(R.string.admin_action_edit_images),
                                             iconRes = R.drawable.ic_photo_search,
                                             onClick = { onAdminAction(AdminAction.EditImages) },
-                                        )
+                                        ),
                                     )
                                     add(
                                         DetailMenuAction(
                                             label =
                                                 stringResource(
-                                                    R.string.admin_action_refresh_metadata
+                                                    R.string.admin_action_refresh_metadata,
                                                 ),
                                             iconRes = R.drawable.ic_refresh,
                                             onClick = { onAdminAction(AdminAction.Refresh) },
-                                        )
+                                        ),
                                     )
                                 }
                                 if (canDelete) {
@@ -479,7 +482,7 @@ fun EpisodeDetailOverlay(
                                             iconRes = R.drawable.ic_delete,
                                             onClick = { onAdminAction(AdminAction.Delete) },
                                             destructive = true,
-                                        )
+                                        ),
                                     )
                                 }
                             }
@@ -511,7 +514,7 @@ fun EpisodeDetailOverlay(
                 Modifier.statusBarsPadding()
                     .navigationBarsPadding()
                     .windowInsetsPadding(
-                        WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                        WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal),
                     ),
                 24.dp,
             )

@@ -252,11 +252,11 @@ private fun LiveTvGuideContent(
         }
     val renderStart =
         uiState.epgStartTime.plusMinutes(
-            (renderSlots.first - RENDER_MARGIN_SLOTS) * RENDER_SLOT_MINUTES
+            (renderSlots.first - RENDER_MARGIN_SLOTS) * RENDER_SLOT_MINUTES,
         )
     val renderEnd =
         uiState.epgStartTime.plusMinutes(
-            (renderSlots.last + 1 + RENDER_MARGIN_SLOTS) * RENDER_SLOT_MINUTES
+            (renderSlots.last + 1 + RENDER_MARGIN_SLOTS) * RENDER_SLOT_MINUTES,
         )
 
     val listState = rememberLazyListState()
@@ -329,13 +329,13 @@ private fun LiveTvGuideContent(
                     modifier =
                         Modifier.fillMaxWidth()
                             .height(headerHeight)
-                            .background(MaterialTheme.colorScheme.surface)
+                            .background(MaterialTheme.colorScheme.surface),
                 ) {
                     Box(
                         modifier =
                             Modifier.width(channelCellWidth)
                                 .height(headerHeight)
-                                .background(MaterialTheme.colorScheme.surface)
+                                .background(MaterialTheme.colorScheme.surface),
                     )
                     Box(modifier = Modifier.weight(1f).horizontalScroll(horizontalScrollState)) {
                         EpgTimeHeader(

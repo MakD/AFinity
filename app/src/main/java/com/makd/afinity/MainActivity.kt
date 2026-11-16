@@ -171,9 +171,9 @@ class MainActivity : AppCompatActivity() {
                                 onClick = {
                                     showNotificationRationale.value = false
                                     notificationPermissionLauncher.launch(
-                                        Manifest.permission.POST_NOTIFICATIONS
+                                        Manifest.permission.POST_NOTIFICATIONS,
                                     )
-                                }
+                                },
                             ) {
                                 Text(stringResource(R.string.notification_permission_yes))
                             }
@@ -184,10 +184,10 @@ class MainActivity : AppCompatActivity() {
                                     showNotificationRationale.value = false
                                     lifecycleScope.launch {
                                         preferencesRepository.setNotificationPermissionDeclined(
-                                            true
+                                            true,
                                         )
                                     }
-                                }
+                                },
                             ) {
                                 Text(stringResource(R.string.notification_permission_no))
                             }
@@ -243,7 +243,7 @@ class MainActivity : AppCompatActivity() {
                             itemId = itemId,
                             episodeId =
                                 intent.getStringExtra(AudioWidgetIntents.EXTRA_ABS_EPISODE_ID),
-                        )
+                        ),
                     )
                 }
         }

@@ -20,7 +20,7 @@ interface PreferencesRepositoryEntryPoint {
 
 @Composable
 fun rememberPreferencesRepository(
-    context: Context = LocalContext.current.applicationContext
+    context: Context = LocalContext.current.applicationContext,
 ): PreferencesRepository {
     return EntryPointAccessors.fromApplication(context, PreferencesRepositoryEntryPoint::class.java)
         .preferencesRepository()
@@ -34,7 +34,7 @@ interface ItemDownloadDelegateEntryPoint {
 
 @Composable
 fun rememberItemDownloadDelegate(
-    context: Context = LocalContext.current.applicationContext
+    context: Context = LocalContext.current.applicationContext,
 ): ItemDownloadDelegate {
     return EntryPointAccessors.fromApplication(
             context,
@@ -51,7 +51,7 @@ interface SeerrImageProxyEntryPoint {
 
 @Composable
 fun rememberSeerrImageProxy(
-    context: Context = LocalContext.current.applicationContext
+    context: Context = LocalContext.current.applicationContext,
 ): SeerrImageProxy {
     return EntryPointAccessors.fromApplication(context, SeerrImageProxyEntryPoint::class.java)
         .seerrImageProxy()
@@ -65,7 +65,7 @@ interface StorageLocationProviderEntryPoint {
 
 @Composable
 fun rememberStorageLocationProvider(
-    context: Context = LocalContext.current.applicationContext
+    context: Context = LocalContext.current.applicationContext,
 ): StorageLocationProvider {
     return EntryPointAccessors.fromApplication(
             context,

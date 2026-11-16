@@ -632,7 +632,7 @@ fun UpcomingEpisodeCard(
                             MaterialTheme.typography.bodySmall.copy(
                                 fontSize =
                                     MaterialTheme.typography.bodySmall.fontSize *
-                                        ratingScale.textScale
+                                        ratingScale.textScale,
                             ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

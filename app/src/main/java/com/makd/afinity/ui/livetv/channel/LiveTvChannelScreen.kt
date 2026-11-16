@@ -175,7 +175,7 @@ private fun ChannelDetailContent(
         remember(artChain, channel.id) {
             artChain.ifEmpty {
                 listOfNotNull(
-                    channel.images.primaryImageUrl?.let { it to channel.images.primaryBlurHash }
+                    channel.images.primaryImageUrl?.let { it to channel.images.primaryBlurHash },
                 )
             }
         }
@@ -281,12 +281,12 @@ private fun ColumnScope.ChannelHeader(
                         painterResource(
                             id =
                                 if (channel.favorite) R.drawable.ic_favorite_filled
-                                else R.drawable.ic_favorite
+                                else R.drawable.ic_favorite,
                         ),
                     contentDescription =
                         stringResource(
                             if (channel.favorite) R.string.cd_favorite_remove
-                            else R.string.cd_favorite_add
+                            else R.string.cd_favorite_add,
                         ),
                     onClick = onFavoriteClick,
                     iconTint = if (channel.favorite) Color.Red else null,

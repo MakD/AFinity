@@ -289,7 +289,7 @@ private fun colorEntry(format: MediaInfoFormat, video: AfinityMediaStream): Medi
         title =
             format.string(
                 if (dolbyVision != null) R.string.media_info_dolby_vision_and_color
-                else R.string.media_info_color_details
+                else R.string.media_info_color_details,
             ),
         summary = summary,
         groups =
@@ -429,7 +429,7 @@ private fun audioSection(format: MediaInfoFormat, source: AfinitySource): MediaI
                                     )
                                 },
                             ) + flagRows(format, stream),
-                    )
+                    ),
                 ),
         )
     }
@@ -475,7 +475,7 @@ private fun subtitleSection(format: MediaInfoFormat, source: AfinitySource): Med
                                     format.yesNo(stream.isHearingImpaired),
                                 ),
                             ) + flagRows(format, stream),
-                    )
+                    ),
                 ),
         )
     }

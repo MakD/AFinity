@@ -147,7 +147,7 @@ fun PlaylistVideoRow(
                                 iconRes = R.drawable.ic_delete,
                                 onClick = onRemoveFromPlaylist,
                                 destructive = true,
-                            )
+                            ),
                         ),
                 )
             }

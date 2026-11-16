@@ -36,7 +36,7 @@ fun LazyListScope.detailItem(
 fun DetailItemBox(horizontalPadding: Dp, gap: Dp, content: @Composable () -> Unit) {
     Box(
         modifier =
-            Modifier.fillMaxWidth().gapIfNotEmpty(gap).padding(horizontal = horizontalPadding)
+            Modifier.fillMaxWidth().gapIfNotEmpty(gap).padding(horizontal = horizontalPadding),
     ) {
         content()
     }

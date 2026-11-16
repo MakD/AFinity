@@ -86,7 +86,7 @@ internal fun PageGridSheet(
             val gridState =
                 rememberLazyGridState(
                     initialFirstVisibleItemIndex =
-                        if (filtering) 0 else (currentPage - ROWS_ABOVE_CURRENT).coerceAtLeast(0)
+                        if (filtering) 0 else (currentPage - ROWS_ABOVE_CURRENT).coerceAtLeast(0),
                 )
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(GridMinCell),
@@ -141,10 +141,10 @@ private fun GridPage(
                                 .padding(3.dp)
                         } else {
                             Modifier
-                        }
+                        },
                     )
                     .clip(RoundedCornerShape(8.dp))
-                    .background(colors.surfaceContainerHigh)
+                    .background(colors.surfaceContainerHigh),
         ) {
             file?.let {
                 AsyncImage(

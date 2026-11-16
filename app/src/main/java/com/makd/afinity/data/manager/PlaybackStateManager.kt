@@ -120,17 +120,17 @@ constructor(
 
                 if (success) {
                     Timber.d(
-                        "Playback stop reported to Jellyfin: item=$itemId, positionTicks=$positionTicks"
+                        "Playback stop reported to Jellyfin: item=$itemId, positionTicks=$positionTicks",
                     )
                 } else {
                     Timber.w(
-                        "Failed to report playback stop, progress saved locally. Scheduling sync..."
+                        "Failed to report playback stop, progress saved locally. Scheduling sync...",
                     )
                     syncScheduler.triggerSync()
                 }
             } else {
                 Timber.w(
-                    "Cannot report playback stop - missing data: item=$itemId, session=$sessionId, source=$mediaSourceId. Saving locally."
+                    "Cannot report playback stop - missing data: item=$itemId, session=$sessionId, source=$mediaSourceId. Saving locally.",
                 )
                 playbackRepository.savePlaybackStopOffline(
                     itemId = itemId,

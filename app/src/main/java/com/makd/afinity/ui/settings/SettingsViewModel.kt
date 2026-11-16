@@ -528,7 +528,7 @@ constructor(
                     _lastFmApiKey.value = lastFmKey
 
                     Timber.d(
-                        "SettingsViewModel - Updated uiState: user=${user?.name}, server=${server?.name}"
+                        "SettingsViewModel - Updated uiState: user=${user?.name}, server=${server?.name}",
                     )
                 }
         }
@@ -955,11 +955,11 @@ constructor(
                                     com.makd.afinity.data.models.player.SubtitleOutlineStyle
                                         .DEPRESSED) -> {
                             Timber.d(
-                                "Switching to MPV: Resetting ${currentSubtitlePrefs.outlineStyle} to NONE"
+                                "Switching to MPV: Resetting ${currentSubtitlePrefs.outlineStyle} to NONE",
                             )
                             currentSubtitlePrefs.copy(
                                 outlineStyle =
-                                    com.makd.afinity.data.models.player.SubtitleOutlineStyle.NONE
+                                    com.makd.afinity.data.models.player.SubtitleOutlineStyle.NONE,
                             )
                         }
 
@@ -1574,7 +1574,7 @@ constructor(
                 Timber.e(e, "TMDB validation network failure")
                 _uiState.value =
                     _uiState.value.copy(
-                        tmdbKeyValidationError = "Network failure. Please try again."
+                        tmdbKeyValidationError = "Network failure. Please try again.",
                     )
             } finally {
                 _uiState.value = _uiState.value.copy(isTmdbKeyValidating = false)
@@ -1610,7 +1610,7 @@ constructor(
                 Timber.e(e, "MDBList validation network failure")
                 _uiState.value =
                     _uiState.value.copy(
-                        mdbListKeyValidationError = "Network failure. Please try again."
+                        mdbListKeyValidationError = "Network failure. Please try again.",
                     )
             } finally {
                 _uiState.value = _uiState.value.copy(isMdbListKeyValidating = false)
@@ -1646,7 +1646,7 @@ constructor(
                 Timber.e(e, "OMDb validation network failure")
                 _uiState.value =
                     _uiState.value.copy(
-                        omdbKeyValidationError = "Network failure. Please try again."
+                        omdbKeyValidationError = "Network failure. Please try again.",
                     )
             } finally {
                 _uiState.value = _uiState.value.copy(isOmdbKeyValidating = false)
@@ -1729,7 +1729,7 @@ constructor(
                     _uiState.value.copy(
                         lastFmKeyValidationError =
                             if (e.code() == 403) "Invalid Last.fm API Key"
-                            else "Network failure. Please try again."
+                            else "Network failure. Please try again.",
                     )
             } catch (e: CancellationException) {
                 throw e
@@ -1737,7 +1737,7 @@ constructor(
                 Timber.e(e, "Last.fm validation network failure")
                 _uiState.value =
                     _uiState.value.copy(
-                        lastFmKeyValidationError = "Network failure. Please try again."
+                        lastFmKeyValidationError = "Network failure. Please try again.",
                     )
             } finally {
                 _uiState.value = _uiState.value.copy(isLastFmKeyValidating = false)

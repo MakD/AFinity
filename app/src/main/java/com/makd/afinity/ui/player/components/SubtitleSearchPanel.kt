@@ -160,7 +160,7 @@ fun SubtitleSearchPanel(
                                             R.string.subtitle_search_error_subtitledb
                                         } else {
                                             R.string.subtitle_search_error_server
-                                        }
+                                        },
                                     ),
                                 body = stringResource(R.string.subtitle_search_error_hint),
                                 actionLabel = stringResource(R.string.action_retry),
@@ -203,7 +203,7 @@ private fun PanelHeader(state: SubtitleSearchUiState, onBack: () -> Unit, onFilt
                 text =
                     stringResource(
                         if (optIn) R.string.subtitledb_connect_title
-                        else R.string.subtitle_search_title
+                        else R.string.subtitle_search_title,
                     ),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -230,7 +230,7 @@ private fun PanelHeader(state: SubtitleSearchUiState, onBack: () -> Unit, onFilt
                     painter =
                         painterResource(
                             if (state.isLanguageFiltered) R.drawable.ic_filter_active
-                            else R.drawable.ic_filter
+                            else R.drawable.ic_filter,
                         ),
                     contentDescription = stringResource(R.string.cd_subtitle_language_filter),
                     tint =
@@ -252,8 +252,8 @@ private fun headerSubtitle(state: SubtitleSearchUiState): String {
         add(
             stringResource(
                 if (fromSubtitleDb) R.string.subtitle_search_from_subtitledb
-                else R.string.subtitle_search_from_server
-            )
+                else R.string.subtitle_search_from_server,
+            ),
         )
     }
     return parts.joinToString(" · ")
@@ -274,7 +274,7 @@ private fun footerText(state: SubtitleSearchUiState): String? {
                     R.string.subtitle_search_footer_downloaded
                 } else {
                     R.string.subtitle_search_footer_device
-                }
+                },
             )
         null -> null
     }
@@ -298,7 +298,7 @@ private fun OptInContent(
                         SubtitleOptInReason.NO_PROVIDER -> R.string.subtitledb_blurb_no_provider
                         SubtitleOptInReason.NO_PERMISSION -> R.string.subtitledb_blurb_no_permission
                         SubtitleOptInReason.DOWNLOADED -> R.string.subtitledb_blurb_downloaded
-                    }
+                    },
                 ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -372,7 +372,7 @@ private fun SubtitleResultRow(
                 .clip(RoundedCornerShape(12.dp))
                 .background(
                     if (downloading) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                    else Color.Transparent
+                    else Color.Transparent,
                 )
                 .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
                 .padding(horizontal = 12.dp, vertical = 10.dp),
@@ -455,7 +455,7 @@ private fun LoadingRows() {
                     Modifier.fillMaxWidth()
                         .height(48.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
             )
         }
     }
@@ -516,7 +516,7 @@ private fun LanguageMenu(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
                     onClick = onDismiss,
-                )
+                ),
     ) {
         Surface(
             shape = RoundedCornerShape(12.dp),
@@ -533,7 +533,7 @@ private fun LanguageMenu(
                     ) {},
         ) {
             Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()).padding(vertical = 8.dp)
+                modifier = Modifier.verticalScroll(rememberScrollState()).padding(vertical = 8.dp),
             ) {
                 if (showAllLanguages) {
                     AfinityMenuItem(

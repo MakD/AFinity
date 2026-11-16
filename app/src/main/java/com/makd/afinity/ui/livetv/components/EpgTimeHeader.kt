@@ -51,7 +51,7 @@ fun EpgTimeHeader(
                                     MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                                 } else {
                                     MaterialTheme.colorScheme.surface
-                                }
+                                },
                             )
                             .padding(horizontal = 8.dp),
                     contentAlignment = Alignment.CenterStart,
@@ -75,7 +75,7 @@ fun EpgTimeHeader(
                     Modifier.align(Alignment.BottomStart)
                         .offset(x = offset - NowDotSize / 2)
                         .size(NowDotSize)
-                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape),
             )
         }
     }

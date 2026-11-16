@@ -55,7 +55,7 @@ constructor(
                     !isNetworkAvailable -> Connectivity.NoNetwork
                     !isServerReachable ->
                         Connectivity.ServerUnreachable(
-                            reason ?: UnreachableReason.ALL_ADDRESSES_FAILED
+                            reason ?: UnreachableReason.ALL_ADDRESSES_FAILED,
                         )
 
                     else -> Connectivity.Online
@@ -72,7 +72,7 @@ constructor(
                         !sessionManager.isServerReachable.value ->
                             Connectivity.ServerUnreachable(
                                 sessionManager.unreachableReason.value
-                                    ?: UnreachableReason.ALL_ADDRESSES_FAILED
+                                    ?: UnreachableReason.ALL_ADDRESSES_FAILED,
                             )
 
                         else -> Connectivity.Online

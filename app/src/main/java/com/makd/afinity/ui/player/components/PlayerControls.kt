@@ -355,7 +355,7 @@ fun PlayerControls(
                     isDefault = false,
                     index = -1,
                     isNone = true,
-                )
+                ),
             )
             var embeddedOrdinal = 0
             player.currentTracks.groups
@@ -394,7 +394,7 @@ fun PlayerControls(
                                 append(localizedLang)
                                 if (serverStream.isOriginal) {
                                     append(
-                                        " [${serverStream.localizedOriginal ?: trackTags.original}]"
+                                        " [${serverStream.localizedOriginal ?: trackTags.original}]",
                                     )
                                 }
                                 if (serverStream.isForced) {
@@ -402,12 +402,12 @@ fun PlayerControls(
                                 }
                                 if (serverStream.isHearingImpaired) {
                                     append(
-                                        " [${serverStream.localizedHearingImpaired ?: trackTags.hearingImpaired}]"
+                                        " [${serverStream.localizedHearingImpaired ?: trackTags.hearingImpaired}]",
                                     )
                                 }
                                 if (serverStream.isExternal) {
                                     append(
-                                        " [${serverStream.localizedExternal ?: trackTags.external}]"
+                                        " [${serverStream.localizedExternal ?: trackTags.external}]",
                                     )
                                 }
                             }
@@ -442,7 +442,7 @@ fun PlayerControls(
                                             primaryLabel = displayName,
                                         )
                                 },
-                        )
+                        ),
                     )
                 }
             assertSubtitleOptions(options, trackFmt)
@@ -517,10 +517,10 @@ fun PlayerControls(
                         .fillMaxWidth()
                         .windowInsetsPadding(
                             WindowInsets.displayCutout.only(
-                                WindowInsetsSides.Horizontal + WindowInsetsSides.Top
-                            )
+                                WindowInsetsSides.Horizontal + WindowInsetsSides.Top,
+                            ),
                         )
-                        .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 16.dp)
+                        .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 16.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(
@@ -702,10 +702,10 @@ fun PlayerControls(
                         Modifier.fillMaxWidth()
                             .windowInsetsPadding(
                                 WindowInsets.safeDrawing.only(
-                                    WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
-                                )
+                                    WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
+                                ),
                             )
-                            .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 10.dp)
+                            .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 10.dp),
                 ) {
                     SeekBar(
                         uiState = uiState,
@@ -725,8 +725,8 @@ fun PlayerControls(
                 Modifier.align(Alignment.BottomEnd)
                     .windowInsetsPadding(
                         WindowInsets.safeDrawing.only(
-                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
-                        )
+                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
+                        ),
                     )
                     .padding(end = 16.dp, bottom = overlayBottomPadding),
             enter =
@@ -767,8 +767,8 @@ fun PlayerControls(
                 Modifier.align(Alignment.BottomEnd)
                     .windowInsetsPadding(
                         WindowInsets.safeDrawing.only(
-                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
-                        )
+                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
+                        ),
                     )
                     .padding(end = 16.dp, bottom = overlayBottomPadding),
             enter =
@@ -822,8 +822,8 @@ fun PlayerControls(
                 Modifier.align(Alignment.BottomEnd)
                     .windowInsetsPadding(
                         WindowInsets.safeDrawing.only(
-                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
-                        )
+                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
+                        ),
                     )
                     .padding(end = 16.dp, bottom = overlayBottomPadding),
             enter =
@@ -887,7 +887,7 @@ fun PlayerControls(
                                 PlayerEvent.RenegotiateTracks(audioStreamIndex = index)
                             } else {
                                 PlayerEvent.RenegotiateTracks(subtitleStreamIndex = index)
-                            }
+                            },
                         )
                     } else {
                         onPlayerEvent(PlayerEvent.SwitchToTrack(trackType, index))
@@ -1009,15 +1009,15 @@ fun PlayerControls(
                         indication = null,
                     ) {
                         showMembersPopup = false
-                    }
+                    },
             ) {
                 Box(
                     modifier =
                         Modifier.align(Alignment.TopEnd)
                             .windowInsetsPadding(
                                 WindowInsets.safeDrawing.only(
-                                    WindowInsetsSides.Horizontal + WindowInsetsSides.Top
-                                )
+                                    WindowInsetsSides.Horizontal + WindowInsetsSides.Top,
+                                ),
                             )
                             .padding(top = 60.dp, end = 16.dp)
                             .clickable(
@@ -1025,7 +1025,7 @@ fun PlayerControls(
                                 indication = null,
                             ) {
                                 /* consume clicks */
-                            }
+                            },
                 ) {
                     Column(
                         modifier =
@@ -1114,8 +1114,8 @@ fun PlayerControls(
                                                         .clip(CircleShape)
                                                         .background(
                                                             MaterialTheme.colorScheme.primary.copy(
-                                                                alpha = 0.2f
-                                                            )
+                                                                alpha = 0.2f,
+                                                            ),
                                                         ),
                                                 contentAlignment = Alignment.Center,
                                             ) {
@@ -1134,7 +1134,7 @@ fun PlayerControls(
                                                     .align(Alignment.BottomEnd)
                                                     .offset(x = 2.dp, y = 2.dp)
                                                     .background(Color(0xFF4CAF50), CircleShape)
-                                                    .border(2.dp, Color(0xEB000000), CircleShape)
+                                                    .border(2.dp, Color(0xEB000000), CircleShape),
                                         )
                                     }
 
@@ -1226,10 +1226,10 @@ private fun TopControls(
                 .fillMaxWidth()
                 .windowInsetsPadding(
                     WindowInsets.safeDrawing.only(
-                        WindowInsetsSides.Horizontal + WindowInsetsSides.Top
-                    )
+                        WindowInsetsSides.Horizontal + WindowInsetsSides.Top,
+                    ),
                 )
-                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 8.dp)
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 8.dp),
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
             IconButton(onClick = onBackClick, modifier = Modifier.size(36.dp)) {
@@ -1253,7 +1253,7 @@ private fun TopControls(
                             painterResource(
                                 id =
                                     if (uiState.isControlsLocked) R.drawable.ic_unlock_player
-                                    else R.drawable.ic_lock_player
+                                    else R.drawable.ic_lock_player,
                             ),
                         contentDescription =
                             if (uiState.isControlsLocked) stringResource(R.string.cd_unlock)
@@ -1287,7 +1287,7 @@ private fun TopControls(
                                 painterResource(
                                     id =
                                         if (uiState.isCasting) R.drawable.ic_cast_connected
-                                        else R.drawable.ic_cast
+                                        else R.drawable.ic_cast,
                                 ),
                             contentDescription = stringResource(R.string.cd_cast),
                             tint =
@@ -1455,10 +1455,10 @@ private fun BottomControls(
                 .fillMaxWidth()
                 .windowInsetsPadding(
                     WindowInsets.safeDrawing.only(
-                        WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
-                    )
+                        WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
+                    ),
                 )
-                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp)
+                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
     ) {
         Column {
             if (!uiState.isPlayingIntro) {
@@ -1550,7 +1550,7 @@ private fun BottomControls(
                                     painterResource(
                                         id =
                                             if (sleepTimerArmed) R.drawable.ic_moon_filled
-                                            else R.drawable.ic_moon
+                                            else R.drawable.ic_moon,
                                     ),
                                 label =
                                     if (sleepTimerArmed) formatClock(uiState.sleepTimerRemainingMs)
@@ -1598,7 +1598,7 @@ private fun BottomControls(
                                     painterResource(
                                         id =
                                             if (sleepTimerArmed) R.drawable.ic_moon_filled
-                                            else R.drawable.ic_moon
+                                            else R.drawable.ic_moon,
                                     ),
                                 label =
                                     if (sleepTimerArmed) formatClock(uiState.sleepTimerRemainingMs)
@@ -1694,7 +1694,7 @@ private fun PlaybackBadges(uiState: PlayerViewModel.PlayerUiState, onClick: (() 
             Box(
                 modifier =
                     Modifier.size(width = 1.dp, height = 10.dp)
-                        .background(Color.White.copy(alpha = 0.22f))
+                        .background(Color.White.copy(alpha = 0.22f)),
             )
         }
         if (showPlayMethod) {
@@ -1775,7 +1775,7 @@ private fun SeekBar(
                     Modifier.weight(1f)
                         .height(6.dp)
                         .padding(start = 8.dp)
-                        .background(Color.Red.copy(alpha = 0.8f), RoundedCornerShape(3.dp))
+                        .background(Color.Red.copy(alpha = 0.8f), RoundedCornerShape(3.dp)),
             )
         } else {
             Slider(
@@ -1789,7 +1789,7 @@ private fun SeekBar(
                 },
                 onValueChangeFinished = {
                     onPlayerEvent(
-                        PlayerEvent.OnSeekBarDragFinished((draggedPosition ?: position).toLong())
+                        PlayerEvent.OnSeekBarDragFinished((draggedPosition ?: position).toLong()),
                     )
                     draggedPosition = null
                 },
@@ -2075,7 +2075,7 @@ private fun QualityPanel(
         if (playMethod == PlayMethod.TRANSCODE) transcodeReasonText(transcodeReasons) else null
     val listState =
         rememberLazyListState(
-            initialFirstVisibleItemIndex = (options.indexOf(selected) - 2).coerceAtLeast(0)
+            initialFirstVisibleItemIndex = (options.indexOf(selected) - 2).coerceAtLeast(0),
         )
     val playingText =
         when {
@@ -2188,7 +2188,7 @@ private fun QualityOptionRow(
                 .clip(RoundedCornerShape(12.dp))
                 .background(
                     if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                    else Color.Transparent
+                    else Color.Transparent,
                 )
                 .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
                 .padding(horizontal = 16.dp),
@@ -2261,7 +2261,7 @@ private fun TrackRow(
                 .clip(RoundedCornerShape(12.dp))
                 .background(
                     if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                    else Color.Transparent
+                    else Color.Transparent,
                 )
                 .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
                 .padding(horizontal = 12.dp, vertical = 10.dp),
@@ -2475,7 +2475,7 @@ private fun PauseDetailsOverlay(
                         event.changes.forEach { it.consume() }
                     }
                 }
-            }
+            },
     ) {
         val compact = maxHeight < PauseCompactHeight
         val isWide = maxWidth >= 600.dp
@@ -2485,7 +2485,7 @@ private fun PauseDetailsOverlay(
             modifier =
                 Modifier.fillMaxSize()
                     .windowInsetsPadding(
-                        WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                        WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal),
                     )
                     .padding(
                         start = 32.dp,
@@ -2703,7 +2703,7 @@ private fun PauseDetailsOverlay(
                 }
             } else {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(top = if (compact) 12.dp else 20.dp)
+                    modifier = Modifier.fillMaxWidth().padding(top = if (compact) 12.dp else 20.dp),
                 ) {
                     Text(
                         text =

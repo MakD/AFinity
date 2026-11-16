@@ -129,7 +129,8 @@ internal fun JellyfinTabContent(
                     Modifier.fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
                         .then(
-                            if (isActive) Modifier.clickable { onControlPanelClick() } else Modifier
+                            if (isActive) Modifier.clickable { onControlPanelClick() }
+                            else Modifier,
                         ),
             ) {
                 Row(
@@ -153,7 +154,7 @@ internal fun JellyfinTabContent(
                                 text = stringResource(R.string.action_open_control_panel),
                                 style =
                                     MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.SemiBold
+                                        fontWeight = FontWeight.SemiBold,
                                     ),
                                 color =
                                     MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
@@ -164,7 +165,7 @@ internal fun JellyfinTabContent(
                                     style = MaterialTheme.typography.bodySmall,
                                     color =
                                         MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                            alpha = 0.6f
+                                            alpha = 0.6f,
                                         ),
                                 )
                             }
@@ -236,7 +237,7 @@ private fun StorageDeviceCard(device: StorageDevice) {
                         text = device.label,
                         style =
                             MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
                             ),
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
@@ -252,7 +253,7 @@ private fun StorageDeviceCard(device: StorageDevice) {
                             ),
                         style =
                             MaterialTheme.typography.labelMedium.copy(
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
                             ),
                         color =
                             if (isTight) MaterialTheme.colorScheme.error

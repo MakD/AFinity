@@ -274,7 +274,7 @@ constructor(
                 PagingConfig(
                     pageSize = MusicGenresPagingSource.PAGE_SIZE,
                     prefetchDistance = PREFETCH_DISTANCE,
-                )
+                ),
             ) {
                 MusicGenresPagingSource(musicRepository = musicRepository, libraryId = libraryId)
             }

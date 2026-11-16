@@ -52,7 +52,7 @@ class TrickplayThumbnailLoader(
     private val decoders =
         object : LinkedHashMap<ByteArray, BitmapRegionDecoder>(4, 0.75f, true) {
             override fun removeEldestEntry(
-                eldest: MutableMap.MutableEntry<ByteArray, BitmapRegionDecoder>?
+                eldest: MutableMap.MutableEntry<ByteArray, BitmapRegionDecoder>?,
             ): Boolean {
                 if (size <= MAX_DECODERS) return false
                 eldest?.value?.recycle()

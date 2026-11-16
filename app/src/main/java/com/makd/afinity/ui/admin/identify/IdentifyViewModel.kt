@@ -86,7 +86,7 @@ constructor(
             IdentifyUiState(
                 showYear = itemType !in NO_YEAR_TYPES,
                 showAlbumArtist = itemType == MUSIC_ALBUM,
-            )
+            ),
         )
     val uiState: StateFlow<IdentifyUiState> = _uiState.asStateFlow()
 

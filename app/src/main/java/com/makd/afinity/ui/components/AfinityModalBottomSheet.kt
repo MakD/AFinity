@@ -46,7 +46,7 @@ fun AfinityModalBottomSheet(
         onDismissRequest = onDismissRequest,
         modifier =
             modifier.windowInsetsPadding(
-                WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+                WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
             ),
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
@@ -64,6 +64,6 @@ private fun AfinitySheetDragHandle() {
                 .width(32.dp)
                 .height(4.dp)
                 .clip(RoundedCornerShape(2.dp))
-                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)),
     )
 }

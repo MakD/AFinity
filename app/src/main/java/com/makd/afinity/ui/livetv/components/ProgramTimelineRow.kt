@@ -117,7 +117,7 @@ fun ProgramTimelineRow(
                     topLeft = Offset(center - railWidthPx / 2f, 0f),
                     size = Size(railWidthPx, size.height),
                 )
-            }
+            },
     ) {
         TimelineTimeColumn(time = program.startDate, showDay = showDay, now = now)
 
@@ -132,9 +132,9 @@ fun ProgramTimelineRow(
                     Modifier.requiredSize(17.dp)
                         .clip(CircleShape)
                         .background(
-                            if (filledNode) nodeColor else MaterialTheme.colorScheme.background
+                            if (filledNode) nodeColor else MaterialTheme.colorScheme.background,
                         )
-                        .border(2.dp, nodeColor, CircleShape)
+                        .border(2.dp, nodeColor, CircleShape),
             )
             when {
                 filledNode ->
@@ -142,12 +142,12 @@ fun ProgramTimelineRow(
                         modifier =
                             Modifier.requiredSize(7.dp)
                                 .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.background)
+                                .background(MaterialTheme.colorScheme.background),
                     )
                 isAiring || recordingStyle ->
                     Box(
                         modifier =
-                            Modifier.requiredSize(9.dp).clip(CircleShape).background(nodeColor)
+                            Modifier.requiredSize(9.dp).clip(CircleShape).background(nodeColor),
                     )
             }
         }
@@ -286,7 +286,7 @@ private fun TimelineRecordButton(program: AfinityProgram, recording: TimelineRec
         contentDescription =
             stringResource(
                 if (program.hasActiveTimer) R.string.livetv_do_not_record
-                else R.string.livetv_action_record
+                else R.string.livetv_action_record,
             ),
         iconSize = 24.dp,
         active = program.hasActiveTimer,
@@ -309,12 +309,12 @@ private fun TimelineCancelButton(program: AfinityProgram, scheduled: TimelineSch
         Icon(
             painter =
                 painterResource(
-                    id = if (inProgress) R.drawable.ic_player_stop_filled else R.drawable.ic_close
+                    id = if (inProgress) R.drawable.ic_player_stop_filled else R.drawable.ic_close,
                 ),
             contentDescription =
                 stringResource(
                     if (inProgress) R.string.livetv_stop_recording
-                    else R.string.livetv_cancel_recording
+                    else R.string.livetv_cancel_recording,
                 ),
             tint = MaterialTheme.colorScheme.error,
             modifier = Modifier.size(22.dp),
@@ -363,7 +363,7 @@ fun ProgramTimelineEndRow(
                     modifier =
                         Modifier.width(1.dp)
                             .height(4.dp)
-                            .background(MaterialTheme.colorScheme.outlineVariant)
+                            .background(MaterialTheme.colorScheme.outlineVariant),
                 )
             }
         }

@@ -51,7 +51,7 @@ fun EmptyState(
                     Modifier.size(badgeSize)
                         .background(
                             MaterialTheme.colorScheme.surfaceContainerHighest.copy(
-                                alpha = badgeAlpha
+                                alpha = badgeAlpha,
                             ),
                             CircleShape,
                         ),

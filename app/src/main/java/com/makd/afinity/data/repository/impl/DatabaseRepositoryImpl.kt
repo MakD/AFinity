@@ -185,7 +185,7 @@ constructor(
     }
 
     override suspend fun getServerWithAddressesAndUsers(
-        serverId: String
+        serverId: String,
     ): ServerWithAddressesAndUsers? {
         return serverDao.getServerWithAddressesAndUsers(serverId)
     }
@@ -585,7 +585,7 @@ constructor(
 
     override suspend fun insertMediaStream(stream: AfinityMediaStream, sourceId: String) {
         mediaStreamDao.insertMediaStream(
-            stream.toAfinityMediaStreamDto(UUID.randomUUID(), sourceId, stream.path ?: "")
+            stream.toAfinityMediaStreamDto(UUID.randomUUID(), sourceId, stream.path ?: ""),
         )
     }
 
@@ -697,7 +697,7 @@ constructor(
                 userId = userId,
                 serverId = serverId,
                 playedAt = playedAt,
-            )
+            ),
         )
     }
 

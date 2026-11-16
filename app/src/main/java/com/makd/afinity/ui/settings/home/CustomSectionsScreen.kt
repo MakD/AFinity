@@ -377,7 +377,7 @@ fun CustomSectionsScreen(
             title =
                 stringResource(
                     if (editingIsNew) R.string.custom_sections_new
-                    else R.string.custom_sections_edit
+                    else R.string.custom_sections_edit,
                 ),
             onDismiss = { editing = null },
             height = dialogHeight,
@@ -438,7 +438,7 @@ private fun CustomSectionRow(
                     Modifier.size(40.dp)
                         .clip(CircleShape)
                         .background(
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = contentAlpha)
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = contentAlpha),
                         ),
                 contentAlignment = Alignment.Center,
             ) {
@@ -759,7 +759,7 @@ private fun SourceValuesPicker(
             suggestionLabel = { it.label },
             onSuggestionSelected = { option ->
                 onValuesChange(
-                    if (allowsMultiple) sourceValues + option.value else listOf(option.value)
+                    if (allowsMultiple) sourceValues + option.value else listOf(option.value),
                 )
                 sourceQuery = ""
             },
@@ -1014,7 +1014,7 @@ private fun ColumnScope.HeroContentEditor(
                             draft.copy(
                                 libraryIds =
                                     if (id in draft.libraryIds) draft.libraryIds - id
-                                    else draft.libraryIds + id
+                                    else draft.libraryIds + id,
                             )
                     },
                 )
@@ -1120,7 +1120,7 @@ private fun SourceStatusRow(state: SourceLoadState?, onRetry: () -> Unit) {
                         SourceLoadState.LOADED -> R.string.custom_sections_sources_empty
                         SourceLoadState.FAILED -> R.string.custom_sections_sources_failed
                         else -> R.string.custom_sections_sources_loading
-                    }
+                    },
                 ),
             style = MaterialTheme.typography.bodySmall,
             color =
@@ -1591,7 +1591,7 @@ private fun MonthDayPickerDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
                 )
 
                 Row(
@@ -1718,7 +1718,7 @@ private fun MonthCell(
                 .then(
                     if (isToday && !selected) {
                         Modifier.border(1.dp, MaterialTheme.colorScheme.primary, shape)
-                    } else Modifier
+                    } else Modifier,
                 )
                 .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -1727,7 +1727,7 @@ private fun MonthCell(
             text = label,
             style =
                 MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                 ),
             color =
                 if (selected) MaterialTheme.colorScheme.onPrimary
@@ -1754,7 +1754,7 @@ private fun DayCell(
                 .then(
                     if (isToday && !selected) {
                         Modifier.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                    } else Modifier
+                    } else Modifier,
                 )
                 .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -1763,7 +1763,7 @@ private fun DayCell(
             text = day.toString(),
             style =
                 MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                 ),
             color =
                 if (selected) MaterialTheme.colorScheme.onPrimary

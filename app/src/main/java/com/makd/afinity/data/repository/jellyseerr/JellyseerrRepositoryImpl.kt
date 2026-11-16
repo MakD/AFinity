@@ -358,12 +358,12 @@ constructor(
                             result.address != config.serverUrl
                     ) {
                         Timber.d(
-                            "Jellyseerr: Resolved to ${result.address} (config: ${config.serverUrl})"
+                            "Jellyseerr: Resolved to ${result.address} (config: ${config.serverUrl})",
                         )
                         securePreferencesRepository.updateCachedJellyseerrServerUrl(result.address)
                     } else if (result is JellyseerrAddressResult.NoRoute) {
                         Timber.w(
-                            "Jellyseerr: No route from this network to ${result.attemptedAddresses}"
+                            "Jellyseerr: No route from this network to ${result.attemptedAddresses}",
                         )
                     } else if (result is JellyseerrAddressResult.AllFailed) {
                         Timber.w("Jellyseerr: All addresses failed: ${result.attemptedAddresses}")
@@ -544,7 +544,7 @@ constructor(
                         jellyfinServerId = currentServerId,
                         jellyfinUserId = currentUserId.toString(),
                         address = existingConfig.serverUrl,
-                    )
+                    ),
                 )
             }
         }
@@ -562,7 +562,7 @@ constructor(
                         jellyfinServerId = currentServerId,
                         jellyfinUserId = currentUserId.toString(),
                         address = serverUrl,
-                    )
+                    ),
                 )
             }
         }
@@ -576,7 +576,7 @@ constructor(
                 username = loginResponse.username,
                 userId = loginResponse.id,
                 permissions = loginResponse.permissions,
-            )
+            ),
         )
 
         _isAuthenticated.value = true
@@ -705,7 +705,7 @@ constructor(
                     Result.success(settings)
                 } else {
                     Result.failure(
-                        Exception("Failed to get public settings: ${response.message()}")
+                        Exception("Failed to get public settings: ${response.message()}"),
                     )
                 }
             } catch (e: CancellationException) {
@@ -743,7 +743,7 @@ constructor(
     }
 
     override suspend fun getPersonCombinedCredits(
-        personId: Int
+        personId: Int,
     ): Result<PersonCombinedCreditsResponse> {
         return seerrResult("Failed to get person credits") { api ->
             api.getPersonCombinedCredits(personId)
@@ -1042,7 +1042,7 @@ constructor(
                                     backdropPath = details.backdropPath,
                                     releaseDate = details.releaseDate,
                                     firstAirDate = details.firstAirDate,
-                                )
+                                ),
                         )
                         .toEntity(currentServerId, currentUserId.toString())
                 jellyseerrDao.insertRequest(enriched)
@@ -1217,7 +1217,7 @@ constructor(
                     try {
                         val mediaDelRes = api.deleteMedia(mediaId)
                         Timber.d(
-                            "Delete media $mediaId in Jellyseerr response: ${mediaDelRes.code()}"
+                            "Delete media $mediaId in Jellyseerr response: ${mediaDelRes.code()}",
                         )
                     } catch (e: CancellationException) {
                         throw e
@@ -1333,7 +1333,7 @@ constructor(
                         if (response.isSuccessful) response.body()
                         else
                             return@withContext Result.failure(
-                                Exception(seerrErrorMessage(response))
+                                Exception(seerrErrorMessage(response)),
                             )
                     }
 
@@ -1395,7 +1395,7 @@ constructor(
                                     firstAirDate =
                                         updatedRequest.media.firstAirDate
                                             ?: existingEntity?.mediaFirstAirDate,
-                                )
+                                ),
                         )
 
                     cacheRequest(updatedRequest)
@@ -1562,7 +1562,7 @@ constructor(
                         releaseDate = artwork.releaseDate,
                         firstAirDate = artwork.firstAirDate,
                         voteAverage = artwork.voteAverage,
-                    )
+                    ),
                 )
             } catch (e: CancellationException) {
                 throw e
@@ -1658,7 +1658,7 @@ constructor(
                             Result.success(response.body()!!)
                         } else {
                             Result.failure(
-                                Exception("Failed to get ratings: ${response.message()}")
+                                Exception("Failed to get ratings: ${response.message()}"),
                             )
                         }
                     }
@@ -1668,7 +1668,7 @@ constructor(
                             Result.success(RatingsCombined(rt = response.body()!!, imdb = null))
                         } else {
                             Result.failure(
-                                Exception("Failed to get ratings: ${response.message()}")
+                                Exception("Failed to get ratings: ${response.message()}"),
                             )
                         }
                     }
@@ -1699,7 +1699,7 @@ constructor(
                 if (response.isSuccessful && response.body() != null) {
                     val body = response.body()!!
                     Result.success(
-                        if (limit != null) body.copy(results = body.results.take(limit)) else body
+                        if (limit != null) body.copy(results = body.results.take(limit)) else body,
                     )
                 } else Result.failure(Exception("Failed"))
             } catch (e: CancellationException) {
@@ -1721,7 +1721,7 @@ constructor(
                     Result.success(response.body()!!)
                 } else {
                     Result.failure(
-                        Exception("Failed to get discover sliders: ${response.message()}")
+                        Exception("Failed to get discover sliders: ${response.message()}"),
                     )
                 }
             } catch (e: CancellationException) {
@@ -1789,7 +1789,7 @@ constructor(
                 if (response.isSuccessful && response.body() != null) {
                     val body = response.body()!!
                     Result.success(
-                        if (limit != null) body.copy(results = body.results.take(limit)) else body
+                        if (limit != null) body.copy(results = body.results.take(limit)) else body,
                     )
                 } else Result.failure(Exception("Failed"))
             } catch (e: CancellationException) {
@@ -1860,7 +1860,7 @@ constructor(
                 if (response.isSuccessful && response.body() != null) {
                     val body = response.body()!!
                     Result.success(
-                        if (limit != null) body.copy(results = body.results.take(limit)) else body
+                        if (limit != null) body.copy(results = body.results.take(limit)) else body,
                     )
                 } else Result.failure(Exception("Failed"))
             } catch (e: CancellationException) {
@@ -1878,7 +1878,7 @@ constructor(
                 if (response.isSuccessful && response.body() != null) {
                     val body = response.body()!!
                     Result.success(
-                        if (limit != null) body.copy(results = body.results.take(limit)) else body
+                        if (limit != null) body.copy(results = body.results.take(limit)) else body,
                     )
                 } else Result.failure(Exception("Failed"))
             } catch (e: CancellationException) {
@@ -1896,7 +1896,7 @@ constructor(
                 if (response.isSuccessful && response.body() != null) {
                     val body = response.body()!!
                     Result.success(
-                        if (limit != null) body.copy(results = body.results.take(limit)) else body
+                        if (limit != null) body.copy(results = body.results.take(limit)) else body,
                     )
                 } else Result.failure(Exception("Failed"))
             } catch (e: CancellationException) {
@@ -2015,14 +2015,14 @@ constructor(
     }
 
     override suspend fun getMovieWatchProviders(
-        watchRegion: String
+        watchRegion: String,
     ): Result<List<WatchProviderDetails>> {
         return withContext(Dispatchers.IO) {
             try {
                 val response = apiService.get().getMovieWatchProviders(watchRegion)
                 if (response.isSuccessful && response.body() != null)
                     Result.success(
-                        response.body()!!.sortedBy { it.displayPriority ?: Int.MAX_VALUE }
+                        response.body()!!.sortedBy { it.displayPriority ?: Int.MAX_VALUE },
                     )
                 else Result.failure(Exception("Failed"))
             } catch (e: CancellationException) {
@@ -2034,14 +2034,14 @@ constructor(
     }
 
     override suspend fun getTvWatchProviders(
-        watchRegion: String
+        watchRegion: String,
     ): Result<List<WatchProviderDetails>> {
         return withContext(Dispatchers.IO) {
             try {
                 val response = apiService.get().getTvWatchProviders(watchRegion)
                 if (response.isSuccessful && response.body() != null)
                     Result.success(
-                        response.body()!!.sortedBy { it.displayPriority ?: Int.MAX_VALUE }
+                        response.body()!!.sortedBy { it.displayPriority ?: Int.MAX_VALUE },
                     )
                 else Result.failure(Exception("Failed"))
             } catch (e: CancellationException) {
@@ -2071,7 +2071,7 @@ constructor(
     }
 
     override suspend fun getDiscoverFilterState(
-        contextKey: String
+        contextKey: String,
     ): Pair<String, DiscoverFilterOptions>? {
         return withContext(Dispatchers.IO) {
             val (serverId, userId) = activeContext ?: return@withContext null
@@ -2105,7 +2105,7 @@ constructor(
                         filterContextKey = contextKey,
                         sortBy = sortBy,
                         filterOptionsJson = Json.encodeToString(filterOptions),
-                    )
+                    ),
                 )
             } catch (e: CancellationException) {
                 throw e
@@ -2130,7 +2130,7 @@ constructor(
                     Result.success(response.body()!!)
                 } else {
                     Result.failure(
-                        Exception("Failed to get service settings: ${response.message()}")
+                        Exception("Failed to get service settings: ${response.message()}"),
                     )
                 }
             } catch (e: CancellationException) {
@@ -2236,9 +2236,9 @@ constructor(
             if (seasonsJson != null) {
                 try {
                     Json.decodeFromString<
-                        List<com.makd.afinity.data.models.jellyseerr.SeasonRequest>
+                        List<com.makd.afinity.data.models.jellyseerr.SeasonRequest>,
                     >(
-                        seasonsJson
+                        seasonsJson,
                     )
                 } catch (e: CancellationException) {
                     throw e

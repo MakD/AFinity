@@ -88,7 +88,7 @@ fun AddToPlaylistDialog(
                 toggleHint = { isPublic ->
                     stringResource(
                         if (isPublic) R.string.music_playlist_visible_all
-                        else R.string.music_playlist_visible_only_you
+                        else R.string.music_playlist_visible_only_you,
                     )
                 },
                 isLoading = state.isSubmitting,

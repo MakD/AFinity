@@ -178,7 +178,7 @@ fun GalleryTile(
                                         R.drawable.ic_folder
                                     } else {
                                         R.drawable.ic_photo_search
-                                    }
+                                    },
                             ),
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -334,10 +334,10 @@ private fun BoxScope.GalleryNameOverlay(name: String, count: Int?) {
                 .fillMaxWidth()
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.78f))
-                    )
+                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.78f)),
+                    ),
                 )
-                .padding(start = 10.dp, end = 10.dp, top = 28.dp, bottom = 8.dp)
+                .padding(start = 10.dp, end = 10.dp, top = 28.dp, bottom = 8.dp),
     ) {
         Text(
             text = name,

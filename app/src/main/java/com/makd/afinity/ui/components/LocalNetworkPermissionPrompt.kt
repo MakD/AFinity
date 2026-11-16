@@ -48,7 +48,7 @@ fun LocalNetworkPermissionGrantButton(onGranted: () -> Unit) {
                             Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                             "package:${context.packageName}".toUri(),
                         )
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 )
             } else {
                 launcher.launch(LocalNetworkPermission.PERMISSION)
@@ -60,8 +60,8 @@ fun LocalNetworkPermissionGrantButton(onGranted: () -> Unit) {
             text =
                 stringResource(
                     if (denied) R.string.local_network_permission_settings
-                    else R.string.local_network_permission_grant
-                )
+                    else R.string.local_network_permission_grant,
+                ),
         )
     }
 }
@@ -111,9 +111,9 @@ fun LocalNetworkPermissionCard(
                                         Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                                         "package:${context.packageName}".toUri(),
                                     )
-                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                             )
-                        }
+                        },
                     ) {
                         Text(text = stringResource(R.string.local_network_permission_settings))
                     }

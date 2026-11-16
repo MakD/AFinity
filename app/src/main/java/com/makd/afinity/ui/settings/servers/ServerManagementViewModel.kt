@@ -314,7 +314,7 @@ constructor(
                                 id = UUID.randomUUID(),
                                 serverId = serverId,
                                 address = oldPrimary,
-                            )
+                            ),
                         )
                     }
                 }
@@ -406,7 +406,7 @@ constructor(
                     val currentStats = _state.value.detailStats ?: ServerDetailStats()
                     _state.value =
                         _state.value.copy(
-                            detailStats = currentStats.copy(audiobookshelfStats = stats)
+                            detailStats = currentStats.copy(audiobookshelfStats = stats),
                         )
                 } catch (e: CancellationException) {
                     throw e
@@ -689,7 +689,7 @@ constructor(
                             _state.value.copy(
                                 error =
                                     context.getString(
-                                        R.string.error_address_different_audiobookshelf
+                                        R.string.error_address_different_audiobookshelf,
                                     ),
                                 isLoading = false,
                             )
@@ -729,7 +729,7 @@ constructor(
                 jellyfinServerId = serverId,
                 jellyfinUserId = userId,
                 address = url,
-            )
+            ),
         )
         reloadAndRefreshDetail()
         Timber.d("Jellyseerr address added: $url")
@@ -746,7 +746,7 @@ constructor(
                 jellyfinServerId = serverId,
                 jellyfinUserId = userId,
                 address = url,
-            )
+            ),
         )
         reloadAndRefreshDetail()
         Timber.d("Audiobookshelf address added: $url")

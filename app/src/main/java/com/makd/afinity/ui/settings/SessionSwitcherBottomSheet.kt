@@ -214,7 +214,7 @@ internal fun ServerSessionGroupItem(
             modifier =
                 Modifier.fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
         ) {
             sessionGroup.sessions.forEach { session ->
                 SessionItem(
@@ -300,7 +300,7 @@ private fun SessionItem(
             text = session.username,
             style =
                 MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = if (session.isCurrent) FontWeight.Bold else FontWeight.Normal
+                    fontWeight = if (session.isCurrent) FontWeight.Bold else FontWeight.Normal,
                 ),
             color =
                 if (session.isCurrent) {

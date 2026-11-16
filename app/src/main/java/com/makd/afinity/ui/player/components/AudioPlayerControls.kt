@@ -119,6 +119,6 @@ private fun ActiveDot(active: Boolean, color: Color) {
         modifier =
             Modifier.size(AudioPlayerLayout.ActiveDotSize)
                 .alpha(if (active) 1f else 0f)
-                .background(color, CircleShape)
+                .background(color, CircleShape),
     )
 }

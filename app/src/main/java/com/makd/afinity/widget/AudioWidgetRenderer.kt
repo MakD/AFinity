@@ -118,7 +118,7 @@ internal class AudioWidgetRenderer(private val context: Context) {
                 SizeF(250f, 140f) to build(state, Layout.MEDIUM_TALL, style),
                 SizeF(250f, 240f) to build(state, Layout.LARGE, style),
                 SizeF(250f, 330f) to build(state, Layout.LARGE_TALL, style),
-            )
+            ),
         )
     }
 
@@ -134,7 +134,7 @@ internal class AudioWidgetRenderer(private val context: Context) {
             R.id.widget_card,
             "setBackgroundTintList",
             ColorStateList.valueOf(
-                AudioWidgetLook.backgroundColor(style.lightText, settings.backgroundOpacity)
+                AudioWidgetLook.backgroundColor(style.lightText, settings.backgroundOpacity),
             ),
         )
         views.setInt(
@@ -225,7 +225,7 @@ internal class AudioWidgetRenderer(private val context: Context) {
                 if (isAbs) R.drawable.ic_rewind_backward_30 else R.drawable.ic_player_skip_forward,
                 if (isAbs) R.string.cd_rewind_30 else R.string.cd_next,
                 actionIntent(
-                    if (isAbs) AudioWidgetIntents.ACTION_REWIND else AudioWidgetIntents.ACTION_NEXT
+                    if (isAbs) AudioWidgetIntents.ACTION_REWIND else AudioWidgetIntents.ACTION_NEXT,
                 ),
                 style,
             )
@@ -237,7 +237,7 @@ internal class AudioWidgetRenderer(private val context: Context) {
             if (isAbs) R.drawable.ic_rewind_backward_30 else R.drawable.ic_player_skip_back,
             if (isAbs) R.string.cd_rewind_30 else R.string.cd_previous,
             actionIntent(
-                if (isAbs) AudioWidgetIntents.ACTION_REWIND else AudioWidgetIntents.ACTION_PREVIOUS
+                if (isAbs) AudioWidgetIntents.ACTION_REWIND else AudioWidgetIntents.ACTION_PREVIOUS,
             ),
             style,
         )
@@ -247,7 +247,7 @@ internal class AudioWidgetRenderer(private val context: Context) {
             if (isAbs) R.drawable.ic_rewind_forward_30 else R.drawable.ic_player_skip_forward,
             if (isAbs) R.string.cd_forward_30 else R.string.cd_next,
             actionIntent(
-                if (isAbs) AudioWidgetIntents.ACTION_FORWARD else AudioWidgetIntents.ACTION_NEXT
+                if (isAbs) AudioWidgetIntents.ACTION_FORWARD else AudioWidgetIntents.ACTION_NEXT,
             ),
             style,
         )

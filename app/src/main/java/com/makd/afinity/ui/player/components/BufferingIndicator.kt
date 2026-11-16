@@ -98,7 +98,7 @@ fun ErrorIndicator(
                         onClick = onPlayAnywayClick,
                         colors =
                             ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
+                                containerColor = MaterialTheme.colorScheme.primary,
                             ),
                     ) {
                         Text(text = stringResource(R.string.player_play_anyway))

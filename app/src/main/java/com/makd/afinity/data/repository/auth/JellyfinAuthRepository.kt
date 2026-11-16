@@ -119,7 +119,7 @@ constructor(
                         username.isNullOrBlank()
                 ) {
                     Timber.w(
-                        "Incomplete encrypted auth data found, clearing and requiring fresh login"
+                        "Incomplete encrypted auth data found, clearing and requiring fresh login",
                     )
                     clearAllAuthData()
                     return@withContext AuthRepository.RestoreResult.Failed
@@ -369,7 +369,7 @@ constructor(
             val current = sessionManager.currentSession.value
             if (current?.serverId == serverId && current.userId == userId) {
                 return@withContext Result.failure(
-                    IllegalStateException("Cannot revoke the token of the active session")
+                    IllegalStateException("Cannot revoke the token of the active session"),
                 )
             }
 

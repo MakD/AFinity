@@ -258,7 +258,7 @@ constructor(
                     if (currentCount != newCount) {
                         newList[parentSeriesIndex] = parent.copy(unplayedItemCount = newCount)
                         Timber.d(
-                            "Optimistic Update: Series '${parent.name}' badge $currentCount -> $newCount"
+                            "Optimistic Update: Series '${parent.name}' badge $currentCount -> $newCount",
                         )
                     }
                 }
@@ -419,7 +419,7 @@ constructor(
                     if (existingIndex != -1) {
                         newList.removeAt(existingIndex)
                         Timber.d(
-                            "Removed episode from next up (played=${updatedEpisode.played}, resumable=${updatedEpisode.playbackPositionTicks > 0}): ${updatedEpisode.name}"
+                            "Removed episode from next up (played=${updatedEpisode.played}, resumable=${updatedEpisode.playbackPositionTicks > 0}): ${updatedEpisode.name}",
                         )
                     }
                 }
@@ -773,7 +773,7 @@ constructor(
         val randomOrder = if (sortBy == SortBy.RANDOM) RandomOrder() else null
         return Pager(
                 config =
-                    PagingConfig(pageSize = 50, enablePlaceholders = false, initialLoadSize = 50)
+                    PagingConfig(pageSize = 50, enablePlaceholders = false, initialLoadSize = 50),
             ) {
                 JellyfinItemsPagingSource(
                         mediaRepository = this,
@@ -805,7 +805,7 @@ constructor(
     ): Flow<PagingData<AfinityItem>> =
         Pager(
                 config =
-                    PagingConfig(pageSize = 50, enablePlaceholders = false, initialLoadSize = 50)
+                    PagingConfig(pageSize = 50, enablePlaceholders = false, initialLoadSize = 50),
             ) {
                 BookLibraryPagingSource(
                         mediaRepository = this,
@@ -823,7 +823,7 @@ constructor(
             .flow
 
     override suspend fun getBookLibraryCompositionResult(
-        parentId: UUID?
+        parentId: UUID?,
     ): Result<BookLibraryComposition> = apiInvoker.apiResult { _, _ ->
         coroutineScope {
             val books = async { countItems(parentId, "BOOK") }
@@ -1485,7 +1485,7 @@ constructor(
         }
 
     override suspend fun getLibraryIndexResult(
-        itemType: BaseItemKind
+        itemType: BaseItemKind,
     ): Result<List<LibraryIndexEntry>> = apiInvoker.apiResult { apiClient, userId ->
         LibraryApi(apiClient)
             .getItems(
@@ -2001,7 +2001,7 @@ constructor(
         }
 
     override suspend fun getFavoriteMediaResult(
-        fields: List<ItemFields>?
+        fields: List<ItemFields>?,
     ): Result<List<AfinityItem>> = apiInvoker.apiResult { apiClient, userId ->
         val baseUrl = getBaseUrl()
         LibraryApi(apiClient)
@@ -2595,7 +2595,7 @@ constructor(
                     .take(maxBoxSets)
 
             Timber.d(
-                "BoxSet spotlight: ${qualifying.size} qualifying sets (min $minChildCount children)"
+                "BoxSet spotlight: ${qualifying.size} qualifying sets (min $minChildCount children)",
             )
 
             val semaphore = Semaphore(5)

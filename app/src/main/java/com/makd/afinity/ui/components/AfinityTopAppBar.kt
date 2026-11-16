@@ -140,12 +140,12 @@ fun AfinityTopAppBar(
                         Icon(
                             painter =
                                 painterResource(
-                                    id = if (isMenu) R.drawable.ic_menu else R.drawable.ic_home
+                                    id = if (isMenu) R.drawable.ic_menu else R.drawable.ic_home,
                                 ),
                             contentDescription =
                                 stringResource(
                                     if (isMenu) R.string.cd_open_navigation_menu
-                                    else R.string.cd_go_to_home
+                                    else R.string.cd_go_to_home,
                                 ),
                             tint = Color.White,
                             modifier = Modifier.size(22.dp),
@@ -180,7 +180,7 @@ fun AfinityTopAppBar(
                             contentDescription =
                                 stringResource(
                                     if (isForcedOffline) R.string.cd_go_online
-                                    else R.string.cd_retry_connection
+                                    else R.string.cd_retry_connection,
                                 ),
                             tint = Color.White,
                             modifier = Modifier.size(20.dp),
@@ -194,7 +194,7 @@ fun AfinityTopAppBar(
                                     isRetrying -> R.string.connection_retrying
                                     isForcedOffline -> R.string.connection_go_online
                                     else -> R.string.connection_retry
-                                }
+                                },
                             ),
                         style = MaterialTheme.typography.labelLarge,
                         color = Color.White,
@@ -231,7 +231,7 @@ fun AfinityTopAppBar(
                             modifier =
                                 Modifier.height(20.dp)
                                     .width(1.dp)
-                                    .background(Color.White.copy(alpha = 0.2f))
+                                    .background(Color.White.copy(alpha = 0.2f)),
                         )
                     }
                     if (onSearchClick != null) {
@@ -253,7 +253,7 @@ fun AfinityTopAppBar(
                     modifier =
                         Modifier.size(40.dp).graphicsLayer {
                             compositingStrategy = CompositingStrategy.Offscreen
-                        }
+                        },
                 ) {
                     IconButton(onClick = profile.onClick, modifier = Modifier.size(40.dp)) {
                         UserAvatar(

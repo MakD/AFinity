@@ -344,12 +344,12 @@ fun SessionRemoteSheet(
                                 painterResource(
                                     id =
                                         if (isPaused) R.drawable.ic_player_play_filled
-                                        else R.drawable.ic_player_pause_filled
+                                        else R.drawable.ic_player_pause_filled,
                                 ),
                             contentDescription =
                                 stringResource(
                                     if (isPaused) R.string.cd_session_play
-                                    else R.string.cd_session_pause
+                                    else R.string.cd_session_pause,
                                 ),
                             modifier = Modifier.size(28.dp),
                         )
@@ -393,7 +393,7 @@ fun SessionRemoteSheet(
                                     painterResource(
                                         id =
                                             if (isMuted) R.drawable.ic_volume_off
-                                            else R.drawable.ic_volume_up
+                                            else R.drawable.ic_volume_up,
                                     ),
                                 contentDescription = stringResource(R.string.cd_session_mute),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,

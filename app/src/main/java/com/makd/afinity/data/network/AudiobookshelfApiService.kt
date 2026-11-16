@@ -134,7 +134,7 @@ interface AudiobookshelfApiService {
 
     @GET("api/me/items-in-progress")
     suspend fun getItemsInProgress(
-        @Query("limit") limit: Int? = null
+        @Query("limit") limit: Int? = null,
     ): Response<ItemsInProgressResponse>
 
     @PATCH("api/me/progress/{itemId}")
@@ -195,6 +195,6 @@ interface AudiobookshelfApiService {
 
     @POST("api/session/local-all")
     suspend fun syncAllLocalSessions(
-        @Body request: BatchLocalSessionRequest
+        @Body request: BatchLocalSessionRequest,
     ): Response<BatchSyncResponse>
 }

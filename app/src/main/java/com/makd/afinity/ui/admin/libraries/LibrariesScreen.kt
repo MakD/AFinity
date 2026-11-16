@@ -127,7 +127,7 @@ fun LibrariesScreen(
                     LibrariesMessage.LEFTOVER_REMAINS -> leftoverRemainsMessage
                     LibrariesMessage.REMOVAL_CANCELLED -> removalCancelledMessage
                     LibrariesMessage.REMOVAL_BUSY -> removalBusyMessage
-                }
+                },
             )
         }
     }
@@ -351,7 +351,7 @@ private fun LibrariesHeader(
             Text(
                 text =
                     if (isScanningAll) stringResource(R.string.library_scanning)
-                    else stringResource(R.string.libraries_scan_all)
+                    else stringResource(R.string.libraries_scan_all),
             )
         }
     }
@@ -484,7 +484,7 @@ private fun AdminLibraryCard(
                     style =
                         if (isScanning) {
                             MaterialTheme.typography.bodySmall.copy(
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
                             )
                         } else {
                             MaterialTheme.typography.bodySmall
@@ -516,7 +516,7 @@ private fun LibraryCover(library: AdminLibraryRow) {
             shape = RoundedCornerShape(12.dp),
             colors =
                 CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                 ),
             elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         ) {
@@ -594,14 +594,14 @@ private fun LibraryMenu(
                                 label = stringResource(R.string.library_scan),
                                 iconRes = R.drawable.ic_refresh,
                                 onClick = onScan,
-                            )
+                            ),
                         )
                         add(
                             DetailMenuAction(
                                 label = stringResource(R.string.library_edit_image),
                                 iconRes = R.drawable.ic_photo_edit,
                                 onClick = onEditImage,
-                            )
+                            ),
                         )
                     }
                     add(
@@ -609,7 +609,7 @@ private fun LibraryMenu(
                             label = stringResource(R.string.action_rename),
                             iconRes = R.drawable.ic_edit,
                             onClick = onRename,
-                        )
+                        ),
                     )
                     add(
                         DetailMenuAction(
@@ -617,7 +617,7 @@ private fun LibraryMenu(
                             iconRes = R.drawable.ic_delete,
                             onClick = onRemove,
                             destructive = true,
-                        )
+                        ),
                     )
                 },
         )

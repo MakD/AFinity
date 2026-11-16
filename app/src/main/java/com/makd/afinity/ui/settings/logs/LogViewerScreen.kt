@@ -166,7 +166,7 @@ fun LogViewerScreen(
                     when {
                         uiState.openCrash != null -> {
                             IconButton(
-                                onClick = { uiState.openCrash?.let(viewModel::deleteCrash) }
+                                onClick = { uiState.openCrash?.let(viewModel::deleteCrash) },
                             ) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_delete),
@@ -284,7 +284,7 @@ fun LogViewerScreen(
             modifier =
                 Modifier.fillMaxSize()
                     .windowInsetsPadding(screenInsets.only(WindowInsetsSides.Horizontal))
-                    .padding(top = padding.calculateTopPadding())
+                    .padding(top = padding.calculateTopPadding()),
         ) {
             Row(
                 modifier =
@@ -365,7 +365,7 @@ fun LogViewerScreen(
                         action =
                             stringResource(
                                 if (uiState.groupRepeats) R.string.logs_expand
-                                else R.string.logs_collapse
+                                else R.string.logs_collapse,
                             ),
                         onAction = viewModel::toggleGrouping,
                     )
@@ -385,8 +385,8 @@ fun LogViewerScreen(
                                     .background(LogLevelColors.consoleSurface)
                             } else {
                                 Modifier
-                            }
-                        )
+                            },
+                        ),
             ) {
                 val bottomPadding = padding.calculateBottomPadding() + 16.dp
 
@@ -528,7 +528,7 @@ fun LogViewerScreen(
                                 Modifier.padding(top = 16.dp)
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(
-                                        LogLevelColors.content(LogLevel.ERROR).copy(alpha = 0.09f)
+                                        LogLevelColors.content(LogLevel.ERROR).copy(alpha = 0.09f),
                                     )
                                     .padding(horizontal = 14.dp, vertical = 11.dp),
                         )
@@ -540,7 +540,7 @@ fun LogViewerScreen(
                     onClick = {
                         showClearConfirm = false
                         viewModel.clearBuffer()
-                    }
+                    },
                 ) {
                     Text(
                         text = stringResource(R.string.logs_clear_action),
@@ -589,7 +589,7 @@ internal fun SearchField(
             singleLine = true,
             textStyle =
                 MaterialTheme.typography.bodyLarge.copy(
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 ),
             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
             modifier = Modifier.weight(1f).focusRequester(focusRequester),
@@ -701,7 +701,7 @@ private fun OverflowMenu(
                     label =
                         stringResource(
                             if (groupRepeats) R.string.logs_expand_repeats
-                            else R.string.logs_collapse_repeats
+                            else R.string.logs_collapse_repeats,
                         ),
                     iconRes = R.drawable.ic_arrows_output,
                     onClick = onToggleGrouping,
@@ -728,7 +728,7 @@ private fun OverflowMenu(
                     iconRes = R.drawable.ic_delete,
                     onClick = onDeleteCrashes,
                     destructive = true,
-                )
+                ),
             )
         }
     AfinityActionMenu(expanded = expanded, onDismissRequest = onDismiss, actions = actions)
@@ -864,8 +864,8 @@ private fun BottomBar(
                     .clip(CircleShape)
                     .background(
                         if (paused) MaterialTheme.colorScheme.outline
-                        else MaterialTheme.colorScheme.primary
-                    )
+                        else MaterialTheme.colorScheme.primary,
+                    ),
         )
         Text(
             text =
@@ -1007,10 +1007,10 @@ private fun ScopeOption(
                 .clip(RoundedCornerShape(16.dp))
                 .background(
                     if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-                    else MaterialTheme.colorScheme.surfaceContainerLow
+                    else MaterialTheme.colorScheme.surfaceContainerLow,
                 )
                 .clickable(onClick = onClick)
-                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .padding(horizontal = 16.dp, vertical = 14.dp),
     ) {
         Text(
             text = title,

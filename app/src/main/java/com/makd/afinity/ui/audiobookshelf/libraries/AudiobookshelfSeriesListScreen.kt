@@ -43,7 +43,7 @@ fun AudiobookshelfSeriesListScreen(
                         imageUrl = mainUiState.userProfileImageUrl,
                     ),
             )
-        }
+        },
     ) { innerPadding ->
         AudiobookshelfSeriesTab(
             seriesList = allSeries,

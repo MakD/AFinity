@@ -218,7 +218,7 @@ class ItemProjection internal constructor() {
                 favorite = source.favorite,
                 liked = source.liked,
                 playbackPositionTicks = source.playbackPositionTicks,
-            )
+            ),
         ) as T
     }
 

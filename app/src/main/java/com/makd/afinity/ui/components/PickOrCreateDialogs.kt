@@ -148,7 +148,7 @@ fun PickerListDialog(
                             text = createLabel,
                             style =
                                 MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Medium,
                                 ),
                             color = MaterialTheme.colorScheme.primary,
                         )
@@ -191,7 +191,7 @@ private fun PickerChoiceRow(
             modifier =
                 Modifier.size(width = thumbWidth, height = ThumbHeight)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
         ) {
             AsyncImage(
                 imageUrl = choice.imageUrl,
@@ -266,7 +266,7 @@ fun CreateNamedItemDialog(
                         KeyboardActions(
                             onDone = {
                                 if (name.isNotBlank() && !isLoading) onCreate(name.trim(), toggled)
-                            }
+                            },
                         ),
                 )
                 Row(

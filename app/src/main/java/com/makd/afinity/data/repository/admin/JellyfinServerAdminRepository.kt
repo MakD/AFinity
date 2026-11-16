@@ -333,7 +333,7 @@ constructor(
             .apiResult { api, _ ->
                 UserApi(api)
                     .createUserByName(
-                        CreateUserByName(name = name.trim(), password = password?.ifEmpty { null })
+                        CreateUserByName(name = name.trim(), password = password?.ifEmpty { null }),
                     )
                     .content
                     .id
@@ -480,7 +480,7 @@ constructor(
                         pageSize = ACTIVITY_PAGE_SIZE,
                         enablePlaceholders = false,
                         initialLoadSize = ACTIVITY_PAGE_SIZE,
-                    )
+                    ),
             ) {
                 ActivityLogPagingSource(apiInvoker, filter)
             }
@@ -872,7 +872,7 @@ constructor(
             _libraryRemoval.value = null
             if (cause is CancellationException) {
                 _libraryRemovalResults.tryEmit(
-                    LibraryRemovalResult(name, LibraryRemovalOutcome.CANCELLED)
+                    LibraryRemovalResult(name, LibraryRemovalOutcome.CANCELLED),
                 )
             }
         }

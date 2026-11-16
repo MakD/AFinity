@@ -29,5 +29,5 @@ data class JellyseerrUser(
 
 @Serializable
 data class UserResultsResponse(
-    @SerialName("results") val results: List<JellyseerrUser> = emptyList()
+    @SerialName("results") val results: List<JellyseerrUser> = emptyList(),
 )

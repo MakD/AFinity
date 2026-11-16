@@ -22,7 +22,7 @@ abstract class AudiobookshelfModule {
     @Binds
     @Singleton
     abstract fun bindAudiobookshelfRepository(
-        impl: AudiobookshelfRepositoryImpl
+        impl: AudiobookshelfRepositoryImpl,
     ): AudiobookshelfRepository
 
     @Binds

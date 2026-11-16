@@ -290,7 +290,7 @@ constructor(
     }
 
     private suspend fun fetchSourceOptions(
-        sourceType: CustomSectionSourceType
+        sourceType: CustomSectionSourceType,
     ): List<SourceOption>? =
         when (sourceType) {
             CustomSectionSourceType.GENRE -> {
@@ -398,7 +398,7 @@ constructor(
         }
 
     private suspend fun perLibrary(
-        fetch: suspend (AfinityCollection) -> Result<List<SourceOption>>
+        fetch: suspend (AfinityCollection) -> Result<List<SourceOption>>,
     ): List<SourceOption>? =
         withContext(Dispatchers.IO) {
             val libraries =

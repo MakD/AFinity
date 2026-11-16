@@ -181,7 +181,7 @@ fun SortFilterHeaderActions(
         Icon(
             painter =
                 painterResource(
-                    if (filterActive) R.drawable.ic_filter_active else R.drawable.ic_filter
+                    if (filterActive) R.drawable.ic_filter_active else R.drawable.ic_filter,
                 ),
             contentDescription = stringResource(R.string.cd_filter_fab),
             tint =

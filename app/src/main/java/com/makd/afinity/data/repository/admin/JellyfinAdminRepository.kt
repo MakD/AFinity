@@ -113,7 +113,7 @@ private fun LyricDto.toLyricsContent(): LyricsContent =
     LyricsContent(
         lyrics
             .map { LyricsLineInfo(text = it.text, startMs = it.start?.div(TICKS_PER_MS)) }
-            .dropLastWhile { it.text.isBlank() }
+            .dropLastWhile { it.text.isBlank() },
     )
 
 @Singleton
@@ -337,8 +337,8 @@ constructor(
                     ItemLookupApi(
                         client
                             ?: return@withContext Result.failure(
-                                IllegalStateException("No API client")
-                            )
+                                IllegalStateException("No API client"),
+                            ),
                     )
                 val itemUuid = UUID.fromString(itemId)
                 val response =
@@ -356,7 +356,7 @@ constructor(
                                                 isAutomated = false,
                                             ),
                                         includeDisabledProviders = false,
-                                    )
+                                    ),
                             )
 
                         "Series" ->
@@ -372,7 +372,7 @@ constructor(
                                                 isAutomated = false,
                                             ),
                                         includeDisabledProviders = false,
-                                    )
+                                    ),
                             )
 
                         "BoxSet" ->
@@ -387,7 +387,7 @@ constructor(
                                                 isAutomated = false,
                                             ),
                                         includeDisabledProviders = false,
-                                    )
+                                    ),
                             )
 
                         MUSIC_ALBUM ->
@@ -405,7 +405,7 @@ constructor(
                                                 songInfos = emptyList(),
                                             ),
                                         includeDisabledProviders = false,
-                                    )
+                                    ),
                             )
 
                         PERSON ->
@@ -420,12 +420,12 @@ constructor(
                                                 isAutomated = false,
                                             ),
                                         includeDisabledProviders = false,
-                                    )
+                                    ),
                             )
 
                         else ->
                             return@withContext Result.failure(
-                                IllegalArgumentException("Identify not supported for $itemType")
+                                IllegalArgumentException("Identify not supported for $itemType"),
                             )
                     }
                 Result.success(response.content.map { it.toIdentifyResult() })
@@ -452,8 +452,8 @@ constructor(
                     ItemLookupApi(
                         sessionManager.getBackgroundApiClient()
                             ?: return@withContext Result.failure(
-                                IllegalStateException("No API client")
-                            )
+                                IllegalStateException("No API client"),
+                            ),
                     )
                 val body =
                     RemoteSearchResult(
@@ -511,7 +511,7 @@ constructor(
                         trackName = dto.name.orEmpty(),
                         artist = dto.artists?.firstOrNull() ?: dto.albumArtistNames().firstOrNull(),
                         lyrics = lyrics,
-                    )
+                    ),
                 )
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to load lyrics for $trackId")
@@ -549,7 +549,7 @@ constructor(
                             synced = metadata.isSynced ?: content.synced,
                             content = content,
                         )
-                    }
+                    },
                 )
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to search lyrics for $trackId")
@@ -710,7 +710,7 @@ constructor(
                             fileSize = info.size,
                             isLocalFile = info.path?.startsWith("http", ignoreCase = true) != true,
                         )
-                    }
+                    },
                 )
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get images for $itemId")
@@ -733,8 +733,8 @@ constructor(
                     RemoteImageApi(
                         getApiClient()
                             ?: return@withContext Result.failure(
-                                IllegalStateException("No API client")
-                            )
+                                IllegalStateException("No API client"),
+                            ),
                     )
                 val response =
                     api.getRemoteImages(
@@ -758,7 +758,7 @@ constructor(
                             previewUrl = info.url,
                             ratingIsLikes = info.ratingType == RatingType.LIKES,
                         )
-                    }
+                    },
                 )
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get remote images for $itemId")
@@ -802,13 +802,13 @@ constructor(
                     RemoteImageApi(
                         getApiClient()
                             ?: return@withContext Result.failure(
-                                IllegalStateException("No API client")
-                            )
+                                IllegalStateException("No API client"),
+                            ),
                     )
                 val type =
                     ImageType.fromNameOrNull(imageType)
                         ?: return@withContext Result.failure(
-                            IllegalArgumentException("Unknown image type: $imageType")
+                            IllegalArgumentException("Unknown image type: $imageType"),
                         )
                 api.downloadRemoteImage(
                     itemId = UUID.fromString(itemId),
@@ -840,13 +840,13 @@ constructor(
                     ImageApi(
                         getApiClient()
                             ?: return@withContext Result.failure(
-                                IllegalStateException("No API client")
-                            )
+                                IllegalStateException("No API client"),
+                            ),
                     )
                 val type =
                     ImageType.fromNameOrNull(imageType)
                         ?: return@withContext Result.failure(
-                            IllegalArgumentException("Unknown image type: $imageType")
+                            IllegalArgumentException("Unknown image type: $imageType"),
                         )
                 val base64Data =
                     Base64.encodeToString(imageData, Base64.NO_WRAP).toByteArray(Charsets.US_ASCII)
@@ -884,13 +884,13 @@ constructor(
                     ImageApi(
                         getApiClient()
                             ?: return@withContext Result.failure(
-                                IllegalStateException("No API client")
-                            )
+                                IllegalStateException("No API client"),
+                            ),
                     )
                 val type =
                     ImageType.fromNameOrNull(imageType)
                         ?: return@withContext Result.failure(
-                            IllegalArgumentException("Unknown image type: $imageType")
+                            IllegalArgumentException("Unknown image type: $imageType"),
                         )
                 api.deleteItemImage(
                     itemId = UUID.fromString(itemId),
@@ -923,13 +923,13 @@ constructor(
                     ImageApi(
                         getApiClient()
                             ?: return@withContext Result.failure(
-                                IllegalStateException("No API client")
-                            )
+                                IllegalStateException("No API client"),
+                            ),
                     )
                 val type =
                     ImageType.fromNameOrNull(imageType)
                         ?: return@withContext Result.failure(
-                            IllegalArgumentException("Unknown image type: $imageType")
+                            IllegalArgumentException("Unknown image type: $imageType"),
                         )
                 val itemUuid = UUID.fromString(itemId)
                 val step = if (toIndex > fromIndex) 1 else -1
@@ -972,8 +972,8 @@ constructor(
                     LibraryApi(
                         getApiClient()
                             ?: return@withContext Result.failure(
-                                IllegalStateException("No API client")
-                            )
+                                IllegalStateException("No API client"),
+                            ),
                     )
                 api.refreshItem(
                     itemId = UUID.fromString(itemId),
@@ -1173,7 +1173,7 @@ constructor(
                         .getOrNull()
                         ?.let { add(QueryKey.ContainingBoxSets(it)) }
                 }
-            }
+            },
         )
     }
 
@@ -1315,7 +1315,7 @@ constructor(
     private fun BaseItemDto.toUpdateBody(dates: Map<String, JsonElement>): JsonObject =
         JsonObject(
             ApiSerializer.json.encodeToJsonElement(BaseItemDto.serializer(), this).jsonObject +
-                dates
+                dates,
         )
 
     private fun EditablePerson.toBaseItemPerson(): BaseItemPerson =

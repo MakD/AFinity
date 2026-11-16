@@ -92,7 +92,7 @@ fun MusicCastRemote(
                             painter =
                                 painterResource(
                                     if (track?.favorite == true) R.drawable.ic_favorite_filled
-                                    else R.drawable.ic_favorite
+                                    else R.drawable.ic_favorite,
                                 ),
                             contentDescription = stringResource(R.string.cd_favorite),
                             tint =
@@ -154,7 +154,7 @@ fun MusicCastRemote(
                             RepeatMode.OFF -> R.drawable.ic_repeat_off
                             RepeatMode.ALL -> R.drawable.ic_repeat
                             RepeatMode.ONE -> R.drawable.ic_repeat_once
-                        }
+                        },
                     ),
                 label = stringResource(R.string.cd_music_repeat),
                 onClick = viewModel::cycleRepeatMode,
@@ -186,7 +186,7 @@ fun MusicCastRemote(
             if (showLyrics) {
                 Box(
                     modifier =
-                        Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.62f))
+                        Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.62f)),
                 )
                 MusicLyricsView(
                     lyrics = lyrics,
@@ -198,7 +198,7 @@ fun MusicCastRemote(
                     modifier =
                         Modifier.matchParentSize()
                             .windowInsetsPadding(
-                                WindowInsets.safeDrawing.only(WindowInsetsSides.Top)
+                                WindowInsets.safeDrawing.only(WindowInsetsSides.Top),
                             )
                             .padding(start = 16.dp, end = 16.dp, top = 56.dp, bottom = 16.dp),
                 )

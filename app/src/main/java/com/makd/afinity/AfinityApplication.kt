@@ -87,7 +87,7 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
         SdkLogBridge.install(if (BuildConfig.DEBUG) Level.DEBUG else Level.WARN)
 
         Thread.setDefaultUncaughtExceptionHandler(
-            CrashFileExporter(this, ringBufferTree, Thread.getDefaultUncaughtExceptionHandler())
+            CrashFileExporter(this, ringBufferTree, Thread.getDefaultUncaughtExceptionHandler()),
         )
 
         try {
@@ -96,7 +96,7 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
                 imageCacheSizeMb = preferencesRepository.getImageCacheSizeMb()
             }
             Timber.d(
-                "ImageLoader prefs: cacheEnabled=$imageCacheEnabled, cacheSizeMb=$imageCacheSizeMb"
+                "ImageLoader prefs: cacheEnabled=$imageCacheEnabled, cacheSizeMb=$imageCacheSizeMb",
             )
         } catch (e: CancellationException) {
             throw e
@@ -141,7 +141,7 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
                                 .onFailure { Timber.w(it, "Foreground re-resolution failed") }
                         }
                     }
-                }
+                },
             )
     }
 
@@ -153,7 +153,7 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
         val isCacheEnabled = imageCacheEnabled
         val cacheSizeMb = imageCacheSizeMb
         Timber.d(
-            "ImageLoader: creating singleton (cacheEnabled=$isCacheEnabled, cacheSizeMb=$cacheSizeMb)"
+            "ImageLoader: creating singleton (cacheEnabled=$isCacheEnabled, cacheSizeMb=$cacheSizeMb)",
         )
 
         return ImageLoader.Builder(context)

@@ -128,14 +128,14 @@ fun DownloadPosterCard(
                     role = Role.Button,
                     onClick = onClick,
                     onLongClick = onLongClick,
-                )
+                ),
     ) {
         Box(
             modifier =
                 Modifier.fillMaxWidth()
                     .aspectRatio(aspectRatioFor(entry.category))
                     .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
         ) {
             AsyncImage(
                 imageUrl = entry.imageUrl,
@@ -153,7 +153,7 @@ fun DownloadPosterCard(
                                 width = 3.dp,
                                 color = MaterialTheme.colorScheme.primary,
                                 shape = RoundedCornerShape(12.dp),
-                            )
+                            ),
                 )
             }
 
@@ -161,7 +161,7 @@ fun DownloadPosterCard(
                 Box(
                     modifier =
                         Modifier.fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.66f))
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.66f)),
                 )
                 CardPill(
                     text = stringResource(R.string.storage_unavailable_badge),
@@ -236,7 +236,7 @@ private fun SelectionIndicator(selected: Boolean, modifier: Modifier = Modifier)
                 .clip(CircleShape)
                 .background(
                     if (selected) MaterialTheme.colorScheme.primary
-                    else Color.Black.copy(alpha = 0.45f)
+                    else Color.Black.copy(alpha = 0.45f),
                 )
                 .border(
                     width = 2.dp,
@@ -337,13 +337,13 @@ fun DownloadStorageStrip(
                                 .fillMaxHeight()
                                 .background(
                                     downloadCategoryColor(usage.category)
-                                        .copy(alpha = if (dimmed) 0.3f else 1f)
+                                        .copy(alpha = if (dimmed) 0.3f else 1f),
                                 )
                                 .clickable {
                                     onSelectCategory(
-                                        usage.category.takeIf { it != selectedCategory }
+                                        usage.category.takeIf { it != selectedCategory },
                                     )
-                                }
+                                },
                     )
                 }
                 if (otherFraction > 0f) {
@@ -351,7 +351,7 @@ fun DownloadStorageStrip(
                         modifier =
                             Modifier.weight(otherFraction)
                                 .fillMaxHeight()
-                                .background(MaterialTheme.colorScheme.outlineVariant)
+                                .background(MaterialTheme.colorScheme.outlineVariant),
                     )
                 }
                 if (remainder > 0f) {
@@ -392,7 +392,7 @@ private fun DownloadCategoryLegend(
                     Modifier.clip(RoundedCornerShape(14.dp))
                         .background(
                             if (selected) color.copy(alpha = 0.16f)
-                            else MaterialTheme.colorScheme.surfaceContainerHigh
+                            else MaterialTheme.colorScheme.surfaceContainerHigh,
                         )
                         .toggleable(
                             value = selected,

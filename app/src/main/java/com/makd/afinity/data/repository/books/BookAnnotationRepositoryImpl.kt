@@ -57,7 +57,7 @@ constructor(
                 text = annotation.text,
                 color = annotation.color?.name,
                 createdAt = annotation.createdAt,
-            )
+            ),
         )
     }
 

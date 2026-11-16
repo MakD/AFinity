@@ -116,7 +116,7 @@ internal val NETWORKING_FORM =
                             "AutoDiscovery",
                             R.string.config_net_auto_discovery,
                             R.string.config_net_auto_discovery_summary,
-                        )
+                        ),
                     ),
                 ),
                 ConfigSection(

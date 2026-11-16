@@ -31,7 +31,7 @@ constructor(
             val current = sessionManager.currentSession.value
             if (current?.serverId == serverId && current.userId == userId) {
                 return@withContext Result.failure(
-                    IllegalStateException("Cannot forget the account that is currently signed in")
+                    IllegalStateException("Cannot forget the account that is currently signed in"),
                 )
             }
 

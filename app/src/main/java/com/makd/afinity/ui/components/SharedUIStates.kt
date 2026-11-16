@@ -69,7 +69,7 @@ fun FullScreenError(
                     onClick = onActionClick,
                     colors =
                         ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
+                            containerColor = MaterialTheme.colorScheme.primary,
                         ),
                 ) {
                     Text(text = actionText, style = MaterialTheme.typography.labelLarge)
@@ -136,7 +136,7 @@ fun FullScreenEmpty(
                     onClick = onActionClick,
                     colors =
                         ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
+                            containerColor = MaterialTheme.colorScheme.primary,
                         ),
                 ) {
                     Text(text = actionText, style = MaterialTheme.typography.labelLarge)

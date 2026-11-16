@@ -131,7 +131,7 @@ constructor(
     }
 
     private suspend fun fetchEntities(
-        entityIds: List<String>
+        entityIds: List<String>,
     ): List<WikidataFranchiseEntityEntity>? {
         val values = entityIds.joinToString(" ") { "wd:$it" }
         val query =

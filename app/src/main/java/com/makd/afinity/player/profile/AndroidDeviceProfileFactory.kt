@@ -43,7 +43,7 @@ class AndroidDeviceProfileFactory @Inject constructor() {
                         container = container,
                         videoCodec = videoCodecs.joinToString(","),
                         audioCodec = audioCodecs.joinToString(","),
-                    )
+                    ),
                 )
             }
             if (audioCodecs.isNotEmpty()) {
@@ -52,7 +52,7 @@ class AndroidDeviceProfileFactory @Inject constructor() {
                         type = DlnaProfileType.AUDIO,
                         container = container,
                         audioCodec = audioCodecs.joinToString(","),
-                    )
+                    ),
                 )
             }
         }
@@ -69,7 +69,7 @@ class AndroidDeviceProfileFactory @Inject constructor() {
                         property = ProfileConditionValue.VIDEO_PROFILE,
                         value = profiles.joinToString("|"),
                         isRequired = false,
-                    )
+                    ),
                 )
             }
             if (maxLevel != null) {
@@ -79,7 +79,7 @@ class AndroidDeviceProfileFactory @Inject constructor() {
                         property = ProfileConditionValue.VIDEO_LEVEL,
                         value = maxLevel.toString(),
                         isRequired = false,
-                    )
+                    ),
                 )
             }
             if (conditions.isEmpty()) return@forEach
@@ -90,7 +90,7 @@ class AndroidDeviceProfileFactory @Inject constructor() {
                     codec = codec,
                     applyConditions = emptyList(),
                     conditions = conditions,
-                )
+                ),
             )
         }
 
@@ -159,7 +159,7 @@ class AndroidDeviceProfileFactory @Inject constructor() {
                         context = EncodingContext.STREAMING,
                         maxAudioChannels = maxAudioChannels.toString(),
                         conditions = emptyList(),
-                    )
+                    ),
                 ),
             containerProfiles = emptyList(),
             codecProfiles = listOfNotNull(globalVideoConditions(quality, allowHdrPassthrough)),
@@ -177,7 +177,7 @@ class AndroidDeviceProfileFactory @Inject constructor() {
                         type = DlnaProfileType.AUDIO,
                         container = container,
                         audioCodec = audioCodecs.joinToString(","),
-                    )
+                    ),
                 )
             }
         }
@@ -189,7 +189,7 @@ class AndroidDeviceProfileFactory @Inject constructor() {
                     type = DlnaProfileType.AUDIO,
                     container = MP4_AUDIO_CONTAINERS,
                     audioCodec = mp4AudioCodecs.joinToString(","),
-                )
+                ),
             )
         }
 
@@ -209,7 +209,7 @@ class AndroidDeviceProfileFactory @Inject constructor() {
                         protocol = MediaStreamProtocol.HLS,
                         context = EncodingContext.STREAMING,
                         conditions = emptyList(),
-                    )
+                    ),
                 ),
             containerProfiles = emptyList(),
             codecProfiles = emptyList(),
@@ -230,7 +230,7 @@ class AndroidDeviceProfileFactory @Inject constructor() {
                     property = ProfileConditionValue.WIDTH,
                     value = width.toString(),
                     isRequired = true,
-                )
+                ),
             )
         }
 

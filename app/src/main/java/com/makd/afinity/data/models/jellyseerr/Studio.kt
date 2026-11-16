@@ -47,7 +47,7 @@ data class Studio(val id: Int, val name: String, val logoPath: String?) {
     }
 
     fun getImageUrl(
-        baseUrl: String = "https://image.tmdb.org/t/p/w780_filter(duotone,ffffff,bababa)"
+        baseUrl: String = "https://image.tmdb.org/t/p/w780_filter(duotone,ffffff,bababa)",
     ): String? {
         return logoPath?.let { "$baseUrl$it" }
     }

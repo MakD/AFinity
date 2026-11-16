@@ -62,7 +62,7 @@ private fun QualityChip(source: MediaSourceOption, isSelected: Boolean, onClick:
                     source.name
                 } else {
                     "${source.name} • ${source.quality} ${source.codec}"
-                }
+                },
         )
     }
 }

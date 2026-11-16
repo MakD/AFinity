@@ -123,7 +123,7 @@ fun LoginScreen(
                     publicUsers = emptyList(),
                     hasServerUrl = false,
                     isConnectedToServer = false,
-                )
+                ),
         )
     val savedServers by viewModel.savedServers.collectAsStateWithLifecycle()
     val savedUsers by viewModel.savedUsers.collectAsStateWithLifecycle()
@@ -210,7 +210,7 @@ fun LoginScreen(
                             }
 
                             VerticalDivider(
-                                modifier = Modifier.padding(vertical = expandedTopSpacer)
+                                modifier = Modifier.padding(vertical = expandedTopSpacer),
                             )
                             Column(
                                 modifier =
@@ -257,7 +257,7 @@ fun LoginScreen(
                                     Text(stringResource(R.string.login_switch_server))
                                 }
                                 Spacer(
-                                    modifier = Modifier.height(if (isLandscape) 16.dp else 24.dp)
+                                    modifier = Modifier.height(if (isLandscape) 16.dp else 24.dp),
                                 )
                                 UserSelectionAndTabs(
                                     uiState = loginState.uiState,
@@ -274,7 +274,7 @@ fun LoginScreen(
                             }
 
                             VerticalDivider(
-                                modifier = Modifier.padding(vertical = expandedTopSpacer)
+                                modifier = Modifier.padding(vertical = expandedTopSpacer),
                             )
                             Column(
                                 modifier =
@@ -334,7 +334,7 @@ fun LoginScreen(
                         targetState = loginState.uiState.isConnectedToServer,
                         transitionSpec = {
                             (slideInVertically { height -> height } + fadeIn()).togetherWith(
-                                slideOutVertically { height -> -height } + fadeOut()
+                                slideOutVertically { height -> -height } + fadeOut(),
                             ) using SizeTransform(clip = false)
                         },
                         label = "LoginStateTransition",
@@ -1010,7 +1010,7 @@ private fun PasswordForm(
                         autofillManager?.commit()
                         focusManager.clearFocus()
                         onLogin()
-                    }
+                    },
                 ),
             modifier =
                 Modifier.fillMaxWidth().focusRequester(passwordFocusRequester).semantics {

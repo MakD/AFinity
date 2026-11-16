@@ -428,7 +428,7 @@ private fun SaveButton(saving: Boolean, onSave: () -> Unit) {
             }
             Text(
                 if (saving) stringResource(R.string.admin_saving)
-                else stringResource(R.string.admin_save_changes)
+                else stringResource(R.string.admin_save_changes),
             )
         }
     }

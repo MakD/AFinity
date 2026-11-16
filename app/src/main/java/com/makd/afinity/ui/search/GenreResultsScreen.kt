@@ -228,7 +228,7 @@ private fun GenreResultsContent(
                                         MaterialTheme.typography.labelLarge.copy(
                                             fontWeight =
                                                 if (isSelected) FontWeight.SemiBold
-                                                else FontWeight.Medium
+                                                else FontWeight.Medium,
                                         ),
                                     color =
                                         if (isSelected) MaterialTheme.colorScheme.onPrimary

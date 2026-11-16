@@ -107,7 +107,7 @@ constructor(
         val (contentChanges, plainChanges) = otherChanges.partition { it.isContentChange }
         itemStore.put(
             plainChanges.flatMap { it.storeItems() } +
-                contentChanges.flatMap { listOfNotNull(it.parentItem, it.seasonItem) }
+                contentChanges.flatMap { listOfNotNull(it.parentItem, it.seasonItem) },
         )
         itemStore.putContent(contentChanges.mapNotNull { it.updatedItem })
         itemStore.putUserDataFrom(userDataChanges.flatMap { it.storeItems() })
@@ -286,7 +286,7 @@ constructor(
                     seasonId = resolvedSeasonId,
                     source = MediaChangeSource.WEBSOCKET,
                     userData = userDataByItemId[itemId],
-                )
+                ),
             )
         }
 
@@ -343,7 +343,7 @@ constructor(
                     source = source,
                     userData = userData,
                     patch = patch,
-                )
+                ),
             )
 
             updatedItem
@@ -359,7 +359,7 @@ constructor(
                     source = source,
                     userData = userData,
                     patch = patch,
-                )
+                ),
             )
             null
         }
@@ -403,7 +403,7 @@ constructor(
                     userData = userData,
                     patch = patch,
                     isContentChange = isContentChange,
-                )
+                ),
             )
         } catch (e: CancellationException) {
             throw e

@@ -106,19 +106,19 @@ fun DiscoverFilterBottomSheet(
     var runtimeRange by remember {
         mutableStateOf(
             (filterOptions.runtimeGte?.toFloat() ?: 0f)..(filterOptions.runtimeLte?.toFloat()
-                    ?: 400f)
+                    ?: 400f),
         )
     }
     var ratingRange by remember {
         mutableStateOf(
             (filterOptions.voteAverageGte?.toFloat() ?: 0f)..(filterOptions.voteAverageLte
-                    ?.toFloat() ?: 10f)
+                    ?.toFloat() ?: 10f),
         )
     }
     var voteCountRange by remember {
         mutableStateOf(
             (filterOptions.voteCountGte?.toFloat() ?: 0f)..(filterOptions.voteCountLte?.toFloat()
-                    ?: 1000f)
+                    ?: 1000f),
         )
     }
     var tvStatus by remember { mutableStateOf(filterOptions.tvStatus.toSet()) }
@@ -164,7 +164,7 @@ fun DiscoverFilterBottomSheet(
                 ) {
                     add("keywords")
                 }
-            }
+            },
         )
     }
     fun toggleSection(key: String) {
@@ -285,17 +285,17 @@ fun DiscoverFilterBottomSheet(
         val ratingsSummary = buildList {
             if (runtimeRange != 0f..400f) {
                 add(
-                    "${runtimeRange.start.roundToInt()}–${runtimeRange.endInclusive.roundToInt()} min"
+                    "${runtimeRange.start.roundToInt()}–${runtimeRange.endInclusive.roundToInt()} min",
                 )
             }
             if (ratingRange != 0f..10f) {
                 add(
-                    "${"%.1f".format(ratingRange.start)}–${"%.1f".format(ratingRange.endInclusive)}★"
+                    "${"%.1f".format(ratingRange.start)}–${"%.1f".format(ratingRange.endInclusive)}★",
                 )
             }
             if (voteCountRange != 0f..1000f) {
                 add(
-                    "${voteCountRange.start.roundToInt()}–${voteCountRange.endInclusive.roundToInt()} votes"
+                    "${voteCountRange.start.roundToInt()}–${voteCountRange.endInclusive.roundToInt()} votes",
                 )
             }
         }
@@ -308,7 +308,7 @@ fun DiscoverFilterBottomSheet(
             onToggle = { toggleSection("ratings") },
         ) {
             FilterSectionHeader(
-                "${stringResource(R.string.discover_filter_runtime)}  ${runtimeRange.start.roundToInt()}–${runtimeRange.endInclusive.roundToInt()} min"
+                "${stringResource(R.string.discover_filter_runtime)}  ${runtimeRange.start.roundToInt()}–${runtimeRange.endInclusive.roundToInt()} min",
             )
             AfinityRangeSlider(
                 value = runtimeRange,
@@ -320,7 +320,7 @@ fun DiscoverFilterBottomSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             FilterSectionHeader(
-                "${stringResource(R.string.discover_filter_rating)}  ${"%.1f".format(ratingRange.start)}–${"%.1f".format(ratingRange.endInclusive)}"
+                "${stringResource(R.string.discover_filter_rating)}  ${"%.1f".format(ratingRange.start)}–${"%.1f".format(ratingRange.endInclusive)}",
             )
             AfinityRangeSlider(
                 value = ratingRange,
@@ -332,7 +332,7 @@ fun DiscoverFilterBottomSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             FilterSectionHeader(
-                "${stringResource(R.string.discover_filter_vote_count)}  ${voteCountRange.start.roundToInt()}–${voteCountRange.endInclusive.roundToInt()}"
+                "${stringResource(R.string.discover_filter_vote_count)}  ${voteCountRange.start.roundToInt()}–${voteCountRange.endInclusive.roundToInt()}",
             )
             AfinityRangeSlider(
                 value = voteCountRange,
@@ -495,7 +495,7 @@ fun DiscoverFilterBottomSheet(
                         R.plurals.discover_filter_keywords_included_fmt,
                         selectedKeywords.size,
                         selectedKeywords.size,
-                    )
+                    ),
                 )
             }
             if (selectedExcludeKeywords.isNotEmpty()) {
@@ -504,7 +504,7 @@ fun DiscoverFilterBottomSheet(
                         R.plurals.discover_filter_keywords_excluded_fmt,
                         selectedExcludeKeywords.size,
                         selectedExcludeKeywords.size,
-                    )
+                    ),
                 )
             }
         }
@@ -628,14 +628,14 @@ private fun WatchProviderTile(
                     .clip(shape)
                     .background(
                         if (selected) MaterialTheme.colorScheme.primaryContainer
-                        else MaterialTheme.colorScheme.surfaceContainerHigh
+                        else MaterialTheme.colorScheme.surfaceContainerHigh,
                     )
                     .then(
                         if (selected) {
                             Modifier.border(1.5.dp, MaterialTheme.colorScheme.primary, shape)
-                        } else Modifier
+                        } else Modifier,
                     )
-                    .noRippleClickable(onClick)
+                    .noRippleClickable(onClick),
         ) {
             provider.logoUrl()?.let { url ->
                 AsyncImage(
@@ -689,7 +689,7 @@ private fun DateFieldButton(
                     MaterialTheme.colorScheme.surfaceContainerHighest,
                     MaterialTheme.shapes.medium,
                 )
-                .padding(horizontal = 12.dp, vertical = 10.dp)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
     ) {
         Text(
             text = label,

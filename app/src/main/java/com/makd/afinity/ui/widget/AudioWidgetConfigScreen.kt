@@ -106,7 +106,7 @@ fun AudioWidgetConfigScreen(
                 },
                 backgroundOpacity = backgroundOpacity,
             )
-        }
+        },
     ) { innerPadding ->
         val current = settings ?: return@AfinityScreen
         val layoutDirection = LocalLayoutDirection.current
@@ -123,7 +123,7 @@ fun AudioWidgetConfigScreen(
                         Modifier.width(directive.defaultPanePreferredWidth)
                             .fillMaxHeight()
                             .verticalScroll(rememberScrollState())
-                            .padding(top = top + 16.dp, bottom = bottom + 16.dp)
+                            .padding(top = top + 16.dp, bottom = bottom + 16.dp),
                 ) {
                     SettingsSections(current, viewModel, onSaved)
                 }
@@ -156,7 +156,7 @@ fun AudioWidgetConfigScreen(
                             end = end,
                             top = top + 8.dp,
                             bottom = bottom + 16.dp,
-                        )
+                        ),
             ) {
                 PreviewSection(
                     settings = current,
@@ -294,14 +294,14 @@ private fun PreviewSection(
                 Modifier.fillMaxWidth()
                     .height(232.dp)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(if (darkWallpaper) Color(0xFF1B2029) else Color(0xFFDCD6CC))
+                    .background(if (darkWallpaper) Color(0xFF1B2029) else Color(0xFFDCD6CC)),
         ) {
             Box(
                 modifier =
                     Modifier.fillMaxWidth()
                         .fillMaxHeight(0.4f)
                         .align(Alignment.BottomCenter)
-                        .background(if (darkWallpaper) Color(0xFF0E1014) else Color(0xFFEDE8DF))
+                        .background(if (darkWallpaper) Color(0xFF0E1014) else Color(0xFFEDE8DF)),
             )
             WidgetPreview(
                 settings = settings,
@@ -371,7 +371,7 @@ private fun WidgetPreviewCard(
         modifier =
             Modifier.clip(RoundedCornerShape(20.dp))
                 .background(
-                    Color(AudioWidgetLook.backgroundColor(lightText, settings.backgroundOpacity))
+                    Color(AudioWidgetLook.backgroundColor(lightText, settings.backgroundOpacity)),
                 )
                 .padding(start = 12.dp, top = 8.dp, end = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.Bottom,
@@ -469,7 +469,7 @@ private fun WidgetPreviewCard(
                         Image(
                             painter =
                                 painterResource(
-                                    playIcon(status == AudioWidgetStatus.PLAYING, lightText)
+                                    playIcon(status == AudioWidgetStatus.PLAYING, lightText),
                                 ),
                             contentDescription = null,
                             modifier = Modifier.size(32.dp),

@@ -230,7 +230,7 @@ constructor(
                 appendLine()
                 appendLine(report.stackTrace)
                 appendLine("```")
-            }
+            },
         )
     }
 
@@ -331,7 +331,7 @@ constructor(
                     key = "launch",
                     timeMillis = tree?.launchTimeMillis ?: entries.first().timeMillis,
                     version = versionLabel,
-                )
+                ),
             )
         }
 
@@ -372,7 +372,7 @@ constructor(
                         count = group.size,
                         occurrenceTimes = group.map { it.entry.timeMillis },
                         highlights = representative.message.highlights(query),
-                    )
+                    ),
                 )
                 previous = representative
             }
@@ -389,7 +389,7 @@ constructor(
                         count = 1,
                         occurrenceTimes = emptyList(),
                         highlights = entry.message.highlights(query),
-                    )
+                    ),
                 )
                 previous = entry
             }

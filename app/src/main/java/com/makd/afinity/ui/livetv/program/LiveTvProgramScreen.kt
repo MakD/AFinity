@@ -394,7 +394,7 @@ private fun ProgramActionGroup(
                 !hasTimer -> R.string.livetv_action_record
                 program.timerStatus == RecordingStatus.IN_PROGRESS -> R.string.livetv_stop_recording
                 else -> R.string.livetv_do_not_record
-            }
+            },
         )
     val recordIcon = painterResource(id = R.drawable.ic_record)
     val recordTint = if (hasTimer) RecordingRed else null
@@ -408,7 +408,7 @@ private fun ProgramActionGroup(
                     icon = painterResource(id = R.drawable.ic_player_play_filled),
                     onClick = onWatchLive,
                     filled = true,
-                )
+                ),
             )
         }
         if (recording.canManage) {
@@ -424,11 +424,11 @@ private fun ProgramActionGroup(
                         contentDescription =
                             stringResource(
                                 if (hasSeriesTimer) R.string.livetv_cancel_series
-                                else R.string.livetv_action_record_series
+                                else R.string.livetv_action_record_series,
                             ),
                         onClick = recording.onToggleSeries.takeUnless { busy },
                         iconTint = if (hasSeriesTimer) RecordingRed else null,
-                    )
+                    ),
                 )
             }
             if (hasTimer || hasSeriesTimer) {
@@ -438,10 +438,10 @@ private fun ProgramActionGroup(
                         contentDescription =
                             stringResource(
                                 if (hasSeriesTimer) R.string.livetv_series_settings
-                                else R.string.livetv_recording_options
+                                else R.string.livetv_recording_options,
                             ),
                         onClick = recording.onOptions.takeUnless { busy },
-                    )
+                    ),
                 )
             }
         }

@@ -68,7 +68,8 @@ fun RatingStamp(text: String, colors: RatingStampColors, modifier: Modifier = Mo
                         textMeasurer.measure(
                             label,
                             baseStyle.copy(
-                                fontSize = baseStyle.fontSize * (maxTextWidth / measured.size.width)
+                                fontSize =
+                                    baseStyle.fontSize * (maxTextWidth / measured.size.width),
                             ),
                             maxLines = 1,
                             softWrap = false,
@@ -111,6 +112,6 @@ fun RatingStamp(text: String, colors: RatingStampColors, modifier: Modifier = Mo
                             ),
                     )
                 }
-            }
+            },
     )
 }

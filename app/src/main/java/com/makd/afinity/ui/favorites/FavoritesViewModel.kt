@@ -225,7 +225,7 @@ constructor(
                 state.copy(
                     favoriteTracks =
                         (tracks.filterNot { it.id == track.id } + track.copy(favorite = true))
-                            .sortedBy { it.name }
+                            .sortedBy { it.name },
                 )
             } else {
                 state.copy(favoriteTracks = tracks.filterNot { it.id == track.id })

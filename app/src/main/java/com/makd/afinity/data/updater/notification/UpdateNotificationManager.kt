@@ -75,7 +75,7 @@ constructor(@param:ApplicationContext private val context: Context) {
                 .setSmallIcon(R.drawable.ic_system_update)
                 .setContentTitle(context.getString(R.string.notif_update_available_title))
                 .setContentText(
-                    context.getString(R.string.notif_update_available_fmt, release.tagName)
+                    context.getString(R.string.notif_update_available_fmt, release.tagName),
                 )
                 .setStyle(
                     NotificationCompat.BigTextStyle()
@@ -83,8 +83,8 @@ constructor(@param:ApplicationContext private val context: Context) {
                             context.getString(
                                 R.string.notif_update_tap_to_download_fmt,
                                 release.tagName,
-                            )
-                        )
+                            ),
+                        ),
                 )
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setContentIntent(pendingIntent)

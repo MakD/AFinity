@@ -63,14 +63,14 @@ constructor(
             override fun onReceive(context: Context, intent: Intent) {
                 val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
                 Timber.d(
-                    "BroadcastReceiver.onReceive called! Download ID: $id, currentDownloadId: $currentDownloadId"
+                    "BroadcastReceiver.onReceive called! Download ID: $id, currentDownloadId: $currentDownloadId",
                 )
                 if (id == currentDownloadId) {
                     Timber.d("IDs match, calling handleDownloadComplete")
                     handleDownloadComplete(id)
                 } else {
                     Timber.w(
-                        "Received download complete for different ID: $id vs $currentDownloadId"
+                        "Received download complete for different ID: $id vs $currentDownloadId",
                     )
                 }
             }
@@ -168,7 +168,7 @@ constructor(
                     .setTitle("AFinity Update")
                     .setDescription("Downloading version ${release.tagName}")
                     .setNotificationVisibility(
-                        DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+                        DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED,
                     )
                     .setDestinationInExternalFilesDir(
                         context,
@@ -247,7 +247,7 @@ constructor(
                             delay(1.seconds)
                             if (_updateState.value is UpdateState.Downloading) {
                                 Timber.w(
-                                    "Broadcast receiver didn't fire, handling completion manually"
+                                    "Broadcast receiver didn't fire, handling completion manually",
                                 )
                                 handleDownloadComplete(currentDownloadId!!)
                             }
@@ -409,7 +409,7 @@ constructor(
                     }
                     else -> {
                         Timber.e(
-                            "SHA-256 mismatch for ${state.file.name}: expected $expected, got $actual"
+                            "SHA-256 mismatch for ${state.file.name}: expected $expected, got $actual",
                         )
                         ApkVerification.FAILED
                     }

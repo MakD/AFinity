@@ -253,7 +253,7 @@ class AudioService : MediaLibraryService() {
         val retryPolicy =
             object : DefaultLoadErrorHandlingPolicy() {
                 override fun getRetryDelayMsFor(
-                    loadErrorInfo: LoadErrorHandlingPolicy.LoadErrorInfo
+                    loadErrorInfo: LoadErrorHandlingPolicy.LoadErrorInfo,
                 ): Long {
                     val e = loadErrorInfo.exception
                     if (
@@ -282,9 +282,9 @@ class AudioService : MediaLibraryService() {
                                 securePreferencesRepository,
                                 activeEngineRef,
                                 audiobookSource = { absPlaybackManager.playbackState.value.source },
-                            )
+                            ),
                         )
-                        .setLoadErrorHandlingPolicy(retryPolicy)
+                        .setLoadErrorHandlingPolicy(retryPolicy),
                 )
                 .build()
                 .apply {
@@ -319,7 +319,7 @@ class AudioService : MediaLibraryService() {
                 .setChannelId(CHANNEL_ID)
                 .setChannelName(R.string.playback_channel_name)
                 .build()
-                .apply { setSmallIcon(R.drawable.ic_launcher_monochrome) }
+                .apply { setSmallIcon(R.drawable.ic_launcher_monochrome) },
         )
 
         addSession(mediaSession!!)
@@ -356,7 +356,7 @@ class AudioService : MediaLibraryService() {
             return
         }
         Timber.d(
-            "AudioService: switchToAbs() from engine=$activeEngine — musicTrack=${musicPlaybackManager.state.value.currentTrack?.name}"
+            "AudioService: switchToAbs() from engine=$activeEngine — musicTrack=${musicPlaybackManager.state.value.currentTrack?.name}",
         )
         activeEngine = ActiveEngine.ABS
         exoPlayer?.setAudioAttributes(ABS_AUDIO_ATTRIBUTES, true)
@@ -579,7 +579,7 @@ class AudioService : MediaLibraryService() {
                                 musicPlaybackManager.stop()
                                 startService(
                                     Intent(this@AudioService, AudioService::class.java)
-                                        .setAction(ACTION_STOP)
+                                        .setAction(ACTION_STOP),
                                 )
                             }
                             Player.STATE_IDLE -> musicPlaybackManager.updateBufferingState(false)
@@ -595,7 +595,7 @@ class AudioService : MediaLibraryService() {
                 if (activeEngine != ActiveEngine.MUSIC) return
                 if (mediaItem == null) {
                     musicProgressReporter.onPlaybackStopped(
-                        musicPlaybackManager.state.value.positionMs
+                        musicPlaybackManager.state.value.positionMs,
                     )
                     if (musicQueueManager.queue.value.isEmpty()) {
                         musicPlaybackManager.updateTrack(null)
@@ -614,7 +614,7 @@ class AudioService : MediaLibraryService() {
                 val track = musicQueueManager.currentTrack
                 musicPlaybackManager.updateTrack(track)
                 musicPlaybackManager.updateServerTranscode(
-                    track != null && musicQueueManager.isServerTranscode(track.id)
+                    track != null && musicQueueManager.isServerTranscode(track.id),
                 )
                 if (track != null) {
                     applyNormalizationGain(track)
@@ -635,7 +635,7 @@ class AudioService : MediaLibraryService() {
                         Player.REPEAT_MODE_ONE -> RepeatMode.ONE
                         Player.REPEAT_MODE_ALL -> RepeatMode.ALL
                         else -> RepeatMode.OFF
-                    }
+                    },
                 )
                 val isShuffled = musicPlaybackManager.state.value.shuffled
                 mediaSession?.setCustomLayout(musicCustomLayout(isShuffled, repeatMode))
@@ -847,7 +847,7 @@ class AudioService : MediaLibraryService() {
     ) =
         ImmutableList.of(
             CommandButton.Builder(
-                    if (shuffled) CommandButton.ICON_SHUFFLE_ON else CommandButton.ICON_SHUFFLE_OFF
+                    if (shuffled) CommandButton.ICON_SHUFFLE_ON else CommandButton.ICON_SHUFFLE_OFF,
                 )
                 .setSessionCommand(SessionCommand(COMMAND_SHUFFLE, Bundle.EMPTY))
                 .setDisplayName(if (shuffled) "Shuffle On" else "Shuffle Off")
@@ -858,7 +858,7 @@ class AudioService : MediaLibraryService() {
                         Player.REPEAT_MODE_ONE -> CommandButton.ICON_REPEAT_ONE
                         Player.REPEAT_MODE_ALL -> CommandButton.ICON_REPEAT_ALL
                         else -> CommandButton.ICON_REPEAT_OFF
-                    }
+                    },
                 )
                 .setSessionCommand(SessionCommand(COMMAND_REPEAT, Bundle.EMPTY))
                 .setDisplayName("Repeat")
@@ -903,7 +903,7 @@ class AudioService : MediaLibraryService() {
                 MediaItem.Builder()
                     .setMediaId("afinity_root")
                     .setMediaMetadata(
-                        MediaMetadata.Builder().setIsBrowsable(true).setIsPlayable(false).build()
+                        MediaMetadata.Builder().setIsBrowsable(true).setIsPlayable(false).build(),
                     )
                     .build()
             return Futures.immediateFuture(LibraryResult.ofItem(rootItem, params))
@@ -933,7 +933,7 @@ class AudioService : MediaLibraryService() {
                     val itemId =
                         args.getString(ARG_ITEM_ID)
                             ?: return Futures.immediateFuture(
-                                SessionResult(SessionError.ERROR_BAD_VALUE)
+                                SessionResult(SessionError.ERROR_BAD_VALUE),
                             )
                     val episodeId = args.getString(ARG_EPISODE_ID)
                     serviceScope.launch { playResolved { resumeAudiobookItem(itemId, episodeId) } }
@@ -964,7 +964,7 @@ class AudioService : MediaLibraryService() {
                     val isNowShuffled = !wasShuffled
                     musicPlaybackManager.updateShuffled(isNowShuffled)
                     mediaSession?.setCustomLayout(
-                        musicCustomLayout(isNowShuffled, player.repeatMode)
+                        musicCustomLayout(isNowShuffled, player.repeatMode),
                     )
                     return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
                 }
@@ -993,7 +993,7 @@ class AudioService : MediaLibraryService() {
                     stopIfIdleAfterFailedResumption()
                 }
                 return Futures.immediateFailedFuture(
-                    UnsupportedOperationException("Casting, resumption handled by the cast device")
+                    UnsupportedOperationException("Casting, resumption handled by the cast device"),
                 )
             }
             val future = SettableFuture.create<MediaSession.MediaItemsWithStartPosition>()
@@ -1048,7 +1048,7 @@ class AudioService : MediaLibraryService() {
     }
 
     private suspend fun resumeJellyfinAudiobook(
-        itemId: String
+        itemId: String,
     ): MediaSession.MediaItemsWithStartPosition? {
         musicPlaybackManager.updateTrack(null)
         switchToAbs()
@@ -1097,7 +1097,7 @@ class AudioService : MediaLibraryService() {
     }
 
     private suspend fun playResolved(
-        resolve: suspend () -> MediaSession.MediaItemsWithStartPosition?
+        resolve: suspend () -> MediaSession.MediaItemsWithStartPosition?,
     ) {
         if (authRepository.ensureAuthenticationRestored() is AuthRepository.RestoreResult.Failed) {
             return
@@ -1124,7 +1124,7 @@ class AudioService : MediaLibraryService() {
                         .setArtworkUri(display.artworkUri?.toUri())
                         .setIsPlayable(true)
                         .setIsBrowsable(false)
-                        .build()
+                        .build(),
                 )
                 .build()
         return MediaSession.MediaItemsWithStartPosition(listOf(item), 0, C.TIME_UNSET)

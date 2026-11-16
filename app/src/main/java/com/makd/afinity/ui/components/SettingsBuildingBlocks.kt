@@ -123,7 +123,7 @@ fun SettingsItem(
                 .then(
                     if (onClick != null && enabled)
                         Modifier.clickable(role = role, onClick = onClick)
-                    else Modifier
+                    else Modifier,
                 )
                 .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -137,7 +137,7 @@ fun SettingsItem(
                 contentDescription = null,
                 tint =
                     (iconTint ?: MaterialTheme.colorScheme.onSurfaceVariant).copy(
-                        alpha = contentAlpha
+                        alpha = contentAlpha,
                     ),
                 modifier = Modifier.size(24.dp),
             )
@@ -156,7 +156,7 @@ fun SettingsItem(
                     style = MaterialTheme.typography.bodyMedium,
                     color =
                         (subtitleColor ?: MaterialTheme.colorScheme.onSurfaceVariant).copy(
-                            alpha = contentAlpha
+                            alpha = contentAlpha,
                         ),
                     maxLines = subtitleMaxLines,
                     overflow = TextOverflow.Ellipsis,

@@ -253,7 +253,7 @@ constructor(
                 val isOffline = offlineModeManager.isCurrentlyOffline()
                 if (isOffline || !sessionManager.isServerReachable.value) {
                     Timber.d(
-                        "Device is offline or server unreachable, skipping server info refresh"
+                        "Device is offline or server unreachable, skipping server info refresh",
                     )
                     return@launch
                 }
@@ -290,7 +290,7 @@ constructor(
                 try {
                     currentAttempt++
                     Timber.d(
-                        "Attempting to load initial data (Attempt $currentAttempt/$maxRetries)"
+                        "Attempting to load initial data (Attempt $currentAttempt/$maxRetries)",
                     )
 
                     appDataRepository.loadInitialData()

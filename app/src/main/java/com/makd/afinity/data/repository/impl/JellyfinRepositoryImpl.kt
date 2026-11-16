@@ -71,7 +71,7 @@ constructor(
     }
 
     override suspend fun validateServer(
-        serverUrl: String
+        serverUrl: String,
     ): JellyfinServerRepository.ServerConnectionResult {
         return try {
             serverRepository.testServerConnection(serverUrl)
@@ -80,7 +80,7 @@ constructor(
         } catch (e: Exception) {
             Timber.e(e, "Failed to validate server: $serverUrl")
             JellyfinServerRepository.ServerConnectionResult.Error(
-                "Failed to validate server: ${e.message ?: "Unknown error"}"
+                "Failed to validate server: ${e.message ?: "Unknown error"}",
             )
         }
     }
@@ -306,7 +306,7 @@ constructor(
                 ServerStorageCacheEntity(
                     serverId = serverId,
                     payload = storageJson.encodeToString(fresh),
-                )
+                ),
             )
             emit(fresh)
         } catch (e: CancellationException) {

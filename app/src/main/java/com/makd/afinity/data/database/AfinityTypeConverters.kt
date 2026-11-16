@@ -103,7 +103,7 @@ class AfinityTypeConverters {
     fun fromMusicVideoArtistList(artists: List<AfinityMusicVideoArtist>?): String? =
         artists?.let { list ->
             json.encodeToString(
-                list.map { SerializableMusicVideoArtist(id = it.id.toString(), name = it.name) }
+                list.map { SerializableMusicVideoArtist(id = it.id.toString(), name = it.name) },
             )
         }
 
@@ -461,19 +461,19 @@ class AfinityTypeConverters {
 
     @TypeConverter
     fun fromSeasonRequestList(
-        seasons: List<com.makd.afinity.data.models.jellyseerr.SeasonRequest>?
+        seasons: List<com.makd.afinity.data.models.jellyseerr.SeasonRequest>?,
     ): String? {
         return seasons?.let { json.encodeToString(it) }
     }
 
     @TypeConverter
     fun toSeasonRequestList(
-        seasonsString: String?
+        seasonsString: String?,
     ): List<com.makd.afinity.data.models.jellyseerr.SeasonRequest>? {
         return seasonsString?.let {
             try {
                 json.decodeFromString<List<com.makd.afinity.data.models.jellyseerr.SeasonRequest>>(
-                    it
+                    it,
                 )
             } catch (e: Exception) {
                 null

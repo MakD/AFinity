@@ -209,7 +209,7 @@ private fun MediaCategorySortDialog(
                 onClick = {
                     onSortSelected(selectedSort, !isAscending)
                     onDismiss()
-                }
+                },
             ) {
                 Text(stringResource(R.string.action_apply))
             }

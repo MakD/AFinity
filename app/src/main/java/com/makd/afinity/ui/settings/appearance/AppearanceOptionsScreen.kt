@@ -692,7 +692,7 @@ private fun DrawerLibrariesModeSelectorItem(
                     contentDescription = null,
                     tint =
                         MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                            alpha = if (enabled) 1f else 0.38f
+                            alpha = if (enabled) 1f else 0.38f,
                         ),
                     modifier = Modifier.size(24.dp),
                 )

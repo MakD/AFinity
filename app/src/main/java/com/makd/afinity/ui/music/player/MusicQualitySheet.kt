@@ -48,7 +48,7 @@ fun MusicQualitySheet(
             modifier =
                 Modifier.fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(start = 24.dp, end = 24.dp, bottom = 48.dp)
+                    .padding(start = 24.dp, end = 24.dp, bottom = 48.dp),
         ) {
             Text(
                 text = stringResource(R.string.music_player_quality_title),
@@ -79,7 +79,7 @@ fun MusicQualitySheet(
                                     MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
                                 } else {
                                     Color.Transparent
-                                }
+                                },
                             )
                             .selectable(selected = selected, role = Role.RadioButton) {
                                 onSelect(option)

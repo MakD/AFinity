@@ -53,7 +53,7 @@ fun MediaRowSkeleton(
                                 Modifier.fillMaxWidth(0.8f)
                                     .height(14.dp)
                                     .clip(RoundedCornerShape(4.dp))
-                                    .shimmerEffect()
+                                    .shimmerEffect(),
                         )
                     }
 
@@ -66,7 +66,7 @@ fun MediaRowSkeleton(
                                 Modifier.fillMaxWidth(0.45f)
                                     .height(12.dp)
                                     .clip(RoundedCornerShape(4.dp))
-                                    .shimmerEffect()
+                                    .shimmerEffect(),
                         )
                     }
                 }

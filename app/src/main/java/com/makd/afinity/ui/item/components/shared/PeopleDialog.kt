@@ -136,7 +136,7 @@ private fun PersonRow(person: AfinityPerson, onPersonClick: ((UUID) -> Unit)?) {
                 .then(
                     if (clickHandler != null)
                         Modifier.clickable(role = Role.Button) { clickHandler(person.id) }
-                    else Modifier
+                    else Modifier,
                 )
                 .padding(horizontal = 24.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),

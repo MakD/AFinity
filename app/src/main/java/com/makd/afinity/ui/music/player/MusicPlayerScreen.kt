@@ -193,14 +193,14 @@ fun SharedTransitionScope.MusicPlayerScreen(
                                 painter =
                                     painterResource(
                                         if (track?.favorite == true) R.drawable.ic_favorite_filled
-                                        else R.drawable.ic_favorite
+                                        else R.drawable.ic_favorite,
                                     ),
                                 contentDescription = stringResource(R.string.cd_favorite),
                                 tint =
                                     if (track?.favorite == true) Color.Red
                                     else
                                         MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                            alpha = 0.8f
+                                            alpha = 0.8f,
                                         ),
                             )
                         }
@@ -241,7 +241,7 @@ fun SharedTransitionScope.MusicPlayerScreen(
                             RepeatMode.OFF -> R.drawable.ic_repeat_off
                             RepeatMode.ALL -> R.drawable.ic_repeat
                             RepeatMode.ONE -> R.drawable.ic_repeat_once
-                        }
+                        },
                     ),
                 contentDescription = stringResource(R.string.cd_music_repeat),
                 onClick = viewModel::cycleRepeatMode,
@@ -276,7 +276,7 @@ fun SharedTransitionScope.MusicPlayerScreen(
                     value =
                         stringResource(
                             if (equalizerState.isEnabled) R.string.state_toggle_on
-                            else R.string.state_toggle_off
+                            else R.string.state_toggle_off,
                         ),
                     onClick = {
                         showMoreSheet = false
@@ -288,7 +288,7 @@ fun SharedTransitionScope.MusicPlayerScreen(
                     title = stringResource(R.string.music_player_quality_title),
                     value =
                         musicQualityShortLabel(
-                            if (neverTranscode) MusicQuality.ORIGINAL else musicQuality
+                            if (neverTranscode) MusicQuality.ORIGINAL else musicQuality,
                         ),
                     onClick = {
                         showMoreSheet = false
@@ -299,7 +299,7 @@ fun SharedTransitionScope.MusicPlayerScreen(
                 PlayerMoreRow(
                     painter =
                         painterResource(
-                            if (sleepTimerActive) R.drawable.ic_moon_filled else R.drawable.ic_moon
+                            if (sleepTimerActive) R.drawable.ic_moon_filled else R.drawable.ic_moon,
                         ),
                     title = stringResource(R.string.cd_music_sleep_timer),
                     value =
@@ -498,7 +498,7 @@ private fun SharedTransitionScope.MusicSwipeableCover(
                     coverModifier.sharedElement(
                         sharedContentState =
                             rememberSharedContentState(
-                                key = "music-cover-${image.url ?: "default"}"
+                                key = "music-cover-${image.url ?: "default"}",
                             ),
                         animatedVisibilityScope = animatedVisibilityScope,
                     )

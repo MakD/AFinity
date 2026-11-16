@@ -121,7 +121,7 @@ fun SharedTransitionScope.AudioMiniPlayer(
             SwipeToDismissBoxValue.EndToStart -> {
                 Timber.tag("ABS-MiniPlayer")
                     .d(
-                        "MiniPlayer: DISMISSED — value=${dismissState.currentValue} stateType=${state::class.simpleName}"
+                        "MiniPlayer: DISMISSED — value=${dismissState.currentValue} stateType=${state::class.simpleName}",
                     )
                 onCloseClick()
             }
@@ -173,7 +173,7 @@ fun SharedTransitionScope.AudioMiniPlayer(
                             )
                             .size(48.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
                 ) {
                     if (state.coverUrl != null || state is AudioMiniPlayerState.Music) {
                         val title =
@@ -212,14 +212,14 @@ fun SharedTransitionScope.AudioMiniPlayer(
                                 when (state) {
                                     is AudioMiniPlayerState.Abs -> R.drawable.ic_rewind_backward_30
                                     is AudioMiniPlayerState.Music -> R.drawable.ic_player_skip_back
-                                }
+                                },
                             ),
                         contentDescription =
                             stringResource(
                                 when (state) {
                                     is AudioMiniPlayerState.Abs -> R.string.cd_rewind_30
                                     is AudioMiniPlayerState.Music -> R.string.cd_previous
-                                }
+                                },
                             ),
                         modifier = Modifier.size(24.dp),
                         tint = MaterialTheme.colorScheme.onSurface,
@@ -258,14 +258,14 @@ fun SharedTransitionScope.AudioMiniPlayer(
                                     is AudioMiniPlayerState.Abs -> R.drawable.ic_rewind_forward_30
                                     is AudioMiniPlayerState.Music ->
                                         R.drawable.ic_player_skip_forward
-                                }
+                                },
                             ),
                         contentDescription =
                             stringResource(
                                 when (state) {
                                     is AudioMiniPlayerState.Abs -> R.string.cd_forward_30
                                     is AudioMiniPlayerState.Music -> R.string.cd_next
-                                }
+                                },
                             ),
                         modifier = Modifier.size(24.dp),
                         tint = MaterialTheme.colorScheme.onSurface,

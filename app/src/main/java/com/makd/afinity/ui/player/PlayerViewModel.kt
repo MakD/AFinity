@@ -667,7 +667,7 @@ constructor(
                                 repeatMode = "RepeatNone",
                             )
                             Timber.d(
-                                "Reported progress: ${player.currentPosition}ms, paused: $isPaused, audio: $jfAudioIndex, sub: $jfSubIndex"
+                                "Reported progress: ${player.currentPosition}ms, paused: $isPaused, audio: $jfAudioIndex, sub: $jfSubIndex",
                             )
                         } catch (e: CancellationException) {
                             throw e
@@ -716,7 +716,7 @@ constructor(
                     setPreferredAudioLanguage(preferredAudioLang)
                 }
                 setIgnoredTextSelectionFlags(C.SELECTION_FLAG_DEFAULT)
-            }
+            },
         )
 
         val bufferSizeMb = preferencesRepository.getBufferSizeMb()
@@ -834,7 +834,7 @@ constructor(
                         ) {
                             exoNetworkBitrate = bitrateEstimate
                         }
-                    }
+                    },
                 )
             }
     }
@@ -885,7 +885,7 @@ constructor(
                     add("sub-border-size" to subtitlePrefs.outlineSize.toString())
                     add(
                         "sub-border-color" to
-                            SubtitlePreferences.colorToMpvHex(subtitlePrefs.outlineColor)
+                            SubtitlePreferences.colorToMpvHex(subtitlePrefs.outlineColor),
                     )
                     add("sub-shadow-offset" to "0")
                     add("sub-shadow-color" to "#00000000")
@@ -898,7 +898,7 @@ constructor(
                     add("sub-shadow-offset" to subtitlePrefs.outlineSize.toString())
                     add(
                         "sub-shadow-color" to
-                            SubtitlePreferences.colorToMpvHex(subtitlePrefs.outlineColor)
+                            SubtitlePreferences.colorToMpvHex(subtitlePrefs.outlineColor),
                     )
                 }
 
@@ -906,7 +906,7 @@ constructor(
                     add("sub-border-style" to "background-box")
                     add(
                         "sub-back-color" to
-                            SubtitlePreferences.colorToMpvHex(subtitlePrefs.backgroundColor)
+                            SubtitlePreferences.colorToMpvHex(subtitlePrefs.backgroundColor),
                     )
                     add("sub-spacing" to "0.5")
                 }
@@ -1004,7 +1004,7 @@ constructor(
                         !streamFailed -> R.string.player_error_connection
                         isLive -> R.string.player_error_live_channel_unavailable
                         else -> R.string.player_error_stream_failed
-                    }
+                    },
                 )
             showPlaybackError(message)
             if (streamFailed) appendServerFailureReason(message, isLive)
@@ -1027,7 +1027,7 @@ constructor(
         updateUiState {
             it.copy(
                 errorMessage =
-                    context.getString(R.string.player_error_server_reason_fmt, message, reason)
+                    context.getString(R.string.player_error_server_reason_fmt, message, reason),
             )
         }
     }
@@ -1310,14 +1310,20 @@ constructor(
                 GeneralCommandType.VOLUME_UP ->
                     handlePlayerEvent(
                         PlayerEvent.SetVolume(
-                            (volumeManager.getCurrentVolume() + REMOTE_VOLUME_STEP).coerceIn(0, 100)
-                        )
+                            (volumeManager.getCurrentVolume() + REMOTE_VOLUME_STEP).coerceIn(
+                                0,
+                                100,
+                            ),
+                        ),
                     )
                 GeneralCommandType.VOLUME_DOWN ->
                     handlePlayerEvent(
                         PlayerEvent.SetVolume(
-                            (volumeManager.getCurrentVolume() - REMOTE_VOLUME_STEP).coerceIn(0, 100)
-                        )
+                            (volumeManager.getCurrentVolume() - REMOTE_VOLUME_STEP).coerceIn(
+                                0,
+                                100,
+                            ),
+                        ),
                     )
                 GeneralCommandType.MUTE -> applyRemoteMute(true)
                 GeneralCommandType.UNMUTE -> applyRemoteMute(false)
@@ -1977,7 +1983,7 @@ constructor(
             return
         }
         factory.setDefaultRequestProperties(
-            mapOf("Authorization" to "MediaBrowser Token=\"$token\"")
+            mapOf("Authorization" to "MediaBrowser Token=\"$token\""),
         )
     }
 
@@ -2274,7 +2280,7 @@ constructor(
     }
 
     private fun deviceSubtitleConfigurations(
-        device: Map<Int, DeviceSubtitle>
+        device: Map<Int, DeviceSubtitle>,
     ): List<MediaItem.SubtitleConfiguration> = device.map { (index, subtitle) ->
         MediaItem.SubtitleConfiguration.Builder(deviceSubtitleUri(subtitle).toUri())
             .setId(TrackMapping.sideLoadedId(index))
@@ -2494,7 +2500,7 @@ constructor(
             context.startService(
                 android.content
                     .Intent(context, com.makd.afinity.player.AudioService::class.java)
-                    .setAction(com.makd.afinity.player.AudioService.ACTION_STOP)
+                    .setAction(com.makd.afinity.player.AudioService.ACTION_STOP),
             )
         }
     }
@@ -2585,7 +2591,7 @@ constructor(
                         it.copy(resolvedOrientation = computeOrientation(isVideoPortrait))
                     }
                     Timber.d(
-                        "Pre-set orientation from metadata: ${w}x${h}, isPortrait=$isVideoPortrait"
+                        "Pre-set orientation from metadata: ${w}x${h}, isPortrait=$isVideoPortrait",
                     )
                 }
             }
@@ -2726,7 +2732,7 @@ constructor(
             currentSessionId = playbackInfo?.playSessionId ?: UUID.randomUUID().toString()
             currentLivePlaybackInfo = null
             Timber.d(
-                "Playback session ID: $currentSessionId (from server: ${playbackInfo?.playSessionId != null})"
+                "Playback session ID: $currentSessionId (from server: ${playbackInfo?.playSessionId != null})",
             )
             hasStoppedPlayback = false
             exoDroppedFrames = 0
@@ -2829,7 +2835,7 @@ constructor(
                                             ?: context.getString(R.string.track_unknown)
 
                                     MediaItem.SubtitleConfiguration.Builder(
-                                            "file://${subtitleFile.absolutePath}".toUri()
+                                            "file://${subtitleFile.absolutePath}".toUri(),
                                         )
                                         .setId(TrackMapping.sideLoadedId(streamIndex))
                                         .setLabel(language)
@@ -2960,17 +2966,17 @@ constructor(
                     viewModelScope.launch(Dispatchers.IO) {
                         try {
                             Timber.d(
-                                "[MultiPart] Checking additional parts for '${fullItem.name}' id=${fullItem.id}"
+                                "[MultiPart] Checking additional parts for '${fullItem.name}' id=${fullItem.id}",
                             )
                             val parts = mediaRepository.getAdditionalParts(fullItem.id)
                             queueInitJob?.join()
                             Timber.d(
-                                "[MultiPart] getAdditionalParts returned ${parts.size} item(s): ${parts.map { "'${it.name}' (${it.id})" }}"
+                                "[MultiPart] getAdditionalParts returned ${parts.size} item(s): ${parts.map { "'${it.name}' (${it.id})" }}",
                             )
                             if (parts.isNotEmpty()) {
                                 playlistManager.insertAfterCurrent(parts)
                                 Timber.d(
-                                    "[MultiPart] Inserted ${parts.size} parts into queue after '${fullItem.name}'"
+                                    "[MultiPart] Inserted ${parts.size} parts into queue after '${fullItem.name}'",
                                 )
                             }
                         } catch (e: CancellationException) {
@@ -3069,7 +3075,7 @@ constructor(
                             MediaItem.LiveConfiguration.Builder()
                                 .setTargetOffsetMs(3000)
                                 .setMaxPlaybackSpeed(1.02f)
-                                .build()
+                                .build(),
                         )
                         .build()
 
@@ -3179,7 +3185,7 @@ constructor(
             isVideoPortrait = videoSize.height > videoSize.width
             val aspectRatio = videoSize.width * videoSize.pixelWidthHeightRatio / videoSize.height
             Timber.d(
-                "Video size changed: ${videoSize.width}x${videoSize.height}, isPortrait=$isVideoPortrait"
+                "Video size changed: ${videoSize.width}x${videoSize.height}, isPortrait=$isVideoPortrait",
             )
             updateUiState {
                 it.copy(
@@ -3299,7 +3305,7 @@ constructor(
 
         if (audioGroup == null && subtitleGroup == null && !disableSubtitles) {
             Timber.d(
-                "Deferring track selection, tracks not ready (audio=$audioPending, subtitle=$subtitlePending)"
+                "Deferring track selection, tracks not ready (audio=$audioPending, subtitle=$subtitlePending)",
             )
             abandonUnresolvedPendingTracks()
             return
@@ -3321,7 +3327,7 @@ constructor(
                         clearOverridesOfType(C.TRACK_TYPE_TEXT)
                         setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
                         setIgnoredTextSelectionFlags(
-                            C.SELECTION_FLAG_FORCED or C.SELECTION_FLAG_DEFAULT
+                            C.SELECTION_FLAG_FORCED or C.SELECTION_FLAG_DEFAULT,
                         )
                     }
                 }
@@ -3342,7 +3348,7 @@ constructor(
         if (pendingTrackResolveAttempts < MAX_PENDING_TRACK_ATTEMPTS) return
 
         Timber.w(
-            "Giving up on track selection after $pendingTrackResolveAttempts attempts (audio=$pendingAudioStreamIndex, subtitle=$pendingSubtitleStreamIndex)"
+            "Giving up on track selection after $pendingTrackResolveAttempts attempts (audio=$pendingAudioStreamIndex, subtitle=$pendingSubtitleStreamIndex)",
         )
         pendingAudioStreamIndex = null
         pendingSubtitleStreamIndex = null
@@ -3367,7 +3373,7 @@ constructor(
                     .apply {
                         if (trackType == C.TRACK_TYPE_TEXT) {
                             setIgnoredTextSelectionFlags(
-                                C.SELECTION_FLAG_FORCED or C.SELECTION_FLAG_DEFAULT
+                                C.SELECTION_FLAG_FORCED or C.SELECTION_FLAG_DEFAULT,
                             )
                         }
                     }
@@ -3767,7 +3773,7 @@ constructor(
                     audioStreamIndex = audioStreamIndex,
                     subtitleStreamIndex = subtitleStreamIndex,
                     startPositionMs = startPositionMs,
-                )
+                ),
             )
             return
         }
@@ -3802,7 +3808,7 @@ constructor(
                             if (firstItem.playbackPositionTicks > 0)
                                 firstItem.playbackPositionTicks / 10000
                             else 0L,
-                    )
+                    ),
                 )
             } else if (firstItem.id != item.id) {
                 pendingMainItemOptions =
@@ -3825,7 +3831,7 @@ constructor(
                         audioStreamIndex = null,
                         subtitleStreamIndex = null,
                         startPositionMs = 0L,
-                    )
+                    ),
                 )
             } else {
                 pendingMainItemOptions = null
@@ -3839,7 +3845,7 @@ constructor(
                         audioStreamIndex = audioStreamIndex,
                         subtitleStreamIndex = subtitleStreamIndex,
                         startPositionMs = startPositionMs,
-                    )
+                    ),
                 )
             }
 
@@ -4064,7 +4070,7 @@ constructor(
                     audioStreamIndex = options.audioStreamIndex,
                     subtitleStreamIndex = options.subtitleStreamIndex,
                     startPositionMs = options.startPositionMs,
-                )
+                ),
             )
             viewModelScope.launch { playlistManager.enrichWithCollectionQueue(fullItem) }
             return
@@ -4093,7 +4099,7 @@ constructor(
                 audioStreamIndex = null,
                 subtitleStreamIndex = null,
                 startPositionMs = 0L,
-            )
+            ),
         )
     }
 

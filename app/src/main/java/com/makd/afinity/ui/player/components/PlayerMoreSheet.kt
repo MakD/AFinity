@@ -45,7 +45,7 @@ fun PlayerMoreSheet(
             modifier =
                 Modifier.fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(bottom = 28.dp)
+                    .padding(bottom = 28.dp),
         ) {
             content()
         }

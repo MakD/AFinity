@@ -88,7 +88,7 @@ fun AudiobookshelfLibrariesScreen(
                             imageUrl = mainUiState.userProfileImageUrl,
                         ),
                 )
-            }
+            },
         ) { paddingValues ->
             Box(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
@@ -123,7 +123,7 @@ fun AudiobookshelfLibrariesScreen(
                         imageUrl = mainUiState.userProfileImageUrl,
                     ),
             )
-        }
+        },
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             Column(modifier = Modifier.fillMaxSize()) {
@@ -195,7 +195,7 @@ fun AudiobookshelfLibrariesScreen(
                             ),
                     colors =
                         CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
                         ),
                 ) {
                     Text(

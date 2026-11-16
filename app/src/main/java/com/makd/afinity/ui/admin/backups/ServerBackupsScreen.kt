@@ -121,7 +121,7 @@ private fun ServerBackupsContent(
                                 modifier =
                                     Modifier.fillMaxWidth()
                                         .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-                                        .height(4.dp)
+                                        .height(4.dp),
                             )
                         } else {
                             SettingsItem(
@@ -185,7 +185,7 @@ private fun BackupRow(backup: AdminBackupRow) {
     val created =
         remember(backup.created) {
             backup.created.format(
-                DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
+                DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT),
             )
         }
     val contents =

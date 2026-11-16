@@ -44,7 +44,7 @@ fun DiscoverMediaCard(
 ) {
     Column(
         modifier =
-            modifier.then(if (fillWidth) Modifier.fillMaxWidth() else Modifier.width(cardWidth))
+            modifier.then(if (fillWidth) Modifier.fillMaxWidth() else Modifier.width(cardWidth)),
     ) {
         Card(
             onClick = onClick,

@@ -260,7 +260,7 @@ fun ItemDetailScreen(
                     }
                     .sortedWith(
                         compareBy<SearchResultItem> { it.releaseDate.isNullOrBlank() }
-                            .thenBy { it.releaseDate }
+                            .thenBy { it.releaseDate },
                     )
             if (missing.isEmpty()) null else parts.copy(items = missing)
         }
@@ -328,7 +328,7 @@ fun ItemDetailScreen(
                                 )
                             } else {
                                 Timber.w(
-                                    "Special feature has no playable source: name=${specialFeature.name}, type=${specialFeature::class.simpleName}"
+                                    "Special feature has no playable source: name=${specialFeature.name}, type=${specialFeature::class.simpleName}",
                                 )
                             }
                         },
@@ -1398,7 +1398,7 @@ private fun LazyListScope.typeSpecificItems(
                         )
                     } else {
                         Timber.w(
-                            "Special feature (series) has no playable source: name=${sf.name}, type=${sf::class.simpleName}"
+                            "Special feature (series) has no playable source: name=${sf.name}, type=${sf::class.simpleName}",
                         )
                     }
                 },
@@ -1670,7 +1670,7 @@ private fun DeleteConfirmationDialog(
                     DeleteScope.ITEM -> R.string.admin_delete_message_item
                     DeleteScope.WITH_CHILDREN -> R.string.admin_delete_message_children
                     DeleteScope.CONTAINER_ONLY -> R.string.admin_delete_message_container
-                }
+                },
             ),
         deleting = deleting,
         errorRes = errorRes,

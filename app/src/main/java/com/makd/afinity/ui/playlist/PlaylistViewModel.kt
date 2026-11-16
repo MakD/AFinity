@@ -279,7 +279,7 @@ constructor(
                         else 0L,
                     playlistId = playlistId,
                     shuffle = shuffle,
-                )
+                ),
             )
         }
     }
@@ -316,7 +316,7 @@ constructor(
                 .onSuccess { started ->
                     if (started < expected) {
                         _downloadMessages.emit(
-                            PlaylistDownloadMessage.PartiallyStarted(started, expected)
+                            PlaylistDownloadMessage.PartiallyStarted(started, expected),
                         )
                     }
                 }

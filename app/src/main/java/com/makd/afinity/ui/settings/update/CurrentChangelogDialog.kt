@@ -105,7 +105,7 @@ fun CurrentChangelogDialog(
                             modifier =
                                 Modifier.fillMaxWidth()
                                     .verticalScroll(rememberScrollState())
-                                    .padding(12.dp)
+                                    .padding(12.dp),
                         ) {
                             ProvideTextStyle(value = MaterialTheme.typography.bodyMedium) {
                                 ChangelogContent(

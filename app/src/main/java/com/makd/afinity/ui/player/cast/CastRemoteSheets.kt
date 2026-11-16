@@ -84,9 +84,9 @@ fun CastChaptersSheet(
                                 .background(
                                     if (isCurrent)
                                         MaterialTheme.colorScheme.primaryContainer.copy(
-                                            alpha = 0.4f
+                                            alpha = 0.4f,
                                         )
-                                    else Color.Transparent
+                                    else Color.Transparent,
                                 )
                                 .clickable(role = Role.Button) {
                                     onChapterClick(chapter)
@@ -149,7 +149,7 @@ fun CastTracksSheet(
             modifier =
                 Modifier.fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
         ) {
             Text(
                 text = stringResource(R.string.cast_audio_and_subs),
@@ -284,7 +284,7 @@ fun CastTracksSheet(
                                     stringResource(
                                         R.string.cast_quality_mbps_fmt,
                                         bitrate / 1_000_000,
-                                    )
+                                    ),
                             )
                         },
                     )

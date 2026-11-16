@@ -273,7 +273,7 @@ fun RequestsScreen(
                                                                     type = viewAllType,
                                                                     id = section.viewAllId,
                                                                     name = title,
-                                                                )
+                                                                ),
                                                             )
                                                         }
                                                     },
@@ -290,7 +290,7 @@ fun RequestsScreen(
                                                             type = FilterType.GENRE_MOVIE,
                                                             id = genre.id,
                                                             name = genre.name,
-                                                        )
+                                                        ),
                                                     )
                                                 },
                                                 genreBackdrops = section.backdrops,
@@ -306,7 +306,7 @@ fun RequestsScreen(
                                                             type = FilterType.GENRE_TV,
                                                             id = genre.id,
                                                             name = genre.name,
-                                                        )
+                                                        ),
                                                     )
                                                 },
                                                 genreBackdrops = section.backdrops,
@@ -322,7 +322,7 @@ fun RequestsScreen(
                                                             type = FilterType.STUDIO,
                                                             id = studio.id,
                                                             name = studio.name,
-                                                        )
+                                                        ),
                                                     )
                                                 },
                                                 widthSizeClass = widthSizeClass,
@@ -337,7 +337,7 @@ fun RequestsScreen(
                                                             type = FilterType.NETWORK,
                                                             id = network.id,
                                                             name = network.name,
-                                                        )
+                                                        ),
                                                     )
                                                 },
                                                 widthSizeClass = widthSizeClass,
@@ -353,7 +353,7 @@ fun RequestsScreen(
                                 ) {
                                     item {
                                         EmptyStateView(
-                                            modifier = Modifier.fillMaxWidth().padding(32.dp)
+                                            modifier = Modifier.fillMaxWidth().padding(32.dp),
                                         )
                                     }
                                 }

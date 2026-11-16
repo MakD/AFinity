@@ -15,6 +15,6 @@ abstract class SecurityModule {
     @Binds
     @Singleton
     abstract fun bindSecurePreferencesRepository(
-        securePreferencesRepositoryImpl: SecurePreferencesRepositoryImpl
+        securePreferencesRepositoryImpl: SecurePreferencesRepositoryImpl,
     ): SecurePreferencesRepository
 }

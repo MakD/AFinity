@@ -59,7 +59,7 @@ fun MusicSleepTimerSheet(
 
     AfinityModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 48.dp)
+            modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 48.dp),
         ) {
             Text(
                 text = stringResource(R.string.abs_sleep_timer_title),
@@ -78,7 +78,7 @@ fun MusicSleepTimerSheet(
                         Modifier.fillMaxWidth()
                             .clip(RoundedCornerShape(20.dp))
                             .background(MaterialTheme.colorScheme.primaryContainer)
-                            .padding(20.dp)
+                            .padding(20.dp),
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -99,7 +99,7 @@ fun MusicSleepTimerSheet(
                                 ),
                             style =
                                 MaterialTheme.typography.headlineSmall.copy(
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
                                 ),
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                         )

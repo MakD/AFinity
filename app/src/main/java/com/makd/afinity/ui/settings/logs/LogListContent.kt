@@ -184,7 +184,7 @@ internal fun ConsoleLine(
                         size = Size(ribbonWidthPx, size.height),
                     )
                 }
-                .padding(start = RibbonWidth, top = 2.dp, bottom = 2.dp)
+                .padding(start = RibbonWidth, top = 2.dp, bottom = 2.dp),
     ) {
         Text(
             text = time,
@@ -245,7 +245,7 @@ private fun ComfortableRow(
                         size = Size(railWidthPx, size.height),
                     )
                 }
-                .padding(start = RowStartPadding)
+                .padding(start = RowStartPadding),
     ) {
         Text(
             text = row.relativeLabel ?: formatter.format(Date(entry.timeMillis)),
@@ -269,7 +269,7 @@ private fun ComfortableRow(
                     Modifier.requiredSize(17.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surface)
-                        .border(2.dp, tint, CircleShape)
+                        .border(2.dp, tint, CircleShape),
             )
             Box(modifier = Modifier.requiredSize(9.dp).clip(CircleShape).background(tint))
         }
@@ -320,7 +320,7 @@ private fun ComfortableRow(
                             .padding(top = 8.dp)
                             .clip(RoundedCornerShape(10.dp))
                             .background(LogLevelColors.container(entry.level))
-                            .padding(horizontal = 12.dp, vertical = 10.dp)
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
                 ) {
                     Text(
                         text = trace,
@@ -340,7 +340,7 @@ private fun ComfortableRow(
                         modifier =
                             Modifier.weight(1f)
                                 .height(1.dp)
-                                .background(MaterialTheme.colorScheme.outlineVariant)
+                                .background(MaterialTheme.colorScheme.outlineVariant),
                     )
                     Text(
                         text =
@@ -417,13 +417,13 @@ internal fun ConsoleExpandedLine(
                         size = Size(ribbonWidthPx, size.height),
                     )
                 }
-                .padding(start = RibbonWidth)
+                .padding(start = RibbonWidth),
     ) {
         Column(
             modifier =
                 Modifier.weight(1f)
                     .clickable(onClick = onCollapse)
-                    .padding(start = 10.dp, end = 12.dp, top = 11.dp, bottom = 10.dp)
+                    .padding(start = 10.dp, end = 12.dp, top = 11.dp, bottom = 10.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -467,7 +467,7 @@ internal fun ConsoleExpandedLine(
                             .padding(top = 9.dp)
                             .clip(RoundedCornerShape(10.dp))
                             .background(LogLevelColors.container(level))
-                            .padding(horizontal = 12.dp, vertical = 10.dp)
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
                 ) {
                     Text(
                         text = it,
@@ -551,7 +551,7 @@ private fun LaunchRow(row: TimelineRow.Launch, formatter: SimpleDateFormat) {
             modifier =
                 Modifier.weight(1f)
                     .height(1.dp)
-                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
         )
         Text(
             text =
@@ -567,7 +567,7 @@ private fun LaunchRow(row: TimelineRow.Launch, formatter: SimpleDateFormat) {
             modifier =
                 Modifier.weight(1f)
                     .height(1.dp)
-                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
         )
     }
 }
@@ -595,7 +595,7 @@ private fun GapRow(row: TimelineRow.Gap) {
                     modifier =
                         Modifier.width(1.dp)
                             .height(4.dp)
-                            .background(MaterialTheme.colorScheme.outlineVariant)
+                            .background(MaterialTheme.colorScheme.outlineVariant),
                 )
             }
         }

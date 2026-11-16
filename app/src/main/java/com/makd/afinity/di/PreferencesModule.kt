@@ -33,7 +33,7 @@ object PreferencesModule {
     @Singleton
     @AppPreferences
     fun provideAppPreferencesDataStore(
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
     ): DataStore<Preferences> {
         return context.appPreferencesDataStore
     }
@@ -42,7 +42,7 @@ object PreferencesModule {
     @Singleton
     @UserPreferences
     fun provideUserPreferencesDataStore(
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
     ): DataStore<Preferences> {
         return context.userPreferencesDataStore
     }
@@ -51,7 +51,7 @@ object PreferencesModule {
     @Singleton
     @ServerPreferences
     fun provideServerPreferencesDataStore(
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
     ): DataStore<Preferences> {
         return context.serverPreferencesDataStore
     }

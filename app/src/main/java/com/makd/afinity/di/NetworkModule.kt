@@ -151,7 +151,7 @@ object NetworkModule {
             Dispatcher(
                     Executors.newCachedThreadPool { runnable ->
                         Thread(runnable, "Jellyfin-OkHttp").apply { isDaemon = false }
-                    }
+                    },
                 )
                 .apply {
                     maxRequests = 45
@@ -175,7 +175,7 @@ object NetworkModule {
                     Cache(
                         directory = File(context.cacheDir, "http_cache"),
                         maxSize = 50L * 1024L * 1024L,
-                    )
+                    ),
                 )
                 .dns { hostname ->
                     Dns.SYSTEM.lookup(hostname).sortedBy { if (it is Inet4Address) 0 else 1 }
@@ -259,7 +259,7 @@ object NetworkModule {
                             request
                                 .newBuilder()
                                 .addHeader("Authorization", "MediaBrowser Token=$token")
-                                .build()
+                                .build(),
                         )
                     }
                 }
@@ -277,7 +277,7 @@ object NetworkModule {
                 Cache(
                     directory = File(context.cacheDir, "github_http_cache"),
                     maxSize = 1L * 1024L * 1024L,
-                )
+                ),
             )
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
@@ -295,7 +295,7 @@ object NetworkModule {
             Dispatcher(
                     Executors.newCachedThreadPool { runnable ->
                         Thread(runnable, "Download-OkHttp").apply { isDaemon = false }
-                    }
+                    },
                 )
                 .apply {
                     maxRequests = 5
@@ -408,12 +408,12 @@ object NetworkModule {
                 Dispatcher(
                         Executors.newCachedThreadPool { runnable ->
                             Thread(runnable, "Jellyfin-Prober").apply { isDaemon = false }
-                        }
+                        },
                     )
                     .apply {
                         maxRequests = 8
                         maxRequestsPerHost = 4
-                    }
+                    },
             )
             .build()
 
@@ -744,7 +744,7 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideAudiobookshelfApiService(
-        @AudiobookshelfRetrofit retrofit: Retrofit
+        @AudiobookshelfRetrofit retrofit: Retrofit,
     ): AudiobookshelfApiService {
         return retrofit.create(AudiobookshelfApiService::class.java)
     }
@@ -829,7 +829,7 @@ object NetworkModule {
                     .connectTimeout(10, TimeUnit.SECONDS)
                     .readTimeout(10, TimeUnit.SECONDS)
                     .callTimeout(15, TimeUnit.SECONDS)
-                    .build()
+                    .build(),
             )
             .addConverterFactory(json.asConverterFactory(contentType))
             .build()
@@ -864,7 +864,7 @@ object NetworkModule {
                             .newBuilder()
                             .header("User-Agent", wikidataUserAgent)
                             .header("Accept", "application/sparql-results+json")
-                            .build()
+                            .build(),
                     )
                 }
                 .build()
@@ -960,7 +960,7 @@ object NetworkModule {
                 .callTimeout(30, TimeUnit.SECONDS)
                 .addInterceptor { chain ->
                     chain.proceed(
-                        chain.request().newBuilder().header("User-Agent", lastFmUserAgent).build()
+                        chain.request().newBuilder().header("User-Agent", lastFmUserAgent).build(),
                     )
                 }
                 .build()

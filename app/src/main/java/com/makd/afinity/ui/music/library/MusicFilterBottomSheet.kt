@@ -38,7 +38,7 @@ fun MusicFilterBottomSheet(
                 add("status")
                 if (working.genres.isNotEmpty()) add("genres")
                 if (working.years.isNotEmpty()) add("years")
-            }
+            },
         )
     }
     fun toggleSection(key: String) {

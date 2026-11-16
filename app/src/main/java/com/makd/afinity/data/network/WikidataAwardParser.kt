@@ -59,7 +59,7 @@ object WikidataAwardParser {
                 .sortedWith(
                     compareByDescending<WikidataAward> { it.year ?: 0 }
                         .thenBy { if (it.result == AwardResult.WON) 0 else 1 }
-                        .thenBy { it.name }
+                        .thenBy { it.name },
                 )
 
         return WikidataAwards(awards = awards, confirmed = true)

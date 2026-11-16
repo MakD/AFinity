@@ -79,7 +79,7 @@ fun LazyListScope.episodeListItems(
                 Modifier.animateItem()
                     .fadeOutBottom(fadeLastItem && index == episodes.lastIndex)
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
         ) {
             ExpandableEpisodeItem(
                 episode = episode,
@@ -137,7 +137,7 @@ private fun ExpandableEpisodeItem(
                 .clip(RoundedCornerShape(12.dp))
                 .clickable(role = Role.Button, onClick = onPlay)
                 .padding(12.dp)
-                .animateContentSize()
+                .animateContentSize(),
     ) {
         Row(verticalAlignment = Alignment.Top) {
             Column(modifier = Modifier.weight(1f)) {
@@ -192,7 +192,7 @@ private fun ExpandableEpisodeItem(
                                     Text(
                                         text =
                                             formatTimeLeftSeconds(
-                                                progress.duration - progress.currentTime
+                                                progress.duration - progress.currentTime,
                                             ),
                                         style = MaterialTheme.typography.labelSmall,
                                         color =
@@ -333,7 +333,7 @@ private fun ExpandableEpisodeItem(
                                 painterResource(
                                     id =
                                         if (isExpanded) R.drawable.ic_keyboard_arrow_up
-                                        else R.drawable.ic_keyboard_arrow_down
+                                        else R.drawable.ic_keyboard_arrow_down,
                                 ),
                             contentDescription =
                                 if (isExpanded) stringResource(R.string.cd_collapse)
@@ -363,7 +363,7 @@ fun HtmlText(
                 htmlToAnnotatedString(html, textColor)
             } else {
                 AnnotatedString(
-                    HtmlCompat.fromHtml(html, HtmlCompat.FROM_HTML_MODE_COMPACT).toString()
+                    HtmlCompat.fromHtml(html, HtmlCompat.FROM_HTML_MODE_COMPACT).toString(),
                 )
             }
         }

@@ -96,7 +96,7 @@ fun EpgProgramCell(
                     shape = MaterialTheme.shapes.small,
                 )
                 .clickable(role = Role.Button, onClick = onClick)
-                .padding(horizontal = 4.dp, vertical = 4.dp)
+                .padding(horizontal = 4.dp, vertical = 4.dp),
     ) {
         if (!showContent) return@Box
         CompositionLocalProvider(LocalContentColor provides contentColor) {

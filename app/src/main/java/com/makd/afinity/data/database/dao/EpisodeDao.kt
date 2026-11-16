@@ -39,17 +39,17 @@ interface EpisodeDao {
     suspend fun getEpisode(episodeId: UUID, serverId: String): AfinityEpisodeDto?
 
     @Query(
-        "SELECT * FROM episodes WHERE seasonId = :seasonId AND serverId = :serverId ORDER BY indexNumber ASC"
+        "SELECT * FROM episodes WHERE seasonId = :seasonId AND serverId = :serverId ORDER BY indexNumber ASC",
     )
     suspend fun getEpisodesForSeason(seasonId: UUID, serverId: String): List<AfinityEpisodeDto>
 
     @Query(
-        "SELECT * FROM episodes WHERE seasonId = :seasonId AND serverId = :serverId ORDER BY indexNumber ASC"
+        "SELECT * FROM episodes WHERE seasonId = :seasonId AND serverId = :serverId ORDER BY indexNumber ASC",
     )
     fun getEpisodesForSeasonFlow(seasonId: UUID, serverId: String): Flow<List<AfinityEpisodeDto>>
 
     @Query(
-        "SELECT * FROM episodes WHERE seriesId = :seriesId AND serverId = :serverId ORDER BY parentIndexNumber ASC, indexNumber ASC"
+        "SELECT * FROM episodes WHERE seriesId = :seriesId AND serverId = :serverId ORDER BY parentIndexNumber ASC, indexNumber ASC",
     )
     suspend fun getEpisodesForSeries(seriesId: UUID, serverId: String): List<AfinityEpisodeDto>
 
@@ -59,7 +59,7 @@ interface EpisodeDao {
         WHERE serverId = :serverId
         AND (name LIKE '%' || :query || '%' OR overview LIKE '%' || :query || '%')
         ORDER BY seriesName ASC, parentIndexNumber ASC, indexNumber ASC
-    """
+    """,
     )
     suspend fun searchEpisodes(query: String, serverId: String): List<AfinityEpisodeDto>
 
@@ -71,7 +71,7 @@ interface EpisodeDao {
         AND u.userId = :userId AND u.playbackPositionTicks > 0 AND u.played = 0
         ORDER BY u.playbackPositionTicks DESC
         LIMIT :limit
-    """
+    """,
     )
     suspend fun getContinueWatchingEpisodes(
         userId: UUID,
@@ -80,7 +80,7 @@ interface EpisodeDao {
     ): List<AfinityEpisodeDto>
 
     @Query(
-        "SELECT * FROM episodes WHERE serverId = :serverId ORDER BY seriesName ASC, parentIndexNumber ASC, indexNumber ASC"
+        "SELECT * FROM episodes WHERE serverId = :serverId ORDER BY seriesName ASC, parentIndexNumber ASC, indexNumber ASC",
     )
     suspend fun getAllEpisodes(serverId: String): List<AfinityEpisodeDto>
 

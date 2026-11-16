@@ -38,7 +38,7 @@ class BookLibraryPagingSource(
     private val comparator = bookLibraryComparator(sortBy, sortDescending)
 
     override suspend fun load(
-        params: LoadParams<BookLibraryKey>
+        params: LoadParams<BookLibraryKey>,
     ): LoadResult<BookLibraryKey, AfinityItem> =
         try {
             val key = params.key ?: BookLibraryKey(0, 0)

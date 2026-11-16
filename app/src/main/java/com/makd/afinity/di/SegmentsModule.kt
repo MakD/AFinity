@@ -15,6 +15,6 @@ abstract class SegmentsModule {
     @Binds
     @Singleton
     abstract fun bindSegmentsRepository(
-        jellyfinSegmentsRepository: JellyfinSegmentsRepository
+        jellyfinSegmentsRepository: JellyfinSegmentsRepository,
     ): SegmentsRepository
 }

@@ -52,7 +52,7 @@ fun DateFieldPickerDialog(
                     } else {
                         onConfirm(null)
                     }
-                }
+                },
             ) {
                 Text(stringResource(R.string.action_apply))
             }

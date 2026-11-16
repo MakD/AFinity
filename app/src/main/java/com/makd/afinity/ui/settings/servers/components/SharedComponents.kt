@@ -146,7 +146,7 @@ internal fun StatChip(
                             Modifier.size(24.dp)
                                 .background(
                                     (iconTint ?: MaterialTheme.colorScheme.primary).copy(
-                                        alpha = 0.15f
+                                        alpha = 0.15f,
                                     ),
                                     CircleShape,
                                 ),
@@ -346,7 +346,7 @@ internal fun SelectableAddressRow(
                     text = addressAnnotated(parts, contentColor),
                     style =
                         MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = if (isPrimary) FontWeight.SemiBold else FontWeight.Normal
+                            fontWeight = if (isPrimary) FontWeight.SemiBold else FontWeight.Normal,
                         ),
                     color = contentColor,
                     maxLines = 1,
@@ -481,7 +481,7 @@ internal fun AddAddressField(placeholder: String, onAdd: (String) -> Unit) {
                             onAdd(trimmed)
                             text = ""
                         }
-                    }
+                    },
                 ),
             modifier = Modifier.weight(1f),
         )
@@ -701,7 +701,7 @@ internal fun UnverifiedAddressDialog(url: String, onConfirm: () -> Unit, onDismi
                 stringResource(
                     R.string.unverified_address_message,
                     url.substringAfter("://"),
-                )
+                ),
             )
         },
         confirmButton = {

@@ -13,7 +13,7 @@ import java.util.UUID
             Index(
                 value = ["libraryItemId", "episodeId", "jellyfinServerId", "jellyfinUserId"],
                 unique = true,
-            )
+            ),
         ],
 )
 data class AbsDownloadEntity(

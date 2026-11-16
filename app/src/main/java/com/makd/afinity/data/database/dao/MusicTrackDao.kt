@@ -16,12 +16,12 @@ interface MusicTrackDao {
     suspend fun insertAll(tracks: List<MusicTrackEntity>)
 
     @Query(
-        "SELECT * FROM music_tracks WHERE id = :id AND serverId = :serverId AND userId = :userId LIMIT 1"
+        "SELECT * FROM music_tracks WHERE id = :id AND serverId = :serverId AND userId = :userId LIMIT 1",
     )
     suspend fun getById(id: String, serverId: String, userId: String): MusicTrackEntity?
 
     @Query(
-        "SELECT * FROM music_tracks WHERE albumId = :albumId AND serverId = :serverId AND userId = :userId ORDER BY discNumber ASC, indexNumber ASC"
+        "SELECT * FROM music_tracks WHERE albumId = :albumId AND serverId = :serverId AND userId = :userId ORDER BY discNumber ASC, indexNumber ASC",
     )
     suspend fun getByAlbum(
         albumId: String,
@@ -30,22 +30,22 @@ interface MusicTrackDao {
     ): List<MusicTrackEntity>
 
     @Query(
-        "SELECT * FROM music_tracks WHERE serverId = :serverId AND userId = :userId ORDER BY name ASC"
+        "SELECT * FROM music_tracks WHERE serverId = :serverId AND userId = :userId ORDER BY name ASC",
     )
     fun getAllFlow(serverId: String, userId: String): Flow<List<MusicTrackEntity>>
 
     @Query(
-        "SELECT * FROM music_tracks WHERE serverId = :serverId AND userId = :userId ORDER BY name ASC"
+        "SELECT * FROM music_tracks WHERE serverId = :serverId AND userId = :userId ORDER BY name ASC",
     )
     suspend fun getAll(serverId: String, userId: String): List<MusicTrackEntity>
 
     @Query(
-        "UPDATE music_tracks SET localFilePath = :path WHERE id = :id AND serverId = :serverId AND userId = :userId"
+        "UPDATE music_tracks SET localFilePath = :path WHERE id = :id AND serverId = :serverId AND userId = :userId",
     )
     suspend fun updateLocalFilePath(id: String, serverId: String, userId: String, path: String)
 
     @Query(
-        "UPDATE music_tracks SET localImagePath = :path WHERE id = :id AND serverId = :serverId AND userId = :userId"
+        "UPDATE music_tracks SET localImagePath = :path WHERE id = :id AND serverId = :serverId AND userId = :userId",
     )
     suspend fun updateLocalImagePath(id: String, serverId: String, userId: String, path: String)
 
@@ -53,7 +53,7 @@ interface MusicTrackDao {
     suspend fun delete(id: String, serverId: String, userId: String)
 
     @Query(
-        "DELETE FROM music_tracks WHERE albumId = :albumId AND serverId = :serverId AND userId = :userId"
+        "DELETE FROM music_tracks WHERE albumId = :albumId AND serverId = :serverId AND userId = :userId",
     )
     suspend fun deleteByAlbum(albumId: String, serverId: String, userId: String)
 

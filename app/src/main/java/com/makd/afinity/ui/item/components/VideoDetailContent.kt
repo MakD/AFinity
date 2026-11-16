@@ -135,7 +135,7 @@ private fun MusicVideoCredits(
                                         tag = "artist_$id",
                                         styles = linkStyle,
                                         linkInteractionListener = { onArtistClick(id.toString()) },
-                                    )
+                                    ),
                                 ) {
                                     append(name)
                                 }
@@ -161,7 +161,7 @@ private fun MusicVideoCredits(
                                     tag = "album_$albumId",
                                     styles = linkStyle,
                                     linkInteractionListener = { onAlbumClick(albumId.toString()) },
-                                )
+                                ),
                             ) {
                                 append(album)
                             }

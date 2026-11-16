@@ -74,7 +74,7 @@ fun SpotlightCarousel(
     Column(modifier = modifier) {
         HomeSectionHeader(title = title, startPadding = CardDimensions.RowGutter)
         BoxWithConstraints(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = CardDimensions.RowGutter)
+            modifier = Modifier.fillMaxWidth().padding(horizontal = CardDimensions.RowGutter),
         ) {
             val itemSize =
                 CardDimensions.carouselItemSize(
@@ -99,7 +99,7 @@ fun SpotlightCarousel(
                     modifier =
                         Modifier.height(itemSize.height)
                             .maskClip(MaterialTheme.shapes.extraLarge)
-                            .clickable(role = Role.Button) { onItemClick(item) }
+                            .clickable(role = Role.Button) { onItemClick(item) },
                 ) {
                     AsyncImage(
                         imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl,
@@ -170,7 +170,7 @@ fun SpotlightCarousel(
                                     text = item.name,
                                     style =
                                         MaterialTheme.typography.titleMedium.copy(
-                                            fontWeight = FontWeight.Bold
+                                            fontWeight = FontWeight.Bold,
                                         ),
                                     color = Color.White,
                                     maxLines = 1,
@@ -211,7 +211,7 @@ fun SpotlightCarousel(
                                             painter =
                                                 painterResource(
                                                     if (rt > 60) R.drawable.ic_rotten_tomato_fresh
-                                                    else R.drawable.ic_rotten_tomato_rotten
+                                                    else R.drawable.ic_rotten_tomato_rotten,
                                                 ),
                                             contentDescription = null,
                                             tint = Color.Unspecified,

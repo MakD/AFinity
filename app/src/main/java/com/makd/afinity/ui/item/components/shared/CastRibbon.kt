@@ -90,7 +90,7 @@ fun CastRibbon(
                 Box(
                     modifier =
                         Modifier.size(10.dp)
-                            .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                            .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape),
                 )
 
                 Text(
@@ -122,7 +122,7 @@ private fun RibbonFace(entry: RibbonEntry, onPersonClick: ((UUID) -> Unit)?) {
                         ) {
                             onPersonClick(person.id)
                         }
-                    else Modifier
+                    else Modifier,
                 ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),

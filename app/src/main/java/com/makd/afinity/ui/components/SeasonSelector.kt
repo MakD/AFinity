@@ -69,14 +69,14 @@ fun SeasonSelector(
                                 emptyList()
                             } else {
                                 selectableSeasons
-                            }
+                            },
                         )
                     },
                     label = {
                         Text(
                             if (disabledSeasons.isEmpty())
                                 stringResource(R.string.season_all_seasons)
-                            else stringResource(R.string.season_all_remaining_seasons)
+                            else stringResource(R.string.season_all_remaining_seasons),
                         )
                     },
                 )
@@ -100,7 +100,7 @@ fun SeasonSelector(
                                         selectedSeasons - seasonNumber
                                     } else {
                                         selectedSeasons + seasonNumber
-                                    }
+                                    },
                                 )
                             }
                         },
@@ -112,7 +112,7 @@ fun SeasonSelector(
                             ) {
                                 Text(
                                     if (seasonNumber == 0) stringResource(R.string.season_specials)
-                                    else stringResource(R.string.season_n_fmt, seasonNumber)
+                                    else stringResource(R.string.season_n_fmt, seasonNumber),
                                 )
 
                                 if (isDisabled) {

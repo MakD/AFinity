@@ -28,7 +28,7 @@ class BackgroundWorkQueue @Inject constructor() {
                 withContext(BackgroundRequest()) { block() }
             } finally {
                 Timber.d(
-                    "BackgroundQueue: done $label in ${System.currentTimeMillis() - startedAt}ms"
+                    "BackgroundQueue: done $label in ${System.currentTimeMillis() - startedAt}ms",
                 )
             }
         }

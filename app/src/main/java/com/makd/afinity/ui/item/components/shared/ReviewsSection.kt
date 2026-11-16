@@ -69,7 +69,7 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
                     color = MaterialTheme.colorScheme.primary,
                     textDecoration = TextDecoration.Underline,
                     fontWeight = FontWeight.SemiBold,
-                )
+                ),
         )
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -96,7 +96,7 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
                 modifier =
                     Modifier.fillMaxWidth()
                         .padding(horizontal = 24.dp, vertical = 16.dp)
-                        .verticalScroll(rememberScrollState())
+                        .verticalScroll(rememberScrollState()),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
@@ -133,7 +133,7 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
                                 text = "$percentage%",
                                 style =
                                     MaterialTheme.typography.labelLarge.copy(
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
                                     ),
                                 color = Color(0xFFFFD700),
                             )
@@ -165,13 +165,13 @@ private fun ReviewCard(
     Card(
         modifier =
             Modifier.width(cardWidth).height(CardDimensions.reviewCardHeight).clickable(
-                role = Role.Button
+                role = Role.Button,
             ) {
                 onReadMoreClick()
             },
         colors =
             CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
             ),
         shape = RoundedCornerShape(12.dp),
     ) {
@@ -214,7 +214,7 @@ private fun ReviewCard(
                             text = "$percentage%",
                             style =
                                 MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
                                 ),
                             color = Color(0xFFFFD700),
                         )

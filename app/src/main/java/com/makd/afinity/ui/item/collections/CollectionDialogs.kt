@@ -214,7 +214,7 @@ fun AddToCollectionDialog(
                 toggleHint = { on ->
                     stringResource(
                         if (on) R.string.collection_search_metadata_on
-                        else R.string.collection_search_metadata_off
+                        else R.string.collection_search_metadata_off,
                     )
                 },
                 isLoading = state.isSubmitting,
@@ -317,7 +317,7 @@ fun ManageCollectionItemsSheet(
                                         height = ThumbHeight,
                                     )
                                     .clip(RoundedCornerShape(6.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
                         ) {
                             AsyncImage(
                                 imageUrl = item.images.primaryImageUrl,

@@ -52,7 +52,7 @@ fun VersionPickerSheet(
                 .background(Color.Black.copy(alpha = 0.95f), RoundedCornerShape(8.dp))
                 .padding(12.dp)
                 .width(240.dp)
-                .heightIn(max = 180.dp)
+                .heightIn(max = 180.dp),
     ) {
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -91,7 +91,7 @@ private fun VersionItem(
                 .clip(RoundedCornerShape(6.dp))
                 .background(
                     if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                    else Color.Transparent
+                    else Color.Transparent,
                 )
                 .selectable(selected = isSelected, role = Role.RadioButton, onClick = onClick)
                 .padding(horizontal = 8.dp, vertical = 6.dp),

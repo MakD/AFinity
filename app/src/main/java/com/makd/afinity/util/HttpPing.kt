@@ -28,6 +28,6 @@ suspend fun OkHttpClient.pingUrl(url: String): Boolean =
                 override fun onResponse(call: Call, response: Response) {
                     response.use { if (continuation.isActive) continuation.resume(it.isSuccessful) }
                 }
-            }
+            },
         )
     }

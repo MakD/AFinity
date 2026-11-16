@@ -95,7 +95,7 @@ fun EpisodeListCard(
                     Modifier.width(thumbnailWidth)
                         .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE)
                         .clip(MaterialTheme.shapes.medium)
-                        .alpha(if (isMissingAndAired) 0.5f else 1f)
+                        .alpha(if (isMissingAndAired) 0.5f else 1f),
             ) {
                 val blurHash =
                     item.images.primaryBlurHash
@@ -179,7 +179,7 @@ fun EpisodeListCard(
                                         RoundedCornerShape(4.dp),
                                     )
                                     .padding(horizontal = 4.dp, vertical = 2.dp)
-                                    .align(Alignment.CenterVertically)
+                                    .align(Alignment.CenterVertically),
                         ) {
                             Text(
                                 text = stringResource(R.string.episode_missing),
@@ -199,7 +199,7 @@ fun EpisodeListCard(
                                         RoundedCornerShape(4.dp),
                                     )
                                     .padding(horizontal = 4.dp, vertical = 2.dp)
-                                    .align(Alignment.CenterVertically)
+                                    .align(Alignment.CenterVertically),
                         ) {
                             Text(
                                 text = stringResource(R.string.episode_upcoming),
@@ -231,7 +231,7 @@ fun EpisodeListCard(
                                     text = String.format(Locale.US, "%.1f", rating),
                                     style =
                                         MaterialTheme.typography.labelMedium.copy(
-                                            fontWeight = FontWeight.Bold
+                                            fontWeight = FontWeight.Bold,
                                         ),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )

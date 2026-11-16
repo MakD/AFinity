@@ -89,10 +89,12 @@ fun WormPagerIndicator(
                         val lastDrawn = min(windowFloor + dots, pageCount - 1)
                         val isRtl = layoutDirection == LayoutDirection.Rtl
 
-                        withTransform({
-                            if (isRtl) scale(-1f, 1f)
-                            translate(left = -windowStart * stepPx)
-                        }) {
+                        withTransform(
+                            {
+                                if (isRtl) scale(-1f, 1f)
+                                translate(left = -windowStart * stepPx)
+                            },
+                        ) {
                             for (index in windowFloor..lastDrawn) {
                                 val sizeFactor =
                                     lerp(
@@ -125,6 +127,6 @@ fun WormPagerIndicator(
                             )
                         }
                     }
-                }
+                },
     )
 }

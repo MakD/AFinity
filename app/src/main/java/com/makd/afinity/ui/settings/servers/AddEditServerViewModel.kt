@@ -88,7 +88,7 @@ constructor(
                 Timber.e(e, "Error loading server")
                 _state.value =
                     _state.value.copy(
-                        error = context.getString(R.string.error_load_server_failed_fmt, e.message)
+                        error = context.getString(R.string.error_load_server_failed_fmt, e.message),
                     )
             }
         }
@@ -114,8 +114,8 @@ constructor(
                 _state.value.copy(
                     connectionTestResult =
                         ConnectionTestResult.Error(
-                            context.getString(R.string.error_enter_server_url)
-                        )
+                            context.getString(R.string.error_enter_server_url),
+                        ),
                 )
             return
         }
@@ -164,7 +164,7 @@ constructor(
                                 isTestingConnection = false,
                                 connectionTestResult =
                                     ConnectionTestResult.Error(
-                                        context.getString(R.string.local_network_permission_needed)
+                                        context.getString(R.string.local_network_permission_needed),
                                     ),
                                 needsLocalNetworkPermission = true,
                             )
@@ -182,7 +182,7 @@ constructor(
                                 context.getString(
                                     R.string.error_connection_test_failed_fmt,
                                     e.message ?: context.getString(R.string.error_unknown),
-                                )
+                                ),
                             ),
                     )
             }
@@ -226,7 +226,7 @@ constructor(
                                     id = UUID.randomUUID(),
                                     serverId = currentState.serverId,
                                     address = existingServer.address,
-                                )
+                                ),
                             )
                         }
                     }
@@ -258,7 +258,7 @@ constructor(
                                 id = UUID.randomUUID(),
                                 serverId = serverInfo.id,
                                 address = url,
-                            )
+                            ),
                         )
                         Timber.d("Alternate address added to server: ${existingServer.name}")
                         _state.value =
@@ -283,7 +283,7 @@ constructor(
                                 id = UUID.randomUUID(),
                                 serverId = serverInfo.id,
                                 address = url,
-                            )
+                            ),
                         )
                         sessionManager.updateSessionServer(server)
                         Timber.d("Server saved: ${server.name}")

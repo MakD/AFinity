@@ -137,7 +137,7 @@ fun AudiobookshelfSeriesScreen(
                     PortraitDetailLayout(
                         hero =
                             PortraitHero.Cover(
-                                backdropChainOf(coverUrls.firstOrNull()?.withAbsWidth(600))
+                                backdropChainOf(coverUrls.firstOrNull()?.withAbsWidth(600)),
                             ),
                         listState = lazyListState,
                         listVerticalArrangement = Arrangement.spacedBy(12.dp),
@@ -221,7 +221,7 @@ private fun SeriesBookItem(
                 modifier =
                     Modifier.size(72.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
             )
         }
 

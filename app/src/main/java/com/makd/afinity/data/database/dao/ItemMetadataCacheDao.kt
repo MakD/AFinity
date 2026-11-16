@@ -11,7 +11,7 @@ import java.util.UUID
 interface ItemMetadataCacheDao {
 
     @Query(
-        "SELECT * FROM item_metadata_cache WHERE itemId = :itemId AND serverId = :serverId AND userId = :userId"
+        "SELECT * FROM item_metadata_cache WHERE itemId = :itemId AND serverId = :serverId AND userId = :userId",
     )
     suspend fun getMetadata(
         itemId: UUID,

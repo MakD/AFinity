@@ -261,13 +261,13 @@ fun ServicesHubScreen(
     }
 
     BoxWithConstraints(
-        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
     ) {
         val expanded = maxWidth >= ExpandedThreshold
         val contentInsets =
             if (showAppBar)
                 WindowInsets.safeDrawing.only(
-                    WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                    WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
                 )
             else WindowInsets.safeDrawing
 
@@ -435,7 +435,7 @@ fun ServicesHubScreen(
                         onClick = {
                             settingsViewModel.setWikidataEnabled(false)
                             showWikidataDisconnect = false
-                        }
+                        },
                     ) {
                         Text(stringResource(R.string.wikidata_disconnect_action))
                     }
@@ -482,7 +482,7 @@ fun ServicesHubScreen(
                         },
                         colors =
                             ButtonDefaults.textButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error
+                                contentColor = MaterialTheme.colorScheme.error,
                             ),
                     ) {
                         Text(stringResource(R.string.action_remove))
@@ -506,7 +506,7 @@ fun ServicesHubScreen(
                             settingsViewModel.setSubtitleDbEnabled(false)
                             showSubtitleDbDisconnect = false
                             showSubtitleDbManage = false
-                        }
+                        },
                     ) {
                         Text(stringResource(R.string.action_disconnect))
                     }
@@ -617,7 +617,7 @@ private fun HubList(
                     .widthIn(max = ContentMaxWidth)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp)
+                    .padding(horizontal = 20.dp),
         ) {
             if (showWelcome) {
                 Spacer(Modifier.height(28.dp))
@@ -649,7 +649,7 @@ private fun HubList(
                         statusText =
                             stringResource(
                                 if (seerrConnected) R.string.services_hub_status_connected
-                                else R.string.services_hub_status_not_set_up
+                                else R.string.services_hub_status_not_set_up,
                             ),
                         isSelected = selected == EditorKind.SEERR,
                         onClick = onSeerr,
@@ -666,7 +666,7 @@ private fun HubList(
                         statusText =
                             stringResource(
                                 if (absConnected) R.string.services_hub_status_connected
-                                else R.string.services_hub_status_not_set_up
+                                else R.string.services_hub_status_not_set_up,
                             ),
                         isSelected = selected == EditorKind.ABS,
                         onClick = onAbs,
@@ -683,7 +683,7 @@ private fun HubList(
                         statusText =
                             stringResource(
                                 if (remoteAdded) R.string.services_hub_status_added
-                                else R.string.services_hub_status_not_set_up
+                                else R.string.services_hub_status_not_set_up,
                             ),
                         isSelected = selected == EditorKind.JELLYFIN,
                         onClick = onRemote,
@@ -722,7 +722,7 @@ private fun HubList(
                         statusText =
                             stringResource(
                                 if (wikidataEnabled) R.string.services_hub_status_connected
-                                else R.string.services_hub_status_not_set_up
+                                else R.string.services_hub_status_not_set_up,
                             ),
                         isSelected = false,
                         onClick = onWikidata,
@@ -777,7 +777,7 @@ private fun HubList(
                     onClick = {
                         markDone()
                         onFinish()
-                    }
+                    },
                 ) {
                     Text(stringResource(finishLabel))
                 }
@@ -1378,10 +1378,10 @@ private fun ServiceTile(
                                     if (connected) accent
                                     else
                                         MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                            alpha = 0.4f
+                                            alpha = 0.4f,
                                         ),
                                     CircleShape,
-                                )
+                                ),
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
@@ -1571,7 +1571,7 @@ private fun SubtitleDbManageSheet(
                     enabled = count > 0,
                     colors =
                         ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
+                            contentColor = MaterialTheme.colorScheme.error,
                         ),
                 ) {
                     Text(stringResource(R.string.subtitledb_remove_all))

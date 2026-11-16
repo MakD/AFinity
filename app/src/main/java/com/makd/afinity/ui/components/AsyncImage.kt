@@ -370,7 +370,7 @@ private fun AsyncImageContent(
                 .diskCachePolicy(CachePolicy.ENABLED)
                 .networkCachePolicy(
                     if (imageUrl?.startsWith("file://") == true) CachePolicy.DISABLED
-                    else CachePolicy.ENABLED
+                    else CachePolicy.ENABLED,
                 )
                 .crossfade(crossfadeMillis)
                 .placeholderMemoryCacheKey(lowResPlaceholder?.memoryCacheKey)

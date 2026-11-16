@@ -190,7 +190,7 @@ private fun PresetSpeedItem(speed: Float, isSelected: Boolean, onClick: () -> Un
                 Modifier.clip(RoundedCornerShape(50))
                     .background(
                         if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                        else Color.Transparent
+                        else Color.Transparent,
                     )
                     .border(
                         BorderStroke(

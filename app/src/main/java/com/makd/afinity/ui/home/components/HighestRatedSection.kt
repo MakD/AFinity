@@ -181,7 +181,7 @@ private fun HighestRatedDetails(item: AfinityItem) {
                             text = String.format(Locale.US, "%.1f", rating),
                             style =
                                 MaterialTheme.typography.bodySmall.copy(
-                                    fontSize = metadataFontSize
+                                    fontSize = metadataFontSize,
                                 ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -204,7 +204,7 @@ private fun HighestRatedDetails(item: AfinityItem) {
                                                 R.drawable.ic_rotten_tomato_fresh
                                             } else {
                                                 R.drawable.ic_rotten_tomato_rotten
-                                            }
+                                            },
                                     ),
                                 contentDescription = stringResource(R.string.cd_rotten_tomatoes),
                                 tint = Color.Unspecified,
@@ -214,7 +214,7 @@ private fun HighestRatedDetails(item: AfinityItem) {
                                 text = "${rtRating.toInt()}%",
                                 style =
                                     MaterialTheme.typography.bodySmall.copy(
-                                        fontSize = metadataFontSize
+                                        fontSize = metadataFontSize,
                                     ),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

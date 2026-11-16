@@ -120,7 +120,7 @@ constructor(
                 val channel = channelDeferred.await()
                 if (channel != null) {
                     Timber.d(
-                        "PlayerWrapperViewModel: Loaded live channel from API: ${channel.name}"
+                        "PlayerWrapperViewModel: Loaded live channel from API: ${channel.name}",
                     )
                     _item.value = channel
                 }
@@ -128,7 +128,7 @@ constructor(
                 val playbackInfo = playbackInfoDeferred.await()
                 if (playbackInfo != null) {
                     Timber.d(
-                        "PlayerWrapperViewModel: Got stream URL: ${redactUrl(playbackInfo.streamUrl)}"
+                        "PlayerWrapperViewModel: Got stream URL: ${redactUrl(playbackInfo.streamUrl)}",
                     )
                     _livePlaybackInfo.value = playbackInfo
                     _liveStreamUrl.value = playbackInfo.streamUrl
@@ -158,7 +158,7 @@ constructor(
                     sessionManager.currentSession.value?.userId
                         ?: run {
                             Timber.w(
-                                "No active session found in PlayerWrapperViewModel, trying DB fallback"
+                                "No active session found in PlayerWrapperViewModel, trying DB fallback",
                             )
                             databaseRepository.getAllUsers().firstOrNull()?.id
                         }
@@ -175,7 +175,7 @@ constructor(
 
                         if (loadedItem != null) {
                             Timber.d(
-                                "PlayerWrapperViewModel: Loaded item from database: ${loadedItem.name}"
+                                "PlayerWrapperViewModel: Loaded item from database: ${loadedItem.name}",
                             )
                         }
                     } catch (e: CancellationException) {
@@ -190,7 +190,7 @@ constructor(
                 if (loadedItem == null || loadedItem.sources.isEmpty()) {
                     if (loadedItem != null) {
                         Timber.d(
-                            "PlayerWrapperViewModel: DB item has no sources, refetching from API"
+                            "PlayerWrapperViewModel: DB item has no sources, refetching from API",
                         )
                     } else {
                         Timber.d("PlayerWrapperViewModel: Trying to load from API")
@@ -199,7 +199,7 @@ constructor(
                         val apiItem = mediaRepository.getItemById(itemId)
                         if (apiItem != null) {
                             Timber.d(
-                                "PlayerWrapperViewModel: Loaded item from API: ${apiItem.name}"
+                                "PlayerWrapperViewModel: Loaded item from API: ${apiItem.name}",
                             )
                             loadedItem = apiItem
                         } else {
@@ -214,7 +214,7 @@ constructor(
 
                 if (loadedItem == null) {
                     Timber.e(
-                        "PlayerWrapperViewModel: Failed to load item from both database and API"
+                        "PlayerWrapperViewModel: Failed to load item from both database and API",
                     )
                 }
 

@@ -451,7 +451,7 @@ constructor(
                         newSessionId != null
                 ) {
                     Timber.d(
-                        "Session changed from $currentSessionId to $newSessionId - clearing and reloading data"
+                        "Session changed from $currentSessionId to $newSessionId - clearing and reloading data",
                     )
                     sessionSwitchJob?.cancel()
                     sessionSwitchJob = scope.launch {
@@ -479,12 +479,12 @@ constructor(
                     if (!_isInitialDataLoaded.value) return@collect
                     if (sessionManager.isSwitchingSession.value) {
                         Timber.d(
-                            "Server base URL changed to $newUrl during a session switch — deferring to the session reload"
+                            "Server base URL changed to $newUrl during a session switch — deferring to the session reload",
                         )
                         return@collect
                     }
                     Timber.d(
-                        "Server base URL changed to $newUrl — clearing all URL-dependent caches and reloading"
+                        "Server base URL changed to $newUrl — clearing all URL-dependent caches and reloading",
                     )
                     try {
                         clearAllData(sessionEnded = false)
@@ -515,7 +515,7 @@ constructor(
     }
 
     private suspend fun loadBookShelves(
-        libraries: List<AfinityCollection>
+        libraries: List<AfinityCollection>,
     ): Pair<List<CachedBookShelf>?, List<CachedBookShelf>?> {
         val bookLibraries = libraries.filter { it.type == CollectionType.Books }
         val hidden = homeLayoutPreferencesRepository.getHiddenRows()
@@ -563,7 +563,7 @@ constructor(
     }
 
     private fun CachedBookShelf.library(
-        fallbackType: CollectionType = CollectionType.Books
+        fallbackType: CollectionType = CollectionType.Books,
     ): AfinityCollection {
         val id = UUID.fromString(libraryId)
         return _libraries.value.firstOrNull { it.id == id }
@@ -652,7 +652,7 @@ constructor(
     }
 
     private suspend fun loadVideoShelves(
-        libraries: List<AfinityCollection>
+        libraries: List<AfinityCollection>,
     ): Pair<List<CachedBookShelf>?, List<CachedBookShelf>?> {
         val hidden = homeLayoutPreferencesRepository.getHiddenRows()
         suspend fun shelves(
@@ -1215,7 +1215,7 @@ constructor(
                 parentId = libraryId,
                 limit = limit,
                 groupItems = true,
-            )
+            ),
         )
 
     private suspend fun getLatestShowsCombined(limit: Int): List<AfinityShow> =
@@ -1224,7 +1224,7 @@ constructor(
                 limit = limit,
                 groupItems = true,
                 includeItemTypes = listOf(BaseItemKind.EPISODE),
-            )
+            ),
         )
 
     private suspend fun resolveLatestShows(raw: List<AfinityItem>): List<AfinityShow> {
@@ -1535,7 +1535,7 @@ constructor(
     }
 
     private suspend fun loadHomeSpecificData(
-        libraries: List<AfinityCollection>
+        libraries: List<AfinityCollection>,
     ): Pair<List<AfinityMovie>, List<AfinityShow>> {
         return try {
             val latestExcludes =
@@ -2124,7 +2124,7 @@ constructor(
                         current
                     } else {
                         current.copy(
-                            audiobookParts = current.audiobookParts.upserted(item, isFavorite)
+                            audiobookParts = current.audiobookParts.upserted(item, isFavorite),
                         )
                     }
                 is AfinityVideo,
@@ -2139,7 +2139,7 @@ constructor(
                             current.channels
                                 .filterNot { it.id == item.id }
                                 .let { if (isFavorite) it + item.copy(favorite = true) else it }
-                                .sortedBy { it.channelNumber ?: it.name }
+                                .sortedBy { it.channelNumber ?: it.name },
                     )
                 else -> current
             }
@@ -2156,7 +2156,7 @@ constructor(
             current.copy(
                 favoriteAlbums =
                     if (isFavorite) (without + album.copy(favorite = true)).sortedBy { it.name }
-                    else without
+                    else without,
             )
         }
     }
@@ -2171,7 +2171,7 @@ constructor(
             current.copy(
                 favoriteArtists =
                     if (isFavorite) (without + artist.copy(favorite = true)).sortedBy { it.name }
-                    else without
+                    else without,
             )
         }
     }
@@ -2186,7 +2186,7 @@ constructor(
             current.copy(
                 favoriteTracks =
                     if (isFavorite) (without + track.copy(favorite = true)).sortedBy { it.name }
-                    else without
+                    else without,
             )
         }
     }
@@ -2201,7 +2201,7 @@ constructor(
             current.copy(
                 favoritePlaylists =
                     if (isFavorite) (without + playlist.copy(favorite = true)).sortedBy { it.name }
-                    else without
+                    else without,
             )
         }
     }

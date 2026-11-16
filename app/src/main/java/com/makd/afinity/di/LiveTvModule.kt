@@ -15,6 +15,6 @@ abstract class LiveTvModule {
     @Binds
     @Singleton
     abstract fun bindLiveTvRepository(
-        jellyfinLiveTvRepository: JellyfinLiveTvRepository
+        jellyfinLiveTvRepository: JellyfinLiveTvRepository,
     ): LiveTvRepository
 }

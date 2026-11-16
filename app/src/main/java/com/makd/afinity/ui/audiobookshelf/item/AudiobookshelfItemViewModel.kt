@@ -86,7 +86,7 @@ constructor(
                                     progressMap[entry.id]?.let {
                                         entry.copy(userMediaProgress = it)
                                     } ?: entry
-                                }
+                                },
                         )
                     }
             }

@@ -182,7 +182,7 @@ fun UpdateAvailableDialog(
                             modifier =
                                 Modifier.fillMaxWidth()
                                     .padding(12.dp)
-                                    .verticalScroll(rememberScrollState())
+                                    .verticalScroll(rememberScrollState()),
                         ) {
                             ProvideTextStyle(value = MaterialTheme.typography.bodyMedium) {
                                 ChangelogContent(
@@ -197,11 +197,11 @@ fun UpdateAvailableDialog(
                         visible = consoleVisible,
                         enter =
                             expandVertically(
-                                animationSpec = tween(400, easing = FastOutSlowInEasing)
+                                animationSpec = tween(400, easing = FastOutSlowInEasing),
                             ) + fadeIn(tween(400)),
                         exit =
                             shrinkVertically(
-                                animationSpec = tween(400, easing = FastOutSlowInEasing)
+                                animationSpec = tween(400, easing = FastOutSlowInEasing),
                             ) + fadeOut(tween(400)),
                     ) {
                         VerificationConsole(
@@ -409,7 +409,7 @@ private fun ValidateButton(
                             property = LottieProperty.STROKE_COLOR,
                             value = contentColor.toArgb(),
                             keyPath = arrayOf("**"),
-                        )
+                        ),
                     )
 
                 LottieAnimation(

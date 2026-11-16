@@ -74,7 +74,7 @@ internal fun SessionPlaybackDetails(session: SessionInfoDto, modifier: Modifier 
                                 if (info.isVideoDirect) R.string.session_video_direct_fmt
                                 else R.string.session_video_transcoded_fmt,
                                 codec.uppercase(Locale.ROOT),
-                            )
+                            ),
                     )
                 }
                 info.audioCodec?.let { codec ->
@@ -84,7 +84,7 @@ internal fun SessionPlaybackDetails(session: SessionInfoDto, modifier: Modifier 
                                 if (info.isAudioDirect) R.string.session_audio_direct_fmt
                                 else R.string.session_audio_transcoded_fmt,
                                 codec.uppercase(Locale.ROOT),
-                            )
+                            ),
                     )
                 }
                 info.bitrate
@@ -102,7 +102,7 @@ internal fun SessionPlaybackDetails(session: SessionInfoDto, modifier: Modifier 
                                 stringResource(
                                     R.string.session_hardware_fmt,
                                     type.serialName.uppercase(Locale.ROOT),
-                                )
+                                ),
                         )
                     }
             }

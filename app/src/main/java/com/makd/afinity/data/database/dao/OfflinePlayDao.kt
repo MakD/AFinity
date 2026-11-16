@@ -12,7 +12,7 @@ interface OfflinePlayDao {
     @Insert suspend fun insert(play: OfflinePlayEntity)
 
     @Query(
-        "SELECT * FROM offline_plays WHERE userId = :userId AND serverId = :serverId ORDER BY playedAt ASC, id ASC"
+        "SELECT * FROM offline_plays WHERE userId = :userId AND serverId = :serverId ORDER BY playedAt ASC, id ASC",
     )
     suspend fun getForAccount(userId: UUID, serverId: String): List<OfflinePlayEntity>
 

@@ -490,7 +490,7 @@ fun RecommendationRowSection(
                                                 title = series.name,
                                                 authorName =
                                                     booksLabel ?: entry.media.metadata.authorName,
-                                            )
+                                            ),
                                     ),
                                 userMediaProgress = null,
                             )
@@ -554,7 +554,7 @@ fun PodcastUpNextCard(
                 UpNextTarget.NEXT -> R.string.abs_next_unplayed_label
                 UpNextTarget.LATEST -> R.string.abs_latest_episode_label
                 UpNextTarget.FIRST -> R.string.abs_first_episode_label
-            }
+            },
         )
     val meta =
         if (primary == UpNextTarget.RESUME && resumeProgress != null) {
@@ -690,7 +690,7 @@ fun PodcastUpNextCard(
                                     UpNextTarget.NEXT -> R.string.action_play
                                     UpNextTarget.LATEST -> R.string.abs_play_latest
                                     UpNextTarget.FIRST -> R.string.abs_from_episode_one
-                                }
+                                },
                             ),
                         style = MaterialTheme.typography.labelLarge,
                         maxLines = 1,
@@ -707,7 +707,7 @@ fun PodcastUpNextCard(
                             text =
                                 stringResource(
                                     if (target == UpNextTarget.FIRST) R.string.abs_from_episode_one
-                                    else R.string.abs_latest_short
+                                    else R.string.abs_latest_short,
                                 ),
                             style = MaterialTheme.typography.labelLarge,
                             maxLines = 1,

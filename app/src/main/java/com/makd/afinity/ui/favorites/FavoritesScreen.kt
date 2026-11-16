@@ -714,7 +714,7 @@ internal fun FavoriteTrackCard(
                                     label =
                                         stringResource(
                                             if (track.favorite) R.string.cd_favorite_remove
-                                            else R.string.cd_favorite_add
+                                            else R.string.cd_favorite_add,
                                         ),
                                     iconRes =
                                         if (track.favorite) R.drawable.ic_favorite_filled

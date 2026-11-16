@@ -45,7 +45,7 @@ fun Map<String, Map<String, TrickplayInfoDto>?>.toAfinityTrickplayInfoMap():
 }
 
 fun Map<String, List<AfinityTrickplayInfo>>.forSource(
-    mediaSourceId: String?
+    mediaSourceId: String?,
 ): List<AfinityTrickplayInfo> {
     if (mediaSourceId == null) return if (size == 1) values.first() else emptyList()
     return this[mediaSourceId]

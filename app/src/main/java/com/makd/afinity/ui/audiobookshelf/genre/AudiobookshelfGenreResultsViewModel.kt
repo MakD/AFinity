@@ -68,7 +68,7 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
                     )
 
                 Timber.d(
-                    "Genre results loaded: ${audiobooks.size} audiobooks, ${podcasts.size} podcasts for '$genre'"
+                    "Genre results loaded: ${audiobooks.size} audiobooks, ${podcasts.size} podcasts for '$genre'",
                 )
             } catch (e: CancellationException) {
                 throw e

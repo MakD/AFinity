@@ -229,7 +229,7 @@ private fun SeerrRequestActionButton(
             user.hasPermission(Permissions.REQUEST) ||
                 user.hasPermission(
                     if (mediaType == MediaType.MOVIE) Permissions.REQUEST_MOVIE
-                    else Permissions.REQUEST_TV
+                    else Permissions.REQUEST_TV,
                 )
         } ?: true
     val fourKEnabled =
@@ -423,7 +423,7 @@ private fun SeerrDetailSections(
             cast = cast,
             onPersonClick = { member ->
                 onNavigateToFilteredMedia(
-                    FilterParams(type = FilterType.PERSON, id = member.id, name = member.name)
+                    FilterParams(type = FilterType.PERSON, id = member.id, name = member.name),
                 )
             },
             widthSizeClass = widthSizeClass,
@@ -524,7 +524,7 @@ private fun SeerrCastSection(
                         textAlign = TextAlign.Center,
                         modifier =
                             Modifier.height(
-                                CardDimensions.textHeight(MaterialTheme.typography.bodySmall)
+                                CardDimensions.textHeight(MaterialTheme.typography.bodySmall),
                             ),
                     )
                 }
@@ -890,7 +890,7 @@ private fun buildSeerrDetailRows(
                     context.getString(R.string.seerr_detail_status),
                     it,
                     isStatus = true,
-                )
+                ),
             )
         }
 
@@ -918,7 +918,7 @@ private fun buildSeerrDetailRows(
                     SeerrDetailRowData(
                         context.getString(R.string.seerr_detail_episode_runtime),
                         formatRuntime(context, it),
-                    )
+                    ),
                 )
             }
         details.networks
@@ -929,7 +929,7 @@ private fun buildSeerrDetailRows(
                     SeerrDetailRowData(
                         context.getString(R.string.seerr_detail_networks),
                         it.joinToString(", "),
-                    )
+                    ),
                 )
             }
     } else {
@@ -944,7 +944,7 @@ private fun buildSeerrDetailRows(
                         SeerrDetailRowData(
                             context.getString(R.string.seerr_detail_release_theatrical),
                             it,
-                        )
+                        ),
                     )
                 }
             }
@@ -957,7 +957,7 @@ private fun buildSeerrDetailRows(
                         SeerrDetailRowData(
                             context.getString(R.string.seerr_detail_release_digital),
                             it,
-                        )
+                        ),
                     )
                 }
             }
@@ -968,7 +968,7 @@ private fun buildSeerrDetailRows(
                         SeerrDetailRowData(
                             context.getString(R.string.seerr_detail_release_date),
                             it,
-                        )
+                        ),
                     )
                 }
             }
@@ -980,7 +980,7 @@ private fun buildSeerrDetailRows(
                     SeerrDetailRowData(
                         context.getString(R.string.seerr_detail_budget),
                         String.format(Locale.US, "$%,d", it),
-                    )
+                    ),
                 )
             }
         details.revenue
@@ -990,7 +990,7 @@ private fun buildSeerrDetailRows(
                     SeerrDetailRowData(
                         context.getString(R.string.seerr_detail_revenue),
                         String.format(Locale.US, "$%,d", it),
-                    )
+                    ),
                 )
             }
     }
@@ -1003,7 +1003,7 @@ private fun buildSeerrDetailRows(
                     "Original Language",
                     it,
                     flagLanguageCode = details.originalLanguage,
-                )
+                ),
             )
         }
     countries?.let {
@@ -1011,7 +1011,7 @@ private fun buildSeerrDetailRows(
             SeerrDetailRowData(
                 context.getString(R.string.seerr_detail_production_country),
                 it.joinToString(", "),
-            )
+            ),
         )
     }
 }
@@ -1270,7 +1270,7 @@ private fun SeerrDetailLedgerRow(row: SeerrDetailRowData) {
                             text = row.value,
                             style =
                                 MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
                                 ),
                             color =
                                 if (active) MaterialTheme.colorScheme.primary
@@ -1288,7 +1288,7 @@ private fun SeerrDetailLedgerRow(row: SeerrDetailRowData) {
                         text = row.value,
                         style =
                             MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
                             ),
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.End,
@@ -1299,7 +1299,7 @@ private fun SeerrDetailLedgerRow(row: SeerrDetailRowData) {
                         text = row.value,
                         style =
                             MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
                             ),
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.End,

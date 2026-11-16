@@ -164,7 +164,7 @@ constructor(
                         trackDownloadInfos =
                             allDownloads
                                 .filter { d -> d.itemType == "Audio" }
-                                .associateBy { d -> d.itemId }
+                                .associateBy { d -> d.itemId },
                     )
                 }
             }
@@ -296,7 +296,7 @@ constructor(
                 HotTracks.rank(
                     pool.sortedWith(
                         compareByDescending<AfinityTrack> { it.playCount ?: 0 }
-                            .thenBy { it.productionYear ?: Int.MAX_VALUE }
+                            .thenBy { it.productionYear ?: Int.MAX_VALUE },
                     ),
                     { it.name },
                     popularity.index,

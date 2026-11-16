@@ -107,7 +107,7 @@ constructor(
                             items =
                                 enriched.sortedByDescending {
                                     it.userMediaProgress?.lastUpdate ?: 0L
-                                }
+                                },
                         )
                     } else {
                         section.copy(items = enriched)
@@ -303,7 +303,7 @@ constructor(
     }
 
     private fun buildSectionsFromViews(
-        viewsByLibrary: Map<String, List<PersonalizedView>>
+        viewsByLibrary: Map<String, List<PersonalizedView>>,
     ): List<PersonalizedSection> {
         val allSections = mutableMapOf<String, PersonalizedSection>()
         for ((_, views) in viewsByLibrary) {
@@ -349,7 +349,7 @@ constructor(
                             items =
                                 (existing.items + items).distinctBy {
                                     it.id to it.recentEpisode?.id
-                                }
+                                },
                         )
                 } else {
                     allSections[view.id] =

@@ -22,7 +22,7 @@ object PlayerLauncher {
         collectionId: UUID? = null,
     ) {
         Timber.d(
-            "PlayerLauncher: Launching player for item $itemId, seasonId=$seasonId, shuffle=$shuffle"
+            "PlayerLauncher: Launching player for item $itemId, seasonId=$seasonId, shuffle=$shuffle",
         )
 
         val intent =

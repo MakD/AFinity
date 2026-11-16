@@ -597,7 +597,7 @@ fun MusicArtistScreen(
                 backdrop =
                     backdropChainOf(
                         (uiState.artist?.images?.backdrop ?: uiState.artist?.images?.primary)
-                            ?.toString()
+                            ?.toString(),
                     ),
                 listState = lazyListState,
                 arrangement = LandscapeDetailArrangement.Split,

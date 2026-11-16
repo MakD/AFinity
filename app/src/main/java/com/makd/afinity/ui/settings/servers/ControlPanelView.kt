@@ -348,7 +348,7 @@ fun ControlPanelOverviewScreen(
                 Modifier.fillMaxSize()
                     .verticalScroll(rememberScrollState())
                     .padding(contentPadding)
-                    .padding(16.dp)
+                    .padding(16.dp),
         ) {
             ControlPanelOverview(
                 viewModel = viewModel,
@@ -936,7 +936,7 @@ private fun ActiveSessionsSection(
                                                 if (selected) MaterialTheme.colorScheme.primary
                                                 else MaterialTheme.colorScheme.outlineVariant,
                                             shape = CircleShape,
-                                        )
+                                        ),
                             )
                         }
                     }
@@ -1037,7 +1037,7 @@ private fun PlayingSessionCard(
                 Box(
                     modifier =
                         Modifier.matchParentSize()
-                            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                            .background(MaterialTheme.colorScheme.surfaceContainerLow),
                 )
             }
 
@@ -1049,8 +1049,8 @@ private fun PlayingSessionCard(
                                 0f to Color.Black.copy(alpha = 0.55f),
                                 0.35f to Color.Transparent,
                                 1f to Color.Black.copy(alpha = 0.85f),
-                            )
-                        )
+                            ),
+                        ),
             )
 
             Column(modifier = Modifier.fillMaxWidth().heightIn(min = 180.dp).padding(12.dp)) {
@@ -1081,7 +1081,7 @@ private fun PlayingSessionCard(
                             text = stringResource(playMethod),
                             style =
                                 MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.SemiBold,
                                 ),
                             color = Color.White,
                             maxLines = 1,
@@ -1169,7 +1169,7 @@ private fun PlayingSessionCard(
                             text = userName,
                             style =
                                 MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.SemiBold,
                                 ),
                             color = Color.White,
                             maxLines = 1,

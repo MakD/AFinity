@@ -114,7 +114,7 @@ fun AudioPlayerScaffold(
     ) { paddingValues ->
         Box(
             modifier =
-                Modifier.fillMaxSize().background(Brush.verticalGradient(colors = gradientColors))
+                Modifier.fillMaxSize().background(Brush.verticalGradient(colors = gradientColors)),
         ) {
             if (isCasting) {
                 castRemote()
@@ -244,7 +244,7 @@ private fun AudioPlayerTopRow(
                                 Modifier.size(4.dp)
                                     .align(Alignment.BottomCenter)
                                     .alpha(if (isCasting) 1f else 0f)
-                                    .background(accentColor, CircleShape)
+                                    .background(accentColor, CircleShape),
                         )
                     }
                 }
@@ -289,7 +289,7 @@ fun AudioPlayerTitleBlock(
                         MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                     } else {
                         MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.ExtraBold
+                            fontWeight = FontWeight.ExtraBold,
                         )
                     },
                 color = MaterialTheme.colorScheme.onSurface,

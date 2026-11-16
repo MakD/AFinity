@@ -39,7 +39,7 @@ fun RecordingEventsSnackbar(
                     RecordingEvent.CANCELLED -> cancelled
                     RecordingEvent.SERIES_CANCELLED -> seriesCancelled
                     RecordingEvent.FAILED -> failed
-                }
+                },
             )
         }
     }

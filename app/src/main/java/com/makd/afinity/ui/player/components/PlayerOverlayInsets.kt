@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun Modifier.playerOverlayInsets(
-    sides: WindowInsetsSides = WindowInsetsSides.Horizontal + WindowInsetsSides.Vertical
+    sides: WindowInsetsSides = WindowInsetsSides.Horizontal + WindowInsetsSides.Vertical,
 ): Modifier =
     this.windowInsetsPadding(WindowInsets.systemBarsIgnoringVisibility.only(sides))
         .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))

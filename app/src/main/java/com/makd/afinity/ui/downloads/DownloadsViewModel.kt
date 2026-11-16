@@ -589,7 +589,7 @@ constructor(
                         Timber.e(error, "Failed to cancel download")
                         _uiState.value =
                             _uiState.value.copy(
-                                error = "Failed to cancel download: ${error.message}"
+                                error = "Failed to cancel download: ${error.message}",
                             )
                     }
             } catch (e: CancellationException) {
@@ -620,7 +620,7 @@ constructor(
                             Timber.e(error, "Failed to delete download")
                             _uiState.value =
                                 _uiState.value.copy(
-                                    error = "Failed to delete download: ${error.message}"
+                                    error = "Failed to delete download: ${error.message}",
                                 )
                         }
                     }

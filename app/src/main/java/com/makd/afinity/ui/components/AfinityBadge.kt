@@ -28,7 +28,7 @@ fun AfinityBadge(
             modifier
                 .clip(RoundedCornerShape(4.dp))
                 .background(containerColor)
-                .padding(horizontal = 6.dp, vertical = 2.dp)
+                .padding(horizontal = 6.dp, vertical = 2.dp),
     ) {
         Text(
             text = text,

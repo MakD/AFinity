@@ -142,7 +142,7 @@ constructor(
                                     recommendations =
                                         res.results
                                             .filter { item -> item.getMediaType() != null }
-                                            .take(15)
+                                            .take(15),
                                 )
                             }
                         }
@@ -154,7 +154,7 @@ constructor(
                                     similar =
                                         res.results
                                             .filter { item -> item.getMediaType() != null }
-                                            .take(15)
+                                            .take(15),
                                 )
                             }
                         }
@@ -192,7 +192,7 @@ constructor(
                     .filter { it.file_path?.endsWith(".png") == true }
                     .sortedWith(
                         compareByDescending<TmdbImage> { it.iso_639_1 == "en" }
-                            .thenByDescending { it.vote_average ?: 0.0 }
+                            .thenByDescending { it.vote_average ?: 0.0 },
                     )
                     .firstOrNull()
                     ?.file_path ?: return

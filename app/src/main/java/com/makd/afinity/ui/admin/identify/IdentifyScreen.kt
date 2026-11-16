@@ -429,7 +429,7 @@ private fun ProviderIdsPanel(
         modifier =
             Modifier.fillMaxWidth()
                 .clip(AdminCardShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .background(MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Row(
             modifier =
@@ -457,7 +457,7 @@ private fun ProviderIdsPanel(
             Icon(
                 painterResource(
                     if (expanded) R.drawable.ic_keyboard_arrow_up
-                    else R.drawable.ic_keyboard_arrow_down
+                    else R.drawable.ic_keyboard_arrow_down,
                 ),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,

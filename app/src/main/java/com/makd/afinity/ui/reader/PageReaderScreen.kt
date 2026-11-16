@@ -652,10 +652,10 @@ private fun FilmstripThumb(
                                 .padding(3.dp)
                         } else {
                             Modifier
-                        }
+                        },
                     )
                     .clip(RoundedCornerShape(6.dp))
-                    .background(colors.surfaceContainerHigh)
+                    .background(colors.surfaceContainerHigh),
         ) {
             file?.let {
                 AsyncImage(
@@ -698,7 +698,7 @@ private fun ScrubPreview(page: Int, loadThumbnail: suspend (Int) -> File?) {
                 Modifier.size(width = PreviewWidth, height = PreviewHeight)
                     .clip(RoundedCornerShape(12.dp))
                     .background(colors.surfaceContainerHigh)
-                    .border(2.dp, colors.primary, RoundedCornerShape(12.dp))
+                    .border(2.dp, colors.primary, RoundedCornerShape(12.dp)),
         ) {
             file?.let {
                 AsyncImage(
@@ -769,7 +769,7 @@ internal fun ReaderFailure(error: ReaderError, onRetry: () -> Unit, onBack: () -
                 ReaderError.CORRUPT -> R.string.reader_error_corrupt
                 ReaderError.NO_PAGES -> R.string.reader_error_no_pages
                 ReaderError.PASSWORD_PROTECTED -> R.string.reader_error_password
-            }
+            },
         )
     Column(
         modifier = Modifier.fillMaxSize().padding(32.dp),

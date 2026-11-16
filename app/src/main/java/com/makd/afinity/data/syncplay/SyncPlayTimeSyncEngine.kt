@@ -88,7 +88,7 @@ constructor(
                     syncPlayRepository.ping(clientTimeMs = rtt)
 
                     Timber.d(
-                        "SyncPlay time sync round ${round + 1}/$PING_ROUNDS: rtt=${rtt}ms offset=${offset}ms"
+                        "SyncPlay time sync round ${round + 1}/$PING_ROUNDS: rtt=${rtt}ms offset=${offset}ms",
                     )
                 } catch (e: CancellationException) {
                     throw e
@@ -100,7 +100,7 @@ constructor(
             if (offsets.isNotEmpty()) {
                 _clockOffsetMs.set(offsets.average().toLong())
                 Timber.d(
-                    "SyncPlay clock offset updated: ${_clockOffsetMs.get()}ms (${offsets.size}/${PING_ROUNDS} rounds)"
+                    "SyncPlay clock offset updated: ${_clockOffsetMs.get()}ms (${offsets.size}/${PING_ROUNDS} rounds)",
                 )
             } else {
                 Timber.w("SyncPlay time sync: all rounds failed, keeping previous offset")

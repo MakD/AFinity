@@ -59,7 +59,7 @@ constructor(
                 _uiState.value.copy(
                     lastCheckTime =
                         if (lastCheck > 0) formatTimestamp(lastCheck)
-                        else context.getString(R.string.update_never_checked)
+                        else context.getString(R.string.update_never_checked),
                 )
         }
     }

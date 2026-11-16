@@ -240,14 +240,14 @@ fun AvailableRequestCard(
                     shape = RoundedCornerShape(4.dp),
                     colors =
                         CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondary
+                            containerColor = MaterialTheme.colorScheme.secondary,
                         ),
                 ) {
                     Text(
                         text =
                             stringResource(
                                 if (isPartial) R.string.status_partially_available
-                                else R.string.status_available
+                                else R.string.status_available,
                             ),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSecondary,

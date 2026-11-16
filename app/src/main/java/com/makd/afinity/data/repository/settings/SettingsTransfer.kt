@@ -100,7 +100,7 @@ constructor(
 
             if (payload.format != AfinitySettingsExport.FORMAT) {
                 return@withContext SettingsImportResult.Failed(
-                    SettingsImportFailure.NOT_AFINITY_BACKUP
+                    SettingsImportFailure.NOT_AFINITY_BACKUP,
                 )
             }
             if (payload.schemaVersion > AfinitySettingsExport.SCHEMA_VERSION) {
@@ -130,7 +130,7 @@ constructor(
                     prefCounts = prefCounts,
                     homePlan = homePlan,
                     payload = payload,
-                )
+                ),
             )
         }
 

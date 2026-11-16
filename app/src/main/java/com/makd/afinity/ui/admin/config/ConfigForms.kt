@@ -41,7 +41,7 @@ private val GENERAL_FORM =
                             R.string.config_server_name,
                             R.string.config_server_name_summary,
                             required = true,
-                        )
+                        ),
                     ),
                 ),
                 ConfigSection(
@@ -112,7 +112,7 @@ internal val SERVER_LOGS_FORM =
                             max = MAX_RETENTION_DAYS,
                         ),
                     ),
-                )
+                ),
             ),
     )
 
@@ -160,7 +160,7 @@ private val LIBRARY_DISPLAY_FORM =
                             R.string.config_external_suggestions_summary,
                         ),
                     ),
-                )
+                ),
             ),
     )
 
@@ -206,7 +206,7 @@ private val RESUME_FORM =
                             max = MAX_RESUME_DURATION_SECONDS,
                         ),
                     ),
-                )
+                ),
             ),
         orderedPairs = listOf(FieldOrder("MinResumePct", "MaxResumePct")),
     )
@@ -227,9 +227,9 @@ private val STREAMING_FORM =
                             max = MAX_BITRATE_MEGABITS,
                             storedPerShown = BITS_PER_MEGABIT,
                             storedAsWholeNumber = true,
-                        )
+                        ),
                     ),
-                )
+                ),
             ),
     )
 
@@ -420,7 +420,7 @@ private val NFO_FORM =
                             R.string.config_nfo_extra_thumbs_summary,
                         ),
                     ),
-                )
+                ),
             ),
     )
 

@@ -156,7 +156,7 @@ private fun CastMemberCard(
                         }
                     } else {
                         Modifier
-                    }
+                    },
                 ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),

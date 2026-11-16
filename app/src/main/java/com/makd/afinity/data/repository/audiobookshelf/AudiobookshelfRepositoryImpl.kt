@@ -212,7 +212,7 @@ constructor(
                     ) {
                         Timber.d("Audiobookshelf: Network changed, switching to ${result.address}")
                         securePreferencesRepository.updateCachedAudiobookshelfServerUrl(
-                            result.address
+                            result.address,
                         )
                         _currentConfig.value =
                             _currentConfig.value?.copy(serverUrl = result.address)
@@ -367,15 +367,15 @@ constructor(
                             result.address != config.serverUrl
                     ) {
                         Timber.d(
-                            "Audiobookshelf: Resolved to ${result.address} (config: ${config.serverUrl})"
+                            "Audiobookshelf: Resolved to ${result.address} (config: ${config.serverUrl})",
                         )
                         securePreferencesRepository.updateCachedAudiobookshelfServerUrl(
-                            result.address
+                            result.address,
                         )
                         activeUrl = result.address
                     } else if (result is AudiobookshelfAddressResult.NoRoute) {
                         Timber.w(
-                            "Audiobookshelf: No route from this network to ${result.attemptedAddresses}"
+                            "Audiobookshelf: No route from this network to ${result.attemptedAddresses}",
                         )
                     }
                 } catch (e: CancellationException) {
@@ -394,7 +394,7 @@ constructor(
             _isAuthenticated.value = true
             absSyncScheduler.scheduleSync(serverId, userId)
             Timber.d(
-                "Audiobookshelf authenticated via context switch — pending progress sync scheduled"
+                "Audiobookshelf authenticated via context switch — pending progress sync scheduled",
             )
         }
 
@@ -486,7 +486,7 @@ constructor(
                                     jellyfinServerId = currentServerId,
                                     jellyfinUserId = currentUserId.toString(),
                                     address = existingConfig.serverUrl,
-                                )
+                                ),
                             )
                         }
                     }
@@ -504,7 +504,7 @@ constructor(
                                     jellyfinServerId = currentServerId,
                                     jellyfinUserId = currentUserId.toString(),
                                     address = serverUrl,
-                                )
+                                ),
                             )
                         }
                     }
@@ -518,13 +518,13 @@ constructor(
                             username = user.username,
                             isLoggedIn = true,
                             lastSync = System.currentTimeMillis(),
-                        )
+                        ),
                     )
 
                     _isAuthenticated.value = true
                     absSyncScheduler.scheduleSync(currentServerId, currentUserId)
                     Timber.d(
-                        "Audiobookshelf authenticated via login — pending progress sync scheduled"
+                        "Audiobookshelf authenticated via login — pending progress sync scheduled",
                     )
                     _currentConfig.value =
                         AudiobookshelfConfig(
@@ -714,7 +714,7 @@ constructor(
                     Result.success(response.body()!!)
                 } else {
                     Result.failure(
-                        Exception("Failed to fetch library stats: ${response.message()}")
+                        Exception("Failed to fetch library stats: ${response.message()}"),
                     )
                 }
             } catch (e: CancellationException) {
@@ -781,7 +781,7 @@ constructor(
                             return@withContext Result.success(emptyList())
                         }
                         Timber.d(
-                            "Library $libraryId cache holds $cachedCount of $serverTotal items, refreshing"
+                            "Library $libraryId cache holds $cachedCount of $serverTotal items, refreshing",
                         )
                     }
                 }
@@ -826,13 +826,13 @@ constructor(
                         currentPage++
 
                         Timber.d(
-                            "Fetched items page $currentPage: ${items.size} items, total: $total"
+                            "Fetched items page $currentPage: ${items.size} items, total: $total",
                         )
 
                         if (items.isEmpty()) break
                     } else {
                         return@withContext Result.failure(
-                            Exception("Failed to fetch items: ${response.message()}")
+                            Exception("Failed to fetch items: ${response.message()}"),
                         )
                     }
                 }
@@ -1003,7 +1003,7 @@ constructor(
                 }
                 item = item.copy(media = item.media.copy(episodes = syntheticEpisodes))
                 Timber.d(
-                    "cachedItemOrNull: synthesized ${syntheticEpisodes.size} episodes from downloads"
+                    "cachedItemOrNull: synthesized ${syntheticEpisodes.size} episodes from downloads",
                 )
             }
         }
@@ -1019,7 +1019,7 @@ constructor(
                 val cached = cachedItemOrNull(itemId, currentServerId, currentUserId.toString())
                 return if (cached != null) {
                     Timber.d(
-                        "getItemDetails: returning cached item episodes=${cached.media.episodes?.size}"
+                        "getItemDetails: returning cached item episodes=${cached.media.episodes?.size}",
                     )
                     Result.success(cached)
                 } else {
@@ -1281,7 +1281,7 @@ constructor(
                 audiobookshelfDao.deleteSyncedBookmarks(serverId, userId.toString())
                 if (bookmarks.isNotEmpty()) {
                     audiobookshelfDao.insertBookmarks(
-                        bookmarks.map { it.toEntity(serverId, userId.toString()) }
+                        bookmarks.map { it.toEntity(serverId, userId.toString()) },
                     )
                 }
                 cachedBookmarksSignature = signature
@@ -1336,7 +1336,7 @@ constructor(
                     pendingSync = true,
                     deleted = false,
                     updatedAt = now,
-                )
+                ),
             )
             if (!canReachServer()) {
                 absSyncScheduler.scheduleSync(serverId, userId)
@@ -1379,7 +1379,7 @@ constructor(
                     pendingSync = true,
                     deleted = true,
                     updatedAt = now,
-                )
+                ),
             )
             if (!canReachServer()) {
                 absSyncScheduler.scheduleSync(serverId, userId)
@@ -1439,7 +1439,7 @@ constructor(
                         val body = response.body()
                         if (response.isSuccessful && body != null) {
                             audiobookshelfDao.insertBookmark(
-                                body.toEntity(serverId, userId.toString())
+                                body.toEntity(serverId, userId.toString()),
                             )
                             synced++
                         }
@@ -1708,7 +1708,7 @@ constructor(
                             .getDownloadForBook(itemId, currentServerId, currentUserId.toString())
                     }
                 Timber.d(
-                    "startPlaybackSession: itemId=$itemId episodeId=$episodeId serverId=$currentServerId userId=$currentUserId downloadEntity=${downloadEntity?.id} status=${downloadEntity?.status} hasSession=${downloadEntity?.serializedSession != null}"
+                    "startPlaybackSession: itemId=$itemId episodeId=$episodeId serverId=$currentServerId userId=$currentUserId downloadEntity=${downloadEntity?.id} status=${downloadEntity?.status} hasSession=${downloadEntity?.serializedSession != null}",
                 )
                 if (downloadEntity == null && !canReachServer()) {
                     downloadEntity =
@@ -1721,7 +1721,7 @@ constructor(
                             )
                     if (downloadEntity != null) {
                         Timber.d(
-                            "startPlaybackSession: offline episode fallback → using downloaded episodeId=${downloadEntity.episodeId}"
+                            "startPlaybackSession: offline episode fallback → using downloaded episodeId=${downloadEntity.episodeId}",
                         )
                     }
                 }
@@ -1730,7 +1730,7 @@ constructor(
                         downloadEntity.serializedSession != null
                 ) {
                     Timber.d(
-                        "startPlaybackSession: returning local session for $itemId / ${downloadEntity.episodeId}"
+                        "startPlaybackSession: returning local session for $itemId / ${downloadEntity.episodeId}",
                     )
                     var session =
                         json.decodeFromString<PlaybackSession>(downloadEntity.serializedSession)
@@ -1754,7 +1754,7 @@ constructor(
                         val resumeTime =
                             if (progressEntity.isFinished) 0.0 else progressEntity.currentTime
                         Timber.d(
-                            "startPlaybackSession: overriding stale currentTime=${session.currentTime} with saved progress ${progressEntity.currentTime} (finished=${progressEntity.isFinished}, resume=$resumeTime)"
+                            "startPlaybackSession: overriding stale currentTime=${session.currentTime} with saved progress ${progressEntity.currentTime} (finished=${progressEntity.isFinished}, resume=$resumeTime)",
                         )
                         session = session.copy(currentTime = resumeTime)
                     }
@@ -1790,23 +1790,23 @@ constructor(
                 if (response.isSuccessful && response.body() != null) {
                     val session = response.body()!!
                     Timber.d(
-                        "Playback session received: id=${session.id}, mediaType=${session.mediaType}"
+                        "Playback session received: id=${session.id}, mediaType=${session.mediaType}",
                     )
                     Timber.d(
-                        "Session displayTitle=${session.displayTitle}, displayAuthor=${session.displayAuthor}"
+                        "Session displayTitle=${session.displayTitle}, displayAuthor=${session.displayAuthor}",
                     )
                     Timber.d(
-                        "Session audioTracks=${session.audioTracks?.size ?: 0}, chapters=${session.chapters?.size ?: 0}"
+                        "Session audioTracks=${session.audioTracks?.size ?: 0}, chapters=${session.chapters?.size ?: 0}",
                     )
                     Timber.d("Session episodeId=${session.episodeId}, duration=${session.duration}")
                     Result.success(session)
                 } else {
                     val errorBody = response.errorBody()?.string()
                     Timber.e(
-                        "Failed to initMonitoring session: ${response.code()} - ${response.message()}, body=$errorBody"
+                        "Failed to initMonitoring session: ${response.code()} - ${response.message()}, body=$errorBody",
                     )
                     Result.failure(
-                        Exception("Failed to initMonitoring session: ${response.message()}")
+                        Exception("Failed to initMonitoring session: ${response.message()}"),
                     )
                 }
             } catch (e: CancellationException) {
@@ -1923,7 +1923,7 @@ constructor(
                         .sorted()
 
                 Timber.d(
-                    "Fetched ${combinedGenres.size} combined genres across ${libraryIds.size} libraries"
+                    "Fetched ${combinedGenres.size} combined genres across ${libraryIds.size} libraries",
                 )
                 Result.success(combinedGenres)
             } catch (e: CancellationException) {
@@ -1983,7 +1983,7 @@ constructor(
                         if (body.results.isEmpty()) break
                     } else {
                         return@withContext Result.failure(
-                            Exception("Failed to fetch items by genre: ${response.message()}")
+                            Exception("Failed to fetch items by genre: ${response.message()}"),
                         )
                     }
                 }
@@ -2035,7 +2035,7 @@ constructor(
                 if (response.isSuccessful && response.body() != null) {
                     val items = response.body()!!.results
                     Timber.d(
-                        "Fetched ${items.size} items for genre '$genre' in library $libraryId (limit=$limit)"
+                        "Fetched ${items.size} items for genre '$genre' in library $libraryId (limit=$limit)",
                     )
                     Result.success(items)
                 } else {
@@ -2064,14 +2064,14 @@ constructor(
                     )
 
                 Timber.d(
-                    "syncPendingProgress: found ${pendingProgress.size} pending records for serverId=$serverId userId=$userId"
+                    "syncPendingProgress: found ${pendingProgress.size} pending records for serverId=$serverId userId=$userId",
                 )
 
                 if (pendingProgress.isEmpty()) return@withContext Result.success(0)
 
                 pendingProgress.forEach { p ->
                     Timber.d(
-                        "syncPendingProgress: pending → itemId=${p.libraryItemId} episodeId=${p.episodeId} currentTime=${p.currentTime} duration=${p.duration}"
+                        "syncPendingProgress: pending → itemId=${p.libraryItemId} episodeId=${p.episodeId} currentTime=${p.currentTime} duration=${p.duration}",
                     )
                 }
 
@@ -2100,13 +2100,13 @@ constructor(
                             BatchLocalSessionRequest(
                                 deviceInfo = buildDeviceInfo(),
                                 sessions = sessions,
-                            )
+                            ),
                         )
                 Timber.d("syncPendingProgress: batch response ${response.code()}")
 
                 if (!response.isSuccessful) {
                     Timber.w(
-                        "syncPendingProgress: FAILED ${response.code()} ${response.message()} body=${response.errorBody()?.string()}"
+                        "syncPendingProgress: FAILED ${response.code()} ${response.message()} body=${response.errorBody()?.string()}",
                     )
                     return@withContext Result.failure(Exception("Sync failed: ${response.code()}"))
                 }
@@ -2127,11 +2127,11 @@ constructor(
                             )
                         syncedCount++
                         Timber.d(
-                            "syncPendingProgress: synced itemId=${progress.libraryItemId} episodeId=${progress.episodeId} listened=${progress.pendingTimeListened} stillPending=${cleared == 0}"
+                            "syncPendingProgress: synced itemId=${progress.libraryItemId} episodeId=${progress.episodeId} listened=${progress.pendingTimeListened} stillPending=${cleared == 0}",
                         )
                     } else {
                         Timber.w(
-                            "syncPendingProgress: not synced itemId=${progress.libraryItemId} episodeId=${progress.episodeId} error=${results.firstOrNull { it.id == sessionId }?.error}"
+                            "syncPendingProgress: not synced itemId=${progress.libraryItemId} episodeId=${progress.episodeId} error=${results.firstOrNull { it.id == sessionId }?.error}",
                         )
                     }
                 }
@@ -2193,7 +2193,7 @@ constructor(
                             startedAt = remote.startedAt,
                             finishedAt = remote.finishedAt,
                             pendingSync = false,
-                        )
+                        ),
                     )
                     pruneDuplicateProgress(
                         currentServerId,
@@ -2406,7 +2406,7 @@ constructor(
     }
 
     private fun AudiobookshelfItemEntity.toLibraryItem(
-        episodes: List<PodcastEpisode>? = null
+        episodes: List<PodcastEpisode>? = null,
     ): LibraryItem {
         val genres = genres?.let {
             try {
@@ -2468,7 +2468,7 @@ constructor(
     }
 
     override suspend fun getListeningSessions(
-        itemsPerPage: Int
+        itemsPerPage: Int,
     ): Result<ListeningSessionsResponse> {
         return withContext(Dispatchers.IO) {
             try {
@@ -2480,7 +2480,7 @@ constructor(
                     Result.success(response.body() ?: ListeningSessionsResponse())
                 } else {
                     Result.failure(
-                        Exception("Failed to get listening sessions: ${response.code()}")
+                        Exception("Failed to get listening sessions: ${response.code()}"),
                     )
                 }
             } catch (e: CancellationException) {
@@ -2580,7 +2580,7 @@ constructor(
                             FilteredItemsResult(
                                 items = body.results,
                                 total = body.total,
-                            )
+                            ),
                         )
                     } else {
                         Result.failure(Exception("Failed to get items: ${response.code()}"))
@@ -2630,7 +2630,7 @@ constructor(
             try {
                 val context = currentActiveContext
                 Timber.d(
-                    "AudibleRating: initMonitoring itemId=$itemId asin=$asin title=$title context=$context"
+                    "AudibleRating: initMonitoring itemId=$itemId asin=$asin title=$title context=$context",
                 )
                 val (serverId, userId) = context ?: return@withContext Result.success(null)
 
@@ -2661,13 +2661,13 @@ constructor(
 
                 if (!response.isSuccessful && region != "us") {
                     Timber.d(
-                        "AudibleRating: Regional fetch failed (${response.code()}), falling back to region=us"
+                        "AudibleRating: Regional fetch failed (${response.code()}), falling back to region=us",
                     )
                     response = audnexusApiService.getBook(resolvedAsin, "us")
                 }
 
                 Timber.d(
-                    "AudibleRating: Audnexus response code=${response.code()} body=${response.body()}"
+                    "AudibleRating: Audnexus response code=${response.code()} body=${response.body()}",
                 )
                 if (!response.isSuccessful) return@withContext Result.success(cachedRating)
 
@@ -2685,12 +2685,12 @@ constructor(
                         rating = rating,
                         numRatings = null,
                         fetchedAt = System.currentTimeMillis(),
-                    )
+                    ),
                 )
 
                 Timber.d("AudibleRating: success rating=$rating")
                 Result.success(
-                    AudibleRating(rating = rating, numRatings = null, asin = resolvedAsin)
+                    AudibleRating(rating = rating, numRatings = null, asin = resolvedAsin),
                 )
             } catch (e: CancellationException) {
                 throw e
@@ -2706,14 +2706,14 @@ constructor(
                 Locale.getDefault().country.lowercase().let { if (it == "gb") "uk" else it }
             val provider = if (region in AUDIBLE_PROVIDER_REGIONS) "audible.$region" else "audible"
             Timber.d(
-                "AudibleRating: fallback search title=$title author=$authorName provider=$provider"
+                "AudibleRating: fallback search title=$title author=$authorName provider=$provider",
             )
             val response =
                 apiService
                     .get()
                     .searchBooks(title = title, author = authorName, provider = provider)
             Timber.d(
-                "AudibleRating: fallback response code=${response.code()} body=${response.body()}"
+                "AudibleRating: fallback response code=${response.code()} body=${response.body()}",
             )
             if (!response.isSuccessful) return null
             val asin = response.body()?.firstNotNullOfOrNull { it.asin?.takeIf(String::isNotBlank) }

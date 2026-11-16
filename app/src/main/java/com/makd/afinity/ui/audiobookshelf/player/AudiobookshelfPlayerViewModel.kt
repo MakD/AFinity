@@ -162,7 +162,7 @@ constructor(
             tokenParam = if (isJellyfin) "api_key" else "token",
         )
         playbackManager.updatePlaybackSpeed(
-            state.playbackSpeed.coerceIn(MIN_CAST_SPEED, MAX_CAST_SPEED)
+            state.playbackSpeed.coerceIn(MIN_CAST_SPEED, MAX_CAST_SPEED),
         )
         audiobookshelfPlayer.pause()
     }
@@ -244,7 +244,7 @@ constructor(
         if (isAbsCasting.value) {
             val newPos =
                 (castManager.castState.value.currentPosition + 30_000L).coerceAtMost(
-                    (playbackManager.playbackState.value.duration * 1000).toLong()
+                    (playbackManager.playbackState.value.duration * 1000).toLong(),
                 )
             castManager.seekAbsGlobalPosition(newPos)
         } else {

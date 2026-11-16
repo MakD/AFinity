@@ -206,7 +206,7 @@ private fun lockedFieldLabel(field: String, isPerson: Boolean): String =
     when (field) {
         "Name" ->
             stringResource(
-                if (isPerson) R.string.admin_field_person_name else R.string.admin_field_title
+                if (isPerson) R.string.admin_field_person_name else R.string.admin_field_title,
             )
         "Overview" -> stringResource(R.string.admin_field_overview)
         "Genres" -> stringResource(R.string.admin_section_genres)
@@ -218,7 +218,7 @@ private fun lockedFieldLabel(field: String, isPerson: Boolean): String =
         "ProductionLocations" ->
             stringResource(
                 if (isPerson) R.string.admin_locked_field_birth_location
-                else R.string.admin_locked_field_production_locations
+                else R.string.admin_locked_field_production_locations,
             )
         else -> field
     }
@@ -287,7 +287,7 @@ fun EditMetadataScreen(
                     },
                     colors =
                         ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
+                            contentColor = MaterialTheme.colorScheme.error,
                         ),
                 ) {
                     Text(stringResource(R.string.admin_metadata_discard))
@@ -346,7 +346,7 @@ fun EditMetadataScreen(
                         }
                         Text(
                             if (uiState.saving) stringResource(R.string.admin_saving)
-                            else stringResource(R.string.admin_save_changes)
+                            else stringResource(R.string.admin_save_changes),
                         )
                     }
                 }
@@ -449,7 +449,7 @@ private fun GeneralTab(
                 label =
                     stringResource(
                         if (isPerson) R.string.admin_field_original_name
-                        else R.string.admin_field_original_title
+                        else R.string.admin_field_original_title,
                     ),
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -460,7 +460,7 @@ private fun GeneralTab(
             label =
                 stringResource(
                     if (isPerson) R.string.admin_field_sort_name
-                    else R.string.admin_field_sort_title
+                    else R.string.admin_field_sort_title,
                 ),
             modifier = Modifier.fillMaxWidth(),
         )
@@ -541,7 +541,8 @@ private fun GeneralTab(
                 onValueChange = viewModel::updateYear,
                 label =
                     stringResource(
-                        if (isPerson) R.string.admin_field_birth_year else R.string.admin_field_year
+                        if (isPerson) R.string.admin_field_birth_year
+                        else R.string.admin_field_year,
                     ),
                 modifier = Modifier.weight(1f),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -628,8 +629,8 @@ private fun GeneralTab(
         Spacer(
             modifier =
                 Modifier.height(
-                    adminContentBottomPadding(hasFloatingButton = true) + playerClearance()
-                )
+                    adminContentBottomPadding(hasFloatingButton = true) + playerClearance(),
+                ),
         )
     }
 }
@@ -706,7 +707,7 @@ private fun ChipGroup(
                     shape = CircleShape,
                     colors =
                         InputChipDefaults.inputChipColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                         ),
                     border = null,
                     trailingIcon = {
@@ -772,7 +773,7 @@ private fun ChipGroup(
                     onClick = {
                         onPendingChange("")
                         adding = false
-                    }
+                    },
                 ) {
                     Icon(
                         painterResource(R.drawable.ic_close),
@@ -879,7 +880,7 @@ private fun PersonRow(
             Modifier.fillMaxWidth()
                 .clip(shape)
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                .clickable(onClick = onClick)
+                .clickable(onClick = onClick),
     ) {
         if (showDivider) {
             HorizontalDivider(
@@ -1017,7 +1018,7 @@ private fun PersonSheet(
                         onClick = onRemove,
                         colors =
                             ButtonDefaults.textButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error
+                                contentColor = MaterialTheme.colorScheme.error,
                             ),
                         modifier = Modifier.heightIn(min = 56.dp),
                     ) {
@@ -1039,7 +1040,7 @@ private fun PersonSheet(
                                 type = type,
                                 role = role.trim().ifBlank { null },
                                 imageUrl = person?.imageUrl?.takeIf { person.name == name.trim() },
-                            )
+                            ),
                         )
                     },
                     enabled = name.isNotBlank(),
@@ -1188,8 +1189,8 @@ private fun AdvancedTab(
         Spacer(
             modifier =
                 Modifier.height(
-                    adminContentBottomPadding(hasFloatingButton = true) + playerClearance()
-                )
+                    adminContentBottomPadding(hasFloatingButton = true) + playerClearance(),
+                ),
         )
     }
 }
@@ -1264,7 +1265,7 @@ private fun DateField(
                     onClickLabel = label,
                 ) {
                     picking = true
-                }
+                },
         )
     }
     if (picking) {
@@ -1314,7 +1315,7 @@ private fun <T> DropdownField(
             modifier =
                 Modifier.matchParentSize().clip(RoundedCornerShape(14.dp)).clickable {
                     expanded = true
-                }
+                },
         )
         DropdownMenu(
             expanded = expanded,

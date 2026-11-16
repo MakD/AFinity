@@ -111,7 +111,7 @@ constructor(
                                 } else {
                                     channel
                                 }
-                            }
+                            },
                     )
                 }
                 val options = preferencesRepository.getLiveTvViewOptionsFlow().first()

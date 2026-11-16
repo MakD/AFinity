@@ -16,12 +16,12 @@ import kotlinx.coroutines.flow.Flow
 interface JellyseerrDao {
 
     @Query(
-        "SELECT * FROM jellyseerr_requests WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId ORDER BY requestedAt DESC"
+        "SELECT * FROM jellyseerr_requests WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId ORDER BY requestedAt DESC",
     )
     fun getAllRequests(serverId: String, userId: String): Flow<List<JellyseerrRequestEntity>>
 
     @Query(
-        "SELECT * FROM jellyseerr_requests WHERE id = :requestId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "SELECT * FROM jellyseerr_requests WHERE id = :requestId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun getRequestById(
         requestId: Int,
@@ -30,7 +30,7 @@ interface JellyseerrDao {
     ): JellyseerrRequestEntity?
 
     @Query(
-        "SELECT * FROM jellyseerr_requests WHERE status = :status AND jellyfinServerId = :serverId AND jellyfinUserId = :userId ORDER BY requestedAt DESC"
+        "SELECT * FROM jellyseerr_requests WHERE status = :status AND jellyfinServerId = :serverId AND jellyfinUserId = :userId ORDER BY requestedAt DESC",
     )
     fun getRequestsByStatus(
         status: Int,
@@ -45,12 +45,12 @@ interface JellyseerrDao {
     suspend fun insertRequests(requests: List<JellyseerrRequestEntity>)
 
     @Query(
-        "DELETE FROM jellyseerr_requests WHERE id = :requestId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM jellyseerr_requests WHERE id = :requestId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun deleteRequest(requestId: Int, serverId: String, userId: String)
 
     @Query(
-        "DELETE FROM jellyseerr_requests WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM jellyseerr_requests WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun clearAllRequests(serverId: String, userId: String)
 
@@ -59,17 +59,17 @@ interface JellyseerrDao {
     @Query("SELECT (SELECT COUNT(*) FROM jellyseerr_requests)") suspend fun cachedEntryCount(): Int
 
     @Query(
-        "DELETE FROM jellyseerr_requests WHERE cachedAt < :expiryTime AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM jellyseerr_requests WHERE cachedAt < :expiryTime AND jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun deleteExpiredRequests(expiryTime: Long, serverId: String, userId: String)
 
     @Query(
-        "SELECT * FROM jellyseerr_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "SELECT * FROM jellyseerr_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun getConfig(serverId: String, userId: String): JellyseerrConfigEntity?
 
     @Query(
-        "SELECT * FROM jellyseerr_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "SELECT * FROM jellyseerr_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     fun getConfigFlow(serverId: String, userId: String): Flow<JellyseerrConfigEntity?>
 
@@ -77,7 +77,7 @@ interface JellyseerrDao {
     suspend fun saveConfig(config: JellyseerrConfigEntity)
 
     @Query(
-        "DELETE FROM jellyseerr_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM jellyseerr_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun clearConfig(serverId: String, userId: String)
 
@@ -85,12 +85,12 @@ interface JellyseerrDao {
     suspend fun insertAddress(address: JellyseerrAddressEntity)
 
     @Query(
-        "SELECT * FROM jellyseerr_addresses WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "SELECT * FROM jellyseerr_addresses WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun getAddresses(serverId: String, userId: String): List<JellyseerrAddressEntity>
 
     @Query(
-        "SELECT * FROM jellyseerr_addresses WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND address = :address"
+        "SELECT * FROM jellyseerr_addresses WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND address = :address",
     )
     suspend fun getAddressByUrl(
         serverId: String,
@@ -105,12 +105,12 @@ interface JellyseerrDao {
     suspend fun deleteAddress(addressId: UUID)
 
     @Query(
-        "DELETE FROM jellyseerr_addresses WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM jellyseerr_addresses WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun deleteAllAddresses(serverId: String, userId: String)
 
     @Query(
-        "SELECT * FROM jellyseerr_discover_filters WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND filterContextKey = :contextKey"
+        "SELECT * FROM jellyseerr_discover_filters WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND filterContextKey = :contextKey",
     )
     suspend fun getDiscoverFilterState(
         serverId: String,
@@ -122,7 +122,7 @@ interface JellyseerrDao {
     suspend fun saveDiscoverFilterState(entity: JellyseerrDiscoverFilterEntity)
 
     @Query(
-        "DELETE FROM jellyseerr_discover_filters WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM jellyseerr_discover_filters WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun clearDiscoverFilterState(serverId: String, userId: String)
 

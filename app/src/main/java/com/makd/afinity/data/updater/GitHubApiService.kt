@@ -49,7 +49,7 @@ constructor(@param:GitHubClient private val okHttpClient: OkHttpClient) {
                 if (!response.isSuccessful) {
                     Timber.e("GitHub API request failed: ${response.code}")
                     return@withContext Result.failure(
-                        Exception("Failed to fetch release: HTTP ${response.code}")
+                        Exception("Failed to fetch release: HTTP ${response.code}"),
                     )
                 }
 
@@ -82,7 +82,7 @@ constructor(@param:GitHubClient private val okHttpClient: OkHttpClient) {
                 if (!response.isSuccessful) {
                     Timber.e("GitHub API request failed: ${response.code}")
                     return@withContext Result.failure(
-                        Exception("Failed to fetch releases: HTTP ${response.code}")
+                        Exception("Failed to fetch releases: HTTP ${response.code}"),
                     )
                 }
 
@@ -120,7 +120,7 @@ constructor(@param:GitHubClient private val okHttpClient: OkHttpClient) {
                         Timber.d(e, "Release $tag not reachable, trying the HTTP cache")
                         okHttpClient
                             .newCall(
-                                request.newBuilder().cacheControl(CacheControl.FORCE_CACHE).build()
+                                request.newBuilder().cacheControl(CacheControl.FORCE_CACHE).build(),
                             )
                             .execute()
                     }
@@ -131,7 +131,7 @@ constructor(@param:GitHubClient private val okHttpClient: OkHttpClient) {
                         !it.isSuccessful -> {
                             Timber.e("GitHub API request failed: ${it.code}")
                             Result.failure(
-                                Exception("Failed to fetch release $tag: HTTP ${it.code}")
+                                Exception("Failed to fetch release $tag: HTTP ${it.code}"),
                             )
                         }
                         else ->

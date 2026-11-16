@@ -83,7 +83,7 @@ fun NextUpSkipOverlay(
                             Modifier.width(thumbnailWidth)
                                 .aspectRatio(16f / 9f)
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                                .background(MaterialTheme.colorScheme.surfaceContainerHighest),
                     ) {
                         val primaryImageUrl = nextEpisode.images.primaryImageUrl
                         if (primaryImageUrl != null) {
@@ -94,7 +94,7 @@ fun NextUpSkipOverlay(
                                 modifier =
                                     Modifier.fillMaxSize()
                                         .episodeBlur(
-                                            shouldBlurEpisode(nextEpisode, primaryImageUrl)
+                                            shouldBlurEpisode(nextEpisode, primaryImageUrl),
                                         ),
                                 targetWidth = thumbnailWidth,
                                 targetHeight = thumbnailWidth * 9f / 16f,
@@ -103,7 +103,7 @@ fun NextUpSkipOverlay(
                             Box(
                                 modifier =
                                     Modifier.fillMaxSize()
-                                        .background(Color.White.copy(alpha = 0.05f))
+                                        .background(Color.White.copy(alpha = 0.05f)),
                             )
                         }
                     }

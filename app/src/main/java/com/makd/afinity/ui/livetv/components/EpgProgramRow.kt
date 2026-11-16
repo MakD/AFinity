@@ -54,7 +54,7 @@ fun EpgProgramRow(
             modifier
                 .width(totalWidth)
                 .height(cellHeight)
-                .background(MaterialTheme.colorScheme.surface)
+                .background(MaterialTheme.colorScheme.surface),
     ) {
         val visiblePrograms =
             remember(programs, windowStart, windowEnd) {
@@ -101,14 +101,14 @@ fun EpgPendingRow(
             modifier
                 .width(hourWidth * hours)
                 .height(cellHeight)
-                .background(MaterialTheme.colorScheme.surface)
+                .background(MaterialTheme.colorScheme.surface),
     ) {
         Box(
             modifier =
                 Modifier.fillMaxWidth()
                     .height(cellHeight - 2.dp)
                     .clip(MaterialTheme.shapes.small)
-                    .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                    .background(MaterialTheme.colorScheme.surfaceContainerLow),
         )
         Column(
             modifier =
@@ -131,7 +131,7 @@ private fun PendingLine(width: Dp, height: Dp) {
             Modifier.width(width)
                 .height(height)
                 .clip(RoundedCornerShape(height / 2))
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
     )
 }
 
@@ -142,7 +142,7 @@ private fun NowLine(offset: Dp) {
             Modifier.offset(x = offset - NowLineWidth / 2)
                 .width(NowLineWidth)
                 .fillMaxHeight()
-                .background(MaterialTheme.colorScheme.primary)
+                .background(MaterialTheme.colorScheme.primary),
     )
 }
 

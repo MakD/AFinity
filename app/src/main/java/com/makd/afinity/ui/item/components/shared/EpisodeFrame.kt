@@ -125,15 +125,15 @@ fun EpisodeFrame(
                             onClickLabel =
                                 stringResource(
                                     if (isRevealed) R.string.cd_blur_thumbnail
-                                    else R.string.cd_reveal_thumbnail
+                                    else R.string.cd_reveal_thumbnail,
                                 ),
                         ) {
                             isRevealed = !isRevealed
                         }
                     } else {
                         Modifier
-                    }
-                )
+                    },
+                ),
     ) {
         AsyncImage(
             imageUrl = imageUrl,
@@ -178,9 +178,9 @@ fun EpisodeFrame(
                     .height(72.dp)
                     .background(
                         Brush.verticalGradient(
-                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))
-                        )
-                    )
+                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                        ),
+                    ),
         )
 
         Row(

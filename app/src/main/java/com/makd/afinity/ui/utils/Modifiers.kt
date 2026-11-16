@@ -85,7 +85,7 @@ fun Modifier.horizontalBleed(amount: Dp) =
                 constraints.copy(
                     minWidth = constraints.minWidth + extraPx,
                     maxWidth = constraints.maxWidth + extraPx,
-                )
+                ),
             )
 
         layout((placeable.width - extraPx).coerceAtLeast(0), placeable.height) {

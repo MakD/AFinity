@@ -95,7 +95,7 @@ fun TrickplayPreview(
             modifier =
                 Modifier.fillMaxSize().onGloballyPositioned {
                     containerOrigin = it.positionInWindow()
-                }
+                },
         ) {
             val image = previewImage ?: return@BoxWithConstraints
             val windowSlider = sliderBounds ?: return@BoxWithConstraints
@@ -177,7 +177,7 @@ fun TrickplayPreview(
                                             color = Color.Black.copy(alpha = 0.75f),
                                             shape = RoundedCornerShape(4.dp),
                                         )
-                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                        .padding(horizontal = 8.dp, vertical = 4.dp),
                             ) {
                                 Text(
                                     text = chapterName,

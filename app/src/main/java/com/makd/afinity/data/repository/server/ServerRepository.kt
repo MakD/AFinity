@@ -23,7 +23,7 @@ interface ServerRepository {
     fun discoverServersFlow(): Flow<List<Server>>
 
     suspend fun testServerConnection(
-        serverAddress: String
+        serverAddress: String,
     ): JellyfinServerRepository.ServerConnectionResult
 
     suspend fun pingServer(address: String, timeoutMs: Long = 3000L): Boolean

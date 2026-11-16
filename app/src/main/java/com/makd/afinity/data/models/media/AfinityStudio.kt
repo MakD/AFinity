@@ -20,6 +20,6 @@ fun AfinityStudio.withBaseUrl(newBaseUrl: String): AfinityStudio {
                 ?.scheme(base.scheme)
                 ?.encodedAuthority(base.encodedAuthority)
                 ?.build()
-                ?.toString()
+                ?.toString(),
     )
 }

@@ -193,7 +193,7 @@ fun StorageSettingsScreen(
                                 IconButton(
                                     onClick = {
                                         viewModel.setMaxConcurrentDownloads(
-                                            uiState.maxConcurrentDownloads - 1
+                                            uiState.maxConcurrentDownloads - 1,
                                         )
                                     },
                                     enabled = uiState.maxConcurrentDownloads > 1,
@@ -213,7 +213,7 @@ fun StorageSettingsScreen(
                                 IconButton(
                                     onClick = {
                                         viewModel.setMaxConcurrentDownloads(
-                                            uiState.maxConcurrentDownloads + 1
+                                            uiState.maxConcurrentDownloads + 1,
                                         )
                                     },
                                     enabled = uiState.maxConcurrentDownloads < 3,

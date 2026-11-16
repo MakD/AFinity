@@ -157,7 +157,7 @@ fun LibraryContentScreen(
         },
         modifier =
             modifier.windowInsetsPadding(
-                WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal),
             ),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -225,7 +225,9 @@ fun LibraryContentScreen(
                                         selectedLetter = uiState.selectedLetter,
                                         modifier =
                                             Modifier.background(
-                                                MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                                                MaterialTheme.colorScheme.surface.copy(
+                                                    alpha = 0.8f,
+                                                ),
                                             ),
                                     )
                                 }
@@ -330,7 +332,7 @@ fun LibraryContentScreen(
                                     selectedLetter = uiState.selectedLetter,
                                     modifier =
                                         Modifier.background(
-                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
                                         ),
                                 )
                             }
@@ -503,7 +505,7 @@ private fun SortDialog(
                     modifier =
                         Modifier.weight(1f, fill = false)
                             .verticalScroll(rememberScrollState())
-                            .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp)
+                            .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp),
                 ) {
                     Text(
                         text = stringResource(R.string.sort_title),
@@ -547,7 +549,7 @@ private fun SortDialog(
                 }
 
                 HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
                 )
 
                 Row(
@@ -561,7 +563,7 @@ private fun SortDialog(
                         onClick = {
                             onSortSelected(selectedSort, !isAscending)
                             onDismiss()
-                        }
+                        },
                     ) {
                         Text(stringResource(R.string.action_apply))
                     }

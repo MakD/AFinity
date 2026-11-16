@@ -208,7 +208,7 @@ private fun RefreshModeOption(
                 .clip(OptionShape)
                 .background(
                     if (selected) MaterialTheme.colorScheme.surfaceContainerHighest
-                    else Color.Transparent
+                    else Color.Transparent,
                 )
                 .selectable(
                     selected = selected,

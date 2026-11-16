@@ -90,7 +90,7 @@ fun RadioModeBottomSheet(
                 Modifier.fillMaxWidth()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 24.dp)
-                    .padding(bottom = 32.dp)
+                    .padding(bottom = 32.dp),
         ) {
             Text(
                 text = stringResource(R.string.music_action_start_radio_header),

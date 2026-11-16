@@ -143,7 +143,7 @@ constructor(
                 if (!isLoaded) {
                     if (!hasEverLoaded) return@collect
                     Timber.d(
-                        "Data cleared detected (Session Switch/Clear), resetting HomeViewModel UI state"
+                        "Data cleared detected (Session Switch/Clear), resetting HomeViewModel UI state",
                     )
                     secondaryLoadJob?.cancel()
                     _uiState.update {
@@ -161,7 +161,7 @@ constructor(
                             appDataRepository.homeEssentialsReady.first { it }
                         }
                         Timber.d(
-                            "Home essentials ready: triggering secondary content load (Studios, Genres, Recs)"
+                            "Home essentials ready: triggering secondary content load (Studios, Genres, Recs)",
                         )
                         coroutineScope {
                             launch { loadCombinedGenres() }
@@ -618,7 +618,7 @@ constructor(
     }
 
     private fun <T : AfinityItem> sectionsForDisplay(
-        sections: List<Pair<AfinityCollection, List<T>>>
+        sections: List<Pair<AfinityCollection, List<T>>>,
     ): List<Pair<AfinityCollection, List<T>>> = sections.mapNotNull { (library, items) ->
         val visible = items.unplayedForDisplay()
         if (visible.isEmpty()) null else library to visible
@@ -671,7 +671,7 @@ constructor(
                     .sortedBy { it.name.lowercase() }
 
             Timber.d(
-                "Found ${downloadedMovies.size} movies, ${downloadedShows.size} shows and ${downloadedVideos.size} videos with downloads"
+                "Found ${downloadedMovies.size} movies, ${downloadedShows.size} shows and ${downloadedVideos.size} videos with downloads",
             )
 
             val offlineContinueWatching = mutableListOf<AfinityItem>()
@@ -707,7 +707,7 @@ constructor(
             }
 
             Timber.d(
-                "Found ${sortedOfflineContinueWatching.size} items to continue watching offline"
+                "Found ${sortedOfflineContinueWatching.size} items to continue watching offline",
             )
 
             val offlineNextUp = mutableListOf<AfinityEpisode>()

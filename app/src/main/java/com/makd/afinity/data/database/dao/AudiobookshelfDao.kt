@@ -19,12 +19,12 @@ import kotlinx.coroutines.flow.Flow
 interface AudiobookshelfDao {
 
     @Query(
-        "SELECT * FROM audiobookshelf_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "SELECT * FROM audiobookshelf_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun getConfig(serverId: String, userId: String): AudiobookshelfConfigEntity?
 
     @Query(
-        "SELECT * FROM audiobookshelf_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "SELECT * FROM audiobookshelf_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     fun getConfigFlow(serverId: String, userId: String): Flow<AudiobookshelfConfigEntity?>
 
@@ -32,22 +32,22 @@ interface AudiobookshelfDao {
     suspend fun insertConfig(config: AudiobookshelfConfigEntity)
 
     @Query(
-        "DELETE FROM audiobookshelf_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM audiobookshelf_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun deleteConfig(serverId: String, userId: String)
 
     @Query(
-        "SELECT * FROM audiobookshelf_libraries WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId ORDER BY displayOrder ASC"
+        "SELECT * FROM audiobookshelf_libraries WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId ORDER BY displayOrder ASC",
     )
     fun getLibrariesFlow(serverId: String, userId: String): Flow<List<AudiobookshelfLibraryEntity>>
 
     @Query(
-        "SELECT * FROM audiobookshelf_libraries WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId ORDER BY displayOrder ASC"
+        "SELECT * FROM audiobookshelf_libraries WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId ORDER BY displayOrder ASC",
     )
     suspend fun getLibraries(serverId: String, userId: String): List<AudiobookshelfLibraryEntity>
 
     @Query(
-        "SELECT * FROM audiobookshelf_libraries WHERE id = :libraryId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "SELECT * FROM audiobookshelf_libraries WHERE id = :libraryId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun getLibrary(
         libraryId: String,
@@ -62,12 +62,12 @@ interface AudiobookshelfDao {
     suspend fun insertLibrary(library: AudiobookshelfLibraryEntity)
 
     @Query(
-        "DELETE FROM audiobookshelf_libraries WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM audiobookshelf_libraries WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun deleteAllLibraries(serverId: String, userId: String)
 
     @Query(
-        "SELECT * FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryId = :libraryId ORDER BY title ASC"
+        "SELECT * FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryId = :libraryId ORDER BY title ASC",
     )
     fun getItemsFlow(
         serverId: String,
@@ -76,7 +76,7 @@ interface AudiobookshelfDao {
     ): Flow<List<AudiobookshelfItemEntity>>
 
     @Query(
-        "SELECT * FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryId = :libraryId ORDER BY title ASC"
+        "SELECT * FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryId = :libraryId ORDER BY title ASC",
     )
     suspend fun getItems(
         serverId: String,
@@ -85,17 +85,17 @@ interface AudiobookshelfDao {
     ): List<AudiobookshelfItemEntity>
 
     @Query(
-        "SELECT * FROM audiobookshelf_items WHERE id = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "SELECT * FROM audiobookshelf_items WHERE id = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun getItem(itemId: String, serverId: String, userId: String): AudiobookshelfItemEntity?
 
     @Query(
-        "SELECT numEpisodesIncomplete FROM audiobookshelf_items WHERE id = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "SELECT numEpisodesIncomplete FROM audiobookshelf_items WHERE id = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun getNumEpisodesIncomplete(itemId: String, serverId: String, userId: String): Int?
 
     @Query(
-        "UPDATE audiobookshelf_items SET numEpisodesIncomplete = MAX(numEpisodesIncomplete + :delta, 0) WHERE id = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId AND numEpisodesIncomplete IS NOT NULL"
+        "UPDATE audiobookshelf_items SET numEpisodesIncomplete = MAX(numEpisodesIncomplete + :delta, 0) WHERE id = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId AND numEpisodesIncomplete IS NOT NULL",
     )
     suspend fun adjustNumEpisodesIncomplete(
         itemId: String,
@@ -105,7 +105,7 @@ interface AudiobookshelfDao {
     )
 
     @Query(
-        "SELECT * FROM audiobookshelf_episodes WHERE libraryItemId = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId ORDER BY episodeIndex ASC, publishedAt DESC"
+        "SELECT * FROM audiobookshelf_episodes WHERE libraryItemId = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId ORDER BY episodeIndex ASC, publishedAt DESC",
     )
     suspend fun getEpisodesForItem(
         itemId: String,
@@ -117,7 +117,7 @@ interface AudiobookshelfDao {
     suspend fun insertEpisodes(episodes: List<AudiobookshelfEpisodeEntity>)
 
     @Query(
-        "DELETE FROM audiobookshelf_episodes WHERE libraryItemId = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM audiobookshelf_episodes WHERE libraryItemId = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun deleteEpisodesForItem(itemId: String, serverId: String, userId: String)
 
@@ -141,17 +141,17 @@ interface AudiobookshelfDao {
     suspend fun insertItem(item: AudiobookshelfItemEntity)
 
     @Query(
-        "DELETE FROM audiobookshelf_items WHERE id = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM audiobookshelf_items WHERE id = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun deleteItem(itemId: String, serverId: String, userId: String)
 
     @Query(
-        "DELETE FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryId = :libraryId"
+        "DELETE FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryId = :libraryId",
     )
     suspend fun deleteItemsByLibrary(serverId: String, userId: String, libraryId: String)
 
     @Query(
-        "DELETE FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryId = :libraryId AND cachedAt < :threshold"
+        "DELETE FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryId = :libraryId AND cachedAt < :threshold",
     )
     suspend fun deleteStaleItemsByLibrary(
         serverId: String,
@@ -161,7 +161,7 @@ interface AudiobookshelfDao {
     )
 
     @Query(
-        "SELECT MIN(cachedAt) FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryId = :libraryId"
+        "SELECT MIN(cachedAt) FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryId = :libraryId",
     )
     suspend fun getOldestCachedAtForLibrary(
         serverId: String,
@@ -170,12 +170,12 @@ interface AudiobookshelfDao {
     ): Long?
 
     @Query(
-        "SELECT COUNT(*) FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryId = :libraryId"
+        "SELECT COUNT(*) FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryId = :libraryId",
     )
     suspend fun countItemsForLibrary(serverId: String, userId: String, libraryId: String): Int
 
     @Query(
-        "SELECT (SELECT COUNT(*) FROM audiobookshelf_items) + (SELECT COUNT(*) FROM audiobookshelf_libraries) + (SELECT COUNT(*) FROM audiobookshelf_episodes)"
+        "SELECT (SELECT COUNT(*) FROM audiobookshelf_items) + (SELECT COUNT(*) FROM audiobookshelf_libraries) + (SELECT COUNT(*) FROM audiobookshelf_episodes)",
     )
     suspend fun cachedEntryCount(): Int
 
@@ -186,12 +186,12 @@ interface AudiobookshelfDao {
     @Query("DELETE FROM audiobookshelf_libraries") suspend fun deleteAllLibraries()
 
     @Query(
-        "DELETE FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun deleteAllItems(serverId: String, userId: String)
 
     @Query(
-        "SELECT * FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND (title LIKE '%' || :query || '%' OR authorName LIKE '%' || :query || '%') ORDER BY title ASC"
+        "SELECT * FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND (title LIKE '%' || :query || '%' OR authorName LIKE '%' || :query || '%') ORDER BY title ASC",
     )
     suspend fun searchItems(
         serverId: String,
@@ -200,7 +200,7 @@ interface AudiobookshelfDao {
     ): List<AudiobookshelfItemEntity>
 
     @Query(
-        "SELECT * FROM audiobookshelf_progress WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId ORDER BY lastUpdate DESC"
+        "SELECT * FROM audiobookshelf_progress WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId ORDER BY lastUpdate DESC",
     )
     fun getAllProgressFlow(
         serverId: String,
@@ -208,7 +208,7 @@ interface AudiobookshelfDao {
     ): Flow<List<AudiobookshelfProgressEntity>>
 
     @Query(
-        "SELECT * FROM audiobookshelf_progress WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND isFinished = 0 ORDER BY lastUpdate DESC"
+        "SELECT * FROM audiobookshelf_progress WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND isFinished = 0 ORDER BY lastUpdate DESC",
     )
     fun getInProgressFlow(
         serverId: String,
@@ -216,12 +216,12 @@ interface AudiobookshelfDao {
     ): Flow<List<AudiobookshelfProgressEntity>>
 
     @Query(
-        "SELECT * FROM audiobookshelf_progress WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND isFinished = 0 ORDER BY lastUpdate DESC"
+        "SELECT * FROM audiobookshelf_progress WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND isFinished = 0 ORDER BY lastUpdate DESC",
     )
     suspend fun getInProgress(serverId: String, userId: String): List<AudiobookshelfProgressEntity>
 
     @Query(
-        "SELECT * FROM audiobookshelf_progress WHERE libraryItemId = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId AND (episodeId IS NULL OR episodeId = '')"
+        "SELECT * FROM audiobookshelf_progress WHERE libraryItemId = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId AND (episodeId IS NULL OR episodeId = '')",
     )
     suspend fun getProgressForItem(
         itemId: String,
@@ -230,7 +230,7 @@ interface AudiobookshelfDao {
     ): AudiobookshelfProgressEntity?
 
     @Query(
-        "DELETE FROM audiobookshelf_progress WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryItemId = :itemId AND episodeId = :episodeId AND id != :keepId"
+        "DELETE FROM audiobookshelf_progress WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryItemId = :itemId AND episodeId = :episodeId AND id != :keepId",
     )
     suspend fun deleteDuplicateEpisodeProgress(
         serverId: String,
@@ -241,7 +241,7 @@ interface AudiobookshelfDao {
     )
 
     @Query(
-        "DELETE FROM audiobookshelf_progress WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryItemId = :itemId AND (episodeId IS NULL OR episodeId = '') AND id != :keepId"
+        "DELETE FROM audiobookshelf_progress WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryItemId = :itemId AND (episodeId IS NULL OR episodeId = '') AND id != :keepId",
     )
     suspend fun deleteDuplicateItemProgress(
         serverId: String,
@@ -251,7 +251,7 @@ interface AudiobookshelfDao {
     )
 
     @Query(
-        "SELECT * FROM audiobookshelf_progress WHERE libraryItemId = :itemId AND episodeId = :episodeId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "SELECT * FROM audiobookshelf_progress WHERE libraryItemId = :itemId AND episodeId = :episodeId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun getProgressForEpisode(
         itemId: String,
@@ -261,7 +261,7 @@ interface AudiobookshelfDao {
     ): AudiobookshelfProgressEntity?
 
     @Query(
-        "SELECT * FROM audiobookshelf_progress WHERE libraryItemId = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId AND (episodeId IS NULL OR episodeId = '')"
+        "SELECT * FROM audiobookshelf_progress WHERE libraryItemId = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId AND (episodeId IS NULL OR episodeId = '')",
     )
     fun getProgressForItemFlow(
         itemId: String,
@@ -270,7 +270,7 @@ interface AudiobookshelfDao {
     ): Flow<AudiobookshelfProgressEntity?>
 
     @Query(
-        "SELECT * FROM audiobookshelf_progress WHERE libraryItemId = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId AND episodeId IS NOT NULL AND episodeId != ''"
+        "SELECT * FROM audiobookshelf_progress WHERE libraryItemId = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId AND episodeId IS NOT NULL AND episodeId != ''",
     )
     fun getEpisodeProgressFlow(
         itemId: String,
@@ -279,7 +279,7 @@ interface AudiobookshelfDao {
     ): Flow<List<AudiobookshelfProgressEntity>>
 
     @Query(
-        "SELECT * FROM audiobookshelf_progress WHERE pendingSync = 1 AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "SELECT * FROM audiobookshelf_progress WHERE pendingSync = 1 AND jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun getPendingSyncProgress(
         serverId: String,
@@ -293,7 +293,7 @@ interface AudiobookshelfDao {
     suspend fun insertProgressList(progressList: List<AudiobookshelfProgressEntity>)
 
     @Query(
-        "UPDATE audiobookshelf_progress SET pendingSync = 0, pendingTimeListened = 0, localSessionId = NULL WHERE id = :progressId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId AND lastUpdate = :lastUpdate"
+        "UPDATE audiobookshelf_progress SET pendingSync = 0, pendingTimeListened = 0, localSessionId = NULL WHERE id = :progressId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId AND lastUpdate = :lastUpdate",
     )
     suspend fun markSyncedIfUnchanged(
         progressId: String,
@@ -303,13 +303,13 @@ interface AudiobookshelfDao {
     ): Int
 
     @Query(
-        "DELETE FROM audiobookshelf_progress WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM audiobookshelf_progress WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun deleteAllProgress(serverId: String, userId: String)
 
     @Query(
         "SELECT * FROM audiobookshelf_bookmarks WHERE libraryItemId = :itemId AND deleted = 0 " +
-            "AND jellyfinServerId = :serverId AND jellyfinUserId = :userId ORDER BY time ASC"
+            "AND jellyfinServerId = :serverId AND jellyfinUserId = :userId ORDER BY time ASC",
     )
     fun getBookmarksForItemFlow(
         itemId: String,
@@ -319,7 +319,7 @@ interface AudiobookshelfDao {
 
     @Query(
         "SELECT * FROM audiobookshelf_bookmarks WHERE pendingSync = 1 " +
-            "AND jellyfinServerId = :serverId AND jellyfinUserId = :userId ORDER BY updatedAt ASC"
+            "AND jellyfinServerId = :serverId AND jellyfinUserId = :userId ORDER BY updatedAt ASC",
     )
     suspend fun getPendingSyncBookmarks(
         serverId: String,
@@ -334,7 +334,7 @@ interface AudiobookshelfDao {
 
     @Query(
         "DELETE FROM audiobookshelf_bookmarks WHERE libraryItemId = :itemId AND time = :time " +
-            "AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+            "AND jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun deleteBookmarkRow(
         itemId: String,
@@ -345,22 +345,22 @@ interface AudiobookshelfDao {
 
     @Query(
         "DELETE FROM audiobookshelf_bookmarks WHERE pendingSync = 0 " +
-            "AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+            "AND jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun deleteSyncedBookmarks(serverId: String, userId: String)
 
     @Query(
-        "DELETE FROM audiobookshelf_bookmarks WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM audiobookshelf_bookmarks WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun deleteAllBookmarks(serverId: String, userId: String)
 
     @Query(
-        "DELETE FROM audiobookshelf_items WHERE cachedAt < :expiryTime AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM audiobookshelf_items WHERE cachedAt < :expiryTime AND jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun deleteExpiredItems(expiryTime: Long, serverId: String, userId: String)
 
     @Query(
-        "DELETE FROM audiobookshelf_libraries WHERE cachedAt < :expiryTime AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM audiobookshelf_libraries WHERE cachedAt < :expiryTime AND jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun deleteExpiredLibraries(expiryTime: Long, serverId: String, userId: String)
 
@@ -368,12 +368,12 @@ interface AudiobookshelfDao {
     suspend fun insertAddress(address: AudiobookshelfAddressEntity)
 
     @Query(
-        "SELECT * FROM audiobookshelf_addresses WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "SELECT * FROM audiobookshelf_addresses WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun getAddresses(serverId: String, userId: String): List<AudiobookshelfAddressEntity>
 
     @Query(
-        "SELECT * FROM audiobookshelf_addresses WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND address = :address"
+        "SELECT * FROM audiobookshelf_addresses WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND address = :address",
     )
     suspend fun getAddressByUrl(
         serverId: String,
@@ -388,7 +388,7 @@ interface AudiobookshelfDao {
     suspend fun deleteAddress(addressId: UUID)
 
     @Query(
-        "DELETE FROM audiobookshelf_addresses WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM audiobookshelf_addresses WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     suspend fun deleteAllAddresses(serverId: String, userId: String)
 }

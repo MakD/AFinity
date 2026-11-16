@@ -10,7 +10,7 @@ import com.makd.afinity.data.database.entities.WikidataAwardsCacheEntity
 interface WikidataAwardsDao {
 
     @Query(
-        "SELECT * FROM wikidata_awards_cache WHERE subjectType = :subjectType AND tmdbId = :tmdbId"
+        "SELECT * FROM wikidata_awards_cache WHERE subjectType = :subjectType AND tmdbId = :tmdbId",
     )
     suspend fun getAwards(subjectType: String, tmdbId: String): WikidataAwardsCacheEntity?
 

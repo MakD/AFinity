@@ -256,7 +256,7 @@ fun MusicAlbumScreen(
                         onConfirm = {
                             pendingDownloadConfirm = null
                             viewModel.cancelAlbumDownload(
-                                deleteCompleted = confirm.kind == DownloadConfirmKind.DELETE
+                                deleteCompleted = confirm.kind == DownloadConfirmKind.DELETE,
                             )
                         },
                         onDismiss = { pendingDownloadConfirm = null },
@@ -349,7 +349,7 @@ fun MusicAlbumScreen(
             title =
                 uiState.album?.name
                     ?: uiState.tracks.firstOrNull()?.album
-                    ?: stringResource(R.string.music_fallback_album)
+                    ?: stringResource(R.string.music_fallback_album),
         )
 
         val artist = uiState.album?.artist ?: uiState.tracks.firstOrNull()?.artist
@@ -368,7 +368,7 @@ fun MusicAlbumScreen(
                                 ) {
                                     onMusicArtistClick(artistId.toString())
                                 }
-                            else Modifier
+                            else Modifier,
                         ),
             ) {
                 ArtistPhotoCard(imageUrl = uiState.artistImageUrl, fallbackUrl = coverUrl)
@@ -580,7 +580,7 @@ private fun ArtistPhotoCard(
                     .background(
                         color = Color(0xFF757575),
                         shape = RoundedCornerShape(4.dp),
-                    )
+                    ),
         )
 
         Box(
@@ -597,7 +597,7 @@ private fun ArtistPhotoCard(
                         shape = RoundedCornerShape(6.dp),
                     )
                     .padding(2.dp)
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(RoundedCornerShape(4.dp)),
         ) {
             AsyncImage(
                 imageUrl = currentUrl,

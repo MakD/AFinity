@@ -81,20 +81,20 @@ fun FilterDialog(
                                     end = 24.dp,
                                     top = 24.dp,
                                     bottom = bodyBottomPadding,
-                                )
+                                ),
                     ) {
                         Text(
                             text = title,
                             style =
                                 MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
                                 ),
                         )
                         content()
                     }
 
                     HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
                     )
 
                     Row(

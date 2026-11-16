@@ -147,7 +147,7 @@ fun buildAudiobookMediaInfo(
                                     )
                                 },
                         ),
-                )
+                ),
             ),
     )
 }
@@ -256,7 +256,7 @@ fun buildPodcastEpisodeMediaInfo(
                                     )
                                 },
                         ),
-                )
+                ),
             ),
     )
 }
@@ -309,7 +309,7 @@ private fun fileRows(
     listOfNotNull(
         file.format
             ?.takeIf { it.isNotBlank() }
-            ?.let { MediaInfoRow(format.string(R.string.media_info_label_format), it) }
+            ?.let { MediaInfoRow(format.string(R.string.media_info_label_format), it) },
     ) +
         audioRows(format, file) +
         listOfNotNull(

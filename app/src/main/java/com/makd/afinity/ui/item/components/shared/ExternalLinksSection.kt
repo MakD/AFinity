@@ -120,7 +120,7 @@ private fun getExternalLinks(
             }
 
         links.add(
-            ExternalLink(name = externalUrl.name ?: defaultName, url = url, iconRes = iconRes)
+            ExternalLink(name = externalUrl.name ?: defaultName, url = url, iconRes = iconRes),
         )
     }
 

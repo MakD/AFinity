@@ -172,7 +172,7 @@ configure<ApplicationAndroidComponentsExtension> {
                 description = "Archives the R8 mapping for $buildType builds."
                 from(mappingFile)
                 archiveFileName.set(
-                    "afinity-v$appVersionName-$appVersionCode-${variant.name}-mapping.zip"
+                    "afinity-v$appVersionName-$appVersionCode-${variant.name}-mapping.zip",
                 )
                 destinationDirectory.set(rootProject.layout.projectDirectory.dir("mapping-archive"))
                 onlyIf { mappingFile.orNull?.asFile?.exists() == true }
@@ -337,7 +337,7 @@ tasks.register("checkCancellationRethrow") {
                     appendLine(
                         "Cancellation rethrow missing at ${violations.size} site(s). " +
                             "Catching Exception swallows coroutine cancellation, so the coroutine " +
-                            "keeps running until its next suspension point."
+                            "keeps running until its next suspension point.",
                     )
                     violations.forEach { appendLine("  $it") }
                     appendLine()
@@ -347,9 +347,9 @@ tasks.register("checkCancellationRethrow") {
                     appendLine()
                     appendLine(
                         "If the file contains no coroutines, add it to " +
-                            "cancellationRethrowAllowlist in app/build.gradle.kts instead."
+                            "cancellationRethrowAllowlist in app/build.gradle.kts instead.",
                     )
-                }
+                },
             )
         }
     }
@@ -370,7 +370,7 @@ tasks.register("checkItemProjection") {
         val itemList =
             Regex(
                 "List<(Afinity(Item|Movie|Show|Episode|Season|BoxSet|Video|VideoPlaylist|" +
-                    "Folder|Track|Album|Artist)|RelatedRow|HomeSection|PlaylistEntry)>"
+                    "Folder|Track|Album|Artist)|RelatedRow|HomeSection|PlaylistEntry)>",
             )
         val declaration = Regex("""data class (\w+UiState)\s*\(""")
         val files = sourceRoot.walkTopDown().filter { it.isFile && it.extension == "kt" }.toList()
@@ -415,19 +415,19 @@ tasks.register("checkItemProjection") {
                 buildString {
                     appendLine(
                         "${violations.size} screen(s) keep item copies in a mutable UiState " +
-                            "without ItemStore.project, so changes made elsewhere never reach them."
+                            "without ItemStore.project, so changes made elsewhere never reach them.",
                     )
                     violations.forEach { appendLine("  $it") }
                     appendLine()
                     appendLine(
                         "Expose the state through itemStore.project(viewModelScope, _uiState) " +
-                            "{ state -> state.copy(items = live(state.items)) }."
+                            "{ state -> state.copy(items = live(state.items)) }.",
                     )
                     appendLine(
                         "A screen not yet migrated goes in itemProjectionAllowlist in " +
-                            "app/build.gradle.kts; remove it from there once it is migrated."
+                            "app/build.gradle.kts; remove it from there once it is migrated.",
                     )
-                }
+                },
             )
         }
     }

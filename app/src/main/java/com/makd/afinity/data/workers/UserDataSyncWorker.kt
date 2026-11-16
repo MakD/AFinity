@@ -85,7 +85,7 @@ constructor(
                         if (pending.isEmpty() && plays.isEmpty()) return@forEach
 
                         Timber.i(
-                            "Found ${pending.size} items and ${plays.size} offline plays to sync for user ${account.userId} on server ${account.serverId}"
+                            "Found ${pending.size} items and ${plays.size} offline plays to sync for user ${account.userId} on server ${account.serverId}",
                         )
 
                         val apiClient =
@@ -103,7 +103,7 @@ constructor(
 
                         if (apiClient == null) {
                             Timber.w(
-                                "No client for server ${account.serverId} with ${pending.size} pending items, will retry"
+                                "No client for server ${account.serverId} with ${pending.size} pending items, will retry",
                             )
                             retryNeeded = true
                             return@forEach
@@ -141,7 +141,7 @@ constructor(
                                     totalFailure++
                                     accountStopped = true
                                     Timber.w(
-                                        "Token rejected for server ${account.serverId}, aborting its sync"
+                                        "Token rejected for server ${account.serverId}, aborting its sync",
                                     )
                                     break
                                 }
@@ -177,7 +177,7 @@ constructor(
                                 UploadResult.UNAUTHORIZED -> {
                                     totalFailure++
                                     Timber.w(
-                                        "Token rejected for server ${account.serverId}, aborting its play sync"
+                                        "Token rejected for server ${account.serverId}, aborting its play sync",
                                     )
                                     break
                                 }
@@ -191,7 +191,7 @@ constructor(
                     }
 
                 Timber.i(
-                    "Global user data sync completed. Success: $totalSuccess, Failures: $totalFailure, retryNeeded: $retryNeeded"
+                    "Global user data sync completed. Success: $totalSuccess, Failures: $totalFailure, retryNeeded: $retryNeeded",
                 )
 
                 return@withContext when {
@@ -200,17 +200,17 @@ constructor(
                             workDataOf(
                                 "synced_count" to totalSuccess,
                                 "failed_count" to totalFailure,
-                            )
+                            ),
                         )
                     runAttemptCount >= MAX_RUN_ATTEMPTS -> {
                         Timber.w(
-                            "Giving up user data sync after $runAttemptCount attempts, rows stay queued"
+                            "Giving up user data sync after $runAttemptCount attempts, rows stay queued",
                         )
                         Result.success(
                             workDataOf(
                                 "synced_count" to totalSuccess,
                                 "failed_count" to totalFailure,
-                            )
+                            ),
                         )
                     }
                     else -> Result.retry()

@@ -46,7 +46,7 @@ fun PlayMethodBadge(isTranscoding: Boolean, modifier: Modifier = Modifier) {
         text =
             stringResource(
                 if (isTranscoding) R.string.player_badge_transcoding
-                else R.string.player_badge_direct
+                else R.string.player_badge_direct,
             ),
         style = MaterialTheme.typography.labelSmall,
         fontSize = 10.sp,
@@ -70,7 +70,7 @@ fun AudioFormatBadge(
 
     val method =
         stringResource(
-            if (isTranscoding) R.string.player_badge_transcoding else R.string.player_badge_direct
+            if (isTranscoding) R.string.player_badge_transcoding else R.string.player_badge_direct,
         )
     val label = if (codec.isNullOrBlank()) method else "$codec · $method"
 

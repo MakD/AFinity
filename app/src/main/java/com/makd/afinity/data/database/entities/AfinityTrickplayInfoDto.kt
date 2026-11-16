@@ -14,7 +14,7 @@ import com.makd.afinity.data.models.media.AfinityTrickplayInfo
                 parentColumns = arrayOf("id"),
                 childColumns = arrayOf("sourceId"),
                 onDelete = ForeignKey.CASCADE,
-            )
+            ),
         ],
 )
 data class AfinityTrickplayInfoDto(

@@ -84,12 +84,12 @@ fun SkipButton(
                         painterResource(
                             id =
                                 if (isAutoSkip) R.drawable.ic_close
-                                else R.drawable.ic_player_skip_forward
+                                else R.drawable.ic_player_skip_forward,
                         ),
                     contentDescription =
                         stringResource(
                             if (isAutoSkip) R.string.cd_cancel_auto_skip
-                            else R.string.cd_skip_button_icon
+                            else R.string.cd_skip_button_icon,
                         ),
                     modifier = Modifier.size(14.dp),
                     tint = MaterialTheme.colorScheme.primary,

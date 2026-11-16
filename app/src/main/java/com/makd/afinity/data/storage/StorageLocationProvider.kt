@@ -3,7 +3,6 @@ package com.makd.afinity.data.storage
 import android.content.Context
 import android.os.Environment
 import android.os.storage.StorageManager
-import com.makd.afinity.data.storage.StorageLocationProvider.Companion.PRIMARY_VOLUME_ID
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject

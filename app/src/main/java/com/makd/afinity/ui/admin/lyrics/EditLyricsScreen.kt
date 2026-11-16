@@ -230,7 +230,7 @@ fun EditLyricsScreen(onNavigateUp: () -> Unit, viewModel: EditLyricsViewModel = 
                                     enabled = !uiState.working,
                                     colors =
                                         ButtonDefaults.textButtonColors(
-                                            contentColor = MaterialTheme.colorScheme.error
+                                            contentColor = MaterialTheme.colorScheme.error,
                                         ),
                                     modifier = Modifier.weight(1f).heightIn(min = 44.dp),
                                 ) {
@@ -276,8 +276,8 @@ fun EditLyricsScreen(onNavigateUp: () -> Unit, viewModel: EditLyricsViewModel = 
                                 Text(
                                     stringResource(
                                         if (uiState.hasSearched) R.string.lyrics_search_again
-                                        else R.string.lyrics_search
-                                    )
+                                        else R.string.lyrics_search,
+                                    ),
                                 )
                             }
                         }
@@ -342,7 +342,7 @@ private fun SyncBadge(synced: Boolean) {
     AfinityBadge(
         text =
             stringResource(
-                if (synced) R.string.lyrics_badge_synced else R.string.lyrics_badge_plain
+                if (synced) R.string.lyrics_badge_synced else R.string.lyrics_badge_plain,
             ),
         containerColor =
             if (synced) MaterialTheme.colorScheme.secondaryContainer
@@ -392,8 +392,8 @@ private fun CurrentLyricsCard(lyrics: TrackLyrics, showAll: Boolean, onToggleSho
             TextButton(onClick = onToggleShowAll, modifier = Modifier.align(Alignment.End)) {
                 Text(
                     stringResource(
-                        if (showAll) R.string.lyrics_show_less else R.string.lyrics_show_all
-                    )
+                        if (showAll) R.string.lyrics_show_less else R.string.lyrics_show_all,
+                    ),
                 )
             }
         }
@@ -411,7 +411,7 @@ private fun LyricLines(content: LyricsContent, limit: Int?) {
                         text = line.startMs?.let(::formatClock).orEmpty(),
                         style =
                             MaterialTheme.typography.bodySmall.copy(
-                                fontFamily = FontFamily.Monospace
+                                fontFamily = FontFamily.Monospace,
                             ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -618,7 +618,7 @@ private fun ReplaceLyricsDialog(
                 colors =
                     if (sidecarFileName != null) {
                         ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
+                            contentColor = MaterialTheme.colorScheme.error,
                         )
                     } else ButtonDefaults.textButtonColors(),
             ) {

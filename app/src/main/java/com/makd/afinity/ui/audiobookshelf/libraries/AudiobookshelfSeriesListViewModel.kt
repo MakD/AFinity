@@ -55,7 +55,7 @@ constructor(
                                 else
                                     progress[item.id]?.let { item.copy(userMediaProgress = it) }
                                         ?: item
-                            }
+                            },
                     )
                 }
             }
@@ -98,7 +98,9 @@ constructor(
                                     seriesById[series.id] =
                                         existing?.copy(
                                             books =
-                                                (existing.books + series.books).distinctBy { it.id }
+                                                (existing.books + series.books).distinctBy {
+                                                    it.id
+                                                },
                                         ) ?: series.copy(books = series.books.distinctBy { it.id })
                                 }
                                 seriesById.values

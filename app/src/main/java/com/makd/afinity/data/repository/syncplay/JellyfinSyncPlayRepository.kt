@@ -161,7 +161,7 @@ class JellyfinSyncPlayRepository @Inject constructor(private val sessionManager:
                             positionTicks = positionTicks,
                             isPlaying = isPlaying,
                             playlistItemId = playlistItemId,
-                        )
+                        ),
                     )
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to report SyncPlay buffering")
@@ -186,7 +186,7 @@ class JellyfinSyncPlayRepository @Inject constructor(private val sessionManager:
                             positionTicks = positionTicks,
                             isPlaying = isPlaying,
                             playlistItemId = playlistItemId,
-                        )
+                        ),
                     )
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to report SyncPlay ready")
@@ -219,10 +219,10 @@ class JellyfinSyncPlayRepository @Inject constructor(private val sessionManager:
                             playingQueue = itemIds,
                             playingItemPosition = position,
                             startPositionTicks = startPositionTicks,
-                        )
+                        ),
                     )
                 Timber.d(
-                    "SyncPlay: set new queue — ${itemIds.size} item(s) at ${startPositionTicks / 10_000}ms"
+                    "SyncPlay: set new queue — ${itemIds.size} item(s) at ${startPositionTicks / 10_000}ms",
                 )
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to set SyncPlay queue")

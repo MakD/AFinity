@@ -108,7 +108,7 @@ object FranchiseGrouper {
                 keys
                     .map { byKey.getValue(it) }
                     .minWith(
-                        compareBy<FranchiseTitle>({ it.year ?: Int.MAX_VALUE }, { it.name.length })
+                        compareBy<FranchiseTitle>({ it.year ?: Int.MAX_VALUE }, { it.name.length }),
                     )
             val rootEntity = component.first { oldest.key in entityTitles.getValue(it) }
             val name = oldest.name.replace(YEAR_SUFFIX, "").trim()
@@ -132,7 +132,7 @@ object FranchiseGrouper {
                         compareBy(
                             { byKey.getValue(it).year ?: Int.MAX_VALUE },
                             { byKey.getValue(it).name },
-                        )
+                        ),
                     ),
                 logo = facts.entities[candidate.entityId]?.logo,
             )

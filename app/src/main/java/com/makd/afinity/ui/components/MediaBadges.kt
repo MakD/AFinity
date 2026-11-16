@@ -206,7 +206,7 @@ fun CardPill(
                 modifier =
                     Modifier.size(metrics.size * COUNT_DOT_FRACTION)
                         .background(containerColor, CircleShape)
-                        .semantics { contentDescription = text }
+                        .semantics { contentDescription = text },
             )
         }
     }

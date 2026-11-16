@@ -25,7 +25,7 @@ interface MovieDao {
 
     @Query(
         "UPDATE movies SET providerIds = :providerIds, externalUrls = :externalUrls " +
-            "WHERE id = :movieId AND serverId = :serverId"
+            "WHERE id = :movieId AND serverId = :serverId",
     )
     suspend fun updateExternalIds(
         movieId: UUID,
@@ -54,12 +54,12 @@ interface MovieDao {
         WHERE serverId = :serverId
         AND (name LIKE '%' || :query || '%' OR originalTitle LIKE '%' || :query || '%')
         ORDER BY name ASC
-    """
+    """,
     )
     suspend fun searchMovies(query: String, serverId: String): List<AfinityMovieDto>
 
     @Query(
-        "SELECT * FROM movies WHERE serverId = :serverId AND premiereDate >= :fromDate ORDER BY premiereDate DESC LIMIT :limit"
+        "SELECT * FROM movies WHERE serverId = :serverId AND premiereDate >= :fromDate ORDER BY premiereDate DESC LIMIT :limit",
     )
     suspend fun getRecentMovies(fromDate: Long, limit: Int, serverId: String): List<AfinityMovieDto>
 

@@ -243,7 +243,7 @@ fun jellyfinChildrenOf(
     return downloads
         .filter { it.id in ids }
         .sortedWith(
-            compareBy({ it.seasonNumber ?: Int.MAX_VALUE }, { it.episodeNumber ?: Int.MAX_VALUE })
+            compareBy({ it.seasonNumber ?: Int.MAX_VALUE }, { it.episodeNumber ?: Int.MAX_VALUE }),
         )
 }
 

@@ -103,7 +103,7 @@ constructor(
             .sortedWith(
                 compareBy<AfinityTrack> { it.album.orEmpty() }
                     .thenBy { it.discNumber ?: 1 }
-                    .thenBy { it.indexNumber ?: 0 }
+                    .thenBy { it.indexNumber ?: 0 },
             )
     }
 
@@ -793,7 +793,7 @@ constructor(
                             mediaType = mediaType,
                             users = emptyList(),
                             isPublic = isPublic,
-                        )
+                        ),
                     )
 
             val rawId = result.content.id
@@ -1499,7 +1499,7 @@ constructor(
         if (s.length == 32 && s.all { it.isLetterOrDigit() }) {
             runCatching {
                 return UUID.fromString(
-                    "${s.substring(0,8)}-${s.substring(8,12)}-${s.substring(12,16)}-${s.substring(16,20)}-${s.substring(20)}"
+                    "${s.substring(0,8)}-${s.substring(8,12)}-${s.substring(12,16)}-${s.substring(16,20)}-${s.substring(20)}",
                 )
             }
         }

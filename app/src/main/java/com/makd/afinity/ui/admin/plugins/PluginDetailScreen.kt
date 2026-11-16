@@ -213,7 +213,7 @@ private fun PluginActions(
                         title =
                             stringResource(
                                 if (installable.hasUpdate) R.string.plugin_action_update
-                                else R.string.plugin_action_install
+                                else R.string.plugin_action_install,
                             ),
                         subtitle =
                             when {
@@ -302,7 +302,7 @@ private fun PluginDetails(plugin: PluginDetailUiState) {
                     R.drawable.ic_circle_check_outline,
                     stringResource(R.string.plugin_detail_status),
                     stringResource(installed.status.labelRes() ?: R.string.plugin_status_active),
-                )
+                ),
             )
         }
         add(
@@ -310,7 +310,7 @@ private fun PluginDetails(plugin: PluginDetailUiState) {
                 R.drawable.ic_versions,
                 stringResource(R.string.plugin_detail_version),
                 installed?.version ?: entry?.latestVersion.orEmpty(),
-            )
+            ),
         )
         if (entry != null && entry.owner.isNotBlank()) {
             add(
@@ -318,7 +318,7 @@ private fun PluginDetails(plugin: PluginDetailUiState) {
                     R.drawable.ic_user,
                     stringResource(R.string.plugin_detail_developer),
                     entry.owner,
-                )
+                ),
             )
         }
         if (entry != null && entry.repositoryName.isNotBlank()) {
@@ -327,7 +327,7 @@ private fun PluginDetails(plugin: PluginDetailUiState) {
                     R.drawable.ic_database,
                     stringResource(R.string.plugin_detail_repository),
                     entry.repositoryName,
-                )
+                ),
             )
         }
     }
@@ -382,7 +382,7 @@ private fun PluginHistory(versions: List<PluginVersionRow>, installedVersion: St
                         painterResource(
                             id =
                                 if (isExpanded) R.drawable.ic_keyboard_arrow_up
-                                else R.drawable.ic_keyboard_arrow_down
+                                else R.drawable.ic_keyboard_arrow_down,
                         ),
                     iconTint = if (hasChangelog) null else MaterialTheme.colorScheme.outlineVariant,
                     title = version.version,

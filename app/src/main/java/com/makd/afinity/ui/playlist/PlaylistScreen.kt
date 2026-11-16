@@ -161,7 +161,7 @@ fun PlaylistScreen(
             onConfirm = {
                 pendingDownloadConfirm = null
                 viewModel.cancelPlaylistDownload(
-                    deleteCompleted = confirm.kind == DownloadConfirmKind.DELETE
+                    deleteCompleted = confirm.kind == DownloadConfirmKind.DELETE,
                 )
             },
             onDismiss = { pendingDownloadConfirm = null },
@@ -347,7 +347,7 @@ fun PlaylistScreen(
         )
 
         DetailCoverTitle(
-            title = uiState.playlist?.name ?: stringResource(R.string.music_fallback_playlist)
+            title = uiState.playlist?.name ?: stringResource(R.string.music_fallback_playlist),
         )
 
         PlaylistCountLabel(
@@ -556,7 +556,7 @@ fun PlaylistScreen(
                             uiState.videoCount,
                             uiState.videoCount,
                         ),
-                    )
+                    ),
                 )
             },
             confirmButton = {
@@ -564,7 +564,7 @@ fun PlaylistScreen(
                     onClick = {
                         playChoiceShuffle = null
                         playMusic(shuffle)
-                    }
+                    },
                 ) {
                     Text(stringResource(R.string.playlist_play_music))
                 }
@@ -574,7 +574,7 @@ fun PlaylistScreen(
                     onClick = {
                         playChoiceShuffle = null
                         playVideos(shuffle)
-                    }
+                    },
                 ) {
                     Text(stringResource(R.string.playlist_play_videos))
                 }
@@ -614,7 +614,7 @@ fun PlaylistScreen(
                                 uiState.videoCount,
                                 uiState.videoCount,
                             ),
-                        )
+                        ),
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     DownloadChoiceRow(
@@ -672,7 +672,7 @@ fun PlaylistScreen(
                     onClick = {
                         showDeleteConfirm = false
                         viewModel.deletePlaylist()
-                    }
+                    },
                 ) {
                     Text(stringResource(R.string.action_delete))
                 }
@@ -715,7 +715,7 @@ private fun PlaylistArtistsRow(
                             )
                             .padding(gapWidth)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
                 ) {
                     AsyncImage(
                         imageUrl = entry.imageUrl,
@@ -831,12 +831,12 @@ private fun PlaylistEmptyState(hiddenItemCount: Int, modifier: Modifier = Modifi
     EmptyState(
         icon =
             painterResource(
-                if (videoOnly) R.drawable.ic_music_video else R.drawable.ic_music_playlist
+                if (videoOnly) R.drawable.ic_music_video else R.drawable.ic_music_playlist,
             ),
         title =
             stringResource(
                 if (videoOnly) R.string.music_playlist_video_only_title
-                else R.string.music_playlist_empty_title
+                else R.string.music_playlist_empty_title,
             ),
         message =
             if (videoOnly)

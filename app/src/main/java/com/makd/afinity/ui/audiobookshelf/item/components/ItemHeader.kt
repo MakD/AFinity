@@ -540,7 +540,7 @@ private fun DetailRow(label: String, value: String) {
                         SpanStyle(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Normal,
-                        )
+                        ),
                 ) {
                     append("$label: ")
                 }
@@ -549,7 +549,7 @@ private fun DetailRow(label: String, value: String) {
                         SpanStyle(
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Medium,
-                        )
+                        ),
                 ) {
                     append(value)
                 }

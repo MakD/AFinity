@@ -78,7 +78,7 @@ fun AdminDayToggles(
                         text = day.getDisplayName(TextStyle.NARROW, locale),
                         style =
                             MaterialTheme.typography.labelLarge.copy(
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
                             ),
                     )
                 }
@@ -137,7 +137,7 @@ fun AdminTimeDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(pickerState.hour * MINUTES_PER_HOUR + pickerState.minute) }
+                onClick = { onConfirm(pickerState.hour * MINUTES_PER_HOUR + pickerState.minute) },
             ) {
                 Text(stringResource(R.string.action_ok))
             }

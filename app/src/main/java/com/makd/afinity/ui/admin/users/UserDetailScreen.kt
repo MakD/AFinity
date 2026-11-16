@@ -113,7 +113,7 @@ fun UserDetailScreen(
         onOpenParentalControls = onOpenParentalControls,
         onChoosePicture = {
             picturePicker.launch(
-                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
             )
         },
         onRemovePicture = viewModel::removePicture,
@@ -532,7 +532,7 @@ private fun PictureEditButton(
                             label = stringResource(R.string.user_picture_choose),
                             iconRes = R.drawable.ic_photo_search,
                             onClick = onChoosePicture,
-                        )
+                        ),
                     )
                     if (hasPicture) {
                         add(
@@ -541,7 +541,7 @@ private fun PictureEditButton(
                                 iconRes = R.drawable.ic_delete,
                                 onClick = onRemovePicture,
                                 destructive = true,
-                            )
+                            ),
                         )
                     }
                 },

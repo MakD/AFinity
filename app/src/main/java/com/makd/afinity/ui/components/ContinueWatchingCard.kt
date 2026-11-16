@@ -77,7 +77,7 @@ fun ContinueWatchingCard(
 
     Column(
         modifier =
-            modifier.then(if (fillWidth) Modifier.fillMaxWidth() else Modifier.width(cardWidth))
+            modifier.then(if (fillWidth) Modifier.fillMaxWidth() else Modifier.width(cardWidth)),
     ) {
         Card(
             onClick = onClick,
@@ -200,7 +200,7 @@ fun ContinueWatchingCard(
                                         MaterialTheme.typography.bodySmall.copy(
                                             fontSize =
                                                 MaterialTheme.typography.bodySmall.fontSize *
-                                                    ratingScale.textScale
+                                                    ratingScale.textScale,
                                         ),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -217,7 +217,7 @@ fun ContinueWatchingCard(
                                         Icon(
                                             painter =
                                                 painterResource(
-                                                    id = R.drawable.ic_community_rating
+                                                    id = R.drawable.ic_community_rating,
                                                 ),
                                             contentDescription = stringResource(R.string.cd_imdb),
                                             tint = Color.Unspecified,
@@ -229,7 +229,7 @@ fun ContinueWatchingCard(
                                                 MaterialTheme.typography.bodySmall.copy(
                                                     fontSize =
                                                         MaterialTheme.typography.bodySmall
-                                                            .fontSize * ratingScale.textScale
+                                                            .fontSize * ratingScale.textScale,
                                                 ),
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
@@ -248,7 +248,7 @@ fun ContinueWatchingCard(
                                                             R.drawable.ic_rotten_tomato_fresh
                                                         } else {
                                                             R.drawable.ic_rotten_tomato_rotten
-                                                        }
+                                                        },
                                                 ),
                                             contentDescription =
                                                 stringResource(R.string.cd_rotten_tomatoes_rating),
@@ -262,7 +262,7 @@ fun ContinueWatchingCard(
                                                 MaterialTheme.typography.bodySmall.copy(
                                                     fontSize =
                                                         MaterialTheme.typography.bodySmall
-                                                            .fontSize * ratingScale.textScale
+                                                            .fontSize * ratingScale.textScale,
                                                 ),
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
@@ -319,7 +319,7 @@ fun ContinueWatchingCard(
                                         Icon(
                                             painter =
                                                 painterResource(
-                                                    id = R.drawable.ic_community_rating
+                                                    id = R.drawable.ic_community_rating,
                                                 ),
                                             contentDescription = stringResource(R.string.cd_imdb),
                                             tint = Color.Unspecified,
@@ -331,7 +331,7 @@ fun ContinueWatchingCard(
                                                 MaterialTheme.typography.bodySmall.copy(
                                                     fontSize =
                                                         MaterialTheme.typography.bodySmall
-                                                            .fontSize * ratingScale.textScale
+                                                            .fontSize * ratingScale.textScale,
                                                 ),
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
@@ -376,7 +376,7 @@ fun ContinueWatchingCard(
                                             MaterialTheme.typography.bodySmall.copy(
                                                 fontSize =
                                                     MaterialTheme.typography.bodySmall.fontSize *
-                                                        ratingScale.textScale
+                                                        ratingScale.textScale,
                                             ),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -426,7 +426,7 @@ private fun ContinueWatchingCardRowPreviewContent(cardSize: CardSize) {
 @WidthPreviews
 @Composable
 private fun ContinueWatchingCardWidthPreview(
-    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize
+    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize,
 ) {
     ContinueWatchingCardRowPreviewContent(cardSize)
 }
@@ -434,7 +434,7 @@ private fun ContinueWatchingCardWidthPreview(
 @FontScalePreviews
 @Composable
 private fun ContinueWatchingCardFontScalePreview(
-    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize
+    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize,
 ) {
     ContinueWatchingCardRowPreviewContent(cardSize)
 }
@@ -442,7 +442,7 @@ private fun ContinueWatchingCardFontScalePreview(
 @StressPreviews
 @Composable
 private fun ContinueWatchingCardStressPreview(
-    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize
+    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize,
 ) {
     ContinueWatchingCardRowPreviewContent(cardSize)
 }

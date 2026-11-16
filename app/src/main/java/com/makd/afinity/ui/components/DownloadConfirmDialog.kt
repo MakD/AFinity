@@ -89,7 +89,7 @@ fun DownloadConfirmDialog(confirm: DownloadConfirm, onConfirm: () -> Unit, onDis
             Icon(
                 painter =
                     painterResource(
-                        id = if (isDelete) R.drawable.ic_delete else R.drawable.ic_cancel
+                        id = if (isDelete) R.drawable.ic_delete else R.drawable.ic_cancel,
                     ),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.error,
@@ -115,8 +115,8 @@ fun DownloadConfirmDialog(confirm: DownloadConfirm, onConfirm: () -> Unit, onDis
             ) {
                 Text(
                     stringResource(
-                        if (isDelete) R.string.action_delete else R.string.action_stop_download
-                    )
+                        if (isDelete) R.string.action_delete else R.string.action_stop_download,
+                    ),
                 )
             }
         },
@@ -124,8 +124,8 @@ fun DownloadConfirmDialog(confirm: DownloadConfirm, onConfirm: () -> Unit, onDis
             TextButton(onClick = onDismiss) {
                 Text(
                     stringResource(
-                        if (isDelete) R.string.action_cancel else R.string.action_keep_downloading
-                    )
+                        if (isDelete) R.string.action_cancel else R.string.action_keep_downloading,
+                    ),
                 )
             }
         },

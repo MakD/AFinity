@@ -162,7 +162,7 @@ constructor(
                             type = DlnaProfileType.VIDEO,
                             container = DIRECT_PLAY_CONTAINERS,
                         )
-                    }
+                    },
                 ),
             transcodingProfiles =
                 listOf(
@@ -175,7 +175,7 @@ constructor(
                         audioCodec = hlsAudioCodecs,
                         breakOnNonKeyFrames = false,
                         conditions = emptyList(),
-                    )
+                    ),
                 ),
             codecProfiles = emptyList(),
             containerProfiles = emptyList(),
@@ -265,7 +265,7 @@ constructor(
                                 ChannelSortOrder.NUMBER -> ItemSortBy.SORT_NAME
                                 ChannelSortOrder.NAME -> ItemSortBy.NAME
                                 ChannelSortOrder.RECENTLY_WATCHED -> ItemSortBy.DATE_PLAYED
-                            }
+                            },
                         ),
                     sortOrder =
                         if (sortOrder == ChannelSortOrder.RECENTLY_WATCHED) SortOrder.DESCENDING
@@ -372,7 +372,7 @@ constructor(
     }
 
     override suspend fun getCurrentProgramsResult(
-        channelIds: List<UUID>
+        channelIds: List<UUID>,
     ): Result<Map<UUID, AfinityProgram>> = apiInvoker.apiResult { apiClient, userId ->
         val baseUrl = getBaseUrl()
         LiveTvApi(apiClient)
@@ -499,7 +499,7 @@ constructor(
     }
 
     override suspend fun getSeriesRecordingOptionsResult(
-        seriesTimerId: String
+        seriesTimerId: String,
     ): Result<SeriesRecordingOptions> = apiInvoker.apiResult { apiClient, _ ->
         LiveTvApi(apiClient)
             .getSeriesTimer(timerId = seriesTimerId)
@@ -812,7 +812,7 @@ constructor(
                     enableImages = false,
                     enableTotalRecordCount = false,
                     fields = emptyList(),
-                )
+                ),
             )
             .content
             .items
@@ -891,7 +891,7 @@ constructor(
             val playbackInfo = playbackResponse.content
 
             Timber.d(
-                "PlaybackInfo: playSessionId=${playbackInfo.playSessionId}, mediaSources=${playbackInfo.mediaSources.size}"
+                "PlaybackInfo: playSessionId=${playbackInfo.playSessionId}, mediaSources=${playbackInfo.mediaSources.size}",
             )
 
             val sources = playbackInfo.mediaSources
@@ -924,7 +924,7 @@ constructor(
                                             enableDirectStream = allowDirectPlay,
                                             deviceProfile = deviceProfile,
                                             directPlayProtocols = listOf(MediaProtocol.HTTP),
-                                        )
+                                        ),
                                 )
                                 .content
                                 .mediaSource
@@ -943,7 +943,7 @@ constructor(
             val transcodingUrl = source.transcodingUrl
 
             Timber.d(
-                "Source: id=$mediaSourceId, liveStreamId=$liveStreamId, protocol=${source.protocol}, isRemote=${source.isRemote}, container=${source.container}, supportsDirectPlay=${source.supportsDirectPlay}, supportsDirectStream=${source.supportsDirectStream}, supportsTranscoding=${source.supportsTranscoding}, hasTranscodingUrl=${!transcodingUrl.isNullOrBlank()}"
+                "Source: id=$mediaSourceId, liveStreamId=$liveStreamId, protocol=${source.protocol}, isRemote=${source.isRemote}, container=${source.container}, supportsDirectPlay=${source.supportsDirectPlay}, supportsDirectStream=${source.supportsDirectStream}, supportsTranscoding=${source.supportsTranscoding}, hasTranscodingUrl=${!transcodingUrl.isNullOrBlank()}",
             )
 
             val playMethod: PlayMethod
@@ -1025,7 +1025,7 @@ constructor(
             if (changed) {
                 updateCachedFavorite(channelId, favorite)
                 _channelFavoriteChanges.emit(
-                    ChannelFavoriteChange(channelId, favorite, channel.copy(favorite = favorite))
+                    ChannelFavoriteChange(channelId, favorite, channel.copy(favorite = favorite)),
                 )
             }
             changed

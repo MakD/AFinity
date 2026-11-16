@@ -72,7 +72,7 @@ fun SeriesOptionsSheet(
                 Modifier.fillMaxWidth()
                     .weight(1f, fill = false)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp)
+                    .padding(horizontal = 24.dp),
         ) {
             Text(
                 text = stringResource(R.string.livetv_series_options),
@@ -173,7 +173,7 @@ fun SeriesOptionsSheet(
                                 recordAnyTime = anyTime,
                                 keepUpTo = keepUpTo,
                                 padding = RecordingPadding(preMinutes, postMinutes),
-                            )
+                            ),
                         )
                     }
                 },
@@ -261,11 +261,11 @@ private fun KeepUpToField(value: Int, onValueChange: (Int) -> Unit) {
                         Modifier.background(
                             if (count == value) {
                                 MaterialTheme.colorScheme.onSurface.copy(
-                                    alpha = SELECTED_OPTION_ALPHA
+                                    alpha = SELECTED_OPTION_ALPHA,
                                 )
                             } else {
                                 Color.Transparent
-                            }
+                            },
                         ),
                 )
             }

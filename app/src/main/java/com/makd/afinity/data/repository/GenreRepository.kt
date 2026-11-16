@@ -195,7 +195,7 @@ constructor(
                         lastFetchedTimestamp = timestamp,
                         movieCount = 0,
                     )
-                }
+                },
             )
         }
         showGenres?.let { names ->
@@ -213,7 +213,7 @@ constructor(
                         lastFetchedTimestamp = timestamp,
                         showCount = 0,
                     )
-                }
+                },
             )
         }
 

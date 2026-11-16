@@ -157,7 +157,7 @@ private fun CastEpisodeCard(
                 Modifier.width(140.dp)
                     .aspectRatio(16f / 9f)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
         ) {
             val imageUrl = episode.images.primaryImageUrl
             val shouldBlur = !isCurrentlyPlaying && shouldBlurEpisode(episode, imageUrl)
@@ -181,7 +181,7 @@ private fun CastEpisodeCard(
                                 endY = size.height,
                             )
                         onDrawBehind { drawRect(gradient) }
-                    }
+                    },
             )
 
             if (episode.played) {

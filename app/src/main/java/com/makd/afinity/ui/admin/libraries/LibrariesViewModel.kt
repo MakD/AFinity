@@ -114,7 +114,7 @@ constructor(
                         LibraryRemovalOutcome.LEFTOVER_REMAINS -> LibrariesMessage.LEFTOVER_REMAINS
                         LibraryRemovalOutcome.CANCELLED -> LibrariesMessage.REMOVAL_CANCELLED
                         LibraryRemovalOutcome.FAILED -> LibrariesMessage.COMMAND_FAILED
-                    }
+                    },
                 )
                 fetch(refreshImages = true)
             }

@@ -202,7 +202,7 @@ fun MediaItemCard(
                     style =
                         MaterialTheme.typography.bodySmall.copy(
                             fontSize =
-                                MaterialTheme.typography.bodySmall.fontSize * ratingScale.textScale
+                                MaterialTheme.typography.bodySmall.fontSize * ratingScale.textScale,
                         ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -232,7 +232,7 @@ fun MediaItemCard(
                                 MaterialTheme.typography.bodySmall.copy(
                                     fontSize =
                                         MaterialTheme.typography.bodySmall.fontSize *
-                                            ratingScale.textScale
+                                            ratingScale.textScale,
                                 ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -255,7 +255,7 @@ fun MediaItemCard(
                                                 R.drawable.ic_rotten_tomato_fresh
                                             } else {
                                                 R.drawable.ic_rotten_tomato_rotten
-                                            }
+                                            },
                                     ),
                                 contentDescription = stringResource(R.string.cd_rotten_tomatoes),
                                 tint = Color.Unspecified,
@@ -267,7 +267,7 @@ fun MediaItemCard(
                                     MaterialTheme.typography.bodySmall.copy(
                                         fontSize =
                                             MaterialTheme.typography.bodySmall.fontSize *
-                                                ratingScale.textScale
+                                                ratingScale.textScale,
                                     ),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -295,7 +295,7 @@ private fun MediaItemCardRowPreviewContent(cardSize: CardSize) {
 @WidthPreviews
 @Composable
 private fun MediaItemCardWidthPreview(
-    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize
+    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize,
 ) {
     MediaItemCardRowPreviewContent(cardSize)
 }
@@ -303,7 +303,7 @@ private fun MediaItemCardWidthPreview(
 @FontScalePreviews
 @Composable
 private fun MediaItemCardFontScalePreview(
-    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize
+    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize,
 ) {
     MediaItemCardRowPreviewContent(cardSize)
 }
@@ -311,7 +311,7 @@ private fun MediaItemCardFontScalePreview(
 @StressPreviews
 @Composable
 private fun MediaItemCardStressPreview(
-    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize
+    @PreviewParameter(CardSizePreviewProvider::class) cardSize: CardSize,
 ) {
     MediaItemCardRowPreviewContent(cardSize)
 }

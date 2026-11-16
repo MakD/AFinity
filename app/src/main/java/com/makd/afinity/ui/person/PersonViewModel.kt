@@ -223,7 +223,7 @@ constructor(
                                             { it.seriesName?.lowercase() ?: it.name.lowercase() },
                                             { it.seriesIndex ?: Int.MAX_VALUE },
                                             { it.premiereDate },
-                                        )
+                                        ),
                                     ),
                             audiobooks =
                                 personItems
@@ -369,7 +369,7 @@ constructor(
                 if (!success) {
                     _uiState.update { currentState ->
                         currentState.copy(
-                            person = currentState.person?.copy(favorite = !targetStatus)
+                            person = currentState.person?.copy(favorite = !targetStatus),
                         )
                     }
                     Timber.e("Failed to toggle favorite for person: ${currentPerson.name}")

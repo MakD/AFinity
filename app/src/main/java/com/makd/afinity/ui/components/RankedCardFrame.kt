@@ -107,7 +107,7 @@ private fun RankDigits(glyph: RankGlyph, modifier: Modifier = Modifier) {
                         drawPath(path = path, color = fillColor, style = Fill)
                     }
                 }
-            }
+            },
     )
 }
 

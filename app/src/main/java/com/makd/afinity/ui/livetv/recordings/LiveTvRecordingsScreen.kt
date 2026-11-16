@@ -311,7 +311,7 @@ private fun SeriesRuleRow(rule: SeriesRecordingRule, onClick: (() -> Unit)?) {
             modifier =
                 Modifier.size(52.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
         ) {
             AsyncImage(
                 imageUrl = rule.imageUrl,
@@ -353,7 +353,7 @@ private fun seriesRuleSummary(options: SeriesRecordingOptions): String {
     return listOfNotNull(
             stringResource(
                 if (options.recordNewOnly) R.string.livetv_new_episodes_only
-                else R.string.livetv_all_episodes
+                else R.string.livetv_all_episodes,
             ),
             when {
                 options.recordAnyChannel -> stringResource(R.string.livetv_all_channels)
@@ -412,7 +412,7 @@ private fun RecordedRow(
             modifier =
                 Modifier.size(width = 112.dp, height = 63.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
         ) {
             AsyncImage(
                 imageUrl =

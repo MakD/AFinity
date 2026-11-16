@@ -84,7 +84,7 @@ constructor(
                         networkKey = networkKey,
                         address = probe.address,
                         lastSucceededAt = System.currentTimeMillis(),
-                    )
+                    ),
                 )
             }
                 .onFailure { Timber.w(it, "Could not remember working address") }

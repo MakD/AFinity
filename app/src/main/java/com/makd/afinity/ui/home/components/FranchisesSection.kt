@@ -114,7 +114,7 @@ private fun FranchiseCardItem(card: FranchiseCard, onClick: () -> Unit, cardWidt
                 }
                 Box(
                     modifier =
-                        Modifier.fillMaxSize().background(Color.Black.copy(alpha = SCRIM_ALPHA))
+                        Modifier.fillMaxSize().background(Color.Black.copy(alpha = SCRIM_ALPHA)),
                 )
                 FranchiseLogo(
                     card = card,

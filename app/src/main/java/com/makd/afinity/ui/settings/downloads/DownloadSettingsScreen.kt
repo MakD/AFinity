@@ -311,7 +311,7 @@ fun DownloadSettingsScreen(
                 AfinityTopBar(
                     title = {
                         AfinityTopAppBarTitle(
-                            stringResource(R.string.downloads_selected_fmt, selectedEntries.size)
+                            stringResource(R.string.downloads_selected_fmt, selectedEntries.size),
                         )
                     },
                     modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -614,7 +614,7 @@ private fun DownloadGroupSheet(
                                         entry.category == DownloadCategory.BOOK
                                 )
                                     2f / 3f
-                                else 1f
+                                else 1f,
                             )
                             .clip(RoundedCornerShape(12.dp)),
                 )
@@ -674,7 +674,7 @@ private fun DownloadGroupSheet(
                     Text(
                         text =
                             if (entry.isGroup) stringResource(R.string.downloads_delete_all)
-                            else stringResource(R.string.action_delete)
+                            else stringResource(R.string.action_delete),
                     )
                 }
 
@@ -787,7 +787,7 @@ fun ActiveDownloadCard(
                             text = download.itemName,
                             style =
                                 MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
                                 ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -984,7 +984,7 @@ fun CompletedDownloadRow(
             if (!download.seriesName.isNullOrBlank()) append("${download.seriesName} • ")
             if (download.seasonNumber != null && download.episodeNumber != null) {
                 append(
-                    "S${download.seasonNumber.toString().padStart(2, '0')}:E${download.episodeNumber.toString().padStart(2, '0')} • "
+                    "S${download.seasonNumber.toString().padStart(2, '0')}:E${download.episodeNumber.toString().padStart(2, '0')} • ",
                 )
             }
         } else {
@@ -1118,7 +1118,7 @@ private fun VolumeStorageRow(
                 .clickable(enabled = stats.isAvailable, onClick = onSetDefault)
                 .background(
                     if (isDefault) MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
-                    else Color.Transparent
+                    else Color.Transparent,
                 )
                 .padding(16.dp),
     ) {
@@ -1144,7 +1144,8 @@ private fun VolumeStorageRow(
             Icon(
                 painter =
                     painterResource(
-                        id = if (stats.isRemovable) R.drawable.ic_folder else R.drawable.ic_database
+                        id =
+                            if (stats.isRemovable) R.drawable.ic_folder else R.drawable.ic_database,
                     ),
                 contentDescription = null,
                 tint =
@@ -1181,7 +1182,7 @@ private fun VolumeStorageRow(
                             text = stringResource(R.string.storage_unavailable_badge),
                             style =
                                 MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
                                 ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
@@ -1196,7 +1197,7 @@ private fun VolumeStorageRow(
                             text = stringResource(R.string.storage_default_badge),
                             style =
                                 MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
                                 ),
                             color = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
@@ -1235,7 +1236,7 @@ private fun VolumeStorageRow(
 }
 
 private fun aggregateDeviceStats(
-    stats: List<DownloadsViewModel.VolumeStorageStats>
+    stats: List<DownloadsViewModel.VolumeStorageStats>,
 ): DownloadsViewModel.DeviceStorageStats? {
     val devices = stats.mapNotNull { it.device }
     if (devices.isEmpty()) return null
@@ -1300,7 +1301,7 @@ fun AbsActiveDownloadCard(
                             text = download.title,
                             style =
                                 MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
                                 ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -1487,7 +1488,7 @@ fun ImageCacheSettingsCard(
                 Column {
                     Spacer(modifier = Modifier.height(16.dp))
                     HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
                     )
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -1500,7 +1501,7 @@ fun ImageCacheSettingsCard(
                             text = stringResource(R.string.pref_image_cache_max_disk),
                             style =
                                 MaterialTheme.typography.labelLarge.copy(
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Medium,
                                 ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

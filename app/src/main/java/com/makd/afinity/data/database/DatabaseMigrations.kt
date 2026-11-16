@@ -38,7 +38,7 @@ object DatabaseMigrations {
                         addedAt INTEGER NOT NULL
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
             }
         }
@@ -82,7 +82,7 @@ object DatabaseMigrations {
                         updatedAt INTEGER NOT NULL
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
             }
         }
@@ -152,7 +152,7 @@ object DatabaseMigrations {
                         movieCount INTEGER NOT NULL DEFAULT 0
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL(
@@ -166,7 +166,7 @@ object DatabaseMigrations {
                         PRIMARY KEY (genreName, movieId)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
             }
         }
@@ -182,7 +182,7 @@ object DatabaseMigrations {
                         showCount INTEGER NOT NULL DEFAULT 0
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL(
@@ -196,7 +196,7 @@ object DatabaseMigrations {
                         PRIMARY KEY (genreName, showId)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
             }
         }
@@ -213,7 +213,7 @@ object DatabaseMigrations {
                         cachedTimestamp INTEGER NOT NULL
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
             }
         }
@@ -255,7 +255,7 @@ object DatabaseMigrations {
                         address TEXT NOT NULL
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL(
@@ -264,7 +264,7 @@ object DatabaseMigrations {
                 SELECT id, name, version, '$defaultServerId'
                 FROM servers
             """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL("DROP TABLE servers")
@@ -295,7 +295,7 @@ object DatabaseMigrations {
                         people TEXT
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL(
@@ -306,7 +306,7 @@ object DatabaseMigrations {
                        criticRating, status, productionYear, endDate, chapters, images, genres, tagline, people
                 FROM movies
             """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL("DROP TABLE movies")
@@ -335,7 +335,7 @@ object DatabaseMigrations {
                         people TEXT
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL(
@@ -346,7 +346,7 @@ object DatabaseMigrations {
                        premiereDate, dateCreated, dateLastContentAdded, endDate, images, genres, people
                 FROM shows
             """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL("DROP TABLE shows")
@@ -368,7 +368,7 @@ object DatabaseMigrations {
                         FOREIGN KEY (seriesId) REFERENCES shows(id) ON DELETE CASCADE
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL("CREATE INDEX index_seasons_seriesId ON seasons_new(seriesId)")
@@ -379,7 +379,7 @@ object DatabaseMigrations {
                 SELECT id, '$defaultServerId', seriesId, name, seriesName, overview, indexNumber, images
                 FROM seasons
             """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL("DROP TABLE seasons")
@@ -410,7 +410,7 @@ object DatabaseMigrations {
                         FOREIGN KEY (seriesId) REFERENCES shows(id) ON DELETE CASCADE
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL("CREATE INDEX index_episodes_seasonId ON episodes_new(seasonId)")
@@ -424,7 +424,7 @@ object DatabaseMigrations {
                        premiereDate, communityRating, chapters, images
                 FROM episodes
             """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL("DROP TABLE episodes")
@@ -444,7 +444,7 @@ object DatabaseMigrations {
                         PRIMARY KEY (userId, itemId, serverId)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL(
@@ -453,7 +453,7 @@ object DatabaseMigrations {
                 SELECT userId, itemId, '$defaultServerId', played, favorite, playbackPositionTicks, toBeSynced
                 FROM userdata
             """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL("DROP TABLE userdata")
@@ -478,7 +478,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(jellyfinServerId, jellyfinUserId)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL("DROP TABLE IF EXISTS jellyseerr_requests")
@@ -508,7 +508,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(id, jellyfinServerId, jellyfinUserId)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
             }
         }
@@ -518,7 +518,7 @@ object DatabaseMigrations {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE downloads ADD COLUMN serverId TEXT NOT NULL DEFAULT ''")
                 db.execSQL(
-                    "ALTER TABLE downloads ADD COLUMN userId TEXT NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000'"
+                    "ALTER TABLE downloads ADD COLUMN userId TEXT NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000'",
                 )
             }
         }
@@ -539,7 +539,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(jellyfinServerId, jellyfinUserId)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL(
@@ -559,7 +559,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(id, jellyfinServerId, jellyfinUserId)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL(
@@ -588,7 +588,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(id, jellyfinServerId, jellyfinUserId)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL(
@@ -610,7 +610,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(id, jellyfinServerId, jellyfinUserId)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
             }
         }
@@ -619,7 +619,7 @@ object DatabaseMigrations {
         object : Migration(26, 27) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
-                    "ALTER TABLE jellyseerr_requests ADD COLUMN is4k INTEGER NOT NULL DEFAULT 0"
+                    "ALTER TABLE jellyseerr_requests ADD COLUMN is4k INTEGER NOT NULL DEFAULT 0",
                 )
                 db.execSQL("ALTER TABLE jellyseerr_requests ADD COLUMN serverId INTEGER")
                 db.execSQL("ALTER TABLE jellyseerr_requests ADD COLUMN profileId INTEGER")
@@ -676,7 +676,7 @@ object DatabaseMigrations {
                         lastUpdated INTEGER NOT NULL
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
             }
         }
@@ -704,7 +704,7 @@ object DatabaseMigrations {
                         jellyfinServerId TEXT NOT NULL,
                         jellyfinUserId TEXT NOT NULL,
                         address TEXT NOT NULL
-                    )"""
+                    )""",
                 )
                 db.execSQL(
                     """CREATE TABLE IF NOT EXISTS audiobookshelf_addresses (
@@ -712,7 +712,7 @@ object DatabaseMigrations {
                         jellyfinServerId TEXT NOT NULL,
                         jellyfinUserId TEXT NOT NULL,
                         address TEXT NOT NULL
-                    )"""
+                    )""",
                 )
             }
         }
@@ -731,7 +731,7 @@ object DatabaseMigrations {
                         lastUpdated INTEGER NOT NULL
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
             }
         }
@@ -765,14 +765,14 @@ object DatabaseMigrations {
                         serializedSession TEXT
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 db.execSQL(
                     """
                     CREATE UNIQUE INDEX IF NOT EXISTS index_abs_downloads_item
                     ON abs_downloads (libraryItemId, episodeId, jellyfinServerId, jellyfinUserId)
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
             }
         }
@@ -819,7 +819,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(`genreName`, `serverId`, `userId`)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL(
@@ -833,7 +833,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(`genreName`, `serverId`, `userId`)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL(
@@ -849,7 +849,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(`genreName`, `movieId`, `serverId`, `userId`)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL(
@@ -865,7 +865,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(`genreName`, `showId`, `serverId`, `userId`)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL(
@@ -880,7 +880,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(`studioId`, `serverId`, `userId`)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL(
@@ -925,7 +925,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(`libraryId`, `itemId`, `serverId`, `userId`)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL(
@@ -941,7 +941,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(`sectionId`, `serverId`, `userId`)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL(
@@ -955,7 +955,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(`itemId`, `serverId`, `userId`)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL(
@@ -968,7 +968,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(`serverId`, `userId`)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL(
@@ -983,7 +983,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(`itemId`, `serverId`, `userId`)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL(
@@ -999,7 +999,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(`cacheKey`, `serverId`, `userId`)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
 
                 db.execSQL(
@@ -1013,10 +1013,10 @@ object DatabaseMigrations {
                         PRIMARY KEY(`personType`, `serverId`, `userId`)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 db.execSQL(
-                    "DELETE FROM downloads WHERE serverId = '' OR userId = '00000000-0000-0000-0000-000000000000'"
+                    "DELETE FROM downloads WHERE serverId = '' OR userId = '00000000-0000-0000-0000-000000000000'",
                 )
             }
         }
@@ -1029,11 +1029,11 @@ object DatabaseMigrations {
                 db.execSQL("CREATE INDEX IF NOT EXISTS idx_seasons_server ON seasons(serverId)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS idx_episodes_server ON episodes(serverId)")
                 db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS idx_userdata_server_user ON userdata(serverId, userId)"
+                    "CREATE INDEX IF NOT EXISTS idx_userdata_server_user ON userdata(serverId, userId)",
                 )
                 db.execSQL("CREATE INDEX IF NOT EXISTS idx_userdata_item ON userdata(itemId)")
                 db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS idx_downloads_scoped ON downloads(itemId, serverId, userId)"
+                    "CREATE INDEX IF NOT EXISTS idx_downloads_scoped ON downloads(itemId, serverId, userId)",
                 )
             }
         }
@@ -1043,7 +1043,7 @@ object DatabaseMigrations {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE userdata ADD COLUMN audioStreamIndex INTEGER DEFAULT NULL")
                 db.execSQL(
-                    "ALTER TABLE userdata ADD COLUMN subtitleStreamIndex INTEGER DEFAULT NULL"
+                    "ALTER TABLE userdata ADD COLUMN subtitleStreamIndex INTEGER DEFAULT NULL",
                 )
             }
         }
@@ -1066,7 +1066,7 @@ object DatabaseMigrations {
         object : Migration(44, 45) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
-                    "ALTER TABLE item_metadata_cache ADD COLUMN mdbRatingBadges TEXT NOT NULL DEFAULT '{\"certifiedFresh\":false,\"verifiedHot\":false}'"
+                    "ALTER TABLE item_metadata_cache ADD COLUMN mdbRatingBadges TEXT NOT NULL DEFAULT '{\"certifiedFresh\":false,\"verifiedHot\":false}'",
                 )
             }
         }
@@ -1094,7 +1094,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(`itemId`, `jellyfinServerId`, `jellyfinUserId`)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
             }
         }
@@ -1103,7 +1103,7 @@ object DatabaseMigrations {
         object : Migration(47, 48) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
-                    "ALTER TABLE downloads ADD COLUMN storageVolumeId TEXT NOT NULL DEFAULT 'primary'"
+                    "ALTER TABLE downloads ADD COLUMN storageVolumeId TEXT NOT NULL DEFAULT 'primary'",
                 )
             }
         }
@@ -1112,7 +1112,7 @@ object DatabaseMigrations {
         object : Migration(48, 49) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
-                    "ALTER TABLE abs_downloads ADD COLUMN storageVolumeId TEXT NOT NULL DEFAULT 'primary'"
+                    "ALTER TABLE abs_downloads ADD COLUMN storageVolumeId TEXT NOT NULL DEFAULT 'primary'",
                 )
             }
         }
@@ -1138,7 +1138,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(`position`)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
             }
         }
@@ -1167,13 +1167,13 @@ object DatabaseMigrations {
                         PRIMARY KEY(`id`, `serverId`, `userId`)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS `index_music_tracks_serverId_userId` ON `music_tracks` (`serverId`, `userId`)"
+                    "CREATE INDEX IF NOT EXISTS `index_music_tracks_serverId_userId` ON `music_tracks` (`serverId`, `userId`)",
                 )
                 db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS `index_music_tracks_albumId_serverId_userId` ON `music_tracks` (`albumId`, `serverId`, `userId`)"
+                    "CREATE INDEX IF NOT EXISTS `index_music_tracks_albumId_serverId_userId` ON `music_tracks` (`albumId`, `serverId`, `userId`)",
                 )
 
                 db.execSQL(
@@ -1193,10 +1193,10 @@ object DatabaseMigrations {
                         PRIMARY KEY(`id`, `serverId`, `userId`)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS `index_music_albums_serverId_userId` ON `music_albums` (`serverId`, `userId`)"
+                    "CREATE INDEX IF NOT EXISTS `index_music_albums_serverId_userId` ON `music_albums` (`serverId`, `userId`)",
                 )
 
                 db.execSQL(
@@ -1210,7 +1210,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(`trackId`, `serverId`, `userId`)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
             }
         }
@@ -1232,7 +1232,7 @@ object DatabaseMigrations {
                         json TEXT NOT NULL,
                         updatedAt INTEGER NOT NULL
                     )
-                    """
+                    """,
                 )
             }
         }
@@ -1241,7 +1241,7 @@ object DatabaseMigrations {
         object : Migration(53, 54) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
-                    "ALTER TABLE audiobookshelf_items ADD COLUMN numEpisodesIncomplete INTEGER"
+                    "ALTER TABLE audiobookshelf_items ADD COLUMN numEpisodesIncomplete INTEGER",
                 )
             }
         }
@@ -1283,14 +1283,14 @@ object DatabaseMigrations {
                             ON DELETE CASCADE
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 db.execSQL(
                     """
                     CREATE INDEX IF NOT EXISTS index_audiobookshelf_episodes_libraryItemId_jellyfinServerId_jellyfinUserId
                     ON audiobookshelf_episodes (libraryItemId, jellyfinServerId, jellyfinUserId)
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 db.execSQL("ALTER TABLE audiobookshelf_items DROP COLUMN serializedEpisodes")
             }
@@ -1310,7 +1310,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(jellyfinServerId, jellyfinUserId, filterContextKey)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
             }
         }
@@ -1339,10 +1339,10 @@ object DatabaseMigrations {
                         PRIMARY KEY(id)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS `index_custom_home_sections_sessionKey` ON `custom_home_sections` (sessionKey)"
+                    "CREATE INDEX IF NOT EXISTS `index_custom_home_sections_sessionKey` ON `custom_home_sections` (sessionKey)",
                 )
             }
         }
@@ -1361,10 +1361,10 @@ object DatabaseMigrations {
                         PRIMARY KEY(sessionKey, sectionKey)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS `index_home_layout_preferences_sessionKey` ON `home_layout_preferences` (sessionKey)"
+                    "CREATE INDEX IF NOT EXISTS `index_home_layout_preferences_sessionKey` ON `home_layout_preferences` (sessionKey)",
                 )
             }
         }
@@ -1380,7 +1380,7 @@ object DatabaseMigrations {
         object : Migration(59, 60) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
-                    "UPDATE `custom_home_sections` SET includeItemTypes = 'MOVIE,SERIES' WHERE includeItemTypes IS NULL OR includeItemTypes = ''"
+                    "UPDATE `custom_home_sections` SET includeItemTypes = 'MOVIE,SERIES' WHERE includeItemTypes IS NULL OR includeItemTypes = ''",
                 )
             }
         }
@@ -1389,10 +1389,10 @@ object DatabaseMigrations {
         object : Migration(60, 61) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
-                    "ALTER TABLE `mediastreams` ADD COLUMN `isForced` INTEGER NOT NULL DEFAULT 0"
+                    "ALTER TABLE `mediastreams` ADD COLUMN `isForced` INTEGER NOT NULL DEFAULT 0",
                 )
                 db.execSQL(
-                    "ALTER TABLE `mediastreams` ADD COLUMN `isHearingImpaired` INTEGER NOT NULL DEFAULT 0"
+                    "ALTER TABLE `mediastreams` ADD COLUMN `isHearingImpaired` INTEGER NOT NULL DEFAULT 0",
                 )
                 db.execSQL("ALTER TABLE `mediastreams` ADD COLUMN `profile` TEXT")
             }
@@ -1423,11 +1423,11 @@ object DatabaseMigrations {
                         "`type` TEXT NOT NULL, " +
                         "`startTicks` INTEGER NOT NULL, " +
                         "`endTicks` INTEGER NOT NULL, " +
-                        "PRIMARY KEY(`itemId`, `type`))"
+                        "PRIMARY KEY(`itemId`, `type`))",
                 )
                 db.execSQL(
                     "INSERT INTO `segments_new` (`itemId`, `type`, `startTicks`, `endTicks`) " +
-                        "SELECT `itemId`, `type`, `startTicks`, `endTicks` FROM `segments`"
+                        "SELECT `itemId`, `type`, `startTicks`, `endTicks` FROM `segments`",
                 )
                 db.execSQL("DROP TABLE `segments`")
                 db.execSQL("ALTER TABLE `segments_new` RENAME TO `segments`")
@@ -1442,7 +1442,7 @@ object DatabaseMigrations {
                         "`itemId` TEXT NOT NULL, " +
                         "`serverId` TEXT NOT NULL, " +
                         "`deletedAt` INTEGER NOT NULL, " +
-                        "PRIMARY KEY(`itemId`))"
+                        "PRIMARY KEY(`itemId`))",
                 )
             }
         }
@@ -1472,7 +1472,7 @@ object DatabaseMigrations {
         object : Migration(68, 69) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
-                    "ALTER TABLE `userdata` ADD COLUMN `unplayedItemCount` INTEGER DEFAULT NULL"
+                    "ALTER TABLE `userdata` ADD COLUMN `unplayedItemCount` INTEGER DEFAULT NULL",
                 )
                 db.execSQL("ALTER TABLE `userdata` ADD COLUMN `playCount` INTEGER DEFAULT NULL")
             }
@@ -1496,7 +1496,7 @@ object DatabaseMigrations {
                         "`awards` TEXT NOT NULL, " +
                         "`confirmed` INTEGER NOT NULL, " +
                         "`fetchedAt` INTEGER NOT NULL, " +
-                        "PRIMARY KEY(`subjectType`, `tmdbId`))"
+                        "PRIMARY KEY(`subjectType`, `tmdbId`))",
                 )
             }
         }
@@ -1505,22 +1505,22 @@ object DatabaseMigrations {
         object : Migration(71, 72) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
-                    "ALTER TABLE `mediastreams` ADD COLUMN `isOriginal` INTEGER NOT NULL DEFAULT 0"
+                    "ALTER TABLE `mediastreams` ADD COLUMN `isOriginal` INTEGER NOT NULL DEFAULT 0",
                 )
                 db.execSQL(
-                    "ALTER TABLE `mediastreams` ADD COLUMN `localizedLanguage` TEXT DEFAULT NULL"
+                    "ALTER TABLE `mediastreams` ADD COLUMN `localizedLanguage` TEXT DEFAULT NULL",
                 )
                 db.execSQL(
-                    "ALTER TABLE `mediastreams` ADD COLUMN `localizedForced` TEXT DEFAULT NULL"
+                    "ALTER TABLE `mediastreams` ADD COLUMN `localizedForced` TEXT DEFAULT NULL",
                 )
                 db.execSQL(
-                    "ALTER TABLE `mediastreams` ADD COLUMN `localizedExternal` TEXT DEFAULT NULL"
+                    "ALTER TABLE `mediastreams` ADD COLUMN `localizedExternal` TEXT DEFAULT NULL",
                 )
                 db.execSQL(
-                    "ALTER TABLE `mediastreams` ADD COLUMN `localizedHearingImpaired` TEXT DEFAULT NULL"
+                    "ALTER TABLE `mediastreams` ADD COLUMN `localizedHearingImpaired` TEXT DEFAULT NULL",
                 )
                 db.execSQL(
-                    "ALTER TABLE `mediastreams` ADD COLUMN `localizedOriginal` TEXT DEFAULT NULL"
+                    "ALTER TABLE `mediastreams` ADD COLUMN `localizedOriginal` TEXT DEFAULT NULL",
                 )
             }
         }
@@ -1529,13 +1529,13 @@ object DatabaseMigrations {
         object : Migration(72, 73) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
-                    "ALTER TABLE `music_tracks` ADD COLUMN `normalizationGain` REAL DEFAULT NULL"
+                    "ALTER TABLE `music_tracks` ADD COLUMN `normalizationGain` REAL DEFAULT NULL",
                 )
                 db.execSQL(
-                    "ALTER TABLE `music_tracks` ADD COLUMN `albumNormalizationGain` REAL DEFAULT NULL"
+                    "ALTER TABLE `music_tracks` ADD COLUMN `albumNormalizationGain` REAL DEFAULT NULL",
                 )
                 db.execSQL(
-                    "ALTER TABLE `music_queue` ADD COLUMN `albumNormalizationGain` REAL DEFAULT NULL"
+                    "ALTER TABLE `music_queue` ADD COLUMN `albumNormalizationGain` REAL DEFAULT NULL",
                 )
             }
         }
@@ -1563,7 +1563,7 @@ object DatabaseMigrations {
                     )
                     .forEach { column ->
                         db.execSQL(
-                            "ALTER TABLE `jellyfin_stats_cache` ADD COLUMN `$column` INTEGER NOT NULL DEFAULT 0"
+                            "ALTER TABLE `jellyfin_stats_cache` ADD COLUMN `$column` INTEGER NOT NULL DEFAULT 0",
                         )
                     }
             }
@@ -1580,7 +1580,7 @@ object DatabaseMigrations {
                         lastUpdated INTEGER NOT NULL
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
             }
         }
@@ -1589,34 +1589,34 @@ object DatabaseMigrations {
         object : Migration(76, 77) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
-                    "ALTER TABLE `mediastreams` ADD COLUMN `hdr10PlusPresentFlag` INTEGER NOT NULL DEFAULT 0"
+                    "ALTER TABLE `mediastreams` ADD COLUMN `hdr10PlusPresentFlag` INTEGER NOT NULL DEFAULT 0",
                 )
                 db.execSQL(
-                    "UPDATE `mediastreams` SET `videoRangeType` = 'HDR10Plus' WHERE `videoRangeType` = 'HDR10_PLUS'"
+                    "UPDATE `mediastreams` SET `videoRangeType` = 'HDR10Plus' WHERE `videoRangeType` = 'HDR10_PLUS'",
                 )
                 db.execSQL(
-                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithHDR10' WHERE `videoRangeType` = 'DOVI_WITH_HDR10'"
+                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithHDR10' WHERE `videoRangeType` = 'DOVI_WITH_HDR10'",
                 )
                 db.execSQL(
-                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithHLG' WHERE `videoRangeType` = 'DOVI_WITH_HLG'"
+                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithHLG' WHERE `videoRangeType` = 'DOVI_WITH_HLG'",
                 )
                 db.execSQL(
-                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithSDR' WHERE `videoRangeType` = 'DOVI_WITH_SDR'"
+                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithSDR' WHERE `videoRangeType` = 'DOVI_WITH_SDR'",
                 )
                 db.execSQL(
-                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithEL' WHERE `videoRangeType` = 'DOVI_WITH_EL'"
+                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithEL' WHERE `videoRangeType` = 'DOVI_WITH_EL'",
                 )
                 db.execSQL(
-                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithHDR10Plus' WHERE `videoRangeType` = 'DOVI_WITH_HDR10_PLUS'"
+                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithHDR10Plus' WHERE `videoRangeType` = 'DOVI_WITH_HDR10_PLUS'",
                 )
                 db.execSQL(
-                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithELHDR10Plus' WHERE `videoRangeType` = 'DOVI_WITH_ELHDR10_PLUS'"
+                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithELHDR10Plus' WHERE `videoRangeType` = 'DOVI_WITH_ELHDR10_PLUS'",
                 )
                 db.execSQL(
-                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIInvalid' WHERE `videoRangeType` = 'DOVI_INVALID'"
+                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIInvalid' WHERE `videoRangeType` = 'DOVI_INVALID'",
                 )
                 db.execSQL(
-                    "UPDATE `mediastreams` SET `videoRangeType` = 'Unknown' WHERE `videoRangeType` = 'UNKNOWN'"
+                    "UPDATE `mediastreams` SET `videoRangeType` = 'Unknown' WHERE `videoRangeType` = 'UNKNOWN'",
                 )
             }
         }
@@ -1640,7 +1640,7 @@ object DatabaseMigrations {
                         PRIMARY KEY(`jellyfinServerId`, `jellyfinUserId`, `libraryItemId`, `time`)
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
             }
         }
@@ -1660,11 +1660,11 @@ object DatabaseMigrations {
                             ON UPDATE NO ACTION ON DELETE CASCADE
                     )
                     """
-                        .trimIndent()
+                        .trimIndent(),
                 )
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS `index_serverAddressMemory_serverId` " +
-                        "ON `serverAddressMemory` (`serverId`)"
+                        "ON `serverAddressMemory` (`serverId`)",
                 )
             }
         }
@@ -1680,7 +1680,7 @@ object DatabaseMigrations {
         object : Migration(80, 81) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
-                    "ALTER TABLE `audiobookshelf_progress` ADD COLUMN `pendingTimeListened` REAL NOT NULL DEFAULT 0"
+                    "ALTER TABLE `audiobookshelf_progress` ADD COLUMN `pendingTimeListened` REAL NOT NULL DEFAULT 0",
                 )
                 db.execSQL("ALTER TABLE `audiobookshelf_progress` ADD COLUMN `localSessionId` TEXT")
             }
@@ -1714,7 +1714,7 @@ object DatabaseMigrations {
                         "`tracks` TEXT NOT NULL, " +
                         "`confirmed` INTEGER NOT NULL, " +
                         "`fetchedAt` INTEGER NOT NULL, " +
-                        "PRIMARY KEY(`artistKey`))"
+                        "PRIMARY KEY(`artistKey`))",
                 )
                 db.execSQL(
                     "CREATE TABLE IF NOT EXISTS `lastfm_popular_cache` (" +
@@ -1725,7 +1725,7 @@ object DatabaseMigrations {
                         "`trackCount` INTEGER NOT NULL, " +
                         "`lastFmVersion` INTEGER NOT NULL, " +
                         "`updatedAt` INTEGER NOT NULL, " +
-                        "PRIMARY KEY(`serverId`, `userId`, `artistId`))"
+                        "PRIMARY KEY(`serverId`, `userId`, `artistId`))",
                 )
             }
         }
@@ -1758,7 +1758,7 @@ object DatabaseMigrations {
                         db.execSQL("ALTER TABLE `mediastreams` ADD COLUMN `$column` $type")
                     }
                 db.execSQL(
-                    "ALTER TABLE `mediastreams` ADD COLUMN `isInterlaced` INTEGER NOT NULL DEFAULT 0"
+                    "ALTER TABLE `mediastreams` ADD COLUMN `isInterlaced` INTEGER NOT NULL DEFAULT 0",
                 )
                 db.execSQL("ALTER TABLE `sources` ADD COLUMN `bitrate` INTEGER")
                 db.execSQL("ALTER TABLE `sources` ADD COLUMN `container` TEXT")
@@ -1775,11 +1775,11 @@ object DatabaseMigrations {
                         "`type` TEXT NOT NULL, " +
                         "`startTicks` INTEGER NOT NULL, " +
                         "`endTicks` INTEGER NOT NULL, " +
-                        "PRIMARY KEY(`itemId`, `type`, `startTicks`))"
+                        "PRIMARY KEY(`itemId`, `type`, `startTicks`))",
                 )
                 db.execSQL(
                     "INSERT INTO `segments_new` (`itemId`, `type`, `startTicks`, `endTicks`) " +
-                        "SELECT `itemId`, `type`, `startTicks`, `endTicks` FROM `segments`"
+                        "SELECT `itemId`, `type`, `startTicks`, `endTicks` FROM `segments`",
                 )
                 db.execSQL("DROP TABLE `segments`")
                 db.execSQL("ALTER TABLE `segments_new` RENAME TO `segments`")
@@ -1803,7 +1803,7 @@ object DatabaseMigrations {
                         "`groupRefs` TEXT NOT NULL, " +
                         "`linkRefs` TEXT NOT NULL, " +
                         "`fetchedAt` INTEGER NOT NULL, " +
-                        "PRIMARY KEY(`imdbId`))"
+                        "PRIMARY KEY(`imdbId`))",
                 )
                 db.execSQL(
                     "CREATE TABLE IF NOT EXISTS `wikidata_franchise_entities` (" +
@@ -1813,7 +1813,7 @@ object DatabaseMigrations {
                         "`parents` TEXT NOT NULL, " +
                         "`logo` TEXT, " +
                         "`fetchedAt` INTEGER NOT NULL, " +
-                        "PRIMARY KEY(`entityId`))"
+                        "PRIMARY KEY(`entityId`))",
                 )
             }
         }
@@ -1833,7 +1833,7 @@ object DatabaseMigrations {
                         "`firstAirDate` TEXT, " +
                         "`voteAverage` REAL, " +
                         "`fetchedAt` INTEGER NOT NULL, " +
-                        "PRIMARY KEY(`key`))"
+                        "PRIMARY KEY(`key`))",
                 )
             }
         }
@@ -1856,10 +1856,10 @@ object DatabaseMigrations {
                 db.execSQL("ALTER TABLE `abs_downloads` ADD COLUMN `authorImagePath` TEXT")
                 db.execSQL("ALTER TABLE `abs_downloads` ADD COLUMN `authorTitleCount` INTEGER")
                 db.execSQL(
-                    "CREATE TABLE IF NOT EXISTS `offline_plays` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `itemId` TEXT NOT NULL, `userId` TEXT NOT NULL, `serverId` TEXT NOT NULL, `playedAt` INTEGER NOT NULL)"
+                    "CREATE TABLE IF NOT EXISTS `offline_plays` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `itemId` TEXT NOT NULL, `userId` TEXT NOT NULL, `serverId` TEXT NOT NULL, `playedAt` INTEGER NOT NULL)",
                 )
                 db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS `index_offline_plays_userId_serverId` ON `offline_plays` (`userId`, `serverId`)"
+                    "CREATE INDEX IF NOT EXISTS `index_offline_plays_userId_serverId` ON `offline_plays` (`userId`, `serverId`)",
                 )
             }
         }
@@ -1868,22 +1868,22 @@ object DatabaseMigrations {
         object : Migration(90, 91) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
-                    "CREATE TABLE IF NOT EXISTS `book_annotations` (`id` TEXT NOT NULL, `serverId` TEXT NOT NULL, `userId` TEXT NOT NULL, `itemId` TEXT NOT NULL, `kind` TEXT NOT NULL, `locator` TEXT, `page` INTEGER, `progression` REAL NOT NULL, `label` TEXT, `text` TEXT, `color` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+                    "CREATE TABLE IF NOT EXISTS `book_annotations` (`id` TEXT NOT NULL, `serverId` TEXT NOT NULL, `userId` TEXT NOT NULL, `itemId` TEXT NOT NULL, `kind` TEXT NOT NULL, `locator` TEXT, `page` INTEGER, `progression` REAL NOT NULL, `label` TEXT, `text` TEXT, `color` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
                 )
                 db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS `index_book_annotations_serverId_userId_itemId` ON `book_annotations` (`serverId`, `userId`, `itemId`)"
+                    "CREATE INDEX IF NOT EXISTS `index_book_annotations_serverId_userId_itemId` ON `book_annotations` (`serverId`, `userId`, `itemId`)",
                 )
                 db.execSQL(
-                    "CREATE TABLE IF NOT EXISTS `videos` (`id` TEXT NOT NULL, `serverId` TEXT NOT NULL, `name` TEXT NOT NULL, `originalTitle` TEXT, `overview` TEXT NOT NULL, `runtimeTicks` INTEGER NOT NULL, `premiereDate` TEXT, `communityRating` REAL, `officialRating` TEXT, `criticRating` REAL, `status` TEXT NOT NULL, `productionYear` INTEGER, `endDate` TEXT, `chapters` TEXT, `images` TEXT, `genres` TEXT, `tagline` TEXT, `people` TEXT, `providerIds` TEXT, `externalUrls` TEXT, `extraType` TEXT, PRIMARY KEY(`id`))"
+                    "CREATE TABLE IF NOT EXISTS `videos` (`id` TEXT NOT NULL, `serverId` TEXT NOT NULL, `name` TEXT NOT NULL, `originalTitle` TEXT, `overview` TEXT NOT NULL, `runtimeTicks` INTEGER NOT NULL, `premiereDate` TEXT, `communityRating` REAL, `officialRating` TEXT, `criticRating` REAL, `status` TEXT NOT NULL, `productionYear` INTEGER, `endDate` TEXT, `chapters` TEXT, `images` TEXT, `genres` TEXT, `tagline` TEXT, `people` TEXT, `providerIds` TEXT, `externalUrls` TEXT, `extraType` TEXT, PRIMARY KEY(`id`))",
                 )
                 db.execSQL(
-                    "CREATE TABLE IF NOT EXISTS `music_videos` (`id` TEXT NOT NULL, `serverId` TEXT NOT NULL, `name` TEXT NOT NULL, `originalTitle` TEXT, `overview` TEXT NOT NULL, `runtimeTicks` INTEGER NOT NULL, `premiereDate` TEXT, `dateCreated` TEXT, `productionYear` INTEGER, `communityRating` REAL, `officialRating` TEXT, `criticRating` REAL, `chapters` TEXT, `images` TEXT, `genres` TEXT, `studios` TEXT, `tags` TEXT, `tagline` TEXT, `people` TEXT, `providerIds` TEXT, `externalUrls` TEXT, `artists` TEXT, `artistItems` TEXT, `album` TEXT, `albumId` TEXT, `parentId` TEXT, PRIMARY KEY(`id`))"
+                    "CREATE TABLE IF NOT EXISTS `music_videos` (`id` TEXT NOT NULL, `serverId` TEXT NOT NULL, `name` TEXT NOT NULL, `originalTitle` TEXT, `overview` TEXT NOT NULL, `runtimeTicks` INTEGER NOT NULL, `premiereDate` TEXT, `dateCreated` TEXT, `productionYear` INTEGER, `communityRating` REAL, `officialRating` TEXT, `criticRating` REAL, `chapters` TEXT, `images` TEXT, `genres` TEXT, `studios` TEXT, `tags` TEXT, `tagline` TEXT, `people` TEXT, `providerIds` TEXT, `externalUrls` TEXT, `artists` TEXT, `artistItems` TEXT, `album` TEXT, `albumId` TEXT, `parentId` TEXT, PRIMARY KEY(`id`))",
                 )
                 db.execSQL(
-                    "CREATE TABLE IF NOT EXISTS `books` (`id` TEXT NOT NULL, `serverId` TEXT NOT NULL, `name` TEXT NOT NULL, `originalTitle` TEXT, `overview` TEXT NOT NULL, `runtimeTicks` INTEGER NOT NULL, `images` TEXT, `chapters` TEXT, `providerIds` TEXT, `externalUrls` TEXT, `seriesName` TEXT, `seriesIndex` INTEGER, `people` TEXT, `publisher` TEXT, `premiereDate` TEXT, `productionYear` INTEGER, `genres` TEXT, `tags` TEXT, `communityRating` REAL, `dateCreated` TEXT, `format` TEXT NOT NULL, `parentId` TEXT, PRIMARY KEY(`id`))"
+                    "CREATE TABLE IF NOT EXISTS `books` (`id` TEXT NOT NULL, `serverId` TEXT NOT NULL, `name` TEXT NOT NULL, `originalTitle` TEXT, `overview` TEXT NOT NULL, `runtimeTicks` INTEGER NOT NULL, `images` TEXT, `chapters` TEXT, `providerIds` TEXT, `externalUrls` TEXT, `seriesName` TEXT, `seriesIndex` INTEGER, `people` TEXT, `publisher` TEXT, `premiereDate` TEXT, `productionYear` INTEGER, `genres` TEXT, `tags` TEXT, `communityRating` REAL, `dateCreated` TEXT, `format` TEXT NOT NULL, `parentId` TEXT, PRIMARY KEY(`id`))",
                 )
                 db.execSQL(
-                    "CREATE TABLE IF NOT EXISTS `audiobook_parts` (`id` TEXT NOT NULL, `serverId` TEXT NOT NULL, `name` TEXT NOT NULL, `originalTitle` TEXT, `overview` TEXT NOT NULL, `runtimeTicks` INTEGER NOT NULL, `images` TEXT, `chapters` TEXT, `providerIds` TEXT, `externalUrls` TEXT, `album` TEXT, `people` TEXT, `publisher` TEXT, `premiereDate` TEXT, `productionYear` INTEGER, `genres` TEXT, `communityRating` REAL, `dateCreated` TEXT, `parentId` TEXT, `trackNumber` INTEGER, `discNumber` INTEGER, `container` TEXT, `bookPartCount` INTEGER, PRIMARY KEY(`id`))"
+                    "CREATE TABLE IF NOT EXISTS `audiobook_parts` (`id` TEXT NOT NULL, `serverId` TEXT NOT NULL, `name` TEXT NOT NULL, `originalTitle` TEXT, `overview` TEXT NOT NULL, `runtimeTicks` INTEGER NOT NULL, `images` TEXT, `chapters` TEXT, `providerIds` TEXT, `externalUrls` TEXT, `album` TEXT, `people` TEXT, `publisher` TEXT, `premiereDate` TEXT, `productionYear` INTEGER, `genres` TEXT, `communityRating` REAL, `dateCreated` TEXT, `parentId` TEXT, `trackNumber` INTEGER, `discNumber` INTEGER, `container` TEXT, `bookPartCount` INTEGER, PRIMARY KEY(`id`))",
                 )
             }
         }

@@ -143,7 +143,7 @@ private fun AudiobookshelfGenreResultsContent(
                                         MaterialTheme.typography.labelLarge.copy(
                                             fontWeight =
                                                 if (isSelected) FontWeight.SemiBold
-                                                else FontWeight.Medium
+                                                else FontWeight.Medium,
                                         ),
                                     color =
                                         if (isSelected) {
@@ -168,7 +168,7 @@ private fun AudiobookshelfGenreResultsContent(
                                             Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                                         style =
                                             MaterialTheme.typography.labelSmall.copy(
-                                                fontWeight = FontWeight.Medium
+                                                fontWeight = FontWeight.Medium,
                                             ),
                                         color =
                                             if (isSelected) {

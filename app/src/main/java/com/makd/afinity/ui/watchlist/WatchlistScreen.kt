@@ -202,7 +202,8 @@ fun WatchlistScreen(
                                 items = uiState.episodes,
                                 onItemClick = { episode ->
                                     viewModel.selectEpisode(
-                                        episode as com.makd.afinity.data.models.media.AfinityEpisode
+                                        episode
+                                            as com.makd.afinity.data.models.media.AfinityEpisode,
                                     )
                                 },
                                 cardWidth = landscapeWidth,
@@ -228,7 +229,7 @@ fun WatchlistScreen(
                                                 type = FilterType.WATCHLIST_NOT_IN_LIBRARY,
                                                 id = 0,
                                                 name = title,
-                                            )
+                                            ),
                                         )
                                     },
                                 )

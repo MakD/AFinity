@@ -61,7 +61,7 @@ fun AudiobookshelfLibraryScreen(
                         imageUrl = mainUiState.userProfileImageUrl,
                     ),
             )
-        }
+        },
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             when {

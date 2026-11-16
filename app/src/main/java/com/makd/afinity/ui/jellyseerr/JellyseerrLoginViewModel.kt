@@ -352,7 +352,7 @@ constructor(
                                 quickConnectAvailable = false,
                                 error =
                                     context.getString(
-                                        R.string.error_seerr_quick_connect_unsupported
+                                        R.string.error_seerr_quick_connect_unsupported,
                                     ),
                             )
                         }
@@ -378,7 +378,7 @@ constructor(
                                 isQuickConnecting = false,
                                 error =
                                     context.getString(
-                                        R.string.error_seerr_quick_connect_other_server
+                                        R.string.error_seerr_quick_connect_other_server,
                                     ),
                             )
                         }
@@ -392,7 +392,7 @@ constructor(
                                 isQuickConnecting = false,
                                 error =
                                     context.getString(
-                                        R.string.error_seerr_quick_connect_not_approved
+                                        R.string.error_seerr_quick_connect_not_approved,
                                     ),
                             )
                         }
@@ -417,7 +417,7 @@ constructor(
                                 )
                             }
                             Timber.d(
-                                "Quick Connect sign-in successful for user: ${successUser.username}"
+                                "Quick Connect sign-in successful for user: ${successUser.username}",
                             )
                         },
                         onFailure = { error ->
@@ -426,7 +426,7 @@ constructor(
                                 when {
                                     statusCode == 403 ->
                                         context.getString(
-                                            R.string.error_seerr_quick_connect_access_denied
+                                            R.string.error_seerr_quick_connect_access_denied,
                                         )
 
                                     statusCode != null && statusCode >= 500 ->
@@ -480,8 +480,8 @@ constructor(
                     emailError =
                         context.getString(
                             if (state.useJellyfinAuth) R.string.error_username_required
-                            else R.string.error_email_username_required
-                        )
+                            else R.string.error_email_username_required,
+                        ),
                 )
             }
             isValid = false

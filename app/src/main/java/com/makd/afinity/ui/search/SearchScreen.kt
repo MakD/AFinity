@@ -228,7 +228,7 @@ fun SearchScreen(
             modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .safeDrawingPadding()
+                .safeDrawingPadding(),
     ) {
         SearchTopBar(
             searchQuery = uiState.searchQuery,
@@ -1076,7 +1076,7 @@ private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
                         is AfinityShow -> item.productionYear?.toString()
                         is AfinityEpisode ->
                             item.premiereDate?.format(
-                                DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+                                DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM),
                             )
                         is AfinityBoxSet -> item.productionYear?.toString()
                         is AfinityBook -> item.productionYear?.toString()
@@ -1135,7 +1135,7 @@ private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
                                         painterResource(
                                             id =
                                                 if (rtRating > 60) R.drawable.ic_rotten_tomato_fresh
-                                                else R.drawable.ic_rotten_tomato_rotten
+                                                else R.drawable.ic_rotten_tomato_rotten,
                                         ),
                                     contentDescription =
                                         stringResource(R.string.cd_rotten_tomatoes),

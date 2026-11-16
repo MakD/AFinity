@@ -255,7 +255,7 @@ constructor(
                         input.readAtMost(MAX_LYRIC_BYTES + 1)
                     }
                         ?: return@withContext LyricFileRead.Rejected(
-                            EditLyricsMessage.FILE_UNREADABLE
+                            EditLyricsMessage.FILE_UNREADABLE,
                         )
                 if (bytes.size > MAX_LYRIC_BYTES) {
                     return@withContext LyricFileRead.Rejected(EditLyricsMessage.FILE_TOO_LARGE)

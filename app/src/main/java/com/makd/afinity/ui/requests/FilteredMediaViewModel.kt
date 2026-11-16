@@ -61,11 +61,11 @@ constructor(
                                 } else {
                                     item
                                 }
-                            }
+                            },
                     )
                 }
                 Timber.d(
-                    "Updated media item ${updatedRequest.media.tmdbId} with new request status"
+                    "Updated media item ${updatedRequest.media.tmdbId} with new request status",
                 )
             }
         }
@@ -150,7 +150,7 @@ constructor(
                             DiscoverFilterOptions(
                                 releaseDateGte = releaseDateGte,
                                 watchRegion = defaultRegion,
-                            )
+                            ),
                     )
                 }
             }
@@ -164,7 +164,7 @@ constructor(
             if (isUpcoming) {
                 val today = java.time.LocalDate.now().toString()
                 persistedOptions.copy(
-                    releaseDateGte = listOfNotNull(persistedOptions.releaseDateGte, today).max()
+                    releaseDateGte = listOfNotNull(persistedOptions.releaseDateGte, today).max(),
                 )
             } else persistedOptions
         val separatorIndex = sortBy.lastIndexOf('.')
@@ -365,7 +365,7 @@ constructor(
                                     if (currentPage == 1) credits.meaningfulCredits()
                                     else emptyList()
                                 com.makd.afinity.data.models.jellyseerr.JellyseerrSearchResult(
-                                    results = combined
+                                    results = combined,
                                 )
                             }
                         FilterType.POPULAR_MOVIES,

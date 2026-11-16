@@ -120,14 +120,14 @@ private fun BrightnessIndicator(
                     modifier =
                         Modifier.width(6.dp)
                             .weight(1f)
-                            .background(Color.White.copy(alpha = 0.3f), RoundedCornerShape(3.dp))
+                            .background(Color.White.copy(alpha = 0.3f), RoundedCornerShape(3.dp)),
                 ) {
                     Box(
                         modifier =
                             Modifier.fillMaxWidth()
                                 .fillMaxHeight(level)
                                 .background(Color.White, RoundedCornerShape(3.dp))
-                                .align(Alignment.BottomCenter)
+                                .align(Alignment.BottomCenter),
                     )
                 }
 
@@ -184,14 +184,14 @@ private fun VolumeIndicator(
                     modifier =
                         Modifier.width(6.dp)
                             .weight(1f)
-                            .background(Color.White.copy(alpha = 0.3f), RoundedCornerShape(3.dp))
+                            .background(Color.White.copy(alpha = 0.3f), RoundedCornerShape(3.dp)),
                 ) {
                     Box(
                         modifier =
                             Modifier.fillMaxWidth()
                                 .fillMaxHeight(level / 100f)
                                 .background(Color.White, RoundedCornerShape(3.dp))
-                                .align(Alignment.BottomCenter)
+                                .align(Alignment.BottomCenter),
                     )
                 }
 

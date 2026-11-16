@@ -46,7 +46,7 @@ class RingBufferTree(private val maxLines: Int = 2000) : Timber.Tree() {
                     stackTrace =
                         fullStackTrace?.let {
                             LogRedactor.redact(
-                                it.lines().take(STACK_TRACE_LINES).joinToString("\n")
+                                it.lines().take(STACK_TRACE_LINES).joinToString("\n"),
                             )
                         },
                 )

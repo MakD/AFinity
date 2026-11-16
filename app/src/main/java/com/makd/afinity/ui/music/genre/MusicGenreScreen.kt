@@ -441,7 +441,7 @@ fun MusicGenreScreen(
                                     text =
                                         stringResource(
                                             if (expanded) R.string.action_see_less
-                                            else R.string.action_see_more
+                                            else R.string.action_see_more,
                                         ),
                                     style = MaterialTheme.typography.labelLarge,
                                 )

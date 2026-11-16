@@ -106,7 +106,7 @@ constructor(
                 android.media.AudioAttributes.Builder()
                     .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
                     .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .build()
+                    .build(),
             )
             .setOnAudioFocusChangeListener(
                 { change ->
@@ -242,7 +242,7 @@ constructor(
                             START_BUFFER_MS,
                             REBUFFER_MS,
                         )
-                        .build()
+                        .build(),
                 )
                 .setAudioAttributes(
                     AudioAttributes.Builder()
@@ -281,11 +281,11 @@ constructor(
                     Timber.w(error, "Theme song playback failed for $songId")
                     mainHandler.post { retire(deck) }
                 }
-            }
+            },
         )
 
         player.setMediaItem(
-            MediaItem.Builder().setUri(url).setCustomCacheKey("theme_$songId").build()
+            MediaItem.Builder().setUri(url).setCustomCacheKey("theme_$songId").build(),
         )
         if (songId == resumeSongId) {
             player.seekTo(resumePositionMs)
@@ -384,7 +384,7 @@ constructor(
                 .setConnectTimeoutMs(NETWORK_TIMEOUT_MS)
                 .setReadTimeoutMs(NETWORK_TIMEOUT_MS)
                 .setDefaultRequestProperties(
-                    mapOf("Authorization" to "MediaBrowser Token=\"$token\"")
+                    mapOf("Authorization" to "MediaBrowser Token=\"$token\""),
                 )
         return CacheDataSource.Factory()
             .setCache(cache)

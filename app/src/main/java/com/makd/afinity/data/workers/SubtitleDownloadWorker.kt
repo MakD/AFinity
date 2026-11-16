@@ -57,7 +57,7 @@ constructor(
             val downloadIdString =
                 inputData.getString(KEY_DOWNLOAD_ID)
                     ?: return@withContext Result.failure(
-                        workDataOf("error" to "Missing download ID")
+                        workDataOf("error" to "Missing download ID"),
                     )
 
             val itemIdString =
@@ -88,7 +88,7 @@ constructor(
                 val download: DownloadDto =
                     databaseRepository.getDownload(downloadId)
                         ?: return@withContext Result.failure(
-                            workDataOf("error" to "Download not found")
+                            workDataOf("error" to "Download not found"),
                         )
 
                 val apiClient =
@@ -96,8 +96,8 @@ constructor(
                         ?: return@withContext Result.failure(
                             workDataOf(
                                 "error" to
-                                    "Could not restore session for server ${download.serverId}"
-                            )
+                                    "Could not restore session for server ${download.serverId}",
+                            ),
                         )
 
                 val userId = download.userId
@@ -132,7 +132,7 @@ constructor(
                         BaseItemKind.EPISODE ->
                             baseItemDto.toAfinityEpisode(baseUrl)
                                 ?: return@withContext Result.failure(
-                                    workDataOf("error" to "Failed to convert episode")
+                                    workDataOf("error" to "Failed to convert episode"),
                                 )
 
                         BaseItemKind.VIDEO -> baseItemDto.toAfinityVideo(baseUrl)
@@ -141,14 +141,14 @@ constructor(
 
                         else ->
                             return@withContext Result.failure(
-                                workDataOf("error" to "Unsupported item type: ${baseItemDto.type}")
+                                workDataOf("error" to "Unsupported item type: ${baseItemDto.type}"),
                             )
                     }
 
                 val source =
                     item.sources.find { it.id == sourceId }
                         ?: return@withContext Result.failure(
-                            workDataOf("error" to "Source not found")
+                            workDataOf("error" to "Source not found"),
                         )
 
                 val includeEmbeddedText = download.transcodedContainer != null
@@ -172,7 +172,7 @@ constructor(
                 if (!subtitlesDir.exists() && !subtitlesDir.mkdirs()) {
                     Timber.e("Failed to create subtitles directory at ${subtitlesDir.absolutePath}")
                     return@withContext Result.failure(
-                        workDataOf("error" to "Failed to create subtitles directory")
+                        workDataOf("error" to "Failed to create subtitles directory"),
                     )
                 }
 
@@ -200,14 +200,14 @@ constructor(
                         KEY_DOWNLOAD_ID to downloadIdString,
                         KEY_ITEM_ID to itemIdString,
                         KEY_SOURCE_ID to sourceId,
-                    )
+                    ),
                 )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Subtitle download failed")
                 return@withContext Result.failure(
-                    workDataOf("error" to (e.message ?: "Unknown error"))
+                    workDataOf("error" to (e.message ?: "Unknown error")),
                 )
             }
         }

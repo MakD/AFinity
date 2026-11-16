@@ -186,7 +186,7 @@ fun PlayerOptionsScreen(
                 title = { AfinityTopAppBarTitle(playbackSectionTitle(section)) },
                 navigationIcon = {
                     AfinityBackButton(
-                        onClick = { if (section != null) section = null else onBackClick() }
+                        onClick = { if (section != null) section = null else onBackClick() },
                     )
                 },
                 backgroundOpacity = backgroundOpacity,
@@ -245,7 +245,7 @@ fun PlayerOptionsScreen(
                             title = stringResource(R.string.playback_section_subtitle_appearance),
                             subtitle =
                                 stringResource(
-                                    R.string.playback_section_subtitle_appearance_summary
+                                    R.string.playback_section_subtitle_appearance_summary,
                                 ),
                             onClick = { section = PlaybackSection.SubtitleAppearance },
                         )
@@ -946,10 +946,10 @@ private fun SubtitleModePickerDialog(
                                     if (isSelected)
                                         Modifier.background(
                                             MaterialTheme.colorScheme.primaryContainer.copy(
-                                                alpha = 0.3f
-                                            )
+                                                alpha = 0.3f,
+                                            ),
                                         )
-                                    else Modifier
+                                    else Modifier,
                                 )
                                 .clickable { onSelect(mode) }
                                 .padding(horizontal = 12.dp, vertical = 14.dp),
@@ -1297,7 +1297,7 @@ private fun MpvConfigEditorDialog(fileName: String, onDismiss: () -> Unit) {
                                 .weight(1f, fill = false),
                         textStyle =
                             MaterialTheme.typography.bodySmall.copy(
-                                fontFamily = FontFamily.Monospace
+                                fontFamily = FontFamily.Monospace,
                             ),
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -1554,7 +1554,7 @@ private fun ColorPickerItem(title: String, color: Int, onColorChange: (Int) -> U
                 Modifier.size(32.dp)
                     .clip(CircleShape)
                     .background(Color(color))
-                    .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                    .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(
@@ -1651,7 +1651,7 @@ private fun VideoQualitySelectorItem(
                     contentDescription = null,
                     tint =
                         MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                            alpha = if (enabled) 1f else 0.38f
+                            alpha = if (enabled) 1f else 0.38f,
                         ),
                     modifier = Modifier.size(24.dp),
                 )
@@ -1710,10 +1710,10 @@ private fun VideoQualityPickerDialog(
                                     if (isSelected)
                                         Modifier.background(
                                             MaterialTheme.colorScheme.primaryContainer.copy(
-                                                alpha = 0.3f
-                                            )
+                                                alpha = 0.3f,
+                                            ),
                                         )
-                                    else Modifier
+                                    else Modifier,
                                 )
                                 .clickable { onSelect(quality.maxBitrate) }
                                 .padding(horizontal = 12.dp, vertical = 14.dp),
@@ -1777,7 +1777,7 @@ internal fun <T> SubtitleDropdownItem(
                         contentDescription = null,
                         tint =
                             MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                alpha = if (enabled) 1f else 0.38f
+                                alpha = if (enabled) 1f else 0.38f,
                             ),
                     )
                 },
@@ -1788,7 +1788,7 @@ internal fun <T> SubtitleDropdownItem(
                     style = MaterialTheme.typography.labelSmall,
                     color =
                         MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                            alpha = if (enabled) 0.7f else 0.38f
+                            alpha = if (enabled) 0.7f else 0.38f,
                         ),
                     modifier =
                         Modifier.padding(
@@ -1903,7 +1903,7 @@ private fun LanguagePickerDialog(
                         Modifier.fillMaxWidth()
                             .padding(bottom = 12.dp)
                             .clip(RoundedCornerShape(28.dp))
-                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest),
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -1921,7 +1921,7 @@ private fun LanguagePickerDialog(
                             onValueChange = { searchQuery = it },
                             textStyle =
                                 MaterialTheme.typography.bodyLarge.copy(
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = MaterialTheme.colorScheme.onSurface,
                                 ),
                             singleLine = true,
                             modifier = Modifier.weight(1f).padding(vertical = 12.dp),
@@ -1965,10 +1965,10 @@ private fun LanguagePickerDialog(
                                         if (isSelected)
                                             Modifier.background(
                                                 MaterialTheme.colorScheme.primaryContainer.copy(
-                                                    alpha = 0.3f
-                                                )
+                                                    alpha = 0.3f,
+                                                ),
                                             )
-                                        else Modifier
+                                        else Modifier,
                                     )
                                     .clickable { onSelect(languageCodes[idx]) }
                                     .padding(horizontal = 12.dp, vertical = 14.dp),
@@ -2074,7 +2074,7 @@ private fun SimpleColorPickerDialog(
                                             },
                                             CircleShape,
                                         )
-                                        .clickable { onColorSelected(presetColor) }
+                                        .clickable { onColorSelected(presetColor) },
                             )
                         }
                     }
@@ -2117,9 +2117,9 @@ private fun SimpleColorPickerDialog(
                                             Color(parseHexColor(hexInput) ?: initialColor)
                                         } else {
                                             MaterialTheme.colorScheme.surfaceVariant
-                                        }
+                                        },
                                     )
-                                    .border(2.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                                    .border(2.dp, MaterialTheme.colorScheme.outline, CircleShape),
                         )
                     }
 
@@ -2180,7 +2180,7 @@ private fun SubtitlePreview(
                     .padding(
                         horizontal = if (useExoPlayer) 4.dp else 0.dp,
                         vertical = if (useExoPlayer) 2.dp else 0.dp,
-                    )
+                    ),
         ) {
             Box(
                 modifier =
@@ -2193,7 +2193,7 @@ private fun SubtitlePreview(
                             },
                             RoundedCornerShape(4.dp),
                         )
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
             ) {
                 if (
                     !useExoPlayer &&
@@ -2287,7 +2287,7 @@ private fun SubtitlePreview(
                                         Shadow(
                                             color =
                                                 androidx.compose.ui.graphics.Color.White.copy(
-                                                    alpha = 0.5f
+                                                    alpha = 0.5f,
                                                 ),
                                             offset = Offset(-1f, -1f),
                                             blurRadius = 2f,
@@ -2300,7 +2300,7 @@ private fun SubtitlePreview(
                                         Shadow(
                                             color =
                                                 androidx.compose.ui.graphics.Color.Black.copy(
-                                                    alpha = 0.5f
+                                                    alpha = 0.5f,
                                                 ),
                                             offset = Offset(-1f, -1f),
                                             blurRadius = 2f,
@@ -2308,7 +2308,7 @@ private fun SubtitlePreview(
                                     }
 
                                     else -> null
-                                }
+                                },
                         ),
                     color = Color(subtitlePrefs.textColor),
                     textAlign = TextAlign.Center,
@@ -2352,7 +2352,7 @@ private fun getSubtitleVerticalPositionDisplayName(position: SubtitleVerticalPos
 
 @Composable
 private fun getSubtitleHorizontalAlignmentDisplayName(
-    alignment: SubtitleHorizontalAlignment
+    alignment: SubtitleHorizontalAlignment,
 ): String {
     return when (alignment) {
         SubtitleHorizontalAlignment.LEFT -> stringResource(R.string.align_left)

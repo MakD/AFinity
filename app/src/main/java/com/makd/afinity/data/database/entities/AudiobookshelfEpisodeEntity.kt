@@ -14,7 +14,7 @@ import androidx.room.Index
                 parentColumns = ["id", "jellyfinServerId", "jellyfinUserId"],
                 childColumns = ["libraryItemId", "jellyfinServerId", "jellyfinUserId"],
                 onDelete = ForeignKey.CASCADE,
-            )
+            ),
         ],
     indices = [Index(value = ["libraryItemId", "jellyfinServerId", "jellyfinUserId"])],
 )

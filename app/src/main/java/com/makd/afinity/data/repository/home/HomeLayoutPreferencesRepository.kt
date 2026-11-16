@@ -114,7 +114,7 @@ constructor(
                     position = density.ordinal,
                     visible = true,
                     maxCount = null,
-                )
+                ),
             )
         } catch (e: CancellationException) {
             throw e
@@ -137,7 +137,7 @@ constructor(
                     position = section.ordinal,
                     visible = enabled,
                     maxCount = maxCount?.coerceIn(1, section.ceiling),
-                )
+                ),
             )
         } catch (e: CancellationException) {
             throw e
@@ -157,7 +157,7 @@ constructor(
                     position = row.ordinal,
                     visible = visible,
                     maxCount = null,
-                )
+                ),
             )
         } catch (e: CancellationException) {
             throw e

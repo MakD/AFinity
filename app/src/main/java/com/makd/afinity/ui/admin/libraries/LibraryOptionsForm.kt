@@ -75,14 +75,14 @@ internal fun libraryOptionsForm(
                 "Enabled",
                 R.string.library_opt_enabled,
                 R.string.library_opt_enabled_summary,
-            )
+            ),
         )
         add(
             SwitchField(
                 "EnableRealtimeMonitor",
                 R.string.library_opt_realtime_monitor,
                 R.string.library_opt_realtime_monitor_summary,
-            )
+            ),
         )
         if (type == TYPE_HOME_VIDEOS || type == TYPE_PHOTOS) {
             add(
@@ -90,7 +90,7 @@ internal fun libraryOptionsForm(
                     "EnablePhotos",
                     R.string.library_opt_photos,
                     R.string.library_opt_photos_summary,
-                )
+                ),
             )
         }
         if (hasMetadataFetchers) {
@@ -106,7 +106,7 @@ internal fun libraryOptionsForm(
                     ),
                     R.string.library_opt_refresh_interval_summary,
                     numeric = true,
-                )
+                ),
             )
         }
         if (providers.hasImageFetchers()) {
@@ -115,7 +115,7 @@ internal fun libraryOptionsForm(
                     "SaveLocalMetadata",
                     R.string.library_opt_save_local,
                     R.string.library_opt_save_local_summary,
-                )
+                ),
             )
         }
         segmentProvidersField(providers)?.let { add(it) }
@@ -129,7 +129,7 @@ internal fun libraryOptionsForm(
                     R.string.library_opt_language,
                     listOf(ChoiceOption("", R.string.library_opt_server_default)),
                     optionsSource = ChoiceOptionsSource.CULTURES,
-                )
+                ),
             )
             add(
                 ChoiceField(
@@ -137,7 +137,7 @@ internal fun libraryOptionsForm(
                     R.string.library_opt_country,
                     listOf(ChoiceOption("", R.string.library_opt_server_default)),
                     optionsSource = ChoiceOptionsSource.COUNTRIES,
-                )
+                ),
             )
         }
         if (type == TYPE_SHOWS) {
@@ -146,21 +146,21 @@ internal fun libraryOptionsForm(
                     "SeasonZeroDisplayName",
                     R.string.library_opt_season_zero,
                     required = true,
-                )
+                ),
             )
             add(
                 SwitchField(
                     "EnableAutomaticSeriesGrouping",
                     R.string.library_opt_group_series,
                     R.string.library_opt_group_series_summary,
-                )
+                ),
             )
             add(
                 SwitchField(
                     "EnableEmbeddedEpisodeInfos",
                     R.string.library_opt_embedded_episode,
                     R.string.library_opt_embedded_episode_summary,
-                )
+                ),
             )
         }
         if (hasEmbeddedTitles) {
@@ -169,7 +169,7 @@ internal fun libraryOptionsForm(
                     "EnableEmbeddedTitles",
                     R.string.library_opt_embedded_titles,
                     R.string.library_opt_embedded_titles_summary,
-                )
+                ),
             )
             add(
                 SwitchField(
@@ -177,7 +177,7 @@ internal fun libraryOptionsForm(
                     R.string.library_opt_embedded_extras_titles,
                     R.string.library_opt_embedded_extras_titles_summary,
                     visibleWhen = FieldCondition("EnableEmbeddedTitles", setOf("true")),
-                )
+                ),
             )
         }
         if (type == TYPE_MOVIES || isMixed) {
@@ -186,7 +186,7 @@ internal fun libraryOptionsForm(
                     "AutomaticallyAddToCollection",
                     R.string.library_opt_add_to_collection,
                     R.string.library_opt_add_to_collection_summary,
-                )
+                ),
             )
         }
         metadataReadersField(providers)?.let { add(it) }

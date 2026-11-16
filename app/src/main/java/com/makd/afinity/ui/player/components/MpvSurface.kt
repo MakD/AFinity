@@ -75,9 +75,9 @@ fun MpvSurface(
                                             onSurfaceDestroyed()
                                             Timber.d("MPV surface destroyed and detached")
                                         }
-                                    }
+                                    },
                                 )
-                            }
+                            },
                         )
                     }
                 addView(aspectFrame)

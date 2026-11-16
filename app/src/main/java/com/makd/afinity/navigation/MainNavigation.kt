@@ -408,7 +408,7 @@ fun MainNavigation(
                                                 destination.selectedIconRes
                                             } else {
                                                 destination.unselectedIconRes
-                                            }
+                                            },
                                     ),
                                 contentDescription = stringResource(destination.titleRes),
                             )
@@ -533,7 +533,7 @@ fun MainNavigation(
 
                                                     if (playableItem == null) {
                                                         Timber.w(
-                                                            "Could not playbackCompletionResolved playable item for: ${item.name}"
+                                                            "Could not playbackCompletionResolved playable item for: ${item.name}",
                                                         )
                                                         return@launch
                                                     }
@@ -562,19 +562,19 @@ fun MainNavigation(
                                         onSearchClick = { navController.navigateToSearch() },
                                         onServerManagementClick = {
                                             navController.navigate(
-                                                Destination.createServerManagementRoute()
+                                                Destination.createServerManagementRoute(),
                                             )
                                         },
                                         onLibraryClick = { library ->
                                             navController.navigate(
-                                                Destination.createLibraryRoute(library)
+                                                Destination.createLibraryRoute(library),
                                             )
                                         },
                                         onDownloadedCategoryClick = { category ->
                                             navController.navigate(
                                                 Destination.createDownloadedCategoryRoute(
-                                                    category.name
-                                                )
+                                                    category.name,
+                                                ),
                                             )
                                         },
                                         onMusicAlbumClick = { albumId ->
@@ -585,19 +585,19 @@ fun MainNavigation(
                                         },
                                         onStudioClick = { studioName ->
                                             navController.navigate(
-                                                Destination.createStudioContentRoute(studioName)
+                                                Destination.createStudioContentRoute(studioName),
                                             )
                                         },
                                         onFranchiseClick = { franchiseId ->
                                             navController.navigate(
-                                                Destination.createFranchiseRoute(franchiseId)
+                                                Destination.createFranchiseRoute(franchiseId),
                                             )
                                         },
                                         onCustomSectionClick = { sectionId ->
                                             navController.navigate(
                                                 Destination.createCustomSectionContentRoute(
-                                                    sectionId
-                                                )
+                                                    sectionId,
+                                                ),
                                             )
                                         },
                                         onSeriesClick = { seriesId ->
@@ -608,7 +608,7 @@ fun MainNavigation(
                                         },
                                         onAbsItemClick = { itemId ->
                                             navController.navigate(
-                                                Destination.createAudiobookshelfItemRoute(itemId)
+                                                Destination.createAudiobookshelfItemRoute(itemId),
                                             )
                                         },
                                         snackbarHostState = snackbarHostState,
@@ -627,7 +627,7 @@ fun MainNavigation(
                                         onMenuClick = onMenuClick,
                                         onLibraryClick = { library ->
                                             navController.navigate(
-                                                Destination.createLibraryRoute(library)
+                                                Destination.createLibraryRoute(library),
                                             )
                                         },
                                         onProfileClick = { navController.navigateToSettings() },
@@ -659,7 +659,7 @@ fun MainNavigation(
                                                     folder.id.toString(),
                                                     folder.name,
                                                     gallery,
-                                                )
+                                                ),
                                             )
                                         },
                                         onSeriesClick = { seriesId ->
@@ -680,7 +680,7 @@ fun MainNavigation(
                                     route = Destination.CUSTOM_SECTION_CONTENT_ROUTE,
                                     arguments =
                                         listOf(
-                                            navArgument("sectionId") { type = NavType.StringType }
+                                            navArgument("sectionId") { type = NavType.StringType },
                                         ),
                                 ) {
                                     LibraryContentScreen(
@@ -695,7 +695,7 @@ fun MainNavigation(
                                                     folder.id.toString(),
                                                     folder.name,
                                                     gallery,
-                                                )
+                                                ),
                                             )
                                         },
                                         onSeriesClick = { seriesId ->
@@ -712,7 +712,7 @@ fun MainNavigation(
                                     route = Destination.STUDIO_CONTENT_ROUTE,
                                     arguments =
                                         listOf(
-                                            navArgument("studioName") { type = NavType.StringType }
+                                            navArgument("studioName") { type = NavType.StringType },
                                         ),
                                 ) {
                                     LibraryContentScreen(
@@ -727,7 +727,7 @@ fun MainNavigation(
                                                     folder.id.toString(),
                                                     folder.name,
                                                     gallery,
-                                                )
+                                                ),
                                             )
                                         },
                                         onSeriesClick = { seriesId ->
@@ -764,7 +764,7 @@ fun MainNavigation(
                                                     folder.id.toString(),
                                                     folder.name,
                                                     gallery,
-                                                )
+                                                ),
                                             )
                                         },
                                         onSeriesClick = { seriesId ->
@@ -797,7 +797,7 @@ fun MainNavigation(
                                         ),
                                 ) { backStackEntry ->
                                     PhotoViewerScreen(
-                                        onBack = { navController.popIfCurrent(backStackEntry) }
+                                        onBack = { navController.popIfCurrent(backStackEntry) },
                                     )
                                 }
 
@@ -842,12 +842,12 @@ fun MainNavigation(
                                         },
                                         onEditMetadataClick = { itemId ->
                                             navController.navigate(
-                                                Destination.createEditMetadataRoute(itemId)
+                                                Destination.createEditMetadataRoute(itemId),
                                             )
                                         },
                                         onEditImagesClick = { itemId ->
                                             navController.navigate(
-                                                Destination.createEditImagesRoute(itemId)
+                                                Destination.createEditImagesRoute(itemId),
                                             )
                                         },
                                         onIdentifyClick = { itemId, itemType ->
@@ -855,7 +855,7 @@ fun MainNavigation(
                                                 Destination.createIdentifyItemRoute(
                                                     itemId,
                                                     itemType,
-                                                )
+                                                ),
                                             )
                                         },
                                         onItemDeleted = {
@@ -877,8 +877,8 @@ fun MainNavigation(
                                                 if (result == SnackbarResult.ActionPerformed) {
                                                     navController.navigate(
                                                         Destination.createItemDetailRoute(
-                                                            collectionId
-                                                        )
+                                                            collectionId,
+                                                        ),
                                                     )
                                                 }
                                             }
@@ -948,12 +948,12 @@ fun MainNavigation(
                                         },
                                         onEditMetadataClick = { itemId ->
                                             navController.navigate(
-                                                Destination.createEditMetadataRoute(itemId)
+                                                Destination.createEditMetadataRoute(itemId),
                                             )
                                         },
                                         onEditImagesClick = { itemId ->
                                             navController.navigate(
-                                                Destination.createEditImagesRoute(itemId)
+                                                Destination.createEditImagesRoute(itemId),
                                             )
                                         },
                                         onIdentifyClick = { itemId, itemType ->
@@ -961,7 +961,7 @@ fun MainNavigation(
                                                 Destination.createIdentifyItemRoute(
                                                     itemId,
                                                     itemType,
-                                                )
+                                                ),
                                             )
                                         },
                                         onItemDeleted = {
@@ -983,8 +983,8 @@ fun MainNavigation(
                                                 if (result == SnackbarResult.ActionPerformed) {
                                                     navController.navigate(
                                                         Destination.createItemDetailRoute(
-                                                            collectionId
-                                                        )
+                                                            collectionId,
+                                                        ),
                                                     )
                                                 }
                                             }
@@ -998,7 +998,7 @@ fun MainNavigation(
                                     route = Destination.PERSON_ROUTE,
                                     arguments =
                                         listOf(
-                                            navArgument("personId") { type = NavType.StringType }
+                                            navArgument("personId") { type = NavType.StringType },
                                         ),
                                 ) {
                                     PersonScreen(
@@ -1023,7 +1023,7 @@ fun MainNavigation(
                                                 Destination.createIdentifyItemRoute(
                                                     personId,
                                                     "Person",
-                                                )
+                                                ),
                                             )
                                         },
                                         modifier = Modifier.fillMaxSize(),
@@ -1084,8 +1084,8 @@ fun MainNavigation(
                                         onViewAllClick = { category ->
                                             navController.navigate(
                                                 Destination.createFavoritesCategoryRoute(
-                                                    category.name
-                                                )
+                                                    category.name,
+                                                ),
                                             )
                                         },
                                         onSearchClick = { navController.navigateToSearch() },
@@ -1118,8 +1118,8 @@ fun MainNavigation(
                                         onViewAllClick = { category ->
                                             navController.navigate(
                                                 Destination.createWatchlistCategoryRoute(
-                                                    category.name
-                                                )
+                                                    category.name,
+                                                ),
                                             )
                                         },
                                         onSearchClick = { navController.navigateToSearch() },
@@ -1180,12 +1180,12 @@ fun MainNavigation(
                                         },
                                         onChannelsClick = {
                                             navController.navigate(
-                                                Destination.LIVE_TV_CHANNELS_ROUTE
+                                                Destination.LIVE_TV_CHANNELS_ROUTE,
                                             )
                                         },
                                         onRecordingsClick = {
                                             navController.navigate(
-                                                Destination.LIVE_TV_RECORDINGS_ROUTE
+                                                Destination.LIVE_TV_RECORDINGS_ROUTE,
                                             )
                                         },
                                         onProgramClick = { programId ->
@@ -1250,7 +1250,7 @@ fun MainNavigation(
                                     route = Destination.LIVE_TV_PROGRAM_ROUTE,
                                     arguments =
                                         listOf(
-                                            navArgument("programId") { type = NavType.StringType }
+                                            navArgument("programId") { type = NavType.StringType },
                                         ),
                                 ) {
                                     com.makd.afinity.ui.livetv.program.LiveTvProgramScreen(
@@ -1273,7 +1273,7 @@ fun MainNavigation(
                                     route = Destination.LIVE_TV_CHANNEL_ROUTE,
                                     arguments =
                                         listOf(
-                                            navArgument("channelId") { type = NavType.StringType }
+                                            navArgument("channelId") { type = NavType.StringType },
                                         ),
                                 ) {
                                     com.makd.afinity.ui.livetv.channel.LiveTvChannelScreen(
@@ -1335,7 +1335,7 @@ fun MainNavigation(
                                     route = Destination.FAVORITES_CATEGORY_ROUTE,
                                     arguments =
                                         listOf(
-                                            navArgument("category") { type = NavType.StringType }
+                                            navArgument("category") { type = NavType.StringType },
                                         ),
                                 ) { backStackEntry ->
                                     val categoryName =
@@ -1375,7 +1375,7 @@ fun MainNavigation(
                                     route = Destination.DOWNLOADED_CATEGORY_ROUTE,
                                     arguments =
                                         listOf(
-                                            navArgument("category") { type = NavType.StringType }
+                                            navArgument("category") { type = NavType.StringType },
                                         ),
                                 ) { backStackEntry ->
                                     val categoryName =
@@ -1397,7 +1397,7 @@ fun MainNavigation(
                                         },
                                         onAbsItemClick = { itemId ->
                                             navController.navigate(
-                                                Destination.createAudiobookshelfItemRoute(itemId)
+                                                Destination.createAudiobookshelfItemRoute(itemId),
                                             )
                                         },
                                         onProfileClick = { navController.navigateToSettings() },
@@ -1416,7 +1416,9 @@ fun MainNavigation(
                                     route = Destination.FRANCHISE_ROUTE,
                                     arguments =
                                         listOf(
-                                            navArgument("franchiseId") { type = NavType.StringType }
+                                            navArgument("franchiseId") {
+                                                type = NavType.StringType
+                                            },
                                         ),
                                 ) {
                                     FranchiseScreen(
@@ -1435,7 +1437,7 @@ fun MainNavigation(
                                     route = Destination.WATCHLIST_CATEGORY_ROUTE,
                                     arguments =
                                         listOf(
-                                            navArgument("category") { type = NavType.StringType }
+                                            navArgument("category") { type = NavType.StringType },
                                         ),
                                 ) { backStackEntry ->
                                     val categoryName =
@@ -1526,14 +1528,14 @@ fun MainNavigation(
                                         },
                                         onAudiobookshelfItemClick = { itemId ->
                                             navController.navigate(
-                                                Destination.createAudiobookshelfItemRoute(itemId)
+                                                Destination.createAudiobookshelfItemRoute(itemId),
                                             )
                                         },
                                         onAudiobookshelfGenreClick = { genre ->
                                             navController.navigate(
                                                 Destination.createAudiobookshelfGenreResultsRoute(
-                                                    genre
-                                                )
+                                                    genre,
+                                                ),
                                             )
                                         },
                                         onNavigateToSeerrMedia = { seerrItem ->
@@ -1547,7 +1549,7 @@ fun MainNavigation(
                                         },
                                         onMusicPlaylistClick = { playlistId ->
                                             navController.navigate(
-                                                Destination.createPlaylistRoute(playlistId)
+                                                Destination.createPlaylistRoute(playlistId),
                                             )
                                         },
                                         onEditMetadataClick = { itemId ->
@@ -1591,7 +1593,7 @@ fun MainNavigation(
                                             dropUnlessResumed { navController.popBackStack() },
                                         onItemClick = { itemId ->
                                             navController.navigate(
-                                                Destination.createAudiobookshelfItemRoute(itemId)
+                                                Destination.createAudiobookshelfItemRoute(itemId),
                                             )
                                         },
                                         modifier = Modifier.fillMaxSize(),
@@ -1604,7 +1606,7 @@ fun MainNavigation(
                                             dropUnlessResumed { navController.popBackStack() },
                                         onAddAccountClick = { serverUrl ->
                                             navController.navigate(
-                                                Destination.createLoginRoute(serverUrl = serverUrl)
+                                                Destination.createLoginRoute(serverUrl = serverUrl),
                                             )
                                         },
                                         onControlPanelClick = {
@@ -1614,7 +1616,7 @@ fun MainNavigation(
                                         },
                                         onAppearanceClick = {
                                             navController.navigate(
-                                                Destination.APPEARANCE_OPTIONS_ROUTE
+                                                Destination.APPEARANCE_OPTIONS_ROUTE,
                                             )
                                         },
                                         onPlayerOptionsClick = {
@@ -1622,22 +1624,22 @@ fun MainNavigation(
                                         },
                                         onStorageClick = {
                                             navController.navigate(
-                                                Destination.STORAGE_SETTINGS_ROUTE
+                                                Destination.STORAGE_SETTINGS_ROUTE,
                                             )
                                         },
                                         onDownloadSettingsClick = {
                                             navController.navigate(
-                                                Destination.DOWNLOAD_SETTINGS_ROUTE
+                                                Destination.DOWNLOAD_SETTINGS_ROUTE,
                                             )
                                         },
                                         onServerManagementClick = {
                                             navController.navigate(
-                                                Destination.SERVER_MANAGEMENT_ROUTE
+                                                Destination.SERVER_MANAGEMENT_ROUTE,
                                             )
                                         },
                                         onServicesHubClick = {
                                             navController.navigate(
-                                                Destination.createServicesHubRoute("manual")
+                                                Destination.createServicesHubRoute("manual"),
                                             )
                                         },
                                         onLogsClick = {
@@ -1648,21 +1650,21 @@ fun MainNavigation(
                                         },
                                         onAbsItemClick = { itemId ->
                                             navController.navigate(
-                                                Destination.createAudiobookshelfItemRoute(itemId)
+                                                Destination.createAudiobookshelfItemRoute(itemId),
                                             )
                                         },
                                         onAddServerClick = {
                                             navController.navigate(
                                                 Destination.createAddEditServerRoute(
-                                                    serverId = null
-                                                )
+                                                    serverId = null,
+                                                ),
                                             )
                                         },
                                         onEditServerClick = { serverId ->
                                             navController.navigate(
                                                 Destination.createAddEditServerRoute(
-                                                    serverId = serverId
-                                                )
+                                                    serverId = serverId,
+                                                ),
                                             )
                                         },
                                     )
@@ -1674,7 +1676,7 @@ fun MainNavigation(
                                             dropUnlessResumed { navController.popBackStack() },
                                         onNavigateToAbsItem = { itemId ->
                                             navController.navigate(
-                                                Destination.createAudiobookshelfItemRoute(itemId)
+                                                Destination.createAudiobookshelfItemRoute(itemId),
                                             )
                                         },
                                         modifier = Modifier.fillMaxSize(),
@@ -1704,7 +1706,7 @@ fun MainNavigation(
                                         onCustomSectionsClick =
                                             dropUnlessResumed {
                                                 navController.navigate(
-                                                    Destination.CUSTOM_SECTIONS_ROUTE
+                                                    Destination.CUSTOM_SECTIONS_ROUTE,
                                                 )
                                             },
                                     )
@@ -1713,21 +1715,21 @@ fun MainNavigation(
                                 composable(Destination.CUSTOM_SECTIONS_ROUTE) {
                                     CustomSectionsScreen(
                                         onBackClick =
-                                            dropUnlessResumed { navController.popBackStack() }
+                                            dropUnlessResumed { navController.popBackStack() },
                                     )
                                 }
 
                                 composable(Destination.LICENSES_ROUTE) {
                                     LicensesScreen(
                                         onBackClick =
-                                            dropUnlessResumed { navController.popBackStack() }
+                                            dropUnlessResumed { navController.popBackStack() },
                                     )
                                 }
 
                                 composable(Destination.LOGS_ROUTE) {
                                     LogViewerScreen(
                                         onBackClick =
-                                            dropUnlessResumed { navController.popBackStack() }
+                                            dropUnlessResumed { navController.popBackStack() },
                                     )
                                 }
 
@@ -1738,14 +1740,14 @@ fun MainNavigation(
                                         onAddServerClick = {
                                             val route =
                                                 Destination.createAddEditServerRoute(
-                                                    serverId = null
+                                                    serverId = null,
                                                 )
                                             navController.navigate(route)
                                         },
                                         onEditServerClick = { serverId ->
                                             val route =
                                                 Destination.createAddEditServerRoute(
-                                                    serverId = serverId
+                                                    serverId = serverId,
                                                 )
                                             navController.navigate(route)
                                         },
@@ -1760,7 +1762,7 @@ fun MainNavigation(
                                 composable(Destination.ADMIN_SERVER_ROUTE) {
                                     ControlPanelRoute(
                                         onBackClick =
-                                            dropUnlessResumed { navController.popBackStack() }
+                                            dropUnlessResumed { navController.popBackStack() },
                                     )
                                 }
 
@@ -1772,12 +1774,12 @@ fun MainNavigation(
                                                 type = NavType.StringType
                                                 nullable = true
                                                 defaultValue = null
-                                            }
+                                            },
                                         ),
                                 ) {
                                     AddEditServerScreen(
                                         onBackClick =
-                                            dropUnlessResumed { navController.popBackStack() }
+                                            dropUnlessResumed { navController.popBackStack() },
                                     )
                                 }
 
@@ -1789,7 +1791,7 @@ fun MainNavigation(
                                                 type = NavType.StringType
                                                 nullable = true
                                                 defaultValue = null
-                                            }
+                                            },
                                         ),
                                 ) {
                                     LoginScreen(
@@ -1800,7 +1802,7 @@ fun MainNavigation(
                                                         Destination.HOME.route
                                                     } else {
                                                         Destination.createServicesHubRoute(
-                                                            "firstRun"
+                                                            "firstRun",
                                                         )
                                                     }
                                                 Timber.d("Login success → $target")
@@ -1822,7 +1824,7 @@ fun MainNavigation(
                                                 type = NavType.StringType
                                                 nullable = true
                                                 defaultValue = "firstRun"
-                                            }
+                                            },
                                         ),
                                 ) { backStackEntry ->
                                     val entry =
@@ -1837,7 +1839,7 @@ fun MainNavigation(
                                         },
                                         onNavigateToServerManagement = {
                                             navController.navigate(
-                                                Destination.SERVER_MANAGEMENT_ROUTE
+                                                Destination.SERVER_MANAGEMENT_ROUTE,
                                             ) {
                                                 launchSingleTop = true
                                             }
@@ -1876,7 +1878,7 @@ fun MainNavigation(
                                                     libraryId = libraryId,
                                                     libraryName = libraryName,
                                                     tab = tab,
-                                                )
+                                                ),
                                             )
                                         },
                                         onOpenMusicPlayer = {
@@ -1922,7 +1924,7 @@ fun MainNavigation(
                                                     imageUrl = genre.imageUrl,
                                                     genreId = genre.id,
                                                     libraryId = libraryId,
-                                                )
+                                                ),
                                             )
                                         },
                                         onOpenMusicPlayer = {
@@ -1957,7 +1959,7 @@ fun MainNavigation(
                                                         book.playableParts.first().id.toString(),
                                                     startPosition = startSeconds,
                                                     source = Destination.AUDIOBOOK_SOURCE_JELLYFIN,
-                                                )
+                                                ),
                                             )
                                         },
                                         widthSizeClass = widthSizeClass,
@@ -1981,13 +1983,13 @@ fun MainNavigation(
                                         onReadClick = { book ->
                                             if (book.format == BookFormat.EPUB) {
                                                 bookContext.startActivity(
-                                                    EpubReaderActivity.intent(bookContext, book.id)
+                                                    EpubReaderActivity.intent(bookContext, book.id),
                                                 )
                                             } else {
                                                 navController.navigate(
                                                     Destination.createBookReaderRoute(
-                                                        book.id.toString()
-                                                    )
+                                                        book.id.toString(),
+                                                    ),
                                                 )
                                             }
                                         },
@@ -2010,13 +2012,13 @@ fun MainNavigation(
                                                     EpubReaderActivity.intent(
                                                         readerContext,
                                                         next.id,
-                                                    )
+                                                    ),
                                                 )
                                             } else {
                                                 navController.navigate(
                                                     Destination.createBookReaderRoute(
-                                                        next.id.toString()
-                                                    )
+                                                        next.id.toString(),
+                                                    ),
                                                 ) {
                                                     popUpTo(Destination.BOOK_READER_ROUTE) {
                                                         inclusive = true
@@ -2031,7 +2033,7 @@ fun MainNavigation(
                                     route = Destination.MUSIC_ALBUM_ROUTE,
                                     arguments =
                                         listOf(
-                                            navArgument("albumId") { type = NavType.StringType }
+                                            navArgument("albumId") { type = NavType.StringType },
                                         ),
                                 ) { backStackEntry ->
                                     MusicAlbumScreen(
@@ -2043,7 +2045,7 @@ fun MainNavigation(
                                         },
                                         onMusicVideoClick = { videoId ->
                                             navController.navigate(
-                                                Destination.createItemDetailRoute(videoId)
+                                                Destination.createItemDetailRoute(videoId),
                                             )
                                         },
                                         onHomeClick = { navController.navigateHome() },
@@ -2061,7 +2063,7 @@ fun MainNavigation(
                                                 Destination.createIdentifyItemRoute(
                                                     itemId,
                                                     "MusicAlbum",
-                                                )
+                                                ),
                                             )
                                         },
                                         onNavigateUp = {
@@ -2074,7 +2076,7 @@ fun MainNavigation(
                                     route = Destination.MUSIC_ARTIST_ROUTE,
                                     arguments =
                                         listOf(
-                                            navArgument("artistId") { type = NavType.StringType }
+                                            navArgument("artistId") { type = NavType.StringType },
                                         ),
                                 ) { backStackEntry ->
                                     MusicArtistScreen(
@@ -2083,7 +2085,7 @@ fun MainNavigation(
                                         },
                                         onMusicVideoClick = { videoId ->
                                             navController.navigate(
-                                                Destination.createItemDetailRoute(videoId)
+                                                Destination.createItemDetailRoute(videoId),
                                             )
                                         },
                                         onHomeClick = { navController.navigateHome() },
@@ -2175,7 +2177,7 @@ fun MainNavigation(
                                         onMenuClick = onMenuClick,
                                         onNavigateToItem = { itemId ->
                                             navController.navigate(
-                                                Destination.createAudiobookshelfItemRoute(itemId)
+                                                Destination.createAudiobookshelfItemRoute(itemId),
                                             )
                                         },
                                         onNavigateToPlayer = { itemId, episodeId ->
@@ -2183,7 +2185,7 @@ fun MainNavigation(
                                                 Destination.createAudiobookshelfPlayerRoute(
                                                     itemId = itemId,
                                                     episodeId = episodeId,
-                                                )
+                                                ),
                                             )
                                         },
                                         onNavigateToSeries = { seriesId, libraryId, seriesName ->
@@ -2192,12 +2194,12 @@ fun MainNavigation(
                                                     seriesId,
                                                     libraryId,
                                                     seriesName,
-                                                )
+                                                ),
                                             )
                                         },
                                         onNavigateToSeriesList = {
                                             navController.navigate(
-                                                Destination.createAudiobookshelfSeriesListRoute()
+                                                Destination.createAudiobookshelfSeriesListRoute(),
                                             )
                                         },
                                         onNavigateToLibrary = { libraryId, libraryName ->
@@ -2205,7 +2207,7 @@ fun MainNavigation(
                                                 Destination.createAudiobookshelfLibraryRoute(
                                                     libraryId,
                                                     libraryName,
-                                                )
+                                                ),
                                             )
                                         },
                                         onSearchClick = { navController.navigateToSearch() },
@@ -2219,7 +2221,7 @@ fun MainNavigation(
                                     AudiobookshelfSeriesListScreen(
                                         onNavigateToItem = { itemId ->
                                             navController.navigate(
-                                                Destination.createAudiobookshelfItemRoute(itemId)
+                                                Destination.createAudiobookshelfItemRoute(itemId),
                                             )
                                         },
                                         onSearchClick = { navController.navigateToSearch() },
@@ -2242,7 +2244,7 @@ fun MainNavigation(
                                     AudiobookshelfLibraryScreen(
                                         onNavigateToItem = { itemId ->
                                             navController.navigate(
-                                                Destination.createAudiobookshelfItemRoute(itemId)
+                                                Destination.createAudiobookshelfItemRoute(itemId),
                                             )
                                         },
                                         onSearchClick = { navController.navigateToSearch() },
@@ -2271,7 +2273,7 @@ fun MainNavigation(
                                                     startPosition,
                                                     episodeSort,
                                                     includePlayed,
-                                                )
+                                                ),
                                             )
                                         },
                                         onNavigateToSeries = { seriesId, libraryId, seriesName ->
@@ -2280,12 +2282,12 @@ fun MainNavigation(
                                                     seriesId,
                                                     libraryId,
                                                     seriesName,
-                                                )
+                                                ),
                                             )
                                         },
                                         onNavigateToItem = { itemId ->
                                             navController.navigate(
-                                                Destination.createAudiobookshelfItemRoute(itemId)
+                                                Destination.createAudiobookshelfItemRoute(itemId),
                                             )
                                         },
                                         widthSizeClass = widthSizeClass,
@@ -2309,7 +2311,7 @@ fun MainNavigation(
                                                     itemId = itemId,
                                                     episodeId = episodeId,
                                                     startPosition = startPosition,
-                                                )
+                                                ),
                                             )
                                         },
                                     )
@@ -2379,7 +2381,7 @@ fun MainNavigation(
                                 modifier =
                                     Modifier.align(Alignment.BottomCenter)
                                         .padding(
-                                            bottom = max(globalPlayerOffset, navBarBottom) + 8.dp
+                                            bottom = max(globalPlayerOffset, navBarBottom) + 8.dp,
                                         ),
                             )
 
@@ -2435,7 +2437,7 @@ fun MainNavigation(
                                                 is AudioMiniPlayerState.Abs -> {
                                                     Timber.tag("ABS-MiniPlayer")
                                                         .d(
-                                                            "MainNavigation: ABS onCloseClick — calling pause()+closeSession()"
+                                                            "MainNavigation: ABS onCloseClick — calling pause()+closeSession()",
                                                         )
                                                     viewModel.audiobookshelfPlayer.pause()
                                                     viewModel.audiobookshelfPlayer.closeSession()
@@ -2443,7 +2445,7 @@ fun MainNavigation(
                                                 is AudioMiniPlayerState.Music -> {
                                                     Timber.tag("ABS-MiniPlayer")
                                                         .d(
-                                                            "MainNavigation: Music onCloseClick — calling stop()+ACTION_STOP"
+                                                            "MainNavigation: Music onCloseClick — calling stop()+ACTION_STOP",
                                                         )
                                                     if (
                                                         viewModel.castManager.castState.value
@@ -2462,8 +2464,8 @@ fun MainNavigation(
                                                             )
                                                             .setAction(
                                                                 com.makd.afinity.player.AudioService
-                                                                    .ACTION_STOP
-                                                            )
+                                                                    .ACTION_STOP,
+                                                            ),
                                                     )
                                                 }
                                             }
@@ -2488,13 +2490,13 @@ fun MainNavigation(
                                                                     itemId = itemId,
                                                                     episodeId = episodeId,
                                                                     source = source,
-                                                                )
+                                                                ),
                                                         )
                                                     }
                                                 }
                                                 is AudioMiniPlayerState.Music ->
                                                     navController.navigate(
-                                                        Destination.MUSIC_PLAYER_ROUTE
+                                                        Destination.MUSIC_PLAYER_ROUTE,
                                                     )
                                             }
                                         },
@@ -2521,8 +2523,8 @@ fun MainNavigation(
                                         MaterialTheme.colorScheme.primary
                                             .copy(alpha = 0.15f)
                                             .compositeOver(
-                                                MaterialTheme.colorScheme.surfaceContainerLow
-                                            )
+                                                MaterialTheme.colorScheme.surfaceContainerLow,
+                                            ),
                                 ),
                         windowInsets = WindowInsets(0.dp),
                     ) {
@@ -2556,7 +2558,7 @@ fun MainNavigation(
                                 coroutineScope.launch { railState.collapse() }
                                 if (library.id.toString() != selectedLibraryId) {
                                     navController.navigate(
-                                        Destination.createLibraryRoute(library)
+                                        Destination.createLibraryRoute(library),
                                     ) {
                                         popUpTo(Destination.HOME.route) {
                                             saveState = !isOnLibraryEntry
@@ -2571,7 +2573,7 @@ fun MainNavigation(
                             onAddAccountClick = { server ->
                                 coroutineScope.launch { railState.collapse() }
                                 navController.navigate(
-                                    Destination.createLoginRoute(serverUrl = server.address)
+                                    Destination.createLoginRoute(serverUrl = server.address),
                                 )
                             },
                             onCloseDrawer = { coroutineScope.launch { railState.collapse() } },
@@ -2619,7 +2621,7 @@ fun MainNavigation(
                 },
                 confirmButton = {
                     LocalNetworkPermissionGrantButton(
-                        onGranted = mainViewModel::onLocalNetworkPermissionGranted
+                        onGranted = mainViewModel::onLocalNetworkPermissionGranted,
                     )
                 },
                 dismissButton = {
@@ -2655,7 +2657,7 @@ fun MainNavigation(
                     onAddAccountClick = { server ->
                         showSessionSwitcher = false
                         navController.navigate(
-                            Destination.createLoginRoute(serverUrl = server.address)
+                            Destination.createLoginRoute(serverUrl = server.address),
                         )
                     },
                     sheetState = sessionSwitcherSheetState,
@@ -2769,7 +2771,7 @@ private fun NavController.navigateToSeason(season: AfinitySeason) {
             seasonId = season.id.toString(),
             seasonName = season.name,
             seriesId = season.seriesId.toString(),
-        )
+        ),
     )
 }
 
@@ -2781,7 +2783,7 @@ private fun NavController.navigateToSeerrMedia(item: SearchResultItem) {
             title = item.getDisplayTitle(),
             backdropUrl = item.getBackdropUrl(),
             posterUrl = item.getPosterUrl(),
-        )
+        ),
     )
 }
 
@@ -2791,7 +2793,7 @@ private fun NavController.navigateToFilteredMedia(params: FilterParams) {
             filterType = params.type.name,
             filterId = params.id,
             filterName = params.name,
-        )
+        ),
     )
 }
 
@@ -2811,7 +2813,7 @@ private fun NavController.navigateToPhoto(
             startId = photo.id.toString(),
             sortBy = sortBy.name,
             descending = descending,
-        )
+        ),
     )
 }
 
@@ -2822,7 +2824,7 @@ private fun NavController.navigateToItem(item: AfinityItem) {
     }
     if (item is AfinityPhotoAlbum) {
         navigate(
-            Destination.createFolderContentRoute(item.id.toString(), item.name, gallery = true)
+            Destination.createFolderContentRoute(item.id.toString(), item.name, gallery = true),
         )
         return
     }
@@ -2849,6 +2851,6 @@ private fun NavController.navigateToItem(item: AfinityItem) {
                     else -> null
                 },
             seriesId = (item as? AfinitySeason)?.seriesId?.toString(),
-        )
+        ),
     )
 }

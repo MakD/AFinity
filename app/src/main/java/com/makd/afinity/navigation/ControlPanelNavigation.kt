@@ -134,7 +134,7 @@ fun ControlPanelRoute(
             modifier = modifier,
             listPane = {
                 AnimatedPane(
-                    modifier = Modifier.preferredWidth(directive.defaultPanePreferredWidth)
+                    modifier = Modifier.preferredWidth(directive.defaultPanePreferredWidth),
                 ) {
                     ControlPanelHub(
                         isDualPane = true,
@@ -150,8 +150,8 @@ fun ControlPanelRoute(
                         Modifier.windowInsetsPadding(
                             WindowInsets.systemBars
                                 .union(WindowInsets.displayCutout)
-                                .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)
-                        )
+                                .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top),
+                        ),
                 ) {
                     NavHost(
                         navController = detailNavController,
@@ -342,7 +342,7 @@ private fun NavGraphBuilder.adminDestinations(navController: NavHostController) 
                     type = NavType.StringType
                     nullable = true
                     defaultValue = null
-                }
+                },
             ),
     ) {
         ActivityScreen(onBackClick = dropUnlessResumed { navController.popBackStack() })
@@ -353,7 +353,7 @@ private fun NavGraphBuilder.adminDestinations(navController: NavHostController) 
             onBackClick = dropUnlessResumed { navController.popBackStack() },
             onOpenPlugin = { pluginId ->
                 navController.navigate(
-                    Destination.createAdminPluginDetailRoute(pluginId.toString())
+                    Destination.createAdminPluginDetailRoute(pluginId.toString()),
                 ) {
                     launchSingleTop = true
                 }

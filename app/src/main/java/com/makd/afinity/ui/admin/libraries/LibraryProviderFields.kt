@@ -147,7 +147,7 @@ internal fun normalizeProviders(options: JsonObject, providers: LibraryProviders
             names(
                 selectedNames(providers.metadataSavers, order, options[METADATA_SAVERS_KEY]) {
                     it.defaultEnabled
-                }
+                },
             )
     }
     if (providers.metadataReaders.isNotEmpty()) {

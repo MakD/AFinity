@@ -136,7 +136,7 @@ fun PersonScreen(
                                     type = FilterType.PERSON,
                                     id = tmdbId,
                                     name = person.name,
-                                )
+                                ),
                             )
                         }
                     },

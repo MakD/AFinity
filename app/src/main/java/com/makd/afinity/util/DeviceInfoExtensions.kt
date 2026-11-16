@@ -12,5 +12,5 @@ fun DeviceInfo.forUser(user: String): DeviceInfo =
             MessageDigest.getInstance("SHA-1").run {
                 update("$id+$user".toByteArray())
                 digest().joinToString("") { "%02x".format(it) }
-            }
+            },
     )

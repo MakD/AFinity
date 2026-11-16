@@ -55,79 +55,79 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindServerRepository(
-        jellyfinServerRepository: JellyfinServerRepository
+        jellyfinServerRepository: JellyfinServerRepository,
     ): ServerRepository
 
     @Binds
     @Singleton
     abstract fun bindMediaRepository(
-        jellyfinMediaRepository: JellyfinMediaRepository
+        jellyfinMediaRepository: JellyfinMediaRepository,
     ): MediaRepository
 
     @Binds
     @Singleton
     abstract fun bindExternalTitlesRepository(
-        externalTitlesRepositoryImpl: ExternalTitlesRepositoryImpl
+        externalTitlesRepositoryImpl: ExternalTitlesRepositoryImpl,
     ): ExternalTitlesRepository
 
     @Binds
     @Singleton
     abstract fun bindUserDataRepository(
-        jellyfinUserDataRepository: JellyfinUserDataRepository
+        jellyfinUserDataRepository: JellyfinUserDataRepository,
     ): UserDataRepository
 
     @Binds
     @Singleton
     abstract fun bindPlaybackRepository(
-        jellyfinPlaybackRepository: JellyfinPlaybackRepository
+        jellyfinPlaybackRepository: JellyfinPlaybackRepository,
     ): PlaybackRepository
 
     @Binds
     @Singleton
     abstract fun bindJellyfinRepository(
-        jellyfinRepositoryImpl: JellyfinRepositoryImpl
+        jellyfinRepositoryImpl: JellyfinRepositoryImpl,
     ): JellyfinRepository
 
     @Binds
     @Singleton
     abstract fun bindDatabaseRepository(
-        databaseRepositoryImpl: DatabaseRepositoryImpl
+        databaseRepositoryImpl: DatabaseRepositoryImpl,
     ): DatabaseRepository
 
     @Binds
     @Singleton
     abstract fun bindPreferencesRepository(
-        preferencesRepositoryImpl: PreferencesRepositoryImpl
+        preferencesRepositoryImpl: PreferencesRepositoryImpl,
     ): PreferencesRepository
 
     @Binds
     @Singleton
     abstract fun bindDownloadRepository(
-        jellyfinDownloadRepository: JellyfinDownloadRepository
+        jellyfinDownloadRepository: JellyfinDownloadRepository,
     ): DownloadRepository
 
     @Binds
     @Singleton
     abstract fun bindSyncPlayRepository(
-        jellyfinSyncPlayRepository: JellyfinSyncPlayRepository
+        jellyfinSyncPlayRepository: JellyfinSyncPlayRepository,
     ): SyncPlayRepository
 
     @Binds
     @Singleton
     abstract fun bindMusicRepository(
-        jellyfinMusicRepository: JellyfinMusicRepository
+        jellyfinMusicRepository: JellyfinMusicRepository,
     ): MusicRepository
 
     @Binds
     @Singleton
     abstract fun bindSubtitleSearchRepository(
-        subtitleSearchRepositoryImpl: SubtitleSearchRepositoryImpl
+        subtitleSearchRepositoryImpl: SubtitleSearchRepositoryImpl,
     ): SubtitleSearchRepository
 
     @Binds
     @Singleton
     abstract fun bindBookAnnotationRepository(
-        bookAnnotationRepositoryImpl: BookAnnotationRepositoryImpl
+        bookAnnotationRepositoryImpl: BookAnnotationRepositoryImpl,
     ): BookAnnotationRepository
 
     companion object {

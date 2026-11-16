@@ -17,7 +17,7 @@ data class LastFmTopTracksResponse(
 @Serializable
 data class LastFmTopTracks(
     @Serializable(with = LastFmTrackListSerializer::class)
-    val track: List<LastFmTopTrack> = emptyList()
+    val track: List<LastFmTopTrack> = emptyList(),
 )
 
 @Serializable data class LastFmTopTrack(val name: String? = null, val listeners: String? = null)

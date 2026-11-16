@@ -287,7 +287,7 @@ constructor(
     }
 
     private fun subtitleDbLanguageEntries(
-        languages: List<SubtitleLanguageCount>
+        languages: List<SubtitleLanguageCount>,
     ): List<SubtitleLanguageEntry> {
         val preferred = _uiState.value.preferredLanguage
         val entries = languages.map { SubtitleLanguageEntry(it.code, it.count) }

@@ -316,7 +316,7 @@ constructor(
         val groupId = syncPlayRepository.syncPlayState.value.groupId ?: return
 
         syncPlayRepository.updateFromGroupEvent(
-            SyncPlayGroupEvent.QueueChanged(groupId = groupId, update = update)
+            SyncPlayGroupEvent.QueueChanged(groupId = groupId, update = update),
         )
 
         val playingItem = update.playlist.getOrNull(update.playingItemIndex) ?: return
@@ -334,7 +334,7 @@ constructor(
                 playlistItemId = playingItem.playlistItemId,
             )
             Timber.d(
-                "SyncPlay: already playing ${playingItem.itemId}, synced to ${startPositionMs}ms"
+                "SyncPlay: already playing ${playingItem.itemId}, synced to ${startPositionMs}ms",
             )
             return
         }
@@ -366,11 +366,11 @@ constructor(
         val rawDelayMs = timeSyncEngine.toScheduledDelayMs(command.`when`)
         val delayMs = rawDelayMs.coerceIn(0L, 3_000L)
         Timber.d(
-            "SyncPlay command: ${command.command}, rawDelayMs=$rawDelayMs, clampedDelayMs=$delayMs, ticks=${command.positionTicks}, clockOffset=${timeSyncEngine.clockOffsetMs}ms"
+            "SyncPlay command: ${command.command}, rawDelayMs=$rawDelayMs, clampedDelayMs=$delayMs, ticks=${command.positionTicks}, clockOffset=${timeSyncEngine.clockOffsetMs}ms",
         )
         if (rawDelayMs > 3_000L) {
             Timber.w(
-                "SyncPlay: rawDelayMs=$rawDelayMs clamped to 3000ms — likely clock skew. Check time sync."
+                "SyncPlay: rawDelayMs=$rawDelayMs clamped to 3000ms — likely clock skew. Check time sync.",
             )
         }
 
@@ -411,7 +411,7 @@ constructor(
             GroupUpdateType.GROUP_DOES_NOT_EXIST -> {
                 if (syncPlayRepository.syncPlayState.value.isInGroup) {
                     syncPlayRepository.updateFromGroupEvent(
-                        SyncPlayGroupEvent.GroupLeft(update.groupId)
+                        SyncPlayGroupEvent.GroupLeft(update.groupId),
                     )
                     timeSyncEngine.stop()
                     rawWebSocket.stop()
@@ -422,7 +422,7 @@ constructor(
             GroupUpdateType.LIBRARY_ACCESS_DENIED -> {
                 val message = "Access denied: ${update.type.serialName}"
                 syncPlayRepository.updateFromGroupEvent(
-                    SyncPlayGroupEvent.Error(update.type, message)
+                    SyncPlayGroupEvent.Error(update.type, message),
                 )
                 _uiState.update { it.copy(error = message, isJoining = false) }
                 _effects.emit(SyncPlayEffect.ShowError(message))

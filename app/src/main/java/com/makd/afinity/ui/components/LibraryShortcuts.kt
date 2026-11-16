@@ -72,7 +72,7 @@ fun LibraryShortcutCard(
         Box(
             modifier =
                 Modifier.fillMaxSize()
-                    .background(Brush.linearGradient(colors = listOf(gradientStart, gradientEnd)))
+                    .background(Brush.linearGradient(colors = listOf(gradientStart, gradientEnd))),
         ) {
             Icon(
                 painter = painterResource(iconRes),
@@ -93,9 +93,9 @@ fun LibraryShortcutCard(
                         .align(Alignment.BottomCenter)
                         .background(
                             Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f))
-                            )
-                        )
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)),
+                            ),
+                        ),
             )
 
             Row(

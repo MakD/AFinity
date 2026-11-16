@@ -49,7 +49,7 @@ interface JellyseerrApiService {
 
     @POST("api/v1/auth/jellyfin/quickconnect/authenticate")
     suspend fun authenticateQuickConnect(
-        @Body request: QuickConnectAuthenticateRequest
+        @Body request: QuickConnectAuthenticateRequest,
     ): Response<LoginResponse>
 
     @GET("api/v1/auth/me") suspend fun getCurrentUser(): Response<JellyseerrUser>
@@ -70,7 +70,7 @@ interface JellyseerrApiService {
 
     @GET("api/v1/person/{personId}/combined_credits")
     suspend fun getPersonCombinedCredits(
-        @Path("personId") personId: Int
+        @Path("personId") personId: Int,
     ): Response<PersonCombinedCreditsResponse>
 
     @GET("api/v1/collection/{collectionId}")
@@ -246,12 +246,12 @@ interface JellyseerrApiService {
 
     @GET("api/v1/watchproviders/movies")
     suspend fun getMovieWatchProviders(
-        @Query("watchRegion") watchRegion: String
+        @Query("watchRegion") watchRegion: String,
     ): Response<List<WatchProviderDetails>>
 
     @GET("api/v1/watchproviders/tv")
     suspend fun getTvWatchProviders(
-        @Query("watchRegion") watchRegion: String
+        @Query("watchRegion") watchRegion: String,
     ): Response<List<WatchProviderDetails>>
 
     @GET("api/v1/search/keyword")
@@ -266,11 +266,11 @@ interface JellyseerrApiService {
 
     @GET("api/v1/service/radarr/{serviceId}")
     suspend fun getRadarrDetails(
-        @Path("serviceId") serviceId: Int
+        @Path("serviceId") serviceId: Int,
     ): Response<ServiceDetailsResponse>
 
     @GET("api/v1/service/sonarr/{serviceId}")
     suspend fun getSonarrDetails(
-        @Path("serviceId") serviceId: Int
+        @Path("serviceId") serviceId: Int,
     ): Response<ServiceDetailsResponse>
 }

@@ -251,7 +251,7 @@ internal fun JellyseerrLoginContent(
                                             R.drawable.ic_visibility_off
                                         } else {
                                             R.drawable.ic_visibility
-                                        }
+                                        },
                                 ),
                             contentDescription =
                                 if (passwordVisible) {
@@ -275,7 +275,7 @@ internal fun JellyseerrLoginContent(
                             if (!busy) {
                                 viewModel.login()
                             }
-                        }
+                        },
                     ),
                 modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Password },
             )

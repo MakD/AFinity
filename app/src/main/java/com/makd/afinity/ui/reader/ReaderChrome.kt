@@ -102,8 +102,8 @@ internal fun BoxScope.ReaderTopBar(
                 Modifier.fillMaxWidth()
                     .background(
                         Brush.verticalGradient(
-                            listOf(Color.Black.copy(alpha = 0.9f), Color.Transparent)
-                        )
+                            listOf(Color.Black.copy(alpha = 0.9f), Color.Transparent),
+                        ),
                     )
                     .pointerInput(Unit) { detectTapGestures {} }
                     .windowInsetsPadding(ReaderTopInsets)
@@ -145,12 +145,12 @@ internal fun ReaderBookmarkButton(bookmarked: Boolean, onClick: () -> Unit) {
         Icon(
             painter =
                 painterResource(
-                    if (bookmarked) R.drawable.ic_bookmark_filled else R.drawable.ic_bookmark
+                    if (bookmarked) R.drawable.ic_bookmark_filled else R.drawable.ic_bookmark,
                 ),
             contentDescription =
                 stringResource(
                     if (bookmarked) R.string.cd_reader_bookmark_remove
-                    else R.string.cd_reader_bookmark_add
+                    else R.string.cd_reader_bookmark_add,
                 ),
             tint =
                 if (bookmarked) MaterialTheme.colorScheme.primary
@@ -178,7 +178,7 @@ internal fun BoxScope.ReaderBottomPanel(
                             0f to Color.Transparent,
                             0.3f to Color.Black.copy(alpha = 0.8f),
                             1f to Color.Black.copy(alpha = 0.95f),
-                        )
+                        ),
                     )
                     .pointerInput(Unit) { detectTapGestures {} }
                     .windowInsetsPadding(ReaderBottomInsets)
@@ -304,7 +304,7 @@ internal fun ReaderScrubber(
                     modifier =
                         Modifier.fillMaxWidth().height(TrackHeight).graphicsLayer {
                             if (rtl) scaleX = -1f
-                        }
+                        },
                 ) {
                     val start = 0f
                     val range = size.width.coerceAtLeast(1f)
@@ -353,7 +353,7 @@ internal fun ReaderScrubber(
                                     .coerceIn(0, (widthPx - placeable.width).coerceAtLeast(0))
                             placeable.place(x, -placeable.height - gapPx)
                         }
-                    }
+                    },
             ) {
                 bubble(shown)
             }

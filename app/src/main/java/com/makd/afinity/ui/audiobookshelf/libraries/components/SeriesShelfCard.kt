@@ -59,14 +59,14 @@ fun SeriesShelfCard(
                 Modifier.fillMaxWidth()
                     .aspectRatio(1.5f)
                     .clip(MaterialTheme.shapes.medium)
-                    .clickable(role = Role.Button, onClick = onClick)
+                    .clickable(role = Role.Button, onClick = onClick),
         ) {
             when {
                 coverUrls.isEmpty() -> {
                     Box(
                         modifier =
                             Modifier.fillMaxSize()
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
                     )
                 }
 
@@ -134,7 +134,7 @@ private fun FannedCover(
                 .shadow(3.dp, coverShape)
                 .clip(coverShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
-                .border(1.dp, Color.White.copy(alpha = 0.2f), coverShape)
+                .border(1.dp, Color.White.copy(alpha = 0.2f), coverShape),
     ) {
         AsyncImage(
             imageUrl = imageUrl,

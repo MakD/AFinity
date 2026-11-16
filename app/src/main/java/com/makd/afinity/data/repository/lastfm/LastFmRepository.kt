@@ -113,7 +113,7 @@ constructor(
                     trackIds = ranking.trackIds.map { it.toString() },
                     trackCount = ranking.trackCount,
                     lastFmVersion = ranking.lastFmVersion,
-                )
+                ),
             )
         }
     }
@@ -140,7 +140,7 @@ constructor(
                 runCatching {
                     databaseRepository.insertLastFmArtist(entity)
                     databaseRepository.deleteLastFmArtistsOlderThan(
-                        System.currentTimeMillis() - PRUNE_AFTER_MS
+                        System.currentTimeMillis() - PRUNE_AFTER_MS,
                     )
                 }
                 return rememberIndex(key, entity)

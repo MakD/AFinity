@@ -10,7 +10,7 @@ import com.makd.afinity.data.database.entities.PersonSectionCacheEntity
 interface PersonSectionDao {
 
     @Query(
-        "SELECT * FROM person_section_cache WHERE cacheKey = :key AND serverId = :serverId AND userId = :userId"
+        "SELECT * FROM person_section_cache WHERE cacheKey = :key AND serverId = :serverId AND userId = :userId",
     )
     suspend fun getCachedSection(
         key: String,
@@ -26,7 +26,7 @@ interface PersonSectionDao {
         AND serverId = :serverId
         AND userId = :userId
         AND (cachedTimestamp + :ttlMillis) > :currentTime
-    """
+    """,
     )
     suspend fun isSectionCacheFresh(
         key: String,
@@ -40,12 +40,12 @@ interface PersonSectionDao {
     suspend fun insertSection(entity: PersonSectionCacheEntity)
 
     @Query(
-        "DELETE FROM person_section_cache WHERE cacheKey = :key AND serverId = :serverId AND userId = :userId"
+        "DELETE FROM person_section_cache WHERE cacheKey = :key AND serverId = :serverId AND userId = :userId",
     )
     suspend fun deleteSection(key: String, serverId: String, userId: String)
 
     @Query(
-        "DELETE FROM person_section_cache WHERE sectionType = :type AND serverId = :serverId AND userId = :userId"
+        "DELETE FROM person_section_cache WHERE sectionType = :type AND serverId = :serverId AND userId = :userId",
     )
     suspend fun deleteSectionsByType(type: String, serverId: String, userId: String)
 

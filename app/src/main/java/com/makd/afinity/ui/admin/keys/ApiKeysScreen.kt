@@ -301,7 +301,8 @@ private fun ApiKeyRow(
                 painter =
                     painterResource(
                         id =
-                            if (revealed) R.drawable.ic_visibility_off else R.drawable.ic_visibility
+                            if (revealed) R.drawable.ic_visibility_off
+                            else R.drawable.ic_visibility,
                     ),
                 contentDescription =
                     if (revealed) stringResource(R.string.cd_api_key_hide)
@@ -328,7 +329,7 @@ private fun ApiKeyRow(
                 contentDescription = stringResource(R.string.api_key_revoke),
                 tint =
                     MaterialTheme.colorScheme.error.copy(
-                        alpha = if (actionsEnabled) 1f else DISABLED_ALPHA
+                        alpha = if (actionsEnabled) 1f else DISABLED_ALPHA,
                     ),
                 modifier = Modifier.size(ROW_ACTION_ICON_SIZE),
             )
@@ -362,7 +363,7 @@ private fun KeyCreatedDialog(key: AdminApiKeyRow, onCopy: () -> Unit, onDismiss:
                         text = key.token.chunked(KEY_GROUP_LENGTH).joinToString(" "),
                         style =
                             MaterialTheme.typography.bodyMedium.copy(
-                                fontFamily = FontFamily.Monospace
+                                fontFamily = FontFamily.Monospace,
                             ),
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),

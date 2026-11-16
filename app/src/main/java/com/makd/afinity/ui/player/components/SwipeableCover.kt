@@ -186,7 +186,7 @@ fun <T> SwipeableCover(
                                 val offset = displayedOffset()
                                 translationX = offset + position * travel()
                                 alpha = if (position == 0 || position * offset < 0f) 1f else 0f
-                            }
+                            },
                 ) {
                     cover(slot.value, position == 0)
                 }

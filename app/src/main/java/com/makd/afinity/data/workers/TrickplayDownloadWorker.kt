@@ -62,7 +62,7 @@ constructor(
             val downloadIdString =
                 inputData.getString(KEY_DOWNLOAD_ID)
                     ?: return@withContext Result.failure(
-                        workDataOf("error" to "Missing download ID")
+                        workDataOf("error" to "Missing download ID"),
                     )
 
             val itemIdString =
@@ -93,7 +93,7 @@ constructor(
                 val download: DownloadDto =
                     databaseRepository.getDownload(downloadId)
                         ?: return@withContext Result.failure(
-                            workDataOf("error" to "Download not found")
+                            workDataOf("error" to "Download not found"),
                         )
 
                 val apiClient =
@@ -101,8 +101,8 @@ constructor(
                         ?: return@withContext Result.failure(
                             workDataOf(
                                 "error" to
-                                    "Could not restore session for server ${download.serverId}"
-                            )
+                                    "Could not restore session for server ${download.serverId}",
+                            ),
                         )
 
                 val userId = download.userId
@@ -136,7 +136,7 @@ constructor(
                         BaseItemKind.EPISODE ->
                             (baseItemDto.toAfinityEpisode(baseUrl)
                                     ?: return@withContext Result.failure(
-                                        workDataOf("error" to "Failed to convert episode")
+                                        workDataOf("error" to "Failed to convert episode"),
                                     ))
                                 .trickplayInfo
 
@@ -146,7 +146,7 @@ constructor(
 
                         else ->
                             return@withContext Result.failure(
-                                workDataOf("error" to "Unsupported item type: ${baseItemDto.type}")
+                                workDataOf("error" to "Unsupported item type: ${baseItemDto.type}"),
                             )
                     }
 
@@ -163,7 +163,7 @@ constructor(
                 if (!trickplayDir.exists() && !trickplayDir.mkdirs()) {
                     Timber.e("Failed to create trickplay directory at ${trickplayDir.absolutePath}")
                     return@withContext Result.failure(
-                        workDataOf("error" to "Failed to create trickplay directory")
+                        workDataOf("error" to "Failed to create trickplay directory"),
                     )
                 }
                 Timber.d("Trickplay download base directory: ${trickplayDir.absolutePath}")
@@ -199,14 +199,14 @@ constructor(
                         KEY_DOWNLOAD_ID to downloadIdString,
                         KEY_ITEM_ID to itemIdString,
                         KEY_SOURCE_ID to sourceId,
-                    )
+                    ),
                 )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Trickplay download failed")
                 return@withContext Result.failure(
-                    workDataOf("error" to (e.message ?: "Unknown error"))
+                    workDataOf("error" to (e.message ?: "Unknown error")),
                 )
             }
         }
@@ -233,7 +233,7 @@ constructor(
             kotlin.math.ceil(info.thumbnailCount.toDouble() / thumbnailsPerTile).toInt()
 
         Timber.d(
-            "Downloading trickplay: ${info.thumbnailCount} thumbnails across $totalTiles tiled images (${info.tileWidth}x${info.tileHeight} grid per tile)"
+            "Downloading trickplay: ${info.thumbnailCount} thumbnails across $totalTiles tiled images (${info.tileWidth}x${info.tileHeight} grid per tile)",
         )
 
         val semaphore = Semaphore(4)
@@ -251,7 +251,7 @@ constructor(
                                 val tileUrl =
                                     "$baseUrl/Videos/$itemId/Trickplay/$width/$tileIndex.jpg?mediaSourceId=$mediaSourceId"
                                 Timber.d(
-                                    "Downloading trickplay tile to: ${outputFile.absolutePath}"
+                                    "Downloading trickplay tile to: ${outputFile.absolutePath}",
                                 )
                                 val request =
                                     Request.Builder()
@@ -264,7 +264,7 @@ constructor(
                                 okHttpClient.newCall(request).execute().use { response ->
                                     if (!response.isSuccessful) {
                                         Timber.w(
-                                            "Failed to download trickplay tile $tileIndex: ${response.code}"
+                                            "Failed to download trickplay tile $tileIndex: ${response.code}",
                                         )
                                         return@use
                                     }
@@ -279,7 +279,7 @@ constructor(
                                     }
                                 }
                                 Timber.i(
-                                    "Downloaded trickplay tiled image: $resolution/$tileIndex.jpg (${outputFile.length()} bytes)"
+                                    "Downloaded trickplay tiled image: $resolution/$tileIndex.jpg (${outputFile.length()} bytes)",
                                 )
                             } catch (e: CancellationException) {
                                 throw e

@@ -244,7 +244,7 @@ private fun MediaThumbnailCard(
         ) {
             Box(
                 modifier =
-                    Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant)
+                    Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
             ) {
                 AsyncImage(
                     imageUrl = imageUrl,

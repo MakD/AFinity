@@ -42,7 +42,7 @@ constructor(
     private val _filter =
         MutableStateFlow(
             ActivityFilter.entries.firstOrNull { it.name == savedStateHandle.get<String>("filter") }
-                ?: ActivityFilter.ALL
+                ?: ActivityFilter.ALL,
         )
     val filter: StateFlow<ActivityFilter> = _filter.asStateFlow()
 

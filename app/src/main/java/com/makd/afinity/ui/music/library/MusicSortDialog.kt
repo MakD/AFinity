@@ -72,7 +72,7 @@ fun MusicSortDialog(
                     modifier =
                         Modifier.weight(1f, fill = false)
                             .verticalScroll(rememberScrollState())
-                            .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp)
+                            .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp),
                 ) {
                     Text(
                         text = stringResource(R.string.sort_title),
@@ -115,7 +115,7 @@ fun MusicSortDialog(
                 }
 
                 HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
                 )
 
                 Row(
@@ -129,7 +129,7 @@ fun MusicSortDialog(
                         onClick = {
                             onSortSelected(selectedField, !isAscending)
                             onDismiss()
-                        }
+                        },
                     ) {
                         Text(stringResource(R.string.action_apply))
                     }

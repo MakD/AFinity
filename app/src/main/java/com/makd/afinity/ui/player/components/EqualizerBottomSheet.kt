@@ -70,7 +70,7 @@ fun EqualizerBottomSheet(
             modifier =
                 Modifier.fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(start = 24.dp, end = 24.dp, bottom = 48.dp)
+                    .padding(start = 24.dp, end = 24.dp, bottom = 48.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -237,7 +237,7 @@ private fun PresetChip(
             Modifier.clip(RoundedCornerShape(50))
                 .background(
                     if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                    else Color.Transparent
+                    else Color.Transparent,
                 )
                 .border(
                     BorderStroke(
@@ -254,7 +254,7 @@ private fun PresetChip(
                             role = Role.RadioButton,
                             onClick = onClick,
                         )
-                    else Modifier
+                    else Modifier,
                 )
                 .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
@@ -306,7 +306,7 @@ private fun BandColumn(
                                     maxWidth = constraints.maxHeight,
                                     minHeight = constraints.minWidth,
                                     maxHeight = constraints.maxWidth,
-                                )
+                                ),
                             )
                         layout(placeable.height, placeable.width) {
                             placeable.place(

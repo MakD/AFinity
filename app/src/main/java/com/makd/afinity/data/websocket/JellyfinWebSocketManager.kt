@@ -344,7 +344,7 @@ constructor(
     private fun handleLibraryChanged(message: LibraryChangedMessage) {
         val update = message.data
         Timber.d(
-            "Library changed - added=${update?.itemsAdded?.size ?: 0}, updated=${update?.itemsUpdated?.size ?: 0}, removed=${update?.itemsRemoved?.size ?: 0}"
+            "Library changed - added=${update?.itemsAdded?.size ?: 0}, updated=${update?.itemsUpdated?.size ?: 0}, removed=${update?.itemsRemoved?.size ?: 0}",
         )
         val removed = update?.itemsRemoved.orEmpty()
         val added = update?.itemsAdded.orEmpty()
@@ -475,11 +475,11 @@ constructor(
         ) { message ->
             if (message.data == null) {
                 Timber.w(
-                    "SyncPlay: SyncPlayCommandMessage received but data is null — SDK deserialization failed"
+                    "SyncPlay: SyncPlayCommandMessage received but data is null — SDK deserialization failed",
                 )
             } else {
                 Timber.d(
-                    "SyncPlay: command received — type=${message.data!!.command}, ticks=${message.data!!.positionTicks}"
+                    "SyncPlay: command received — type=${message.data!!.command}, ticks=${message.data!!.positionTicks}",
                 )
                 _syncPlayCommands.emit(message.data!!)
             }
@@ -533,7 +533,7 @@ constructor(
                 SyncPlayGroupUpdate(
                     type = groupUpdate.type,
                     groupId = groupUpdate.groupId,
-                )
+                ),
             )
         }
     }

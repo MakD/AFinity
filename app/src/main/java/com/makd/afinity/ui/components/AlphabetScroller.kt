@@ -38,7 +38,7 @@ fun AlphabetScroller(
                 text = letter,
                 style =
                     MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     ),
                 color =
                     if (isSelected) MaterialTheme.colorScheme.primary

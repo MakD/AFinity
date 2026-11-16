@@ -106,7 +106,7 @@ fun AppNavigationDrawerContent(
         )
 
     Box(
-        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerLow)
+        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -119,13 +119,13 @@ fun AppNavigationDrawerContent(
                                         listOf(
                                             MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                                             MaterialTheme.colorScheme.surfaceContainerLow,
-                                        )
-                                )
+                                        ),
+                                ),
                         )
                         .windowInsetsPadding(
-                            WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                            WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal),
                         )
-                        .padding(bottom = 16.dp)
+                        .padding(bottom = 16.dp),
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -192,7 +192,7 @@ fun AppNavigationDrawerContent(
                                         .background(
                                             connectionIndicatorColor(connectionType),
                                             CircleShape,
-                                        )
+                                        ),
                             )
                             Text(
                                 text =
@@ -216,7 +216,7 @@ fun AppNavigationDrawerContent(
             }
 
             Column(
-                modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
+                modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
             ) {
                 AnimatedVisibility(
                     visible = accountSwitcherExpanded,
@@ -227,7 +227,7 @@ fun AppNavigationDrawerContent(
                         modifier =
                             Modifier.fillMaxWidth()
                                 .windowInsetsPadding(
-                                    WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                                    WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal),
                                 )
                                 .padding(bottom = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -254,8 +254,8 @@ fun AppNavigationDrawerContent(
                     modifier =
                         Modifier.fillMaxWidth()
                             .windowInsetsPadding(
-                                WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
-                            )
+                                WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal),
+                            ),
                 ) {
                     Destination.entries.forEach { destination ->
                         if (destination == Destination.LIBRARIES && !isOffline) {
@@ -323,7 +323,7 @@ fun AppNavigationDrawerContent(
                                         painterResource(
                                             id =
                                                 if (selected) destination.selectedIconRes
-                                                else destination.unselectedIconRes
+                                                else destination.unselectedIconRes,
                                         ),
                                     contentDescription = stringResource(destination.titleRes),
                                 )
@@ -370,7 +370,7 @@ fun AppNavigationDrawerContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier =
                     Modifier.windowInsetsPadding(
-                            WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                            WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal),
                         )
                         .navigationBarsPadding()
                         .padding(start = 24.dp, top = 16.dp, bottom = 16.dp),

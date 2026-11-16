@@ -102,7 +102,7 @@ fun BookmarksSheet(
                                 .background(
                                     if (isCurrent)
                                         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                    else MaterialTheme.colorScheme.surface
+                                    else MaterialTheme.colorScheme.surface,
                                 )
                                 .padding(start = 24.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -113,7 +113,7 @@ fun BookmarksSheet(
                                     .clip(CircleShape)
                                     .background(
                                         if (isCurrent) MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.surfaceContainer
+                                        else MaterialTheme.colorScheme.surfaceContainer,
                                     ),
                             contentAlignment = Alignment.Center,
                         ) {
@@ -138,7 +138,7 @@ fun BookmarksSheet(
                                 style =
                                     MaterialTheme.typography.bodyLarge.copy(
                                         fontWeight =
-                                            if (isCurrent) FontWeight.Bold else FontWeight.Medium
+                                            if (isCurrent) FontWeight.Bold else FontWeight.Medium,
                                     ),
                                 color =
                                     if (isCurrent) MaterialTheme.colorScheme.primary
@@ -186,7 +186,7 @@ fun BookmarksSheet(
                             onClick = {
                                 showTitleInput = false
                                 title = ""
-                            }
+                            },
                         ) {
                             Text(stringResource(R.string.action_cancel))
                         }

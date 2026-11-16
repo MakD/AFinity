@@ -91,12 +91,12 @@ fun ServerLogViewerScreen(
                             painterResource(
                                 id =
                                     if (state.searchActive) R.drawable.ic_close
-                                    else R.drawable.ic_search
+                                    else R.drawable.ic_search,
                             ),
                         contentDescription =
                             stringResource(
                                 if (state.searchActive) R.string.action_cancel
-                                else R.string.logs_search
+                                else R.string.logs_search,
                             ),
                     )
                 }
@@ -200,7 +200,7 @@ private fun ServerLogMenu(
     val tagsLabel = stringResource(R.string.logs_tags_action)
     val groupingLabel =
         stringResource(
-            if (groupRepeats) R.string.logs_expand_repeats else R.string.logs_collapse_repeats
+            if (groupRepeats) R.string.logs_expand_repeats else R.string.logs_collapse_repeats,
         )
     val actions = buildList {
         add(
@@ -209,7 +209,7 @@ private fun ServerLogMenu(
                 iconRes = R.drawable.ic_clipboard,
                 onClick = onCopyVisible,
                 trailingText = matchCount.toString(),
-            )
+            ),
         )
         add(
             DetailMenuAction(
@@ -217,7 +217,7 @@ private fun ServerLogMenu(
                 iconRes = R.drawable.ic_filter,
                 onClick = onTags,
                 trailingText = selectedTagCount.takeIf { it > 0 }?.toString(),
-            )
+            ),
         )
         if (showGrouping) {
             add(
@@ -225,7 +225,7 @@ private fun ServerLogMenu(
                     label = groupingLabel,
                     iconRes = R.drawable.ic_arrows_output,
                     onClick = onToggleGrouping,
-                )
+                ),
             )
         }
     }
@@ -331,7 +331,7 @@ private fun ServerLogContent(
                         },
                     action =
                         stringResource(
-                            if (view.grouped) R.string.logs_expand else R.string.logs_collapse
+                            if (view.grouped) R.string.logs_expand else R.string.logs_collapse,
                         ),
                     onAction = onToggleGrouping,
                 )
@@ -348,8 +348,8 @@ private fun ServerLogContent(
                                 .background(LogLevelColors.consoleSurface)
                         } else {
                             Modifier
-                        }
-                    )
+                        },
+                    ),
         ) {
             if (view.size == 0) {
                 LogEmptyState(

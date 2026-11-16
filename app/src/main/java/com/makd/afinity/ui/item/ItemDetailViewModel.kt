@@ -159,7 +159,7 @@ constructor(
     private val itemId: UUID =
         UUID.fromString(
             savedStateHandle.get<String>("itemId")
-                ?: throw IllegalArgumentException("itemId is required")
+                ?: throw IllegalArgumentException("itemId is required"),
         )
 
     private val itemType: String? = savedStateHandle.get<String>("itemType")
@@ -176,7 +176,7 @@ constructor(
     private var currentEpisodesPagingSource: EpisodesPagingSource? = null
 
     private fun applyUpdatesToPagingFlow(
-        baseFlow: Flow<PagingData<AfinityEpisode>>
+        baseFlow: Flow<PagingData<AfinityEpisode>>,
     ): Flow<PagingData<AfinityEpisode>> {
         return baseFlow.withUserDataOverlay(appDataRepository.userDataOverlay, itemStore)
     }
@@ -1049,7 +1049,7 @@ constructor(
                             if (item.episodes.isNotEmpty()) {
                                 val pagingData =
                                     kotlinx.coroutines.flow.flowOf(
-                                        PagingData.from(item.episodes.toList())
+                                        PagingData.from(item.episodes.toList()),
                                     )
                                 _episodesPagingData.value = pagingData
                                 _uiState.value =
@@ -1060,7 +1060,7 @@ constructor(
                             } else {
                                 val emptyPagingData =
                                     kotlinx.coroutines.flow.flowOf(
-                                        PagingData.empty<AfinityEpisode>()
+                                        PagingData.empty<AfinityEpisode>(),
                                     )
                                 _episodesPagingData.value = emptyPagingData
                                 _uiState.value =
@@ -1175,7 +1175,7 @@ constructor(
                                                     pageSize = 50,
                                                     enablePlaceholders = false,
                                                     initialLoadSize = 50,
-                                                )
+                                                ),
                                         ) {
                                             EpisodesPagingSource(mediaRepository, itemId, seriesId)
                                                 .also { currentEpisodesPagingSource = it }
@@ -1873,7 +1873,7 @@ constructor(
                         startPositionMs = resumeMs,
                         collectionId = boxSet.id,
                         shuffle = shuffle,
-                    )
+                    ),
                 )
             } finally {
                 _uiState.update { it.copy(isStartingCollectionPlayback = false) }

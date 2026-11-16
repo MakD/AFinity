@@ -92,7 +92,7 @@ private fun MusicCarouselSection(
                     modifier =
                         Modifier.height(itemSize.height)
                             .maskClip(MaterialTheme.shapes.extraLarge)
-                            .clickable(role = Role.Button) { onItemClick(index) }
+                            .clickable(role = Role.Button) { onItemClick(index) },
                 ) {
                     AsyncImage(
                         imageUrl = imageUrl(index),
@@ -133,7 +133,7 @@ private fun MusicCarouselSection(
                             text = itemTitle(index),
                             style =
                                 MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
                                 ),
                             color = Color.White,
                             maxLines = 1,
@@ -400,7 +400,7 @@ fun ArtistAlbumsCarousel(
                     modifier =
                         Modifier.height(itemSize.height)
                             .maskClip(MaterialTheme.shapes.extraLarge)
-                            .clickable(role = Role.Button) { onAlbumClick(album) }
+                            .clickable(role = Role.Button) { onAlbumClick(album) },
                 ) {
                     AsyncImage(
                         imageUrl = (album.images.backdrop ?: album.images.primary)?.toString(),
@@ -455,7 +455,7 @@ fun ArtistAlbumsCarousel(
                                 text = artist.name,
                                 style =
                                     MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
                                     ),
                                 color = Color.White,
                                 maxLines = 1,

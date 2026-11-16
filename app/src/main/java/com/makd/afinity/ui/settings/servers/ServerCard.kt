@@ -63,7 +63,7 @@ fun ServerCard(
         shape = RoundedCornerShape(20.dp),
         colors =
             CardDefaults.elevatedCardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
             ),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
     ) {
@@ -218,7 +218,7 @@ fun ServerCard(
                             text = serverWithCount.userCount.toString(),
                             style =
                                 MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
                                 ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

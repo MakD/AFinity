@@ -21,7 +21,7 @@ private val currentTimeTicker: StateFlow<LocalDateTime> = flow {
     while (true) {
         emit(LocalDateTime.now())
         delay(
-            (CURRENT_TIME_TICK_MS - System.currentTimeMillis() % CURRENT_TIME_TICK_MS).milliseconds
+            (CURRENT_TIME_TICK_MS - System.currentTimeMillis() % CURRENT_TIME_TICK_MS).milliseconds,
         )
     }
 }

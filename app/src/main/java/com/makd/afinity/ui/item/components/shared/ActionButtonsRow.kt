@@ -159,7 +159,7 @@ fun ActionButtonsRow(
                             label = stringResource(R.string.collection_action_manage),
                             iconRes = R.drawable.ic_list_details,
                             onClick = it,
-                        )
+                        ),
                     )
                 }
                 if (canShuffle) {
@@ -169,7 +169,7 @@ fun ActionButtonsRow(
                             iconRes = R.drawable.ic_arrows_shuffle,
                             onClick = onShufflePlay,
                             enabled = hasPlayableItems,
-                        )
+                        ),
                     )
                 }
                 if (hasMediaInfo) {
@@ -178,7 +178,7 @@ fun ActionButtonsRow(
                             label = stringResource(R.string.media_info_title),
                             iconRes = R.drawable.ic_info,
                             onClick = { showMediaInfo = true },
-                        )
+                        ),
                     )
                 }
                 onAddToPlaylist?.let {
@@ -187,7 +187,7 @@ fun ActionButtonsRow(
                             label = stringResource(R.string.cd_music_add_to_playlist),
                             iconRes = R.drawable.ic_playlist_add,
                             onClick = it,
-                        )
+                        ),
                     )
                 }
                 onAddToCollection?.let {
@@ -196,7 +196,7 @@ fun ActionButtonsRow(
                             label = stringResource(R.string.collection_action_add),
                             iconRes = R.drawable.ic_collection,
                             onClick = it,
-                        )
+                        ),
                     )
                 }
                 onRemoveFromCollection?.let {
@@ -205,7 +205,7 @@ fun ActionButtonsRow(
                             label = stringResource(R.string.collection_action_remove),
                             iconRes = R.drawable.ic_remove,
                             onClick = it,
-                        )
+                        ),
                     )
                 }
             }
@@ -217,7 +217,7 @@ fun ActionButtonsRow(
                             iconRes = R.drawable.ic_edit_circle,
                             onClick = { onAdminAction(AdminAction.EditMetadata) },
                             dividerBefore = userActions.isNotEmpty(),
-                        )
+                        ),
                     )
                     if (canIdentify) {
                         add(
@@ -225,7 +225,7 @@ fun ActionButtonsRow(
                                 label = stringResource(R.string.admin_action_identify),
                                 iconRes = R.drawable.ic_search,
                                 onClick = { onAdminAction(AdminAction.Identify) },
-                            )
+                            ),
                         )
                     }
                     add(
@@ -233,14 +233,14 @@ fun ActionButtonsRow(
                             label = stringResource(R.string.admin_action_edit_images),
                             iconRes = R.drawable.ic_photo_search,
                             onClick = { onAdminAction(AdminAction.EditImages) },
-                        )
+                        ),
                     )
                     add(
                         DetailMenuAction(
                             label = stringResource(R.string.admin_action_refresh_metadata),
                             iconRes = R.drawable.ic_refresh,
                             onClick = { onAdminAction(AdminAction.Refresh) },
-                        )
+                        ),
                     )
                 }
                 if (canDelete) {
@@ -250,7 +250,7 @@ fun ActionButtonsRow(
                             iconRes = R.drawable.ic_delete,
                             onClick = { onAdminAction(AdminAction.Delete) },
                             destructive = true,
-                        )
+                        ),
                     )
                 }
             }
@@ -260,7 +260,7 @@ fun ActionButtonsRow(
                 contentDescription =
                     stringResource(
                         if (hasManageItems) R.string.cd_admin_manage
-                        else R.string.cd_music_more_options
+                        else R.string.cd_music_more_options,
                     ),
             )
         }

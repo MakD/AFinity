@@ -32,7 +32,7 @@ class CastDeviceProfileFactory @Inject constructor() {
                     videoCodec = videoCodecs,
                     audioCodec = "aac,mp3,opus,flac,vorbis,ac3,eac3",
                     type = DlnaProfileType.VIDEO,
-                )
+                ),
             )
         }
 
@@ -48,7 +48,7 @@ class CastDeviceProfileFactory @Inject constructor() {
                     maxAudioChannels = "6",
                     breakOnNonKeyFrames = false,
                     conditions = emptyList(),
-                )
+                ),
             )
 
         val codecProfiles = buildList {
@@ -90,7 +90,7 @@ class CastDeviceProfileFactory @Inject constructor() {
                             ),
                         ),
                     applyConditions = emptyList(),
-                )
+                ),
             )
             if (enableHevc) {
                 add(
@@ -131,7 +131,7 @@ class CastDeviceProfileFactory @Inject constructor() {
                                 ),
                             ),
                         applyConditions = emptyList(),
-                    )
+                    ),
                 )
             }
             add(
@@ -144,10 +144,10 @@ class CastDeviceProfileFactory @Inject constructor() {
                                 property = ProfileConditionValue.AUDIO_CHANNELS,
                                 value = "6",
                                 isRequired = false,
-                            )
+                            ),
                         ),
                     applyConditions = emptyList(),
-                )
+                ),
             )
         }
 

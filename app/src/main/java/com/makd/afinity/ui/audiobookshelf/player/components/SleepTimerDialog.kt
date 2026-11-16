@@ -82,7 +82,7 @@ fun SleepTimerDialog(
         modifier = modifier,
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 48.dp)
+            modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 48.dp),
         ) {
             Text(
                 text = stringResource(R.string.abs_sleep_timer_title),
@@ -101,7 +101,7 @@ fun SleepTimerDialog(
                         Modifier.fillMaxWidth()
                             .clip(RoundedCornerShape(20.dp))
                             .background(MaterialTheme.colorScheme.primaryContainer)
-                            .padding(20.dp)
+                            .padding(20.dp),
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -122,7 +122,7 @@ fun SleepTimerDialog(
                                 ),
                             style =
                                 MaterialTheme.typography.headlineSmall.copy(
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
                                 ),
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
@@ -163,7 +163,7 @@ fun SleepTimerDialog(
                     label =
                         stringResource(
                             if (isPodcast) R.string.abs_sleep_timer_end_of_episode
-                            else R.string.abs_sleep_timer_end_of_chapter
+                            else R.string.abs_sleep_timer_end_of_chapter,
                         ),
                     extraChapters = extraChapters,
                     canDecrease = extraChapters > 0,
@@ -210,7 +210,7 @@ private fun ChapterTimerRow(
                 .clip(RoundedCornerShape(16.dp))
                 .background(
                     if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                 )
                 .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
                 .padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),

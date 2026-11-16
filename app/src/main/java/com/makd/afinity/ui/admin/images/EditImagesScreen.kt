@@ -212,7 +212,7 @@ fun EditImagesScreen(
                     },
                     colors =
                         ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
+                            contentColor = MaterialTheme.colorScheme.error,
                         ),
                 ) {
                     Text(stringResource(R.string.action_delete))
@@ -347,11 +347,11 @@ fun EditImagesScreen(
                                         title = stringResource(R.string.admin_images_empty_title),
                                         message =
                                             stringResource(
-                                                R.string.admin_images_empty_language_message
+                                                R.string.admin_images_empty_language_message,
                                             ),
                                         actionText =
                                             stringResource(
-                                                R.string.admin_images_show_all_languages
+                                                R.string.admin_images_show_all_languages,
                                             ),
                                         onAction = { viewModel.setIncludeAllLanguages(true) },
                                     )
@@ -373,7 +373,7 @@ fun EditImagesScreen(
 
                 if (uiState.busy) {
                     LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter)
+                        modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
                     )
                 }
             }
@@ -712,7 +712,7 @@ private fun CurrentImageStrip(
                                 .shadow(elevation, TileShape)
                                 .clip(TileShape)
                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                                .clickable(enabled = enabled) { onPreview(image) }
+                                .clickable(enabled = enabled) { onPreview(image) },
                     ) {
                         Artwork(url = image.url, fit = false)
                         Text(
@@ -723,7 +723,7 @@ private fun CurrentImageStrip(
                                 Modifier.padding(8.dp)
                                     .clip(CircleShape)
                                     .background(
-                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
                                     )
                                     .padding(horizontal = 8.dp, vertical = 2.dp),
                         )
@@ -732,7 +732,7 @@ private fun CurrentImageStrip(
                         text = resolutionText(image).orEmpty(),
                         style =
                             MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
                             ),
                         color = MaterialTheme.colorScheme.onBackground,
                         maxLines = 1,
@@ -896,7 +896,7 @@ private fun CandidateTile(
     val ratingScale = rememberRatingMetadataScale()
     val metadataStyle =
         MaterialTheme.typography.bodySmall.copy(
-            fontSize = MaterialTheme.typography.bodySmall.fontSize * ratingScale.textScale
+            fontSize = MaterialTheme.typography.bodySmall.fontSize * ratingScale.textScale,
         )
     val resolution = resolutionText(image)
     val provider = image.providerName?.takeIf { it.isNotBlank() }
@@ -911,7 +911,7 @@ private fun CandidateTile(
                     .aspectRatio(shape.ratio)
                     .clip(TileShape)
                     .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                    .clickable(enabled = enabled, onClick = onClick)
+                    .clickable(enabled = enabled, onClick = onClick),
         ) {
             Artwork(url = image.url, fit = image.imageType == LOGO)
             if (showLanguage && language != null) {
@@ -1101,7 +1101,7 @@ private fun ImagePreviewSheet(
                         .fillMaxWidth(if (isPortrait) 0.7f else 1f)
                         .aspectRatio(ratio)
                         .clip(AdminCardShape)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
             ) {
                 Artwork(url = image.url, fit = fit)
                 if (image.previewUrl != null && image.previewUrl != image.url) {
@@ -1174,8 +1174,8 @@ private fun ImagePreviewSheet(
                         Text(
                             stringResource(
                                 if (addsToList) R.string.admin_image_add
-                                else R.string.admin_image_use
-                            )
+                                else R.string.admin_image_use,
+                            ),
                         )
                     }
                 }

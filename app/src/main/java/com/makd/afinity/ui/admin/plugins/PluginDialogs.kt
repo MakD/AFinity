@@ -81,8 +81,8 @@ internal fun PluginInstallDialog(
                 Text(
                     stringResource(
                         if (plugin.hasUpdate) R.string.plugin_action_update
-                        else R.string.plugin_action_install
-                    )
+                        else R.string.plugin_action_install,
+                    ),
                 )
             }
         },

@@ -137,8 +137,8 @@ class PlayerActivity : AppCompatActivity() {
                         if (canPipSeek()) {
                             viewModel.handlePlayerEvent(
                                 PlayerEvent.SeekRelative(
-                                    -viewModel.uiState.value.seekBackStep.millis
-                                )
+                                    -viewModel.uiState.value.seekBackStep.millis,
+                                ),
                             )
                         }
 
@@ -146,8 +146,8 @@ class PlayerActivity : AppCompatActivity() {
                         if (canPipSeek()) {
                             viewModel.handlePlayerEvent(
                                 PlayerEvent.SeekRelative(
-                                    viewModel.uiState.value.seekForwardStep.millis
-                                )
+                                    viewModel.uiState.value.seekForwardStep.millis,
+                                ),
                             )
                         }
 
@@ -371,7 +371,7 @@ class PlayerActivity : AppCompatActivity() {
                             PlayerEvent.Pause
                         } else {
                             PlayerEvent.Play
-                        }
+                        },
                     )
                     viewModel.showControls()
                 }
@@ -684,7 +684,7 @@ class PlayerActivity : AppCompatActivity() {
                 seekBackTitle,
                 seekBackTitle,
                 pipBroadcast(ACTION_SEEK_BACK, REQUEST_SEEK_BACK),
-            )
+            ),
         )
         actions.add(playPauseAction)
         actions.add(
@@ -693,7 +693,7 @@ class PlayerActivity : AppCompatActivity() {
                 seekForwardTitle,
                 seekForwardTitle,
                 pipBroadcast(ACTION_SEEK_FORWARD, REQUEST_SEEK_FORWARD),
-            )
+            ),
         )
 
         return actions
@@ -748,7 +748,7 @@ private fun Intent.toPlaybackRequest(): PlaybackRequest? {
             attachToCast = getBooleanExtra("attachToCast", false),
         )
     Timber.d(
-        "PlayerActivity: Starting playback for item $itemId, seasonId=${request.seasonId}, shuffle=${request.shuffle}, isLive=${request.isLiveChannel}"
+        "PlayerActivity: Starting playback for item $itemId, seasonId=${request.seasonId}, shuffle=${request.shuffle}, isLive=${request.isLiveChannel}",
     )
     return request
 }

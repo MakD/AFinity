@@ -174,7 +174,7 @@ fun DetailCoverImage(
             shape = shape,
             colors =
                 CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                 ),
         ) {}
     }

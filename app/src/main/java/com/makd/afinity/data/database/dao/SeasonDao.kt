@@ -26,7 +26,7 @@ interface SeasonDao {
 
     @Query(
         "UPDATE seasons SET productionYear = :productionYear, premiereDate = :premiereDate " +
-            "WHERE id = :seasonId AND serverId = :serverId"
+            "WHERE id = :seasonId AND serverId = :serverId",
     )
     suspend fun updateDates(
         seasonId: UUID,
@@ -47,22 +47,22 @@ interface SeasonDao {
     suspend fun getSeason(seasonId: UUID, serverId: String): AfinitySeasonDto?
 
     @Query(
-        "SELECT * FROM seasons WHERE seriesId = :seriesId AND serverId = :serverId ORDER BY indexNumber ASC"
+        "SELECT * FROM seasons WHERE seriesId = :seriesId AND serverId = :serverId ORDER BY indexNumber ASC",
     )
     suspend fun getSeasonsForSeries(seriesId: UUID, serverId: String): List<AfinitySeasonDto>
 
     @Query(
-        "SELECT * FROM seasons WHERE seriesId = :seriesId AND serverId = :serverId ORDER BY indexNumber ASC"
+        "SELECT * FROM seasons WHERE seriesId = :seriesId AND serverId = :serverId ORDER BY indexNumber ASC",
     )
     fun getSeasonsForSeriesFlow(seriesId: UUID, serverId: String): Flow<List<AfinitySeasonDto>>
 
     @Query(
-        "SELECT * FROM seasons WHERE serverId = :serverId AND name LIKE '%' || :query || '%' ORDER BY name ASC"
+        "SELECT * FROM seasons WHERE serverId = :serverId AND name LIKE '%' || :query || '%' ORDER BY name ASC",
     )
     suspend fun searchSeasons(query: String, serverId: String): List<AfinitySeasonDto>
 
     @Query(
-        "SELECT * FROM seasons WHERE serverId = :serverId ORDER BY seriesName ASC, indexNumber ASC"
+        "SELECT * FROM seasons WHERE serverId = :serverId ORDER BY seriesName ASC, indexNumber ASC",
     )
     suspend fun getAllSeasons(serverId: String): List<AfinitySeasonDto>
 

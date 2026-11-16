@@ -129,7 +129,7 @@ internal fun ReaderSearchSheet(
                                 query = ""
                                 onSearch("")
                                 focusRequester.requestFocus()
-                            }
+                            },
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_close),
@@ -146,7 +146,7 @@ internal fun ReaderSearchSheet(
                     onSearch = {
                         keyboard?.hide()
                         onSearch(query)
-                    }
+                    },
                 ),
             modifier =
                 Modifier.fillMaxWidth().padding(horizontal = 16.dp).focusRequester(focusRequester),
@@ -206,7 +206,7 @@ internal fun ReaderSearchSheet(
                             append(normalizeSearchText(hit.before))
                             append(" ")
                             withStyle(
-                                SpanStyle(fontWeight = FontWeight.Bold, color = colors.primary)
+                                SpanStyle(fontWeight = FontWeight.Bold, color = colors.primary),
                             ) {
                                 append(hit.match)
                             }

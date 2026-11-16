@@ -133,7 +133,7 @@ constructor(
                         .getPlaylistEntries(playlistId, fields = FieldSets.PLAYABLE_EPISODE)
                         .entries
                         .filterIsInstance<PlaylistEntry.Video>()
-                        .map { it.item }
+                        .map { it.item },
                 )
 
             if (videoItems.isEmpty()) {
@@ -159,7 +159,7 @@ constructor(
             currentSeriesId = null
             val items =
                 withLocalSources(
-                    mediaRepository.getBoxSetPlaybackItemsResult(collectionId).getOrThrow()
+                    mediaRepository.getBoxSetPlaybackItemsResult(collectionId).getOrThrow(),
                 )
             if (items.isEmpty()) {
                 return initializeSingleItemQueue(startingItem, emptyList())
@@ -195,7 +195,7 @@ constructor(
                     withLocalSources(
                         mediaRepository.getEpisodes(seasonId, startingEpisode.seriesId).filter {
                             !it.missing
-                        }
+                        },
                     )
 
                 if (episodes.isEmpty()) {
@@ -228,7 +228,7 @@ constructor(
                 withLocalSources(
                         mediaRepository.getSeriesEpisodes(startingEpisode.seriesId).filter {
                             !it.missing
-                        }
+                        },
                     )
                     .toMutableList()
 
@@ -294,7 +294,7 @@ constructor(
             if (boxSet == null) {
                 Timber.d(
                     "Collection queue: no usable boxset for ${item.name} " +
-                        "(${boxSets.size} found: ${boxSets.joinToString { "${it.name}=${it.itemCount}" }})"
+                        "(${boxSets.size} found: ${boxSets.joinToString { "${it.name}=${it.itemCount}" }})",
                 )
                 return false
             }
@@ -305,14 +305,14 @@ constructor(
                         parentId = boxSet.id,
                         sortBy = SortBy.RELEASE_DATE,
                         fields = FieldSets.PLAYABLE_EPISODE + ItemFields.OVERVIEW,
-                    )
+                    ),
                 )
 
             val startIndex = siblings.indexOfFirst { it.id == item.id }
             if (siblings.size <= 1 || startIndex == -1) {
                 Timber.d(
                     "Collection queue: \"${boxSet.name}\" returned ${siblings.size} movies, " +
-                        "index of ${item.name} = $startIndex"
+                        "index of ${item.name} = $startIndex",
                 )
                 return false
             }
@@ -324,7 +324,7 @@ constructor(
             updatePlaylistState()
             Timber.d(
                 "Collection queue: ${siblings.size} items from \"${boxSet.name}\", " +
-                    "current at $startIndex (jump only)"
+                    "current at $startIndex (jump only)",
             )
             true
         } catch (e: CancellationException) {
@@ -400,7 +400,7 @@ constructor(
         updatePlaylistState()
 
         Timber.d(
-            "Queue set with ${queue.size} items, starting at index $currentIndex, content starts at $contentStartIndex"
+            "Queue set with ${queue.size} items, starting at index $currentIndex, content starts at $contentStartIndex",
         )
     }
 
@@ -552,7 +552,7 @@ constructor(
             contentStartIndex = 0
 
             Timber.d(
-                "Queue shuffled with priority episode: ${priorityEpisode.name} (${currentQueue.size} total items)"
+                "Queue shuffled with priority episode: ${priorityEpisode.name} (${currentQueue.size} total items)",
             )
         } else {
             currentQueue.shuffle()
@@ -578,7 +578,7 @@ constructor(
             )
 
         Timber.d(
-            "Playlist state updated: index=$currentIndex, hasNext=${hasNext()}, hasPrevious=${hasPrevious()}"
+            "Playlist state updated: index=$currentIndex, hasNext=${hasNext()}, hasPrevious=${hasPrevious()}",
         )
     }
 }

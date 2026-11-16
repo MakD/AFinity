@@ -155,7 +155,7 @@ constructor(
                         playMethod = PlayMethod.DIRECT_PLAY,
                         repeatMode = RepeatMode.REPEAT_NONE,
                         playbackOrder = PlaybackOrder.DEFAULT,
-                    )
+                    ),
                 )
                 true
             } catch (e: ApiClientException) {

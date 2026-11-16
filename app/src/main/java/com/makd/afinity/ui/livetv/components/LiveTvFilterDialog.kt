@@ -149,7 +149,7 @@ fun LiveTvFilterDialog(
                                         working.copy(
                                             guideCategories =
                                                 if (selected) selectedCategories + category
-                                                else selectedCategories - category
+                                                else selectedCategories - category,
                                         )
                                 },
                             )
@@ -188,7 +188,7 @@ fun LiveTvFilterDialog(
                                     working.copy(
                                         indicators =
                                             if (selected) working.indicators + indicator
-                                            else working.indicators - indicator
+                                            else working.indicators - indicator,
                                     )
                             },
                         )

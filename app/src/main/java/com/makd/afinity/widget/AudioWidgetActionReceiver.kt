@@ -62,7 +62,7 @@ class AudioWidgetActionReceiver : BroadcastReceiver() {
             AudioWidgetIntents.ACTION_REWIND ->
                 if (cast.isAbsCasting) {
                     castManager.seekAbsGlobalPosition(
-                        (cast.currentPosition - CAST_SEEK_STEP_MS).coerceAtLeast(0L)
+                        (cast.currentPosition - CAST_SEEK_STEP_MS).coerceAtLeast(0L),
                     )
                 }
             AudioWidgetIntents.ACTION_FORWARD ->
@@ -71,7 +71,7 @@ class AudioWidgetActionReceiver : BroadcastReceiver() {
                         (absPlaybackManager.playbackState.value.duration * 1000).toLong()
                     val target = cast.currentPosition + CAST_SEEK_STEP_MS
                     castManager.seekAbsGlobalPosition(
-                        if (durationMs > 0) target.coerceAtMost(durationMs) else target
+                        if (durationMs > 0) target.coerceAtMost(durationMs) else target,
                     )
                 }
         }

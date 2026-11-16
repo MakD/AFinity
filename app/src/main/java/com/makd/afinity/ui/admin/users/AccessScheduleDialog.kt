@@ -136,7 +136,7 @@ internal fun AccessScheduleDialog(
                             days = days,
                             startHour = startMinutes.toDouble() / MINUTES_PER_HOUR,
                             endHour = effectiveEnd.toDouble() / MINUTES_PER_HOUR,
-                        )
+                        ),
                     )
                 },
                 enabled = days.isNotEmpty() && isOrdered,

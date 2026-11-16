@@ -276,7 +276,7 @@ constructor(
                 throw e
             } catch (e: Exception) {
                 Timber.e(
-                    "AbsSocket: failed to parse user_item_progress_updated (${e::class.simpleName})"
+                    "AbsSocket: failed to parse user_item_progress_updated (${e::class.simpleName})",
                 )
             }
         }

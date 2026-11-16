@@ -13,12 +13,12 @@ import kotlinx.coroutines.flow.Flow
 interface CustomHomeSectionDao {
 
     @Query(
-        "SELECT * FROM custom_home_sections WHERE sessionKey = :sessionKey ORDER BY position ASC"
+        "SELECT * FROM custom_home_sections WHERE sessionKey = :sessionKey ORDER BY position ASC",
     )
     fun observeForSession(sessionKey: String): Flow<List<CustomHomeSectionEntity>>
 
     @Query(
-        "SELECT * FROM custom_home_sections WHERE sessionKey = :sessionKey ORDER BY position ASC"
+        "SELECT * FROM custom_home_sections WHERE sessionKey = :sessionKey ORDER BY position ASC",
     )
     suspend fun getForSession(sessionKey: String): List<CustomHomeSectionEntity>
 
@@ -29,7 +29,7 @@ interface CustomHomeSectionDao {
     suspend fun countForSession(sessionKey: String): Int
 
     @Query(
-        "SELECT COALESCE(MAX(position), -1) FROM custom_home_sections WHERE sessionKey = :sessionKey"
+        "SELECT COALESCE(MAX(position), -1) FROM custom_home_sections WHERE sessionKey = :sessionKey",
     )
     suspend fun maxPosition(sessionKey: String): Int
 

@@ -179,11 +179,11 @@ constructor(
                                         id = UUID.randomUUID(),
                                         serverId = serverId,
                                         address = workingUrl,
-                                    )
+                                    ),
                                 )
                             }
                             Timber.d(
-                                "Saved server to database: ${validationResult.server.name} (${validationResult.server.id})"
+                                "Saved server to database: ${validationResult.server.name} (${validationResult.server.id})",
                             )
                         } catch (e: CancellationException) {
                             throw e
@@ -194,7 +194,7 @@ constructor(
                         _uiState.value =
                             _uiState.value.copy(isConnecting = false, isConnectedToServer = true)
                         Timber.d(
-                            "Successfully connected to Jellyfin server: $workingUrl (${validationResult.server.name})"
+                            "Successfully connected to Jellyfin server: $workingUrl (${validationResult.server.name})",
                         )
                     }
                     is JellyfinServerRepository.ServerConnectionResult.Error -> {
@@ -353,7 +353,7 @@ constructor(
             }
             _savedUsers.value = usersWithTokens
             Timber.d(
-                "Loaded ${usersWithTokens.size} saved users with tokens for server $serverId (${allUsers.size} total users)"
+                "Loaded ${usersWithTokens.size} saved users with tokens for server $serverId (${allUsers.size} total users)",
             )
         } catch (e: CancellationException) {
             throw e
@@ -381,7 +381,7 @@ constructor(
                                 error = context.getString(R.string.error_server_not_found_login),
                             )
                         Timber.w(
-                            "Server ${user.serverId} not found in database for user ${user.name}"
+                            "Server ${user.serverId} not found in database for user ${user.name}",
                         )
                         return@launch
                     }

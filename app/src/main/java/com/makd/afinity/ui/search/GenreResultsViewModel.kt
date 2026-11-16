@@ -81,7 +81,7 @@ constructor(
     private var lastLoadedAt = 0L
 
     private fun applyUpdatesToPagingFlow(
-        baseFlow: Flow<PagingData<AfinityItem>>
+        baseFlow: Flow<PagingData<AfinityItem>>,
     ): Flow<PagingData<AfinityItem>> {
         return baseFlow
             .cachedIn(viewModelScope)
@@ -141,7 +141,7 @@ constructor(
                     Pager(PagingConfig(pageSize = 50)) {
                             GenrePagingSource(mediaRepository, genre, "MUSIC_VIDEO")
                         }
-                        .flow
+                        .flow,
                 )
             } else {
                 emptyFlow()

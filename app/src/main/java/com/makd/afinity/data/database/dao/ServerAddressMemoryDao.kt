@@ -12,7 +12,7 @@ interface ServerAddressMemoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsert(memory: ServerAddressMemory)
 
     @Query(
-        "SELECT * FROM serverAddressMemory WHERE serverId = :serverId AND networkKey = :networkKey"
+        "SELECT * FROM serverAddressMemory WHERE serverId = :serverId AND networkKey = :networkKey",
     )
     suspend fun get(serverId: String, networkKey: String): ServerAddressMemory?
 

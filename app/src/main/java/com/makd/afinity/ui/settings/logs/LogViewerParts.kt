@@ -88,7 +88,7 @@ fun TagFilterSheetContent(
         )
 
         LazyColumn(
-            modifier = Modifier.fillMaxWidth().weight(1f, fill = false).padding(top = 8.dp)
+            modifier = Modifier.fillMaxWidth().weight(1f, fill = false).padding(top = 8.dp),
         ) {
             items(items = visible, key = { it.tag }) { tag ->
                 TagRow(
@@ -142,7 +142,7 @@ private fun TagRow(
                 .heightIn(min = 52.dp)
                 .background(
                     if (checked) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
-                    else Color.Transparent
+                    else Color.Transparent,
                 )
                 .clickable(onClick = onToggle)
                 .padding(start = 16.dp, end = 24.dp),
@@ -268,7 +268,7 @@ fun LogCountChip(
                 Modifier.heightIn(min = 32.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(
-                        if (selected) tint else MaterialTheme.colorScheme.surfaceContainerLow
+                        if (selected) tint else MaterialTheme.colorScheme.surfaceContainerLow,
                     )
                     .clickable(onClick = onClick)
                     .padding(horizontal = 14.dp),
@@ -280,7 +280,7 @@ fun LogCountChip(
                     modifier =
                         Modifier.size(6.dp)
                             .clip(RoundedCornerShape(3.dp))
-                            .background(if (selected) MaterialTheme.colorScheme.surface else tint)
+                            .background(if (selected) MaterialTheme.colorScheme.surface else tint),
                 )
             }
             Text(

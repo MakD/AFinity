@@ -102,7 +102,7 @@ abstract class ServerDatabaseDao {
     abstract suspend fun getEpisodesForSeason(seasonId: UUID): List<AfinityEpisodeDto>
 
     @Query(
-        "SELECT * FROM episodes WHERE seriesId = :seriesId ORDER BY parentIndexNumber ASC, indexNumber ASC"
+        "SELECT * FROM episodes WHERE seriesId = :seriesId ORDER BY parentIndexNumber ASC, indexNumber ASC",
     )
     abstract suspend fun getEpisodesForSeries(seriesId: UUID): List<AfinityEpisodeDto>
 
@@ -143,7 +143,7 @@ abstract class ServerDatabaseDao {
     abstract suspend fun deleteDownload(downloadId: UUID)
 
     @Query(
-        "UPDATE downloads SET progress = :progress, bytesDownloaded = :bytesDownloaded, totalBytes = :totalBytes, updatedAt = :updatedAt WHERE id = :downloadId"
+        "UPDATE downloads SET progress = :progress, bytesDownloaded = :bytesDownloaded, totalBytes = :totalBytes, updatedAt = :updatedAt WHERE id = :downloadId",
     )
     abstract suspend fun updateDownloadProgress(
         downloadId: UUID,
@@ -157,7 +157,7 @@ abstract class ServerDatabaseDao {
     abstract suspend fun deleteDownloadsByStatus(status: DownloadStatus)
 
     @Query(
-        "SELECT * FROM downloads WHERE itemId = :itemId AND serverId = :serverId AND userId = :userId"
+        "SELECT * FROM downloads WHERE itemId = :itemId AND serverId = :serverId AND userId = :userId",
     )
     abstract suspend fun getDownloadByItemIdScoped(
         itemId: UUID,
@@ -166,12 +166,12 @@ abstract class ServerDatabaseDao {
     ): DownloadDto?
 
     @Query(
-        "SELECT * FROM downloads WHERE serverId = :serverId AND userId = :userId ORDER BY createdAt DESC"
+        "SELECT * FROM downloads WHERE serverId = :serverId AND userId = :userId ORDER BY createdAt DESC",
     )
     abstract fun getAllDownloadsFlowScoped(serverId: String, userId: UUID): Flow<List<DownloadDto>>
 
     @Query(
-        "SELECT * FROM downloads WHERE status IN (:statuses) AND serverId = :serverId AND userId = :userId ORDER BY createdAt DESC"
+        "SELECT * FROM downloads WHERE status IN (:statuses) AND serverId = :serverId AND userId = :userId ORDER BY createdAt DESC",
     )
     abstract fun getDownloadsByStatusFlowScoped(
         statuses: List<DownloadStatus>,
@@ -180,7 +180,7 @@ abstract class ServerDatabaseDao {
     ): Flow<List<DownloadDto>>
 
     @Query(
-        "SELECT COALESCE(SUM(totalBytes), 0) FROM downloads WHERE serverId = :serverId AND status = 'COMPLETED'"
+        "SELECT COALESCE(SUM(totalBytes), 0) FROM downloads WHERE serverId = :serverId AND status = 'COMPLETED'",
     )
     abstract suspend fun getTotalBytesForServer(serverId: String): Long
 
@@ -188,7 +188,7 @@ abstract class ServerDatabaseDao {
     abstract suspend fun getTotalBytesAllServers(): Long
 
     @Query(
-        "SELECT * FROM downloads WHERE seriesId = :albumSeriesId AND serverId = :serverId AND userId = :userId AND itemType = 'Audio' AND status = 'COMPLETED' ORDER BY seasonNumber ASC, episodeNumber ASC"
+        "SELECT * FROM downloads WHERE seriesId = :albumSeriesId AND serverId = :serverId AND userId = :userId AND itemType = 'Audio' AND status = 'COMPLETED' ORDER BY seasonNumber ASC, episodeNumber ASC",
     )
     abstract suspend fun getCompletedAudioDownloadsByAlbum(
         albumSeriesId: String,
@@ -197,7 +197,7 @@ abstract class ServerDatabaseDao {
     ): List<DownloadDto>
 
     @Query(
-        "SELECT COUNT(*) FROM downloads WHERE seriesId = :seriesId AND serverId = :serverId AND userId = :userId"
+        "SELECT COUNT(*) FROM downloads WHERE seriesId = :seriesId AND serverId = :serverId AND userId = :userId",
     )
     abstract suspend fun countDownloadsWithSeriesId(
         seriesId: String,
@@ -206,12 +206,12 @@ abstract class ServerDatabaseDao {
     ): Int
 
     @Query(
-        "SELECT storageVolumeId, COALESCE(SUM(totalBytes), 0) AS totalBytes FROM downloads WHERE serverId = :serverId AND status = 'COMPLETED' GROUP BY storageVolumeId"
+        "SELECT storageVolumeId, COALESCE(SUM(totalBytes), 0) AS totalBytes FROM downloads WHERE serverId = :serverId AND status = 'COMPLETED' GROUP BY storageVolumeId",
     )
     abstract suspend fun getTotalBytesPerVolumeForServer(serverId: String): List<VolumeUsage>
 
     @Query(
-        "SELECT storageVolumeId, COALESCE(SUM(totalBytes), 0) AS totalBytes FROM downloads WHERE status = 'COMPLETED' GROUP BY storageVolumeId"
+        "SELECT storageVolumeId, COALESCE(SUM(totalBytes), 0) AS totalBytes FROM downloads WHERE status = 'COMPLETED' GROUP BY storageVolumeId",
     )
     abstract suspend fun getTotalBytesPerVolume(): List<VolumeUsage>
 
@@ -265,7 +265,7 @@ abstract class ServerDatabaseDao {
     abstract suspend fun deleteDownloadsByServerId(serverId: String)
 
     @Query(
-        "DELETE FROM sources WHERE itemId NOT IN (SELECT id FROM movies UNION ALL SELECT id FROM shows UNION ALL SELECT id FROM episodes)"
+        "DELETE FROM sources WHERE itemId NOT IN (SELECT id FROM movies UNION ALL SELECT id FROM shows UNION ALL SELECT id FROM episodes)",
     )
     abstract suspend fun deleteOrphanedSources()
 
@@ -309,7 +309,7 @@ abstract class ServerDatabaseDao {
     abstract suspend fun getDownloadsForUser(serverId: String, userId: UUID): List<DownloadDto>
 
     @Query(
-        "SELECT id FROM abs_downloads WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "SELECT id FROM abs_downloads WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     abstract suspend fun getAbsDownloadIdsForUser(serverId: String, userId: String): List<UUID>
 
@@ -320,32 +320,32 @@ abstract class ServerDatabaseDao {
     abstract suspend fun deleteDownloadsForUser(serverId: String, userId: UUID)
 
     @Query(
-        "DELETE FROM abs_downloads WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM abs_downloads WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     abstract suspend fun deleteAbsDownloadsForUser(serverId: String, userId: String)
 
     @Query(
-        "DELETE FROM jellyseerr_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM jellyseerr_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     abstract suspend fun deleteJellyseerrConfigForUser(serverId: String, userId: String)
 
     @Query(
-        "DELETE FROM audiobookshelf_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM audiobookshelf_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     abstract suspend fun deleteAudiobookshelfConfigForUser(serverId: String, userId: String)
 
     @Query(
-        "DELETE FROM audiobookshelf_libraries WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM audiobookshelf_libraries WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     abstract suspend fun deleteAudiobookshelfLibrariesForUser(serverId: String, userId: String)
 
     @Query(
-        "DELETE FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     abstract suspend fun deleteAudiobookshelfItemsForUser(serverId: String, userId: String)
 
     @Query(
-        "DELETE FROM audiobookshelf_progress WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "DELETE FROM audiobookshelf_progress WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId",
     )
     abstract suspend fun deleteAudiobookshelfProgressForUser(serverId: String, userId: String)
 
@@ -417,7 +417,7 @@ abstract class ServerDatabaseDao {
         WHERE name LIKE '%' || :query || '%' OR originalTitle LIKE '%' || :query || '%'
         ORDER BY name ASC
         LIMIT :limit
-    """
+    """,
     )
     abstract suspend fun searchMovies(query: String, limit: Int = 50): List<AfinityMovieDto>
 
@@ -427,7 +427,7 @@ abstract class ServerDatabaseDao {
         WHERE name LIKE '%' || :query || '%' OR originalTitle LIKE '%' || :query || '%'
         ORDER BY name ASC
         LIMIT :limit
-    """
+    """,
     )
     abstract suspend fun searchShows(query: String, limit: Int = 50): List<AfinityShowDto>
 
@@ -437,7 +437,7 @@ abstract class ServerDatabaseDao {
         WHERE name LIKE '%' || :query || '%' OR overview LIKE '%' || :query || '%'
         ORDER BY seriesName ASC, parentIndexNumber ASC, indexNumber ASC
         LIMIT :limit
-    """
+    """,
     )
     abstract suspend fun searchEpisodes(query: String, limit: Int = 50): List<AfinityEpisodeDto>
 
@@ -447,7 +447,7 @@ abstract class ServerDatabaseDao {
         INNER JOIN userdata u ON m.id = u.itemId
         WHERE u.userId = :userId AND u.favorite = 1
         ORDER BY m.name ASC
-    """
+    """,
     )
     abstract suspend fun getFavoriteMovies(userId: UUID): List<AfinityMovieDto>
 
@@ -457,7 +457,7 @@ abstract class ServerDatabaseDao {
         INNER JOIN userdata u ON s.id = u.itemId
         WHERE u.userId = :userId AND u.favorite = 1
         ORDER BY s.name ASC
-    """
+    """,
     )
     abstract suspend fun getFavoriteShows(userId: UUID): List<AfinityShowDto>
 
@@ -467,7 +467,7 @@ abstract class ServerDatabaseDao {
         INNER JOIN userdata u ON e.id = u.itemId
         WHERE u.userId = :userId AND u.favorite = 1
         ORDER BY e.seriesName ASC, e.parentIndexNumber ASC, e.indexNumber ASC
-    """
+    """,
     )
     abstract suspend fun getFavoriteEpisodes(userId: UUID): List<AfinityEpisodeDto>
 
@@ -478,7 +478,7 @@ abstract class ServerDatabaseDao {
         WHERE u.userId = :userId AND u.playbackPositionTicks > 0 AND u.played = 0
         ORDER BY u.playbackPositionTicks DESC
         LIMIT :limit
-    """
+    """,
     )
     abstract suspend fun getContinueWatchingMovies(userId: UUID, limit: Int): List<AfinityMovieDto>
 
@@ -489,7 +489,7 @@ abstract class ServerDatabaseDao {
         WHERE u.userId = :userId AND u.playbackPositionTicks > 0 AND u.played = 0
         ORDER BY u.playbackPositionTicks DESC
         LIMIT :limit
-    """
+    """,
     )
     abstract suspend fun getContinueWatchingEpisodes(
         userId: UUID,

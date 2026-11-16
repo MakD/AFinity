@@ -99,7 +99,7 @@ private fun MusicDeleteDialog(
         message =
             stringResource(
                 if (request.kind == MusicDeleteKind.TRACK) R.string.admin_delete_message_item
-                else R.string.admin_delete_message_children
+                else R.string.admin_delete_message_children,
             ),
         deleting = deleting,
         errorRes = errorRes,

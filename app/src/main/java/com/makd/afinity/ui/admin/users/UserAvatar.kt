@@ -40,7 +40,7 @@ internal fun AdminUserAvatar(
         modifier =
             modifier.size(size).graphicsLayer {
                 compositingStrategy = CompositingStrategy.Offscreen
-            }
+            },
     ) {
         UserAvatar(
             imageUrl = imageUrl,
@@ -64,6 +64,6 @@ private fun PlayingBadge(modifier: Modifier = Modifier) {
                 .drawBehind { drawCircle(color = Color.Black, blendMode = BlendMode.Clear) }
                 .padding(2.dp)
                 .background(color = UserPlayingColor, shape = CircleShape)
-                .semantics { contentDescription = label }
+                .semantics { contentDescription = label },
     )
 }

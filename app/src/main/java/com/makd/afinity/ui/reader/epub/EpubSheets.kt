@@ -123,7 +123,7 @@ internal fun EpubDisplaySheet(
             SheetLabel(
                 stringResource(R.string.reader_text_size) +
                     " · " +
-                    stringResource(R.string.reader_progress_percent_fmt, (size * 100).roundToInt())
+                    stringResource(R.string.reader_progress_percent_fmt, (size * 100).roundToInt()),
             )
             AfinitySlider(
                 value = size,
@@ -256,12 +256,12 @@ private fun ThemeSwatch(
                     Box(
                         Modifier.weight(1f)
                             .fillMaxHeight()
-                            .background(Color(Theme.LIGHT.backgroundColor))
+                            .background(Color(Theme.LIGHT.backgroundColor)),
                     )
                     Box(
                         Modifier.weight(1f)
                             .fillMaxHeight()
-                            .background(Color(Theme.DARK.backgroundColor))
+                            .background(Color(Theme.DARK.backgroundColor)),
                     )
                 }
             } else {
@@ -390,7 +390,7 @@ private fun SwipeToDeleteRow(onDelete: () -> Unit, content: @Composable () -> Un
                     contentDescription = stringResource(R.string.reader_note_delete),
                     tint =
                         MaterialTheme.colorScheme.onErrorContainer.copy(
-                            alpha = if (active) 1f else 0f
+                            alpha = if (active) 1f else 0f,
                         ),
                 )
             }
@@ -435,7 +435,7 @@ private fun NoteRow(annotation: BookAnnotation, onClick: () -> Unit) {
                     Modifier.width(4.dp)
                         .height(44.dp)
                         .clip(RoundedCornerShape(2.dp))
-                        .background(Color((annotation.color ?: HighlightColor.YELLOW).argb))
+                        .background(Color((annotation.color ?: HighlightColor.YELLOW).argb)),
             )
         } else {
             Icon(
@@ -502,7 +502,7 @@ internal fun HighlightActionsSheet(
                                 HighlightColor.GREEN -> R.string.reader_color_green
                                 HighlightColor.BLUE -> R.string.reader_color_blue
                                 HighlightColor.PINK -> R.string.reader_color_pink
-                            }
+                            },
                         )
                     Box(
                         modifier =
@@ -518,7 +518,7 @@ internal fun HighlightActionsSheet(
                                 .semantics {
                                     contentDescription = colorName
                                     this.selected = selected
-                                }
+                                },
                     )
                 }
             }
@@ -565,7 +565,7 @@ private fun ContentsList(
                             end = 12.dp,
                             top = 12.dp,
                             bottom = 12.dp,
-                        )
+                        ),
             ) {
                 Text(
                     text = entry.title,

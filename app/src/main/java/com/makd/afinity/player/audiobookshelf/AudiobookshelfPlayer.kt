@@ -158,7 +158,7 @@ constructor(
                 if (wasAuthenticated && !isAuthenticated) {
                     if (playbackManager.playbackState.value.sessionId != null) {
                         Timber.w(
-                            "Audiobookshelf auth lost while playback active - playback continues"
+                            "Audiobookshelf auth lost while playback active - playback continues",
                         )
                     }
                 }
@@ -171,13 +171,13 @@ constructor(
     private suspend fun getConnectedController(): MediaController? {
         if (mediaController != null) {
             Timber.d(
-                "ABS getConnectedController: FAST PATH — reusing cached controller, switchToAbs() may not have run yet"
+                "ABS getConnectedController: FAST PATH — reusing cached controller, switchToAbs() may not have run yet",
             )
             return mediaController
         }
 
         Timber.d(
-            "ABS getConnectedController: building new connection (coroutine will suspend during await)"
+            "ABS getConnectedController: building new connection (coroutine will suspend during await)",
         )
         val sessionToken =
             SessionToken(
@@ -212,13 +212,13 @@ constructor(
         scope.launch {
             val trackBefore = musicPlaybackManager.state.value.currentTrack
             Timber.d(
-                "ABS loadSession: START itemId=${session.libraryItemId} musicTrack=${trackBefore?.name} controllerCached=${mediaController != null}"
+                "ABS loadSession: START itemId=${session.libraryItemId} musicTrack=${trackBefore?.name} controllerCached=${mediaController != null}",
             )
             musicPlaybackManager.updateTrack(null)
             Timber.d("ABS loadSession: music track cleared synchronously")
             context.startService(
                 Intent(context, com.makd.afinity.player.AudioService::class.java)
-                    .setAction(com.makd.afinity.player.AudioService.ACTION_ENGINE_ABS)
+                    .setAction(com.makd.afinity.player.AudioService.ACTION_ENGINE_ABS),
             )
             Timber.d("ABS loadSession: ACTION_ENGINE_ABS intent sent")
             val controller = getConnectedController() ?: return@launch
@@ -251,7 +251,7 @@ constructor(
             musicPlaybackManager.updateTrack(null)
             context.startService(
                 Intent(context, com.makd.afinity.player.AudioService::class.java)
-                    .setAction(com.makd.afinity.player.AudioService.ACTION_ENGINE_ABS)
+                    .setAction(com.makd.afinity.player.AudioService.ACTION_ENGINE_ABS),
             )
             val controller = getConnectedController() ?: return@launch
             controller.stop()
@@ -283,7 +283,7 @@ constructor(
                             .setTitle(session.title)
                             .setArtist(session.author ?: "")
                             .setArtworkUri(artUri)
-                            .build()
+                            .build(),
                     )
                     .build()
             }
@@ -397,10 +397,10 @@ constructor(
                         .setArtist(
                             enhancedSession.displayAuthor
                                 ?: enhancedSession.mediaMetadata?.authorName
-                                ?: ""
+                                ?: "",
                         )
                         .setArtworkUri(artUrl?.toUri())
-                        .build()
+                        .build(),
                 )
                 .build()
         }
@@ -463,7 +463,7 @@ constructor(
                 ?: run {
                     val saved =
                         EpisodeSort.parse(
-                            preferencesRepository.getStringPreference("abs_episode_sort_$itemId")
+                            preferencesRepository.getStringPreference("abs_episode_sort_$itemId"),
                         ) ?: EpisodeSort.Default
                     val seriesType =
                         session.libraryItem?.media?.metadata?.type
@@ -674,7 +674,7 @@ constructor(
                 val remainingMs = (remainingSeconds / speed * 1000).toLong()
                 delay(
                     (if (current.isPlaying) remainingMs.coerceAtMost(1_000L) else 1_000L)
-                        .milliseconds
+                        .milliseconds,
                 )
             }
             pauseForSleepTimer()
@@ -705,9 +705,9 @@ constructor(
         Timber.d(
             "closeSession: sessionId=$sessionId itemId=${state.itemId} episodeId=${state.episodeId} currentTime=${state.currentTime} listened=$listened isLocal=${
                 sessionId?.startsWith(
-                    "local_"
+                    "local_",
                 )
-            }"
+            }",
         )
         if (sessionId != null && isJellyfin) {
             jellyfinReporter.end(state.currentTime)
@@ -743,7 +743,7 @@ constructor(
                             val episodeId = state.episodeId
                             val activeContext = audiobookshelfRepository.currentActiveContext
                             Timber.d(
-                                "closeSession[local]: saving final position itemId=$itemId episodeId=$episodeId currentTime=$currentTime duration=$duration"
+                                "closeSession[local]: saving final position itemId=$itemId episodeId=$episodeId currentTime=$currentTime duration=$duration",
                             )
                             if (itemId != null && activeContext != null) {
                                 val (serverId, userId) = activeContext
@@ -757,11 +757,11 @@ constructor(
                                 )
                                 absSyncScheduler.scheduleSync(serverId, userId)
                                 Timber.d(
-                                    "closeSession[local]: final position saved and sync scheduled"
+                                    "closeSession[local]: final position saved and sync scheduled",
                                 )
                             } else {
                                 Timber.w(
-                                    "closeSession[local]: itemId or activeContext is null, skipping final position save"
+                                    "closeSession[local]: itemId or activeContext is null, skipping final position save",
                                 )
                             }
                             return@withContext
@@ -778,7 +778,7 @@ constructor(
                             Timber.d("Session closed on server: $sessionId")
                         } else {
                             Timber.e(
-                                "Failed to close session on server: ${result.exceptionOrNull()?.message}"
+                                "Failed to close session on server: ${result.exceptionOrNull()?.message}",
                             )
                         }
                     } catch (e: CancellationException) {
@@ -802,16 +802,16 @@ constructor(
 
         val musicTrackAtClose = musicPlaybackManager.state.value.currentTrack
         Timber.d(
-            "ABS closeSession: calling clearSession — musicTrack at this point=${musicTrackAtClose?.name}"
+            "ABS closeSession: calling clearSession — musicTrack at this point=${musicTrackAtClose?.name}",
         )
         playbackManager.clearSession()
         Timber.d(
-            "ABS closeSession: DONE — sessionId now=${playbackManager.playbackState.value.sessionId} musicTrack=${musicPlaybackManager.state.value.currentTrack?.name}"
+            "ABS closeSession: DONE — sessionId now=${playbackManager.playbackState.value.sessionId} musicTrack=${musicPlaybackManager.state.value.currentTrack?.name}",
         )
         if (sessionId != null && stopService) {
             context.startService(
                 Intent(context, com.makd.afinity.player.AudioService::class.java)
-                    .setAction(com.makd.afinity.player.AudioService.ACTION_STOP)
+                    .setAction(com.makd.afinity.player.AudioService.ACTION_STOP),
             )
         }
     }

@@ -162,7 +162,7 @@ constructor(
             val (serverId, userId) = audiobookshelfRepository.currentActiveContext ?: return
             val listened = takeListenedSeconds()
             Timber.d(
-                "ProgressSync[audiobook]: saving offline progress itemId=$itemId episodeId=${state.episodeId} currentTime=$currentTime duration=${state.duration} listened=$listened"
+                "ProgressSync[audiobook]: saving offline progress itemId=$itemId episodeId=${state.episodeId} currentTime=$currentTime duration=${state.duration} listened=$listened",
             )
             audiobookshelfRepository
                 .updateProgress(
@@ -244,7 +244,7 @@ constructor(
             val (serverId, userId) = audiobookshelfRepository.currentActiveContext ?: return
             val listened = takeListenedSeconds()
             Timber.d(
-                "ProgressSync[podcast]: saving offline progress itemId=$itemId episodeId=$episodeId currentTime=$episodeCurrentTime duration=$episodeDuration listened=$listened"
+                "ProgressSync[podcast]: saving offline progress itemId=$itemId episodeId=$episodeId currentTime=$episodeCurrentTime duration=$episodeDuration listened=$listened",
             )
             audiobookshelfRepository
                 .updateProgress(
@@ -279,7 +279,7 @@ constructor(
                 onSuccess = {
                     Timber.d(
                         "Playlist progress synced: episode=$episodeId, " +
-                            "${episodeCurrentTime}s / ${episodeDuration}s"
+                            "${episodeCurrentTime}s / ${episodeDuration}s",
                     )
                 },
                 onFailure = { error ->
@@ -307,7 +307,7 @@ constructor(
         val itemId = state.itemId ?: return
 
         Timber.d(
-            "Playlist episode change: $previousEpisodeId -> $newEpisodeId at ${previousTime}s / ${previousDuration}s"
+            "Playlist episode change: $previousEpisodeId -> $newEpisodeId at ${previousTime}s / ${previousDuration}s",
         )
 
         val sessionId = state.sessionId

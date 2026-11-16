@@ -24,7 +24,7 @@ fun ForgetAccountDialog(userName: String, onConfirm: () -> Unit, onDismiss: () -
                 onClick = {
                     onConfirm()
                     onDismiss()
-                }
+                },
             ) {
                 Text(
                     text = stringResource(R.string.forget_account_confirm),

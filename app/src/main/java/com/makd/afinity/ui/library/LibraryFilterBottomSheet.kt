@@ -201,7 +201,7 @@ fun LibraryFilterBottomSheet(
                 capabilities.readingStatus -> R.string.filter_continue_reading
                 capabilities.listeningStatus -> R.string.filter_continue_listening
                 else -> R.string.filter_resumable
-            }
+            },
         )
 
     var expandedSections by remember {
@@ -217,7 +217,7 @@ fun LibraryFilterBottomSheet(
                 if (working.videoTypes.isNotEmpty()) add("video_type")
                 if (working.years.isNotEmpty()) add("years")
                 if (working.studios.isNotEmpty()) add("studios")
-            }
+            },
         )
     }
     fun toggleSection(key: String) {
@@ -344,7 +344,7 @@ fun LibraryFilterBottomSheet(
                             onSelectedChange = { selected ->
                                 working =
                                     working.copy(
-                                        formats = if (selected) setOf(format) else emptySet()
+                                        formats = if (selected) setOf(format) else emptySet(),
                                     )
                             },
                         )
@@ -388,7 +388,7 @@ fun LibraryFilterBottomSheet(
                                     working.copy(
                                         seriesStatuses =
                                             if (selected) working.seriesStatuses + status
-                                            else working.seriesStatuses - status
+                                            else working.seriesStatuses - status,
                                     )
                             },
                         )
@@ -432,7 +432,7 @@ fun LibraryFilterBottomSheet(
                                     working.copy(
                                         features =
                                             if (selected) working.features + feature
-                                            else working.features - feature
+                                            else working.features - feature,
                                     )
                             },
                         )
@@ -652,7 +652,7 @@ fun LibraryFilterBottomSheet(
                                     working.copy(
                                         videoTypes =
                                             if (selected) working.videoTypes + type
-                                            else working.videoTypes - type
+                                            else working.videoTypes - type,
                                     )
                             },
                         )

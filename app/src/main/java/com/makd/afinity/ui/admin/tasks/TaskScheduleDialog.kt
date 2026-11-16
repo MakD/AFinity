@@ -162,7 +162,7 @@ internal fun TaskScheduleDialog(
                 text =
                     stringResource(
                         if (initial == null) R.string.task_schedule_add
-                        else R.string.task_schedule_edit
+                        else R.string.task_schedule_edit,
                     ),
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             )
@@ -235,8 +235,8 @@ internal fun TaskScheduleDialog(
             TextButton(onClick = { onSave(draft) }) {
                 Text(
                     stringResource(
-                        if (initial == null) R.string.action_add else R.string.action_save
-                    )
+                        if (initial == null) R.string.action_add else R.string.action_save,
+                    ),
                 )
             }
         },
@@ -325,11 +325,11 @@ private fun <T> MenuTile(
                         Modifier.background(
                             if (option == selected) {
                                 MaterialTheme.colorScheme.onSurface.copy(
-                                    alpha = SELECTED_OPTION_ALPHA
+                                    alpha = SELECTED_OPTION_ALPHA,
                                 )
                             } else {
                                 Color.Transparent
-                            }
+                            },
                         ),
                 )
             }

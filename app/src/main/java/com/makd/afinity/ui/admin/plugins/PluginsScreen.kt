@@ -428,7 +428,7 @@ private fun PluginCard(
                     style =
                         if (isHighlighted) {
                             MaterialTheme.typography.bodySmall.copy(
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
                             )
                         } else {
                             MaterialTheme.typography.bodySmall
@@ -457,7 +457,7 @@ private fun PluginCard(
                             contentDescription =
                                 stringResource(
                                     if (card.hasUpdate) R.string.plugin_action_update
-                                    else R.string.plugin_action_install
+                                    else R.string.plugin_action_install,
                                 ),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp),

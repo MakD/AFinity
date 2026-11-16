@@ -47,7 +47,7 @@ fun PendingSection(
         Column(modifier = modifier) {
             HomeSectionHeader(title = title, startPadding = CardDimensions.RowGutter)
             BoxWithConstraints(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = CardDimensions.RowGutter)
+                modifier = Modifier.fillMaxWidth().padding(horizontal = CardDimensions.RowGutter),
             ) {
                 val itemSize =
                     CardDimensions.carouselItemSize(
@@ -69,7 +69,7 @@ fun PendingSection(
                     Box(
                         modifier =
                             Modifier.height(itemSize.height)
-                                .maskClip(MaterialTheme.shapes.extraLarge)
+                                .maskClip(MaterialTheme.shapes.extraLarge),
                     ) {
                         Box(modifier = Modifier.fillMaxSize().shimmerEffect())
                     }

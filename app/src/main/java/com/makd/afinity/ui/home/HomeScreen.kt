@@ -296,7 +296,7 @@ fun HomeScreen(
             ?: run {
                 if (uiState.isOffline && !uiState.offlineContentLoaded) {
                     FullScreenLoading(
-                        modifier = Modifier.background(MaterialTheme.colorScheme.background)
+                        modifier = Modifier.background(MaterialTheme.colorScheme.background),
                     )
                     return@run
                 }
@@ -307,12 +307,12 @@ fun HomeScreen(
                         title =
                             stringResource(
                                 if (noRoute) R.string.offline_no_route_title
-                                else R.string.offline_empty_title
+                                else R.string.offline_empty_title,
                             ),
                         message =
                             stringResource(
                                 if (noRoute) R.string.offline_no_route_message
-                                else R.string.offline_empty_message
+                                else R.string.offline_empty_message,
                             ),
                         actionText =
                             if (noRoute) stringResource(R.string.offline_no_route_action) else null,
@@ -336,7 +336,7 @@ fun HomeScreen(
                     val baseModifier =
                         Modifier.fillMaxWidth()
                             .windowInsetsPadding(
-                                WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                                WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal),
                             )
 
                     LazyColumn(
@@ -602,7 +602,7 @@ fun HomeScreen(
                                             stringResource(
                                                 if (uiState.downloadedAudiobooks.isNotEmpty())
                                                     R.string.home_downloaded_jellyfin_audiobooks
-                                                else R.string.home_downloaded_audiobooks
+                                                else R.string.home_downloaded_audiobooks,
                                             ),
                                         books = uiState.downloadedJellyfinAudiobooks,
                                         onBookClick = onItemClick,
@@ -610,7 +610,7 @@ fun HomeScreen(
                                         showProgress = true,
                                         onViewAllClick = {
                                             onDownloadedCategoryClick(
-                                                DownloadedCategory.JELLYFIN_AUDIOBOOKS
+                                                DownloadedCategory.JELLYFIN_AUDIOBOOKS,
                                             )
                                         },
                                     )
@@ -1107,7 +1107,7 @@ fun HomeScreen(
                                 Box(
                                     modifier =
                                         if (hideSection) Modifier
-                                        else baseModifier.padding(top = 24.dp)
+                                        else baseModifier.padding(top = 24.dp),
                                 ) {
                                     when (section) {
                                         is HomeSection.Pending -> {
@@ -1186,7 +1186,7 @@ fun HomeScreen(
                                                                 ?: emptyList(),
                                                         loaded =
                                                             uiState.genreMovies.containsKey(
-                                                                section.genreItem.name
+                                                                section.genreItem.name,
                                                             ),
                                                         onVisible = {
                                                             viewModel.onSectionVisible(section.key)
@@ -1208,7 +1208,7 @@ fun HomeScreen(
                                                                 ?: emptyList(),
                                                         loaded =
                                                             uiState.genreShows.containsKey(
-                                                                section.genreItem.name
+                                                                section.genreItem.name,
                                                             ),
                                                         onVisible = {
                                                             viewModel.onSectionVisible(section.key)
@@ -1235,7 +1235,7 @@ fun HomeScreen(
                         modifier =
                             Modifier.align(Alignment.BottomEnd)
                                 .windowInsetsPadding(
-                                    WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                                    WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal),
                                 )
                                 .padding(
                                     end = 16.dp,

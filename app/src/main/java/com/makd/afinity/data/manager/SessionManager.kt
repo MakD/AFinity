@@ -159,7 +159,7 @@ constructor(
                             val result = serverAddressResolver.resolveAddress(serverId, validator)
                             if (result is AddressResolutionResult.Success) {
                                 Timber.d(
-                                    "Resolved server address: ${result.address} (saved: $serverUrl)"
+                                    "Resolved server address: ${result.address} (saved: $serverUrl)",
                                 )
                                 setServerReachable(true)
                                 result.address
@@ -171,7 +171,7 @@ constructor(
                                     when (result) {
                                         is AddressResolutionResult.PermissionRequired -> {
                                             Timber.w(
-                                                "Local network permission missing, cannot reach ${result.attemptedAddresses}"
+                                                "Local network permission missing, cannot reach ${result.attemptedAddresses}",
                                             )
                                             _needsLocalNetworkPermission.value = true
                                             UnreachableReason.PERMISSION_REQUIRED
@@ -179,14 +179,14 @@ constructor(
 
                                         is AddressResolutionResult.NoRoute -> {
                                             Timber.w(
-                                                "No route from this network to ${result.attemptedAddresses}, starting in offline mode"
+                                                "No route from this network to ${result.attemptedAddresses}, starting in offline mode",
                                             )
                                             UnreachableReason.NO_ROUTE
                                         }
 
                                         else -> {
                                             Timber.w(
-                                                "Address resolution failed, starting in offline mode. Saved URL: $serverUrl"
+                                                "Address resolution failed, starting in offline mode. Saved URL: $serverUrl",
                                             )
                                             UnreachableReason.ALL_ADDRESSES_FAILED
                                         }
@@ -327,7 +327,7 @@ constructor(
                                 )
                         }
                         Timber.d(
-                            "Admin status refreshed from policy: isAdmin=$isAdmin, canDownload=$canDownload"
+                            "Admin status refreshed from policy: isAdmin=$isAdmin, canDownload=$canDownload",
                         )
                         if (canManageSubtitles) {
                             refreshSubtitleProvider(apiClient, serverId, userId)
@@ -479,7 +479,7 @@ constructor(
         val token =
             securePrefsRepository.getServerUserToken(serverId, userId)
                 ?: return Result.failure(
-                    IllegalStateException("No token found for user $userId on server $serverId")
+                    IllegalStateException("No token found for user $userId on server $serverId"),
                 )
         val serverUrl =
             securePrefsRepository
@@ -487,7 +487,7 @@ constructor(
                 .find { it.serverId == serverId && it.userId == userId }
                 ?.serverUrl
                 ?: return Result.failure(
-                    IllegalStateException("Could not find Server URL for target user")
+                    IllegalStateException("Could not find Server URL for target user"),
                 )
 
         switchingCallCount.incrementAndGet()

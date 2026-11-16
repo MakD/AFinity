@@ -222,7 +222,7 @@ constructor(
                 val tracks = _queue.value
                 if (tracks.isNotEmpty()) {
                     _rearrangeQueueEvents.emit(
-                        RearrangeQueueEvent(tracks.map { buildMediaItem(it) }, _currentIndex.value)
+                        RearrangeQueueEvent(tracks.map { buildMediaItem(it) }, _currentIndex.value),
                     )
                 }
             }
@@ -239,7 +239,7 @@ constructor(
                     if (playbackManager.state.value.currentTrack != null) {
                         context.startService(
                             Intent(context, AudioService::class.java)
-                                .setAction(AudioService.ACTION_STOP)
+                                .setAction(AudioService.ACTION_STOP),
                         )
                     }
                     clearQueue()
@@ -254,7 +254,7 @@ constructor(
                         Timber.d("Server URL changed, rebuilding music queue stream URLs")
                         val mediaItems = current.map { buildMediaItem(it) }
                         _rearrangeQueueEvents.emit(
-                            RearrangeQueueEvent(mediaItems, _currentIndex.value)
+                            RearrangeQueueEvent(mediaItems, _currentIndex.value),
                         )
                     }
                 }
@@ -295,7 +295,7 @@ constructor(
                         mediaItems = mediaItems,
                         startIndex = _currentIndex.value,
                         startPositionMs = 0L,
-                    )
+                    ),
                 )
             } else {
                 _rearrangeQueueEvents.emit(RearrangeQueueEvent(mediaItems, _currentIndex.value))
@@ -350,7 +350,7 @@ constructor(
                         mediaItems = mediaItems,
                         startIndex = _currentIndex.value,
                         startPositionMs = 0L,
-                    )
+                    ),
                 )
             } else {
                 _rearrangeQueueEvents.emit(RearrangeQueueEvent(mediaItems, _currentIndex.value))
@@ -460,7 +460,7 @@ constructor(
                     mediaItems = mediaItems,
                     startIndex = startIndex,
                     startPositionMs = startPositionMs,
-                )
+                ),
             )
         }
     }

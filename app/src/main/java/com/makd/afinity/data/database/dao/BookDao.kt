@@ -17,7 +17,7 @@ interface BookDao {
     suspend fun getBook(bookId: UUID, serverId: String): AfinityBookDto?
 
     @Query(
-        "SELECT * FROM books WHERE serverId = :serverId AND seriesName = :seriesName COLLATE NOCASE"
+        "SELECT * FROM books WHERE serverId = :serverId AND seriesName = :seriesName COLLATE NOCASE",
     )
     suspend fun getBooksInSeries(serverId: String, seriesName: String): List<AfinityBookDto>
 
@@ -31,7 +31,7 @@ interface BookDao {
     suspend fun insertAudiobookPartsIfAbsent(parts: List<AfinityAudiobookPartDto>)
 
     @Query(
-        "UPDATE audiobook_parts SET bookPartCount = :count WHERE id IN (:partIds) AND serverId = :serverId"
+        "UPDATE audiobook_parts SET bookPartCount = :count WHERE id IN (:partIds) AND serverId = :serverId",
     )
     suspend fun updateBookPartCount(partIds: List<UUID>, serverId: String, count: Int)
 

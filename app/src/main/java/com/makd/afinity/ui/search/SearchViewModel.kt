@@ -327,7 +327,7 @@ constructor(
                         onSuccess = { genres ->
                             _uiState.update { it.copy(audiobookshelfGenres = genres) }
                             Timber.d(
-                                "Loaded ${genres.size} Audiobookshelf genres across ${libraryIds.size} libraries"
+                                "Loaded ${genres.size} Audiobookshelf genres across ${libraryIds.size} libraries",
                             )
                         },
                         onFailure = { error ->
@@ -458,7 +458,7 @@ constructor(
                                     isSearching = false,
                                     searchError =
                                         context.getString(
-                                            R.string.error_content_unavailable_server
+                                            R.string.error_content_unavailable_server,
                                         ),
                                 )
                             return@launch
@@ -735,7 +735,7 @@ constructor(
             it.copy(
                 selectedTagIds =
                     if (tagId in it.selectedTagIds) it.selectedTagIds - tagId
-                    else it.selectedTagIds + tagId
+                    else it.selectedTagIds + tagId,
             )
         }
     }
@@ -852,7 +852,7 @@ constructor(
                 val limit = if (isFocused) 12 else 6
 
                 Timber.d(
-                    "Searching ${targetLibraries.size} libraries (limit $limit): ${targetLibraries.map { it.name }}"
+                    "Searching ${targetLibraries.size} libraries (limit $limit): ${targetLibraries.map { it.name }}",
                 )
 
                 val results =
@@ -863,7 +863,7 @@ constructor(
                                     .searchLibrary(library.id, query, limit)
                                     .onSuccess { response ->
                                         Timber.d(
-                                            "Library '${library.name}': ${response.book?.size ?: 0} books, ${response.podcast?.size ?: 0} podcasts"
+                                            "Library '${library.name}': ${response.book?.size ?: 0} books, ${response.podcast?.size ?: 0} podcasts",
                                         )
                                     }
                                     .onFailure {
@@ -1148,7 +1148,7 @@ constructor(
                                     ) {
                                         val updatedMediaInfo =
                                             newRequest.media.copy(
-                                                requests = listOfNotNull(newRequest)
+                                                requests = listOfNotNull(newRequest),
                                             )
                                         item.copy(mediaInfo = updatedMediaInfo)
                                     } else {
@@ -1406,8 +1406,8 @@ constructor(
                         tracks =
                             tracks.map { t ->
                                 if (t.id == trackId) t.copy(favorite = newFavorite) else t
-                            }
-                    )
+                            },
+                    ),
             )
         }
         viewModelScope.launch {

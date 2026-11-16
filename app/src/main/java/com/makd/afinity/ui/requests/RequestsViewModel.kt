@@ -267,7 +267,7 @@ constructor(
             it.copy(
                 selectedTagIds =
                     if (tagId in it.selectedTagIds) it.selectedTagIds - tagId
-                    else it.selectedTagIds + tagId
+                    else it.selectedTagIds + tagId,
             )
         }
     }
@@ -615,7 +615,7 @@ constructor(
 
     fun selectRequest(request: JellyseerrRequest) {
         Timber.d(
-            "JellyseerrDebug: selectRequest called for Request ID: ${request.id}, pre-loading data..."
+            "JellyseerrDebug: selectRequest called for Request ID: ${request.id}, pre-loading data...",
         )
 
         _uiState.update { it.copy(isLoadingManagementData = true, requestDialogError = null) }
@@ -637,7 +637,7 @@ constructor(
                         if (state.selectedRequest?.id != request.id || current == null) state
                         else
                             state.copy(
-                                selectedRequestDetails = current.copy(ratingsCombined = ratings)
+                                selectedRequestDetails = current.copy(ratingsCombined = ratings),
                             )
                     }
                 }
@@ -663,7 +663,7 @@ constructor(
 
                 if (actualServer != null && actualServer.is4k != finalIs4k) {
                     Timber.w(
-                        "JellyseerrDebug: Correction! Request.is4k=$finalIs4k but Server is4k=${actualServer.is4k}. Switching toggle."
+                        "JellyseerrDebug: Correction! Request.is4k=$finalIs4k but Server is4k=${actualServer.is4k}. Switching toggle.",
                     )
                     finalIs4k = actualServer.is4k
                 }
@@ -904,7 +904,7 @@ constructor(
                                         context.getString(
                                             R.string.error_search_no_results_fmt,
                                             query,
-                                        )
+                                        ),
                                 )
                             }
                     },
@@ -1132,7 +1132,7 @@ constructor(
                                 key,
                                 genres,
                                 buildGenreBackdrops(genres),
-                            )
+                            ),
                         )
                     }
                 }
@@ -1144,7 +1144,7 @@ constructor(
                                 key,
                                 genres,
                                 buildGenreBackdrops(genres),
-                            )
+                            ),
                         )
                     }
                 }
@@ -1274,7 +1274,7 @@ constructor(
                         items = items,
                         viewAllType = viewAllType,
                         viewAllId = viewAllId,
-                    )
+                    ),
                 )
             } else if (removeWhenEmpty) {
                 removeSection(key)
@@ -1359,7 +1359,7 @@ constructor(
                         if (mediaType == MediaType.TV) {
                             details.requestableSeasonNumbers(
                                 includeSpecials =
-                                    _uiState.value.publicSettings?.enableSpecialEpisodes == true
+                                    _uiState.value.publicSettings?.enableSpecialEpisodes == true,
                             )
                         } else {
                             emptyList()

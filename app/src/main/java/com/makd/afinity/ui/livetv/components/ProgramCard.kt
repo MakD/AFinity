@@ -100,7 +100,7 @@ fun ProgramCard(
                                     MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
                                     RoundedCornerShape(6.dp),
                                 )
-                                .padding(if (isCompactCard) 2.dp else 4.dp)
+                                .padding(if (isCompactCard) 2.dp else 4.dp),
                     ) {
                         AsyncImage(
                             imageUrl = channelLogo.toString(),

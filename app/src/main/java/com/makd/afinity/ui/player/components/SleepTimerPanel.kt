@@ -163,7 +163,7 @@ fun SleepTimerPanel(
                         onClick = {
                             onCancel()
                             onDismiss()
-                        }
+                        },
                     )
                 }
             }
@@ -185,7 +185,7 @@ private fun DurationTile(
                 .clip(RoundedCornerShape(16.dp))
                 .background(
                     if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                 )
                 .selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -223,7 +223,7 @@ private fun EndOfItemRow(
                 .clip(RoundedCornerShape(16.dp))
                 .background(
                     if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                 )
                 .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
                 .padding(horizontal = 16.dp),
@@ -233,7 +233,7 @@ private fun EndOfItemRow(
         Icon(
             painter =
                 painterResource(
-                    id = if (isMovie) R.drawable.ic_movie else R.drawable.ic_episodes_list
+                    id = if (isMovie) R.drawable.ic_movie else R.drawable.ic_episodes_list,
                 ),
             contentDescription = null,
             tint =
@@ -245,7 +245,7 @@ private fun EndOfItemRow(
             text =
                 stringResource(
                     if (isMovie) R.string.player_sleep_timer_end_of_movie
-                    else R.string.player_sleep_timer_end_of_episode
+                    else R.string.player_sleep_timer_end_of_episode,
                 ),
             style = MaterialTheme.typography.bodyLarge,
             color =

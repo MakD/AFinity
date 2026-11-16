@@ -12,12 +12,12 @@ interface MusicLyricsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insert(lyrics: MusicLyricsEntity)
 
     @Query(
-        "SELECT * FROM music_lyrics WHERE trackId = :trackId AND serverId = :serverId AND userId = :userId LIMIT 1"
+        "SELECT * FROM music_lyrics WHERE trackId = :trackId AND serverId = :serverId AND userId = :userId LIMIT 1",
     )
     suspend fun get(trackId: String, serverId: String, userId: String): MusicLyricsEntity?
 
     @Query(
-        "DELETE FROM music_lyrics WHERE trackId = :trackId AND serverId = :serverId AND userId = :userId"
+        "DELETE FROM music_lyrics WHERE trackId = :trackId AND serverId = :serverId AND userId = :userId",
     )
     suspend fun delete(trackId: String, serverId: String, userId: String)
 

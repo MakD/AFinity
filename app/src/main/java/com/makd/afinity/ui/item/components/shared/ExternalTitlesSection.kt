@@ -77,7 +77,7 @@ fun ExternalTitlesSection(
                             ExternalTitlesSource.SEERR -> onSeerrItemClick(item)
                             ExternalTitlesSource.TMDB ->
                                 uriHandler.openUri(
-                                    "https://www.themoviedb.org/${item.mediaType}/${item.id}"
+                                    "https://www.themoviedb.org/${item.mediaType}/${item.id}",
                                 )
                         }
                     },

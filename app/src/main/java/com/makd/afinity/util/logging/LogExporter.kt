@@ -165,7 +165,7 @@ object LogExporter {
         context.startActivity(
             Intent.createChooser(shareIntent, "Share Logs").apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
+            },
         )
     }
 

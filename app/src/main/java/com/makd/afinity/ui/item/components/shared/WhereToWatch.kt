@@ -66,7 +66,7 @@ private data class WatchOption(val provider: TmdbWatchProvider, val kinds: List<
 private data class WatchGroups(val stream: List<WatchOption>, val purchase: List<WatchOption>)
 
 private fun groupOptions(
-    vararg sources: Pair<WatchKind, List<TmdbWatchProvider>>
+    vararg sources: Pair<WatchKind, List<TmdbWatchProvider>>,
 ): List<WatchOption> {
     val byProvider = LinkedHashMap<Int, Pair<TmdbWatchProvider, MutableList<WatchKind>>>()
     sources.forEach { (kind, providers) ->

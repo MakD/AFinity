@@ -422,7 +422,7 @@ private fun BadgeCard(
                         text = sourceName,
                         style =
                             MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
                             ),
                         color = labelColor,
                         maxLines = 1,

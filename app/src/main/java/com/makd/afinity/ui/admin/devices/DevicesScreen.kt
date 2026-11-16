@@ -340,7 +340,7 @@ private fun DeviceTile(group: AdminDeviceGroup) {
                 .clip(RoundedCornerShape(12.dp))
                 .background(
                     if (group.isThisDevice) MaterialTheme.colorScheme.primaryContainer
-                    else MaterialTheme.colorScheme.surfaceContainerHighest
+                    else MaterialTheme.colorScheme.surfaceContainerHighest,
                 ),
         contentAlignment = Alignment.Center,
     ) {
@@ -371,7 +371,7 @@ private fun DeviceEntries(
     Column(
         modifier =
             Modifier.fillMaxWidth()
-                .padding(start = SETTINGS_EXPANDED_START_PADDING, end = 8.dp, bottom = 8.dp)
+                .padding(start = SETTINGS_EXPANDED_START_PADDING, end = 8.dp, bottom = 8.dp),
     ) {
         group.entries.forEach { entry ->
             Row(
@@ -432,7 +432,7 @@ private fun DeviceEntries(
                     enabled = actionsEnabled,
                     colors =
                         ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
+                            contentColor = MaterialTheme.colorScheme.error,
                         ),
                 ) {
                     Text(stringResource(R.string.device_sign_out_all_fmt, removable))

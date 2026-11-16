@@ -124,7 +124,7 @@ fun EpisodeSwitcher(
 
     val listState =
         rememberLazyListState(
-            initialFirstVisibleItemIndex = (activeEpisodeIndex - 1).coerceAtLeast(0)
+            initialFirstVisibleItemIndex = (activeEpisodeIndex - 1).coerceAtLeast(0),
         )
 
     LaunchedEffect(activeEpisodeIndex) {
@@ -211,7 +211,7 @@ fun EpisodeSwitcher(
                             modifier =
                                 Modifier.background(
                                         MaterialTheme.colorScheme.surfaceContainerHighest.copy(
-                                            alpha = 0.5f
+                                            alpha = 0.5f,
                                         ),
                                         CircleShape,
                                     )
@@ -306,7 +306,7 @@ private fun EpisodeSwitcherCard(
                 Modifier.width(140.dp)
                     .aspectRatio(16f / 9f)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
         ) {
             val cardImageUrl =
                 if (episode is AfinityMovie) {
@@ -351,7 +351,7 @@ private fun EpisodeSwitcherCard(
                                 endY = size.height,
                             )
                         onDrawBehind { drawRect(gradient) }
-                    }
+                    },
             )
 
             if (watched) {

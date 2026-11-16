@@ -168,7 +168,7 @@ fun SettingsScreen(
         key(isDualPane) {
             val initialHistory =
                 mutableListOf<ThreePaneScaffoldDestinationItem<SettingsPaneDestination>>(
-                    ThreePaneScaffoldDestinationItem(ListDetailPaneScaffoldRole.List, null)
+                    ThreePaneScaffoldDestinationItem(ListDetailPaneScaffoldRole.List, null),
                 )
 
             if (isDualPane) {
@@ -177,7 +177,7 @@ fun SettingsScreen(
                     ThreePaneScaffoldDestinationItem(
                         ListDetailPaneScaffoldRole.Detail,
                         detailPane,
-                    )
+                    ),
                 )
             }
 
@@ -271,7 +271,7 @@ fun SettingsScreen(
         modifier = modifier,
         listPane = {
             AnimatedPane(
-                modifier = Modifier.preferredWidth(customDirective.defaultPanePreferredWidth)
+                modifier = Modifier.preferredWidth(customDirective.defaultPanePreferredWidth),
             ) {
                 AfinityScreen(
                     topBar = { backgroundOpacity ->
@@ -341,7 +341,7 @@ fun SettingsScreen(
                                         SettingsItem(
                                             icon =
                                                 painterResource(
-                                                    id = R.drawable.ic_admin_panel_settings
+                                                    id = R.drawable.ic_admin_panel_settings,
                                                 ),
                                             title = stringResource(R.string.title_control_panel),
                                             subtitle =
@@ -352,7 +352,7 @@ fun SettingsScreen(
                                                                 it.isNotBlank()
                                                             }
                                                                 ?: stringResource(
-                                                                    R.string.generic_server_name
+                                                                    R.string.generic_server_name,
                                                                 )
                                                         when {
                                                             status.restartingPluginNames.size ==
@@ -396,7 +396,7 @@ fun SettingsScreen(
                                                         )
                                                     else ->
                                                         stringResource(
-                                                            R.string.control_panel_summary
+                                                            R.string.control_panel_summary,
                                                         )
                                                 },
                                             onClick = onControlPanelClick,
@@ -425,7 +425,7 @@ fun SettingsScreen(
                                                             UnreachableReason.NO_ROUTE
                                                     )
                                                         R.string.offline_mode_no_route
-                                                    else R.string.offline_mode_unreachable
+                                                    else R.string.offline_mode_unreachable,
                                                 )
                                             else stringResource(R.string.offline_mode_force),
                                         checked = effectiveOfflineMode,
@@ -492,7 +492,7 @@ fun SettingsScreen(
                                         title = stringResource(R.string.pref_downloads_and_storage),
                                         subtitle =
                                             stringResource(
-                                                R.string.pref_downloads_and_storage_summary
+                                                R.string.pref_downloads_and_storage_summary,
                                             ),
                                         onClick = {
                                             openSection(
@@ -533,7 +533,7 @@ fun SettingsScreen(
                                             if (!effectiveOfflineMode) {
                                                 {
                                                     openSection(
-                                                        SettingsPaneDestination.SessionSwitcher
+                                                        SettingsPaneDestination.SessionSwitcher,
                                                     ) {
                                                         showSessionSwitcherSheet = true
                                                     }
@@ -568,13 +568,13 @@ fun SettingsScreen(
                                             stringResource(R.string.pref_authorize_quickconnect),
                                         subtitle =
                                             stringResource(
-                                                R.string.pref_authorize_quickconnect_summary
+                                                R.string.pref_authorize_quickconnect_summary,
                                             ),
                                         onClick =
                                             if (!effectiveOfflineMode) {
                                                 {
                                                     openSection(
-                                                        SettingsPaneDestination.QuickConnect
+                                                        SettingsPaneDestination.QuickConnect,
                                                     ) {
                                                         showQuickConnectDialog = true
                                                     }
@@ -642,7 +642,7 @@ fun SettingsScreen(
                                         )
                                         if (showChangelog) {
                                             CurrentChangelogDialog(
-                                                onDismiss = { showChangelog = false }
+                                                onDismiss = { showChangelog = false },
                                             )
                                         }
                                     }
@@ -654,7 +654,7 @@ fun SettingsScreen(
                                     modifier =
                                         Modifier.fillMaxWidth()
                                             .padding(start = 24.dp, end = logoutEndPadding)
-                                            .padding(bottom = 32.dp)
+                                            .padding(bottom = 32.dp),
                                 ) {
                                     Button(
                                         onClick = { showLogoutDialog = true },
@@ -687,7 +687,7 @@ fun SettingsScreen(
                                                 text = stringResource(R.string.action_logout),
                                                 style =
                                                     MaterialTheme.typography.labelLarge.copy(
-                                                        fontWeight = FontWeight.Bold
+                                                        fontWeight = FontWeight.Bold,
                                                     ),
                                             )
                                         }
@@ -705,8 +705,8 @@ fun SettingsScreen(
                     Modifier.windowInsetsPadding(
                         WindowInsets.systemBars
                             .union(WindowInsets.displayCutout)
-                            .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)
-                    )
+                            .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top),
+                    ),
             ) {
                 when (navigator.currentDestination?.contentKey) {
                     is SettingsPaneDestination.Appearance ->
@@ -723,13 +723,13 @@ fun SettingsScreen(
                         )
                     is SettingsPaneDestination.CustomSections ->
                         CustomSectionsScreen(
-                            onBackClick = { scope.launch { navigator.navigateBack() } }
+                            onBackClick = { scope.launch { navigator.navigateBack() } },
                         )
                     is SettingsPaneDestination.Backup ->
                         BackupScreen(onBackClick = { scope.launch { navigator.navigateBack() } })
                     is SettingsPaneDestination.Player ->
                         PlayerOptionsScreen(
-                            onBackClick = { scope.launch { navigator.navigateBack() } }
+                            onBackClick = { scope.launch { navigator.navigateBack() } },
                         )
                     is SettingsPaneDestination.Downloads ->
                         DownloadSettingsScreen(
@@ -738,7 +738,7 @@ fun SettingsScreen(
                         )
                     is SettingsPaneDestination.StorageSettings ->
                         StorageSettingsScreen(
-                            onBackClick = { scope.launch { navigator.navigateBack() } }
+                            onBackClick = { scope.launch { navigator.navigateBack() } },
                         )
                     is SettingsPaneDestination.ServerManagement ->
                         ServerManagementScreen(
@@ -762,7 +762,7 @@ fun SettingsScreen(
                         )
                     is SettingsPaneDestination.Language ->
                         LanguagePickerPane(
-                            onBackClick = { scope.launch { navigator.navigateBack() } }
+                            onBackClick = { scope.launch { navigator.navigateBack() } },
                         )
                     is SettingsPaneDestination.QuickConnect ->
                         QuickConnectPane(
@@ -800,7 +800,7 @@ fun ProfileHeader(
             modifier =
                 Modifier.size(96.dp).graphicsLayer {
                     compositingStrategy = CompositingStrategy.Offscreen
-                }
+                },
         ) {
             Box(
                 modifier =
@@ -955,7 +955,7 @@ private fun LanguagePickerDialog(onDismiss: () -> Unit) {
         },
         text = {
             Column(
-                modifier = Modifier.heightIn(max = 400.dp).verticalScroll(rememberScrollState())
+                modifier = Modifier.heightIn(max = 400.dp).verticalScroll(rememberScrollState()),
             ) {
                 LanguageOption(
                     name = stringResource(R.string.lang_system_default),
@@ -1016,7 +1016,7 @@ private fun LanguagePickerPane(onBackClick: () -> Unit) {
                 Modifier.fillMaxSize()
                     .padding(innerPadding)
                     .verticalScroll(rememberScrollState())
-                    .padding(vertical = 8.dp)
+                    .padding(vertical = 8.dp),
         ) {
             LanguageOption(
                 name = stringResource(R.string.lang_system_default),
