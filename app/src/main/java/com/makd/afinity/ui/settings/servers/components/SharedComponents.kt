@@ -550,11 +550,7 @@ internal fun UserServiceRow(userInfo: UserServiceInfo) {
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Text(
                 text = userInfo.userName,
                 style = MaterialTheme.typography.titleMedium,
@@ -562,10 +558,11 @@ internal fun UserServiceRow(userInfo: UserServiceInfo) {
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false).padding(end = 12.dp),
             )
+            Spacer(modifier = Modifier.height(12.dp))
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 ServiceStatusIcon(
@@ -591,6 +588,26 @@ internal fun UserServiceRow(userInfo: UserServiceInfo) {
                     activeIconRes = R.drawable.ic_mdblist,
                     contentDescription = stringResource(R.string.cd_mdblist),
                     isActive = userInfo.serviceStatus.mdbListConfigured,
+                )
+                ServiceStatusIcon(
+                    activeIconRes = R.drawable.ic_omdb,
+                    contentDescription = stringResource(R.string.cd_omdb),
+                    isActive = userInfo.serviceStatus.omdbConfigured,
+                )
+                ServiceStatusIcon(
+                    activeIconRes = R.drawable.ic_lastfm,
+                    contentDescription = stringResource(R.string.cd_lastfm),
+                    isActive = userInfo.serviceStatus.lastFmConfigured,
+                )
+                ServiceStatusIcon(
+                    activeIconRes = R.drawable.ic_wikidata,
+                    contentDescription = stringResource(R.string.cd_wikidata),
+                    isActive = userInfo.serviceStatus.wikidataEnabled,
+                )
+                ServiceStatusIcon(
+                    activeIconRes = R.drawable.ic_subtitledb,
+                    contentDescription = stringResource(R.string.cd_subtitledb),
+                    isActive = userInfo.serviceStatus.subtitleDbEnabled,
                 )
             }
         }

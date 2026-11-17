@@ -91,6 +91,7 @@ import com.makd.afinity.ui.settings.servers.ServerWithUserCount
 import com.makd.afinity.ui.settings.servers.components.UnverifiedAddressDialog
 import com.makd.afinity.ui.settings.servers.lastFmColor
 import com.makd.afinity.ui.settings.servers.mdblistColor
+import com.makd.afinity.ui.settings.servers.omdbColor
 import com.makd.afinity.ui.settings.servers.tmdbColor
 import com.makd.afinity.util.isLocalAddress
 import com.makd.afinity.util.isTailscaleAddress
@@ -204,7 +205,7 @@ fun ServicesHubScreen(
         listOf(
             if (tmdbKey.isNotBlank()) tmdbColor else dimDot,
             if (mdbKey.isNotBlank()) mdblistColor else dimDot,
-            if (omdbKey.isNotBlank()) MaterialTheme.colorScheme.onSurfaceVariant else dimDot,
+            if (omdbKey.isNotBlank()) omdbColor else dimDot,
             if (lastFmKey.isNotBlank()) lastFmColor else dimDot,
         )
 
@@ -1151,7 +1152,7 @@ private fun RatingsKeys(viewModel: SettingsViewModel) {
     )
     RatingKeyRow(
         label = "OMDb",
-        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        labelColor = omdbColor,
         currentKey = omdb,
         validating = uiState.isOmdbKeyValidating,
         error = uiState.omdbKeyValidationError,

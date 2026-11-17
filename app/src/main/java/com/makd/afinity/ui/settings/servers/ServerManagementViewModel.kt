@@ -23,6 +23,7 @@ import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.server.ServerRepository
@@ -82,6 +83,10 @@ data class ServiceStatus(
     val audiobookshelfConfigured: Boolean = false,
     val tmdbConfigured: Boolean = false,
     val mdbListConfigured: Boolean = false,
+    val omdbConfigured: Boolean = false,
+    val lastFmConfigured: Boolean = false,
+    val wikidataEnabled: Boolean = false,
+    val subtitleDbEnabled: Boolean = false,
 )
 
 data class UserServiceInfo(
@@ -164,6 +169,7 @@ constructor(
     private val jellyseerrDao: JellyseerrDao,
     private val audiobookshelfDao: AudiobookshelfDao,
     private val securePreferencesRepository: SecurePreferencesRepository,
+    private val preferencesRepository: PreferencesRepository,
     private val authRepository: AuthRepository,
     private val serverRepository: ServerRepository,
     private val jellyseerrRepositoryProvider: Provider<JellyseerrRepository>,
@@ -807,6 +813,11 @@ constructor(
                 val hasTmdb = securePreferencesRepository.getTmdbApiKey(server.id, userId) != null
                 val hasMdbList =
                     securePreferencesRepository.getMdbListApiKey(server.id, userId) != null
+                val hasOmdb = securePreferencesRepository.getOmdbApiKey(server.id, userId) != null
+                val hasLastFm =
+                    securePreferencesRepository.getLastFmApiKey(server.id, userId) != null
+                val wikidataOn = preferencesRepository.getWikidataEnabled(server.id, userId)
+                val subtitleDbOn = preferencesRepository.getSubtitleDbEnabled(server.id, userId)
 
                 UserServiceInfo(
                     userId = userId,
@@ -817,6 +828,10 @@ constructor(
                             audiobookshelfConfigured = hasAudiobookshelf,
                             tmdbConfigured = hasTmdb,
                             mdbListConfigured = hasMdbList,
+                            omdbConfigured = hasOmdb,
+                            lastFmConfigured = hasLastFm,
+                            wikidataEnabled = wikidataOn,
+                            subtitleDbEnabled = subtitleDbOn,
                         ),
                 )
             }
@@ -845,6 +860,12 @@ constructor(
                         tmdbConfigured = userServicesList.any { it.serviceStatus.tmdbConfigured },
                         mdbListConfigured =
                             userServicesList.any { it.serviceStatus.mdbListConfigured },
+                        omdbConfigured = userServicesList.any { it.serviceStatus.omdbConfigured },
+                        lastFmConfigured =
+                            userServicesList.any { it.serviceStatus.lastFmConfigured },
+                        wikidataEnabled = userServicesList.any { it.serviceStatus.wikidataEnabled },
+                        subtitleDbEnabled =
+                            userServicesList.any { it.serviceStatus.subtitleDbEnabled },
                     )
                 }
             val connectionUrl =

@@ -2704,6 +2704,10 @@
     <string name="cd_audiobookshelf">Audiobookshelf</string>
     <string name="cd_tmdb">TMDB</string>
     <string name="cd_mdblist">MDBList</string>
+    <string name="cd_omdb">OMDb</string>
+    <string name="cd_lastfm">Last.fm</string>
+    <string name="cd_wikidata">Wikidata</string>
+    <string name="cd_subtitledb">TheSubtitleDB</string>
 
     <string name="permission_request">Request</string>
     <plurals name="quota_days_fmt">
@@ -3052,6 +3056,10 @@
     <string name="service_label_abs">ABS</string>
     <string name="service_label_tmdb">TMDB</string>
     <string name="service_label_mdblist">MDBList</string>
+    <string name="service_label_omdb">OMDb</string>
+    <string name="service_label_lastfm">Last.fm</string>
+    <string name="service_label_wikidata">Wikidata</string>
+    <string name="service_label_subtitledb">SubDB</string>
     <string name="stat_movies">Movies</string>
     <string name="stat_episodes">Episodes</string>
     <string name="stat_albums">Albums</string>

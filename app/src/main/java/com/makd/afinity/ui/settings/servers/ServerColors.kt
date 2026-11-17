@@ -8,6 +8,7 @@ internal val JellyseerrColor = Color(0xFFA88AFA)
 internal val AudiobookshelfColor = Color(0xFFCD9E46)
 internal val tmdbColor = Color(0xFF3CBEC9)
 internal val mdblistColor = Color(0xFF4283C9)
+internal val omdbColor = Color(0xFF34D399)
 internal val lastFmColor = Color(0xFFD51007)
 
 internal val SaveColor: Color
