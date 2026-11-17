@@ -121,8 +121,6 @@ interface MusicRepository {
 
     suspend fun getInstantMix(itemId: UUID, limit: Int = 50): List<AfinityTrack>
 
-    suspend fun getArtistRadio(artistId: UUID, limit: Int = 50): List<AfinityTrack>
-
     suspend fun getSimilarAlbums(
         itemId: UUID,
         limit: Int = 5,

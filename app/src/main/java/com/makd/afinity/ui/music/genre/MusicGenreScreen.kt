@@ -173,7 +173,14 @@ fun MusicGenreScreen(
                     enabled = !isOffline,
                     onClick = {
                         startMusicService(context)
-                        playerViewModel.playInstantMix(genreId)
+                        playerViewModel.playInstantMix(genreId) {
+                            Toast.makeText(
+                                    context,
+                                    context.getString(R.string.music_genre_mix_empty),
+                                    Toast.LENGTH_SHORT,
+                                )
+                                .show()
+                        }
                     },
                 ) {
                     Icon(

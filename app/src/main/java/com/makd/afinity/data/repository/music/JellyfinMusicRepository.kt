@@ -906,26 +906,6 @@ constructor(
             }
         }
 
-    override suspend fun getArtistRadio(artistId: UUID, limit: Int): List<AfinityTrack> =
-        apiCall(emptyList(), "Failed to fetch artist radio for artist: $artistId") {
-            apiClient,
-            userId ->
-            val baseUrl = getBaseUrlInternal()
-
-            val response =
-                InstantMixApi(apiClient)
-                    .getInstantMixFromArtists(
-                        itemId = artistId,
-                        userId = userId,
-                        limit = limit,
-                        fields = FieldSets.MUSIC_TRACK,
-                        enableUserData = true,
-                    )
-            response.content.items.mapNotNull { dto ->
-                runCatching { dto.toAfinityTrack(baseUrl) }.getOrNull()
-            }
-        }
-
     override suspend fun getSimilarAlbums(
         itemId: UUID,
         limit: Int,

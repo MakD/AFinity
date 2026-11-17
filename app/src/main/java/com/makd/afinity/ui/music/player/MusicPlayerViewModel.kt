@@ -434,23 +434,13 @@ constructor(
 
     fun clearQueue() = queueManager.clearQueue()
 
-    fun playInstantMix(itemId: UUID) {
+    fun playInstantMix(itemId: UUID, onEmpty: () -> Unit = {}) {
         viewModelScope.launch {
             val tracks = runCatching {
                 musicRepository.getInstantMix(itemId)
             }
                 .getOrDefault(emptyList())
-            if (tracks.isNotEmpty()) playQueue(tracks)
-        }
-    }
-
-    fun playArtistRadio(artistId: UUID) {
-        viewModelScope.launch {
-            val tracks = runCatching {
-                musicRepository.getArtistRadio(artistId)
-            }
-                .getOrDefault(emptyList())
-            if (tracks.isNotEmpty()) playQueue(tracks)
+            if (tracks.isNotEmpty()) playQueue(tracks) else onEmpty()
         }
     }
 
