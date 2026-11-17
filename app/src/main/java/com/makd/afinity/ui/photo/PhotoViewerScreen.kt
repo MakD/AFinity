@@ -8,15 +8,14 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.SnapSpec
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.calculateCentroid
-import androidx.compose.foundation.gestures.calculatePan
-import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +30,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,21 +47,24 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
-import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -76,7 +79,10 @@ import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import coil3.imageLoader
 import coil3.request.ImageRequest
+import coil3.request.SuccessResult
+import coil3.size.Precision
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityItem
@@ -85,6 +91,8 @@ import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityBackButton
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.LocalOriginalImages
+import com.makd.afinity.ui.components.cachedImageKey
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.player.utils.PlayerSystemBarsController
 import java.time.format.DateTimeFormatter
@@ -93,15 +101,26 @@ import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
+import me.saket.telephoto.ExperimentalTelephotoApi
+import me.saket.telephoto.zoomable.DoubleClickToZoomListener
+import me.saket.telephoto.zoomable.Viewport
+import me.saket.telephoto.zoomable.ZoomSpec
+import me.saket.telephoto.zoomable.ZoomableState
+import me.saket.telephoto.zoomable.coil3.ZoomableAsyncImage
+import me.saket.telephoto.zoomable.rememberZoomableImageState
+import me.saket.telephoto.zoomable.rememberZoomableState
+import me.saket.telephoto.zoomable.spatial.CoordinateSpace
 
 private const val MAX_SCALE = 5f
 private const val DOUBLE_TAP_SCALE = 2.5f
-private const val ORIGINAL_ZOOM_THRESHOLD = 1.5f
-private const val ZOOMED_EPSILON = 1.01f
+private const val ZOOMED_FRACTION = 0.01f
 private const val DISMISS_FRACTION = 0.15f
 private const val SLIDESHOW_INTERVAL_MS = 5_000L
-private const val ORIGINAL_MAX_PX = 4096
+private const val SCREEN_QUALITY = 80
+private const val DETAIL_CAP_PX = 2688
+private const val DETAIL_CAP_QUALITY = 85
 private val SnackbarAboveChrome = 72.dp
 
 @Composable
@@ -208,6 +227,7 @@ private fun PhotoPager(
     var slideshow by rememberSaveable { mutableStateOf(false) }
     var infoFor by remember { mutableStateOf<AfinityPhoto?>(null) }
     val screenPx = LocalWindowInfo.current.containerSize.width
+    val originalImages = LocalOriginalImages.current
 
     LaunchedEffect(slideshow, pagerState.settledPage) {
         if (!slideshow) return@LaunchedEffect
@@ -227,8 +247,12 @@ private fun PhotoPager(
             is AfinityPhoto ->
                 ZoomablePhoto(
                     photo = item,
-                    screenUrl = item.screenUrl(screenPx),
-                    originalUrl = item.originalUrl(canDownload),
+                    page = page,
+                    pagerState = pagerState,
+                    sources =
+                        remember(item.id, screenPx, canDownload, originalImages) {
+                            item.photoSources(screenPx, canDownload, originalImages)
+                        },
                     onTap = onToggleChrome,
                     onZoomChanged = { zoomed ->
                         zoomedPage =
@@ -290,141 +314,175 @@ private fun PhotoPager(
     }
 }
 
+private data class PhotoSources(
+    val primaryUrl: String?,
+    val screenUrl: String?,
+    val detailUrl: String?,
+    val detailFirst: Boolean,
+)
+
+private fun AfinityPhoto.photoSources(
+    screenPx: Int,
+    canDownload: Boolean,
+    originalImages: Boolean,
+): PhotoSources =
+    PhotoSources(
+        primaryUrl = images.primaryImageUrl,
+        screenUrl = screenUrl(screenPx),
+        detailUrl = detailUrl(canDownload),
+        detailFirst = originalImages && canDownload,
+    )
+
 @Composable
 private fun ZoomablePhoto(
     photo: AfinityPhoto,
-    screenUrl: String?,
-    originalUrl: String?,
+    page: Int,
+    pagerState: PagerState,
+    sources: PhotoSources,
     onTap: () -> Unit,
     onZoomChanged: (Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var scale by remember { mutableFloatStateOf(1f) }
-    var offset by remember { mutableStateOf(Offset.Zero) }
+    val context = LocalContext.current
+    val zoomableState = rememberZoomableState(zoomSpec = ZoomSpec(maxZoomFactor = MAX_SCALE))
+    val imageState = rememberZoomableImageState(zoomableState)
+    val zoomed by remember {
+        derivedStateOf { (zoomableState.zoomFraction ?: 0f) > ZOOMED_FRACTION }
+    }
+    val settled = pagerState.settledPage == page
+    var detailReady by remember(sources.detailUrl) { mutableStateOf(false) }
+    var viewport by remember { mutableStateOf(IntSize.Zero) }
     var dismissDrag by remember { mutableFloatStateOf(0f) }
-    var size by remember { mutableStateOf(IntSize.Zero) }
-    var wantOriginal by remember { mutableStateOf(false) }
-    val zoomed = scale > ZOOMED_EPSILON
 
     LaunchedEffect(zoomed) { onZoomChanged(zoomed) }
-    LaunchedEffect(scale >= ORIGINAL_ZOOM_THRESHOLD) {
-        if (scale >= ORIGINAL_ZOOM_THRESHOLD) wantOriginal = true
+    LaunchedEffect(pagerState.settledPage) {
+        if (pagerState.settledPage != page) zoomableState.resetZoom(animationSpec = SnapSpec())
     }
+    LaunchedEffect(sources.detailUrl, settled, viewport) {
+        val url = sources.detailUrl
+        if (
+            url == null ||
+                sources.detailFirst ||
+                detailReady ||
+                !settled ||
+                viewport == IntSize.Zero
+        ) {
+            return@LaunchedEffect
+        }
+        val result =
+            context.imageLoader.execute(
+                ImageRequest.Builder(context)
+                    .data(url)
+                    .size(viewport.width, viewport.height)
+                    .precision(Precision.INEXACT)
+                    .build(),
+            )
+        if (result is SuccessResult) detailReady = true
+    }
+    LaunchedEffect(zoomableState) { zoomableState.keepCenterAcrossImageSwaps() }
 
-    fun clamp(value: Offset, atScale: Float): Offset {
-        val maxX = size.width * (atScale - 1f) / 2f
-        val maxY = size.height * (atScale - 1f) / 2f
-        return Offset(value.x.coerceIn(-maxX, maxX), value.y.coerceIn(-maxY, maxY))
-    }
+    val thumbnailKey = remember(sources.primaryUrl) { cachedImageKey(context, sources.primaryUrl) }
+    val screenRequest =
+        remember(sources.screenUrl, thumbnailKey) {
+            ImageRequest.Builder(context)
+                .data(sources.screenUrl)
+                .placeholderMemoryCacheKey(thumbnailKey)
+                .build()
+        }
+    val detailRequest =
+        remember(sources.detailUrl, sources.detailFirst, thumbnailKey) {
+            sources.detailUrl?.let { url ->
+                ImageRequest.Builder(context)
+                    .data(url)
+                    .placeholderMemoryCacheKey(
+                        if (sources.detailFirst) thumbnailKey else sources.screenUrl,
+                    )
+                    .build()
+            }
+        }
+    val request =
+        if ((sources.detailFirst || detailReady) && detailRequest != null) detailRequest
+        else screenRequest
 
     Box(
         modifier =
             Modifier.fillMaxSize()
-                .onSizeChanged { size = it }
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onTap = { onTap() },
-                        onDoubleTap = { tap ->
-                            if (scale > ZOOMED_EPSILON) {
-                                scale = 1f
-                                offset = Offset.Zero
-                            } else {
-                                val center = Offset(size.width / 2f, size.height / 2f)
-                                scale = DOUBLE_TAP_SCALE
-                                offset = clamp((center - tap) * (DOUBLE_TAP_SCALE - 1f), scale)
-                            }
+                .onSizeChanged { viewport = it }
+                .draggable(
+                    orientation = Orientation.Vertical,
+                    enabled = !zoomed,
+                    state =
+                        rememberDraggableState { delta ->
+                            dismissDrag = (dismissDrag + delta).coerceAtLeast(0f)
                         },
-                    )
-                }
-                .pointerInput(Unit) {
-                    awaitEachGesture {
-                        awaitFirstDown(requireUnconsumed = false)
-                        var decided = false
-                        var dismissing = false
-                        var totalX = 0f
-                        var totalY = 0f
-                        do {
-                            val event = awaitPointerEvent()
-                            val pressed = event.changes.filter { it.pressed }
-                            if (pressed.size >= 2) {
-                                val newScale =
-                                    (scale * event.calculateZoom()).coerceIn(1f, MAX_SCALE)
-                                val applied = newScale / scale
-                                val center = Offset(size.width / 2f, size.height / 2f)
-                                val centroid = event.calculateCentroid(useCurrent = true)
-                                offset =
-                                    clamp(
-                                        (centroid - center) * (1f - applied) +
-                                            offset * applied +
-                                            event.calculatePan(),
-                                        newScale,
-                                    )
-                                scale = newScale
-                                event.changes.forEach { if (it.positionChanged()) it.consume() }
-                                decided = true
-                            } else if (pressed.size == 1) {
-                                val change = pressed.first()
-                                val delta = change.positionChange()
-                                if (scale > ZOOMED_EPSILON) {
-                                    offset = clamp(offset + delta, scale)
-                                    if (delta != Offset.Zero) change.consume()
-                                } else if (!decided) {
-                                    totalX += delta.x
-                                    totalY += delta.y
-                                    val slop = viewConfiguration.touchSlop
-                                    if (abs(totalX) > slop || abs(totalY) > slop) {
-                                        decided = true
-                                        dismissing = totalY > 0 && abs(totalY) > abs(totalX) * 1.5f
-                                    }
-                                }
-                                if (dismissing) {
-                                    dismissDrag = (dismissDrag + delta.y).coerceAtLeast(0f)
-                                    change.consume()
-                                }
-                            }
-                        } while (event.changes.any { it.pressed })
-                        if (dismissing) {
-                            if (dismissDrag > size.height * DISMISS_FRACTION) onDismiss()
-                            else dismissDrag = 0f
-                        }
-                        if (scale <= ZOOMED_EPSILON) {
-                            scale = 1f
-                            offset = Offset.Zero
-                        }
-                    }
-                }
+                    onDragStopped = {
+                        val height = viewport.height
+                        if (height > 0 && dismissDrag > height * DISMISS_FRACTION) onDismiss()
+                        else dismissDrag = 0f
+                    },
+                )
                 .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                    translationX = offset.x
-                    translationY = offset.y + dismissDrag
-                    alpha =
-                        if (size.height > 0) 1f - (dismissDrag / size.height).coerceIn(0f, 0.6f)
-                        else 1f
+                    val height = viewport.height
+                    translationY = dismissDrag
+                    alpha = if (height > 0) 1f - (dismissDrag / height).coerceIn(0f, 0.6f) else 1f
                 },
     ) {
-        AsyncImage(
-            model = screenUrl,
+        ZoomableAsyncImage(
+            model = request,
             contentDescription = photo.name,
+            state = imageState,
             contentScale = ContentScale.Fit,
+            onClick = { onTap() },
+            onDoubleClick = DoubleClickToZoomListener.cycle(maxZoomFactor = DOUBLE_TAP_SCALE),
             modifier = Modifier.fillMaxSize(),
         )
-        if (wantOriginal && originalUrl != null) {
-            val context = LocalContext.current
-            AsyncImage(
-                model =
-                    remember(originalUrl) {
-                        ImageRequest.Builder(context)
-                            .data(originalUrl)
-                            .size(ORIGINAL_MAX_PX, ORIGINAL_MAX_PX)
-                            .build()
-                    },
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
     }
+}
+
+private class ViewAnchor(val contentSize: Size, val drawn: Rect, val viewportCenter: Offset) {
+    val centerFraction: Offset
+        get() =
+            Offset(
+                (viewportCenter.x - drawn.left) / drawn.width,
+                (viewportCenter.y - drawn.top) / drawn.height,
+            )
+
+    fun pointAt(fraction: Offset): Offset =
+        Offset(drawn.left + fraction.x * drawn.width, drawn.top + fraction.y * drawn.height)
+
+    fun sameContentAs(other: ViewAnchor): Boolean =
+        abs(contentSize.width - other.contentSize.width) <= 1f &&
+            abs(contentSize.height - other.contentSize.height) <= 1f
+}
+
+@OptIn(ExperimentalTelephotoApi::class)
+private fun ZoomableState.viewAnchor(): ViewAnchor? {
+    val scale = contentTransformation.takeIf { it.isSpecified }?.scale ?: return null
+    if (zoomFraction == null || scale.scaleX <= 0f || scale.scaleY <= 0f) return null
+    return with(coordinateSystem) {
+        val drawn = contentBounds(clipToViewport = false).rectIn(CoordinateSpace.Viewport)
+        if (drawn.isEmpty || viewportSize.isEmpty()) null
+        else
+            ViewAnchor(
+                contentSize = Size(drawn.width / scale.scaleX, drawn.height / scale.scaleY),
+                drawn = drawn,
+                viewportCenter = viewportSize.center,
+            )
+    }
+}
+
+private suspend fun ZoomableState.keepCenterAcrossImageSwaps() {
+    var last: ViewAnchor? = null
+    snapshotFlow { viewAnchor() }
+        .filterNotNull()
+        .collect { current ->
+            val previous = last
+            last = current
+            if (previous == null || previous.sameContentAs(current)) return@collect
+            if ((zoomFraction ?: 0f) <= ZOOMED_FRACTION) return@collect
+            val delta = current.viewportCenter - current.pointAt(previous.centerFraction)
+            if (delta.getDistance() > 1f) panBy(delta, SnapSpec())
+        }
 }
 
 @Composable
@@ -672,10 +730,16 @@ private fun exposureLine(photo: AfinityPhoto): String? {
 private fun AfinityItem.screenUrl(widthPx: Int): String? {
     val base = images.primaryImageUrl ?: return null
     if (widthPx <= 0) return base
-    return base.toUri().buildUpon().appendQueryParameter("maxWidth", "$widthPx").build().toString()
+    return base
+        .toUri()
+        .buildUpon()
+        .appendQueryParameter("maxWidth", "$widthPx")
+        .appendQueryParameter("quality", "$SCREEN_QUALITY")
+        .build()
+        .toString()
 }
 
-private fun AfinityPhoto.originalUrl(canDownload: Boolean): String? {
+private fun AfinityPhoto.detailUrl(canDownload: Boolean): String? {
     val primary = images.primaryImageUrl?.toUri() ?: return null
     return if (canDownload) {
         primary
@@ -685,6 +749,11 @@ private fun AfinityPhoto.originalUrl(canDownload: Boolean): String? {
             .build()
             .toString()
     } else {
-        primary.buildUpon().appendQueryParameter("quality", "100").build().toString()
+        primary
+            .buildUpon()
+            .appendQueryParameter("maxWidth", "$DETAIL_CAP_PX")
+            .appendQueryParameter("quality", "$DETAIL_CAP_QUALITY")
+            .build()
+            .toString()
     }
 }

@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.components
 
+import android.content.Context
 import android.util.LruCache
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -76,6 +77,19 @@ private fun String.isResizableItemImage(): Boolean =
     contains("/Items/") && contains("/Images/") && SIZE_PARAMS.none { contains(it) }
 
 private fun String.isLogoImage(): Boolean = contains("/Images/Logo")
+
+internal fun cachedImageKey(context: Context, imageUrl: String?): String? {
+    if (imageUrl == null) return null
+    val memoryCache = context.imageLoader.memoryCache ?: return null
+    val candidates = buildList {
+        originalImageUrl(imageUrl)?.let(::add)
+        add(imageUrl)
+        FILL_WIDTH_BUCKETS.reversed().forEach { bucket ->
+            optimizedImageUrl(imageUrl, bucket)?.let(::add)
+        }
+    }
+    return candidates.distinct().firstOrNull { memoryCache[MemoryCache.Key(it)] != null }
+}
 
 internal fun originalImageUrl(imageUrl: String?): String? {
     if (imageUrl == null || !imageUrl.contains("/Items/") || !imageUrl.contains("/Images/")) {

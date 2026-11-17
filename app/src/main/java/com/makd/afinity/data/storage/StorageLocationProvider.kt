@@ -75,7 +75,7 @@ constructor(@param:ApplicationContext private val context: Context) {
                         isRemovable = volume.isRemovable,
                         isPrimary = isPrimary,
                         baseDir = File(dir, DOWNLOADS_SUBPATH),
-                    )
+                    ),
                 )
             } catch (e: Exception) {
                 Timber.w(

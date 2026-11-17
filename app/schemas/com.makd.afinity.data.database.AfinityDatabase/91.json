@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 91,
-    "identityHash": "e8e7d17bd8c07b70ba0850591897d213",
+    "identityHash": "24b2e032a162865e79de53fff994b163",
     "entities": [
       {
         "tableName": "servers",
@@ -4142,11 +4142,541 @@
             "createSql": "CREATE INDEX IF NOT EXISTS `index_book_annotations_serverId_userId_itemId` ON `${TABLE_NAME}` (`serverId`, `userId`, `itemId`)"
           }
         ]
+      },
+      {
+        "tableName": "videos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `serverId` TEXT NOT NULL, `name` TEXT NOT NULL, `originalTitle` TEXT, `overview` TEXT NOT NULL, `runtimeTicks` INTEGER NOT NULL, `premiereDate` TEXT, `communityRating` REAL, `officialRating` TEXT, `criticRating` REAL, `status` TEXT NOT NULL, `productionYear` INTEGER, `endDate` TEXT, `chapters` TEXT, `images` TEXT, `genres` TEXT, `tagline` TEXT, `people` TEXT, `providerIds` TEXT, `externalUrls` TEXT, `extraType` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "serverId",
+            "columnName": "serverId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "originalTitle",
+            "columnName": "originalTitle",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "overview",
+            "columnName": "overview",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "runtimeTicks",
+            "columnName": "runtimeTicks",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "premiereDate",
+            "columnName": "premiereDate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "communityRating",
+            "columnName": "communityRating",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "officialRating",
+            "columnName": "officialRating",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "criticRating",
+            "columnName": "criticRating",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "productionYear",
+            "columnName": "productionYear",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "endDate",
+            "columnName": "endDate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "chapters",
+            "columnName": "chapters",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "images",
+            "columnName": "images",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "genres",
+            "columnName": "genres",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tagline",
+            "columnName": "tagline",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "people",
+            "columnName": "people",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "providerIds",
+            "columnName": "providerIds",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "externalUrls",
+            "columnName": "externalUrls",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "extraType",
+            "columnName": "extraType",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "music_videos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `serverId` TEXT NOT NULL, `name` TEXT NOT NULL, `originalTitle` TEXT, `overview` TEXT NOT NULL, `runtimeTicks` INTEGER NOT NULL, `premiereDate` TEXT, `dateCreated` TEXT, `productionYear` INTEGER, `communityRating` REAL, `officialRating` TEXT, `criticRating` REAL, `chapters` TEXT, `images` TEXT, `genres` TEXT, `studios` TEXT, `tags` TEXT, `tagline` TEXT, `people` TEXT, `providerIds` TEXT, `externalUrls` TEXT, `artists` TEXT, `artistItems` TEXT, `album` TEXT, `albumId` TEXT, `parentId` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "serverId",
+            "columnName": "serverId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "originalTitle",
+            "columnName": "originalTitle",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "overview",
+            "columnName": "overview",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "runtimeTicks",
+            "columnName": "runtimeTicks",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "premiereDate",
+            "columnName": "premiereDate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "dateCreated",
+            "columnName": "dateCreated",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "productionYear",
+            "columnName": "productionYear",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "communityRating",
+            "columnName": "communityRating",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "officialRating",
+            "columnName": "officialRating",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "criticRating",
+            "columnName": "criticRating",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "chapters",
+            "columnName": "chapters",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "images",
+            "columnName": "images",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "genres",
+            "columnName": "genres",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "studios",
+            "columnName": "studios",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tags",
+            "columnName": "tags",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tagline",
+            "columnName": "tagline",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "people",
+            "columnName": "people",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "providerIds",
+            "columnName": "providerIds",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "externalUrls",
+            "columnName": "externalUrls",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "artists",
+            "columnName": "artists",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "artistItems",
+            "columnName": "artistItems",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "album",
+            "columnName": "album",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "albumId",
+            "columnName": "albumId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "parentId",
+            "columnName": "parentId",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "books",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `serverId` TEXT NOT NULL, `name` TEXT NOT NULL, `originalTitle` TEXT, `overview` TEXT NOT NULL, `runtimeTicks` INTEGER NOT NULL, `images` TEXT, `chapters` TEXT, `providerIds` TEXT, `externalUrls` TEXT, `seriesName` TEXT, `seriesIndex` INTEGER, `people` TEXT, `publisher` TEXT, `premiereDate` TEXT, `productionYear` INTEGER, `genres` TEXT, `tags` TEXT, `communityRating` REAL, `dateCreated` TEXT, `format` TEXT NOT NULL, `parentId` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "serverId",
+            "columnName": "serverId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "originalTitle",
+            "columnName": "originalTitle",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "overview",
+            "columnName": "overview",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "runtimeTicks",
+            "columnName": "runtimeTicks",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "images",
+            "columnName": "images",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "chapters",
+            "columnName": "chapters",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "providerIds",
+            "columnName": "providerIds",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "externalUrls",
+            "columnName": "externalUrls",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "seriesName",
+            "columnName": "seriesName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "seriesIndex",
+            "columnName": "seriesIndex",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "people",
+            "columnName": "people",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "publisher",
+            "columnName": "publisher",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "premiereDate",
+            "columnName": "premiereDate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "productionYear",
+            "columnName": "productionYear",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "genres",
+            "columnName": "genres",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tags",
+            "columnName": "tags",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "communityRating",
+            "columnName": "communityRating",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "dateCreated",
+            "columnName": "dateCreated",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "format",
+            "columnName": "format",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "parentId",
+            "columnName": "parentId",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "audiobook_parts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `serverId` TEXT NOT NULL, `name` TEXT NOT NULL, `originalTitle` TEXT, `overview` TEXT NOT NULL, `runtimeTicks` INTEGER NOT NULL, `images` TEXT, `chapters` TEXT, `providerIds` TEXT, `externalUrls` TEXT, `album` TEXT, `people` TEXT, `publisher` TEXT, `premiereDate` TEXT, `productionYear` INTEGER, `genres` TEXT, `communityRating` REAL, `dateCreated` TEXT, `parentId` TEXT, `trackNumber` INTEGER, `discNumber` INTEGER, `container` TEXT, `bookPartCount` INTEGER, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "serverId",
+            "columnName": "serverId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "originalTitle",
+            "columnName": "originalTitle",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "overview",
+            "columnName": "overview",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "runtimeTicks",
+            "columnName": "runtimeTicks",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "images",
+            "columnName": "images",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "chapters",
+            "columnName": "chapters",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "providerIds",
+            "columnName": "providerIds",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "externalUrls",
+            "columnName": "externalUrls",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "album",
+            "columnName": "album",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "people",
+            "columnName": "people",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "publisher",
+            "columnName": "publisher",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "premiereDate",
+            "columnName": "premiereDate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "productionYear",
+            "columnName": "productionYear",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "genres",
+            "columnName": "genres",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "communityRating",
+            "columnName": "communityRating",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "dateCreated",
+            "columnName": "dateCreated",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "parentId",
+            "columnName": "parentId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "trackNumber",
+            "columnName": "trackNumber",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "discNumber",
+            "columnName": "discNumber",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "container",
+            "columnName": "container",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "bookPartCount",
+            "columnName": "bookPartCount",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e8e7d17bd8c07b70ba0850591897d213')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '24b2e032a162865e79de53fff994b163')"
     ]
   }
 }
