@@ -3,7 +3,6 @@ package com.makd.afinity.player.music
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import androidx.annotation.OptIn
 import androidx.core.net.toUri
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -49,11 +48,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -156,6 +152,14 @@ constructor(
     val rearrangeQueueEvents: SharedFlow<RearrangeQueueEvent> = _rearrangeQueueEvents.asSharedFlow()
 
     private var originalQueue: List<AfinityTrack> = emptyList()
+
+    private val _shuffled = MutableStateFlow(false)
+    val shuffled: StateFlow<Boolean> = _shuffled.asStateFlow()
+
+    private fun setShuffled(value: Boolean) {
+        _shuffled.value = value
+        playbackManager.updateShuffled(value)
+    }
 
     val currentTrack: AfinityTrack?
         get() = _queue.value.getOrNull(_currentIndex.value)
@@ -264,18 +268,26 @@ constructor(
         }
     }
 
-    fun loadQueue(tracks: List<AfinityTrack>, startIndex: Int, startPositionMs: Long = 0L) {
+    fun loadQueue(
+        tracks: List<AfinityTrack>,
+        startIndex: Int,
+        startPositionMs: Long = 0L,
+        shuffle: Boolean = false,
+    ) {
         val clamped = tracks.take(MAX_QUEUE_SIZE)
-        _queue.value = clamped
-        _currentIndex.value = startIndex.coerceIn(0, (clamped.size - 1).coerceAtLeast(0))
-        originalQueue = emptyList()
+        val ordered = if (shuffle) clamped.shuffled() else clamped
+        val index = if (shuffle) 0 else startIndex
+        _queue.value = ordered
+        _currentIndex.value = index.coerceIn(0, (ordered.size - 1).coerceAtLeast(0))
+        originalQueue = if (shuffle) clamped else emptyList()
+        setShuffled(shuffle)
 
         scope.launch {
-            persistQueue(clamped)
-            saveState(startIndex, RepeatMode.OFF.name, false)
+            persistQueue(ordered)
+            saveState(index, RepeatMode.OFF.name, shuffle)
         }
 
-        emitLoadEvent(clamped, startIndex, startPositionMs)
+        emitLoadEvent(ordered, index, startPositionMs)
     }
 
     fun addNext(tracks: List<AfinityTrack>) {
@@ -387,6 +399,8 @@ constructor(
     fun clearQueue() {
         _queue.value = emptyList()
         _currentIndex.value = 0
+        originalQueue = emptyList()
+        setShuffled(false)
         streamSessions.clear()
         resolvedStreams.clear()
         scope.launch { musicQueueDao.clearQueue() }
@@ -433,6 +447,7 @@ constructor(
 
         _queue.value = newQueue
         _currentIndex.value = newCurrentIndex
+        setShuffled(willShuffle)
 
         val mediaItems = newQueue.map { buildMediaItem(it) }
         scope.launch {

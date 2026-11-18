@@ -9,7 +9,6 @@ import android.content.pm.ServiceInfo
 import android.media.MediaCodecList
 import android.os.Bundle
 import android.os.Handler
-import androidx.annotation.OptIn
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.net.toUri
@@ -395,7 +394,12 @@ class AudioService : MediaLibraryService() {
         musicPlaybackManager.setPlayer(exoPlayer!!)
         startMusicQueueListener()
         startMusicRearrangeListener()
-        mediaSession?.setCustomLayout(musicCustomLayout())
+        mediaSession?.setCustomLayout(
+            musicCustomLayout(
+                musicQueueManager.shuffled.value,
+                exoPlayer?.repeatMode ?: Player.REPEAT_MODE_OFF,
+            ),
+        )
     }
 
     private fun pauseForCast() {
@@ -701,6 +705,13 @@ class AudioService : MediaLibraryService() {
     private fun startMusicQueueListener() {
         musicQueueJob?.cancel()
         musicQueueJob = serviceScope.launch {
+            launch {
+                musicQueueManager.shuffled.collect { shuffled ->
+                    if (activeEngine != ActiveEngine.MUSIC) return@collect
+                    val repeatMode = exoPlayer?.repeatMode ?: Player.REPEAT_MODE_OFF
+                    mediaSession?.setCustomLayout(musicCustomLayout(shuffled, repeatMode))
+                }
+            }
             musicQueueManager.loadQueueEvents.collectLatest { event ->
                 if (System.currentTimeMillis() - event.timestamp < 30_000L) {
                     val player = exoPlayer ?: return@collectLatest
@@ -887,7 +898,14 @@ class AudioService : MediaLibraryService() {
                     .add(SessionCommand(COMMAND_PLAY_ABS_ITEM, Bundle.EMPTY))
                     .build()
             val layout =
-                if (activeEngine == ActiveEngine.MUSIC) musicCustomLayout() else absCustomLayout()
+                if (activeEngine == ActiveEngine.MUSIC) {
+                    musicCustomLayout(
+                        musicQueueManager.shuffled.value,
+                        exoPlayer?.repeatMode ?: Player.REPEAT_MODE_OFF,
+                    )
+                } else {
+                    absCustomLayout()
+                }
             return MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
                 .setAvailableSessionCommands(allCommands)
                 .setCustomLayout(layout)
@@ -959,13 +977,7 @@ class AudioService : MediaLibraryService() {
                     return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
                 }
                 COMMAND_SHUFFLE -> {
-                    val wasShuffled = musicPlaybackManager.state.value.shuffled
                     musicQueueManager.toggleShuffle(player.currentPosition)
-                    val isNowShuffled = !wasShuffled
-                    musicPlaybackManager.updateShuffled(isNowShuffled)
-                    mediaSession?.setCustomLayout(
-                        musicCustomLayout(isNowShuffled, player.repeatMode),
-                    )
                     return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
                 }
                 COMMAND_REPEAT -> {

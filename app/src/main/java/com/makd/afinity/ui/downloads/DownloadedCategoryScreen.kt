@@ -14,11 +14,9 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -712,7 +710,7 @@ fun DownloadedCategoryScreen(
                     },
                     onShuffleAll = {
                         startMusicService(context)
-                        playerViewModel.playQueue(tracks.shuffled(), 0)
+                        playerViewModel.playQueue(tracks, 0, shuffle = true)
                     },
                     onTrackClick = { _, queue, index ->
                         startMusicService(context)

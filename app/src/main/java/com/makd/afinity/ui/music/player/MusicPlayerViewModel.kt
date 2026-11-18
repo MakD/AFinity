@@ -2,7 +2,6 @@ package com.makd.afinity.ui.music.player
 
 import android.content.Context
 import android.content.Intent
-import androidx.annotation.OptIn
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
@@ -48,7 +47,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.TranscodingInfo
@@ -306,10 +304,10 @@ constructor(
         _lyricsLoading.value = false
     }
 
-    fun playQueue(tracks: List<AfinityTrack>, startIndex: Int = 0) {
+    fun playQueue(tracks: List<AfinityTrack>, startIndex: Int = 0, shuffle: Boolean = false) {
         if (tracks.isEmpty()) return
         radioManager.stopRadio()
-        queueManager.loadQueue(tracks, startIndex)
+        queueManager.loadQueue(tracks, startIndex, shuffle = shuffle)
     }
 
     fun play() {
@@ -399,7 +397,6 @@ constructor(
             if (casting) castManager.castState.value.currentPosition
             else playbackState.value.positionMs
         queueManager.toggleShuffle(positionMs)
-        playbackManager.updateShuffled(!playbackState.value.shuffled)
         if (casting) loadQueueOnCast(queueManager.currentIndex.value, positionMs)
     }
 

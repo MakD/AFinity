@@ -11,11 +11,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -271,7 +269,7 @@ fun MusicBrowseScreen(
                             val queue = viewModel.getAllFilteredTracks()
                             if (queue.isNotEmpty()) {
                                 startMusicService(context)
-                                playerViewModel.playQueue(queue.shuffled(), 0)
+                                playerViewModel.playQueue(queue, 0, shuffle = true)
                             }
                         }
                     },
