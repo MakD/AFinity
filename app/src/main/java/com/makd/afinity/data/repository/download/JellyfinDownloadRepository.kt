@@ -55,9 +55,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -178,6 +176,7 @@ constructor(
                                 ItemFields.MEDIA_SOURCES,
                                 ItemFields.MEDIA_STREAMS,
                                 ItemFields.OVERVIEW,
+                                ItemFields.CAN_DOWNLOAD,
                             ),
                     ) ?: return@withContext Result.failure(Exception("Item not found"))
 
