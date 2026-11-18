@@ -99,6 +99,9 @@ constructor(
         libraryItemId: String,
         episodeId: String?,
         volumeId: String?,
+        title: String,
+        authorName: String?,
+        coverUrl: String?,
     ): Result<UUID> {
         val session =
             sessionManager.currentSession.value
@@ -135,10 +138,10 @@ constructor(
                 episodeId = episodeId,
                 jellyfinServerId = serverId,
                 jellyfinUserId = userId,
-                title = "",
-                authorName = null,
+                title = title,
+                authorName = authorName,
                 mediaType = if (episodeId != null) "podcast" else "book",
-                coverUrl = null,
+                coverUrl = coverUrl,
                 duration = 0.0,
                 status = AbsDownloadStatus.QUEUED,
                 progress = 0f,

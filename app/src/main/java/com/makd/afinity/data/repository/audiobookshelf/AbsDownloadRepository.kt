@@ -17,6 +17,9 @@ interface AbsDownloadRepository {
         libraryItemId: String,
         episodeId: String? = null,
         volumeId: String? = null,
+        title: String = "",
+        authorName: String? = null,
+        coverUrl: String? = null,
     ): Result<UUID>
 
     suspend fun cancelDownload(downloadId: UUID): Result<Unit>

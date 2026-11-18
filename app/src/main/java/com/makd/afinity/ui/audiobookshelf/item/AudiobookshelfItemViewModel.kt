@@ -203,10 +203,27 @@ constructor(
     private fun episodeSortPreferenceKey() = "abs_episode_sort_$itemId"
 
     fun startDownload(episodeId: String? = null, volumeId: String? = null) {
-        viewModelScope.launch {
-            absDownloadRepository.startDownload(itemId, episodeId, volumeId).onFailure {
-                Timber.e(it, "Failed to start download")
+        val metadata = _item.value?.media?.metadata
+        val title =
+            if (episodeId != null) {
+                _uiState.value.episodes.find { it.id == episodeId }?.title
+            } else {
+                metadata?.title
             }
+        val authorName = if (episodeId != null) metadata?.title else metadata?.authorName
+        val coverUrl =
+            currentConfig.value?.serverUrl?.let { "${it.trimEnd('/')}/api/items/$itemId/cover" }
+        viewModelScope.launch {
+            absDownloadRepository
+                .startDownload(
+                    libraryItemId = itemId,
+                    episodeId = episodeId,
+                    volumeId = volumeId,
+                    title = title.orEmpty(),
+                    authorName = authorName,
+                    coverUrl = coverUrl,
+                )
+                .onFailure { Timber.e(it, "Failed to start download") }
         }
     }
 
