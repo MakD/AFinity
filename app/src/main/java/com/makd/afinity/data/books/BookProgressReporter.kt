@@ -94,6 +94,7 @@ constructor(
                     positionTicks = positionTicks,
                     mediaSourceId = mediaSourceId(id),
                     runtimeTicks = runtime,
+                    isBook = true,
                 )
                 val markedRead = finished && userDataRepository.markWatched(id)
                 val refreshed = mediaRepository.refreshItemUserData(id, FieldSets.BOOK_GRID)

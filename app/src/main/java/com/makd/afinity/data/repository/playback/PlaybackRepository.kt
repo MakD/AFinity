@@ -96,6 +96,7 @@ interface PlaybackRepository {
         isMusic: Boolean = false,
         playCountedOnServer: Boolean = false,
         isAudiobook: Boolean = false,
+        isBook: Boolean = false,
     ): Boolean
 
     suspend fun savePlaybackStopOffline(

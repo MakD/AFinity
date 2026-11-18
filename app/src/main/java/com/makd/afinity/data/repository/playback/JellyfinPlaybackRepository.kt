@@ -12,7 +12,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.operations.AudioApi
@@ -506,6 +505,7 @@ constructor(
         isMusic: Boolean,
         playCountedOnServer: Boolean,
         isAudiobook: Boolean,
+        isBook: Boolean,
     ): Boolean {
         return withContext(Dispatchers.IO) {
             try {
@@ -519,6 +519,7 @@ constructor(
                         isMusic = isMusic,
                         playCountedOnServer = playCountedOnServer,
                         isAudiobook = isAudiobook,
+                        isBook = isBook,
                     )
                     return@withContext false
                 }
@@ -537,6 +538,7 @@ constructor(
                                 isMusic = isMusic,
                                 playCountedOnServer = playCountedOnServer,
                                 isAudiobook = isAudiobook,
+                                isBook = isBook,
                             )
                             return@withContext false
                         }
@@ -567,6 +569,7 @@ constructor(
                     isMusic = isMusic,
                     playCountedOnServer = playCountedOnServer,
                     isAudiobook = isAudiobook,
+                    isBook = isBook,
                 )
                 false
             } catch (e: CancellationException) {
@@ -585,6 +588,7 @@ constructor(
                     isMusic = isMusic,
                     playCountedOnServer = playCountedOnServer,
                     isAudiobook = isAudiobook,
+                    isBook = isBook,
                 )
                 false
             }
@@ -619,6 +623,7 @@ constructor(
         isMusic: Boolean = false,
         playCountedOnServer: Boolean = false,
         isAudiobook: Boolean = false,
+        isBook: Boolean = false,
     ) {
         if (isMusic && (!isStop || playCountedOnServer)) return
         try {
@@ -648,7 +653,9 @@ constructor(
             }
 
             val resolved =
-                if (isStop) {
+                if (isBook) {
+                    PlaybackCompletion.Resolved(positionTicks.coerceAtLeast(0L), false)
+                } else if (isStop) {
                     val resolvedRuntimeTicks =
                         if (runtimeTicks > 0L) runtimeTicks else resolveRuntimeTicks(itemId, userId)
                     if (isAudiobook) {
