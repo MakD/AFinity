@@ -55,7 +55,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -520,27 +522,38 @@ constructor(
                 .addTag("download_${download.id}")
                 .build()
 
-        if (download.itemType == BOOK_ITEM_TYPE || download.itemType == AUDIOBOOK_DOWNLOAD_TYPE) {
-            val bookRequest =
-                OneTimeWorkRequestBuilder<BookDownloadWorker>()
-                    .setConstraints(constraints)
-                    .setInputData(inputData)
-                    .addTag("download_${download.id}")
-                    .addTag("download_active")
-                    .build()
-            workManager.beginUniqueWork("download_${download.id}", policy, bookRequest).enqueue()
-        } else if (download.itemType == "Audio") {
-            workManager
-                .beginUniqueWork("download_${download.id}", policy, mediaDownloadRequest)
-                .then(listOf(imageDownloadRequest, lyricsDownloadRequest))
-                .enqueue()
-        } else {
-            workManager
-                .beginUniqueWork("download_${download.id}", policy, mediaDownloadRequest)
-                .then(
-                    listOf(trickplayDownloadRequest, imageDownloadRequest, subtitleDownloadRequest),
-                )
-                .enqueue()
+        when (download.itemType) {
+            BOOK_ITEM_TYPE,
+            AUDIOBOOK_DOWNLOAD_TYPE -> {
+                val bookRequest =
+                    OneTimeWorkRequestBuilder<BookDownloadWorker>()
+                        .setConstraints(constraints)
+                        .setInputData(inputData)
+                        .addTag("download_${download.id}")
+                        .addTag("download_active")
+                        .build()
+                workManager
+                    .beginUniqueWork("download_${download.id}", policy, bookRequest)
+                    .enqueue()
+            }
+            "Audio" -> {
+                workManager
+                    .beginUniqueWork("download_${download.id}", policy, mediaDownloadRequest)
+                    .then(listOf(imageDownloadRequest, lyricsDownloadRequest))
+                    .enqueue()
+            }
+            else -> {
+                workManager
+                    .beginUniqueWork("download_${download.id}", policy, mediaDownloadRequest)
+                    .then(
+                        listOf(
+                            trickplayDownloadRequest,
+                            imageDownloadRequest,
+                            subtitleDownloadRequest,
+                        ),
+                    )
+                    .enqueue()
+            }
         }
     }
 
