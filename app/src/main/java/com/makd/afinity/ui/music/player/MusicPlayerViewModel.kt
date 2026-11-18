@@ -47,12 +47,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.TranscodingInfo
 
 @HiltViewModel
 class MusicPlayerViewModel
+@UnstableApi
 @Inject
 constructor(
     private val playbackManager: MusicPlaybackManager,
@@ -95,6 +97,7 @@ constructor(
         _musicQuality.value = queueManager.musicQuality
     }
 
+    @UnstableApi
     fun togglePlaybackStats() {
         val willShow = !_showPlaybackStats.value
         _showPlaybackStats.value = willShow
@@ -107,6 +110,7 @@ constructor(
 
     private var lastTranscodingInfo: Pair<UUID, TranscodingInfo>? = null
 
+    @UnstableApi
     private fun startStatsPolling() {
         statsPollingJob?.cancel()
         statsPollingJob = viewModelScope.launch {
@@ -119,7 +123,7 @@ constructor(
         }
     }
 
-    @OptIn(UnstableApi::class)
+    @UnstableApi
     private suspend fun gatherPlaybackStats(): PlaybackStats {
         val player =
             playbackManager.getPlayer()
@@ -260,7 +264,7 @@ constructor(
         }
     }
 
-    @OptIn(UnstableApi::class)
+    @UnstableApi
     private fun resumeFromCast(lastPositionMs: Long) {
         val tracks = queueManager.queue.value
         val index = queueManager.currentIndex.value
@@ -271,7 +275,7 @@ constructor(
         )
     }
 
-    @OptIn(UnstableApi::class)
+    @UnstableApi
     fun castCurrentQueue() {
         val loaded =
             loadQueueOnCast(queueManager.currentIndex.value, playbackState.value.positionMs)
@@ -444,8 +448,6 @@ constructor(
     fun startRadio(seed: RadioSeed, mode: RadioMode) {
         radioManager.startRadio(seed, mode)
     }
-
-    fun stopRadio() = radioManager.stopRadio()
 
     fun toggleCurrentTrackFavorite() {
         val track = playbackState.value.currentTrack ?: return

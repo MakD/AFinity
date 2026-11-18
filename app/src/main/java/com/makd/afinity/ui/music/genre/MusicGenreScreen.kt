@@ -25,8 +25,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -97,6 +100,7 @@ fun MusicGenreScreen(
         viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
     val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val resources = LocalResources.current
     val isLandscape = isLandscapeWindow()
     val relatedCardWidth = CardDimensions.posterCardWidth
     val artistRowHeight =
@@ -174,7 +178,7 @@ fun MusicGenreScreen(
                         playerViewModel.playInstantMix(genreId) {
                             Toast.makeText(
                                     context,
-                                    context.getString(R.string.music_genre_mix_empty),
+                                    resources.getString(R.string.music_genre_mix_empty),
                                     Toast.LENGTH_SHORT,
                                 )
                                 .show()

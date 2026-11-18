@@ -48,8 +48,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -88,7 +91,7 @@ private fun toFileUri(rawPath: String): String =
 
 @Singleton
 class MusicQueueManager
-@OptIn(UnstableApi::class)
+@UnstableApi
 @Inject
 constructor(
     @param:ApplicationContext private val context: Context,
@@ -103,11 +106,11 @@ constructor(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    @kotlin.OptIn(ExperimentalCoroutinesApi::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
     private val downloadedTrackPaths: StateFlow<Map<UUID, String>?> =
         sessionManager.currentSession
             .flatMapLatest { session ->
-                if (session == null) flowOf(emptyMap<UUID, String>())
+                if (session == null) flowOf(emptyMap())
                 else
                     databaseRepository
                         .getDownloadsByStatusFlowScoped(
@@ -554,7 +557,8 @@ constructor(
         if (_neverTranscode.value) {
             val playSessionId =
                 registerStreamSession(track.id, MusicQuality.ORIGINAL_BITRATE, isDirect = true)
-            return Uri.parse("$baseUrl/Audio/${track.id}/stream")
+            return "$baseUrl/Audio/${track.id}/stream"
+                .toUri()
                 .buildUpon()
                 .appendQueryParameter("static", "true")
                 .appendQueryParameter("playSessionId", playSessionId)
@@ -575,7 +579,8 @@ constructor(
             }
         val userId = session?.userId?.toString().orEmpty()
         val deviceId = sessionManager.getCurrentApiClient()?.deviceInfo?.id.orEmpty()
-        return Uri.parse("$baseUrl/Audio/${track.id}/universal")
+        return "$baseUrl/Audio/${track.id}/universal"
+            .toUri()
             .buildUpon()
             .appendQueryParameter("userId", userId)
             .appendQueryParameter("deviceId", deviceId)

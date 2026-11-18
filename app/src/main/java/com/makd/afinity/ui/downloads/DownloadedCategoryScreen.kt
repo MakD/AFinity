@@ -14,9 +14,11 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -70,7 +72,6 @@ import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
 import java.time.ZoneOffset
-import java.util.UUID
 import kotlinx.coroutines.flow.flowOf
 
 private const val TICKS_PER_SECOND = 10_000_000L
@@ -194,18 +195,17 @@ private fun comparatorFor(field: MusicSortField): Comparator<SortKeys> {
     val byName = compareBy<SortKeys, String>(String.CASE_INSENSITIVE_ORDER) { it.name }
     val primary: Comparator<SortKeys> =
         when (field) {
-            MusicSortField.Album ->
-                compareBy<SortKeys, String>(String.CASE_INSENSITIVE_ORDER) { it.album.orEmpty() }
+            MusicSortField.Album -> compareBy(String.CASE_INSENSITIVE_ORDER) { it.album.orEmpty() }
 
             MusicSortField.AlbumArtist,
             MusicSortField.Artist ->
-                compareBy<SortKeys, String>(String.CASE_INSENSITIVE_ORDER) { it.creator.orEmpty() }
+                compareBy(String.CASE_INSENSITIVE_ORDER) { it.creator.orEmpty() }
 
-            MusicSortField.ReleaseDate -> compareBy<SortKeys> { it.released ?: 0L }
-            MusicSortField.DateAdded -> compareBy<SortKeys> { it.added ?: 0L }
-            MusicSortField.Runtime -> compareBy<SortKeys> { it.runtime }
-            MusicSortField.CommunityRating -> compareBy<SortKeys> { it.rating ?: 0f }
-            MusicSortField.PlayCount -> compareBy<SortKeys> { it.playCount ?: 0 }
+            MusicSortField.ReleaseDate -> compareBy { it.released ?: 0L }
+            MusicSortField.DateAdded -> compareBy { it.added ?: 0L }
+            MusicSortField.Runtime -> compareBy { it.runtime }
+            MusicSortField.CommunityRating -> compareBy { it.rating ?: 0f }
+            MusicSortField.PlayCount -> compareBy { it.playCount ?: 0 }
             else -> return byName
         }
     return primary.then(byName)
@@ -688,7 +688,7 @@ fun DownloadedCategoryScreen(
                 TracksList(
                     listState = rememberLazyListState(),
                     tracks = lazyTracks,
-                    favoriteOverrides = emptyMap<UUID, Boolean>(),
+                    favoriteOverrides = emptyMap(),
                     currentTrackId = playbackState.currentTrack?.id?.toString(),
                     headerTitle =
                         pluralStringResource(
