@@ -3786,4 +3786,12 @@
     <string name="person_kind_colorist">Färgare</string>
     <string name="person_kind_letterer">Textare</string>
     <string name="person_kind_cover_artist">Omslagskonstnär</string>
+    <string name="cd_omdb">OMDb</string>
+    <string name="cd_lastfm">Last.fm</string>
+    <string name="cd_wikidata">Wikidata</string>
+    <string name="cd_subtitledb">TheSubtitleDB</string>
+    <string name="service_label_omdb">OMDb</string>
+    <string name="service_label_lastfm">Last.fm</string>
+    <string name="service_label_wikidata">Wikidata</string>
+    <string name="service_label_subtitledb">SubDB</string>
 </resources>
