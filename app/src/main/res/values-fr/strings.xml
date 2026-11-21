@@ -3599,4 +3599,10 @@
     <string name="section_seerr_watchlist_not_in_library">Pas encore dans votre bibliothèque</string>
     <string name="seerr_watchlist_sync_title">Synchroniser les playlist</string>
     <string name="seerr_watchlist_sync_summary">L\'ajout ou la suppression d\'un film ou d\'une série dans votre liste de favoris AFinity met également à jour votre liste de favoris Seerr, et inversement. Uniquement pour ce profil.</string>
+    <string name="home_downloaded_videos">Vidéos téléchargées</string>
+    <plurals name="music_video_artists_prefix">
+        <item quantity="one">Artiste</item>
+        <item quantity="many">Artistes</item>
+        <item quantity="other">Artistes</item>
+    </plurals>
 </resources>
