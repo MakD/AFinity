@@ -58,6 +58,7 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -1778,8 +1779,11 @@ private fun SeekBar(
                         .background(Color.Red.copy(alpha = 0.8f), RoundedCornerShape(3.dp)),
             )
         } else {
+            val seekRange = 0f..duration.toFloat().coerceAtLeast(0f)
+            val seekState = remember(seekRange) { SliderState(trackRange = seekRange) }
+            seekState.value = draggedPosition ?: position.toFloat()
             Slider(
-                value = draggedPosition ?: position.toFloat(),
+                state = seekState,
                 onValueChange = { newPosition ->
                     if (!uiState.isSeeking) {
                         onPlayerEvent(PlayerEvent.OnSeekBarDragStart)
@@ -1793,7 +1797,6 @@ private fun SeekBar(
                     )
                     draggedPosition = null
                 },
-                valueRange = 0f..duration.toFloat().coerceAtLeast(0f),
                 colors =
                     SliderDefaults.colors(
                         thumbColor = MaterialTheme.colorScheme.primary,
@@ -1821,11 +1824,11 @@ private fun SeekBar(
                         Canvas(modifier = Modifier.fillMaxWidth().height(6.dp)) {
                             if (duration > 0) {
                                 val rangeSpan =
-                                    (sliderState.valueRange.endInclusive -
-                                            sliderState.valueRange.start)
+                                    (sliderState.trackRange.endInclusive -
+                                            sliderState.trackRange.start)
                                         .coerceAtLeast(1f)
                                 val progress =
-                                    (sliderState.value - sliderState.valueRange.start) / rangeSpan
+                                    (sliderState.value - sliderState.trackRange.start) / rangeSpan
                                 val thumbTrackGapPx = 6.dp.toPx()
                                 val thumbCenterX = progress * size.width
                                 val bufferStartX =

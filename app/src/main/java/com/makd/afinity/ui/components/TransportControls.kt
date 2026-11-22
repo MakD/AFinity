@@ -14,12 +14,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,7 +40,6 @@ import com.makd.afinity.R
 import com.makd.afinity.ui.player.components.BufferingIndicator
 import com.makd.afinity.ui.theme.isDarkSurface
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransportControls(
     position: Float,
@@ -87,10 +86,13 @@ fun TransportControls(
     val timeLabelColor =
         if (isDark) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
 
+    val seekState = remember(range) { SliderState(trackRange = range) }
+    seekState.value = if (isDragging) sliderValue else position
+
     Column(modifier = modifier.fillMaxWidth()) {
         Box(contentAlignment = Alignment.CenterStart) {
             Slider(
-                value = if (isDragging) sliderValue else position,
+                state = seekState,
                 onValueChange = { value ->
                     sliderValue = value
                     isDragging = true
@@ -99,7 +101,6 @@ fun TransportControls(
                     onSeek(sliderValue)
                     isDragging = false
                 },
-                valueRange = range,
                 modifier = Modifier.fillMaxWidth(),
                 colors =
                     SliderDefaults.colors(
@@ -113,30 +114,29 @@ fun TransportControls(
                 track = { sliderState ->
                     Canvas(modifier = Modifier.fillMaxWidth().height(2.dp)) {
                         val thumbRadiusPx = 8.dp.toPx()
-                        val trackStart = thumbRadiusPx
                         val trackEnd = size.width - thumbRadiusPx
-                        val trackRange = trackEnd - trackStart
+                        val trackRange = trackEnd - thumbRadiusPx
                         val h = size.height
                         val cornerR = CornerRadius(h / 2f, h / 2f)
                         val rangeSpan =
-                            (sliderState.valueRange.endInclusive - sliderState.valueRange.start)
+                            (sliderState.trackRange.endInclusive - sliderState.trackRange.start)
                                 .coerceAtLeast(1f)
                         val progress =
-                            (sliderState.value - sliderState.valueRange.start) / rangeSpan
-                        val thumbCenterX = trackStart + progress * trackRange
+                            (sliderState.value - sliderState.trackRange.start) / rangeSpan
+                        val thumbCenterX = thumbRadiusPx + progress * trackRange
 
                         drawRoundRect(
                             color = inactiveTrackColor,
-                            topLeft = Offset(trackStart, 0f),
+                            topLeft = Offset(thumbRadiusPx, 0f),
                             size = Size(trackRange, h),
                             cornerRadius = cornerR,
                         )
 
                         val bufferedFraction =
-                            ((bufferedPosition - sliderState.valueRange.start) / rangeSpan)
+                            ((bufferedPosition - sliderState.trackRange.start) / rangeSpan)
                                 .coerceIn(0f, 1f)
                         val bufferedEndX =
-                            (trackStart + bufferedFraction * trackRange).coerceAtMost(trackEnd)
+                            (thumbRadiusPx + bufferedFraction * trackRange).coerceAtMost(trackEnd)
                         if (bufferedEndX > thumbCenterX) {
                             drawRoundRect(
                                 color = bufferedTrackColor,
@@ -148,8 +148,8 @@ fun TransportControls(
 
                         drawRoundRect(
                             color = trackColor,
-                            topLeft = Offset(trackStart, 0f),
-                            size = Size((thumbCenterX - trackStart).coerceAtLeast(0f), h),
+                            topLeft = Offset(thumbRadiusPx, 0f),
+                            size = Size((thumbCenterX - thumbRadiusPx).coerceAtLeast(0f), h),
                             cornerRadius = cornerR,
                         )
                     }
