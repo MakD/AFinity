@@ -197,7 +197,7 @@
     </plurals>
     <string name="person_died_no_age_fmt">死亡: %1$s</string>
     <string name="person_birthplace_fmt">出生地: %1$s</string>
-    <string name="person_date_fmt">MMMM d、yyyy</string>
+    <string name="person_date_fmt">MMMM d, yyyy</string>
     <string name="action_show_more">もっと見る</string>
     <string name="action_show_less">表示を少なくする</string>
     <string name="cd_person_image_fmt">%1$s 画像</string>

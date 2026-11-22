@@ -216,7 +216,7 @@
     </plurals>
     <string name="person_died_no_age_fmt">Ölüm tarihi: %1$s</string>
     <string name="person_birthplace_fmt">Doğum yeri: %1$s</string>
-    <string name="person_date_fmt">AAAA d, yyyy</string>
+    <string name="person_date_fmt">MMMM d, yyyy</string>
     <string name="action_show_more">Daha fazlasını göster</string>
     <string name="action_show_less">Hada azını göster</string>
     <string name="cd_person_image_fmt">%1$s resim</string>
