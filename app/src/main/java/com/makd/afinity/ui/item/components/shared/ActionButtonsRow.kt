@@ -55,6 +55,7 @@ fun ActionButtonsRow(
     onCancelDownload: () -> Unit,
     modifier: Modifier = Modifier,
     hasPlayableItems: Boolean = true,
+    canPlayCollection: Boolean = true,
     isDownloadAllowedByServer: Boolean = true,
     canDownloadOnNetwork: Boolean = true,
     isLandscape: Boolean = false,
@@ -118,7 +119,7 @@ fun ActionButtonsRow(
             )
         }
 
-        if (isDownloadAllowedByServer) {
+        if (isDownloadAllowedByServer && canPlayCollection) {
             DownloadProgressIndicator(
                 downloadInfo = downloadInfo,
                 onDownloadClick = onDownloadClick,
@@ -132,7 +133,10 @@ fun ActionButtonsRow(
             )
         }
 
-        val canShuffle = item is AfinityShow || item is AfinitySeason || item is AfinityBoxSet
+        val canShuffle =
+            item is AfinityShow ||
+                item is AfinitySeason ||
+                (item is AfinityBoxSet && canPlayCollection)
         val hasManageItems = isAdmin || canDelete
         val hasCollectionActions =
             onAddToCollection != null ||

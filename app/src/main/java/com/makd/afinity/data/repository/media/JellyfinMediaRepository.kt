@@ -2659,6 +2659,26 @@ constructor(
                 .map { boxSetDto -> boxSetDto.toAfinityBoxSet(getBaseUrl()) }
         }
 
+    override suspend fun getBoxSetChildrenResult(
+        boxSetId: UUID,
+        limit: Int,
+        fields: List<ItemFields>,
+    ): Result<List<BaseItemDto>> = apiInvoker.apiResult { apiClient, userId ->
+        LibraryApi(apiClient)
+            .getItems(
+                userId = userId,
+                parentId = boxSetId,
+                limit = limit,
+                isMissing = false,
+                fields = fields,
+                enableImages = true,
+                enableUserData = true,
+                enableTotalRecordCount = false,
+            )
+            .content
+            .items
+    }
+
     override suspend fun getBoxSetPlaybackItemsResult(boxSetId: UUID): Result<List<AfinityItem>> =
         apiInvoker.apiResult { apiClient, userId ->
             val baseUrl = getBaseUrl()

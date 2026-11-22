@@ -69,17 +69,19 @@ fun MetadataRow(
 
     val actualTotalChildTicks =
         if (boxSetItems.isNotEmpty()) {
-            boxSetItems.sumOf { child ->
-                val epCount =
-                    (child as? AfinityShow)?.episodeCount
-                        ?: (child as? AfinitySeason)?.episodeCount
-                        ?: 1
-                if ((child is AfinityShow || child is AfinitySeason) && epCount > 0) {
-                    child.runtimeTicks * epCount
-                } else {
-                    child.runtimeTicks
+            boxSetItems
+                .filter { it.hasVideoRuntime() }
+                .sumOf { child ->
+                    val epCount =
+                        (child as? AfinityShow)?.episodeCount
+                            ?: (child as? AfinitySeason)?.episodeCount
+                            ?: 1
+                    if ((child is AfinityShow || child is AfinitySeason) && epCount > 0) {
+                        child.runtimeTicks * epCount
+                    } else {
+                        child.runtimeTicks
+                    }
                 }
-            }
         } else {
             totalChildRuntimeTicks
         }
@@ -323,6 +325,14 @@ fun MetadataTimeLeft(progress: Float, remainingTicks: Long) {
         MetadataText(remainingText)
     }
 }
+
+private fun AfinityItem.hasVideoRuntime(): Boolean =
+    this is AfinityMovie ||
+        this is AfinityShow ||
+        this is AfinitySeason ||
+        this is AfinityEpisode ||
+        this is AfinityVideo ||
+        this is AfinityMusicVideo
 
 private fun getFormattedEndTime(context: Context, totalMs: Long): String {
     val endDate = Date(System.currentTimeMillis() + totalMs)

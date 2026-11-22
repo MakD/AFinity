@@ -24,14 +24,16 @@ import com.makd.afinity.data.manager.putFrom
 import com.makd.afinity.data.manager.resolveTargetItem
 import com.makd.afinity.data.models.admin.AdminPermissionDeniedException
 import com.makd.afinity.data.models.admin.AdminRequestStillRunningException
-import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadQuality
 import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.data.models.extensions.toAfinityAlbum
+import com.makd.afinity.data.models.extensions.toAfinityArtist
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.extensions.toAfinityMusicVideo
 import com.makd.afinity.data.models.extensions.toAfinitySeason
+import com.makd.afinity.data.models.extensions.toAfinityTrack
 import com.makd.afinity.data.models.extensions.toAfinityVideo
 import com.makd.afinity.data.models.extensions.toAfinityVideoPlaylist
 import com.makd.afinity.data.models.external.ExternalTitles
@@ -48,10 +50,14 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.ThemeSong
+import com.makd.afinity.data.models.media.UserDataPatch
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.media.toAfinityMovie
 import com.makd.afinity.data.models.media.toAfinityShow
 import com.makd.afinity.data.models.media.withUserDataFrom
+import com.makd.afinity.data.models.music.AfinityAlbum
+import com.makd.afinity.data.models.music.AfinityArtist
+import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.models.tmdb.TmdbRegionProviders
 import com.makd.afinity.data.models.tmdb.TmdbReview
@@ -68,6 +74,7 @@ import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.metadata.ItemMetadataFetcher
+import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.wikidata.WikidataAwardsRepository
@@ -152,6 +159,7 @@ constructor(
     private val queryInvalidator: QueryInvalidator,
     private val wikidataAwardsRepository: WikidataAwardsRepository,
     private val externalTitlesRepository: ExternalTitlesRepository,
+    private val musicRepository: MusicRepository,
     val themeMusicPlayer: ThemeMusicPlayer,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -182,6 +190,7 @@ constructor(
     }
 
     private var bulkDownloadJob: Job? = null
+    private var boxSetLoadJob: Job? = null
     private var itemLastLoadedAt = System.currentTimeMillis()
     private var itemLastServerFetchAt = 0L
     private var themeLookupStarted = false
@@ -195,6 +204,9 @@ constructor(
         itemStore.project(viewModelScope, _uiState) { state ->
             val similar = live(state.similarItems)
             val boxSet = live(state.boxSetItems)
+            val boxSetAlbums = liveOwners(state.boxSetAlbums)
+            val boxSetArtists = liveOwners(state.boxSetArtists)
+            val boxSetTracks = liveOwners(state.boxSetTracks)
             val seasons = live(state.seasons)
             val parts = live(state.movieParts)
             val specials = live(state.specialFeatures)
@@ -208,6 +220,9 @@ constructor(
             if (
                 similar === state.similarItems &&
                     boxSet === state.boxSetItems &&
+                    boxSetAlbums === state.boxSetAlbums &&
+                    boxSetArtists === state.boxSetArtists &&
+                    boxSetTracks === state.boxSetTracks &&
                     seasons === state.seasons &&
                     parts === state.movieParts &&
                     specials === state.specialFeatures &&
@@ -219,6 +234,9 @@ constructor(
                 state.copy(
                     similarItems = similar,
                     boxSetItems = boxSet,
+                    boxSetAlbums = boxSetAlbums,
+                    boxSetArtists = boxSetArtists,
+                    boxSetTracks = boxSetTracks,
                     seasons = seasons,
                     movieParts = parts,
                     specialFeatures = specials,
@@ -604,7 +622,9 @@ constructor(
             when (child) {
                 is AfinityShow -> seriesIds += child.id.toString()
                 is AfinitySeason -> seasons += child.seriesId.toString() to child.indexNumber
-                else -> itemIds += child.id
+                is AfinityMovie,
+                is AfinityEpisode -> itemIds += child.id
+                else -> Unit
             }
         }
         return downloads.filter { download ->
@@ -816,25 +836,51 @@ constructor(
         }
     }
 
+    fun retryBoxSetItems() {
+        val boxSet = _uiState.value.item as? AfinityBoxSet ?: return
+        _uiState.update { it.copy(boxSetLoad = BoxSetLoad.LOADING) }
+        loadBoxSetItems(boxSet.id)
+    }
+
     private fun loadBoxSetItems(boxSetId: UUID) {
-        viewModelScope.launch {
-            try {
-                val response =
-                    mediaRepository.getItems(
-                        parentId = boxSetId,
-                        includeItemTypes = listOf("MOVIE", "SERIES", "SEASON", "EPISODE"),
+        boxSetLoadJob?.cancel()
+        boxSetLoadJob = viewModelScope.launch {
+            val dtos =
+                mediaRepository
+                    .getBoxSetChildrenResult(
+                        boxSetId = boxSetId,
                         limit = 100,
-                        sortBy = SortBy.RELEASE_DATE,
                         fields = FieldSets.MINIMAL + ItemFields.PROVIDER_IDS,
                     )
+                    .getOrElse { e ->
+                        Timber.e(e, "Failed to load boxset items")
+                        _uiState.update {
+                            if (it.boxSetLoad == BoxSetLoad.LOADED) it
+                            else it.copy(boxSetLoad = BoxSetLoad.FAILED)
+                        }
+                        return@launch
+                    }
+            try {
                 val baseUrl = mediaRepository.getBaseUrl()
-                val converted =
+                val content =
                     withContext(Dispatchers.Default) {
                         yield()
-                        response.items.mapNotNull { it.toAfinityItem(baseUrl) }
+                        val items = mutableListOf<AfinityItem>()
+                        val albums = mutableListOf<AfinityAlbum>()
+                        val artists = mutableListOf<AfinityArtist>()
+                        val tracks = mutableListOf<AfinityTrack>()
+                        dtos.forEach { dto ->
+                            when (dto.type) {
+                                BaseItemKind.MUSIC_ALBUM -> albums += dto.toAfinityAlbum(baseUrl)
+                                BaseItemKind.MUSIC_ARTIST -> artists += dto.toAfinityArtist(baseUrl)
+                                BaseItemKind.AUDIO -> tracks += dto.toAfinityTrack(baseUrl)
+                                else -> dto.toAfinityItem(baseUrl)?.let { items += it }
+                            }
+                        }
+                        BoxSetChildren(items, albums, artists, tracks)
                     }
                 val seriesIdsNeedingRuntime =
-                    converted
+                    content.items
                         .filterIsInstance<AfinitySeason>()
                         .filter { it.runtimeTicks == 0L }
                         .map { it.seriesId }
@@ -845,17 +891,43 @@ constructor(
                         mediaRepository
                             .getItemsByIds(seriesIdsNeedingRuntime, FieldSets.MINIMAL)
                             .associate { it.id to it.runtimeTicks }
-                val items = converted.map { item ->
-                    if (item is AfinitySeason && item.runtimeTicks == 0L)
-                        item.copy(runtimeTicks = seriesRuntimes[item.seriesId] ?: 0L)
-                    else item
+                val items =
+                    content.items.map { item ->
+                        if (item is AfinitySeason && item.runtimeTicks == 0L)
+                            item.copy(runtimeTicks = seriesRuntimes[item.seriesId] ?: 0L)
+                        else item
+                    }
+                _uiState.update {
+                    it.copy(
+                        boxSetItems = items,
+                        boxSetAlbums = content.albums,
+                        boxSetArtists = content.artists,
+                        boxSetTracks = content.tracks,
+                        boxSetLoad = BoxSetLoad.LOADED,
+                    )
                 }
-                _uiState.value = _uiState.value.copy(boxSetItems = items)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Timber.e(e, "Failed to load boxset items")
+                Timber.e(e, "Failed to convert boxset items")
+                _uiState.update {
+                    if (it.boxSetLoad == BoxSetLoad.LOADED) it
+                    else it.copy(boxSetLoad = BoxSetLoad.FAILED)
+                }
             }
+        }
+    }
+
+    fun toggleBoxSetTrackFavorite(trackId: UUID) {
+        val track = uiState.value.boxSetTracks.find { it.id == trackId } ?: return
+        val newFavorite = !track.favorite
+        itemStore.applyPatch(trackId, UserDataPatch(favorite = newFavorite))
+        viewModelScope.launch {
+            runCatching { musicRepository.setFavorite(trackId, newFavorite) }
+                .onSuccess { appDataRepository.updateTrackFavoriteStatus(track, newFavorite) }
+                .onFailure {
+                    itemStore.applyPatch(trackId, UserDataPatch(favorite = track.favorite))
+                }
         }
     }
 
@@ -2089,10 +2161,27 @@ data class RelatedRow(val kind: Kind, val subject: String, val items: List<Afini
     }
 }
 
+enum class BoxSetLoad {
+    LOADING,
+    LOADED,
+    FAILED,
+}
+
+private class BoxSetChildren(
+    val items: List<AfinityItem>,
+    val albums: List<AfinityAlbum>,
+    val artists: List<AfinityArtist>,
+    val tracks: List<AfinityTrack>,
+)
+
 data class ItemDetailUiState(
     val item: AfinityItem? = null,
     val seasons: List<AfinitySeason> = emptyList(),
     val boxSetItems: List<AfinityItem> = emptyList(),
+    val boxSetAlbums: List<AfinityAlbum> = emptyList(),
+    val boxSetArtists: List<AfinityArtist> = emptyList(),
+    val boxSetTracks: List<AfinityTrack> = emptyList(),
+    val boxSetLoad: BoxSetLoad = BoxSetLoad.LOADING,
     val containingBoxSets: List<AfinityBoxSet> = emptyList(),
     val similarItems: List<AfinityItem> = emptyList(),
     val relatedRows: List<RelatedRow> = emptyList(),
@@ -2133,4 +2222,14 @@ data class ItemDetailUiState(
                 is AfinityEpisode -> !item.missing
                 else -> true
             }
+
+    val canPlayCollection: Boolean
+        get() =
+            boxSetLoad != BoxSetLoad.LOADED ||
+                boxSetItems.any {
+                    it is AfinityMovie ||
+                        it is AfinityShow ||
+                        it is AfinitySeason ||
+                        it is AfinityEpisode
+                }
 }

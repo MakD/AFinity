@@ -1780,6 +1780,13 @@
     <string name="section_boxset">Box Sets</string>
     <string name="section_tv_shows">TV Shows</string>
     <string name="section_books">Books</string>
+    <string name="section_albums">Albums</string>
+    <string name="section_artists">Artists</string>
+    <string name="section_songs">Songs</string>
+    <string name="section_collections">Collections</string>
+    <string name="section_photos">Photos</string>
+    <string name="section_playlists">Playlists</string>
+    <string name="section_other_items">Other items</string>
     <string name="section_audiobooks">Audiobooks</string>
     <string name="section_seasons">Seasons</string>
     <string name="section_episodes">Episodes</string>
@@ -3515,6 +3522,7 @@
     <string name="cd_collection_remove_item">Remove %1$s from the collection</string>
     <string name="collection_play_failed">Couldn\'t load the collection for playback</string>
     <string name="collection_play_empty">Nothing in this collection can be played</string>
+    <string name="collection_items_load_failed">Couldn\'t load what\'s in this collection</string>
     <plurals name="collection_item_count">
         <item quantity="one">%d item</item>
         <item quantity="other">%d items</item>

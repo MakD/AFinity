@@ -69,6 +69,9 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.AfinityVideoPlaylist
+import com.makd.afinity.data.models.music.AfinityAlbum
+import com.makd.afinity.data.models.music.AfinityArtist
+import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.tmdb.TmdbRegionProviders
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.models.wikidata.WikidataAwards
@@ -801,11 +804,13 @@ private fun LandscapeItemDetailContent(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         if (item is AfinityBoxSet) {
-                            Box(modifier = Modifier.widthIn(max = 200.dp)) {
-                                CollectionPlayButton(
-                                    isLoading = uiState.isStartingCollectionPlayback,
-                                    onClick = { viewModel.playCollection() },
-                                )
+                            if (uiState.canPlayCollection) {
+                                Box(modifier = Modifier.widthIn(max = 200.dp)) {
+                                    CollectionPlayButton(
+                                        isLoading = uiState.isStartingCollectionPlayback,
+                                        onClick = { viewModel.playCollection() },
+                                    )
+                                }
                             }
                         } else if (item !is AfinityVideoPlaylist && item.canPlay) {
                             Box(modifier = Modifier.widthIn(max = 200.dp)) {
@@ -837,6 +842,7 @@ private fun LandscapeItemDetailContent(
                             hasTrailer = hasTrailer(item),
                             downloadInfo = downloadInfo,
                             hasPlayableItems = hasPlayableItems,
+                            canPlayCollection = uiState.canPlayCollection,
                             onPlayTrailer = { playTrailer(item, context, viewModel) },
                             onToggleWatchlist = { viewModel.toggleWatchlist() },
                             onShufflePlay = {
@@ -950,6 +956,10 @@ private fun LandscapeItemDetailContent(
                 item = item,
                 seasons = seasons,
                 boxSetItems = boxSetItems,
+                boxSetAlbums = uiState.boxSetAlbums,
+                boxSetArtists = uiState.boxSetArtists,
+                boxSetTracks = uiState.boxSetTracks,
+                boxSetLoad = uiState.boxSetLoad,
                 containingBoxSets = containingBoxSets,
                 similarItems = similarItems,
                 relatedRows = relatedRows,
@@ -1104,10 +1114,12 @@ private fun PortraitItemDetailContent(
             }
 
             if (item is AfinityBoxSet) {
-                CollectionPlayButton(
-                    isLoading = uiState.isStartingCollectionPlayback,
-                    onClick = { viewModel.playCollection() },
-                )
+                if (uiState.canPlayCollection) {
+                    CollectionPlayButton(
+                        isLoading = uiState.isStartingCollectionPlayback,
+                        onClick = { viewModel.playCollection() },
+                    )
+                }
             } else if (item !is AfinityVideoPlaylist && item.canPlay) {
                 PrimaryPlaybackButton(
                     item = item,
@@ -1126,6 +1138,7 @@ private fun PortraitItemDetailContent(
                 hasTrailer = hasTrailer(item),
                 downloadInfo = downloadInfo,
                 hasPlayableItems = hasPlayableItems,
+                canPlayCollection = uiState.canPlayCollection,
                 onPlayTrailer = { playTrailer(item, context, viewModel) },
                 onToggleWatchlist = { viewModel.toggleWatchlist() },
                 onShufflePlay = {
@@ -1235,6 +1248,10 @@ private fun PortraitItemDetailContent(
                 item = item,
                 seasons = seasons,
                 boxSetItems = boxSetItems,
+                boxSetAlbums = uiState.boxSetAlbums,
+                boxSetArtists = uiState.boxSetArtists,
+                boxSetTracks = uiState.boxSetTracks,
+                boxSetLoad = uiState.boxSetLoad,
                 containingBoxSets = containingBoxSets,
                 similarItems = similarItems,
                 relatedRows = relatedRows,
@@ -1319,6 +1336,10 @@ private fun LazyListScope.typeSpecificItems(
     item: AfinityItem,
     seasons: List<AfinitySeason>,
     boxSetItems: List<AfinityItem>,
+    boxSetAlbums: List<AfinityAlbum>,
+    boxSetArtists: List<AfinityArtist>,
+    boxSetTracks: List<AfinityTrack>,
+    boxSetLoad: BoxSetLoad,
     containingBoxSets: List<AfinityBoxSet>,
     similarItems: List<AfinityItem>,
     relatedRows: List<RelatedRow>,
@@ -1479,7 +1500,15 @@ private fun LazyListScope.typeSpecificItems(
             boxSetDetailItems(
                 item = item,
                 boxSetItems = boxSetItems,
+                albums = boxSetAlbums,
+                artists = boxSetArtists,
+                tracks = boxSetTracks,
+                load = boxSetLoad,
                 onItemClick = onBoxSetItemClick,
+                onAlbumClick = onMusicAlbumClick,
+                onArtistClick = onMusicArtistClick,
+                onTrackFavorite = { track -> viewModel.toggleBoxSetTrackFavorite(track.id) },
+                onRetry = { viewModel.retryBoxSetItems() },
                 missingParts = missingCollectionParts,
                 onMissingPartClick = onNavigateToSeerrMedia,
                 widthSizeClass = widthSizeClass,

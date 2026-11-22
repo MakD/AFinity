@@ -388,6 +388,12 @@ interface MediaRepository {
         fields: List<ItemFields>? = null,
     ): List<AfinityBoxSet>
 
+    suspend fun getBoxSetChildrenResult(
+        boxSetId: UUID,
+        limit: Int,
+        fields: List<ItemFields>,
+    ): Result<List<BaseItemDto>>
+
     suspend fun getBoxSetPlaybackItemsResult(boxSetId: UUID): Result<List<AfinityItem>>
 
     suspend fun getBoxSetsForSpotlight(
