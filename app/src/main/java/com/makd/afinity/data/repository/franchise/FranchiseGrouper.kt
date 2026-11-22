@@ -98,11 +98,49 @@ object FranchiseGrouper {
             results.getOrPut(label) { Candidate(group, LinkedHashSet()) }.keys.addAll(keys)
         }
 
-        for (component in linkedComponents(byKey, facts, entityTitles)) {
+        val collectionSets =
+            byKey.values
+                .filter { it.tmdbCollectionId != null && it.tmdbCollectionId in collectionTmdbIds }
+                .groupBy { it.tmdbCollectionId }
+                .values
+                .mapTo(HashSet()) { members -> members.mapTo(HashSet()) { it.key } }
+
+        val memberOf = HashMap<String, MutableSet<String>>()
+        for ((label, candidate) in results) {
+            if (candidate.keys in collectionSets) continue
+            candidate.keys.forEach { memberOf.getOrPut(it) { HashSet() }.add(label) }
+        }
+
+        val links = acceptedLinks(byKey, facts, entityTitles)
+        val edges = HashMap<String, LinkedHashSet<String>>()
+        for ((source, target) in links) {
+            for (a in entityTitles.getValue(source)) {
+                for (b in entityTitles.getValue(target)) {
+                    edges.getOrPut(a) { LinkedHashSet() }.add(b)
+                    edges.getOrPut(b) { LinkedHashSet() }.add(a)
+                }
+            }
+        }
+
+        for (component in linkedComponents(entityTitles, links)) {
             val keys = component.flatMapTo(LinkedHashSet()) { entityTitles.getValue(it) }
             val overlapping =
                 results.values.filter { candidate -> candidate.keys.any { it in keys } }
-            overlapping.forEach { it.keys.addAll(keys) }
+            for (candidate in overlapping) {
+                val reach = keys.filterTo(LinkedHashSet()) { it in candidate.keys }
+                val queue = ArrayDeque(reach)
+                while (queue.isNotEmpty()) {
+                    val source = queue.removeFirst()
+                    val shared = memberOf[source].orEmpty()
+                    for (target in edges[source].orEmpty()) {
+                        if (target !in keys || target in reach) continue
+                        if (memberOf[target].orEmpty().any { it in shared }) continue
+                        reach.add(target)
+                        queue.addLast(target)
+                    }
+                }
+                candidate.keys.addAll(reach)
+            }
             if (overlapping.isNotEmpty() || keys.size < MIN_TITLES) continue
             val oldest =
                 keys
@@ -114,13 +152,6 @@ object FranchiseGrouper {
             val name = oldest.name.replace(YEAR_SUFFIX, "").trim()
             results.getOrPut(name) { Candidate(rootEntity, LinkedHashSet()) }.keys.addAll(keys)
         }
-
-        val collectionSets =
-            byKey.values
-                .filter { it.tmdbCollectionId != null && it.tmdbCollectionId in collectionTmdbIds }
-                .groupBy { it.tmdbCollectionId }
-                .values
-                .mapTo(HashSet()) { members -> members.mapTo(HashSet()) { it.key } }
 
         return results.mapNotNull { (label, candidate) ->
             if (candidate.keys in collectionSets) return@mapNotNull null
@@ -150,10 +181,33 @@ object FranchiseGrouper {
         return current
     }
 
-    private fun linkedComponents(
+    private fun acceptedLinks(
         byKey: Map<String, FranchiseTitle>,
         facts: WikidataFranchiseFacts,
         entityTitles: Map<String, Set<String>>,
+    ): List<Pair<String, String>> {
+        fun nameOf(entity: String): String =
+            byKey.getValue(entityTitles.getValue(entity).first()).name
+
+        val links = ArrayList<Pair<String, String>>()
+        for (key in byKey.keys) {
+            val title = facts.titles[key] ?: continue
+            val source = title.entityId ?: continue
+            for (link in title.links) {
+                val target = link.entityId
+                if (target == source || target !in entityTitles) continue
+                val accepted =
+                    link.property in SPIN_OFF_PROPS ||
+                        tokens(nameOf(source)).any { it in tokens(nameOf(target)) }
+                if (accepted) links.add(source to target)
+            }
+        }
+        return links
+    }
+
+    private fun linkedComponents(
+        entityTitles: Map<String, Set<String>>,
+        links: List<Pair<String, String>>,
     ): List<List<String>> {
         val parent = HashMap<String, String>()
         entityTitles.keys.forEach { parent[it] = it }
@@ -165,21 +219,8 @@ object FranchiseGrouper {
             }
             return current
         }
-        fun nameOf(entity: String): String =
-            byKey.getValue(entityTitles.getValue(entity).first()).name
 
-        for (key in byKey.keys) {
-            val title = facts.titles[key] ?: continue
-            val source = title.entityId ?: continue
-            for (link in title.links) {
-                val target = link.entityId
-                if (target == source || target !in entityTitles) continue
-                val accepted =
-                    link.property in SPIN_OFF_PROPS ||
-                        tokens(nameOf(source)).any { it in tokens(nameOf(target)) }
-                if (accepted) parent[find(source)] = find(target)
-            }
-        }
+        for ((source, target) in links) parent[find(source)] = find(target)
         return entityTitles.keys.groupBy { find(it) }.values.filter { it.size > 1 }
     }
 
