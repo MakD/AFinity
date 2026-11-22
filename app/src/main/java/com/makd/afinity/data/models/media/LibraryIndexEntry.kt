@@ -9,4 +9,5 @@ data class LibraryIndexEntry(
     val isSeries: Boolean,
     val imdbId: String?,
     val tmdbCollectionId: String?,
+    val studioIds: List<UUID>,
 )

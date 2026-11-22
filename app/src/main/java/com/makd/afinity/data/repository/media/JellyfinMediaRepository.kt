@@ -1494,7 +1494,7 @@ constructor(
                 recursive = true,
                 collapseBoxSetItems = false,
                 hasImdbId = true,
-                fields = listOf(ItemFields.PROVIDER_IDS),
+                fields = listOf(ItemFields.PROVIDER_IDS, ItemFields.STUDIOS),
                 enableImages = false,
                 enableUserData = false,
                 enableTotalRecordCount = false,
@@ -1509,6 +1509,7 @@ constructor(
                     isSeries = item.type == BaseItemKind.SERIES,
                     imdbId = item.providerId("imdb"),
                     tmdbCollectionId = item.providerId("tmdbcollection"),
+                    studioIds = item.studios.orEmpty().map { it.id },
                 )
             }
     }

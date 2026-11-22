@@ -449,20 +449,38 @@ constructor(
             if (now - studiosFailedAt < POOL_FAILURE_BACKOFF_MS) return null
         }
         val sk = sessionKey()
+        val (studiosResult, titleCounts) =
+            coroutineScope {
+                val counts = async { studioTitleCounts(force) }
+                val studios =
+                    backgroundWorkQueue.run("studios pool") {
+                        mediaRepository.getStudiosResult(
+                            limit = Int.MAX_VALUE,
+                            minItemCount = 0,
+                            includeItemTypes = POPULAR_STUDIOS_TYPES,
+                        )
+                    }
+                studios to counts.await()
+            }
+        val studios = studiosResult.getOrElse { e ->
+            if (e is CancellationException) throw e
+            Timber.w(e, "Failed to load studios")
+            studiosFailedAt = now
+            return null
+        }
         val fetched =
-            backgroundWorkQueue
-                .run("studios pool") {
-                    mediaRepository.getStudiosResult(
-                        limit = STUDIOS_POOL,
-                        includeItemTypes = POPULAR_STUDIOS_TYPES,
-                    )
-                }
-                .getOrElse { e ->
-                    if (e is CancellationException) throw e
-                    Timber.w(e, "Failed to load studios")
-                    studiosFailedAt = now
-                    return null
-                }
+            if (titleCounts == null) {
+                studios.filter { it.itemCount >= MIN_STUDIO_TITLES }.take(STUDIOS_POOL)
+            } else {
+                studios
+                    .mapNotNull { studio ->
+                        titleCounts[studio.id]
+                            ?.takeIf { it >= MIN_STUDIO_TITLES }
+                            ?.let { studio.copy(itemCount = it) }
+                    }
+                    .sortedByDescending { it.itemCount }
+                    .take(STUDIOS_POOL)
+            }
         if (fetched.isEmpty()) {
             studiosFailedAt = now
             return null
@@ -478,6 +496,31 @@ constructor(
             }
         }
         fetched
+    }
+
+    private suspend fun studioTitleCounts(force: Boolean): Map<UUID, Int>? = coroutineScope {
+        val results =
+            listOf(BaseItemKind.MOVIE, BaseItemKind.SERIES)
+                .map { type ->
+                    async {
+                        backgroundWorkQueue.run("studio counts ${type.name}") {
+                            libraryIndexRepository.index(type, force)
+                        }
+                    }
+                }
+                .map { it.await() }
+        val counts = HashMap<UUID, Int>()
+        for (result in results) {
+            val entries = result.getOrElse { e ->
+                if (e is CancellationException) throw e
+                Timber.w(e, "Failed to count studio titles, ranking by server counts")
+                return@coroutineScope null
+            }
+            entries.forEach { entry ->
+                entry.studioIds.distinct().forEach { counts.merge(it, 1, Int::plus) }
+            }
+        }
+        counts
     }
 
     private suspend fun boxSetPool(): List<AfinityBoxSet> {
@@ -2399,6 +2442,7 @@ private const val WATCH_AGAIN_POOL = 50
 private const val WATCH_AGAIN_MIN_ITEMS = 5
 private const val POPULAR_STUDIOS_KEY = "popular_studios"
 private const val STUDIOS_POOL = 50
+private const val MIN_STUDIO_TITLES = 5
 private const val POOL_FAILURE_BACKOFF_MS = 10 * 60 * 1000L
 private const val PEOPLE_SCAN_PER_ROW = 8
 private const val PEOPLE_SCAN_MIN = 60
