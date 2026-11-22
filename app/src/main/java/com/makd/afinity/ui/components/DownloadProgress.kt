@@ -1,5 +1,8 @@
 package com.makd.afinity.ui.components
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,6 +29,19 @@ import androidx.compose.ui.unit.dp
 
 private val RingStrokeWidth = 2.dp
 private val BarThickness = 8.dp
+private val BarWavelength = 20.dp
+private const val PROGRESS_GLIDE_MS = 500
+
+@Composable
+private fun rememberGlidingProgress(progress: () -> Float): () -> Float {
+    val animated =
+        animateFloatAsState(
+            targetValue = progress().coerceIn(0f, 1f),
+            animationSpec = tween(durationMillis = PROGRESS_GLIDE_MS, easing = LinearEasing),
+            label = "downloadProgress",
+        )
+    return remember(animated) { { animated.value } }
+}
 
 @Composable
 fun DownloadProgressRing(
@@ -34,6 +50,7 @@ fun DownloadProgressRing(
     active: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val glidingProgress = rememberGlidingProgress(progress)
     if (active) {
         val density = LocalDensity.current
         val stroke =
@@ -41,7 +58,7 @@ fun DownloadProgressRing(
                 Stroke(width = with(density) { RingStrokeWidth.toPx() }, cap = StrokeCap.Round)
             }
         CircularWavyProgressIndicator(
-            progress = progress,
+            progress = glidingProgress,
             modifier = modifier.size(size),
             trackColor = ProgressIndicatorDefaults.circularDeterminateTrackColor,
             stroke = stroke,
@@ -52,7 +69,7 @@ fun DownloadProgressRing(
         )
     } else {
         CircularProgressIndicator(
-            progress = progress,
+            progress = glidingProgress,
             modifier = modifier.size(size),
             strokeWidth = RingStrokeWidth,
         )
@@ -67,6 +84,7 @@ fun DownloadProgressBar(
     modifier: Modifier = Modifier,
 ) {
     val trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+    val glidingProgress = rememberGlidingProgress(progress)
     Box(
         modifier =
             modifier.fillMaxWidth().height(WavyProgressIndicatorDefaults.LinearContainerHeight),
@@ -74,14 +92,15 @@ fun DownloadProgressBar(
     ) {
         if (active) {
             LinearWavyProgressIndicator(
-                progress = progress,
+                progress = glidingProgress,
                 modifier = Modifier.fillMaxWidth(),
                 color = color,
                 trackColor = trackColor,
+                wavelength = BarWavelength,
             )
         } else {
             LinearProgressIndicator(
-                progress = progress,
+                progress = glidingProgress,
                 modifier =
                     Modifier.fillMaxWidth()
                         .height(BarThickness)
