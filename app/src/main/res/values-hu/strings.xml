@@ -496,7 +496,7 @@
     </plurals>
     <string name="person_died_no_age_fmt">Elhunyt: %1$s</string>
     <string name="person_birthplace_fmt">Születési hely: %1$s</string>
-    <string name="person_date_fmt">ÉÉÉÉ HHH n</string>
+    <string name="person_date_fmt">yyyy. MMMM d.</string>
     <string name="action_show_more">Több mutatása</string>
     <string name="action_show_less">Kevesebb mutatása</string>
     <string name="abs_show_less">Kevesebb mutatása</string>
@@ -1559,4 +1559,35 @@
     <string name="library_filter_audio_language">Hangsáv nyelve</string>
     <string name="playback_section_tracks_summary">Melyik nyelvet és feliratot válassza a rendszer automatikusan</string>
     <string name="library_filter_subtitle_language">Felirat nyelve</string>
+    <plurals name="detail_fact_director">
+        <item quantity="one">Rendező</item>
+        <item quantity="other">Rendezők</item>
+    </plurals>
+    <string name="request_director_label">Rendező:</string>
+    <string name="admin_person_type_director">Rendező</string>
+    <plurals name="detail_fact_writer">
+        <item quantity="one">Író</item>
+        <item quantity="other">Írók</item>
+    </plurals>
+    <string name="admin_person_type_writer">Író</string>
+    <string name="person_kind_writer">Író</string>
+    <string name="detail_fact_audio">Hangsáv</string>
+    <string name="library_opt_section_subtitles">Feliratok</string>
+    <string name="detail_fact_subtitles">Feliratok</string>
+    <string name="plugin_category_subtitles">Feliratok</string>
+    <string name="server_backup_subtitles">Feliratok</string>
+    <string name="cd_subtitles">Feliratok</string>
+    <string name="media_info_section_subtitles">Feliratok</string>
+    <string name="detail_fact_links">Linkek</string>
+    <string name="related_starring_fmt">%1$s szereplésével</string>
+    <string name="related_more_in_genre_fmt">Több %1$s</string>
+    <string name="book_more_in_series_fmt">Több %1$s</string>
+    <string name="collection_action_add">Hozzáadás a gyűjteményhez</string>
+    <string name="collection_add_title">Hozzáadás a gyűjteményhez</string>
+    <string name="collection_remove_title">Eltávolítás a gyűjteményből</string>
+    <string name="collection_action_remove">Eltávolítás a gyűjteményből</string>
+    <string name="discovery_section_top_imdb_movies">Minden idők legnagyobbjai</string>
+    <string name="discovery_section_trending_shows">Amit most mindenki néz</string>
+    <string name="discovery_section_trending_movies">Jelenleg népszerű</string>
+    <string name="discovery_section_top_imdb_shows">Legendás sorozatok</string>
 </resources>
