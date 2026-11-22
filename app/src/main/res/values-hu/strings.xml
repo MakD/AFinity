@@ -1777,8 +1777,8 @@
     <string name="hero_slide_count_range_fmt">%1$d - %2$d</string>
     <string name="not_in_library_title">Nincs a könyvtáradban</string>
     <plurals name="music_video_artists_prefix">
-        <item quantity="one">Művész: %1$s</item>
-        <item quantity="other">Művészek: %1$s</item>
+        <item quantity="one">Előadó: %1$s</item>
+        <item quantity="other">Előadók: %1$s</item>
     </plurals>
     <string name="music_video_album_prefix">Album: %1$s</string>
     <string name="where_to_watch_title">Hol lehet megnézni</string>
@@ -1830,4 +1830,22 @@
     <string name="music_nav_album_artists">Album előadója</string>
     <string name="perm_deletion_all_libraries">Minden könyvtár</string>
     <string name="widget_settings_appearance">Megjelenés</string>
+    <string name="favorites_artists">Kedvenc előadók</string>
+    <string name="library_opt_type_music_artist">Zenei előadók</string>
+    <string name="playlist_artists_two_fmt">%1$s &amp; %2$s</string>
+    <string name="playlist_artists_three_fmt">%1$s, %2$s és %3$s</string>
+    <plurals name="playlist_artists_more_fmt">
+        <item quantity="one">%1$s, %2$s és még %3$d</item>
+        <item quantity="other">%1$s, %2$s és még %3$d</item>
+    </plurals>
+    <string name="stat_artists">Előadók</string>
+    <string name="admin_section_artists">Előadók</string>
+    <string name="music_more_section_audio">HANGSÁV</string>
+    <string name="abs_more_section_audio">Hangsáv</string>
+    <string name="config_section_audio">Hangsáv</string>
+    <string name="media_info_section_audio">Hangsáv</string>
+    <string name="playback_stats_label_transcode_audio">Hangsáv</string>
+    <string name="livetv_skip_episodes_in_library_help">Az epizódokat – amennyiben rendelkezésre állnak – a évad- és epizódszámok alapján fogjuk összehasonlítani.</string>
+    <string name="mpv_device_check_vulkan_missing">nem elérhető</string>
+    <string name="mpv_device_check_status_supported">HDR-átvitel elérhető. Válassza ki a Vulkan-t GPU-API-ként.</string>
 </resources>
