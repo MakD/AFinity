@@ -665,6 +665,24 @@ constructor(
         }
 
         viewModelScope.launch {
+            preferencesRepository.getSeekGestureEnabledFlow().collect {
+                _uiState.value = _uiState.value.copy(seekGestureEnabled = it)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getBrightnessGestureEnabledFlow().collect {
+                _uiState.value = _uiState.value.copy(brightnessGestureEnabled = it)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getVolumeGestureEnabledFlow().collect {
+                _uiState.value = _uiState.value.copy(volumeGestureEnabled = it)
+            }
+        }
+
+        viewModelScope.launch {
             preferencesRepository.getDefaultVideoZoomModeFlow().collect { mode ->
                 _uiState.value = _uiState.value.copy(defaultVideoZoomMode = mode)
             }
@@ -1114,6 +1132,45 @@ constructor(
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle swap gesture indicators")
+            }
+        }
+    }
+
+    fun toggleSeekGesture(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setSeekGestureEnabled(enabled)
+                Timber.d("Seek gesture set to: $enabled")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle seek gesture")
+            }
+        }
+    }
+
+    fun toggleBrightnessGesture(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setBrightnessGestureEnabled(enabled)
+                Timber.d("Brightness gesture set to: $enabled")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle brightness gesture")
+            }
+        }
+    }
+
+    fun toggleVolumeGesture(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setVolumeGestureEnabled(enabled)
+                Timber.d("Volume gesture set to: $enabled")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle volume gesture")
             }
         }
     }
@@ -1976,6 +2033,9 @@ data class SettingsUiState(
     val seekForwardStep: SeekStep = SeekStep.defaultForward,
     val chapterSkipGesture: Boolean = true,
     val swapGestureIndicators: Boolean = false,
+    val seekGestureEnabled: Boolean = true,
+    val brightnessGestureEnabled: Boolean = true,
+    val volumeGestureEnabled: Boolean = true,
     val defaultVideoZoomMode: VideoZoomMode = VideoZoomMode.FIT,
     val mpvHwDec: MpvHwDec = MpvHwDec.default,
     val mpvVideoOutput: MpvVideoOutput = MpvVideoOutput.default,

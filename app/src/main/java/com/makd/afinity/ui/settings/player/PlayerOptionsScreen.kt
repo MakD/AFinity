@@ -557,21 +557,57 @@ fun PlayerOptionsScreen(
                         )
                         SettingsDivider()
                         SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_arrows_move_horizontal),
+                            title = stringResource(R.string.pref_seek_gesture_title),
+                            subtitle = stringResource(R.string.pref_seek_gesture_summary),
+                            checked = uiState.seekGestureEnabled,
+                            onCheckedChange = viewModel::toggleSeekGesture,
+                        )
+                        SettingsDivider()
+                        SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_brightness_half),
+                            title = stringResource(R.string.pref_brightness_gesture_title),
+                            subtitle = stringResource(R.string.pref_brightness_gesture_summary),
+                            checked = uiState.brightnessGestureEnabled,
+                            onCheckedChange = viewModel::toggleBrightnessGesture,
+                        )
+                        SettingsDivider()
+                        SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_volume_up),
+                            title = stringResource(R.string.pref_volume_gesture_title),
+                            subtitle = stringResource(R.string.pref_volume_gesture_summary),
+                            checked = uiState.volumeGestureEnabled,
+                            onCheckedChange = viewModel::toggleVolumeGesture,
+                        )
+                        SettingsDivider()
+                        SettingsSwitchItem(
                             icon = painterResource(id = R.drawable.ic_fast_forward),
                             title = stringResource(R.string.pref_chapter_skip_gesture_title),
                             subtitle = stringResource(R.string.pref_chapter_skip_gesture_summary),
                             checked = uiState.chapterSkipGesture,
                             onCheckedChange = viewModel::toggleChapterSkipGesture,
                         )
-                        SettingsDivider()
-                        SettingsSwitchItem(
-                            icon = painterResource(id = R.drawable.ic_switch_horizontal),
-                            title = stringResource(R.string.pref_swap_gesture_indicators_title),
-                            subtitle =
-                                stringResource(R.string.pref_swap_gesture_indicators_summary),
-                            checked = uiState.swapGestureIndicators,
-                            onCheckedChange = viewModel::toggleSwapGestureIndicators,
-                        )
+                        AnimatedVisibility(
+                            visible =
+                                uiState.brightnessGestureEnabled || uiState.volumeGestureEnabled,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically(),
+                        ) {
+                            Column {
+                                SettingsDivider()
+                                SettingsSwitchItem(
+                                    icon = painterResource(id = R.drawable.ic_switch_horizontal),
+                                    title =
+                                        stringResource(R.string.pref_swap_gesture_indicators_title),
+                                    subtitle =
+                                        stringResource(
+                                            R.string.pref_swap_gesture_indicators_summary,
+                                        ),
+                                    checked = uiState.swapGestureIndicators,
+                                    onCheckedChange = viewModel::toggleSwapGestureIndicators,
+                                )
+                            }
+                        }
                         SettingsDivider()
                         VideoZoomModeSelectorItem(
                             selectedMode = uiState.defaultVideoZoomMode,

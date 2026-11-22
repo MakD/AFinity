@@ -252,6 +252,9 @@ fun PlayerScreen(
         } else {
             GestureHandler(
                 isSeekEnabled = !uiState.isPlayingIntro,
+                isSwipeSeekEnabled = uiState.seekGestureEnabled,
+                isBrightnessEnabled = uiState.brightnessGestureEnabled,
+                isVolumeEnabled = uiState.volumeGestureEnabled,
                 onSingleTap = { viewModel.onSingleTap() },
                 onDoubleTap = { isForward, xFraction, offset ->
                     val step =

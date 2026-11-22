@@ -43,6 +43,9 @@ private enum class GestureType {
 fun GestureHandler(
     modifier: Modifier = Modifier,
     isSeekEnabled: Boolean = true,
+    isSwipeSeekEnabled: Boolean = true,
+    isBrightnessEnabled: Boolean = true,
+    isVolumeEnabled: Boolean = true,
     onSingleTap: () -> Unit,
     onDoubleTap: (isForward: Boolean, xFraction: Float, offset: Offset) -> Boolean,
     onLongPressStart: (xFraction: Float) -> Unit = {},
@@ -78,6 +81,9 @@ fun GestureHandler(
     val currentOnSeekGesture by rememberUpdatedState(onSeekGesture)
     val currentOnSeekPreview by rememberUpdatedState(onSeekPreview)
     val currentIsSeekEnabled by rememberUpdatedState(isSeekEnabled)
+    val currentIsSwipeSeekEnabled by rememberUpdatedState(isSwipeSeekEnabled)
+    val currentIsBrightnessEnabled by rememberUpdatedState(isBrightnessEnabled)
+    val currentIsVolumeEnabled by rememberUpdatedState(isVolumeEnabled)
 
     var isDragging by remember { mutableStateOf(false) }
     var isLongPressActive by remember { mutableStateOf(false) }
@@ -215,17 +221,19 @@ fun GestureHandler(
                                         when {
                                             abs(totalVerticalDelta) > abs(totalHorizontalDelta) -> {
                                                 when {
-                                                    dragStartOffset.x < leftZoneWidth ->
+                                                    dragStartOffset.x < leftZoneWidth &&
+                                                        currentIsBrightnessEnabled ->
                                                         GestureType.BRIGHTNESS
 
-                                                    dragStartOffset.x > rightZoneStart ->
-                                                        GestureType.VOLUME
+                                                    dragStartOffset.x > rightZoneStart &&
+                                                        currentIsVolumeEnabled -> GestureType.VOLUME
 
                                                     else -> null
                                                 }
                                             }
 
-                                            currentIsSeekEnabled -> GestureType.SEEK
+                                            currentIsSeekEnabled && currentIsSwipeSeekEnabled ->
+                                                GestureType.SEEK
                                             else -> null
                                         }
 

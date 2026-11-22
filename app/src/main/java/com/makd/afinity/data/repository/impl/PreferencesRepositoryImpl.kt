@@ -169,6 +169,9 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val CHAPTER_SKIP_GESTURE = booleanPreferencesKey("chapter_skip_gesture")
 
         val SWAP_GESTURE_INDICATORS = booleanPreferencesKey("swap_gesture_indicators")
+        val GESTURE_SEEK_ENABLED = booleanPreferencesKey("gesture_seek_enabled")
+        val GESTURE_BRIGHTNESS_ENABLED = booleanPreferencesKey("gesture_brightness_enabled")
+        val GESTURE_VOLUME_ENABLED = booleanPreferencesKey("gesture_volume_enabled")
 
         val ASS_RENDER_MODE = stringPreferencesKey("ass_render_mode")
         val MPV_HW_DEC = stringPreferencesKey("mpv_hw_dec")
@@ -1307,6 +1310,46 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
     override fun getSwapGestureIndicatorsFlow(): Flow<Boolean> {
         return dataStore.data.map { preferences ->
             preferences[Keys.SWAP_GESTURE_INDICATORS] ?: false
+        }
+    }
+
+    override suspend fun setSeekGestureEnabled(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.GESTURE_SEEK_ENABLED] = enabled }
+    }
+
+    override suspend fun getSeekGestureEnabled(): Boolean {
+        return dataStore.data.first()[Keys.GESTURE_SEEK_ENABLED] ?: true
+    }
+
+    override fun getSeekGestureEnabledFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences -> preferences[Keys.GESTURE_SEEK_ENABLED] ?: true }
+    }
+
+    override suspend fun setBrightnessGestureEnabled(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.GESTURE_BRIGHTNESS_ENABLED] = enabled }
+    }
+
+    override suspend fun getBrightnessGestureEnabled(): Boolean {
+        return dataStore.data.first()[Keys.GESTURE_BRIGHTNESS_ENABLED] ?: true
+    }
+
+    override fun getBrightnessGestureEnabledFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.GESTURE_BRIGHTNESS_ENABLED] ?: true
+        }
+    }
+
+    override suspend fun setVolumeGestureEnabled(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.GESTURE_VOLUME_ENABLED] = enabled }
+    }
+
+    override suspend fun getVolumeGestureEnabled(): Boolean {
+        return dataStore.data.first()[Keys.GESTURE_VOLUME_ENABLED] ?: true
+    }
+
+    override fun getVolumeGestureEnabledFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.GESTURE_VOLUME_ENABLED] ?: true
         }
     }
 

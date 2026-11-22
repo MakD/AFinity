@@ -1487,6 +1487,12 @@
     <string name="seek_step_seconds_fmt">%1$d seconds</string>
     <string name="cd_rewind_seconds_fmt">Rewind %1$d seconds</string>
     <string name="cd_forward_seconds_fmt">Forward %1$d seconds</string>
+    <string name="pref_seek_gesture_title">Swipe to seek</string>
+    <string name="pref_seek_gesture_summary">Swipe left or right to move through the video</string>
+    <string name="pref_brightness_gesture_title">Brightness gesture</string>
+    <string name="pref_brightness_gesture_summary">Swipe up or down on the left side to change brightness</string>
+    <string name="pref_volume_gesture_title">Volume gesture</string>
+    <string name="pref_volume_gesture_summary">Swipe up or down on the right side to change volume</string>
     <string name="pref_chapter_skip_gesture_title">Chapter skip gesture</string>
     <string name="pref_chapter_skip_gesture_summary">Long-press the left or right edge to skip chapters (middle keeps 2× speed)</string>
     <string name="pref_swap_gesture_indicators_title">Swap gesture indicators</string>
