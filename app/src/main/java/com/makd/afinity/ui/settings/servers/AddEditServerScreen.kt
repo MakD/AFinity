@@ -39,7 +39,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -64,6 +63,7 @@ import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.LoadingButton
 import com.makd.afinity.ui.components.LocalNetworkPermissionCard
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.util.isInsecurePublicUrl
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -96,6 +96,7 @@ fun AddEditServerScreen(
 
     if (state.duplicateServerDetected && state.saveSuccess && duplicateMessage != null) {
         AlertDialog(
+            properties = afinityDialogProperties(),
             onDismissRequest = onBackClick,
             title = { Text(stringResource(R.string.address_added_title)) },
             text = { Text(duplicateMessage) },
@@ -364,7 +365,7 @@ private fun ConnectionErrorCard(errorMessage: String, modifier: Modifier = Modif
 
 @Composable
 private fun InsecureConnectionBanner(serverUrl: String) {
-    val showWarning by remember(serverUrl) { derivedStateOf { isInsecurePublicUrl(serverUrl) } }
+    val showWarning = remember(serverUrl) { isInsecurePublicUrl(serverUrl) }
 
     AnimatedVisibility(
         visible = showWarning,

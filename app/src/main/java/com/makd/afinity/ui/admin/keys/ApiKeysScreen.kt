@@ -39,7 +39,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.SecureFlagPolicy
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,6 +50,7 @@ import com.makd.afinity.ui.admin.components.adminContentBottomPadding
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.util.logging.LogClipboard
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -377,7 +377,7 @@ private fun KeyCreatedDialog(key: AdminApiKeyRow, onCopy: () -> Unit, onDismiss:
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_done)) }
         },
-        properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn),
+        properties = afinityDialogProperties(securePolicy = SecureFlagPolicy.SecureOn),
         shape = RoundedCornerShape(28.dp),
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
     )
@@ -388,6 +388,7 @@ private fun CreateKeyDialog(onConfirm: (String) -> Unit, onDismiss: () -> Unit) 
     var appName by rememberSaveable { mutableStateOf("") }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = {
             Text(
@@ -419,6 +420,7 @@ private fun CreateKeyDialog(onConfirm: (String) -> Unit, onDismiss: () -> Unit) 
 @Composable
 private fun RevokeKeyDialog(appName: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = {
             Text(

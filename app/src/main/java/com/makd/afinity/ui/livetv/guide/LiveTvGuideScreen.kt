@@ -34,7 +34,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.computedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -65,10 +66,11 @@ import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AppBarProfile
-import com.makd.afinity.ui.components.FilterFab
+import com.makd.afinity.ui.components.FilterSortToolbar
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.playerClearance
+import com.makd.afinity.ui.components.rememberFilterSortToolbarScrollBehavior
 import com.makd.afinity.ui.livetv.components.EpgChannelCell
 import com.makd.afinity.ui.livetv.components.EpgPendingRow
 import com.makd.afinity.ui.livetv.components.EpgProgramRow
@@ -151,6 +153,7 @@ private fun BoxScope.GuideContentWithFilters(
     val playerClearance = playerClearance()
     var showFilters by rememberSaveable { mutableStateOf(false) }
     val activeCount = viewOptions.activeCount(includeGuideOptions = true)
+    val toolbarScroll = rememberFilterSortToolbarScrollBehavior()
 
     LiveTvGuideContent(
         uiState = uiState,
@@ -169,17 +172,16 @@ private fun BoxScope.GuideContentWithFilters(
         onScrollConsumed = viewModel::onScrollConsumed,
         onVisibleChannelsChanged = viewModel::onVisibleChannelsChanged,
         onRetry = viewModel::retry,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().nestedScroll(toolbarScroll),
         widthSizeClass = widthSizeClass,
     )
 
-    FilterFab(
-        active = activeCount > 0,
-        onClick = { showFilters = true },
-        badgeCount = activeCount,
-        modifier =
-            Modifier.align(Alignment.BottomEnd)
-                .padding(end = 24.dp, bottom = 16.dp + playerClearance),
+    FilterSortToolbar(
+        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp + playerClearance),
+        onFilterClick = { showFilters = true },
+        filterActive = activeCount > 0,
+        filterCount = activeCount,
+        scrollBehavior = toolbarScroll,
     )
 
     if (showFilters) {
@@ -243,7 +245,7 @@ private fun LiveTvGuideContent(
     val now = rememberCurrentTime()
     val renderSlots by
         remember(horizontalScrollState, hourWidthPx) {
-            derivedStateOf {
+            computedStateOf {
                 val slotPx = hourWidthPx * RENDER_SLOT_MINUTES / 60f
                 val left = horizontalScrollState.value
                 val right = left + horizontalScrollState.viewportSize

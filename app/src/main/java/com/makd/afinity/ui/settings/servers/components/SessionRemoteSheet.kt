@@ -47,6 +47,7 @@ import com.makd.afinity.ui.components.AfinityModalBottomSheet
 import com.makd.afinity.ui.components.AfinitySlider
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.components.formatClockTicks
 import com.makd.afinity.ui.components.isCompactHeightWindow
 import com.makd.afinity.ui.components.rememberAfinitySheetState
@@ -65,6 +66,7 @@ private fun SessionMessageDialog(onDismiss: () -> Unit, onSend: (String) -> Unit
     var text by remember { mutableStateOf("") }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         icon = {
             Icon(

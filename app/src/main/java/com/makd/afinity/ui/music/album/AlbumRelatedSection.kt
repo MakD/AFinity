@@ -25,6 +25,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.DetailGutter
+import com.makd.afinity.ui.components.afinitySectionChevronSize
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.theme.CardDimensions
@@ -72,7 +73,7 @@ fun AlbumRelatedSection(
                     painter = painterResource(id = R.drawable.ic_chevron_right),
                     contentDescription = stringResource(R.string.cd_view_all),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 4.dp).size(24.dp),
+                    modifier = Modifier.padding(start = 4.dp).size(afinitySectionChevronSize()),
                 )
             }
         }

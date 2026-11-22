@@ -2,8 +2,6 @@ package com.makd.afinity.ui.downloads
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,6 +19,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -49,13 +48,14 @@ import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.FAB_CONTENT_BOTTOM_PADDING
-import com.makd.afinity.ui.components.FilterFab
+import com.makd.afinity.ui.components.FilterSortToolbar
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.components.MediaItemGridCard
-import com.makd.afinity.ui.components.SortFab
+import com.makd.afinity.ui.components.bottomClearance
 import com.makd.afinity.ui.components.formatRuntimeTicks
 import com.makd.afinity.ui.components.playerClearance
+import com.makd.afinity.ui.components.rememberFilterSortToolbarScrollBehavior
 import com.makd.afinity.ui.home.HomeViewModel
 import com.makd.afinity.ui.home.components.SquareMediaTile
 import com.makd.afinity.ui.main.MainUiState
@@ -371,6 +371,8 @@ fun DownloadedCategoryScreen(
     val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
     val playbackState by playerViewModel.playbackState.collectAsStateWithLifecycle()
     val playerClearance = playerClearance()
+    val bottomClearance = bottomClearance()
+    val toolbarScroll = rememberFilterSortToolbarScrollBehavior()
 
     var sortField by rememberSaveable { mutableStateOf(MusicSortField.Name) }
     var sortDescending by rememberSaveable { mutableStateOf(false) }
@@ -547,25 +549,7 @@ fun DownloadedCategoryScreen(
                     ),
             )
         },
-        floatingActionButton = {
-            if (category != DownloadedCategory.TRACKS && totalCount > 0) {
-                Box(modifier = Modifier.padding(bottom = playerClearance)) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        horizontalAlignment = Alignment.End,
-                    ) {
-                        if (category.canFilter) {
-                            FilterFab(
-                                active = filters.isActive,
-                                onClick = { showFilterSheet = true },
-                            )
-                        }
-                        SortFab(onClick = { showSortDialog = true })
-                    }
-                }
-            }
-        },
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().nestedScroll(toolbarScroll),
     ) { innerPadding ->
         val contentModifier = Modifier.fillMaxSize().padding(innerPadding)
 
@@ -726,6 +710,18 @@ fun DownloadedCategoryScreen(
                     modifier = contentModifier,
                 )
             }
+        }
+
+        if (category != DownloadedCategory.TRACKS && totalCount > 0) {
+            FilterSortToolbar(
+                modifier =
+                    Modifier.align(Alignment.BottomCenter)
+                        .padding(bottom = 16.dp + bottomClearance),
+                onFilterClick = if (category.canFilter) ({ showFilterSheet = true }) else null,
+                filterActive = filters.isActive,
+                onSortClick = { showSortDialog = true },
+                scrollBehavior = toolbarScroll,
+            )
         }
     }
 

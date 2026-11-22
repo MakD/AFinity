@@ -52,7 +52,6 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -77,8 +76,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -92,6 +89,7 @@ import coil3.request.crossfade
 import com.makd.afinity.R
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
+import com.makd.afinity.ui.components.AfinityPasswordField
 import com.makd.afinity.ui.components.AfinitySegmentedTabs
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.ForgetAccountDialog
@@ -445,7 +443,7 @@ private fun LoginErrorBanner(error: String?) {
 
 @Composable
 private fun InsecureConnectionBanner(serverUrl: String) {
-    val showWarning by remember(serverUrl) { derivedStateOf { isInsecurePublicUrl(serverUrl) } }
+    val showWarning = remember(serverUrl) { isInsecurePublicUrl(serverUrl) }
 
     AnimatedVisibility(
         visible = showWarning,
@@ -982,7 +980,7 @@ private fun PasswordForm(
             modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Username },
         )
 
-        AfinityTextField(
+        AfinityPasswordField(
             value = uiState.password,
             onValueChange = onPasswordChange,
             label = stringResource(R.string.login_password_label),
@@ -997,21 +995,17 @@ private fun PasswordForm(
                     )
                 }
             },
-            visualTransformation =
-                if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            revealed = passwordVisible,
             keyboardOptions =
                 KeyboardOptions(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Done,
                 ),
-            keyboardActions =
-                KeyboardActions(
-                    onDone = {
-                        autofillManager?.commit()
-                        focusManager.clearFocus()
-                        onLogin()
-                    },
-                ),
+            onImeAction = {
+                autofillManager?.commit()
+                focusManager.clearFocus()
+                onLogin()
+            },
             modifier =
                 Modifier.fillMaxWidth().focusRequester(passwordFocusRequester).semantics {
                     contentType = ContentType.Password

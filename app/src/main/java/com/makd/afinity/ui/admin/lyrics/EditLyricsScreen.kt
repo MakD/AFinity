@@ -70,6 +70,7 @@ import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.DeleteItemDialog
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.components.formatClock
 import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.components.rememberAfinitySheetState
@@ -592,6 +593,7 @@ private fun ReplaceLyricsDialog(
 ) {
     val currentWorking by rememberUpdatedState(working)
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = { if (!currentWorking) onDismiss() },
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         title = {

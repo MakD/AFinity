@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +27,7 @@ import com.makd.afinity.data.models.external.ExternalTitles
 import com.makd.afinity.data.models.external.ExternalTitlesSource
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.ui.components.CardRow
+import com.makd.afinity.ui.components.afinitySectionChevronSize
 import com.makd.afinity.ui.requests.DiscoverMediaCard
 import com.makd.afinity.ui.theme.CardDimensions
 
@@ -50,7 +52,7 @@ fun ExternalTitlesSection(
             if (onViewAllClick != null) {
                 Box(
                     modifier =
-                        Modifier.size(40.dp)
+                        Modifier.sizeIn(minWidth = 40.dp, minHeight = 40.dp)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
@@ -62,7 +64,7 @@ fun ExternalTitlesSection(
                         painter = painterResource(id = R.drawable.ic_chevron_right),
                         contentDescription = stringResource(R.string.cd_view_all),
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size(afinitySectionChevronSize()),
                     )
                 }
             }

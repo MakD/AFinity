@@ -43,9 +43,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.makd.afinity.R
 import com.makd.afinity.data.models.server.ServerStorage
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.components.windowHeightDp
 import com.makd.afinity.ui.settings.servers.tabs.AudiobookshelfTabContent
 import com.makd.afinity.ui.settings.servers.tabs.JellyfinTabContent
@@ -215,7 +215,7 @@ internal fun ServerDetailDialog(
     val dialogHeight = minOf(750.dp, windowHeightDp() * 0.92f)
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+        properties = afinityDialogProperties(usePlatformDefaultWidth = false),
     ) {
         Surface(
             modifier =

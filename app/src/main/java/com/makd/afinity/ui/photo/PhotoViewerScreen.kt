@@ -47,7 +47,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.computedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -347,7 +347,7 @@ private fun ZoomablePhoto(
     val zoomableState = rememberZoomableState(zoomSpec = ZoomSpec(maxZoomFactor = MAX_SCALE))
     val imageState = rememberZoomableImageState(zoomableState)
     val zoomed by remember {
-        derivedStateOf { (zoomableState.zoomFraction ?: 0f) > ZOOMED_FRACTION }
+        computedStateOf { (zoomableState.zoomFraction ?: 0f) > ZOOMED_FRACTION }
     }
     val settled = pagerState.settledPage == page
     var detailReady by remember(sources.detailUrl) { mutableStateOf(false) }

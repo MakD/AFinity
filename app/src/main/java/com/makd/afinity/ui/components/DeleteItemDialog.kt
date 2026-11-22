@@ -33,6 +33,7 @@ fun DeleteItemDialog(
     details: (@Composable () -> Unit)? = null,
 ) {
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = { if (!deleting) onDismiss() },
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         title = {

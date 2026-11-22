@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinitySource
+import com.makd.afinity.ui.components.afinityDialogProperties
 
 /**
  * A card-style dialog for selecting a media version before playback starts. Used from
@@ -34,7 +35,7 @@ fun VersionPickerDialog(
     onDismiss: () -> Unit,
     selectedSourceId: String? = null,
 ) {
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(onDismissRequest = onDismiss, properties = afinityDialogProperties()) {
         Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Text(

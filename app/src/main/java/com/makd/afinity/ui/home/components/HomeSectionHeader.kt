@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.afinitySectionChevronSize
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
 
 @Composable
@@ -59,7 +60,7 @@ fun HomeSectionHeader(
                 painter = painterResource(id = R.drawable.ic_chevron_right),
                 contentDescription = stringResource(R.string.cd_view_all),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 4.dp).size(24.dp),
+                modifier = Modifier.padding(start = 4.dp).size(afinitySectionChevronSize()),
             )
         }
     }

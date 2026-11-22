@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.livetv.RecordingEvent
 import com.makd.afinity.ui.livetv.RecordingPrompt
 import kotlinx.coroutines.flow.SharedFlow
@@ -60,6 +61,7 @@ fun RecordingPromptDialog(
         }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         text = { Text(stringResource(R.string.livetv_confirm_recording_cancellation)) },
         confirmButton = {

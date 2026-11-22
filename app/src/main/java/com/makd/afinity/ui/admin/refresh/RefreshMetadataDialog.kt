@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.AfinitySwitch
+import com.makd.afinity.ui.components.afinityDialogProperties
 
 private val OptionShape = RoundedCornerShape(16.dp)
 
@@ -65,6 +66,7 @@ fun RefreshMetadataDialog(
     var failed by remember(itemId) { mutableStateOf(false) }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = { if (!refreshing) onDismiss() },
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         title = {

@@ -78,6 +78,7 @@ fun PickerListDialog(
     trailingTint: Color? = null,
 ) {
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
@@ -249,6 +250,7 @@ fun CreateNamedItemDialog(
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = { if (!isLoading) onDismiss() },
         title = { Text(title) },
         text = {

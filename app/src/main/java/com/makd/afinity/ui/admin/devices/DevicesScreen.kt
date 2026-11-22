@@ -53,6 +53,7 @@ import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AfinityToggleChip
 import com.makd.afinity.ui.components.SETTINGS_EXPANDED_START_PADDING
 import com.makd.afinity.ui.components.SettingsItem
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.settings.servers.utils.formatRelativeTime
 
 private val DEVICE_TILE_SIZE = 40.dp
@@ -451,6 +452,7 @@ private fun RenameDeviceDialog(
     var name by rememberSaveable { mutableStateOf(currentName) }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = {
             Text(
@@ -486,6 +488,7 @@ private fun ConfirmDialog(
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = {
             Text(

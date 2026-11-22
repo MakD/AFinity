@@ -40,6 +40,7 @@ import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
+import com.makd.afinity.ui.components.afinityDialogProperties
 import org.jellyfin.sdk.model.api.RepositoryInfo
 
 @Composable
@@ -180,6 +181,7 @@ private fun AddRepositoryDialog(
     val urlValid = isValidRepositoryUrl(url)
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = {
             Text(
@@ -225,6 +227,7 @@ private fun AddRepositoryDialog(
 @Composable
 private fun RemoveRepositoryDialog(name: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = {
             Text(

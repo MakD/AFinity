@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +33,7 @@ import com.makd.afinity.data.models.jellyseerr.Network
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.Studio
 import com.makd.afinity.ui.components.CardRow
+import com.makd.afinity.ui.components.afinitySectionChevronSize
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.home.components.HomeSectionHeader
 import com.makd.afinity.ui.theme.CardDimensions
@@ -137,7 +139,7 @@ fun DiscoverSection(
             if (onViewAllClick != null) {
                 Box(
                     modifier =
-                        Modifier.size(40.dp)
+                        Modifier.sizeIn(minWidth = 40.dp, minHeight = 40.dp)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
@@ -149,7 +151,7 @@ fun DiscoverSection(
                         painter = painterResource(id = drawable.ic_chevron_right),
                         contentDescription = stringResource(R.string.cd_view_all),
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size(afinitySectionChevronSize()),
                     )
                 }
             }

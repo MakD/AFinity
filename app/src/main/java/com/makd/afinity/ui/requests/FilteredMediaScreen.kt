@@ -2,7 +2,6 @@ package com.makd.afinity.ui.requests
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -34,13 +34,15 @@ import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AppBarProfile
-import com.makd.afinity.ui.components.FilterFab
+import com.makd.afinity.ui.components.FAB_CONTENT_BOTTOM_PADDING
+import com.makd.afinity.ui.components.FilterSortToolbar
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
-import com.makd.afinity.ui.components.SortFab
+import com.makd.afinity.ui.components.bottomClearance
 import com.makd.afinity.ui.components.playerClearance
+import com.makd.afinity.ui.components.rememberFilterSortToolbarScrollBehavior
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.scaledPortraitWidth
@@ -79,6 +81,8 @@ fun FilteredMediaScreen(
     val requestsUiState by requestsViewModel.uiState.collectAsStateWithLifecycle()
     val currentUser by requestsViewModel.currentUser.collectAsStateWithLifecycle()
     val playerClearance = playerClearance()
+    val bottomClearance = bottomClearance()
+    val toolbarScroll = rememberFilterSortToolbarScrollBehavior()
     var showSortDialog by remember { mutableStateOf(false) }
     var showFilterSheet by remember { mutableStateOf(false) }
 
@@ -120,26 +124,7 @@ fun FilteredMediaScreen(
                     ),
             )
         },
-        floatingActionButton = {
-            if (showSortAndFilterControls) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    horizontalAlignment = Alignment.End,
-                    modifier = Modifier.padding(bottom = playerClearance),
-                ) {
-                    FilterFab(
-                        active = false,
-                        onClick = {
-                            viewModel.ensureWatchProviderRegionsLoaded()
-                            if (showGenrePicker) viewModel.ensureGenresLoaded(isTv)
-                            showFilterSheet = true
-                        },
-                    )
-                    SortFab(onClick = { showSortDialog = true })
-                }
-            }
-        },
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().nestedScroll(toolbarScroll),
     ) { innerPadding ->
         when {
             uiState.isLoading && uiState.items.isEmpty() -> {
@@ -171,7 +156,9 @@ fun FilteredMediaScreen(
                             start = 16.dp,
                             top = 16.dp,
                             end = 16.dp,
-                            bottom = 16.dp + playerClearance,
+                            bottom =
+                                (if (showSortAndFilterControls) FAB_CONTENT_BOTTOM_PADDING
+                                else 16.dp) + playerClearance,
                         ),
                     horizontalArrangement = Arrangement.spacedBy(CardDimensions.RowGap),
                     verticalArrangement = Arrangement.spacedBy(CardDimensions.GridRowGap),
@@ -233,6 +220,21 @@ fun FilteredMediaScreen(
                     }
                 }
             }
+        }
+
+        if (showSortAndFilterControls) {
+            FilterSortToolbar(
+                modifier =
+                    Modifier.align(Alignment.BottomCenter)
+                        .padding(bottom = 16.dp + bottomClearance),
+                onFilterClick = {
+                    viewModel.ensureWatchProviderRegionsLoaded()
+                    if (showGenrePicker) viewModel.ensureGenresLoaded(isTv)
+                    showFilterSheet = true
+                },
+                onSortClick = { showSortDialog = true },
+                scrollBehavior = toolbarScroll,
+            )
         }
     }
 

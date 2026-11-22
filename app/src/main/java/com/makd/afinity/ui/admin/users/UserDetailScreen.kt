@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -45,8 +44,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -57,12 +54,14 @@ import com.makd.afinity.ui.admin.components.AdminLoadContent
 import com.makd.afinity.ui.admin.components.AdminPill
 import com.makd.afinity.ui.admin.components.AdminScaffold
 import com.makd.afinity.ui.components.AfinityActionMenu
+import com.makd.afinity.ui.components.AfinityPasswordField
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.DetailMenuAction
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.settings.servers.utils.formatRelativeTime
 
 private val USER_HEADER_AVATAR_SIZE = 96.dp
@@ -622,6 +621,7 @@ private fun RenameUserDialog(
     var name by rememberSaveable { mutableStateOf(currentName) }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { DialogTitle(text = stringResource(R.string.user_rename_title)) },
         text = {
@@ -661,6 +661,7 @@ private fun SetPasswordDialog(
             (!needsCurrentPassword || currentPassword.isNotEmpty())
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { DialogTitle(text = stringResource(R.string.user_set_password)) },
         text = {
@@ -714,15 +715,13 @@ private fun PasswordField(
     label: String,
     errorText: String? = null,
 ) {
-    AfinityTextField(
+    AfinityPasswordField(
         value = value,
         onValueChange = onValueChange,
         modifier = Modifier.fillMaxWidth(),
         label = label,
         isError = errorText != null,
         supportingText = errorText,
-        visualTransformation = PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
     )
 }
 
@@ -743,6 +742,7 @@ private fun ConfirmDialog(
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { DialogTitle(text = title) },
         text = { Text(text = message, style = MaterialTheme.typography.bodyLarge) },

@@ -106,6 +106,7 @@ import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.components.filter.SearchableChipMultiSelect
 import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.components.windowHeightDp
@@ -1437,6 +1438,7 @@ private fun CountInputDialog(
     val parsed = text.toIntOrNull()
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { Text(text = title) },
         text = {
@@ -1569,6 +1571,7 @@ private fun MonthDayPickerDialog(
         animateFloatAsState(if (monthGridOpen) 180f else 0f, label = "month_chevron")
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = {
             Column(modifier = Modifier.fillMaxWidth()) {

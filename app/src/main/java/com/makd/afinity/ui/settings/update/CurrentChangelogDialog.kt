@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.afinityDialogProperties
 
 @Composable
 fun CurrentChangelogDialog(
@@ -44,6 +45,7 @@ fun CurrentChangelogDialog(
     LaunchedEffect(viewModel) { viewModel.load() }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }

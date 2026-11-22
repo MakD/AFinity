@@ -29,7 +29,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,14 +47,13 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.ui.audiobookshelf.login.AudiobookshelfLoginViewModel
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.AfinityPasswordField
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.DiscoveredServicesSection
 import com.makd.afinity.ui.components.LoadingButton
@@ -151,18 +149,13 @@ internal fun AudiobookshelfLoginContent(
                 modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Username },
             )
 
-            AfinityTextField(
+            AfinityPasswordField(
                 value = uiState.password,
                 onValueChange = viewModel::updatePassword,
                 label = stringResource(R.string.login_password_label),
                 leadingIcon = painterResource(id = R.drawable.ic_lock_filled),
                 enabled = !uiState.isLoggingIn,
-                visualTransformation =
-                    if (passwordVisible) {
-                        VisualTransformation.None
-                    } else {
-                        PasswordVisualTransformation()
-                    },
+                revealed = passwordVisible,
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
@@ -189,16 +182,13 @@ internal fun AudiobookshelfLoginContent(
                         keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Done,
                     ),
-                keyboardActions =
-                    KeyboardActions(
-                        onDone = {
-                            autofillManager?.commit()
-                            focusManager.clearFocus()
-                            if (!uiState.isLoggingIn) {
-                                viewModel.login()
-                            }
-                        },
-                    ),
+                onImeAction = {
+                    autofillManager?.commit()
+                    focusManager.clearFocus()
+                    if (!uiState.isLoggingIn) {
+                        viewModel.login()
+                    }
+                },
                 modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Password },
             )
         }
@@ -268,7 +258,7 @@ fun AudiobookshelfBottomSheet(
 
 @Composable
 private fun InsecureConnectionBannerAbs(serverUrl: String) {
-    val showWarning by remember(serverUrl) { derivedStateOf { isInsecurePublicUrl(serverUrl) } }
+    val showWarning = remember(serverUrl) { isInsecurePublicUrl(serverUrl) }
 
     AnimatedVisibility(
         visible = showWarning,

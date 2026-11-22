@@ -44,6 +44,7 @@ import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
 import com.makd.afinity.ui.components.DownloadConfirm
 import com.makd.afinity.ui.components.DownloadConfirmDialog
+import com.makd.afinity.ui.components.DownloadProgressRing
 import com.makd.afinity.ui.components.MetadataOverflowRow
 import com.makd.afinity.ui.components.formatRuntimeSeconds
 import com.makd.afinity.ui.components.formatTimeLeftSeconds
@@ -261,10 +262,10 @@ private fun ExpandableEpisodeItem(
                                 modifier = Modifier.size(32.dp),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                CircularProgressIndicator(
+                                DownloadProgressRing(
                                     progress = { downloadInfo.progress },
-                                    modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp,
+                                    size = 20.dp,
+                                    active = downloadInfo.status == AbsDownloadStatus.DOWNLOADING,
                                 )
                                 IconButton(
                                     onClick = { onCancelDownload?.invoke() },

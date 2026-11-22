@@ -30,8 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.components.windowHeightDp
 
 @Composable
@@ -49,7 +49,7 @@ fun FilterDialog(
     Dialog(
         onDismissRequest = onDismiss,
         properties =
-            DialogProperties(
+            afinityDialogProperties(
                 usePlatformDefaultWidth = false,
                 decorFitsSystemWindows = true,
             ),

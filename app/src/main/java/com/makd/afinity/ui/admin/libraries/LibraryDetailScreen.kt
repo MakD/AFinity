@@ -56,6 +56,7 @@ import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
+import com.makd.afinity.ui.components.afinityDialogProperties
 import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.CollectionTypeOptions
 
@@ -383,6 +384,7 @@ private fun ConfirmDialog(
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { DialogTitle(text = title) },
         text = { Text(text = message, style = MaterialTheme.typography.bodyLarge) },

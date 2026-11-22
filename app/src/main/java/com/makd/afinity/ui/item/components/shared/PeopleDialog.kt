@@ -33,6 +33,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.afinityDialogProperties
 import java.util.UUID
 import org.jellyfin.sdk.model.api.PersonKind
 
@@ -48,7 +49,7 @@ fun PeopleDialog(
 
     if (cast.isEmpty() && guestStars.isEmpty()) return
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(onDismissRequest = onDismiss, properties = afinityDialogProperties()) {
         Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
             Column(modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)) {
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {

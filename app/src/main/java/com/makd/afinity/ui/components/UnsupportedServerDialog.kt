@@ -8,7 +8,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.window.DialogProperties
 import com.makd.afinity.R
 import com.makd.afinity.data.repository.server.ServerVersionSupport
 
@@ -20,7 +19,8 @@ fun UnsupportedServerDialog(
 ) {
     AlertDialog(
         onDismissRequest = {},
-        properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
+        properties =
+            afinityDialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
         icon = {
             Icon(
                 painter = painterResource(id = R.drawable.ic_alert_triangle),

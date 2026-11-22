@@ -54,6 +54,7 @@ import com.makd.afinity.ui.components.SETTINGS_TEXT_START_PADDING
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
+import com.makd.afinity.ui.components.afinityDialogProperties
 
 private data class UnratedType(val value: String, @param:StringRes val label: Int)
 
@@ -373,6 +374,7 @@ private fun AddTagDialog(onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
     var tag by rememberSaveable { mutableStateOf("") }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = {
             Text(

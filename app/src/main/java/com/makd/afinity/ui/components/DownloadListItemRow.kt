@@ -54,14 +54,6 @@ fun DownloadListItemRow(
                 targetHeight = 56.dp / aspectRatio,
             )
         },
-        headlineContent = {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
         supportingContent = supportingContent,
         trailingContent = {
             IconButton(onClick = onDelete) {
@@ -72,5 +64,12 @@ fun DownloadListItemRow(
                 )
             }
         },
-    )
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }

@@ -43,6 +43,7 @@ import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.storage.StorageVolumeInfo
 import com.makd.afinity.player.profile.AndroidDeviceProfileFactory
 import com.makd.afinity.ui.components.EndAlignedDropdownMenu
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.player.components.musicQualityLabel
 import com.makd.afinity.ui.player.components.settingsQualityLabel
 import com.makd.afinity.util.formatFileSize
@@ -114,7 +115,7 @@ fun QualitySelectionDialog(
             )
         }
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(onDismissRequest = onDismiss, properties = afinityDialogProperties()) {
         Card(modifier = modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Text(
@@ -269,7 +270,7 @@ fun StorageLocationDialog(
         VideoQuality.settingsLadder().filterNot { it.isAuto }.map { it.maxBitrate }
     }
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(onDismissRequest = onDismiss, properties = afinityDialogProperties()) {
         Card(modifier = modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Text(
@@ -352,7 +353,7 @@ fun MusicDownloadQualityDialog(
     val showVolumePicker = volumes.size > 1
     val options = remember { MusicQuality.options() }
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(onDismissRequest = onDismiss, properties = afinityDialogProperties()) {
         Card(modifier = modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Text(

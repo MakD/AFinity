@@ -39,7 +39,7 @@ fun ListPickerDialog(
     actions: @Composable RowScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(onDismissRequest = onDismiss, properties = afinityDialogProperties()) {
         Surface(
             modifier = Modifier.fillMaxWidth().height(height),
             shape = RoundedCornerShape(28.dp),

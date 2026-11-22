@@ -167,6 +167,7 @@ fun RequestConfirmationDialog(
     LaunchedEffect(mediaTitle) { scrollState.scrollTo(0) }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = { if (!isLoading) onDismiss() },
         title = {
             Text(

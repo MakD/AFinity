@@ -38,7 +38,7 @@ import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.computedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -155,7 +155,7 @@ fun HomeScreen(
 
     val lazyListState = rememberLazyListState()
     val scrollToTopScope = rememberCoroutineScope()
-    val showScrollToTop by remember { derivedStateOf { lazyListState.firstVisibleItemIndex > 3 } }
+    val showScrollToTop by remember { computedStateOf { lazyListState.firstVisibleItemIndex > 3 } }
     val continueWatchingScrollState = rememberLazyListState()
     val nextUpMerged =
         !uiState.isOffline &&
@@ -198,7 +198,7 @@ fun HomeScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    val isScrolling by remember { derivedStateOf { lazyListState.isScrollInProgress } }
+    val isScrolling = lazyListState.isScrollInProgress
 
     val latestLibraryRows =
         remember(

@@ -64,7 +64,7 @@ fun SectionRowHeader(
                     painter = painterResource(id = R.drawable.ic_chevron_right),
                     contentDescription = stringResource(R.string.cd_view_all),
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier.size(afinitySectionChevronSize()),
                 )
             }
         }

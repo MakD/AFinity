@@ -4,7 +4,6 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.ui.components.DownloadProgressRing
 
 @Composable
 fun DownloadProgressIndicator(
@@ -121,10 +121,10 @@ private fun DownloadIndicatorContent(
 
         DownloadStatus.DOWNLOADING -> {
             Box(contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(
+                DownloadProgressRing(
                     progress = { downloadInfo.progress },
-                    modifier = Modifier.size(iconSize),
-                    strokeWidth = 2.dp,
+                    size = iconSize,
+                    active = true,
                 )
                 Icon(
                     painter = painterResource(id = R.drawable.ic_cancel),
@@ -146,10 +146,10 @@ private fun DownloadIndicatorContent(
 
         DownloadStatus.PAUSED -> {
             Box(contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(
+                DownloadProgressRing(
                     progress = { downloadInfo.progress },
-                    modifier = Modifier.size(iconSize),
-                    strokeWidth = 2.dp,
+                    size = iconSize,
+                    active = false,
                 )
                 Icon(
                     painter = painterResource(id = R.drawable.ic_cloud_pause),

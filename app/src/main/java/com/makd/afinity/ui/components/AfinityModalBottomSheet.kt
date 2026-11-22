@@ -17,7 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,8 +29,11 @@ fun rememberAfinitySheetState(
     skipPartiallyExpanded: Boolean = true,
     confirmValueChange: (SheetValue) -> Boolean = { true },
 ): SheetState =
-    rememberModalBottomSheetState(
-        skipPartiallyExpanded = skipPartiallyExpanded,
+    rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues =
+            if (skipPartiallyExpanded) setOf(SheetValue.Hidden, SheetValue.Expanded)
+            else setOf(SheetValue.Hidden, SheetValue.PartiallyExpanded, SheetValue.Expanded),
         confirmValueChange = confirmValueChange,
     )
 

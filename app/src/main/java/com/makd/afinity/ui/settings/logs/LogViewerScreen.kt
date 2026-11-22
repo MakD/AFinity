@@ -37,6 +37,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -80,8 +81,10 @@ import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.DetailMenuAction
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.components.rememberAfinitySheetState
+import com.makd.afinity.ui.components.rememberSyncedTextFieldState
 import com.makd.afinity.util.logging.LogLevel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -499,6 +502,7 @@ fun LogViewerScreen(
 
     if (showClearConfirm) {
         AlertDialog(
+            properties = afinityDialogProperties(),
             onDismissRequest = { showClearConfirm = false },
             icon = {
                 Icon(
@@ -583,17 +587,17 @@ internal fun SearchField(
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(19.dp),
         )
+        val queryState = rememberSyncedTextFieldState(query, onQueryChange)
         BasicTextField(
-            value = query,
-            onValueChange = onQueryChange,
-            singleLine = true,
+            state = queryState,
+            lineLimits = TextFieldLineLimits.SingleLine,
             textStyle =
                 MaterialTheme.typography.bodyLarge.copy(
                     color = MaterialTheme.colorScheme.onSurface,
                 ),
             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
             modifier = Modifier.weight(1f).focusRequester(focusRequester),
-            decorationBox = { innerTextField ->
+            decorator = { innerTextField ->
                 Box(contentAlignment = Alignment.CenterStart) {
                     if (query.isEmpty()) {
                         Text(

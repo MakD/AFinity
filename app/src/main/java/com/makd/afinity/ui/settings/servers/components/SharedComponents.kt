@@ -62,6 +62,7 @@ import com.makd.afinity.data.network.AddressParts
 import com.makd.afinity.data.network.parseAddressParts
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.EmptyState
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.settings.servers.AudiobookshelfColor
 import com.makd.afinity.ui.settings.servers.JellyseerrColor
 import com.makd.afinity.ui.settings.servers.ServerWithUserCount
@@ -631,6 +632,7 @@ internal fun DeleteServerConfirmationDialog(
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         icon = {
             Icon(
@@ -711,6 +713,7 @@ internal fun DeleteServerConfirmationDialog(
 @Composable
 internal fun UnverifiedAddressDialog(url: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.unverified_address_title)) },
         text = {

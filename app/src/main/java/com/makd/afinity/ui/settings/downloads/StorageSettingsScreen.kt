@@ -54,6 +54,7 @@ import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.downloads.DownloadsViewModel
 import com.makd.afinity.ui.player.components.musicQualityLabel
 import com.makd.afinity.ui.player.components.settingsQualityLabel
@@ -98,6 +99,7 @@ fun StorageSettingsScreen(
 
     if (showClearCacheDialog) {
         AlertDialog(
+            properties = afinityDialogProperties(),
             onDismissRequest = { if (!isClearingCache) showClearCacheDialog = false },
             title = { Text(text = stringResource(R.string.pref_clear_cache_confirm)) },
             text = {

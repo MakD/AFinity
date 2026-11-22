@@ -107,6 +107,7 @@ import com.makd.afinity.ui.components.AppNavigationDrawerContent
 import com.makd.afinity.ui.components.LocalNetworkPermissionGrantButton
 import com.makd.afinity.ui.components.LocalOriginalImages
 import com.makd.afinity.ui.components.UnsupportedServerDialog
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.downloads.DownloadedCategory
 import com.makd.afinity.ui.downloads.DownloadedCategoryScreen
@@ -2614,6 +2615,7 @@ fun MainNavigation(
 
         if (needsLocalNetworkPermission) {
             AlertDialog(
+                properties = afinityDialogProperties(),
                 onDismissRequest = mainViewModel::dismissLocalNetworkPermissionPrompt,
                 title = { Text(text = stringResource(R.string.local_network_permission_title)) },
                 text = {

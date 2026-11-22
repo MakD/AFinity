@@ -45,12 +45,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
@@ -76,7 +76,7 @@ import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.AudiobookCardFrame
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FAB_CONTENT_BOTTOM_PADDING
-import com.makd.afinity.ui.components.FilterFab
+import com.makd.afinity.ui.components.FilterSortToolbar
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
@@ -84,8 +84,9 @@ import com.makd.afinity.ui.components.MasonryMediaGrid
 import com.makd.afinity.ui.components.MediaItemGridCard
 import com.makd.afinity.ui.components.PaginatedMediaGrid
 import com.makd.afinity.ui.components.RadioOptionRow
-import com.makd.afinity.ui.components.SortFab
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.components.bottomClearance
+import com.makd.afinity.ui.components.rememberFilterSortToolbarScrollBehavior
 import com.makd.afinity.ui.components.windowHeightDp
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.theme.CardDimensions
@@ -121,6 +122,7 @@ fun LibraryContentScreen(
         viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
     val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val bottomClearance = bottomClearance()
+    val toolbarScroll = rememberFilterSortToolbarScrollBehavior()
     val context = LocalContext.current
     val playVideo: (AfinityVideo) -> Unit = { video ->
         viewModel.resolveVideoPlayback(video) { mediaSourceId, startPositionMs ->
@@ -160,7 +162,7 @@ fun LibraryContentScreen(
                 WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal),
             ),
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize().nestedScroll(toolbarScroll)) {
             Column(modifier = Modifier.fillMaxSize()) {
                 when {
                     uiState.isLoading -> {
@@ -341,28 +343,24 @@ fun LibraryContentScreen(
                 }
             }
 
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalAlignment = Alignment.End,
+            val activeFilterCount = uiState.currentFilters.activeCount
+            FilterSortToolbar(
                 modifier =
-                    Modifier.align(Alignment.BottomEnd)
-                        .padding(end = 24.dp)
+                    Modifier.align(Alignment.BottomCenter)
                         .padding(bottom = 16.dp + bottomClearance),
-            ) {
-                if (!uiState.filtersLocked) {
-                    val activeCount = uiState.currentFilters.activeCount
-                    FilterFab(
-                        active = activeCount > 0,
-                        onClick = {
+                onFilterClick =
+                    if (uiState.filtersLocked) null
+                    else {
+                        {
                             viewModel.ensureFilterOptionsLoaded()
                             showFilterSheet = true
-                        },
-                        badgeCount = activeCount,
-                    )
-                }
-
-                SortFab(onClick = { showSortDialog = true })
-            }
+                        }
+                    },
+                filterActive = !uiState.filtersLocked && activeFilterCount > 0,
+                filterCount = activeFilterCount,
+                onSortClick = { showSortDialog = true },
+                scrollBehavior = toolbarScroll,
+            )
         }
     }
 
@@ -489,7 +487,7 @@ private fun SortDialog(
             onSortSelected(selectedSort, !isAscending)
             onDismiss()
         },
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+        properties = afinityDialogProperties(usePlatformDefaultWidth = false),
     ) {
         Surface(
             modifier =

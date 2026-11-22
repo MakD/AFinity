@@ -43,6 +43,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.computedStateOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -451,7 +452,7 @@ private fun HeroFullBleed(
     val currentItem by
         remember(items) { derivedStateOf { items[pagerState.currentPage % items.size] } }
     val contentAlpha by remember {
-        derivedStateOf {
+        computedStateOf {
             1f - (kotlin.math.abs(pagerState.currentPageOffsetFraction) * 2f).coerceIn(0f, 1f)
         }
     }

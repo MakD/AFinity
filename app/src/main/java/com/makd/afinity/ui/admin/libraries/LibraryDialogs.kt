@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.ui.admin.refresh.RefreshMetadataDialog
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.afinityDialogProperties
 import java.util.UUID
 import org.jellyfin.sdk.model.api.CollectionTypeOptions
 
@@ -43,6 +44,7 @@ internal fun RenameLibraryDialog(
     var name by rememberSaveable { mutableStateOf(currentName) }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { LibraryDialogTitle(text = stringResource(R.string.library_rename_title)) },
         text = {
@@ -80,6 +82,7 @@ internal fun RemoveLibraryDialog(name: String, onConfirm: () -> Unit, onDismiss:
     var typed by rememberSaveable { mutableStateOf("") }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { LibraryDialogTitle(text = stringResource(R.string.library_remove_title)) },
         text = {

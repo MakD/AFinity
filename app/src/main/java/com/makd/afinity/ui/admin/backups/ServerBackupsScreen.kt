@@ -43,6 +43,7 @@ import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
+import com.makd.afinity.ui.components.afinityDialogProperties
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -213,6 +214,7 @@ private fun CreateBackupDialog(
     var trickplay by rememberSaveable { mutableStateOf(false) }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = {
             Text(

@@ -76,6 +76,7 @@ import com.makd.afinity.ui.components.LandscapeDetailArrangement
 import com.makd.afinity.ui.components.LandscapeDetailLayout
 import com.makd.afinity.ui.components.PortraitDetailLayout
 import com.makd.afinity.ui.components.PortraitHero
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.components.backdropChainOf
 import com.makd.afinity.ui.components.detailListBottomPadding
 import com.makd.afinity.ui.components.isLandscapeWindow
@@ -540,6 +541,7 @@ fun PlaylistScreen(
 
     playChoiceShuffle?.let { shuffle ->
         AlertDialog(
+            properties = afinityDialogProperties(),
             onDismissRequest = { playChoiceShuffle = null },
             title = { Text(stringResource(R.string.playlist_play_choice_title)) },
             text = {
@@ -597,6 +599,7 @@ fun PlaylistScreen(
 
     if (showDownloadChoice) {
         AlertDialog(
+            properties = afinityDialogProperties(),
             onDismissRequest = { showDownloadChoice = false },
             title = { Text(stringResource(R.string.playlist_download_choice_title)) },
             text = {
@@ -658,6 +661,7 @@ fun PlaylistScreen(
     if (showDeleteConfirm) {
 
         AlertDialog(
+            properties = afinityDialogProperties(),
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text(stringResource(R.string.music_delete_playlist_title)) },
             text = {

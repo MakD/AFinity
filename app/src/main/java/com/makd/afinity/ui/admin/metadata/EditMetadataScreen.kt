@@ -94,6 +94,7 @@ import com.makd.afinity.ui.components.DateFieldPickerDialog
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.SegmentedTab
 import com.makd.afinity.ui.components.UserAvatar
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.util.DateSkeleton
@@ -265,6 +266,7 @@ fun EditMetadataScreen(
 
     if (showDiscardDialog) {
         AlertDialog(
+            properties = afinityDialogProperties(),
             onDismissRequest = { showDiscardDialog = false },
             title = {
                 Text(

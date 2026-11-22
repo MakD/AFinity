@@ -14,11 +14,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,14 +45,20 @@ private val MinDigitBoxSize = 24.dp
 private const val DigitFontSizeAtMaxBox = 20f
 internal const val QuickConnectCodeLength = 6
 
-@Composable
-fun rememberQuickConnectCode(): MutableState<String> {
-    return remember { mutableStateOf("") }
+private val QuickConnectCodeInput = InputTransformation {
+    val digits = asCharSequence().filter { it.isDigit() }
+    if (digits.length > QuickConnectCodeLength) {
+        revertAllChanges()
+    } else if (digits.length != length) {
+        replace(0, length, digits)
+    }
 }
+
+@Composable fun rememberQuickConnectCode(): TextFieldState = rememberTextFieldState()
 
 @Composable
 fun QuickConnectDigitEntry(
-    codeState: MutableState<String>,
+    codeState: TextFieldState,
     isAuthorizing: Boolean,
     isSuccess: Boolean,
     errorMessage: String?,
@@ -79,14 +87,10 @@ fun QuickConnectDigitEntry(
                 (DigitFontSizeAtMaxBox * (boxSize / MaxDigitBoxSize).coerceIn(0.65f, 1f)).sp
             val cornerRadius = if (boxSize < 34.dp) 8.dp else 10.dp
 
+            val code = codeState.text
             BasicTextField(
-                value = codeState.value,
-                onValueChange = { input ->
-                    val filtered = input.filter { it.isDigit() }
-                    if (filtered.length <= QuickConnectCodeLength) {
-                        codeState.value = filtered
-                    }
-                },
+                state = codeState,
+                inputTransformation = QuickConnectCodeInput,
                 modifier =
                     Modifier.align(Alignment.Center).onFocusChanged { isFocused = it.isFocused },
                 keyboardOptions =
@@ -97,7 +101,7 @@ fun QuickConnectDigitEntry(
                 enabled = !isAuthorizing && !isSuccess,
                 textStyle = LocalTextStyle.current.copy(color = Color.Transparent),
                 cursorBrush = SolidColor(Color.Transparent),
-                decorationBox = { innerTextField ->
+                decorator = { innerTextField ->
                     Box(contentAlignment = Alignment.Center) {
                         innerTextField()
                         Row(
@@ -105,12 +109,12 @@ fun QuickConnectDigitEntry(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             repeat(QuickConnectCodeLength) { index ->
-                                val char = codeState.value.getOrNull(index)?.toString() ?: ""
+                                val char = code.getOrNull(index)?.toString() ?: ""
                                 val isActive =
                                     isFocused &&
                                         !isAuthorizing &&
                                         !isSuccess &&
-                                        index == codeState.value.length
+                                        index == code.length
 
                                 Box(
                                     modifier =

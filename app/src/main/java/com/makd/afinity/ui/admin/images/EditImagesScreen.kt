@@ -87,6 +87,7 @@ import com.makd.afinity.ui.components.CardRow
 import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.components.MediaCountBadge
 import com.makd.afinity.ui.components.SegmentedTab
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.components.playerClearance
 import com.makd.afinity.ui.components.rememberAfinitySheetState
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
@@ -190,6 +191,7 @@ fun EditImagesScreen(
 
     imageToDelete?.let { image ->
         AlertDialog(
+            properties = afinityDialogProperties(),
             onDismissRequest = { imageToDelete = null },
             title = {
                 Text(

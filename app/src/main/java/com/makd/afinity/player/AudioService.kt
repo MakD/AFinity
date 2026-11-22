@@ -96,7 +96,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 
 @UnstableApi
-@OptIn(UnstableApi::class)
 @AndroidEntryPoint
 class AudioService : MediaLibraryService() {
 

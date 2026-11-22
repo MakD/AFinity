@@ -84,6 +84,7 @@ fun DownloadConfirmDialog(confirm: DownloadConfirm, onConfirm: () -> Unit, onDis
         }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         icon = {
             Icon(

@@ -52,6 +52,7 @@ import com.makd.afinity.ui.components.LocalStatusBarIcons
 import com.makd.afinity.ui.components.RemoteMessagePill
 import com.makd.afinity.ui.components.StatusBarIconsEffect
 import com.makd.afinity.ui.components.StatusBarIconsState
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.theme.AFinityTheme
 import com.makd.afinity.ui.theme.ThemeMode
 import com.makd.afinity.widget.AudioWidgetIntents
@@ -158,6 +159,7 @@ class MainActivity : AppCompatActivity() {
                 val showRationale by showNotificationRationale.collectAsStateWithLifecycle()
                 if (showRationale) {
                     AlertDialog(
+                        properties = afinityDialogProperties(),
                         onDismissRequest = {
                             showNotificationRationale.value = false
                             lifecycleScope.launch {

@@ -2,10 +2,13 @@ package com.makd.afinity.ui.components
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RangeSlider
+import androidx.compose.material3.RangeSliderState
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderColors
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.SliderState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 
@@ -39,14 +42,17 @@ fun AfinitySlider(
     steps: Int = 0,
     colors: SliderColors = AfinitySliderDefaults.colors(),
 ) {
+    val state =
+        remember(steps, valueRange) {
+            SliderState(value = value, steps = steps, trackRange = valueRange)
+        }
+    state.value = value
     Slider(
-        value = value,
+        state = state,
         onValueChange = onValueChange,
         modifier = modifier,
         enabled = enabled,
         onValueChangeFinished = onValueChangeFinished,
-        valueRange = valueRange,
-        steps = steps,
         colors = colors,
     )
 }
@@ -62,14 +68,23 @@ fun AfinityRangeSlider(
     steps: Int = 0,
     colors: SliderColors = AfinitySliderDefaults.colors(),
 ) {
+    val state =
+        remember(steps, valueRange) {
+            RangeSliderState(
+                startValue = value.start,
+                endValue = value.endInclusive,
+                steps = steps,
+                trackRange = valueRange,
+            )
+        }
+    state.startValue = value.start
+    state.endValue = value.endInclusive
     RangeSlider(
-        value = value,
+        state = state,
         onValueChange = onValueChange,
         modifier = modifier,
         enabled = enabled,
-        valueRange = valueRange,
         onValueChangeFinished = onValueChangeFinished,
-        steps = steps,
         colors = colors,
     )
 }

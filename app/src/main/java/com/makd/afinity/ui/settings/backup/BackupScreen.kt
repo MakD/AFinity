@@ -43,6 +43,7 @@ import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.components.playerClearance
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -231,6 +232,7 @@ private fun BackupBody(viewModel: BackupViewModel, modifier: Modifier = Modifier
     val failure = uiState.failure
     if (failure != null) {
         AlertDialog(
+            properties = afinityDialogProperties(),
             onDismissRequest = { viewModel.dismiss() },
             title = { Text(text = stringResource(R.string.backup_import_title)) },
             text = { Text(text = stringResource(failure.labelRes())) },
@@ -244,6 +246,7 @@ private fun BackupBody(viewModel: BackupViewModel, modifier: Modifier = Modifier
 
     if (uiState.imported) {
         AlertDialog(
+            properties = afinityDialogProperties(),
             onDismissRequest = { viewModel.dismiss() },
             title = { Text(text = stringResource(R.string.backup_import_done)) },
             text = { Text(text = stringResource(R.string.backup_import_done_message)) },

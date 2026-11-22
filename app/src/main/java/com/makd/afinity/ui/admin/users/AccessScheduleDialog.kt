@@ -29,6 +29,7 @@ import com.makd.afinity.ui.admin.components.AdminDayToggles
 import com.makd.afinity.ui.admin.components.AdminTimeDialog
 import com.makd.afinity.ui.admin.components.AdminValueTile
 import com.makd.afinity.ui.admin.components.rememberAdminTimeFormatter
+import com.makd.afinity.ui.components.afinityDialogProperties
 import java.time.DayOfWeek
 import java.time.LocalTime
 import java.time.format.TextStyle
@@ -89,6 +90,7 @@ internal fun AccessScheduleDialog(
     }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = {
             Text(

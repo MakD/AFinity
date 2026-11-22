@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -57,8 +58,9 @@ fun MediaCategoryGrid(
 
     val sortedItems =
         remember(items, sortBy, descending) { items.sortedForCategory(sortBy, descending) }
+    val toolbarScroll = rememberFilterSortToolbarScrollBehavior()
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize().nestedScroll(toolbarScroll)) {
         LazyVerticalGrid(
             columns =
                 if (landscape) CardDimensions.landscapeGridCells() else CardDimensions.gridCells(),
@@ -87,12 +89,11 @@ fun MediaCategoryGrid(
             }
         }
 
-        SortFab(
-            onClick = { showSortDialog = true },
+        FilterSortToolbar(
             modifier =
-                Modifier.align(Alignment.BottomEnd)
-                    .padding(end = 24.dp)
-                    .padding(bottom = 16.dp + playerClearance),
+                Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp + playerClearance),
+            onSortClick = { showSortDialog = true },
+            scrollBehavior = toolbarScroll,
         )
     }
 
@@ -160,6 +161,7 @@ private fun MediaCategorySortDialog(
     var selectedSort by remember { mutableStateOf(currentSortBy) }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.sort_title)) },
         text = {

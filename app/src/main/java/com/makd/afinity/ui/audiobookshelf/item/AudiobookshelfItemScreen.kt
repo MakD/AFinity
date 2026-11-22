@@ -80,6 +80,7 @@ import com.makd.afinity.ui.components.LandscapeDetailLayout
 import com.makd.afinity.ui.components.PortraitDetailLayout
 import com.makd.afinity.ui.components.PortraitHero
 import com.makd.afinity.ui.components.RadioOptionRow
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.components.backdropChainOf
 import com.makd.afinity.ui.components.formatRuntimeSeconds
 import com.makd.afinity.ui.components.isLandscapeWindow
@@ -641,6 +642,7 @@ private fun EpisodeSortDialog(
     var selectedSort by remember { mutableStateOf(current.key) }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.abs_sort_episodes_title)) },
         text = {

@@ -12,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -31,7 +30,6 @@ fun AfinityTextField(
     enabled: Boolean = true,
     isError: Boolean = false,
     supportingText: String? = null,
-    visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
 ) {
@@ -45,7 +43,6 @@ fun AfinityTextField(
         minLines = minLines,
         maxLines = maxLines,
         isError = isError,
-        visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
         label = label?.let { { Text(it) } },

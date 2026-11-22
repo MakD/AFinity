@@ -32,11 +32,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.MovieSortField
 import com.makd.afinity.data.models.jellyseerr.TvSortField
 import com.makd.afinity.ui.components.RadioOptionRow
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.components.windowHeightDp
 
 @Composable
@@ -107,7 +107,7 @@ private fun <T> DiscoverSortDialog(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+        properties = afinityDialogProperties(usePlatformDefaultWidth = false),
     ) {
         Surface(
             modifier =

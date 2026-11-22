@@ -58,6 +58,7 @@ import com.makd.afinity.ui.components.AfinityToggleChip
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.DateFieldPickerDialog
 import com.makd.afinity.ui.components.RadioOptionRow
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.components.filter.FilterAccordionSection
 import com.makd.afinity.ui.components.filter.FilterDialog
 import com.makd.afinity.ui.components.filter.FilterSectionHeader
@@ -711,6 +712,7 @@ private fun RegionPickerDialog(
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.discover_filter_select_region)) },
         text = {

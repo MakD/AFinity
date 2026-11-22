@@ -11,6 +11,7 @@ import com.makd.afinity.R
 @Composable
 fun ForgetAccountDialog(userName: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { Text(text = stringResource(R.string.forget_account_title, userName)) },
         text = {

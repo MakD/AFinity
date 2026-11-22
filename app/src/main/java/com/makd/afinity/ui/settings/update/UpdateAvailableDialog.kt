@@ -68,6 +68,7 @@ import com.airbnb.lottie.compose.rememberLottieDynamicProperty
 import com.makd.afinity.R
 import com.makd.afinity.data.updater.models.ApkVerification
 import com.makd.afinity.data.updater.models.GitHubRelease
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.theme.isDarkSurface
 import java.io.File
 
@@ -93,6 +94,7 @@ fun UpdateAvailableDialog(
                 verification == ApkVerification.UNAVAILABLE)
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         shape = MaterialTheme.shapes.extraLarge,
         icon = {

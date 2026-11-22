@@ -18,6 +18,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,6 +49,8 @@ fun CastInfoBottomSheet(
 ) {
     val sheetState = rememberAfinitySheetState()
     var volumeSliderValue by remember { mutableFloatStateOf(castState.volume.toFloat()) }
+    val volumeState = remember { SliderState() }
+    volumeState.value = volumeSliderValue
 
     AfinityModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
@@ -115,12 +118,11 @@ fun CastInfoBottomSheet(
             )
 
             Slider(
-                value = volumeSliderValue,
+                state = volumeState,
                 onValueChange = { newValue ->
                     volumeSliderValue = newValue
                     castManager.setVolume(newValue.toDouble())
                 },
-                valueRange = 0f..1f,
                 colors =
                     SliderDefaults.colors(
                         thumbColor = MaterialTheme.colorScheme.primary,

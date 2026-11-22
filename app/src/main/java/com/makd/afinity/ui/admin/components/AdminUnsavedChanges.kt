@@ -14,6 +14,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.afinityDialogProperties
 
 class AdminNavigationGuard {
     var hasUnsavedChanges by mutableStateOf(false)
@@ -33,6 +34,7 @@ fun ReportUnsavedChanges(hasUnsavedChanges: Boolean) {
 @Composable
 fun AdminDiscardDialog(message: String, onDiscard: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = {
             Text(

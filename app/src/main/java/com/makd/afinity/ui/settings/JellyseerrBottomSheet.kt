@@ -32,7 +32,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,13 +50,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.AfinityModalBottomSheet
+import com.makd.afinity.ui.components.AfinityPasswordField
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.DiscoveredServicesSection
 import com.makd.afinity.ui.components.LoadingButton
@@ -225,7 +223,7 @@ internal fun JellyseerrLoginContent(
                     },
             )
 
-            AfinityTextField(
+            AfinityPasswordField(
                 value = uiState.password,
                 onValueChange = viewModel::updatePassword,
                 label =
@@ -235,12 +233,7 @@ internal fun JellyseerrLoginContent(
                 supportingText = uiState.passwordError,
                 isError = uiState.passwordError != null,
                 enabled = !busy,
-                visualTransformation =
-                    if (passwordVisible) {
-                        VisualTransformation.None
-                    } else {
-                        PasswordVisualTransformation()
-                    },
+                revealed = passwordVisible,
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
@@ -267,16 +260,13 @@ internal fun JellyseerrLoginContent(
                         keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Done,
                     ),
-                keyboardActions =
-                    KeyboardActions(
-                        onDone = {
-                            autofillManager?.commit()
-                            focusManager.clearFocus()
-                            if (!busy) {
-                                viewModel.login()
-                            }
-                        },
-                    ),
+                onImeAction = {
+                    autofillManager?.commit()
+                    focusManager.clearFocus()
+                    if (!busy) {
+                        viewModel.login()
+                    }
+                },
                 modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Password },
             )
         }
@@ -382,7 +372,7 @@ fun JellyseerrBottomSheet(
 
 @Composable
 private fun InsecureConnectionBannerJellyseerr(serverUrl: String) {
-    val showWarning by remember(serverUrl) { derivedStateOf { isInsecurePublicUrl(serverUrl) } }
+    val showWarning = remember(serverUrl) { isInsecurePublicUrl(serverUrl) }
 
     AnimatedVisibility(
         visible = showWarning,

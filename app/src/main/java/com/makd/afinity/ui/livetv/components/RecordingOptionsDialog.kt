@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.livetv.RecordingPadding
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.afinityDialogProperties
 
 @Composable
 fun RecordingOptionsDialog(
@@ -35,6 +36,7 @@ fun RecordingOptionsDialog(
     val postMinutes = post.toIntOrNull()?.takeIf { it >= 0 }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.livetv_recording_options)) },
         text = {

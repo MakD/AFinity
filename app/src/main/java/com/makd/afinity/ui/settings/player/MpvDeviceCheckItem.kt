@@ -53,6 +53,7 @@ import com.makd.afinity.player.mpv.MpvDeviceCapabilities
 import com.makd.afinity.player.mpv.MpvDeviceSupport
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsItem
+import com.makd.afinity.ui.components.afinityDialogProperties
 
 enum class MpvDeviceCheckStatus {
     IDLE,
@@ -118,6 +119,7 @@ private fun MpvDeviceCheckDialog(check: MpvDeviceCheck, onStart: () -> Unit, onC
     LaunchedEffect(Unit) { if (check.status == MpvDeviceCheckStatus.IDLE) onStart() }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onClose,
         icon = { DeviceCheckAnimation(status = check.status) },
         title = { Text(text = stringResource(R.string.pref_mpv_device_check_title)) },

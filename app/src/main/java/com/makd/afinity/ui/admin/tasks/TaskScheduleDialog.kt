@@ -43,6 +43,7 @@ import com.makd.afinity.ui.admin.components.AdminDayToggles
 import com.makd.afinity.ui.admin.components.AdminTimeDialog
 import com.makd.afinity.ui.admin.components.AdminValueTile
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.afinityDialogProperties
 import org.jellyfin.sdk.model.api.DayOfWeek
 import org.jellyfin.sdk.model.api.TaskTriggerInfo
 import org.jellyfin.sdk.model.api.TaskTriggerInfoType
@@ -156,6 +157,7 @@ internal fun TaskScheduleDialog(
     }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = {
             Text(
@@ -356,6 +358,7 @@ private fun CustomTimeLimitDialog(
     val ticks = parseLimitHours(text)
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = {
             Text(

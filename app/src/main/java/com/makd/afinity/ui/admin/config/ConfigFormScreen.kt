@@ -70,6 +70,7 @@ import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
+import com.makd.afinity.ui.components.afinityDialogProperties
 import sh.calvin.reorderable.ReorderableColumn
 
 private const val SEARCHABLE_CHOICE_MIN_OPTIONS = 12
@@ -477,6 +478,7 @@ private fun ChoiceSearchDialog(
         else labelled.filter { (_, label) -> label.contains(needle, ignoreCase = true) }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = {
             Text(
@@ -902,6 +904,7 @@ private fun ImageOptionsDialog(
     val isValid = counted == null || (count != null && width != null)
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {

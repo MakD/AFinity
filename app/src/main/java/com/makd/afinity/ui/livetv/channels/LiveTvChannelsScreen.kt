@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -51,10 +52,11 @@ import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AlphabetScroller
 import com.makd.afinity.ui.components.AppBarProfile
-import com.makd.afinity.ui.components.FilterFab
+import com.makd.afinity.ui.components.FilterSortToolbar
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
+import com.makd.afinity.ui.components.rememberFilterSortToolbarScrollBehavior
 import com.makd.afinity.ui.livetv.components.ChannelCard
 import com.makd.afinity.ui.livetv.components.LiveTvFilterDialog
 import com.makd.afinity.ui.main.MainUiState
@@ -173,9 +175,11 @@ private fun LiveTvChannelsContent(
             .collect { (first, last) -> currentOnVisibleChannelsChanged(first, last) }
     }
 
+    val toolbarScroll = rememberFilterSortToolbarScrollBehavior()
+
     Box(modifier = modifier.fillMaxSize()) {
         Row(modifier = Modifier.fillMaxSize()) {
-            Box(modifier = Modifier.weight(1f)) {
+            Box(modifier = Modifier.weight(1f).nestedScroll(toolbarScroll)) {
                 if (uiState.channels.isEmpty() && selectedLetter != null) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -258,13 +262,14 @@ private fun LiveTvChannelsContent(
                     }
                 }
 
-                FilterFab(
-                    active = filterCount > 0,
-                    onClick = onFilterClick,
-                    badgeCount = filterCount,
+                FilterSortToolbar(
                     modifier =
-                        Modifier.align(Alignment.BottomEnd)
-                            .padding(end = 8.dp, bottom = max(safeBottom, playerOffset) + 16.dp),
+                        Modifier.align(Alignment.BottomCenter)
+                            .padding(bottom = max(safeBottom, playerOffset) + 16.dp),
+                    onFilterClick = onFilterClick,
+                    filterActive = filterCount > 0,
+                    filterCount = filterCount,
+                    scrollBehavior = toolbarScroll,
                 )
             }
 

@@ -38,7 +38,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHost
@@ -94,7 +93,9 @@ import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.DownloadConfirm
 import com.makd.afinity.ui.components.DownloadConfirmDialog
 import com.makd.afinity.ui.components.DownloadListItemRow
+import com.makd.afinity.ui.components.DownloadProgressBar
 import com.makd.afinity.ui.components.EmptyState
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.components.formatRuntimeSeconds
 import com.makd.afinity.ui.components.singleDownloadConfirm
 import com.makd.afinity.ui.downloads.DownloadCatalogEntry
@@ -289,6 +290,7 @@ fun DownloadSettingsScreen(
 
     if (uiState.pendingUnavailableDelete != null) {
         AlertDialog(
+            properties = afinityDialogProperties(),
             onDismissRequest = viewModel::dismissUnavailableDelete,
             title = { Text(stringResource(R.string.download_unavailable_delete_title)) },
             text = { Text(stringResource(R.string.download_unavailable_delete_message)) },
@@ -476,6 +478,7 @@ private fun DeleteDownloadsDialog(
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         icon = {
             Icon(
@@ -863,15 +866,13 @@ fun ActiveDownloadCard(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                LinearProgressIndicator(
+                DownloadProgressBar(
                     progress = { download.progress },
-                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                    active = download.status == DownloadStatus.DOWNLOADING,
                     color =
                         if (download.status == DownloadStatus.FAILED)
                             MaterialTheme.colorScheme.error
                         else MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    strokeCap = StrokeCap.Round,
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -1331,15 +1332,13 @@ fun AbsActiveDownloadCard(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                LinearProgressIndicator(
+                DownloadProgressBar(
                     progress = { download.progress },
-                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                    active = download.status == AbsDownloadStatus.DOWNLOADING,
                     color =
                         if (download.status == AbsDownloadStatus.FAILED)
                             MaterialTheme.colorScheme.error
                         else MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    strokeCap = StrokeCap.Round,
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))

@@ -52,6 +52,7 @@ import com.makd.afinity.ui.components.DetailCoverTitle
 import com.makd.afinity.ui.components.DownloadConfirm
 import com.makd.afinity.ui.components.DownloadConfirmDialog
 import com.makd.afinity.ui.components.DownloadConfirmKind
+import com.makd.afinity.ui.components.DownloadProgressRing
 import com.makd.afinity.ui.components.formatRuntimeSeconds
 import com.makd.afinity.ui.components.formatTimeLeftSeconds
 import com.makd.afinity.ui.components.getAutoFlagUrl
@@ -385,10 +386,10 @@ internal fun ItemActionRow(
                 when (downloadInfo?.status) {
                     AbsDownloadStatus.DOWNLOADING -> {
                         Box(contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(
+                            DownloadProgressRing(
                                 progress = { downloadInfo.progress },
-                                modifier = Modifier.size(26.dp),
-                                strokeWidth = 2.dp,
+                                size = 26.dp,
+                                active = true,
                             )
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_cancel),

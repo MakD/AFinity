@@ -41,6 +41,7 @@ fun DateFieldPickerDialog(
         )
 
     DatePickerDialog(
+        properties = afinityDialogProperties(usePlatformDefaultWidth = false),
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(

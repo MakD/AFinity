@@ -34,9 +34,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.RadioOptionRow
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.components.windowHeightDp
 
 @Composable
@@ -56,7 +56,7 @@ fun MusicSortDialog(
             onSortSelected(selectedField, !isAscending)
             onDismiss()
         },
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+        properties = afinityDialogProperties(usePlatformDefaultWidth = false),
     ) {
         Surface(
             modifier =

@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.util.DateSkeleton
 import com.makd.afinity.util.localizedDateFormatter
 import java.time.DayOfWeek
@@ -134,6 +135,7 @@ fun AdminTimeDialog(
         )
 
     TimePickerDialog(
+        properties = afinityDialogProperties(usePlatformDefaultWidth = false),
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(

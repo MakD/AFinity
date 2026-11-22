@@ -1,8 +1,5 @@
 package com.makd.afinity.ui.music.library
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -17,6 +14,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -32,10 +30,10 @@ import com.makd.afinity.ui.components.AfinityScreen
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AppBarProfile
-import com.makd.afinity.ui.components.FilterFab
-import com.makd.afinity.ui.components.SortFab
+import com.makd.afinity.ui.components.FilterSortToolbar
+import com.makd.afinity.ui.components.bottomClearance
 import com.makd.afinity.ui.components.formatRuntimeTicks
-import com.makd.afinity.ui.components.playerClearance
+import com.makd.afinity.ui.components.rememberFilterSortToolbarScrollBehavior
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
@@ -118,7 +116,8 @@ fun MusicBrowseScreen(
         viewModel = adminViewModel,
     )
 
-    val playerClearance = playerClearance()
+    val bottomClearance = bottomClearance()
+    val toolbarScroll = rememberFilterSortToolbarScrollBehavior()
     val lazyGenres = viewModel.genresPagingFlow.collectAsLazyPagingItems()
 
     val lazyTracks = viewModel.tracksPagingFlow.collectAsLazyPagingItems()
@@ -150,34 +149,7 @@ fun MusicBrowseScreen(
                 onSearchClick = onSearchClick,
             )
         },
-        floatingActionButton = {
-            Box(modifier = Modifier.padding(bottom = playerClearance)) {
-                when (tab) {
-                    LibraryFilter.Albums ->
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            horizontalAlignment = Alignment.End,
-                        ) {
-                            FilterFab(
-                                active = albumFilters.isActive,
-                                onClick = { showAlbumFilterSheet = true },
-                            )
-                            SortFab(onClick = { showAlbumSortDialog = true })
-                        }
-                    LibraryFilter.AlbumArtists ->
-                        FilterFab(
-                            active = artistFilters.isActive,
-                            onClick = { showArtistFilterSheet = true },
-                        )
-                    LibraryFilter.Artists ->
-                        FilterFab(
-                            active = allArtistFilters.isActive,
-                            onClick = { showAllArtistFilterSheet = true },
-                        )
-                    else -> Unit
-                }
-            }
-        },
+        modifier = Modifier.nestedScroll(toolbarScroll),
     ) { innerPadding ->
         val trackTotals =
             if (tab == LibraryFilter.Tracks) {
@@ -331,6 +303,34 @@ fun MusicBrowseScreen(
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
                 )
             LibraryFilter.Home -> Unit
+        }
+
+        val toolbarModifier =
+            Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp + bottomClearance)
+        when (tab) {
+            LibraryFilter.Albums ->
+                FilterSortToolbar(
+                    modifier = toolbarModifier,
+                    onFilterClick = { showAlbumFilterSheet = true },
+                    filterActive = albumFilters.isActive,
+                    onSortClick = { showAlbumSortDialog = true },
+                    scrollBehavior = toolbarScroll,
+                )
+            LibraryFilter.AlbumArtists ->
+                FilterSortToolbar(
+                    modifier = toolbarModifier,
+                    onFilterClick = { showArtistFilterSheet = true },
+                    filterActive = artistFilters.isActive,
+                    scrollBehavior = toolbarScroll,
+                )
+            LibraryFilter.Artists ->
+                FilterSortToolbar(
+                    modifier = toolbarModifier,
+                    onFilterClick = { showAllArtistFilterSheet = true },
+                    filterActive = allArtistFilters.isActive,
+                    scrollBehavior = toolbarScroll,
+                )
+            else -> Unit
         }
     }
 

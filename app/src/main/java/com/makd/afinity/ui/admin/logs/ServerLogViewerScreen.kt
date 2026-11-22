@@ -22,7 +22,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.computedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -251,7 +251,7 @@ private fun ServerLogContent(
         rememberLazyListState(initialFirstVisibleItemIndex = (view.size - 1).coerceAtLeast(0))
     val scope = rememberCoroutineScope()
     var shownView by remember { mutableStateOf(view) }
-    val atEnd by remember { derivedStateOf { !listState.canScrollForward } }
+    val atEnd by remember { computedStateOf { !listState.canScrollForward } }
     val console = state.level == null
     val narrowed = state.query.isNotBlank() || state.tags.isNotEmpty() || state.groupFilter != null
 

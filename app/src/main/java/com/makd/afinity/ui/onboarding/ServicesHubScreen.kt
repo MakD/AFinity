@@ -77,6 +77,7 @@ import com.makd.afinity.ui.components.AfinityTopAppBarTitle
 import com.makd.afinity.ui.components.AfinityTopBar
 import com.makd.afinity.ui.components.DisclosureBlock
 import com.makd.afinity.ui.components.LocalNetworkPermissionCard
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.components.connectionIndicatorColor
 import com.makd.afinity.ui.components.connectionLabel
 import com.makd.afinity.ui.components.rememberAfinitySheetState
@@ -428,6 +429,7 @@ fun ServicesHubScreen(
 
         if (showWikidataDisconnect) {
             AlertDialog(
+                properties = afinityDialogProperties(),
                 onDismissRequest = { showWikidataDisconnect = false },
                 title = { Text(stringResource(R.string.wikidata_disconnect_title)) },
                 text = { Text(stringResource(R.string.wikidata_disconnect_message)) },
@@ -472,6 +474,7 @@ fun ServicesHubScreen(
         }
         if (showSubtitleDbRemoveAll) {
             AlertDialog(
+                properties = afinityDialogProperties(),
                 onDismissRequest = { showSubtitleDbRemoveAll = false },
                 title = { Text(stringResource(R.string.subtitledb_remove_all_title)) },
                 text = { Text(stringResource(R.string.subtitledb_remove_all_message)) },
@@ -498,6 +501,7 @@ fun ServicesHubScreen(
         }
         if (showSubtitleDbDisconnect) {
             AlertDialog(
+                properties = afinityDialogProperties(),
                 onDismissRequest = { showSubtitleDbDisconnect = false },
                 title = { Text(stringResource(R.string.subtitledb_disconnect_title)) },
                 text = { Text(stringResource(R.string.subtitledb_disconnect_message)) },
@@ -1400,6 +1404,7 @@ private fun ServiceTile(
 @Composable
 private fun DisconnectDialog(serviceName: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.services_hub_disconnect_title, serviceName)) },
         text = { Text(stringResource(R.string.services_hub_disconnect_message)) },

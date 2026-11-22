@@ -28,8 +28,8 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.isLandscapeWindow
+import com.makd.afinity.ui.components.rememberSyncedTextFieldState
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -238,18 +239,18 @@ fun <T> SearchableChipMultiSelect(
                         )
                     }
 
+                    val queryState = rememberSyncedTextFieldState(query, onQueryChange)
                     BasicTextField(
-                        value = query,
-                        onValueChange = onQueryChange,
+                        state = queryState,
                         readOnly = !editing,
-                        singleLine = true,
+                        lineLimits = TextFieldLineLimits.SingleLine,
                         textStyle =
                             MaterialTheme.typography.bodyLarge.copy(
                                 color = MaterialTheme.colorScheme.onSurface,
                             ),
                         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                        onKeyboardAction = { focusManager.clearFocus() },
                         modifier =
                             Modifier.widthIn(min = 72.dp)
                                 .heightIn(min = 48.dp)
@@ -266,7 +267,7 @@ fun <T> SearchableChipMultiSelect(
                                         expanded = false
                                     }
                                 },
-                        decorationBox = { innerTextField ->
+                        decorator = { innerTextField ->
                             Box(contentAlignment = Alignment.CenterStart) {
                                 if (query.isEmpty() && selected.isEmpty()) {
                                     Text(

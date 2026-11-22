@@ -65,6 +65,7 @@ import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.settings.SettingsViewModel
 import com.makd.afinity.ui.theme.AppFont
 import com.makd.afinity.ui.theme.ThemeMode
@@ -473,6 +474,7 @@ private fun NextUpMaxDaysDialog(days: Int, onDismiss: () -> Unit, onConfirm: (In
     val parsed = text.toIntOrNull()
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { Text(text = stringResource(R.string.pref_next_up_max_days_title)) },
         text = {

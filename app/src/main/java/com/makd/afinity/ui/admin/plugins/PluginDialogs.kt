@@ -12,6 +12,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.afinityDialogProperties
 
 @Composable
 internal fun PluginConfirmDialog(
@@ -22,6 +23,7 @@ internal fun PluginConfirmDialog(
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = {
             Text(
@@ -57,6 +59,7 @@ internal fun PluginInstallDialog(
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = {
             Text(

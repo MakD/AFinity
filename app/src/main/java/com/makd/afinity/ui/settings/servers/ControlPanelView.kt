@@ -68,6 +68,7 @@ import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsGroupTitle
 import com.makd.afinity.ui.components.SettingsItem
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.components.formatClockTicks
 import com.makd.afinity.ui.settings.servers.components.SessionRemoteSheet
 import com.makd.afinity.ui.settings.servers.components.playMethodLabelRes
@@ -424,6 +425,7 @@ private fun ControlPanelOverview(
 
     if (pendingPowerAction == ServerPowerAction.RESTART) {
         AlertDialog(
+            properties = afinityDialogProperties(),
             onDismissRequest = { viewModel.confirmPowerAction(null) },
             icon = {
                 Icon(
@@ -472,6 +474,7 @@ private fun ControlPanelOverview(
 
     if (pendingPowerAction == ServerPowerAction.SHUTDOWN) {
         AlertDialog(
+            properties = afinityDialogProperties(),
             onDismissRequest = { viewModel.confirmPowerAction(null) },
             icon = {
                 Icon(

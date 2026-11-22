@@ -4,7 +4,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.computedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
@@ -22,7 +22,7 @@ fun rememberTopBarOpacity(
     val thresholdPx =
         remember(density, scrollThreshold) { with(density) { scrollThreshold.toPx() } }
     return remember(state, thresholdPx) {
-        derivedStateOf {
+        computedStateOf {
             val firstIndex = state.firstVisibleItemIndex
             val offset = state.firstVisibleItemScrollOffset
             if (firstIndex > 0 || offset > thresholdPx) 1f else 0f
@@ -39,7 +39,7 @@ fun rememberTopBarOpacity(
     val thresholdPx =
         remember(density, scrollThreshold) { with(density) { scrollThreshold.toPx() } }
     return remember(state, thresholdPx) {
-        derivedStateOf {
+        computedStateOf {
             val offset = state.firstVisibleItemScrollOffset
             (offset / thresholdPx).coerceIn(0f, 1f)
         }

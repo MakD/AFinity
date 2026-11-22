@@ -34,6 +34,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.admin.ServerFolder
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.SettingsItem
+import com.makd.afinity.ui.components.afinityDialogProperties
 
 private val FOLDER_LIST_MAX_HEIGHT = 320.dp
 
@@ -58,6 +59,7 @@ internal fun ServerFolderPickerDialog(
     }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = {
             Text(

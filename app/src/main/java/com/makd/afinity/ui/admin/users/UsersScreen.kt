@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -40,8 +39,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -52,7 +49,9 @@ import com.makd.afinity.ui.admin.components.AdminLoadContent
 import com.makd.afinity.ui.admin.components.AdminPill
 import com.makd.afinity.ui.admin.components.AdminScaffold
 import com.makd.afinity.ui.admin.components.adminContentBottomPadding
+import com.makd.afinity.ui.components.AfinityPasswordField
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.settings.servers.utils.formatRelativeTime
 import java.util.UUID
 
@@ -275,6 +274,7 @@ private fun CreateUserDialog(
     var password by remember { mutableStateOf("") }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = {
             Text(
@@ -290,14 +290,12 @@ private fun CreateUserDialog(
                     modifier = Modifier.fillMaxWidth(),
                     label = stringResource(R.string.user_name_label),
                 )
-                AfinityTextField(
+                AfinityPasswordField(
                     value = password,
                     onValueChange = { password = it },
                     modifier = Modifier.fillMaxWidth(),
                     label = stringResource(R.string.user_password_optional_label),
                     supportingText = stringResource(R.string.user_password_optional_hint),
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 )
             }
         },

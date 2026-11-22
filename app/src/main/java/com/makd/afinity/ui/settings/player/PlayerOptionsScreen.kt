@@ -32,6 +32,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.clearText
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -109,6 +112,7 @@ import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
+import com.makd.afinity.ui.components.afinityDialogProperties
 import com.makd.afinity.ui.player.components.musicQualityLabel
 import com.makd.afinity.ui.player.components.settingsQualityLabel
 import com.makd.afinity.ui.settings.SettingsViewModel
@@ -967,6 +971,7 @@ private fun SubtitleModePickerDialog(
     val options = listOf("") + SubtitlePlaybackMode.entries.map { it.serialName }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.pref_subtitle_mode_title)) },
         text = {
@@ -1312,6 +1317,7 @@ private fun MpvConfigEditorDialog(fileName: String, onDismiss: () -> Unit) {
     }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { Text(fileName) },
         text = {
@@ -1731,6 +1737,7 @@ private fun VideoQualityPickerDialog(
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
@@ -1916,7 +1923,8 @@ private fun LanguagePickerDialog(
     onSelect: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var searchQuery by remember { mutableStateOf("") }
+    val searchState = rememberTextFieldState()
+    val searchQuery = searchState.text.toString()
 
     val filteredIndices =
         remember(searchQuery) {
@@ -1930,6 +1938,7 @@ private fun LanguagePickerDialog(
         }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.pref_group_language)) },
         text = {
@@ -1953,15 +1962,14 @@ private fun LanguagePickerDialog(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         androidx.compose.foundation.text.BasicTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
+                            state = searchState,
                             textStyle =
                                 MaterialTheme.typography.bodyLarge.copy(
                                     color = MaterialTheme.colorScheme.onSurface,
                                 ),
-                            singleLine = true,
+                            lineLimits = TextFieldLineLimits.SingleLine,
                             modifier = Modifier.weight(1f).padding(vertical = 12.dp),
-                            decorationBox = { innerTextField ->
+                            decorator = { innerTextField ->
                                 if (searchQuery.isEmpty()) {
                                     Text(
                                         text = stringResource(R.string.pref_language_search_hint),
@@ -1974,7 +1982,7 @@ private fun LanguagePickerDialog(
                         )
                         if (searchQuery.isNotEmpty()) {
                             IconButton(
-                                onClick = { searchQuery = "" },
+                                onClick = { searchState.clearText() },
                                 modifier = Modifier.size(32.dp),
                             ) {
                                 Icon(
@@ -2077,6 +2085,7 @@ private fun SimpleColorPickerDialog(
     }
 
     AlertDialog(
+        properties = afinityDialogProperties(),
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.color_picker_title)) },
         text = {

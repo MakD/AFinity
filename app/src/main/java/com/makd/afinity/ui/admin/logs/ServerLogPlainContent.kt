@@ -23,7 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.computedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,7 +62,7 @@ internal fun ServerLogPlainContent(
     var level by rememberSaveable { mutableStateOf(LogLevelFilter.ALL) }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
-    val atEnd by remember { derivedStateOf { !listState.canScrollForward } }
+    val atEnd by remember { computedStateOf { !listState.canScrollForward } }
     val isFiltered = query.isNotBlank() || level != LogLevelFilter.ALL
     val shown =
         remember(lines, query, level) {
