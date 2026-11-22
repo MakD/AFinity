@@ -57,6 +57,8 @@ interface AudiobookshelfRepository {
 
     suspend fun validateToken(): Result<Boolean>
 
+    suspend fun getSortingIgnorePrefix(): Boolean
+
     suspend fun getServerUrl(): String?
 
     suspend fun hasValidConfiguration(): Boolean

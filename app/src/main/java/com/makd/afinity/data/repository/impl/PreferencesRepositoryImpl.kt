@@ -1313,6 +1313,14 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         }
     }
 
+    override suspend fun getAbsSort(key: String): String? {
+        return dataStore.data.first()[stringPreferencesKey("abs_sort_$key")]
+    }
+
+    override suspend fun setAbsSort(key: String, value: String) {
+        dataStore.edit { preferences -> preferences[stringPreferencesKey("abs_sort_$key")] = value }
+    }
+
     override suspend fun setSeekGestureEnabled(enabled: Boolean) {
         dataStore.edit { preferences -> preferences[Keys.GESTURE_SEEK_ENABLED] = enabled }
     }

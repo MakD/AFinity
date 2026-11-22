@@ -1888,6 +1888,28 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_91_92 =
+        object : Migration(91, 92) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                listOf(
+                        "`titleIgnorePrefix` TEXT",
+                        "`authorNameLF` TEXT",
+                        "`podcastAuthor` TEXT",
+                        "`tags` TEXT",
+                        "`publisher` TEXT",
+                        "`language` TEXT",
+                        "`explicit` INTEGER",
+                        "`abridged` INTEGER",
+                        "`size` INTEGER",
+                        "`numEpisodes` INTEGER",
+                    )
+                    .forEach { column ->
+                        db.execSQL("ALTER TABLE `audiobookshelf_items` ADD COLUMN $column")
+                    }
+                db.execSQL("UPDATE `audiobookshelf_items` SET `cachedAt` = 0")
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1980,5 +2002,6 @@ object DatabaseMigrations {
             MIGRATION_88_89,
             MIGRATION_89_90,
             MIGRATION_90_91,
+            MIGRATION_91_92,
         )
 }

@@ -466,6 +466,10 @@ interface PreferencesRepository {
 
     fun getSwapGestureIndicatorsFlow(): Flow<Boolean>
 
+    suspend fun getAbsSort(key: String): String?
+
+    suspend fun setAbsSort(key: String, value: String)
+
     suspend fun setSeekGestureEnabled(enabled: Boolean)
 
     suspend fun getSeekGestureEnabled(): Boolean

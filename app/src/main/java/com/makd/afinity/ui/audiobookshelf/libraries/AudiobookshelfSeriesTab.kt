@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
@@ -23,6 +25,8 @@ import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
 import com.makd.afinity.ui.components.CardRow
+import com.makd.afinity.ui.components.FAB_CONTENT_BOTTOM_PADDING
+import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.afinitySectionTitleStyle
 import com.makd.afinity.ui.components.playerClearance
@@ -37,10 +41,24 @@ fun AudiobookshelfSeriesTab(
     isLoading: Boolean,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
+    filtersActive: Boolean = false,
+    onClearFilters: () -> Unit = {},
+    listState: LazyListState = rememberLazyListState(),
 ) {
     when {
         isLoading -> {
             FullScreenLoading(modifier = modifier)
+        }
+
+        seriesList.isEmpty() && filtersActive -> {
+            Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                FullScreenEmpty(
+                    title = stringResource(R.string.abs_no_series_found),
+                    message = stringResource(R.string.filter_empty_filtered),
+                    actionText = stringResource(R.string.action_clear_filter),
+                    onActionClick = onClearFilters,
+                )
+            }
         }
 
         seriesList.isEmpty() -> {
@@ -65,7 +83,9 @@ fun AudiobookshelfSeriesTab(
 
             LazyColumn(
                 modifier = modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = playerClearance),
+                state = listState,
+                contentPadding =
+                    PaddingValues(bottom = FAB_CONTENT_BOTTOM_PADDING + playerClearance),
             ) {
                 items(items = seriesList, key = { it.id }) { series ->
                     Column {

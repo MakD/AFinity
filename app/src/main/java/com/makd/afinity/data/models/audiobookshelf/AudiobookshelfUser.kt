@@ -98,4 +98,5 @@ data class ServerSettings(
 data class AuthorizeResponse(
     @SerialName("user") val user: AudiobookshelfUser,
     @SerialName("userDefaultLibraryId") val userDefaultLibraryId: String? = null,
+    @SerialName("serverSettings") val serverSettings: ServerSettings? = null,
 )

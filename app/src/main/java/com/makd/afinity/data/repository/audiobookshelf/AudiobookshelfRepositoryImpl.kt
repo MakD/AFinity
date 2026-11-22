@@ -234,6 +234,8 @@ constructor(
 
     private var pendingServerUrl: String? = null
 
+    @Volatile private var sortingIgnorePrefix: Pair<Pair<String, UUID>, Boolean>? = null
+
     companion object {
         private const val CACHE_VALIDITY_MS = 5 * 60 * 1000L
         private const val LIBRARY_ITEMS_TTL_MS = 15 * 60 * 1000L
@@ -605,6 +607,26 @@ constructor(
             } catch (e: Exception) {
                 Timber.e(e, "Token validation failed")
                 Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getSortingIgnorePrefix(): Boolean {
+        val context = activeContext ?: return false
+        sortingIgnorePrefix?.let { (cachedFor, value) -> if (cachedFor == context) return value }
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!canReachServer()) return@withContext false
+                val response = apiService.get().authorize()
+                val value =
+                    response.body()?.serverSettings?.sortingIgnorePrefix ?: return@withContext false
+                sortingIgnorePrefix = context to value
+                value
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to read Audiobookshelf sorting settings")
+                false
             }
         }
     }
@@ -2392,6 +2414,16 @@ constructor(
             updatedAt = updatedAt,
             cachedAt = System.currentTimeMillis(),
             numEpisodesIncomplete = numEpisodesIncomplete,
+            titleIgnorePrefix = media.metadata.titleIgnorePrefix,
+            authorNameLF = media.metadata.authorNameLF,
+            podcastAuthor = media.metadata.author,
+            tags = media.tags?.let { json.encodeToString(it) },
+            publisher = media.metadata.publisher,
+            language = media.metadata.language,
+            explicit = media.metadata.explicit,
+            abridged = media.metadata.abridged,
+            size = size,
+            numEpisodes = media.numEpisodes,
         )
     }
 
@@ -2408,15 +2440,8 @@ constructor(
     private fun AudiobookshelfItemEntity.toLibraryItem(
         episodes: List<PodcastEpisode>? = null,
     ): LibraryItem {
-        val genres = genres?.let {
-            try {
-                json.decodeFromString<List<String>>(it)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                null
-            }
-        }
+        val genres = genres?.let(::decodeStringList)
+        val tags = tags?.let(::decodeStringList)
 
         return LibraryItem(
             id = id,
@@ -2427,24 +2452,43 @@ constructor(
                     metadata =
                         com.makd.afinity.data.models.audiobookshelf.MediaMetadata(
                             title = title,
+                            titleIgnorePrefix = titleIgnorePrefix,
                             authorName = authorName,
+                            authorNameLF = authorNameLF,
+                            author = podcastAuthor,
                             narratorName = narratorName,
                             seriesName = seriesName,
                             description = description,
                             publishedYear = publishedYear,
+                            publisher = publisher,
+                            language = language,
+                            explicit = explicit,
+                            abridged = abridged,
                             genres = genres,
                         ),
                     duration = duration,
                     coverPath = coverUrl,
+                    tags = tags,
                     numTracks = numTracks,
+                    numEpisodes = numEpisodes,
                     numChapters = numChapters,
                     episodes = episodes,
                 ),
             addedAt = addedAt,
             updatedAt = updatedAt,
+            size = size,
             numEpisodesIncomplete = numEpisodesIncomplete,
         )
     }
+
+    private fun decodeStringList(raw: String): List<String>? =
+        try {
+            json.decodeFromString<List<String>>(raw)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
 
     override suspend fun getListeningStats(): Result<ListeningStats> {
         return withContext(Dispatchers.IO) {

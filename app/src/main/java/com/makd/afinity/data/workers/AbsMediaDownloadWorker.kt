@@ -195,6 +195,16 @@ constructor(
                                 addedAt = item.addedAt,
                                 updatedAt = item.updatedAt,
                                 cachedAt = System.currentTimeMillis(),
+                                titleIgnorePrefix = item.media.metadata.titleIgnorePrefix,
+                                authorNameLF = item.media.metadata.authorNameLF,
+                                podcastAuthor = item.media.metadata.author,
+                                tags = item.media.tags?.let { json.encodeToString(it) },
+                                publisher = item.media.metadata.publisher,
+                                language = item.media.metadata.language,
+                                explicit = item.media.metadata.explicit,
+                                abridged = item.media.metadata.abridged,
+                                size = item.size,
+                                numEpisodes = item.media.numEpisodes,
                             ),
                         )
                         item.media.episodes?.let { episodes ->
