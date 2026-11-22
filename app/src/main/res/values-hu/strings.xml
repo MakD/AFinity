@@ -496,7 +496,7 @@
     </plurals>
     <string name="person_died_no_age_fmt">Elhunyt: %1$s</string>
     <string name="person_birthplace_fmt">Születési hely: %1$s</string>
-    <string name="person_date_fmt">ÉÉÉÉ HHH n</string>
+    <string name="person_date_fmt">yyyy. MMMM d.</string>
     <string name="action_show_more">Több mutatása</string>
     <string name="action_show_less">Kevesebb mutatása</string>
     <string name="abs_show_less">Kevesebb mutatása</string>
