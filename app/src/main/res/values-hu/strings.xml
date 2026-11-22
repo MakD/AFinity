@@ -1813,4 +1813,21 @@
     <string name="stat_albums">Albumok</string>
     <string name="photo_viewer_load_failed">Ezeket a képeket nem sikerült betölteni</string>
     <string name="photo_action_info">Részletek</string>
+    <string name="title_activity">Tevékenység</string>
+    <string name="logs_buffered_fmt">%1$d / %2$d</string>
+    <string name="cast_quality_mbps_fmt">%1$d Mbps</string>
+    <string name="config_number_range_fmt">%1$d - %2$d</string>
+    <string name="audiobook_progress_percent_fmt">%1$d%% hallgatta meg</string>
+    <string name="action_add">Hozzáadás</string>
+    <string name="plugin_category_administration">Adminisztráció</string>
+    <string name="playback_section_advanced">Haladó</string>
+    <string name="section_advanced">Haladó</string>
+    <string name="photo_info_album">Album</string>
+    <string name="media_info_label_album">Album</string>
+    <string name="favorites_albums">Kedvenc albumok</string>
+    <string name="admin_section_album_artists">Album előadója</string>
+    <string name="music_tab_album_artists">Album előadója</string>
+    <string name="music_nav_album_artists">Album előadója</string>
+    <string name="perm_deletion_all_libraries">Minden könyvtár</string>
+    <string name="widget_settings_appearance">Megjelenés</string>
 </resources>
