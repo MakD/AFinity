@@ -205,7 +205,7 @@
     </plurals>
     <string name="person_died_no_age_fmt">मृत: %1$s</string>
     <string name="person_birthplace_fmt">जन्म स्थान: %1$s</string>
-    <string name="person_date_fmt">एमएमएमएम डी, वाईय</string>
+    <string name="person_date_fmt">d MMMM yyyy</string>
     <string name="action_show_more">और दिखाएँ</string>
     <string name="action_show_less">कम दिखाओ</string>
     <string name="cd_person_image_fmt">%1$s छवि</string>
