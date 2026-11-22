@@ -3794,4 +3794,10 @@
     <string name="service_label_lastfm">Last.fm</string>
     <string name="service_label_wikidata">Wikidata</string>
     <string name="service_label_subtitledb">SubDB</string>
+    <string name="pref_seek_gesture_title">Svep för att söka</string>
+    <string name="pref_seek_gesture_summary">Svep åt vänster eller höger för att förflytta dig i videon</string>
+    <string name="pref_brightness_gesture_title">Ljusstyrkegest</string>
+    <string name="pref_brightness_gesture_summary">Svep uppåt eller nedåt på vänster sida för att ändra ljusstyrkan</string>
+    <string name="pref_volume_gesture_title">Volymgest</string>
+    <string name="pref_volume_gesture_summary">Svep uppåt eller nedåt på höger sida för att ändra volymen</string>
 </resources>
