@@ -42,12 +42,18 @@ private fun LyricLine.toAfinityLyricLine(start: Long): AfinityLyricLine =
     AfinityLyricLine(
         text = text,
         startSeconds = start / TICKS_PER_SECOND,
-        cues =
-            cues
-                .orEmpty()
-                .mapNotNull { it.toAfinityLyricCue(text.length) }
-                .sortedBy { it.startSeconds },
+        cues = cues.orEmpty().mapNotNull { it.toAfinityLyricCue(text.length) }.normalizedCues(),
     )
+
+private fun List<AfinityLyricCue>.normalizedCues(): List<AfinityLyricCue> {
+    var floor = Double.NEGATIVE_INFINITY
+    return sortedBy { it.position }
+        .map { cue ->
+            val start = maxOf(cue.startSeconds, floor)
+            floor = start
+            cue.copy(startSeconds = start, endSeconds = cue.endSeconds?.takeIf { it > start })
+        }
+}
 
 private fun LyricLineCue.toAfinityLyricCue(textLength: Int): AfinityLyricCue? {
     val from = position.coerceIn(0, textLength)
@@ -79,7 +85,9 @@ fun decodeLyricsJson(json: String): CachedLyrics? = runCatching {
         CachedLyrics(lines, cueAware = false)
     } else {
         CachedLyrics(
-            lyricJson.decodeFromJsonElement<List<AfinityLyricLine>>(root),
+            lyricJson.decodeFromJsonElement<List<AfinityLyricLine>>(root).map {
+                it.copy(cues = it.cues.normalizedCues())
+            },
             cueAware = true,
         )
     }

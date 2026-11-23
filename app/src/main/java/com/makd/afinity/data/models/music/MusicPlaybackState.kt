@@ -12,4 +12,12 @@ data class MusicPlaybackState(
     val sleepTimerEndMs: Long? = null,
     val audioCodec: String? = null,
     val isServerTranscode: Boolean = false,
-)
+    val positionSampledAtMs: Long = 0L,
+    val positionEpoch: Long = 0L,
+) {
+    fun positionAt(uptimeMs: Long): Long {
+        if (!isPlaying) return positionMs
+        val estimate = positionMs + (uptimeMs - positionSampledAtMs).coerceAtLeast(0L)
+        return if (durationMs > 0L) estimate.coerceAtMost(durationMs) else estimate
+    }
+}

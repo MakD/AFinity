@@ -1,5 +1,6 @@
 package com.makd.afinity.cast
 
+import android.os.SystemClock
 import com.makd.afinity.player.audiobook.JellyfinAudiobookReporter
 import com.makd.afinity.player.audiobookshelf.AudiobookSource
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
@@ -12,6 +13,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+
+private const val CAST_BACKWARD_JUMP_MS = 2_000L
 
 @Singleton
 class CastPlaybackBridge
@@ -53,7 +56,13 @@ constructor(
         }
         val durationMs =
             playbackManager.state.value.currentTrack?.runtimeTicks?.div(10_000) ?: state.duration
-        playbackManager.updatePosition(state.currentPosition, 0L, durationMs)
+        val expectedMs = playbackManager.state.value.positionAt(SystemClock.uptimeMillis())
+        playbackManager.updatePosition(
+            positionMs = state.currentPosition,
+            bufferedPositionMs = 0L,
+            durationMs = durationMs,
+            discontinuity = state.currentPosition < expectedMs - CAST_BACKWARD_JUMP_MS,
+        )
         playbackManager.updatePlayingState(state.isPlaying)
         playbackManager.updateBufferingState(state.isBuffering)
     }

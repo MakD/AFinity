@@ -20,12 +20,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.LongState
+import androidx.compose.runtime.MutableLongState
 import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.withFrameMillis
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -42,14 +47,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityLyricLine
+import com.makd.afinity.data.models.music.MusicPlaybackState
 import com.makd.afinity.data.models.music.isSynced
+import com.makd.afinity.ui.player.utils.KeepScreenOn
 import com.makd.afinity.ui.theme.isDarkSurface
+import kotlinx.coroutines.flow.first
 
 @Composable
 fun MusicLyricsView(
     lyrics: List<AfinityLyricLine>,
-    positionMs: Long,
-    isPlaying: Boolean,
+    playback: MusicPlaybackState,
     isLoading: Boolean,
     onSeek: (Long) -> Unit,
     modifier: Modifier = Modifier,
@@ -57,11 +64,18 @@ fun MusicLyricsView(
 ) {
     val listState = rememberLazyListState()
     val synced = lyrics.isSynced
-    val currentLineIndex = if (synced) lineIndexAt(lyrics, positionMs / 1000.0) else -1
-    val positionState = rememberUpdatedState(positionMs)
-    val playingState = rememberUpdatedState(isPlaying)
+    val playbackState = rememberUpdatedState(playback)
     val seekState = rememberUpdatedState(onSeek)
+    val clockMs = remember { mutableLongStateOf(playback.positionAt(SystemClock.uptimeMillis())) }
+    val currentLineIndex by
+        remember(lyrics, synced) {
+            derivedStateOf { if (synced) lineIndexAt(lyrics, clockMs.longValue / 1000.0) else -1 }
+        }
     val isDark = isDarkSurface()
+
+    KeepScreenOn(keepOn = playback.isPlaying)
+
+    LaunchedEffect(synced) { if (synced) runLyricsClock(clockMs, playbackState) }
 
     LaunchedEffect(currentLineIndex) {
         if (currentLineIndex >= 0) {
@@ -103,8 +117,7 @@ fun MusicLyricsView(
                                 nextLineStartSeconds = lyrics.getOrNull(index + 1)?.startSeconds,
                                 isCurrent = index == currentLineIndex,
                                 isPast = index < currentLineIndex,
-                                positionState = positionState,
-                                playingState = playingState,
+                                clockMs = clockMs,
                                 seekState = seekState,
                                 accentColor = accentColor,
                                 isDark = isDark,
@@ -124,8 +137,7 @@ private fun LyricLineRow(
     nextLineStartSeconds: Double?,
     isCurrent: Boolean,
     isPast: Boolean,
-    positionState: State<Long>,
-    playingState: State<Boolean>,
+    clockMs: LongState,
     seekState: State<(Long) -> Unit>,
     accentColor: Color,
     isDark: Boolean,
@@ -176,25 +188,7 @@ private fun LyricLineRow(
             }
 
     if (isCurrent && line.cues.isNotEmpty()) {
-        val charProgress = remember(line) { mutableFloatStateOf(0f) }
         val layoutResult = remember(line) { mutableStateOf<TextLayoutResult?>(null) }
-
-        LaunchedEffect(line, nextLineStartSeconds) {
-            var anchorMs = positionState.value
-            var anchorAt = SystemClock.elapsedRealtime()
-            while (true) {
-                withFrameMillis {
-                    if (positionState.value != anchorMs) {
-                        anchorMs = positionState.value
-                        anchorAt = SystemClock.elapsedRealtime()
-                    }
-                    val drift =
-                        if (playingState.value) SystemClock.elapsedRealtime() - anchorAt else 0L
-                    charProgress.floatValue =
-                        charProgressAt(line, (anchorMs + drift) / 1000.0, nextLineStartSeconds)
-                }
-            }
-        }
 
         Box(modifier = rowModifier) {
             Text(
@@ -210,7 +204,10 @@ private fun LyricLineRow(
                 onTextLayout = { layoutResult.value = it },
                 modifier =
                     Modifier.fillMaxWidth().drawWithContent {
-                        drawKaraokeFill(layoutResult.value, charProgress.floatValue)
+                        drawKaraokeFill(
+                            layoutResult.value,
+                            charProgressAt(line, clockMs.longValue / 1000.0, nextLineStartSeconds),
+                        )
                     },
             )
         }
@@ -286,6 +283,28 @@ private fun ContentDrawScope.drawKaraokeFill(layout: TextLayoutResult?, progress
 
     clipRect(0f, layout.getLineTop(lineIndex), x, layout.getLineBottom(lineIndex)) {
         content.drawContent()
+    }
+}
+
+private suspend fun runLyricsClock(
+    clockMs: MutableLongState,
+    playbackState: State<MusicPlaybackState>,
+) {
+    var epoch: Long? = null
+    fun follow(sample: MusicPlaybackState) {
+        val candidate = sample.positionAt(SystemClock.uptimeMillis())
+        clockMs.longValue =
+            if (sample.positionEpoch == epoch) maxOf(clockMs.longValue, candidate) else candidate
+        epoch = sample.positionEpoch
+    }
+    while (true) {
+        val sample = playbackState.value
+        if (sample.isPlaying) {
+            withFrameNanos { follow(playbackState.value) }
+        } else {
+            follow(sample)
+            snapshotFlow { playbackState.value }.first { it !== sample }
+        }
     }
 }
 

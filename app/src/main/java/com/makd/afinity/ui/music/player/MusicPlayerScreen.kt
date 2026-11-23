@@ -150,8 +150,7 @@ fun SharedTransitionScope.MusicPlayerScreen(
                 if (lyricsVisible) {
                     MusicLyricsView(
                         lyrics = lyrics,
-                        positionMs = playbackState.positionMs,
-                        isPlaying = playbackState.isPlaying,
+                        playback = playbackState,
                         isLoading = lyricsLoading,
                         onSeek = viewModel::seekTo,
                         accentColor = animatedColor,

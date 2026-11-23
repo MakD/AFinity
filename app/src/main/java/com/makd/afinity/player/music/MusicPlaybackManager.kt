@@ -2,6 +2,7 @@ package com.makd.afinity.player.music
 
 import android.content.Context
 import android.media.AudioManager
+import android.os.SystemClock
 import androidx.media3.exoplayer.ExoPlayer
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicPlaybackState
@@ -163,19 +164,37 @@ constructor(
     fun updateTrack(track: AfinityTrack?) {
         _state.update {
             if (it.currentTrack?.id == track?.id) it.copy(currentTrack = track)
-            else it.copy(currentTrack = track, audioCodec = null)
+            else
+                it.copy(
+                    currentTrack = track,
+                    audioCodec = null,
+                    positionEpoch = it.positionEpoch + 1,
+                )
         }
     }
 
     fun updatePlayingState(isPlaying: Boolean) {
-        _state.update { it.copy(isPlaying = isPlaying) }
+        _state.update {
+            if (it.isPlaying == isPlaying) return@update it
+            val now = SystemClock.uptimeMillis()
+            it.copy(
+                isPlaying = isPlaying,
+                positionMs = it.positionAt(now),
+                positionSampledAtMs = now,
+            )
+        }
     }
 
     fun updateBufferingState(isBuffering: Boolean) {
         _state.update { it.copy(isBuffering = isBuffering) }
     }
 
-    fun updatePosition(positionMs: Long, bufferedPositionMs: Long = 0L, durationMs: Long = 0L) {
+    fun updatePosition(
+        positionMs: Long,
+        bufferedPositionMs: Long = 0L,
+        durationMs: Long = 0L,
+        discontinuity: Boolean = false,
+    ) {
         _state.update {
             val trackDurationMs =
                 it.currentTrack?.runtimeTicks?.div(10_000L)?.takeIf { ticks -> ticks > 0L }
@@ -183,6 +202,8 @@ constructor(
                 positionMs = positionMs,
                 bufferedPositionMs = bufferedPositionMs,
                 durationMs = trackDurationMs ?: durationMs,
+                positionSampledAtMs = SystemClock.uptimeMillis(),
+                positionEpoch = if (discontinuity) it.positionEpoch + 1 else it.positionEpoch,
             )
         }
     }
@@ -220,6 +241,7 @@ constructor(
             positionMs = positionMs,
             bufferedPositionMs = current.bufferedPositionMs,
             durationMs = current.durationMs,
+            discontinuity = true,
         )
         exoPlayer?.seekTo(positionMs)
     }

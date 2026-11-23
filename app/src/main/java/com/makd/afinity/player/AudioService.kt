@@ -490,6 +490,7 @@ class AudioService : MediaLibraryService() {
                             positionMs = player.currentPosition,
                             bufferedPositionMs = player.bufferedPosition,
                             durationMs = player.duration.takeIf { it != C.TIME_UNSET } ?: 0L,
+                            discontinuity = reason != Player.DISCONTINUITY_REASON_INTERNAL,
                         )
                     }
                     ActiveEngine.NONE -> {}
