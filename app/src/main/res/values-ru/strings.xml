@@ -3986,9 +3986,17 @@
     <string name="abs_filter_abridged">Сокращенная версия</string>
     <string name="abs_filter_explicit">Откровенное содержание</string>
     <string name="pref_seek_gesture_title">Перемотка жестом</string>
-    <string name="pref_seek_gesture_summary">Смахните пальцем влево или вправо для перемотки видео</string>
+    <string name="pref_seek_gesture_summary">Проведите пальцем влево или вправо для перемотки видео</string>
     <string name="pref_brightness_gesture_title">Настройка яркости жестом</string>
-    <string name="pref_brightness_gesture_summary">Смахните пальцем вверх или вниз с левой стороны для изменения яркости</string>
+    <string name="pref_brightness_gesture_summary">Проведите пальцем вверх или вниз с левой стороны для изменения яркости</string>
     <string name="pref_volume_gesture_title">Настройка громкости жестом</string>
     <string name="pref_volume_gesture_summary">Проведите пальцем вверх или вниз с правой стороны для изменения громкости</string>
+    <string name="section_albums">Альбомы</string>
+    <string name="section_artists">Исполнители</string>
+    <string name="section_songs">Песни</string>
+    <string name="section_collections">Коллекции</string>
+    <string name="section_photos">Фотографии</string>
+    <string name="section_playlists">Плейлисты</string>
+    <string name="section_other_items">Прочие элементы</string>
+    <string name="collection_items_load_failed">Не удалось загрузить содержимое этой коллекции</string>
 </resources>

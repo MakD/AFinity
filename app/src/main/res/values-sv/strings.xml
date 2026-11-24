@@ -12,8 +12,8 @@
     <string name="login_saved_servers">Sparade Servrar</string>
     <string name="login_add_new_server">Lägg Till</string>
     <string name="login_server_url_label">Serveradress</string>
-    <string name="login_server_url_placeholder">https://jellyfin.example.com</string>
-    <string name="abs_server_url_placeholder">https://abs.example.com</string>
+    <string name="login_server_url_placeholder">https://jellyfin.exempel.se</string>
+    <string name="abs_server_url_placeholder">https://abs.exempel.se</string>
     <string name="login_btn_connect">Anslut</string>
     <string name="login_btn_cancel">Avbryt</string>
     <string name="login_local_network">Lokalt Nätverk</string>
@@ -506,14 +506,14 @@
     <string name="freq_24_hours">Var 24:e timme</string>
     <string name="update_never_checked">Aldrig</string>
     <string name="jellyseerr_connect_subtitle">Ange serveruppgifter för att aktivera förfrågningar</string>
-    <string name="jellyseerr_placeholder_url">https://seerr.example.com</string>
+    <string name="jellyseerr_placeholder_url">https://seerr.exempel.se</string>
     <string name="label_login_method">Logga in med</string>
     <string name="login_method_jellyfin">Jellyfin-konto</string>
     <string name="login_method_local">Lokalt konto</string>
     <string name="label_jellyfin_username">Jellyfin-användarnamn</string>
     <string name="label_seerr_email">Seerr-e-post</string>
     <string name="placeholder_username">Användarnamn</string>
-    <string name="placeholder_email_example">user@example.com</string>
+    <string name="placeholder_email_example">user@exempel.se</string>
     <string name="label_jellyfin_password">Jellyfin-lösenord</string>
     <string name="label_seerr_password">Seerr-lösenord</string>
     <string name="cd_show_password">Visa lösenord</string>
@@ -603,7 +603,7 @@
     <string name="abs_connect_title">Anslut till Audiobookshelf</string>
     <string name="abs_connect_button">Anslut</string>
     <string name="abs_tab_series">Serier</string>
-    <string name="abs_placeholder_server_url">https://abs.example.com</string>
+    <string name="abs_placeholder_server_url">https://abs.exempel.se</string>
     <string name="abs_no_libraries_found">Inga bibliotek hittades</string>
     <string name="abs_no_items_in_library">Biblioteket är tomt</string>
     <string name="abs_no_personalized_content">Inget personligt innehåll tillgängligt</string>
@@ -2853,7 +2853,7 @@
     <string name="config_networking_note">Visas som referens. Ändra dessa i webbpanelen; de flesta börjar gälla efter en omstart.</string>
     <string name="config_section_net_addresses">Inställningar för serveradress</string>
     <string name="config_net_base_url">Bas-URL</string>
-    <string name="config_net_base_url_summary">Lägg till en egen underkatalog i serveradressen. Exempel: https://example.com/&lt;baseurl&gt;</string>
+    <string name="config_net_base_url_summary">Lägg till en egen underkatalog i serveradressen. Exempel: https://exempel.se/&lt;baseurl&gt;</string>
     <string name="config_net_http_port">Lokalt HTTP-portnummer</string>
     <string name="config_net_http_port_summary">TCP-portnumret för HTTP-servern.</string>
     <string name="config_net_https_port">Lokalt HTTPS-portnummer</string>
